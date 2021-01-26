@@ -10,7 +10,7 @@
 4. islinear(A) trait for whether the operator is linear or not.
 =#
 
-Base.eltype(L::AbstractSciMLOperator{T}) where T = T
+Base.eltype(::Type{AbstractSciMLOperator{T}}) where T = T
 update_coefficients!(L,u,p,t) = nothing
 update_coefficients(L,u,p,t) = L
 

@@ -12,7 +12,7 @@ end
 DESolutionRows(names, types, t, u) = DESolutionRows(names, types, Dict(nm => i for (i, nm) in enumerate(names)), t, u)
 
 Base.length(x::DESolutionRows) = length(x.u)
-Base.eltype(x::DESolutionRows{T, U}) where {T, U} = DESolutionRow{eltype(T), eltype(U)}
+Base.eltype(::Type{DESolutionRows{T, U}}) where {T, U} = DESolutionRow{eltype(T), eltype(U)}
 Base.iterate(x::DESolutionRows, st=1) = st > length(x) ? nothing : (DESolutionRow(x.names, x.lookup, x.t[st], x.u[st]), st + 1)
 
 function Tables.rows(sol::DESolution)
