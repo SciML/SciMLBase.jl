@@ -18,12 +18,10 @@ TreeViews = "a2a6695c-b41b-5b7d-aed9-dbfdeacea5d7"
 
 [compat]
 DocStringExtensions = "0.8"
-IteratorInterfaceExtensions = "^0.1, ^1"
 LabelledArrays = "1.1"
 RecipesBase = "0.7.0, 0.8, 1.0"
 RecursiveArrayTools = "2"
 StaticArrays = "0.11, 0.12, 1.0"
-TableTraits = "^0.3, ^0.4, ^1"
 Tables = "1"
 TreeViews = "0.3"
 julia = "1"
