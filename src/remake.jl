@@ -31,7 +31,7 @@ function remake(thing; kwargs...)
   end
 end
 
-isrecompile(prob::ODEProblem{iip}) where {iip} = (prob.f isa ODEFunction) ? !(typeof(prob.f.f) <: FunctionWrapper) : true
+isrecompile(prob::ODEProblem{iip}) where {iip} = (prob.f isa ODEFunction) ? !isfunctionwrapper(prob.f.f) : true
 
 function remake(thing::ODEProblem; kwargs...)
   T = remaker_of(thing)

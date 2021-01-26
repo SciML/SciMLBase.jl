@@ -2,7 +2,6 @@ module SciMLBase
 
 using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
-import LabelledArrays
 import Logging
 using LinearAlgebra
 
@@ -486,6 +485,7 @@ abstract type AbstractADType end
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
+include("operators.jl")
 include("problems/problem_utils.jl")
 include("problems/discrete_problems.jl")
 include("problems/steady_state_problems.jl")
@@ -520,6 +520,8 @@ include("remake.jl")
 
 function discretize end
 
+isfunctionwrapper(x) = false
+
 export isinplace
 
 export solve, solve!, init, discretize
@@ -552,6 +554,8 @@ export OptimizationFunction
 export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
 
 export EnsembleAnalysis
+
+export tuples, intervals, TimeChoiceIterator
 
 export step!, resize!,deleteat!,addat!,get_tmp_cache,
        full_cache,user_cache,u_cache,du_cache,
