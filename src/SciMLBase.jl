@@ -5,6 +5,11 @@ using DocStringExtensions
 import LabelledArrays
 import Logging
 
+import CommonSolve: solve, init, solve!
+
+function __solve end
+function __init end
+
 abstract type SciMLProblem end
 
 # Problems
