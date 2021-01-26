@@ -1,7 +1,6 @@
 module SciMLBase
 
-using RecipesBase, RecursiveArrayTools, Tables, TableTraits,
-      IteratorInterfaceExtensions, TreeViews
+using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
 import LabelledArrays
 import Logging
