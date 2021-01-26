@@ -6,7 +6,6 @@ version = "0.1.0"
 [deps]
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-LabelledArrays = "2ee39098-c373-598a-b85f-a56591580800"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
@@ -18,7 +17,6 @@ TreeViews = "a2a6695c-b41b-5b7d-aed9-dbfdeacea5d7"
 
 [compat]
 DocStringExtensions = "0.8"
-LabelledArrays = "1.1"
 RecipesBase = "0.7.0, 0.8, 1.0"
 RecursiveArrayTools = "2"
 StaticArrays = "0.11, 0.12, 1.0"

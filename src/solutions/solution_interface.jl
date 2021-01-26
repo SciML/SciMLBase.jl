@@ -154,10 +154,8 @@ end
 function getsyms(sol)
   if has_syms(sol.prob.f)
     return sol.prob.f.syms
-  elseif typeof(sol.u[1]) <: Union{LabelledArrays.LArray,LabelledArrays.SLArray}
-    return LabelledArrays.symnames(typeof(sol.u[1]))
   else
-    return nothing
+    return keys(sol.u[1])
   end
 end
 
