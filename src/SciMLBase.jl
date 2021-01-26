@@ -516,6 +516,7 @@ include("ensemble/ensemble_analysis.jl")
 
 include("integrator_interface.jl")
 include("tabletraits.jl")
+include("remake.jl")
 
 function discretize end
 
