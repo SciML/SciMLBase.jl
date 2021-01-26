@@ -29,7 +29,7 @@ end
 
 """
     isinplace(f, inplace_param_number)
-    isinplace(f::AbstractDiffEqFunction[, inplace_param_number])
+    isinplace(f::AbstractSciMLFunction[, inplace_param_number])
 
 Check whether a function operates in place by comparing its number of arguments
 to the expected number. The second parameter is optional if `f` is an
@@ -42,8 +42,8 @@ function isinplace(f,inplace_param_number)
   numargs(f)>=inplace_param_number
 end
 
-isinplace(f::AbstractDiffEqFunction{iip}) where {iip} = iip
-isinplace(f::AbstractDiffEqFunction{iip}, inplace_param_number) where {iip} = iip
+isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
+isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number) where {iip} = iip
 
 """
     @CSI_str cmd
