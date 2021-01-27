@@ -4,6 +4,7 @@ using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
 import Logging, ArrayInterface
 using LinearAlgebra
+using Statistics
 
 import CommonSolve: solve, init, solve!
 
@@ -485,7 +486,12 @@ abstract type AbstractADType end
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
-include("operators.jl")
+
+include("operators/operators.jl")
+include("operators/diffeq_operator.jl")
+include("operators/common_defaults.jl")
+include("operators/basic_operators.jl")
+
 include("problems/problem_utils.jl")
 include("problems/discrete_problems.jl")
 include("problems/steady_state_problems.jl")
@@ -522,6 +528,9 @@ include("remake.jl")
 function discretize end
 
 isfunctionwrapper(x) = false
+function wrapfun_oop end
+function wrapfun_iip end
+function unwrap_fw end
 
 export isinplace
 
@@ -557,6 +566,10 @@ export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSeria
 export EnsembleAnalysis
 
 export tuples, intervals, TimeChoiceIterator
+
+export AffineDiffEqOperator
+
+export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
 export step!, resize!,deleteat!,addat!,get_tmp_cache,
        full_cache,user_cache,u_cache,du_cache,
