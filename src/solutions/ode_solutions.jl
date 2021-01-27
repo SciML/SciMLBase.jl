@@ -120,22 +120,22 @@ function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
                      sol.alg,sol.interp,false,sol.tslocation,sol.destats,sol.retcode)
  end
 
-function sensitivity_solution(sol::AbstractODESolution,u,t)
-  T = eltype(eltype(u))
-  N = length((size(sol.prob.u0)..., length(u)))
-  interp = if typeof(sol.interp) <: LinearInterpolation
-    LinearInterpolation(t,u)
-  elseif typeof(sol.interp) <: ConstantInterpolation
-    ConstantInterpolation(t,u)
-  else
-    SensitivityInterpolation(t,u)
-  end
+ function sensitivity_solution(sol::AbstractODESolution,u,t)
+   T = eltype(eltype(u))
+   N = length((size(sol.prob.u0)..., length(u)))
+   interp = if typeof(sol.interp) <: LinearInterpolation
+     LinearInterpolation(t,u)
+   elseif typeof(sol.interp) <: ConstantInterpolation
+     ConstantInterpolation(t,u)
+   else
+     SensitivityInterpolation(t,u)
+   end
 
-  ODESolution{T,N,typeof(u),typeof(sol.u_analytic),typeof(sol.errors),
-              typeof(t),Nothing,typeof(sol.prob),typeof(sol.alg),
-              typeof(interp),typeof(sol.destats)}(
-              u,sol.u_analytic,sol.errors,t,nothing,sol.prob,
-              sol.alg,interp,
-              sol.dense,sol.tslocation,
-              sol.destats,sol.retcode)
-end
+   ODESolution{T,N,typeof(u),typeof(sol.u_analytic),typeof(sol.errors),
+               typeof(t),Nothing,typeof(sol.prob),typeof(sol.alg),
+               typeof(interp),typeof(sol.destats)}(
+               u,sol.u_analytic,sol.errors,t,nothing,sol.prob,
+               sol.alg,interp,
+               sol.dense,sol.tslocation,
+               sol.destats,sol.retcode)
+ end

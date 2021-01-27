@@ -2,7 +2,7 @@ module SciMLBase
 
 using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
-import Logging
+import Logging, ArrayInterface
 using LinearAlgebra
 
 import CommonSolve: solve, init, solve!
@@ -514,6 +514,7 @@ include("ensemble/ensemble_problems.jl")
 include("ensemble/basic_ensemble_solve.jl")
 include("ensemble/ensemble_analysis.jl")
 
+include("interpolation.jl")
 include("integrator_interface.jl")
 include("tabletraits.jl")
 include("remake.jl")
