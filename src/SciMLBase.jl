@@ -59,16 +59,17 @@ abstract type AbstractQuadratureProblem{isinplace} <: SciMLProblem end
 """
 $(TYPEDEF)
 
-Base for types which define equations for optimization
+Base for types which define equations for optimization.
 """
 abstract type AbstractOptimizationProblem{isinplace} <: SciMLProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define steady state problems for ODE systems.
+Base for types which define nonlinear solve problems (f(u)=0).
 """
-abstract type AbstractSteadyStateProblem{uType,isinplace} <: DEProblem end
+abstract type AbstractNonlinearProblem{uType,isinplace} <: DEProblem end
+const AbstractSteadyStateProblem{uType,isinplace} = AbstractNonlinearProblem{uType,isinplace}
 
 """
 $(TYPEDEF)
@@ -488,6 +489,7 @@ abstract type AbstractADType end
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
+include("alg_traits.jl")
 
 include("operators/operators.jl")
 include("operators/diffeq_operator.jl")
@@ -511,7 +513,7 @@ include("problems/pde_problems.jl")
 include("problems/problem_traits.jl")
 
 include("solutions/basic_solutions.jl")
-include("solutions/steady_state_solutions.jl")
+include("solutions/nonlinear_solutions.jl")
 include("solutions/ode_solutions.jl")
 include("solutions/rode_solutions.jl")
 include("solutions/dae_solutions.jl")
