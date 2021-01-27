@@ -35,8 +35,10 @@ function Base.show(io::IO, A::AbstractLinearProblem)
   show(io, A.b)
 end
 
-Base.summary(prob::AbstractNonlinearProblem) = string(
+Base.summary(prob::AbstractNonlinearProblem{uType,iip}) where {uType,iip} = string(
                                        TYPE_COLOR, nameof(typeof(prob)),
+                                       NO_COLOR, " with uType ",
+                                       TYPE_COLOR, uType,
                                        NO_COLOR, ". In-place: ",
                                        TYPE_COLOR, isinplace(prob),
                                        NO_COLOR)
@@ -66,7 +68,6 @@ function Base.show(io::IO, A::AbstractQuadratureProblem)
   println(io,summary(A))
 end
 
-Base.summary(prob::AbstractSteadyStateProblem{uType,iip}) where {uType,iip} = string(nameof(typeof(prob))," with uType ",uType)
 Base.summary(prob::AbstractNoiseProblem) = string(nameof(typeof(prob))," with WType ",typeof(prob.noise.W[1])," and tType ",typeof(prob.tspan[1]),". In-place: ",isinplace(prob))
 function Base.show(io::IO, A::DEProblem)
   println(io,summary(A))
@@ -92,11 +93,6 @@ function Base.show(io::IO, A::AbstractDAEProblem)
   println(io)
   print(io,"du0: ")
   show(io, A.du0)
-end
-function Base.show(io::IO, A::AbstractSteadyStateProblem)
-  println(io,summary(A))
-  print(io,"u0: ")
-  show(io, A.u0)
 end
 
 Base.summary(prob::AbstractEnsembleProblem) = string(
