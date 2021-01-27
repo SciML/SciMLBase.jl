@@ -8,5 +8,4 @@ const is_APPVEYOR = ( Sys.iswindows() && haskey(ENV,"APPVEYOR") )
 @time begin
 @time @safetestset "Existence functions" begin include("existence_functions.jl") end
 @time @safetestset "Integrator interface" begin include("integrator_tests.jl") end
-@time @safetestset "Remake tests" begin include("remake_tests.jl") end
 end

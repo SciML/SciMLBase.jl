@@ -2,10 +2,11 @@ module SciMLBase
 
 using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
-import Logging, ArrayInterface
 using LinearAlgebra
 using Statistics
 
+import Logging, ArrayInterface
+import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 
 function __solve end

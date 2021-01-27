@@ -40,3 +40,8 @@ end
 Tables.columnnames(x::DESolutionRow) = getfield(x, :names)
 Tables.getcolumn(x::DESolutionRow, i::Int) = i == 1 ? getfield(x, :t) : getfield(x, :u)[i - 1]
 Tables.getcolumn(x::DESolutionRow, nm::Symbol) = nm === :timestamp ? getfield(x, :t) : getfield(x, :u)[getfield(x, :lookup)[nm] - 1]
+
+IteratorInterfaceExtensions.isiterable(sol::DESolution) = true
+IteratorInterfaceExtensions.getiterator(sol::DESolution) =
+    Tables.datavaluerows(Tables.rows(sol))
+#TableTraits.isiterabletable(sol::DESolution) = true
