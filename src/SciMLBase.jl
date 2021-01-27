@@ -4,6 +4,7 @@ using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
 using LinearAlgebra
 using Statistics
+using Distributed
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
