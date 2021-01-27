@@ -571,7 +571,7 @@ export AffineDiffEqOperator
 
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
-export step!, resize!,deleteat!,addat!,get_tmp_cache,
+export step!, deleteat!,addat!,get_tmp_cache,
        full_cache,user_cache,u_cache,du_cache,
        rand_cache,ratenoise_cache,
        resize_non_user_cache!,deleteat_non_user_cache!,addat_non_user_cache!,
