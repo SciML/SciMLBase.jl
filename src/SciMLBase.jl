@@ -45,13 +45,6 @@ abstract type AbstractLinearProblem{bType,isinplace} <: SciMLProblem end
 """
 $(TYPEDEF)
 
-Base for types which define nonlinear systems.
-"""
-abstract type AbstractNonlinearProblem{uType,isinplace} <: SciMLProblem end
-
-"""
-$(TYPEDEF)
-
 Base for types which define integrals suitable for quadrature.
 """
 abstract type AbstractQuadratureProblem{isinplace} <: SciMLProblem end
