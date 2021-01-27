@@ -390,7 +390,7 @@ abstract type AbstractQuadratureSolution{T,N} <: AbstractNoTimeSolution{T,N} end
 """
 $(TYPEDEF)
 """
-abstract type AbstractSteadyStateSolution{T,N} <: AbstractNoTimeSolution{T,N} end
+const AbstractSteadyStateSolution{T,N} = AbstractNonlinearSolution{T,N}
 
 """
 $(TYPEDEF)
