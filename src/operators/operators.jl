@@ -11,6 +11,7 @@
 =#
 
 Base.eltype(::Type{AbstractSciMLOperator{T}}) where T = T
+Base.eltype(::AbstractSciMLOperator{T}) where T = T
 update_coefficients!(L,u,p,t) = nothing
 update_coefficients(L,u,p,t) = L
 

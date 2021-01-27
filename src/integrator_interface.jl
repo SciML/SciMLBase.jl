@@ -10,7 +10,7 @@ passed to the optional third argument, the integrator advances exactly
 function step!(d::DEIntegrator) error("Integrator stepping is not implemented") end
 
 """
-    resize(integrator::DEIntegrator,k::Int)
+    resize!(integrator::DEIntegrator,k::Int)
 
 Resizes the DE to a size `k`. This chops off the end of the array, or adds blank values at the end, depending on whether
 `k > length(integrator.u)`.
