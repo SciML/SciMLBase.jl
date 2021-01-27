@@ -162,6 +162,9 @@ end
 cleansyms(syms::Nothing) = nothing
 cleansyms(syms::Tuple) = collect(cleansym(sym) for sym in syms)
 cleansyms(syms::Vector{Symbol}) = cleansym.(syms)
+cleansyms(syms::LinearIndices) = nothing
+cleansyms(syms::CartesianIndices) = nothing
+
 function cleansym(sym::Symbol)
   str = String(sym)
   # MTK generated names
