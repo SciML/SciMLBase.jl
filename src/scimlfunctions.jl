@@ -1098,18 +1098,6 @@ __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
 
 # compatibility
-has_invW(f::AbstractDiffEqFunction) = false
-has_analytic(f::AbstractDiffEqFunction) = __has_analytic(f) && f.analytic !== nothing
-has_jac(f::AbstractDiffEqFunction) = __has_jac(f) && f.jac !== nothing
-has_jvp(f::AbstractDiffEqFunction) = __has_jvp(f) && f.jvp !== nothing
-has_vjp(f::AbstractDiffEqFunction) = __has_vjp(f) && f.vjp !== nothing
-has_tgrad(f::AbstractDiffEqFunction) = __has_tgrad(f) && f.tgrad !== nothing
-has_Wfact(f::AbstractDiffEqFunction) = __has_Wfact(f) && f.Wfact !== nothing
-has_Wfact_t(f::AbstractDiffEqFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
-has_paramjac(f::AbstractDiffEqFunction) = __has_paramjac(f) && f.paramjac !== nothing
-has_syms(f::AbstractDiffEqFunction) = __has_syms(f) && f.syms !== nothing
-has_colorvec(f::AbstractDiffEqFunction) = __has_colorvec(f) && f.colorvec !== nothing
-
 has_invW(f::AbstractSciMLFunction) = false
 has_analytic(f::AbstractSciMLFunction) = __has_analytic(f) && f.analytic !== nothing
 has_jac(f::AbstractSciMLFunction) = __has_jac(f) && f.jac !== nothing
