@@ -134,24 +134,23 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
 
   # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
   if typeof(vars) <: Tuple && (issymbollike(vars[1]) && issymbollike(vars[2]))
-    @show
     xguide --> issymbollike(int_vars[1][2]) ? Symbol(int_vars[1][2]) : strs[int_vars[1][2]]
     yguide --> issymbollike(int_vars[1][3]) ? Symbol(int_vars[1][3]) : strs[int_vars[1][3]]
     if length(vars) > 2
       zguide --> issymbollike(int_vars[1][4]) ? Symbol(int_vars[1][4]) : strs[int_vars[1][4]]
     end
   end
-  @show any(issymbollike,getindex.(int_vars,1))
+
   if (!any(issymbollike,getindex.(int_vars,1)) && getindex.(int_vars,1) == zeros(length(int_vars))) ||
      (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars)))
 
-    xguide --> "t"
+    xguide --> "$(getindepsym(sol))"
   end
   if length(int_vars[1]) >= 3 && !any(issymbollike,getindex.(int_vars,3)) && getindex.(int_vars,3) == zeros(length(int_vars))
-    yguide --> "t"
+    yguide --> "$(getindepsym(sol))"
   end
   if length(int_vars[1]) >= 4 && !any(issymbollike,getindex.(int_vars,4)) && getindex.(int_vars,4) == zeros(length(int_vars))
-    zguide --> "t"
+    zguide --> "$(getindepsym(sol))"
   end
 
   if !any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))
@@ -208,6 +207,14 @@ function getsyms(sol)
     return sol.prob.f.syms
   else
     return keys(sol.u[1])
+  end
+end
+
+function getindepsym(sol)
+  if has_indepsym(sol.prob.f)
+    return sol.prob.f.indepsym
+  else
+    return :t
   end
 end
 
@@ -327,7 +334,8 @@ function interpret_vars(vars,sol,syms)
         tmp = []
         for x in var
           if issymbollike(x)
-            push!(tmp,something(sym_to_index(x,syms),x))
+            found = sym_to_index(x,syms)
+            push!(tmp,found == nothing && getindepsym(sol) == x ? 0 : something(found,x))
           else
             push!(tmp,x)
           end
@@ -338,7 +346,8 @@ function interpret_vars(vars,sol,syms)
           var_int = tmp
         end
       elseif issymbollike(var)
-        var_int = something(sym_to_index(var,syms),var)
+        found = sym_to_index(var,syms)
+        var_int = found == nothing && getindepsym(sol) == x ? 0 : something(found,var)
       else
         var_int = var
       end
@@ -416,7 +425,7 @@ function add_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
     if !issymbollike(x[j]) && x[j] == 0
-      push!(lys,"t,")
+      push!(lys,"$(getindepsym(sol)),")
     elseif issymbollike(x[j])
       push!(lys,"$(x[j]),")
     else
@@ -433,7 +442,7 @@ function add_labels!(labels,x,dims,sol,strs)
     if strs !== nothing && endswith(strs[x[3]], r"(.*)")
       tmp_lab = "$(lys...)"
     else
-      tmp_lab = "$(lys...)(t)"
+      tmp_lab = "$(lys...)($(getindepsym(sol)))"
     end
   else
     if strs !== nothing && !issymbollike(x[2]) && x[2] != 0
@@ -441,7 +450,7 @@ function add_labels!(labels,x,dims,sol,strs)
       tmp_lab = "($tmp,$(lys...))"
     else
       if !issymbollike(x[2]) && x[2] == 0
-        tmp_lab = "(t,$(lys...))"
+        tmp_lab = "($(getindepsym(sol)),$(lys...))"
       elseif issymbollike(x[2])
         tmp_lab = "($(x[2]),$(lys...))"
       else
@@ -461,7 +470,7 @@ function add_analytic_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
     if x[j] == 0 && dims == 3
-      push!(lys,"t,")
+      push!(lys,"$(getindepsym(sol)),")
     else
       if strs !== nothing
         push!(lys,string("True ",strs[x[j]],","))
@@ -472,7 +481,7 @@ function add_analytic_labels!(labels,x,dims,sol,strs)
   end
   lys[end] = lys[end][1:end-1] # Take off the last comma
   if x[2] == 0
-    tmp_lab = "$(lys...)(t)"
+    tmp_lab = "$(lys...)($(getindepsym(sol)))"
   else
     if strs !== nothing
       tmp = string("True ",strs[x[2]])
