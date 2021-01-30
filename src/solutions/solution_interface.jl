@@ -142,18 +142,21 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
   end
 
   if (!any(issymbollike,getindex.(int_vars,1)) && getindex.(int_vars,1) == zeros(length(int_vars))) ||
-     (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars)))
-
+     (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))) ||
+     all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,1)) || all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,2))
     xguide --> "$(getindepsym(sol))"
   end
-  if length(int_vars[1]) >= 3 && !any(issymbollike,getindex.(int_vars,3)) && getindex.(int_vars,3) == zeros(length(int_vars))
+  if length(int_vars[1]) >= 3 && ((!any(issymbollike,getindex.(int_vars,3)) && getindex.(int_vars,3) == zeros(length(int_vars))) ||
+     all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,3)))
     yguide --> "$(getindepsym(sol))"
   end
-  if length(int_vars[1]) >= 4 && !any(issymbollike,getindex.(int_vars,4)) && getindex.(int_vars,4) == zeros(length(int_vars))
+  if length(int_vars[1]) >= 4 && ((!any(issymbollike,getindex.(int_vars,4)) && getindex.(int_vars,4) == zeros(length(int_vars))) ||
+     all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,4)))
     zguide --> "$(getindepsym(sol))"
   end
 
-  if !any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))
+  if (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))) ||
+      all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,2))
     if tspan === nothing
       if tdir > 0
         xlims --> (sol.t[1],sol.t[end])
@@ -347,7 +350,7 @@ function interpret_vars(vars,sol,syms)
         end
       elseif issymbollike(var)
         found = sym_to_index(var,syms)
-        var_int = found == nothing && getindepsym(sol) == x ? 0 : something(found,var)
+        var_int = found == nothing && getindepsym(sol) == var ? 0 : something(found,var)
       else
         var_int = var
       end
@@ -439,7 +442,8 @@ function add_labels!(labels,x,dims,sol,strs)
   lys[end] = chop(lys[end]) # Take off the last comma
   if !issymbollike(x[2]) && x[2] == 0 && dims == 3
     # if there are no dependence in syms, then we add "(t)"
-    if strs !== nothing && endswith(strs[x[3]], r"(.*)")
+    if strs !== nothing && (typeof(x[3]) <: Int && endswith(strs[x[3]], r"(.*)")) ||
+                           (issymbollike(x[3]) && endswith(string(x[3]), r"(.*)"))
       tmp_lab = "$(lys...)"
     else
       tmp_lab = "$(lys...)($(getindepsym(sol)))"
@@ -514,7 +518,11 @@ end
 
 function u_n(timeseries::AbstractArray, sym,sol,plott,plot_timeseries)
   @assert issymbollike(sym)
-  getobserved(sol).((sym,),eachcol(timeseries))
+  if getindepsym(sol) == Symbol(sym)
+    return plott
+  else
+    getobserved(sol).((sym,),eachcol(timeseries))
+  end
 end
 
 function solplot_vecs_and_labels(dims,vars,plot_timeseries,plott,sol,plot_analytic,plot_analytic_timeseries,strs)
