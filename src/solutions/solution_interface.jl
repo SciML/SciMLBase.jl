@@ -53,7 +53,6 @@ function observed(A::AbstractTimeseriesSolution,sym,i::Int)
 end
 
 function observed(A::AbstractTimeseriesSolution,sym,i::AbstractArray{Int})
-  @show A[i]
   getobserved(A).((sym,),A.u[i])
 end
 
@@ -135,23 +134,27 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
 
   # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
   if typeof(vars) <: Tuple && (issymbollike(vars[1]) && issymbollike(vars[2]))
-    xguide --> strs[int_vars[1][2]]
-    yguide --> strs[int_vars[1][3]]
+    @show
+    xguide --> issymbollike(int_vars[1][2]) ? Symbol(int_vars[1][2]) : strs[int_vars[1][2]]
+    yguide --> issymbollike(int_vars[1][3]) ? Symbol(int_vars[1][3]) : strs[int_vars[1][3]]
     if length(vars) > 2
-      zguide --> strs[int_vars[1][4]]
+      zguide --> issymbollike(int_vars[1][4]) ? Symbol(int_vars[1][4]) : strs[int_vars[1][4]]
     end
   end
-  if getindex.(int_vars,1) == zeros(length(int_vars)) || getindex.(int_vars,2) == zeros(length(int_vars))
+  @show any(issymbollike,getindex.(int_vars,1))
+  if (!any(issymbollike,getindex.(int_vars,1)) && getindex.(int_vars,1) == zeros(length(int_vars))) ||
+     (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars)))
+
     xguide --> "t"
   end
-  if length(int_vars[1]) >= 3 && getindex.(int_vars,3) == zeros(length(int_vars))
+  if length(int_vars[1]) >= 3 && !any(issymbollike,getindex.(int_vars,3)) && getindex.(int_vars,3) == zeros(length(int_vars))
     yguide --> "t"
   end
-  if length(int_vars[1]) >= 4 && getindex.(int_vars,4) == zeros(length(int_vars))
+  if length(int_vars[1]) >= 4 && !any(issymbollike,getindex.(int_vars,4)) && getindex.(int_vars,4) == zeros(length(int_vars))
     zguide --> "t"
   end
 
-  if getindex.(int_vars,2) == zeros(length(int_vars))
+  if !any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))
     if tspan === nothing
       if tdir > 0
         xlims --> (sol.t[1],sol.t[end])
@@ -324,7 +327,7 @@ function interpret_vars(vars,sol,syms)
         tmp = []
         for x in var
           if issymbollike(x)
-            push!(tmp,something(sym_to_index(x,syms),0))
+            push!(tmp,something(sym_to_index(x,syms),x))
           else
             push!(tmp,x)
           end
@@ -335,7 +338,7 @@ function interpret_vars(vars,sol,syms)
           var_int = tmp
         end
       elseif issymbollike(var)
-        var_int = something(sym_to_index(var,syms),0)
+        var_int = something(sym_to_index(var,syms),var)
       else
         var_int = var
       end
@@ -394,7 +397,7 @@ function interpret_vars(vars,sol,syms)
         vars = [(DEFAULT_PLOT_FUNC,vars[end-1], y) for y in vars[end]]
       else
         # Both axes are numbers
-        if typeof(vars[1]) <: Int
+        if typeof(vars[1]) <: Int || issymbollike(vars[1])
           vars = [tuple(DEFAULT_PLOT_FUNC,vars...)]
         else
           vars = [vars]
@@ -412,8 +415,10 @@ end
 function add_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
-    if x[j] == 0
+    if !issymbollike(x[j]) && x[j] == 0
       push!(lys,"t,")
+    elseif issymbollike(x[j])
+      push!(lys,"$(x[j]),")
     else
       if strs !== nothing
         push!(lys,"$(strs[x[j]]),")
@@ -423,7 +428,7 @@ function add_labels!(labels,x,dims,sol,strs)
     end
   end
   lys[end] = chop(lys[end]) # Take off the last comma
-  if x[2] == 0 && dims == 3
+  if !issymbollike(x[2]) && x[2] == 0 && dims == 3
     # if there are no dependence in syms, then we add "(t)"
     if strs !== nothing && endswith(strs[x[3]], r"(.*)")
       tmp_lab = "$(lys...)"
@@ -431,12 +436,14 @@ function add_labels!(labels,x,dims,sol,strs)
       tmp_lab = "$(lys...)(t)"
     end
   else
-    if strs !== nothing && x[2] != 0
+    if strs !== nothing && !issymbollike(x[2]) && x[2] != 0
       tmp = strs[x[2]]
       tmp_lab = "($tmp,$(lys...))"
     else
-      if x[2] == 0
+      if !issymbollike(x[2]) && x[2] == 0
         tmp_lab = "(t,$(lys...))"
+      elseif issymbollike(x[2])
+        tmp_lab = "($(x[2]),$(lys...))"
       else
         tmp_lab = "(u$(x[2]),$(lys...))"
       end
@@ -494,6 +501,11 @@ function u_n(timeseries::AbstractArray, n::Int,sol,plott,plot_timeseries)
     end
     return tmp
   end
+end
+
+function u_n(timeseries::AbstractArray, sym,sol,plott,plot_timeseries)
+  @assert issymbollike(sym)
+  getobserved(sol).((sym,),eachcol(timeseries))
 end
 
 function solplot_vecs_and_labels(dims,vars,plot_timeseries,plott,sol,plot_analytic,plot_analytic_timeseries,strs)
