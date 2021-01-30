@@ -1,6 +1,6 @@
 const RECOMPILE_BY_DEFAULT = true
 
-function DEFAULT_OBSERVED(sym,u)
+function DEFAULT_OBSERVED(sym,u,p,t)
   error("Indexing symbol $sym is unknown.")
 end
 
@@ -363,7 +363,7 @@ function ODEFunction{iip,true}(f;
                  Wfact_t=nothing,
                  paramjac = nothing,
                  syms = nothing,
-                 indepsym = :t,
+                 indepsym = nothing,
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
@@ -407,7 +407,7 @@ function ODEFunction{iip,false}(f;
                  Wfact_t=nothing,
                  paramjac = nothing,
                  syms = nothing,
-                 indepsym = :t,
+                 indepsym = nothing,
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 

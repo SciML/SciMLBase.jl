@@ -28,7 +28,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
   end
 
   if i == nothing
-      observed(A,sym,:)
+      if issymbollike(i) && Symbol(i) == getindepsym(A)
+        A.t
+      else
+        observed(A,sym,:)
+      end
   else
       A[i,:]
   end
@@ -42,22 +46,26 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
     end
 
     if i == nothing
+      if issymbollike(i) && Symbol(i) == getindepsym(A)
+        A.t[args...]
+      else
         observed(A,sym,args...)
+      end
     else
         A[i,args...]
     end
 end
 
 function observed(A::AbstractTimeseriesSolution,sym,i::Int)
-  getobserved(A)(sym,A[i])
+  getobserved(A)(sym,A[i],A.prob.p,A.t[i])
 end
 
 function observed(A::AbstractTimeseriesSolution,sym,i::AbstractArray{Int})
-  getobserved(A).((sym,),A.u[i])
+  getobserved(A).((sym,),A.u[i],(A.prob.p,),A.t[i])
 end
 
 function observed(A::AbstractTimeseriesSolution,sym,i::Colon)
-  getobserved(A).((sym,),A.u)
+  getobserved(A).((sym,),A.u,(A.prob.p,),A.t)
 end
 
 ## AbstractTimeseriesSolution Interface
@@ -143,20 +151,20 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
 
   if (!any(issymbollike,getindex.(int_vars,1)) && getindex.(int_vars,1) == zeros(length(int_vars))) ||
      (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))) ||
-     all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,1)) || all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,2))
-    xguide --> "$(getindepsym(sol))"
+     all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,1)) || all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,2))
+    xguide --> "$(getindepsym_defaultt(sol))"
   end
   if length(int_vars[1]) >= 3 && ((!any(issymbollike,getindex.(int_vars,3)) && getindex.(int_vars,3) == zeros(length(int_vars))) ||
-     all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,3)))
-    yguide --> "$(getindepsym(sol))"
+     all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,3)))
+    yguide --> "$(getindepsym_defaultt(sol))"
   end
   if length(int_vars[1]) >= 4 && ((!any(issymbollike,getindex.(int_vars,4)) && getindex.(int_vars,4) == zeros(length(int_vars))) ||
-     all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,4)))
-    zguide --> "$(getindepsym(sol))"
+     all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,4)))
+    zguide --> "$(getindepsym_defaultt(sol))"
   end
 
   if (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))) ||
-      all(t->Symbol(t)==getindepsym(sol),getindex.(int_vars,2))
+      all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,2))
     if tspan === nothing
       if tdir > 0
         xlims --> (sol.t[1],sol.t[end])
@@ -214,6 +222,15 @@ function getsyms(sol)
 end
 
 function getindepsym(sol)
+  if has_indepsym(sol.prob.f)
+    return sol.prob.f.indepsym
+  else
+    return nothing
+  end
+end
+
+# Only for compatibility!
+function getindepsym_defaultt(sol)
   if has_indepsym(sol.prob.f)
     return sol.prob.f.indepsym
   else
@@ -338,7 +355,7 @@ function interpret_vars(vars,sol,syms)
         for x in var
           if issymbollike(x)
             found = sym_to_index(x,syms)
-            push!(tmp,found == nothing && getindepsym(sol) == x ? 0 : something(found,x))
+            push!(tmp,found == nothing && getindepsym_defaultt(sol) == x ? 0 : something(found,x))
           else
             push!(tmp,x)
           end
@@ -350,7 +367,7 @@ function interpret_vars(vars,sol,syms)
         end
       elseif issymbollike(var)
         found = sym_to_index(var,syms)
-        var_int = found == nothing && getindepsym(sol) == var ? 0 : something(found,var)
+        var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 : something(found,var)
       else
         var_int = var
       end
@@ -428,7 +445,7 @@ function add_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
     if !issymbollike(x[j]) && x[j] == 0
-      push!(lys,"$(getindepsym(sol)),")
+      push!(lys,"$(getindepsym_defaultt(sol)),")
     elseif issymbollike(x[j])
       push!(lys,"$(x[j]),")
     else
@@ -446,7 +463,7 @@ function add_labels!(labels,x,dims,sol,strs)
                            (issymbollike(x[3]) && endswith(string(x[3]), r"(.*)"))
       tmp_lab = "$(lys...)"
     else
-      tmp_lab = "$(lys...)($(getindepsym(sol)))"
+      tmp_lab = "$(lys...)($(getindepsym_defaultt(sol)))"
     end
   else
     if strs !== nothing && !issymbollike(x[2]) && x[2] != 0
@@ -454,7 +471,7 @@ function add_labels!(labels,x,dims,sol,strs)
       tmp_lab = "($tmp,$(lys...))"
     else
       if !issymbollike(x[2]) && x[2] == 0
-        tmp_lab = "($(getindepsym(sol)),$(lys...))"
+        tmp_lab = "($(getindepsym_defaultt(sol)),$(lys...))"
       elseif issymbollike(x[2])
         tmp_lab = "($(x[2]),$(lys...))"
       else
@@ -474,7 +491,7 @@ function add_analytic_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
     if x[j] == 0 && dims == 3
-      push!(lys,"$(getindepsym(sol)),")
+      push!(lys,"$(getindepsym_defaultt(sol)),")
     else
       if strs !== nothing
         push!(lys,string("True ",strs[x[j]],","))
@@ -485,7 +502,7 @@ function add_analytic_labels!(labels,x,dims,sol,strs)
   end
   lys[end] = lys[end][1:end-1] # Take off the last comma
   if x[2] == 0
-    tmp_lab = "$(lys...)($(getindepsym(sol)))"
+    tmp_lab = "$(lys...)($(getindepsym_defaultt(sol)))"
   else
     if strs !== nothing
       tmp = string("True ",strs[x[2]])
@@ -518,10 +535,10 @@ end
 
 function u_n(timeseries::AbstractArray, sym,sol,plott,plot_timeseries)
   @assert issymbollike(sym)
-  if getindepsym(sol) == Symbol(sym)
+  if getindepsym_defaultt(sol) == Symbol(sym)
     return plott
   else
-    getobserved(sol).((sym,),eachcol(timeseries))
+    getobserved(sol).((sym,),eachcol(timeseries),(sol.prob.p,),plott)
   end
 end
 
