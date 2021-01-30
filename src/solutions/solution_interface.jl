@@ -18,6 +18,7 @@ Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Int) = A.u[I]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Int...) = A.u[I[end]][Base.front(I)...]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,::Colon) = [A.u[j][i] for j in 1:length(A)]
+Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, ::Colon,i::Int) = A.u[i]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,II::AbstractArray{Int}) = [A.u[j][i] for j in II]
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym)
@@ -38,7 +39,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
   end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,args...)
+Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,args::Union{Int,AbstractArray{Int},Colon,CartesianIndex}...)
     if issymbollike(sym)
         i = sym_to_index(sym,A)
     else
