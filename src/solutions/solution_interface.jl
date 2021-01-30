@@ -21,29 +21,44 @@ Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,::C
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,II::AbstractArray{Int}) = [A.u[j][i] for j in II]
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym)
-      if issymbollike(sym)
-            i = sym_to_index(sym,A)
-      else
-            i = sym
-      end
+  if issymbollike(sym)
+      i = sym_to_index(sym,A)
+  else
+      i = sym
+  end
+
+  if i == nothing
+      observed(A,sym,:)
+  else
       A[i,:]
+  end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,I::Int...)
-      if issymbollike(sym)
-            i = sym_to_index(sym,A)
-      else
-            i = sym
-      end
-      A[i,I...]
+Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,args...)
+    if issymbollike(sym)
+        i = sym_to_index(sym,A)
+    else
+        i = sym
+    end
+
+    if i == nothing
+        observed(A,sym,args...)
+    else
+        A[i,args...]
+    end
 end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,I::Union{AbstractArray{Int},Colon,CartesianIndex})
-      if issymbollike(sym)
-            i = sym_to_index(sym,A)
-      else
-            i = sym
-      end
-      A[i,I]
+
+function observed(A::AbstractTimeseriesSolution,sym,i::Int)
+  getobserved(A)(sym,A[i])
+end
+
+function observed(A::AbstractTimeseriesSolution,sym,i::AbstractArray{Int})
+  @show A[i]
+  getobserved(A).((sym,),A.u[i])
+end
+
+function observed(A::AbstractTimeseriesSolution,sym,i::Colon)
+  getobserved(A).((sym,),A.u)
 end
 
 ## AbstractTimeseriesSolution Interface
@@ -190,6 +205,14 @@ function getsyms(sol)
     return sol.prob.f.syms
   else
     return keys(sol.u[1])
+  end
+end
+
+function getobserved(sol)
+  if has_syms(sol.prob.f)
+    return sol.prob.f.observed
+  else
+    return DEFAULT_OBSERVED
   end
 end
 
