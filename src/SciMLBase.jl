@@ -5,6 +5,7 @@ using DocStringExtensions
 using LinearAlgebra
 using Statistics
 using Distributed
+using StaticArrays
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
