@@ -1942,3 +1942,20 @@ function Base.convert(::Type{IncrementingODEFunction}, f)
 end
 
 (f::IncrementingODEFunction)(args...;kwargs...) = f.f(args...;kwargs...)
+
+for S in [
+          :ODEFunction
+          :DiscreteFunction
+          :DAEFunction
+          :DDEFunction
+          :SDEFunction
+          :RODEFunction
+          :SDDEFunction
+          :NonlinearFunction
+          :IncrementingODEFunction
+         ]
+    @eval begin
+        Base.convert(::Type{$S}, x::$S) = x
+        Base.convert(::Type{$S{iip}}, x::T) where {T<:$S{iip}} where iip = x
+    end
+end
