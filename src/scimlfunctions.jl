@@ -112,6 +112,27 @@ end
 """
 $(TYPEDEF)
 """
+struct DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,TCV} <: AbstractDDEFunction{iip}
+  f1::F1
+  f2::F2
+  mass_matrix::TMM
+  analytic::Ta
+  tgrad::Tt
+  jac::TJ
+  jvp::JVP
+  vjp::VJP
+  jac_prototype::JP
+  sparsity::SP
+  Wfact::TW
+  Wfact_t::TWt
+  paramjac::TPJ
+  syms::S
+  colorvec::TCV
+end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractDiscreteFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 """
@@ -321,6 +342,21 @@ end
 
 (f::DDEFunction)(args...) = f.f(args...)
 (f::DDEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
+
+function (f::DynamicalDDEFunction)(u,h,p,t)
+  ArrayPartition(f.f1(u.x[1],u.x[2],h,p,t),f.f2(u.x[1],u.x[2],h,p,t))
+end
+function (f::DynamicalDDEFunction)(du,u,h,p,t)
+  f.f1(du.x[1],u.x[1],u.x[2],h,p,t)
+  f.f2(du.x[2],u.x[1],u.x[2],h,p,t)
+end
+function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
+  if name === :f
+    # Use the f property as an alias for calling the function itself, so DynamicalDDEFunction fits the same interface as DDEFunction as expected by the ODEFunctionWrapper in DelayDiffEq.jl.
+    return f
+  end
+  return getfield(f, name)
+end
 
 (f::SDEFunction)(args...) = f.f(args...)
 (f::SDEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
@@ -933,6 +969,63 @@ DDEFunction{iip}(f::DDEFunction; kwargs...) where iip = f
 DDEFunction(f; kwargs...) = DDEFunction{isinplace(f, 5),RECOMPILE_BY_DEFAULT}(f; kwargs...)
 DDEFunction(f::DDEFunction; kwargs...) = f
 
+@add_kwonly function DynamicalDDEFunction{iip}(f1,f2,mass_matrix,analytic,tgrad,jac,jvp,vjp,
+                                               jac_prototype,sparsity,Wfact,Wfact_t,paramjac,
+                                               syms,colorvec) where iip
+  f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : DDEFunction(f1)
+  f2 = DDEFunction(f2)
+  DynamicalDDEFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(mass_matrix),
+                       typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
+                       typeof(jac_prototype),
+                       typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),
+                       typeof(colorvec)}(f1,f2,mass_matrix,analytic,tgrad,jac,jvp,vjp,
+                                         jac_prototype,sparsity,Wfact,Wfact_t,paramjac,syms,colorvec)
+end
+function DynamicalDDEFunction{iip,true}(f1,f2;mass_matrix=I,
+                                        analytic=nothing,
+                                        tgrad=nothing,
+                                        jac=nothing,
+                                        jvp=nothing,
+                                        vjp=nothing,
+                                        jac_prototype=nothing,
+                                        sparsity=jac_prototype,
+                                        Wfact=nothing,
+                                        Wfact_t=nothing,
+                                        paramjac = nothing,
+                                        syms = nothing,
+                                        colorvec = nothing) where iip
+  DynamicalDDEFunction{iip,typeof(f1),typeof(f2),typeof(mass_matrix),
+                       typeof(analytic),
+                       typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),
+                       typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),
+                       typeof(colorvec)}(
+                         f1,f2,mass_matrix,analytic,tgrad,jac,jvp,vjp,jac_prototype,sparsity,
+                         Wfact,Wfact_t,paramjac,syms,colorvec)
+end
+function DynamicalDDEFunction{iip,false}(f1,f2;mass_matrix=I,
+                                         analytic=nothing,
+                                         tgrad=nothing,
+                                         jac=nothing,
+                                         jvp=nothing,
+                                         vjp=nothing,
+                                         jac_prototype=nothing,
+                                         sparsity=jac_prototype,
+                                         Wfact=nothing,
+                                         Wfact_t=nothing,
+                                         paramjac = nothing,
+                                         syms = nothing,
+                                         colorvec = nothing) where iip
+  DynamicalDDEFunction{iip,Any,Any,Any,Any,Any,Any,Any,
+                       Any,Any,Any,Any,Any}(
+                         f1,f2,mass_matrix,analytic,tgrad,
+                         jac,jvp,vjp,jac_prototype,sparsity,
+                         Wfact,Wfact_t,paramjac,syms,colorvec)
+end
+DynamicalDDEFunction(f1,f2=nothing; kwargs...) = DynamicalDDEFunction{isinplace(f1, 6)}(f1, f2; kwargs...)
+DynamicalDDEFunction{iip}(f1,f2; kwargs...) where iip =
+  DynamicalDDEFunction{iip,RECOMPILE_BY_DEFAULT}(DDEFunction{iip}(f1), DDEFunction{iip}(f2); kwargs...)
+DynamicalDDEFunction(f::DynamicalDDEFunction; kwargs...) = f
+
 function SDDEFunction{iip,true}(f,g;
                                 mass_matrix=I,
                                 analytic=nothing,
@@ -1135,14 +1228,14 @@ has_Wfact_t(f::Union{SplitFunction,SplitSDEFunction}) = has_Wfact_t(f.f1)
 has_paramjac(f::Union{SplitFunction,SplitSDEFunction}) = has_paramjac(f.f1)
 has_colorvec(f::Union{SplitFunction,SplitSDEFunction}) = has_colorvec(f.f1)
 
-has_jac(f::DynamicalODEFunction) = has_jac(f.f1)
-has_jvp(f::DynamicalODEFunction) = has_jvp(f.f1)
-has_vjp(f::DynamicalODEFunction) = has_vjp(f.f1)
-has_tgrad(f::DynamicalODEFunction) = has_tgrad(f.f1)
-has_Wfact(f::DynamicalODEFunction) = has_Wfact(f.f1)
-has_Wfact_t(f::DynamicalODEFunction) = has_Wfact_t(f.f1)
-has_paramjac(f::DynamicalODEFunction) = has_paramjac(f.f1)
-has_colorvec(f::DynamicalODEFunction) = has_colorvec(f.f1)
+has_jac(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_jac(f.f1)
+has_jvp(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_jvp(f.f1)
+has_vjp(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_vjp(f.f1)
+has_tgrad(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_tgrad(f.f1)
+has_Wfact(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_Wfact(f.f1)
+has_Wfact_t(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_Wfact_t(f.f1)
+has_paramjac(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_paramjac(f.f1)
+has_colorvec(f::Union{DynamicalODEFunction,DynamicalDDEFunction}) = has_colorvec(f.f1)
 
 has_jac(f::Union{UDerivativeWrapper,UJacobianWrapper}) = has_jac(f.f)
 has_jvp(f::Union{UDerivativeWrapper,UJacobianWrapper}) = has_jvp(f.f)

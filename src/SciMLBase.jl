@@ -546,6 +546,8 @@ export SplitSDEProblem
 export RODEProblem, RODESolution, SDEProblem
 export DAEProblem, DAESolution
 export DDEProblem
+export DynamicalDDEFunction, DynamicalDDEProblem,
+       SecondOrderDDEProblem
 export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
