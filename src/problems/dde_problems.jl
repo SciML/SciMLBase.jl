@@ -68,13 +68,13 @@ struct DynamicalDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 
 Define a dynamical DDE problem from a [`DynamicalDDEFunction`](@ref).
 """
-function DynamicalDDEProblem(f::DynamicalDDEFunction,v0,u0,h::Function,tspan,p=NullParameters();dependent_lags=(),kwargs...)
+function DynamicalDDEProblem(f::DynamicalDDEFunction,v0,u0,h,tspan,p=NullParameters();dependent_lags=(),kwargs...)
   DDEProblem(f,ArrayPartition(v0,u0),h,tspan,p;
              problem_type=DynamicalDDEProblem{isinplace(f)}(),
              dependent_lags=ntuple(i->(u,p,t)->dependent_lags[i](u[1],u[2],p,t),length(dependent_lags)),
              kwargs...)
 end
-function DynamicalDDEProblem(f::DynamicalDDEFunction,h::Function,tspan,p=NullParameters();kwargs...)
+function DynamicalDDEProblem(f::DynamicalDDEFunction,h,tspan,p=NullParameters();kwargs...)
   DynamicalDDEProblem(f,h(p,first(tspan))...,h,tspan,p;kwargs...)
 end
 function DynamicalDDEProblem(f1::Function,f2::Function,args...;kwargs...)
