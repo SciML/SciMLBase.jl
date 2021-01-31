@@ -18,7 +18,7 @@ Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u
 for T in [Int, Colon]
     @eval Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::$T) = A.u[I]
 end
-Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Int...) = A.u[I[end]][Base.front(I)...]
+Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Union{Int,AbstractArray{Int},CartesianIndex,Colon}...) = A.u[I[end]][Base.front(I)...]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,::Colon) = [A.u[j][i] for j in 1:length(A)]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, ::Colon,i::Int) = A.u[i]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,II::AbstractArray{Int}) = [A.u[j][i] for j in II]
