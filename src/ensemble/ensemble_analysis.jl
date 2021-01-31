@@ -1,6 +1,6 @@
 module EnsembleAnalysis
 
-using SciMLBase, StaticArrays, Statistics, RecursiveArrayTools
+using SciMLBase, Statistics, RecursiveArrayTools
 
 # Getters
 get_timestep(sim,i) = (getindex(sol,i) for sol in sim)

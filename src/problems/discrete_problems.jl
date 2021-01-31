@@ -55,7 +55,7 @@ function DiscreteProblem(f::AbstractDiscreteFunction,u0,tspan::Tuple,p=NullParam
   DiscreteProblem{isinplace(f)}(f,u0,tspan,p;kwargs...)
 end
 
-function DiscreteProblem(f,u0,tspan::Tuple,p=NullParameters();kwargs...)
+function DiscreteProblem(f::Base.Callable,u0,tspan::Tuple,p=NullParameters();kwargs...)
   iip = isinplace(f,4)
   DiscreteProblem(convert(DiscreteFunction{iip},f),u0,tspan,p;kwargs...)
 end
@@ -65,17 +65,7 @@ $(SIGNATURES)
 
 Define a discrete problem with the identity map.
 """
-function DiscreteProblem(u0,tspan::Tuple,p::Tuple;kwargs...)
-  iip = typeof(u0) <: AbstractArray
-  if iip
-    f = DISCRETE_INPLACE_DEFAULT
-  else
-    f = DISCRETE_OUTOFPLACE_DEFAULT
-  end
-  DiscreteProblem(f,u0,tspan,p;kwargs...)
-end
-
-function DiscreteProblem(u0,tspan::Tuple,p=NullParameters();kwargs...)
+function DiscreteProblem(u0::Union{AbstractArray,Number},tspan::Tuple,p=NullParameters();kwargs...)
   iip = typeof(u0) <: AbstractArray
   if iip
     f = DISCRETE_INPLACE_DEFAULT

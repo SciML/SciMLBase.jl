@@ -1,5 +1,9 @@
 const RECOMPILE_BY_DEFAULT = true
 
+function DEFAULT_OBSERVED(sym,u,p,t)
+  error("Indexing symbol $sym is unknown.")
+end
+
 Base.summary(prob::AbstractSciMLFunction) = string(TYPE_COLOR, nameof(typeof(prob)),
                                                    NO_COLOR, ". In-place: ",
                                                    TYPE_COLOR, isinplace(prob),
@@ -18,7 +22,7 @@ abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 """
 $(TYPEDEF)
 """
-struct ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,TCV} <: AbstractODEFunction{iip}
+struct ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
   f::F
   mass_matrix::TMM
   analytic::Ta
@@ -32,6 +36,8 @@ struct ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,TCV} <: Abstrac
   Wfact_t::TWt
   paramjac::TPJ
   syms::S
+  indepsym::S2
+  observed::O
   colorvec::TCV
 end
 
@@ -357,6 +363,8 @@ function ODEFunction{iip,true}(f;
                  Wfact_t=nothing,
                  paramjac = nothing,
                  syms = nothing,
+                 indepsym = nothing,
+                 observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
                  if mass_matrix == I && typeof(f) <: Tuple
@@ -380,10 +388,11 @@ function ODEFunction{iip,true}(f;
                  ODEFunction{iip,
                   typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
                   typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(sparsity), typeof(Wfact),
-                  typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(_colorvec)}(
+                  typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(indepsym),
+                  typeof(observed), typeof(_colorvec)}(
                     f, mass_matrix, analytic, tgrad, jac,
                     jvp, vjp, jac_prototype, sparsity, Wfact,
-                    Wfact_t, paramjac, syms, _colorvec)
+                    Wfact_t, paramjac, syms, indepsym, observed, _colorvec)
 end
 function ODEFunction{iip,false}(f;
                  mass_matrix=I,
@@ -398,6 +407,8 @@ function ODEFunction{iip,false}(f;
                  Wfact_t=nothing,
                  paramjac = nothing,
                  syms = nothing,
+                 indepsym = nothing,
+                 observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
                  if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
@@ -417,10 +428,10 @@ function ODEFunction{iip,false}(f;
                  ODEFunction{iip,
                   Any, Any, Any, Any, Any,
                   Any, Any, Any, Any, Any,
-                  Any, Any, typeof(syms), typeof(_colorvec)}(
+                  Any, Any, typeof(syms), typeof(indepsym), Any, typeof(_colorvec)}(
                     f, mass_matrix, analytic, tgrad, jac,
                     jvp, vjp, jac_prototype, sparsity, Wfact,
-                    Wfact_t, paramjac, syms, _colorvec)
+                    Wfact_t, paramjac, syms, indepsym, observed, _colorvec)
 end
 ODEFunction{iip}(f; kwargs...) where iip = ODEFunction{iip,RECOMPILE_BY_DEFAULT}(f; kwargs...)
 ODEFunction{iip}(f::ODEFunction; kwargs...) where iip = f
@@ -1094,6 +1105,8 @@ __has_Wfact(f) = isdefined(f, :Wfact)
 __has_Wfact_t(f) = isdefined(f, :Wfact_t)
 __has_paramjac(f) = isdefined(f, :paramjac)
 __has_syms(f) = isdefined(f, :syms)
+__has_indepsym(f) = isdefined(f, :indepsym)
+__has_observed(f) = isdefined(f, :observed)
 __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
 
@@ -1108,6 +1121,8 @@ has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
 has_syms(f::AbstractSciMLFunction) = __has_syms(f) && f.syms !== nothing
+has_indepsym(f::AbstractSciMLFunction) = __has_indepsym(f) && f.indepsym !== nothing
+has_observed(f::AbstractSciMLFunction) = __has_observed(f) && f.observed !== DEFAULT_OBSERVED && f.observed !== nothing
 has_colorvec(f::AbstractSciMLFunction) = __has_colorvec(f) && f.colorvec !== nothing
 
 # TODO: find an appropriate way to check `has_*`
@@ -1203,13 +1218,27 @@ function Base.convert(::Type{ODEFunction}, f)
   else
     syms = nothing
   end
+
+  if __has_indepsym(f)
+    indepsym = f.indepsym
+  else
+    indepsym = nothing
+  end
+
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
+
   if __has_colorvec(f)
     colorvec = f.colorvec
   else
     colorvec = nothing
   end
   ODEFunction(f;analytic=analytic,tgrad=tgrad,jac=jac,jvp=jvp,vjp=vjp,Wfact=Wfact,
-              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,colorvec=colorvec)
+              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,indepsym=indepsym,
+              observed=observed,colorvec=colorvec)
 end
 function Base.convert(::Type{ODEFunction{iip}},f) where iip
   if __has_analytic(f)
@@ -1257,13 +1286,27 @@ function Base.convert(::Type{ODEFunction{iip}},f) where iip
   else
     syms = nothing
   end
+
+  if __has_indepsym(f)
+    indepsym = f.indepsym
+  else
+    indepsym = nothing
+  end
+
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
+
   if __has_colorvec(f)
     colorvec = f.colorvec
   else
     colorvec = nothing
   end
   ODEFunction{iip,RECOMPILE_BY_DEFAULT}(f;analytic=analytic,tgrad=tgrad,jac=jac,jvp=jvp,vjp=vjp,Wfact=Wfact,
-              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,colorvec=colorvec)
+              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,indepsym=indepsym,
+              observed=observed,colorvec=colorvec)
 end
 
 function Base.convert(::Type{DiscreteFunction},f)
@@ -1899,3 +1942,20 @@ function Base.convert(::Type{IncrementingODEFunction}, f)
 end
 
 (f::IncrementingODEFunction)(args...;kwargs...) = f.f(args...;kwargs...)
+
+for S in [
+          :ODEFunction
+          :DiscreteFunction
+          :DAEFunction
+          :DDEFunction
+          :SDEFunction
+          :RODEFunction
+          :SDDEFunction
+          :NonlinearFunction
+          :IncrementingODEFunction
+         ]
+    @eval begin
+        Base.convert(::Type{$S}, x::$S) = x
+        Base.convert(::Type{$S{iip}}, x::T) where {T<:$S{iip}} where iip = x
+    end
+end

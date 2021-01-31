@@ -15,35 +15,66 @@ Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u
 # Symbol Handling
 
 # For handling ambiguities
-Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Int) = A.u[I]
+for T in [Int, Colon]
+    @eval Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::$T) = A.u[I]
+end
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Int...) = A.u[I[end]][Base.front(I)...]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,::Colon) = [A.u[j][i] for j in 1:length(A)]
+Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, ::Colon,i::Int) = A.u[i]
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,II::AbstractArray{Int}) = [A.u[j][i] for j in II]
+Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ii::CartesianIndex)
+    ti = Tuple(ii)
+    i = last(ti)
+    jj = CartesianIndex(Base.front(ti))
+    return A.u[i][jj]
+end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym)
-      if issymbollike(sym)
-            i = sym_to_index(sym,A)
+  if issymbollike(sym)
+      i = sym_to_index(sym,A)
+  else
+      i = sym
+  end
+
+  if i == nothing
+      if issymbollike(i) && Symbol(i) == getindepsym(A)
+        A.t
       else
-            i = sym
+        observed(A,sym,:)
       end
+  else
       A[i,:]
+  end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,I::Int...)
-      if issymbollike(sym)
-            i = sym_to_index(sym,A)
+Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,args...)
+    if issymbollike(sym)
+        i = sym_to_index(sym,A)
+    else
+        i = sym
+    end
+
+    if i == nothing
+      if issymbollike(i) && Symbol(i) == getindepsym(A)
+        A.t[args...]
       else
-            i = sym
+        observed(A,sym,args...)
       end
-      A[i,I...]
+    else
+        A[i,args...]
+    end
 end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym,I::Union{AbstractArray{Int},Colon,CartesianIndex})
-      if issymbollike(sym)
-            i = sym_to_index(sym,A)
-      else
-            i = sym
-      end
-      A[i,I]
+
+function observed(A::AbstractTimeseriesSolution,sym,i::Int)
+  getobserved(A)(sym,A[i],A.prob.p,A.t[i])
+end
+
+function observed(A::AbstractTimeseriesSolution,sym,i::AbstractArray{Int})
+  getobserved(A).((sym,),A.u[i],(A.prob.p,),A.t[i])
+end
+
+function observed(A::AbstractTimeseriesSolution,sym,i::Colon)
+  getobserved(A).((sym,),A.u,(A.prob.p,),A.t)
 end
 
 ## AbstractTimeseriesSolution Interface
@@ -120,23 +151,29 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
 
   # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
   if typeof(vars) <: Tuple && (issymbollike(vars[1]) && issymbollike(vars[2]))
-    xguide --> strs[int_vars[1][2]]
-    yguide --> strs[int_vars[1][3]]
+    xguide --> issymbollike(int_vars[1][2]) ? Symbol(int_vars[1][2]) : strs[int_vars[1][2]]
+    yguide --> issymbollike(int_vars[1][3]) ? Symbol(int_vars[1][3]) : strs[int_vars[1][3]]
     if length(vars) > 2
-      zguide --> strs[int_vars[1][4]]
+      zguide --> issymbollike(int_vars[1][4]) ? Symbol(int_vars[1][4]) : strs[int_vars[1][4]]
     end
   end
-  if getindex.(int_vars,1) == zeros(length(int_vars)) || getindex.(int_vars,2) == zeros(length(int_vars))
-    xguide --> "t"
+
+  if (!any(issymbollike,getindex.(int_vars,1)) && getindex.(int_vars,1) == zeros(length(int_vars))) ||
+     (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))) ||
+     all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,1)) || all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,2))
+    xguide --> "$(getindepsym_defaultt(sol))"
   end
-  if length(int_vars[1]) >= 3 && getindex.(int_vars,3) == zeros(length(int_vars))
-    yguide --> "t"
+  if length(int_vars[1]) >= 3 && ((!any(issymbollike,getindex.(int_vars,3)) && getindex.(int_vars,3) == zeros(length(int_vars))) ||
+     all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,3)))
+    yguide --> "$(getindepsym_defaultt(sol))"
   end
-  if length(int_vars[1]) >= 4 && getindex.(int_vars,4) == zeros(length(int_vars))
-    zguide --> "t"
+  if length(int_vars[1]) >= 4 && ((!any(issymbollike,getindex.(int_vars,4)) && getindex.(int_vars,4) == zeros(length(int_vars))) ||
+     all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,4)))
+    zguide --> "$(getindepsym_defaultt(sol))"
   end
 
-  if getindex.(int_vars,2) == zeros(length(int_vars))
+  if (!any(issymbollike,getindex.(int_vars,2)) && getindex.(int_vars,2) == zeros(length(int_vars))) ||
+      all(t->Symbol(t)==getindepsym_defaultt(sol),getindex.(int_vars,2))
     if tspan === nothing
       if tdir > 0
         xlims --> (sol.t[1],sol.t[end])
@@ -190,6 +227,31 @@ function getsyms(sol)
     return sol.prob.f.syms
   else
     return keys(sol.u[1])
+  end
+end
+
+function getindepsym(sol)
+  if has_indepsym(sol.prob.f)
+    return sol.prob.f.indepsym
+  else
+    return nothing
+  end
+end
+
+# Only for compatibility!
+function getindepsym_defaultt(sol)
+  if has_indepsym(sol.prob.f)
+    return sol.prob.f.indepsym
+  else
+    return :t
+  end
+end
+
+function getobserved(sol)
+  if has_syms(sol.prob.f)
+    return sol.prob.f.observed
+  else
+    return DEFAULT_OBSERVED
   end
 end
 
@@ -301,7 +363,8 @@ function interpret_vars(vars,sol,syms)
         tmp = []
         for x in var
           if issymbollike(x)
-            push!(tmp,something(sym_to_index(x,syms),0))
+            found = sym_to_index(x,syms)
+            push!(tmp,found == nothing && getindepsym_defaultt(sol) == x ? 0 : something(found,x))
           else
             push!(tmp,x)
           end
@@ -312,7 +375,8 @@ function interpret_vars(vars,sol,syms)
           var_int = tmp
         end
       elseif issymbollike(var)
-        var_int = something(sym_to_index(var,syms),0)
+        found = sym_to_index(var,syms)
+        var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 : something(found,var)
       else
         var_int = var
       end
@@ -371,7 +435,7 @@ function interpret_vars(vars,sol,syms)
         vars = [(DEFAULT_PLOT_FUNC,vars[end-1], y) for y in vars[end]]
       else
         # Both axes are numbers
-        if typeof(vars[1]) <: Int
+        if typeof(vars[1]) <: Int || issymbollike(vars[1])
           vars = [tuple(DEFAULT_PLOT_FUNC,vars...)]
         else
           vars = [vars]
@@ -389,8 +453,10 @@ end
 function add_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
-    if x[j] == 0
-      push!(lys,"t,")
+    if !issymbollike(x[j]) && x[j] == 0
+      push!(lys,"$(getindepsym_defaultt(sol)),")
+    elseif issymbollike(x[j])
+      push!(lys,"$(x[j]),")
     else
       if strs !== nothing
         push!(lys,"$(strs[x[j]]),")
@@ -400,20 +466,23 @@ function add_labels!(labels,x,dims,sol,strs)
     end
   end
   lys[end] = chop(lys[end]) # Take off the last comma
-  if x[2] == 0 && dims == 3
+  if !issymbollike(x[2]) && x[2] == 0 && dims == 3
     # if there are no dependence in syms, then we add "(t)"
-    if strs !== nothing && endswith(strs[x[3]], r"(.*)")
+    if strs !== nothing && (typeof(x[3]) <: Int && endswith(strs[x[3]], r"(.*)")) ||
+                           (issymbollike(x[3]) && endswith(string(x[3]), r"(.*)"))
       tmp_lab = "$(lys...)"
     else
-      tmp_lab = "$(lys...)(t)"
+      tmp_lab = "$(lys...)($(getindepsym_defaultt(sol)))"
     end
   else
-    if strs !== nothing && x[2] != 0
+    if strs !== nothing && !issymbollike(x[2]) && x[2] != 0
       tmp = strs[x[2]]
       tmp_lab = "($tmp,$(lys...))"
     else
-      if x[2] == 0
-        tmp_lab = "(t,$(lys...))"
+      if !issymbollike(x[2]) && x[2] == 0
+        tmp_lab = "($(getindepsym_defaultt(sol)),$(lys...))"
+      elseif issymbollike(x[2])
+        tmp_lab = "($(x[2]),$(lys...))"
       else
         tmp_lab = "(u$(x[2]),$(lys...))"
       end
@@ -431,7 +500,7 @@ function add_analytic_labels!(labels,x,dims,sol,strs)
   lys = []
   for j in 3:dims
     if x[j] == 0 && dims == 3
-      push!(lys,"t,")
+      push!(lys,"$(getindepsym_defaultt(sol)),")
     else
       if strs !== nothing
         push!(lys,string("True ",strs[x[j]],","))
@@ -442,7 +511,7 @@ function add_analytic_labels!(labels,x,dims,sol,strs)
   end
   lys[end] = lys[end][1:end-1] # Take off the last comma
   if x[2] == 0
-    tmp_lab = "$(lys...)(t)"
+    tmp_lab = "$(lys...)($(getindepsym_defaultt(sol)))"
   else
     if strs !== nothing
       tmp = string("True ",strs[x[2]])
@@ -470,6 +539,15 @@ function u_n(timeseries::AbstractArray, n::Int,sol,plott,plot_timeseries)
       tmp[j] = plot_timeseries[j][n]
     end
     return tmp
+  end
+end
+
+function u_n(timeseries::AbstractArray, sym,sol,plott,plot_timeseries)
+  @assert issymbollike(sym)
+  if getindepsym_defaultt(sol) == Symbol(sym)
+    return plott
+  else
+    getobserved(sol).((sym,),eachcol(timeseries),(sol.prob.p,),plott)
   end
 end
 

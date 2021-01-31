@@ -55,8 +55,10 @@ setval!(α::DiffEqScalar, val) = (α.val = val; α)
 isconstant(α::DiffEqScalar) = α.update_func == DEFAULT_UPDATE_FUNC
 
 for op in (:*, :/, :\)
-  @eval Base.$op(α::DiffEqScalar, x::Union{AbstractArray,Number}) = $op(α.val, x)
-  @eval Base.$op(x::Union{AbstractArray,Number}, α::DiffEqScalar) = $op(x, α.val)
+  for T in (:AbstractArray, :Number)
+    @eval Base.$op(α::DiffEqScalar, x::$T) = $op(α.val, x)
+    @eval Base.$op(x::$T, α::DiffEqScalar) = $op(x, α.val)
+  end
   @eval Base.$op(x::DiffEqScalar, y::DiffEqScalar) = $op(x.val, y.val)
 end
 
@@ -108,6 +110,7 @@ Base.iterate(L::DiffEqArrayOperator,args...) = iterate(L.A,args...)
 Base.axes(L::DiffEqArrayOperator) = axes(L.A)
 Base.IndexStyle(::Type{<:DiffEqArrayOperator{T,AType}}) where {T,AType} = Base.IndexStyle(AType)
 Base.copyto!(L::DiffEqArrayOperator, rhs) = (copyto!(L.A, rhs); L)
+Base.copyto!(L::DiffEqArrayOperator, rhs::Base.Broadcast.Broadcasted{<:StaticArrays.StaticArrayStyle}) = (copyto!(L.A, rhs); L)
 Base.Broadcast.broadcastable(L::DiffEqArrayOperator) = L
 Base.ndims(::Type{<:DiffEqArrayOperator{T,AType}}) where {T,AType} = ndims(AType)
 ArrayInterface.issingular(L::DiffEqArrayOperator) = ArrayInterface.issingular(L.A)
