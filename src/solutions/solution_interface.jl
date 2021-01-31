@@ -15,7 +15,7 @@ Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u
 # Symbol Handling
 
 # For handling ambiguities
-for T in [Int, AbstractArray{Int}, Colon]
+for T in [Int, Colon]
     @eval Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::$T) = A.u[I]
 end
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::Int...) = A.u[I[end]][Base.front(I)...]
