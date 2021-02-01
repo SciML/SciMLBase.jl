@@ -27,7 +27,7 @@ function build_solution(prob::AbstractNonlinearProblem,
 
   NonlinearSolution{T,N,typeof(u),typeof(resid),
                     typeof(prob),typeof(alg),typeof(original)}(
-                    u,resid,prob,alg,retcode,original)
+                    u,resid,prob,alg,retcode,original,left,right)
 end
 
 function sensitivity_solution(sol::AbstractNonlinearProblem,u)
