@@ -8,6 +8,8 @@ struct NonlinearSolution{T,N,uType,R,P,A,O} <: AbstractNonlinearSolution{T,N}
   alg::A
   retcode::Symbol
   original::O
+  left::uType
+  right::uType
 end
 
 const SteadyStateSolution = NonlinearSolution
@@ -16,6 +18,8 @@ function build_solution(prob::AbstractNonlinearProblem,
                         alg,u,resid;calculate_error = true,
                         retcode = :Default,
                         original = nothing,
+                        left = nothing, 
+                        right = nothing,
                         kwargs...)
 
   T = eltype(eltype(u))
