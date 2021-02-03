@@ -23,7 +23,7 @@ function build_solution(prob::AbstractNonlinearProblem,
                         kwargs...)
 
   T = eltype(eltype(u))
-  N = length((size(u)...,))
+  N = ndims(u)
 
   NonlinearSolution{T,N,typeof(u),typeof(resid),
                     typeof(prob),typeof(alg),typeof(original),typeof(left)}(
