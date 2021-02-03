@@ -373,6 +373,8 @@ const SciMLSolution = Union{AbstractTimeseriesSolution,
 const DESolution = SciMLSolution
 export SciMLSolution, DESolution
 
+export AllObserved
+
 """
 $(TYPEDEF)
 """
