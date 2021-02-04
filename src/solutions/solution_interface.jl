@@ -1,4 +1,6 @@
 ### Abstract Interface
+struct AllObserved
+end
 
 # No Time Solution : Forward to `A.u`
 Base.getindex(A::AbstractNoTimeSolution,i::Int) = A.u[i]
@@ -273,7 +275,8 @@ end
 
 sym_to_index(sym,sol::SciMLSolution) = sym_to_index(sym,getsyms(sol))
 sym_to_index(sym,syms) = findfirst(isequal(Symbol(sym)),syms)
-issymbollike(x) = typeof(x) <: Symbol ||
+issymbollike(x) = x isa Symbol ||
+                  x isa AllObserved ||
                   Symbol(parameterless_type(typeof(x))) == :Operation ||
                   Symbol(parameterless_type(typeof(x))) == :Variable ||
                   Symbol(parameterless_type(typeof(x))) == :Sym ||
