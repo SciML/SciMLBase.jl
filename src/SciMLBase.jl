@@ -563,7 +563,7 @@ export OptimizationFunction
 
 export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
 
-export EnsembleAnalysis
+export EnsembleAnalysis, EnsembleSummary
 
 export tuples, intervals, TimeChoiceIterator
 

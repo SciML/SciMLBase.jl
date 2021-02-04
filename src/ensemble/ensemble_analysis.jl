@@ -1,6 +1,6 @@
 module EnsembleAnalysis
 
-using SciMLBase, Statistics, RecursiveArrayTools
+using SciMLBase, Statistics, RecursiveArrayTools, StaticArrays
 
 # Getters
 get_timestep(sim,i) = (getindex(sol,i) for sol in sim)
@@ -104,9 +104,9 @@ timepoint_meancov(sim,t1,t2) = componentwise_meancov(get_timepoint(sim,t1),get_t
 timepoint_meancor(sim,t1,t2) = componentwise_meancor(get_timepoint(sim,t1),get_timepoint(sim,t2))
 timepoint_weighted_meancov(sim,W,t1,t2) = componentwise_weighted_meancov(get_timepoint(sim,t1),get_timepoint(sim,t2),W)
 
-function EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T,N},
+function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T,N},
                          t=sim[1].t;quantiles=[0.05,0.95]) where {T,N}
-  if typeof(sim[1]) <: DESolution
+  if typeof(sim[1]) <: SciMLSolution
     m,v = timeseries_point_meanvar(sim,t)
     qlow = timeseries_point_quantile(sim,quantiles[1],t)
     qhigh = timeseries_point_quantile(sim,quantiles[2],t)
