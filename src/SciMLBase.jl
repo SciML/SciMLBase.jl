@@ -543,6 +543,7 @@ export ODEProblem, ODESolution
 export DynamicalODEFunction, DynamicalODEProblem,
        SecondOrderODEProblem, SplitFunction, SplitODEProblem
 export SplitSDEProblem
+export DynamicalSDEFunction, DynamicalSDEProblem
 export RODEProblem, RODESolution, SDEProblem
 export DAEProblem, DAESolution
 export DDEProblem

@@ -83,3 +83,35 @@ function SplitSDEProblem{iip}(f::SplitSDEFunction,g,u0,tspan,p=NullParameters();
   end
   SDEProblem(_f,g,u0,tspan,p;kwargs...)
 end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractDynamicalSDEProblem end
+
+"""
+$(TYPEDEF)
+"""
+struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
+
+function DynamicalSDEProblem(f1,f2,g,v0,u0,tspan,p=NullParameters();kwargs...)
+  DynamicalSDEProblem(DynamicalSDEFunction(f1,f2,g),g,v0,u0,tspan,p;kwargs...)
+end
+
+DynamicalSDEProblem(f::DynamicalSDEFunction,g,v0,u0,tspan,p=NullParameters();kwargs...) =
+  DynamicalSDEProblem{isinplace(f)}(f,g,u0,v0,tspan,p;kwargs...)
+
+function DynamicalSDEProblem{iip}(f1,f2,g,v0,u0,tspan,p=NullParameters();kwargs...) where iip
+  DynamicalSDEProblem(DynamicalSDEFunction(f1,f2,g),g,v0,u0,tspan,p;kwargs...)
+end
+function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction,g,v0,u0,tspan,p=NullParameters();
+                                     func_cache=nothing,kwargs...) where iip
+  if f.cache === nothing && iip
+    cache = similar(u0)
+    _f = DynamicalSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix=f.mass_matrix,
+                              _func_cache=cache, analytic=f.analytic)
+  else
+    _f = f
+  end
+  SDEProblem(_f,g,ArrayPartition(v0,u0),tspan,p;kwargs...)
+end
