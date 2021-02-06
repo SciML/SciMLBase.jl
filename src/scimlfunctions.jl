@@ -197,6 +197,30 @@ end
 """
 $(TYPEDEF)
 """
+struct DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,TCV} <: AbstractSDEFunction{iip}
+  # This is a direct copy of the SplitSDEFunction, maybe it's not necessary and the above can be used instead.
+  f1::F1
+  f2::F2
+  g::G
+  mass_matrix::TMM
+  cache::C
+  analytic::Ta
+  tgrad::Tt
+  jac::TJ
+  jvp::JVP
+  vjp::VJP
+  jac_prototype::JP
+  sparsity::SP
+  Wfact::TW
+  Wfact_t::TWt
+  paramjac::TPJ
+  syms::S
+  colorvec::TCV
+end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 """
@@ -744,6 +768,66 @@ SplitSDEFunction(f1,f2,g; kwargs...) = SplitSDEFunction{isinplace(f2, 4)}(f1, f2
 SplitSDEFunction{iip}(f1,f2, g; kwargs...) where iip =
 SplitSDEFunction{iip,RECOMPILE_BY_DEFAULT}(SDEFunction(f1,g), SDEFunction{iip}(f2,g), g; kwargs...)
 SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
+
+@add_kwonly function DynamicalSDEFunction(f1,f2,g,mass_matrix,cache,analytic,tgrad,jac,jvp,vjp,
+                                   jac_prototype,Wfact,Wfact_t,paramjac,
+                                   syms,colorvec)
+  f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
+  f2 = SDEFunction(f2)
+  DynamicalSDEFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(g),typeof(mass_matrix),
+              typeof(cache),typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
+              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),
+              typeof(colorvec)}(f1,f2,g,mass_matrix,cache,analytic,tgrad,jac,
+              jac_prototype,Wfact,Wfact_t,paramjac,syms,colorvec)
+end
+
+function DynamicalSDEFunction{iip,true}(f1,f2,g; mass_matrix=I,
+                           _func_cache=nothing,analytic=nothing,
+                           tgrad = nothing,
+                           jac = nothing,
+                           jac_prototype=nothing,
+                           sparsity=jac_prototype,
+                           jvp=nothing,
+                           vjp=nothing,
+                           Wfact = nothing,
+                           Wfact_t = nothing,
+                           paramjac = nothing,
+                           syms = nothing,
+                           colorvec = nothing) where iip
+  DynamicalSDEFunction{iip,typeof(f1),typeof(f2),typeof(g),
+              typeof(mass_matrix),typeof(_func_cache),
+              typeof(analytic),
+              typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),
+              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),
+              typeof(colorvec)}(f1,f2,g,mass_matrix,_func_cache,analytic,
+              tgrad,jac,jvp,vjp,jac_prototype,sparsity,
+              Wfact,Wfact_t,paramjac,syms,colorvec)
+end
+function DynamicalSDEFunction{iip,false}(f1,f2,g; mass_matrix=I,
+                            _func_cache=nothing,analytic=nothing,
+                            tgrad = nothing,
+                            jac = nothing,
+                            jvp=nothing,
+                            vjp=nothing,
+                            jac_prototype=nothing,
+                            sparsity=jac_prototype,
+                            Wfact = nothing,
+                            Wfact_t = nothing,
+                            paramjac = nothing,
+                            syms = nothing,
+                            colorvec = nothing) where iip
+  DynamicalSDEFunction{iip,Any,Any,Any,Any,Any,
+                   Any,Any,Any,Any,
+                   Any,Any,Any,Any,Any}(
+                   f1,f2,g,mass_matrix,_func_cache,analytic,
+                   tgrad,jac,jvp,vjp,jac_prototype,sparsity,
+                   Wfact,Wfact_t,paramjac,syms,colorvec)
+end
+# Here I changed `isinplace(f2, 4) -> isinplace(f2, 5)` to allow for extra arguments for dynamical functions.
+DynamicalSDEFunction(f1,f2,g; kwargs...) = DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
+DynamicalSDEFunction{iip}(f1,f2, g; kwargs...) where iip =
+DynamicalSDEFunction{iip,RECOMPILE_BY_DEFAULT}(SDEFunction(f1,g), SDEFunction{iip}(f2,g), g; kwargs...)
+DynamicalSDEFunction(f::DynamicalSDEFunction; kwargs...) = f
 
 function RODEFunction{iip,true}(f;
                  mass_matrix=I,
