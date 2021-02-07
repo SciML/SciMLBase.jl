@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.package.repo }}
+    name: ${{ matrix.package.repo }}/${{ matrix.package.group }}
     runs-on: ${{ matrix.os }}
     env:
       GROUP: ${{ matrix.package.group }}
@@ -37,7 +37,7 @@ jobs:
           repository: ${{ matrix.package.user }}/${{ matrix.package.repo }}
           path: downstream
       - name: Load this and run the downstream tests
-        shell: julia --project=downstream {0}
+        shell: julia --color=yes --project=downstream {0}
         run: |
           using Pkg
           try
