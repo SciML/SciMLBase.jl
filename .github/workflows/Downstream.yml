@@ -19,8 +19,10 @@ jobs:
         package:
           - {user: SciML, repo: DelayDiffEq.jl, group: All}
           - {user: SciML, repo: DiffEqBase.jl, group: All}
-          - {user: SciML, repo: DiffEqFlux.jl, group: All}
-          - {user: SciML, repo: OrdinaryDiffEq.jl, group: All}
+          - {user: SciML, repo: DiffEqFlux.jl, group: DiffEqFlux}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Interface}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Integrators}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Regression}
           - {user: SciML, repo: StochasticDiffEq.jl, group: All}
           - {user: SciML, repo: Sundials.jl, group: All}
 
