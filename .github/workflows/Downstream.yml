@@ -9,18 +9,20 @@ jobs:
   test:
     name: ${{ matrix.package.repo }}
     runs-on: ${{ matrix.os }}
+    env:
+      GROUP: ${{ matrix.package.group }}
     strategy:
       fail-fast: false
       matrix:
         julia-version: [1]
         os: [ubuntu-latest]
         package:
-          - {user: SciML, repo: DelayDiffEq.jl}
-          - {user: SciML, repo: DiffEqBase.jl}
-          - {user: SciML, repo: DiffEqFlux.jl}
-          - {user: SciML, repo: OrdinaryDiffEq.jl}
-          - {user: SciML, repo: StochasticDiffEq.jl}
-          - {user: SciML, repo: Sundials.jl}
+          - {user: SciML, repo: DelayDiffEq.jl, group: All}
+          - {user: SciML, repo: DiffEqBase.jl, group: All}
+          - {user: SciML, repo: DiffEqFlux.jl, group: All}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: All}
+          - {user: SciML, repo: StochasticDiffEq.jl, group: All}
+          - {user: SciML, repo: Sundials.jl, group: All}
 
     steps:
       - uses: actions/checkout@v2
