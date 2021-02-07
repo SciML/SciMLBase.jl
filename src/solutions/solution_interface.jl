@@ -20,7 +20,8 @@ Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u
 for T in [Int, Colon]
     @eval Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::$T) = A.u[I]
 end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, I::Union{Int,AbstractArray{Int},CartesianIndex,Colon}...)
+Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
+                                                I::Union{Int,AbstractArray{Int},CartesianIndex,Colon,BitArray,AbstractArray{Bool}}...)
   RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,::Colon) = [A.u[j][i] for j in 1:length(A)]
