@@ -99,7 +99,7 @@ function DynamicalSDEProblem(f1,f2,g,v0,u0,tspan,p=NullParameters();kwargs...)
 end
 
 DynamicalSDEProblem(f::DynamicalSDEFunction,g,v0,u0,tspan,p=NullParameters();kwargs...) =
-  DynamicalSDEProblem{isinplace(f)}(f,g,u0,v0,tspan,p;kwargs...)
+  DynamicalSDEProblem{isinplace(f)}(f,g,v0,u0,tspan,p;kwargs...)
 
 function DynamicalSDEProblem{iip}(f1,f2,g,v0,u0,tspan,p=NullParameters();kwargs...) where iip
   DynamicalSDEProblem(DynamicalSDEFunction(f1,f2,g),g,v0,u0,tspan,p;kwargs...)
