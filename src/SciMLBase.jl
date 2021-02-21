@@ -512,6 +512,7 @@ include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
 include("solutions/ode_solutions.jl")
 include("solutions/rode_solutions.jl")
+include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
 include("solutions/solution_interface.jl")
 
