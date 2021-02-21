@@ -19,17 +19,21 @@ function build_solution(prob::AbstractOptimizationProblem,
     N = ndims(u)
 
     OptimizationSolution{T, N, typeof(u), typeof(prob), typeof(alg),
-                         typeof(minimum), typeof(original)}
-                         (u, prob, alg, minimum, retcode, original)
+                         typeof(minimum), typeof(original)}(
+                         u, prob, alg, minimum, retcode, original)
 end
 
 function Base.show(io::IO, A::AbstractOptimizationSolution)
-
-    @printf io "\n * Status: %s\n\n" A.retcode === :Success ? "success" : "failure"
-    @printf io " * Candidate solution\n"
-    @printf io "    Final objective value:     %e\n" A.minimum
-    @printf io "\n"
-    @printf io " * Found with\n"
-    @printf io "    Algorithm:     %s\n" A.alg
+    println(io,string("retcode: ",A.retcode))
+    print(io,"u: ")
+    show(io, A.u)
+    println(io)
+    print(io,"Final objective value:     $(A.minimum)\n")
     return
 end
+
+Base.summary(A::AbstractOptimizationSolution) = string(
+                      TYPE_COLOR, nameof(typeof(A)),
+                      NO_COLOR, " with uType ",
+                      TYPE_COLOR, eltype(A.u),
+                      NO_COLOR)

@@ -521,6 +521,7 @@ include("ensemble/ensemble_problems.jl")
 include("ensemble/basic_ensemble_solve.jl")
 include("ensemble/ensemble_analysis.jl")
 
+include("solve.jl")
 include("interpolation.jl")
 include("integrator_interface.jl")
 include("tabletraits.jl")
