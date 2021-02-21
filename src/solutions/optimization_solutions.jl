@@ -32,6 +32,13 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
     return
 end
 
+Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,s::Symbol)
+    if s == :minimizer
+        return getfield(x,:u)
+    end
+    return getfield(x,s)
+end
+
 Base.summary(A::AbstractOptimizationSolution) = string(
                       TYPE_COLOR, nameof(typeof(A)),
                       NO_COLOR, " with uType ",
