@@ -33,7 +33,7 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,s::Symbol)
-    if s == :minimizer
+    if s === :minimizer
         return getfield(x,:u)
     end
     return getfield(x,s)
