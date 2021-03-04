@@ -4,14 +4,19 @@ function DEFAULT_OBSERVED(sym,u,p,t)
   error("Indexing symbol $sym is unknown.")
 end
 
-Base.summary(prob::AbstractSciMLFunction) = string(TYPE_COLOR, nameof(typeof(prob)),
-                                                   NO_COLOR, ". In-place: ",
-                                                   TYPE_COLOR, isinplace(prob),
-                                                   NO_COLOR)
+function Base.summary(io::IO, prob::AbstractSciMLFunction)
+  type_color, no_color = get_colorizers(io)
+  print(io, 
+    type_color, nameof(typeof(prob)),
+    no_color, ". In-place: ",
+    type_color, isinplace(prob),
+    no_color)
+end
+
 TreeViews.hastreeview(x::AbstractSciMLFunction) = true
 function TreeViews.treelabel(io::IO,x::AbstractSciMLFunction,
                              mime::MIME"text/plain" = MIME"text/plain"())
-  show(io,mime,Base.Text(Base.summary(x)))
+  summary(io, x)
 end
 
 """

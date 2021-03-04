@@ -57,6 +57,8 @@ end
 const TYPE_COLOR = CSI"36"  # Cyan
 const NO_COLOR = CSI"0"
 
+get_colorizers(io::IO) = get(io, :color, false) ? (TYPE_COLOR,NO_COLOR) : ("", "")
+
 """
     @def name definition
 """

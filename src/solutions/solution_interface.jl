@@ -10,7 +10,7 @@ Base.setindex!(A::AbstractNoTimeSolution, v, i::Int) = (A.u[i] = v)
 Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u[I] = v)
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
 
-Base.summary(A::AbstractNoTimeSolution) = string(nameof(typeof(A))," with uType ",eltype(A.u))
+Base.summary(io::IO, A::AbstractNoTimeSolution) = print(io,nameof(typeof(A))," with uType ",eltype(A.u))
 Base.show(io::IO, A::AbstractNoTimeSolution) = (print(io,"u: ");show(io, A.u))
 Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u: ");show(io,m,A.u))
 
@@ -84,12 +84,15 @@ end
 
 ## AbstractTimeseriesSolution Interface
 
-Base.summary(A::AbstractTimeseriesSolution) = string(
-                      TYPE_COLOR, nameof(typeof(A)),
-                      NO_COLOR, " with uType ",
-                      TYPE_COLOR, eltype(A.u),
-                      NO_COLOR, " and tType ",
-                      TYPE_COLOR, eltype(A.t), NO_COLOR)
+function Base.summary(io::IO, A::AbstractTimeseriesSolution)
+  type_color, no_color = get_colorizers(io)
+  print(io,
+    type_color, nameof(typeof(A)),
+    no_color, " with uType ",
+    type_color, eltype(A.u),
+    no_color, " and tType ",
+    type_color, eltype(A.t), no_color)
+end
 
 function Base.show(io::IO, A::AbstractTimeseriesSolution)
   println(io,string("retcode: ",A.retcode))
@@ -112,7 +115,7 @@ end
 TreeViews.hastreeview(x::DESolution) = true
 function TreeViews.treelabel(io::IO,x::DESolution,
                              mime::MIME"text/plain" = MIME"text/plain"())
-  show(io,mime,Text(Base.summary(x)))
+  summary(io,x)
 end
 
 RecursiveArrayTools.tuples(sol::AbstractTimeseriesSolution) = tuple.(sol.u,sol.t)

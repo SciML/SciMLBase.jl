@@ -12,65 +12,90 @@ promote_tspan(tspan::AbstractArray) = length(tspan) == 2 ? promote_tspan((first(
 
 ### Displays
 
-Base.summary(prob::DEProblem) = string(TYPE_COLOR, nameof(typeof(prob)),
-                                       NO_COLOR, " with uType ",
-                                       TYPE_COLOR, typeof(prob.u0),
-                                       NO_COLOR, " and tType ",
-                                       TYPE_COLOR,
-                                       typeof(prob.tspan) <: Function ?
-                                       "Unknown" : (prob.tspan === nothing ?
-                                       "Nothing" : typeof(prob.tspan[1])),
-                                       NO_COLOR, ". In-place: ",
-                                       TYPE_COLOR, isinplace(prob),
-                                       NO_COLOR)
+function Base.summary(io::IO, prob::DEProblem)
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    type_color,nameof(typeof(prob)),
+    no_color," with uType ",
+    type_color,typeof(prob.u0),
+    no_color," and tType ",
+    type_color,
+    typeof(prob.tspan) <: Function ?
+    "Unknown" : (prob.tspan === nothing ?
+    "Nothing" : typeof(prob.tspan[1])),
+    no_color,". In-place: ",
+    type_color,isinplace(prob),
+    no_color)
+end
 
 
-Base.summary(prob::AbstractLinearProblem) = string(TYPE_COLOR, nameof(typeof(prob)),
-                                                   NO_COLOR, ". In-place: ",
-                                                   TYPE_COLOR, isinplace(prob),
-                                                   NO_COLOR)
+function Base.summary(io::IO, prob::AbstractLinearProblem)
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    type_color,nameof(typeof(prob)),
+    no_color,". In-place: ",
+    type_color,isinplace(prob),
+    no_color)
+end
 function Base.show(io::IO, A::AbstractLinearProblem)
-  show(io,summary(A))
+  summary(io,A)
+  println(io)
   print(io,"b: ")
   show(io, A.b)
 end
 
-Base.summary(prob::AbstractNonlinearProblem{uType,iip}) where {uType,iip} = string(
-                                       TYPE_COLOR, nameof(typeof(prob)),
-                                       NO_COLOR, " with uType ",
-                                       TYPE_COLOR, uType,
-                                       NO_COLOR, ". In-place: ",
-                                       TYPE_COLOR, isinplace(prob),
-                                       NO_COLOR)
+function Base.summary(io::IO, prob::AbstractNonlinearProblem{uType,iip}) where {uType,iip}
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    type_color,nameof(typeof(prob)),
+    no_color," with uType ",
+    type_color,uType,
+    no_color,". In-place: ",
+    type_color,isinplace(prob),
+    no_color)
+end
 function Base.show(io::IO, A::AbstractNonlinearProblem)
-  println(io,summary(A))
+  summary(io,A)
+  println(io)
   print(io,"u0: ")
   show(io, A.u0)
 end
 
-Base.summary(prob::AbstractOptimizationProblem) = string(
-                                       TYPE_COLOR, nameof(typeof(prob)),
-                                       NO_COLOR, ". In-place: ",
-                                       TYPE_COLOR, isinplace(prob),
-                                       NO_COLOR)
+function Base.summary(io::IO, prob::AbstractOptimizationProblem)
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    type_color,nameof(typeof(prob)),
+    no_color,". In-place: ",
+    type_color,isinplace(prob),
+    no_color)
+end
 function Base.show(io::IO, A::AbstractOptimizationProblem)
-  println(io,summary(A))
+  summary(io,A)
+  println(io)
   print(io,"u0: ")
   show(io, A.u0)
 end
 
-Base.summary(prob::AbstractQuadratureProblem) = string(
-                                                       TYPE_COLOR, nameof(typeof(prob)),
-                                                       NO_COLOR, ". In-place: ",
-                                                       TYPE_COLOR, isinplace(prob),
-                                                       NO_COLOR)
+function Base.summary(io::IO, prob::AbstractQuadratureProblem)
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    type_color,nameof(typeof(prob)),
+    no_color,". In-place: ",
+    type_color,isinplace(prob),
+    no_color)
+end
 function Base.show(io::IO, A::AbstractQuadratureProblem)
-  println(io,summary(A))
+  summary(io,A)
+  println(io)
 end
 
-Base.summary(prob::AbstractNoiseProblem) = string(nameof(typeof(prob))," with WType ",typeof(prob.noise.W[1])," and tType ",typeof(prob.tspan[1]),". In-place: ",isinplace(prob))
+function Base.summary(io::IO, prob::AbstractNoiseProblem)
+  print(io,
+  nameof(typeof(prob))," with WType ",typeof(prob.noise.W[1])," and tType ",typeof(prob.tspan[1]),". In-place: ",isinplace(prob))
+end
 function Base.show(io::IO, A::DEProblem)
-  println(io,summary(A))
+  summary(io,A)
+  println(io)
   print(io,"timespan: ")
   show(io,A.tspan)
   println(io)
@@ -78,13 +103,15 @@ function Base.show(io::IO, A::DEProblem)
   show(io, A.u0)
 end
 function Base.show(io::IO, A::AbstractNoiseProblem)
-  println(io,summary(A))
+  summary(io,A)
+  println(io)
   print(io,"timespan: ")
   show(io,A.tspan)
   println(io)
 end
 function Base.show(io::IO, A::AbstractDAEProblem)
-  println(io,summary(A))
+  summary(io,A)
+  println(io)
   print(io,"timespan: ")
   show(io,A.tspan)
   println(io)
@@ -95,13 +122,18 @@ function Base.show(io::IO, A::AbstractDAEProblem)
   show(io, A.du0)
 end
 
-Base.summary(prob::AbstractEnsembleProblem) = string(
-nameof(typeof(prob))," with problem ",nameof(typeof(prob.prob)))
-Base.show(io::IO, A::AbstractEnsembleProblem) = print(io,summary(A))
+function Base.summary(io::IO, prob::AbstractEnsembleProblem)
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    nameof(typeof(prob)),
+    " with problem ",
+    nameof(typeof(prob.prob)))
+end
+Base.show(io::IO, A::AbstractEnsembleProblem) = summary(io,A)
 TreeViews.hastreeview(x::DEProblem) = true
 function TreeViews.treelabel(io::IO,x::DEProblem,
                              mime::MIME"text/plain" = MIME"text/plain"())
-  show(io,mime,Base.Text(Base.summary(x)))
+  summary(io,x)
 end
 
 struct NullParameters end
@@ -109,9 +141,12 @@ Base.getindex(::NullParameters,i...) = error("Parameters were indexed but the pa
 Base.iterate(::NullParameters) = error("Parameters were indexed but the parameters are `nothing`. You likely forgot to pass in parameters to the DEProblem!")
 
 function Base.show(io::IO, A::AbstractPDEProblem)
-  println(io,summary(A.prob))
+  summary(io,A.prob)
+  println(io)
   println(io)
 end
-Base.summary(prob::AbstractPDEProblem) = string(TYPE_COLOR,
-                                                nameof(typeof(prob)),
-                                                NO_COLOR)
+function Base.summary(io::IO, prob::AbstractPDEProblem)
+  print(io,
+    type_color,nameof(typeof(prob)),
+    no_color)
+end
