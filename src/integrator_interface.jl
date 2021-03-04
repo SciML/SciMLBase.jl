@@ -281,13 +281,16 @@ has_reinit(i::DEIntegrator) = false
 
 ### Display
 
-Base.summary(I::DEIntegrator) = string(
-                  TYPE_COLOR, nameof(typeof(I)),
-                  NO_COLOR, " with uType ",
-                  TYPE_COLOR, typeof(I.u),
-                  NO_COLOR, " and tType ",
-                  TYPE_COLOR, typeof(I.t), NO_COLOR)
-
+function Base.summary(io::IO, I::DEIntegrator)
+  type_color,no_color = get_colorizers(io)
+  print(io,
+    type_color, nameof(typeof(I)),
+    no_color, " with uType ",
+    type_color, typeof(I.u),
+    no_color, " and tType ",
+    type_color, typeof(I.t),
+    no_color)
+end
 function Base.show(io::IO, A::DEIntegrator)
   println(io,string("t: ",A.t))
   print(io,"u: ")
@@ -301,7 +304,7 @@ end
 TreeViews.hastreeview(x::DEIntegrator) = true
 function TreeViews.treelabel(io::IO,x::DEIntegrator,
                              mime::MIME"text/plain" = MIME"text/plain"())
-  show(io,mime,Base.Text(Base.summary(x)))
+  summary(io,x)
 end
 
 ### Error check (retcode)

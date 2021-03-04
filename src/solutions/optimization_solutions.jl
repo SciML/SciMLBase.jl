@@ -39,8 +39,11 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
     return getfield(x,s)
 end
 
-Base.summary(A::AbstractOptimizationSolution) = string(
-                      TYPE_COLOR, nameof(typeof(A)),
-                      NO_COLOR, " with uType ",
-                      TYPE_COLOR, eltype(A.u),
-                      NO_COLOR)
+function Base.summary(io::IO, A::AbstractOptimizationSolution)
+    type_color, no_color = get_colorizers(io)
+    print(io,
+        type_color, nameof(typeof(A)),
+        no_color, " with uType ",
+        type_color, eltype(A.u),
+        no_color)
+end
