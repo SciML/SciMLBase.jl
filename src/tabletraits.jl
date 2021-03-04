@@ -45,3 +45,4 @@ IteratorInterfaceExtensions.isiterable(sol::DESolution) = true
 IteratorInterfaceExtensions.getiterator(sol::DESolution) =
     Tables.datavaluerows(Tables.rows(sol))
 #TableTraits.isiterabletable(sol::DESolution) = true
+Tables.istable(::EnsembleSolution) = false
