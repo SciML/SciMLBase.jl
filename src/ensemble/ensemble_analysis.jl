@@ -153,7 +153,7 @@ end
 function componentwise_mean(A)
   x0 = first(A)
   n = 0
-  mean = zero(x0)
+  mean = zero(x0) / 1
   for x in A
     n += 1
     if typeof(x0) <: AbstractArray && !(typeof(x0) <: SArray)
@@ -175,10 +175,10 @@ end
 function componentwise_meanvar(A;bessel=true)
   x0 = first(A)
   n = 0
-  mean = zero(x0)
-  M2 = zero(x0)
-  delta = zero(x0)
-  delta2 = zero(x0)
+  mean = zero(x0) / 1
+  M2 = zero(x0) / 1
+  delta = zero(x0) / 1
+  delta2 = zero(x0) / 1
   for x in A
     n += 1
     if typeof(x0) <: AbstractArray && !(typeof(x0) <: SArray)
@@ -217,10 +217,10 @@ function componentwise_meancov(A,B;bessel=true)
   x0 = first(A)
   y0 = first(B)
   n = 0
-  meanx = zero(x0)
-  meany = zero(y0)
-  C = zero(x0)
-  dx = zero(x0)
+  meanx = zero(x0) / 1
+  meany = zero(y0) / 1
+  C = zero(x0) / 1
+  dx = zero(x0) / 1
   for (x,y) in zip(A,B)
     n += 1
     if typeof(x0) <: AbstractArray && !(typeof(x0) <: SArray)
@@ -274,12 +274,12 @@ function componentwise_weighted_meancov(A,B,W;weight_type=:reliability)
   y0 = first(B)
   w0 = first(W)
   n = 0
-  meanx = zero(x0)
-  meany = zero(y0)
-  wsum = zero(w0)
+  meanx = zero(x0) / 1
+  meany = zero(y0) / 1
+  wsum = zero(w0) 
   wsum2 = zero(w0)
-  C = zero(x0)
-  dx = zero(x0)
+  C = zero(x0) / 1
+  dx = zero(x0) / 1
   for (x,y,w) in zip(A,B,W)
     n += 1
     if typeof(x0) <: AbstractArray && !(typeof(x0) <: SArray)
