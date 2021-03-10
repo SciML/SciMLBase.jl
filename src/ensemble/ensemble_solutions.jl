@@ -29,8 +29,11 @@ EnsembleSolution(sim, dims::NTuple{N},elapsedTime,converged) where {N} =
                   EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(sim,elapsedTime,converged)
 EnsembleSolution(sim,elapsedTime,converged) =
              EnsembleSolution(sim, (length(sim),),elapsedTime,converged) # Vector of some type which is not an array
-EnsembleSolution(sim::T,elapsedTime,converged) where T <: AbstractVector{T2} where T2 <: AbstractArray =
-             EnsembleSolution(sim, (size(sim[1])..., length(sim)),elapsedTime,converged) # Requires `size` defined on `sim`
+function EnsembleSolution(sim::T,elapsedTime,converged) where T <: AbstractVector{T2} where T2 <: AbstractArray
+  @show ndims(sim[1])
+  EnsembleSolution{eltype(eltype(sim)), ndims(sim[1])+1,
+                    typeof(sim)}(sim, elapsedTime,converged)
+end
 
 """
 $(TYPEDEF)

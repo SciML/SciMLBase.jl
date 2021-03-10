@@ -13,6 +13,7 @@ jobs:
       matrix:
         group:
           - Core
+          - Downstream
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
