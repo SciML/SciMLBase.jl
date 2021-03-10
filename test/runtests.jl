@@ -16,7 +16,6 @@ end
 
 @time begin
 
-s
 if GROUP == "Core" || GROUP == "All"
     @time @safetestset "Display" begin include("display.jl") end
     @time @safetestset "Existence functions" begin include("existence_functions.jl") end
