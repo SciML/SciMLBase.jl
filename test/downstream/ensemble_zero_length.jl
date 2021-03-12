@@ -8,4 +8,6 @@ sim = solve(ensemble_prob,Tsit5(),EnsembleThreads(),trajectories=10, save_everys
 @test ndims(sim) == 2
 @test length(sim) == 10
 ts = 0.0:0.1:1.0
+
+using SciMLBase.EnsembleAnalysis
 timeseries_point_meancov(ensemble_jsol,ts)
