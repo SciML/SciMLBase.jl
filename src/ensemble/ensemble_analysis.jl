@@ -149,7 +149,7 @@ timeseries_point_meancor(sim,ts) = timeseries_point_meancor(sim,ts[1:end-1],ts[2
 function timeseries_point_meancor(sim,ts1,ts2)
   reshape([timepoint_meancor(sim,t1,t2) for t1 in ts1 for t2 in ts2],length(ts1),length(ts2))
 end
-timeseries_point_weighted_meancov(sim,ts) = timeseries_point_weighted_meancov(sim,ts[1:end-1],ts[2:end])
+timeseries_point_weighted_meancov(sim,W,ts) = timeseries_point_weighted_meancov(sim,W,ts[1:end-1],ts[2:end])
 function timeseries_point_weighted_meancov(sim,W,ts1,ts2)
   reshape([timepoint_meancov(sim,W,t1,t2) for t1 in ts1 for t2 in ts2],length(ts1),length(ts2))
 end
