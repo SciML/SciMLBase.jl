@@ -140,12 +140,16 @@ function timeseries_point_meanvar(sim,ts)
   end
   DiffEqArray(means,ts),DiffEqArray(vars,ts)
 end
+
+timeseries_point_meancov(sim,ts) = timeseries_point_meancov(sim,ts[1:end-1],ts[2:end])
 function timeseries_point_meancov(sim,ts1,ts2)
   reshape([timepoint_meancov(sim,t1,t2) for t1 in ts1 for t2 in ts2],length(ts1),length(ts2))
 end
+timeseries_point_meancor(sim,ts) = timeseries_point_meancor(sim,ts[1:end-1],ts[2:end])
 function timeseries_point_meancor(sim,ts1,ts2)
   reshape([timepoint_meancor(sim,t1,t2) for t1 in ts1 for t2 in ts2],length(ts1),length(ts2))
 end
+timeseries_point_weighted_meancov(sim,W,ts) = timeseries_point_weighted_meancov(sim,W,ts[1:end-1],ts[2:end])
 function timeseries_point_weighted_meancov(sim,W,ts1,ts2)
   reshape([timepoint_meancov(sim,W,t1,t2) for t1 in ts1 for t2 in ts2],length(ts1),length(ts2))
 end
@@ -276,7 +280,7 @@ function componentwise_weighted_meancov(A,B,W;weight_type=:reliability)
   n = 0
   meanx = zero(x0) ./ 1
   meany = zero(y0) ./ 1
-  wsum = zero(w0) 
+  wsum = zero(w0)
   wsum2 = zero(w0)
   C = zero(x0) ./ 1
   dx = zero(x0) ./ 1

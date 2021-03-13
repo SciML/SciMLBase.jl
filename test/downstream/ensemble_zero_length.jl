@@ -7,3 +7,8 @@ ensemble_prob = EnsembleProblem(prob,prob_func=prob_func)
 sim = solve(ensemble_prob,Tsit5(),EnsembleThreads(),trajectories=10, save_everystep=false)
 @test ndims(sim) == 2
 @test length(sim) == 10
+ts = 0.0:0.1:1.0
+
+using SciMLBase.EnsembleAnalysis
+sim = solve(ensemble_prob,Tsit5(),EnsembleThreads(),trajectories=10,saveat=0.1)
+timeseries_point_meancov(sim,ts)
