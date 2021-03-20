@@ -482,6 +482,13 @@ Base type for AD choices.
 """
 abstract type AbstractADType end
 
+"""
+$(TYPEDEF)
+
+A placeholder for the argument of a problem.
+"""
+struct IncompleteProblemArgument end
+
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
