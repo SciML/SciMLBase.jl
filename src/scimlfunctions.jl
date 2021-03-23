@@ -4,9 +4,13 @@ function DEFAULT_OBSERVED(sym,u,p,t)
   error("Indexing symbol $sym is unknown.")
 end
 
+function DEFAULT_OBSERVED_NO_TIME(sym,u,p)
+  error("Indexing symbol $sym is unknown.")
+end
+
 function Base.summary(io::IO, prob::AbstractSciMLFunction)
   type_color, no_color = get_colorizers(io)
-  print(io, 
+  print(io,
     type_color, nameof(typeof(prob)),
     no_color, ". In-place: ",
     type_color, isinplace(prob),
@@ -308,7 +312,7 @@ abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 """
 $(TYPEDEF)
 """
-struct NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,TCV} <: AbstractNonlinearFunction{iip}
+struct NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip}
   f::F
   mass_matrix::TMM
   analytic::Ta
@@ -322,6 +326,7 @@ struct NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,TCV} <: A
   Wfact_t::TWt
   paramjac::TPJ
   syms::S
+  observed::O
   colorvec::TCV
 end
 ######### Backwards Compatibility Overloads
@@ -1207,6 +1212,7 @@ function NonlinearFunction{iip,true}(f;
   Wfact_t=nothing,
   paramjac = nothing,
   syms = nothing,
+  observed = DEFAULT_OBSERVED_NO_TIME,
   colorvec = nothing) where iip
 
   if mass_matrix == I && typeof(f) <: Tuple
@@ -1230,10 +1236,10 @@ function NonlinearFunction{iip,true}(f;
   NonlinearFunction{iip,
    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
    typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(sparsity), typeof(Wfact),
-   typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(_colorvec)}(
+   typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec)}(
      f, mass_matrix, analytic, tgrad, jac,
      jvp, vjp, jac_prototype, sparsity, Wfact,
-     Wfact_t, paramjac, syms, _colorvec)
+     Wfact_t, paramjac, syms, observed, _colorvec)
 end
 function NonlinearFunction{iip,false}(f;
   mass_matrix=I,
@@ -1248,6 +1254,7 @@ function NonlinearFunction{iip,false}(f;
   Wfact_t=nothing,
   paramjac = nothing,
   syms = nothing,
+  observed = DEFAULT_OBSERVED_NO_TIME,
   colorvec = nothing) where iip
 
   if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
@@ -1267,10 +1274,10 @@ function NonlinearFunction{iip,false}(f;
   NonlinearFunction{iip,
    Any, Any, Any, Any, Any,
    Any, Any, Any, Any, Any,
-   Any, Any, typeof(syms), typeof(_colorvec)}(
+   Any, Any, typeof(syms), Any, typeof(_colorvec)}(
      f, mass_matrix, analytic, tgrad, jac,
      jvp, vjp, jac_prototype, sparsity, Wfact,
-     Wfact_t, paramjac, syms, _colorvec)
+     Wfact_t, paramjac, syms, observed, _colorvec)
 end
 NonlinearFunction{iip}(f; kwargs...) where iip = NonlinearFunction{iip,RECOMPILE_BY_DEFAULT}(f; kwargs...)
 NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where iip = f
@@ -2041,13 +2048,18 @@ function Base.convert(::Type{NonlinearFunction}, f)
   else
     syms = nothing
   end
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
   if __has_colorvec(f)
     colorvec = f.colorvec
   else
     colorvec = nothing
   end
   NonlinearFunction(f;analytic=analytic,tgrad=tgrad,jac=jac,jvp=jvp,vjp=vjp,Wfact=Wfact,
-              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,colorvec=colorvec)
+              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,observed=observed,colorvec=colorvec)
 end
 function Base.convert(::Type{NonlinearFunction{iip}},f) where iip
   if __has_analytic(f)
@@ -2095,13 +2107,18 @@ function Base.convert(::Type{NonlinearFunction{iip}},f) where iip
   else
     syms = nothing
   end
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
   if __has_colorvec(f)
     colorvec = f.colorvec
   else
     colorvec = nothing
   end
   NonlinearFunction{iip,RECOMPILE_BY_DEFAULT}(f;analytic=analytic,tgrad=tgrad,jac=jac,jvp=jvp,vjp=vjp,Wfact=Wfact,
-              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,colorvec=colorvec)
+              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,observed=observed,colorvec=colorvec)
 end
 
 struct IncrementingODEFunction{iip,F} <: AbstractODEFunction{iip}

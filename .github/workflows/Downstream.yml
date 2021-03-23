@@ -26,7 +26,8 @@ jobs:
           - {user: SciML, repo: OrdinaryDiffEq.jl, group: Regression}
           - {user: SciML, repo: StochasticDiffEq.jl, group: All}
           - {user: SciML, repo: Sundials.jl, group: All}
-          
+          - {user: JuliaComputing, repo: NonlinearSolve.jl, group: All}
+
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
