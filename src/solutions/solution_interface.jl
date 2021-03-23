@@ -82,6 +82,24 @@ function observed(A::AbstractTimeseriesSolution,sym,i::Colon)
   getobserved(A).((sym,),A.u,(A.prob.p,),A.t)
 end
 
+Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution,sym)
+  if issymbollike(sym)
+      i = sym_to_index(sym,A)
+  else
+      i = sym
+  end
+
+  if i == nothing
+      observed(A,sym)
+  else
+      A[i]
+  end
+end
+
+function observed(A::AbstractNoTimeSolution,sym)
+  getobserved(A)(sym,A.u,A.prob.p)
+end
+
 ## AbstractTimeseriesSolution Interface
 
 function Base.summary(io::IO, A::AbstractTimeseriesSolution)

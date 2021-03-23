@@ -10,7 +10,7 @@ end
 
 function Base.summary(io::IO, prob::AbstractSciMLFunction)
   type_color, no_color = get_colorizers(io)
-  print(io, 
+  print(io,
     type_color, nameof(typeof(prob)),
     no_color, ". In-place: ",
     type_color, isinplace(prob),
@@ -2048,13 +2048,18 @@ function Base.convert(::Type{NonlinearFunction}, f)
   else
     syms = nothing
   end
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
   if __has_colorvec(f)
     colorvec = f.colorvec
   else
     colorvec = nothing
   end
   NonlinearFunction(f;analytic=analytic,tgrad=tgrad,jac=jac,jvp=jvp,vjp=vjp,Wfact=Wfact,
-              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,colorvec=colorvec)
+              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,observed=observed,colorvec=colorvec)
 end
 function Base.convert(::Type{NonlinearFunction{iip}},f) where iip
   if __has_analytic(f)
@@ -2102,13 +2107,18 @@ function Base.convert(::Type{NonlinearFunction{iip}},f) where iip
   else
     syms = nothing
   end
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
   if __has_colorvec(f)
     colorvec = f.colorvec
   else
     colorvec = nothing
   end
   NonlinearFunction{iip,RECOMPILE_BY_DEFAULT}(f;analytic=analytic,tgrad=tgrad,jac=jac,jvp=jvp,vjp=vjp,Wfact=Wfact,
-              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,colorvec=colorvec)
+              Wfact_t=Wfact_t,paramjac=paramjac,syms=syms,observed=observed,colorvec=colorvec)
 end
 
 struct IncrementingODEFunction{iip,F} <: AbstractODEFunction{iip}
