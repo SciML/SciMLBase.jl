@@ -16,6 +16,8 @@ for op in (:*, :/, :\), T in (:AbstractArray, :Number)
 end
 LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray) =
   mul!(Y, convert(AbstractMatrix,L), B)
+LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray, α::Number, β::Number) =
+  mul!(Y, convert(AbstractMatrix,L), B, α, β)
 LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator, B::AbstractVecOrMat) =
   ldiv!(Y, convert(AbstractMatrix,L), B)
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
