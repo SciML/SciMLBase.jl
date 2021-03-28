@@ -77,7 +77,7 @@ end
 function DynamicalDDEProblem(f::DynamicalDDEFunction,h,tspan,p=NullParameters();kwargs...)
   DynamicalDDEProblem(f,h(p,first(tspan))...,h,tspan,p;kwargs...)
 end
-function DynamicalDDEProblem(f1::Function,f2::Function,args...;kwargs...)
+function DynamicalDDEProblem(f1,f2,args...;kwargs...)
   DynamicalDDEProblem(DynamicalDDEFunction(f1,f2),args...;kwargs...)
 end
 
@@ -97,7 +97,7 @@ Define a dynamical DDE problem from the two functions `f1` and `f2`.
 `isinplace` optionally sets whether the function is inplace or not.
 This is determined automatically, but not inferred.
 """
-function DynamicalDDEProblem{iip}(f1::Function,f2::Function,args...;kwargs...) where iip
+function DynamicalDDEProblem{iip}(f1,f2,args...;kwargs...) where iip
   DynamicalDDEProblem(DynamicalDDEFunction{iip}(f1,f2),args...;kwargs...)
 end
 
