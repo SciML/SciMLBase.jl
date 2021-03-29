@@ -444,6 +444,11 @@ abstract type AbstractDiffEqLinearOperator{T} <: AbstractDiffEqOperator{T} end
 
 """
 $(TYPEDEF)
+"""
+abstract type AbstractDiffEqCompositeOperator{T} <: AbstractDiffEqLinearOperator{T} end
+
+"""
+$(TYPEDEF)
 
 Base for types defining SciML functions.
 """
@@ -488,9 +493,9 @@ include("scimlfunctions.jl")
 include("alg_traits.jl")
 
 include("operators/operators.jl")
+include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
 include("operators/common_defaults.jl")
-include("operators/basic_operators.jl")
 
 include("problems/problem_utils.jl")
 include("problems/discrete_problems.jl")
@@ -573,7 +578,7 @@ export EnsembleAnalysis, EnsembleSummary
 
 export tuples, intervals, TimeChoiceIterator
 
-export AffineDiffEqOperator
+export AffineDiffEqOperator, DiffEqScaledOperator
 
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
