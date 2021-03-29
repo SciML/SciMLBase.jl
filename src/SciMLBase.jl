@@ -528,6 +528,7 @@ include("tabletraits.jl")
 include("remake.jl")
 
 function discretize end
+function symbolic_discretize end
 
 isfunctionwrapper(x) = false
 function wrapfun_oop end
@@ -536,7 +537,7 @@ function unwrap_fw end
 
 export isinplace
 
-export solve, solve!, init, discretize
+export solve, solve!, init, discretize, symbolic_discretize
 
 export LinearProblem, NonlinearProblem, QuadratureProblem, OptimizationProblem
 
