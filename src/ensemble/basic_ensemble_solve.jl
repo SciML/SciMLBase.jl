@@ -187,6 +187,7 @@ function solve_batch(prob, alg, ::EnsembleSerial, II, pmap_batch_size; kwargs...
     throw(ArgumentError("number of trajectories must be positive"))
   end
   batch_data = [batch_func(first(II), prob, alg; kwargs...)]
+  sizehint!(batch_data,length(II))
   for i in 2:length(II)
     @inbounds push!(batch_data, batch_func(II[i], prob, alg; kwargs...))
   end
