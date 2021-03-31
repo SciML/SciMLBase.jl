@@ -1,7 +1,7 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
-version = "1.9.1"
+version = "1.9.2"
 
 [deps]
 ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
