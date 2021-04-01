@@ -182,16 +182,20 @@ function solve_batch(prob,alg,ensemblealg::EnsembleDistributed,II,pmap_batch_siz
   tighten_container_eltype(batch_data)
 end
 
-function solve_batch(prob, alg, ::EnsembleSerial, II, pmap_batch_size; kwargs...)
-  if isempty(II)
-    throw(ArgumentError("number of trajectories must be positive"))
+function responsible_map(f,II...)
+  batch_data = [f(getindex.(II,1)...)]
+  sizehint!(batch_data,length(II[1]))
+  for i in 2:length(II[1])
+    @inbounds push!(batch_data, f(getindex.(II,i)...))
   end
-  batch_data = [batch_func(first(II), prob, alg; kwargs...)]
-  sizehint!(batch_data,length(II))
-  for i in 2:length(II)
-    @inbounds push!(batch_data, batch_func(II[i], prob, alg; kwargs...))
+  batch_data
+end
+
+function SciMLBase.solve_batch(prob,alg,::EnsembleSerial,II,pmap_batch_size;kwargs...)
+  batch_data = responsible_map(II) do i
+    SciMLBase.batch_func(i,prob,alg;kwargs...)
   end
-  return tighten_container_eltype(batch_data)
+  SciMLBase.tighten_container_eltype(batch_data)
 end
 
 function solve_batch(prob,alg,ensemblealg::EnsembleThreads,II,pmap_batch_size;kwargs...)
