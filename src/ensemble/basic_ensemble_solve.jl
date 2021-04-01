@@ -183,12 +183,12 @@ function solve_batch(prob,alg,ensemblealg::EnsembleDistributed,II,pmap_batch_siz
 end
 
 function responsible_map(f,II...)
-  batch_data = [f(getindex.(II,1)...)]
+  batch_data = []
   sizehint!(batch_data,length(II[1]))
-  for i in 2:length(II[1])
+  for i in 1:length(II[1])
     @inbounds push!(batch_data, f(getindex.(II,i)...))
   end
-  batch_data
+  identity.(batch_data)
 end
 
 function SciMLBase.solve_batch(prob,alg,::EnsembleSerial,II,pmap_batch_size;kwargs...)
