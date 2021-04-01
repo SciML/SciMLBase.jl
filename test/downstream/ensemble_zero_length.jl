@@ -12,3 +12,10 @@ ts = 0.0:0.1:1.0
 using SciMLBase.EnsembleAnalysis
 sim = solve(ensemble_prob,Tsit5(),EnsembleThreads(),trajectories=10,saveat=0.1)
 timeseries_point_meancov(sim,ts)
+
+function prob_sol(p)
+  prob = ODEProblem((u,p,t)->p*u, 0.5, (0.0,1.0), p, save_start=false, save_end=false)
+  sim = solve(prob,Tsit5())
+end
+mapres = SciMLBase.responsible_map(prob_sol, [0.5, diagm([1.0, 1.0])])
+@test length(mapres) == 2
