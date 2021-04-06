@@ -37,11 +37,11 @@ function Base.summary(io::IO, prob::AbstractLinearProblem)
     type_color,isinplace(prob),
     no_color)
 end
-function Base.show(io::IO, A::AbstractLinearProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractLinearProblem)
   summary(io,A)
   println(io)
   print(io,"b: ")
-  show(io, A.b)
+  show(io, mime, A.b)
 end
 
 function Base.summary(io::IO, prob::AbstractNonlinearProblem{uType,iip}) where {uType,iip}
@@ -54,11 +54,11 @@ function Base.summary(io::IO, prob::AbstractNonlinearProblem{uType,iip}) where {
     type_color,isinplace(prob),
     no_color)
 end
-function Base.show(io::IO, A::AbstractNonlinearProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNonlinearProblem)
   summary(io,A)
   println(io)
   print(io,"u0: ")
-  show(io, A.u0)
+  show(io, mime, A.u0)
 end
 
 function Base.summary(io::IO, prob::AbstractOptimizationProblem)
@@ -69,11 +69,11 @@ function Base.summary(io::IO, prob::AbstractOptimizationProblem)
     type_color,isinplace(prob),
     no_color)
 end
-function Base.show(io::IO, A::AbstractOptimizationProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractOptimizationProblem)
   summary(io,A)
   println(io)
   print(io,"u0: ")
-  show(io, A.u0)
+  show(io, mime, A.u0)
 end
 
 function Base.summary(io::IO, prob::AbstractQuadratureProblem)
@@ -84,7 +84,7 @@ function Base.summary(io::IO, prob::AbstractQuadratureProblem)
     type_color,isinplace(prob),
     no_color)
 end
-function Base.show(io::IO, A::AbstractQuadratureProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractQuadratureProblem)
   summary(io,A)
   println(io)
 end
@@ -93,33 +93,33 @@ function Base.summary(io::IO, prob::AbstractNoiseProblem)
   print(io,
   nameof(typeof(prob))," with WType ",typeof(prob.noise.W[1])," and tType ",typeof(prob.tspan[1]),". In-place: ",isinplace(prob))
 end
-function Base.show(io::IO, A::DEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::DEProblem)
   summary(io,A)
   println(io)
   print(io,"timespan: ")
-  show(io,A.tspan)
+  show(io,mime,A.tspan)
   println(io)
   print(io,"u0: ")
-  show(io, A.u0)
+  show(io, mime, A.u0)
 end
-function Base.show(io::IO, A::AbstractNoiseProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNoiseProblem)
   summary(io,A)
   println(io)
   print(io,"timespan: ")
-  show(io,A.tspan)
+  show(io,mime,A.tspan)
   println(io)
 end
-function Base.show(io::IO, A::AbstractDAEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractDAEProblem)
   summary(io,A)
   println(io)
   print(io,"timespan: ")
-  show(io,A.tspan)
+  show(io,mime,A.tspan)
   println(io)
   print(io,"u0: ")
-  show(io, A.u0)
+  show(io, mime, A.u0)
   println(io)
   print(io,"du0: ")
-  show(io, A.du0)
+  show(io, mime, A.du0)
 end
 
 function Base.summary(io::IO, prob::AbstractEnsembleProblem)
@@ -129,7 +129,7 @@ function Base.summary(io::IO, prob::AbstractEnsembleProblem)
     " with problem ",
     nameof(typeof(prob.prob)))
 end
-Base.show(io::IO, A::AbstractEnsembleProblem) = summary(io,A)
+Base.show(io::IO, mime::MIME"text/plain", A::AbstractEnsembleProblem) = summary(io,A)
 TreeViews.hastreeview(x::DEProblem) = true
 function TreeViews.treelabel(io::IO,x::DEProblem,
                              mime::MIME"text/plain" = MIME"text/plain"())
@@ -140,9 +140,8 @@ struct NullParameters end
 Base.getindex(::NullParameters,i...) = error("Parameters were indexed but the parameters are `nothing`. You likely forgot to pass in parameters to the DEProblem!")
 Base.iterate(::NullParameters) = error("Parameters were indexed but the parameters are `nothing`. You likely forgot to pass in parameters to the DEProblem!")
 
-function Base.show(io::IO, A::AbstractPDEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractPDEProblem)
   summary(io,A.prob)
-  println(io)
   println(io)
 end
 function Base.summary(io::IO, prob::AbstractPDEProblem)
