@@ -18,6 +18,8 @@ for op in (:*, :/, :\)
 end
 LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray) =
   mul!(Y, convert(AbstractMatrix,L), B)
+LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray, α::Number, β::Number) =
+  mul!(Y, convert(AbstractMatrix,L), B, α, β)
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
   @eval LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator) = $pred(convert(AbstractArray, L))
 end

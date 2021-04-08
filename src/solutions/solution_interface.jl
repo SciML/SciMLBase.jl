@@ -11,8 +11,6 @@ Base.setindex!(A::AbstractNoTimeSolution, v, i::Int) = (A.u[i] = v)
 Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u[I] = v)
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
 
-Base.summary(io::IO, A::AbstractNoTimeSolution) = print(io,nameof(typeof(A))," with uType ",eltype(A.u))
-Base.show(io::IO, A::AbstractNoTimeSolution) = (print(io,"u: ");show(io, A.u))
 Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u: ");show(io,m,A.u))
 
 # Symbol Handling
@@ -113,15 +111,6 @@ function Base.summary(io::IO, A::AbstractTimeseriesSolution)
     type_color, eltype(A.t), no_color)
 end
 
-function Base.show(io::IO, A::AbstractTimeseriesSolution)
-  println(io,string("retcode: ",A.retcode))
-  println(io,string("Interpolation: "),interp_summary(A.interp))
-  print(io,"t: ")
-  show(io, A.t)
-  println(io)
-  print(io,"u: ")
-  show(io, A.u)
-end
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
   println(io,string("retcode: ",A.retcode))
   println(io,string("Interpolation: "),interp_summary(A.interp))

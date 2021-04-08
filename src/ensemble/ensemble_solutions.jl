@@ -95,9 +95,6 @@ end
 
 Base.summary(io::IO, A::AbstractEnsembleSolution) =
   print(io,"EnsembleSolution Solution of length ",length(A.u)," with uType:\n",eltype(A.u))
-function Base.show(io::IO, A::AbstractEnsembleSolution)
-  summary(io,A)
-end
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractEnsembleSolution)
   summary(io,A)
 end
