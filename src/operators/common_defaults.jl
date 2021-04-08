@@ -13,6 +13,8 @@ Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where {N} =
 for op in (:*, :/, :\)
   @eval Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractArray) = $op(convert(AbstractMatrix,L), x)
   @eval Base.$op(x::AbstractArray, L::AbstractDiffEqLinearOperator) = $op(x, convert(AbstractMatrix,L))
+  @eval Base.$op(L::DiffEqArrayOperator, x::Number) = $op(convert(AbstractMatrix,L), x)
+  @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix,L))
 end
 LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray) =
   mul!(Y, convert(AbstractMatrix,L), B)
