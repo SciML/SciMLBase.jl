@@ -10,16 +10,16 @@ LinearAlgebra.opnorm(L::AbstractDiffEqLinearOperator, p::Real=2) = opnorm(conver
 Base.@propagate_inbounds Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Any,N}) where {N} = convert(AbstractMatrix,L)[I...]
 Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where {N} =
   convert(AbstractMatrix,L)[I...]
-for op in (:*, :/, :\), T in (:AbstractArray, :Number)
-  @eval Base.$op(L::AbstractDiffEqLinearOperator, x::$T) = $op(convert(AbstractMatrix,L), x)
-  @eval Base.$op(x::$T, L::AbstractDiffEqLinearOperator) = $op(x, convert(AbstractMatrix,L))
+for op in (:*, :/, :\)
+  @eval Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractArray) = $op(convert(AbstractMatrix,L), x)
+  @eval Base.$op(x::AbstractArray, L::AbstractDiffEqLinearOperator) = $op(x, convert(AbstractMatrix,L))
+  @eval Base.$op(L::DiffEqArrayOperator, x::Number) = $op(convert(AbstractMatrix,L), x)
+  @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix,L))
 end
 LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray) =
   mul!(Y, convert(AbstractMatrix,L), B)
 LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator, B::AbstractArray, α::Number, β::Number) =
   mul!(Y, convert(AbstractMatrix,L), B, α, β)
-LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator, B::AbstractVecOrMat) =
-  ldiv!(Y, convert(AbstractMatrix,L), B)
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
   @eval LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator) = $pred(convert(AbstractArray, L))
 end

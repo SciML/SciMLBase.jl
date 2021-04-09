@@ -74,3 +74,52 @@ function update_coefficients!(L::AffineDiffEqOperator,u,p,t)
 end
 
 @deprecate is_constant(L::AbstractDiffEqOperator) isconstant(L)
+
+# Scaled operator (α * A)
+struct DiffEqScaledOperator{T,F,OpType<:AbstractDiffEqLinearOperator{T}} <: AbstractDiffEqCompositeOperator{T}
+  coeff::DiffEqScalar{T,F}
+  op::OpType
+end
+
+# Recursive routines that use `getops`
+function update_coefficients!(L::AbstractDiffEqCompositeOperator,u,p,t)
+  for op in getops(L)
+    update_coefficients!(op,u,p,t)
+  end
+  L
+end
+
+Base.:*(α::DiffEqScalar{T,F}, L::AbstractDiffEqLinearOperator{T}) where {T,F} = DiffEqScaledOperator(α, L)
+Base.:*(α::Number, L::AbstractDiffEqLinearOperator{T}) where T = DiffEqScaledOperator(DiffEqScalar(convert(T,α)), L)
+Base.:-(L::AbstractDiffEqLinearOperator{T}) where {T} = DiffEqScalar(-one(T)) * L
+getops(L::DiffEqScaledOperator) = (L.coeff, L.op)
+Base.Matrix(L::DiffEqScaledOperator) = L.coeff * Matrix(L.op)
+Base.convert(::Type{AbstractMatrix}, L::DiffEqScaledOperator) = L.coeff * convert(AbstractMatrix, L.op)
+
+Base.size(L::DiffEqScaledOperator, args...) = size(L.op, args...)
+LinearAlgebra.opnorm(L::DiffEqScaledOperator, p::Real=2) = abs(L.coeff) * opnorm(L.op, p)
+Base.getindex(L::DiffEqScaledOperator, i::Int) = L.coeff * L.op[i]
+Base.getindex(L::DiffEqScaledOperator, I::Vararg{Int, N}) where {N} =
+  L.coeff * L.op[I...]
+Base.:*(L::DiffEqScaledOperator, x::AbstractArray) = L.coeff * (L.op * x)
+Base.:*(x::AbstractArray, L::DiffEqScaledOperator) = (L.op * x) * L.coeff
+Base.:/(L::DiffEqScaledOperator, x::AbstractArray) = L.coeff * (L.op / x)
+Base.:/(x::AbstractArray, L::DiffEqScaledOperator) = 1/L.coeff * (x / L.op)
+Base.:\(L::DiffEqScaledOperator, x::AbstractArray) = 1/L.coeff * (L.op \ x)
+Base.:\(x::AbstractArray, L::DiffEqScaledOperator) = L.coeff * (x \ L)
+for N in (2,3)
+  @eval begin
+    LinearAlgebra.mul!(Y::AbstractArray{T,$N}, L::DiffEqScaledOperator{T}, B::AbstractArray{T,$N}) where {T} =
+        LinearAlgebra.lmul!(Y, L.coeff, mul!(Y, L.op, B))
+  end
+end
+LinearAlgebra.ldiv!(Y::AbstractArray, L::DiffEqScaledOperator, B::AbstractArray) =
+  lmul!(1/L.coeff, ldiv!(Y, L.op, B))
+LinearAlgebra.factorize(L::DiffEqScaledOperator) = L.coeff * factorize(L.op)
+for fact in (:lu, :lu!, :qr, :qr!, :cholesky, :cholesky!, :ldlt, :ldlt!,
+  :bunchkaufman, :bunchkaufman!, :lq, :lq!, :svd, :svd!)
+  @eval LinearAlgebra.$fact(L::DiffEqScaledOperator, args...) =
+    L.coeff * fact(L.op, args...)
+end
+
+isconstant(L::AbstractDiffEqCompositeOperator) = all(isconstant, getops(L))
