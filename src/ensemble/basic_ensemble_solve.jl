@@ -229,7 +229,7 @@ function tmap(f,args...)
   Threads.@threads for i in 1:length(args[1])
       batch_data[i] = f(getindex.(args,i)...)
   end
-  reduce(vcat,batch_data)
+  batch_data
 end
 
 function solve_batch(prob,alg,::EnsembleSplitThreads,II,pmap_batch_size;kwargs...)
