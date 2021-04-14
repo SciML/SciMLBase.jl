@@ -221,7 +221,7 @@ function solve_batch(prob,alg,ensemblealg::EnsembleThreads,II,pmap_batch_size;kw
     end
     solve_batch(prob,alg,EnsembleSerial(),I_local,pmap_batch_size;kwargs...)
   end
-  tighten_container_eltype(batch_data)
+  tighten_container_eltype(reduce(vcat,batch_data))
 end
 
 function tmap(f,args...)
