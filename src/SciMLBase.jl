@@ -1,5 +1,6 @@
 module SciMLBase
 
+using ConstructionBase
 using RecipesBase, RecursiveArrayTools, Tables, TreeViews
 using DocStringExtensions
 using LinearAlgebra
