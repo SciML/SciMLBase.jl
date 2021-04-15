@@ -199,22 +199,21 @@ function SciMLBase.solve_batch(prob,alg,::EnsembleSerial,II,pmap_batch_size;kwar
 end
 
 function solve_batch(prob,alg,ensemblealg::EnsembleThreads,II,pmap_batch_size;kwargs...)
-
-  if length(II) == 1 || Threads.nthreads() == 1
+  nthreads = min(Threads.nthreads(), length(II))
+  if length(II) == 1 || nthreads == 1
     return solve_batch(prob,alg,EnsembleSerial(),II,pmap_batch_size;kwargs...)
   end
 
   if typeof(prob.prob) <: AbstractJumpProblem && length(II) != 1
-    probs = [deepcopy(prob.prob) for i in 1:Threads.nthreads()]
+    probs = [deepcopy(prob.prob) for i in 1:nthreads]
   else
     probs = prob.prob
   end
 
   #
-  batch_size = length(II)÷Threads.nthreads()
-
-  batch_data = tmap(1:Threads.nthreads()) do i
-    if i == Threads.nthreads()
+  batch_size = length(II)÷nthreads
+  batch_data = tmap(1:nthreads) do i
+    if i == nthreads
       I_local = II[(batch_size*(i-1)+1):end]
     else
       I_local = II[(batch_size*(i-1)+1):(batch_size*i)]
