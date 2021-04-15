@@ -183,12 +183,12 @@ function solve_batch(prob,alg,ensemblealg::EnsembleDistributed,II,pmap_batch_siz
 end
 
 function responsible_map(f,II...)
-  batch_data = []
+  batch_data = Vector{Core.Compiler.return_type(f,Tuple{typeof.(getindex.(II,1))...})}(undef,length(II[1]))
   sizehint!(batch_data,length(II[1]))
   for i in 1:length(II[1])
-    @inbounds push!(batch_data, f(getindex.(II,i)...))
+    batch_data[i] = f(getindex.(II,i)...)
   end
-  identity.(batch_data)
+  batch_data
 end
 
 function SciMLBase.solve_batch(prob,alg,::EnsembleSerial,II,pmap_batch_size;kwargs...)
