@@ -6,6 +6,7 @@ end
 Base.getindex(A::AbstractNoTimeSolution,i::Int) = A.u[i]
 Base.getindex(A::AbstractNoTimeSolution,I::Vararg{Int, N}) where {N} = A.u[I]
 Base.getindex(A::AbstractNoTimeSolution,I::AbstractArray{Int}) = A.u[I]
+Base.getindex(A::AbstractNoTimeSolution,I::CartesianIndex) = A.u[I]
 Base.getindex(A::AbstractTimeseriesSolution,I::AbstractArray{Int}) = solution_slice(A,I)
 Base.setindex!(A::AbstractNoTimeSolution, v, i::Int) = (A.u[i] = v)
 Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u[I] = v)
