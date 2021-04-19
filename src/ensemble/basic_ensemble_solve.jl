@@ -184,7 +184,6 @@ end
 
 function responsible_map(f,II...)
   batch_data = Vector{Core.Compiler.return_type(f,Tuple{typeof.(getindex.(II,1))...})}(undef,length(II[1]))
-  sizehint!(batch_data,length(II[1]))
   for i in 1:length(II[1])
     batch_data[i] = f(getindex.(II,i)...)
   end
