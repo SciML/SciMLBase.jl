@@ -208,18 +208,11 @@ function solve_batch(prob,alg,ensemblealg::EnsembleThreads,II,pmap_batch_size;kw
   else
     probs = prob.prob
   end
-
-  #
-  batch_size = length(II)÷nthreads
-  batch_data = tmap(1:nthreads) do i
-    if i == nthreads
-      I_local = II[(batch_size*(i-1)+1):end]
-    else
-      I_local = II[(batch_size*(i-1)+1):(batch_size*i)]
-    end
-    solve_batch(prob,alg,EnsembleSerial(),I_local,pmap_batch_size;kwargs...)
+  
+  batch_data = tmap(II) do i
+    batch_func(i,prob,alg;kwargs...)
   end
-  tighten_container_eltype(reduce(vcat,batch_data))
+  tighten_container_eltype(batch_data)
 end
 
 function tmap(f,args...)
