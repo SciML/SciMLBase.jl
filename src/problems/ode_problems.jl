@@ -85,8 +85,8 @@ abstract type AbstractDynamicalODEProblem end
 $(TYPEDEF)
 """
 struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
-# u' = f1(v)
-# v' = f2(t,u)
+# u' = f2(v)
+# v' = f1(t,u)
 """
     DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
 
