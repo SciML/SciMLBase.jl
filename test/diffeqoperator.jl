@@ -1,3 +1,4 @@
+using SciMLBase
 
 @testset "DiffEqOperator" begin
     A = rand(10,10);
