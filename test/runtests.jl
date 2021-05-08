@@ -21,6 +21,7 @@ if GROUP == "Core" || GROUP == "All"
     @time @safetestset "Existence functions" begin include("existence_functions.jl") end
     @time @safetestset "Integrator interface" begin include("integrator_tests.jl") end
     @time @safetestset "Ensemble functionality" begin include("ensemble_tests.jl") end
+    @time @safetestset "DiffEqOperator tests" begin include("diffeqoperator.jl") end
 end
 
 if !is_APPVEYOR && GROUP == "Downstream"
