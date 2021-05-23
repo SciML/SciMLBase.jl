@@ -344,7 +344,7 @@ function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_saf
     # Plot for sparse output: use the timeseries itself
     if sol.tslocation == 0
       plott = sol.t
-      plot_timeseries = DiffEqArray(sol.t, sol.u)
+      plot_timeseries = DiffEqArray(sol.u, sol.t)
       if plot_analytic
         plot_analytic_timeseries = sol.u_analytic
       else
@@ -357,7 +357,7 @@ function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_saf
         plott = collect(densetspacer(tspan[1],tspan[2],plotdensity))
       end
 
-      plot_timeseries = DiffEqArray(sol.t[start_idx:end_idx], sol.u[start_idx:end_idx])
+      plot_timeseries = sol.u[start_idx:end_idx]
       if plot_analytic
         plot_analytic_timeseries = sol.u_analytic[start_idx:end_idx]
       else
