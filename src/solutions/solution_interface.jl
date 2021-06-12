@@ -169,10 +169,13 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
 
   # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
   if typeof(vars) <: Tuple && (issymbollike(vars[1]) && issymbollike(vars[2]))
-    xguide --> issymbollike(int_vars[1][2]) ? Symbol(int_vars[1][2]) : strs[int_vars[1][2]]
-    yguide --> issymbollike(int_vars[1][3]) ? Symbol(int_vars[1][3]) : strs[int_vars[1][3]]
+    val = issymbollike(int_vars[1][2]) ? String(Symbol(int_vars[1][2])) : strs[int_vars[1][2]]
+    xguide --> val
+    val = issymbollike(int_vars[1][3]) ? String(Symbol(int_vars[1][3])) : strs[int_vars[1][3]]
+    yguide --> val
     if length(vars) > 2
-      zguide --> issymbollike(int_vars[1][4]) ? Symbol(int_vars[1][4]) : strs[int_vars[1][4]]
+      val = issymbollike(int_vars[1][4]) ? String(Symbol(int_vars[1][4])) : strs[int_vars[1][4]]
+      zguide --> val
     end
   end
 
