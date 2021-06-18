@@ -11,11 +11,11 @@ makedocs(
     pages=[
         "Home" => "index.md",
         "Fundamentals" => Any[
-            "basics/Problems.md",
-            "basics/PDE.md",
-            "basics/SciMLFunctions.md",
-            "basics/Differentiation.md",
-            "basics/FAQ.md"
+            "fundamentals/Problems.md",
+            "fundamentals/PDE.md",
+            "fundamentals/SciMLFunctions.md",
+            "fundamentals/Differentiation.md",
+            "fundamentals/FAQ.md"
         ]
     ]
 )
