@@ -1,7 +1,3 @@
-### Abstract Interface
-struct AllObserved
-end
-
 # No Time Solution : Forward to `A.u`
 Base.getindex(A::AbstractNoTimeSolution,i::Int) = A.u[i]
 Base.getindex(A::AbstractNoTimeSolution,I::Vararg{Int, N}) where {N} = A.u[I]
@@ -295,13 +291,6 @@ end
 
 sym_to_index(sym,sol::SciMLSolution) = sym_to_index(sym,getsyms(sol))
 sym_to_index(sym,syms) = findfirst(isequal(Symbol(sym)),syms)
-issymbollike(x) = x isa Symbol ||
-                  x isa AllObserved ||
-                  Symbol(parameterless_type(typeof(x))) == :Operation ||
-                  Symbol(parameterless_type(typeof(x))) == :Variable ||
-                  Symbol(parameterless_type(typeof(x))) == :Sym ||
-                  Symbol(parameterless_type(typeof(x))) == :Num ||
-                  Symbol(parameterless_type(typeof(x))) == :Term
 
 function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_safety,vars,int_vars,tscale,strs)
   if tspan === nothing
