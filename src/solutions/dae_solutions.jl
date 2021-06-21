@@ -15,8 +15,8 @@ struct DAESolution{T,N,uType,duType,uType2,DType,tType,P,A,ID,DE} <: AbstractDAE
   destats::DE
   retcode::Symbol
 end
-(sol::DAESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(t,idxs,deriv,sol.prob.p,sol.prob.f.syms,sol.prob.f.indepsym,sol.prob.f.observed,continuity)
-(sol::DAESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,sol.prob.f.syms,sol.prob.f.indepsym,sol.prob.f.observed,continuity)
+(sol::DAESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = augment(sol.interp(t,idxs,deriv,sol.prob.p,continuity), sol)
+(sol::DAESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = augment(sol.interp(v,t,idxs,deriv,sol.prob.p,continuity), sol)
 
 function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                         timeseries_errors = length(u) > 2,

@@ -50,16 +50,16 @@ or use the keyword argument sensealg=SensitivityADPassThrough() to revert
 to AD-based derivatives.
 """
 
-(id::HermiteInterpolation)(tvals,idxs,deriv,p,syms,indepsym,observed,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,syms,indepsym,observed,continuity)
+(id::HermiteInterpolation)(tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,continuity)
 (id::HermiteInterpolation)(val,tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation!(val,tvals,id,idxs,deriv,p,continuity)
-(id::LinearInterpolation)(tvals,idxs,deriv,p,syms,indepsym,observed,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,syms,indepsym,observed,continuity)
+(id::LinearInterpolation)(tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,continuity)
 (id::LinearInterpolation)(val,tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation!(val,tvals,id,idxs,deriv,p,continuity)
-(id::ConstantInterpolation)(tvals,idxs,deriv,p,syms,indepsym,observed,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,syms,indepsym,observed,continuity)
+(id::ConstantInterpolation)(tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,continuity)
 (id::ConstantInterpolation)(val,tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation!(val,tvals,id,idxs,deriv,p,continuity)
-(id::SensitivityInterpolation)(tvals,idxs,deriv,p,syms,indepsym,observed,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,syms,indepsym,observed,continuity)
+(id::SensitivityInterpolation)(tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,continuity)
 (id::SensitivityInterpolation)(val,tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation!(val,tvals,id,idxs,deriv,p,continuity)
 
-@inline function interpolation(tvals,id,idxs,deriv,p,syms,indepsym,observed,continuity::Symbol=:left)
+@inline function interpolation(tvals,id,idxs,deriv,continuity::Symbol=:left)
   t = id.t; u = id.u
   typeof(id) <: HermiteInterpolation && (du = id.du)
   tdir = sign(t[end]-t[1])
@@ -105,7 +105,7 @@ to AD-based derivatives.
       end
     end
   end
-  DiffEqArray(vals,tvals,syms,indepsym,observed,p)
+  DiffEqArray(vals,tvals)
 end
 
 """
