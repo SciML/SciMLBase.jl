@@ -59,7 +59,7 @@ to AD-based derivatives.
 (id::SensitivityInterpolation)(tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,continuity)
 (id::SensitivityInterpolation)(val,tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation!(val,tvals,id,idxs,deriv,p,continuity)
 
-@inline function interpolation(tvals,id,idxs,deriv,continuity::Symbol=:left)
+@inline function interpolation(tvals,id,idxs,deriv,p,continuity::Symbol=:left)
   t = id.t; u = id.u
   typeof(id) <: HermiteInterpolation && (du = id.du)
   tdir = sign(t[end]-t[1])
