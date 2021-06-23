@@ -59,7 +59,7 @@ to AD-based derivatives.
 (id::SensitivityInterpolation)(tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation(tvals,id,idxs,deriv,p,continuity)
 (id::SensitivityInterpolation)(val,tvals,idxs,deriv,p,continuity::Symbol=:left) = interpolation!(val,tvals,id,idxs,deriv,p,continuity)
 
-@inline function interpolation(tvals,id,idxs,deriv,p,continuity::Symbol=:left)
+@inline function interpolation(tvals,id::I,idxs,deriv::D,p,continuity::Symbol=:left) where {I,D}
   t = id.t; u = id.u
   typeof(id) <: HermiteInterpolation && (du = id.du)
   tdir = sign(t[end]-t[1])
@@ -114,7 +114,7 @@ $(SIGNATURES)
 Get the value at tvals where the solution is known at the
 times t (sorted), with values u and derivatives ks
 """
-@inline function interpolation!(vals,tvals,id,idxs,deriv,p,continuity::Symbol=:left)
+@inline function interpolation!(vals,tvals,id::I,idxs,deriv::D,p,continuity::Symbol=:left) where {I,D}
   t = id.t; u = id.u
   typeof(id) <: HermiteInterpolation && (du = id.du)
   tdir = sign(t[end]-t[1])
@@ -169,7 +169,7 @@ $(SIGNATURES)
 Get the value at tval where the solution is known at the
 times t (sorted), with values u and derivatives ks
 """
-@inline function interpolation(tval::Number,id,idxs,deriv,p,continuity::Symbol=:left)
+@inline function interpolation(tval::Number,id::I,idxs,deriv::D,p,continuity::Symbol=:left) where {I,D}
   t = id.t; u = id.u
   typeof(id) <: HermiteInterpolation && (du = id.du)
   tdir = sign(t[end]-t[1])
@@ -212,7 +212,7 @@ $(SIGNATURES)
 Get the value at tval where the solution is known at the
 times t (sorted), with values u and derivatives ks
 """
-@inline function interpolation!(out,tval::Number,id,idxs,deriv,p,continuity::Symbol=:left)
+@inline function interpolation!(out,tval::Number,id::I,idxs,deriv::D,p,continuity::Symbol=:left) where {I,D}
   t = id.t; u = id.u
   typeof(id) <: HermiteInterpolation && (du = id.du)
   tdir = sign(t[end]-t[1])
