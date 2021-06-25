@@ -72,6 +72,10 @@ end
 
 using Base: typename
 
+Base.@pure __parameterless_type(T) = typename(T).wrapper
+parameterless_type(x) = parameterless_type(typeof(x))
+parameterless_type(x::Type) = __parameterless_type(x)
+
 # support functions
 export check_keywords, warn_compat
 function check_keywords(alg, kwargs, warnlist)
