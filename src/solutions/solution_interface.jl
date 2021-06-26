@@ -1,6 +1,5 @@
 ### Abstract Interface
-struct AllObserved
-end
+const AllObserved = RecursiveArrayTools.AllObserved
 
 # No Time Solution : Forward to `A.u`
 Base.getindex(A::AbstractNoTimeSolution,i::Int) = A.u[i]
