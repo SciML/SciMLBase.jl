@@ -137,7 +137,16 @@ end
 
 function batch_func(i,prob,alg;kwargs...)
   iter = 1
-  _prob = prob.safetycopy ? deepcopy(prob.prob) : prob.prob
+
+  # if no user specified safetycopy and one thread we don't copy, otherwise
+  # we copy when given a user specified prob_func
+  if prob.safetycopy === nothing
+    safetycopy = (Threads.nthreads() == 1) ? false : DEFAULT_SAFETYCOPY(prob.prob_func)
+  else 
+    safetycopy = prob.safetycopy
+  end
+
+  _prob = safetycopy ? deepcopy(prob.prob) : prob.prob
   new_prob = prob.prob_func(_prob,i,iter)
   rerun = true
   x = prob.output_func(solve(new_prob,alg;kwargs...),i)
@@ -150,7 +159,7 @@ function batch_func(i,prob,alg;kwargs...)
   rerun = _x[2]
   while rerun
       iter += 1
-      _prob = prob.safetycopy ? deepcopy(prob.prob) : prob.prob
+      _prob = safetycopy ? deepcopy(prob.prob) : prob.prob
       new_prob = prob.prob_func(_prob,i,iter)
       x = prob.output_func(solve(new_prob,alg;kwargs...),i)
       if !(typeof(x) <: Tuple)
