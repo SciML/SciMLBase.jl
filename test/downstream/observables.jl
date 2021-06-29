@@ -1,4 +1,3 @@
-using Test: length
 using ModelingToolkit, OrdinaryDiffEq, Test
 
 @parameters t σ ρ β
