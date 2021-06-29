@@ -15,41 +15,67 @@ struct ODESolution{T,N,uType,uType2,DType,tType,rateType,P,A,IType,DE} <: Abstra
   destats::DE
   retcode::Symbol
 end
+(sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol(t,deriv,idxs,continuity)
+(sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
 
-function (sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left)
-  if deriv != Val{0}
-    error("Not Implemented")
+function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs::Nothing,continuity)
+  sol.interp(t,idxs,Val{0},sol.prob.p,continuity)
+end
+
+function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::Nothing,continuity)
+  augment(sol.interp(t,idxs,Val{0},sol.prob.p,continuity), sol)
+end
+
+function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs::Integer,continuity)
+  sol.interp(t,idxs,Val{0},sol.prob.p,continuity)
+end
+function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs::AbstractVector{<:Integer},continuity)
+  sol.interp(t,idxs,Val{0},sol.prob.p,continuity)
+end
+function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::Integer,continuity)
+  sol.interp(t,idxs,Val{0},sol.prob.p,continuity)
+end
+function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::AbstractVector{<:Integer},continuity)
+  sol.interp(t,idxs,Val{0},sol.prob.p,continuity)
+end
+
+function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs,continuity)
+  if !issymbollike(idxs)
+    error("Incorrect specification of `idxs`")
   end
+  augment(sol.interp([t],nothing,Val{0},sol.prob.p,continuity), sol)[idxs]
+end
 
-  if idxs === nothing
-    if t isa Real
-      sol.interp(t,idxs,deriv,sol.prob.p,continuity)
-    else
-      augment(sol.interp(t,idxs,deriv,sol.prob.p,continuity), sol)
-    end
-  elseif idxs isa Vector{<:Integer} || idxs isa Integer
-      sol.interp(t,idxs,deriv,sol.prob.p,continuity)
-  elseif issymbollike(idxs)
-    if t isa Real
-      interp_sol = augment(sol.interp([t],nothing,deriv,sol.prob.p,continuity), sol)
-      interp_sol[idxs][1]
-    else
-      interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
-      @info interp_sol[idxs]
-      DiffEqArray(interp_sol[idxs], t)
-    end
-  else
-    if t isa Real
-      interp_sol = augment(sol.interp([t],nothing,deriv,sol.prob.p,continuity), sol)
-      [first(interp_sol[idx]) for idx in idxs]
-    else
-      interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
-      u = [[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)]
-      DiffEqArray(u, t)
-    end
+function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs::AbstractVector,continuity)
+  if any(.!issymbollike.(idxs))
+    error("Incorrect specification of `idxs`")
+  end
+  interp_sol = augment(sol.interp([t],nothing,Val{0},sol.prob.p,continuity), sol)
+  [first(interp_sol[idx]) for idx in idxs]
+end
+
+function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs,continuity)
+  if !issymbollike(idxs)
+    error("Incorrect specification of `idxs`")
+  end
+  interp_sol = augment(sol.interp(t,nothing,Val{0},sol.prob.p,continuity), sol)
+  DiffEqArray(interp_sol[idxs], t)
+end
+
+function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::AbstractVector,continuity)
+  if any(.!issymbollike.(idxs))
+    error("Incorrect specification of `idxs`")
+  end
+  interp_sol = augment(sol.interp(t,nothing,Val{0},sol.prob.p,continuity), sol)
+  u = [[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)]
+  DiffEqArray(u, t)
+end
+
+for T in 1:3
+  function (sol::ODESolution)(t,::Type{Val{T}},idxs,continuity)
+    error("Higher-order interpolation is not implemented.")
   end
 end
-(sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
 
 function build_solution(
         prob::Union{AbstractODEProblem,AbstractDDEProblem},
