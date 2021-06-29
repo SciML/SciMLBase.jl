@@ -1,3 +1,4 @@
+using Test: length
 using ModelingToolkit, OrdinaryDiffEq, Test
 
 @parameters t σ ρ β
@@ -53,6 +54,60 @@ interpolated_sol = sol(0.0:1.0:10.0)
 @test interpolated_sol[α,2] isa Float64
 @test length(interpolated_sol[α,1:5]) == 5
 @test interpolated_sol[α] ≈ 2interpolated_sol[lorenz1.x] .+ interpolated_sol[a].*2.0
+
+
+sol1 = sol(0.0:1.0:10.0)
+@test sol1.u isa Vector
+@test first(sol1.u) isa Vector
+@test length(sol1.u) == 11
+@test length(sol1.t) == 11
+
+sol2 = sol(0.1)
+@test sol2 isa Vector
+@test length(sol2) == length(states(sys_simplified))
+@test first(sol2) isa Real
+
+sol3 = sol(0.0:1.0:10.0, idxs=[lorenz1.x, lorenz2.x])
+@test sol3.u isa Vector
+@test first(sol3.u) isa Vector
+@test length(sol3.u) == 11
+@test length(sol3.t) == 11
+
+sol4 = sol(0.1, idxs=[lorenz1.x, lorenz2.x])
+@test sol4 isa Vector
+@test length(sol4) == 2
+@test first(sol4) isa Real
+
+sol5 = sol(0.0:1.0:10.0, idxs=lorenz1.x)
+@test sol5.u isa Vector
+@test first(sol5.u) isa Real
+@test length(sol5.u) == 11
+@test length(sol5.t) == 11
+
+sol6 = sol(0.1, idxs=lorenz1.x)
+@test sol6 isa Real
+
+sol7 = sol(0.0:1.0:10.0, idxs=[2,1])
+@test sol7.u isa Vector
+@test first(sol7.u) isa Vector
+@test length(sol7.u) == 11
+@test length(sol7.t) == 11
+
+sol8 = sol(0.1, idxs=[2,1])
+@test sol8 isa Vector
+@test length(sol8) == 2
+@test first(sol8) isa Real
+
+sol9 = sol(0.0:1.0:10.0, idxs=2)
+@test sol9.u isa Vector
+@test first(sol9.u) isa Real
+@test length(sol9.u) == 11
+@test length(sol9.t) == 11
+
+sol10 = sol(0.1, idxs=2)
+@test sol6 isa Real
+
+@test_throws ErrorException sol(0.1, Val{1})
 
 #=
 using Plots

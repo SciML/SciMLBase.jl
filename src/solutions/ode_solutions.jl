@@ -15,8 +15,41 @@ struct ODESolution{T,N,uType,uType2,DType,tType,rateType,P,A,IType,DE} <: Abstra
   destats::DE
   retcode::Symbol
 end
-(sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = augment(sol.interp(t,idxs,deriv,sol.prob.p,continuity), sol)
-(sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = augment(sol.interp(v,t,idxs,deriv,sol.prob.p,continuity), sol)
+
+function (sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left)
+  if deriv != Val{0}
+    error("Not Implemented")
+  end
+
+  if idxs === nothing
+    if t isa Real
+      sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+    else
+      augment(sol.interp(t,idxs,deriv,sol.prob.p,continuity), sol)
+    end
+  elseif idxs isa Vector{<:Integer} || idxs isa Integer
+      sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+  elseif issymbollike(idxs)
+    if t isa Real
+      interp_sol = augment(sol.interp([t],nothing,deriv,sol.prob.p,continuity), sol)
+      interp_sol[idxs][1]
+    else
+      interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
+      @info interp_sol[idxs]
+      DiffEqArray(interp_sol[idxs], t)
+    end
+  else
+    if t isa Real
+      interp_sol = augment(sol.interp([t],nothing,deriv,sol.prob.p,continuity), sol)
+      [first(interp_sol[idx]) for idx in idxs]
+    else
+      interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
+      u = [[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)]
+      DiffEqArray(u, t)
+    end
+  end
+end
+(sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
 
 function build_solution(
         prob::Union{AbstractODEProblem,AbstractDDEProblem},
