@@ -17,7 +17,6 @@ Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u
 # For augmenting system information to enable symbol based indexing of interpolated solutions
 function augment(A::DiffEqArray, sol::AbstractODESolution)
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
-  @info sol.prob.f.syms
   DiffEqArray(A.u, A.t, sol.prob.f.syms,getindepsym(sol),observed,sol.prob.p)
 end
 
