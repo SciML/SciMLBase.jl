@@ -104,7 +104,7 @@ sol9 = sol(0.0:1.0:10.0, idxs=2)
 @test length(sol9.t) == 11
 
 sol10 = sol(0.1, idxs=2)
-@test sol6 isa Real
+@test sol10 isa Real
 
 @test_throws ErrorException sol(0.1, Val{1})
 
