@@ -43,7 +43,7 @@ function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs,continuity)
   if !issymbollike(idxs)
     error("Incorrect specification of `idxs`")
   end
-  augment(sol.interp([t],nothing,Val{0},sol.prob.p,continuity), sol)[idxs]
+  augment(sol.interp([t],nothing,Val{0},sol.prob.p,continuity), sol)[idxs][1]
 end
 
 function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs::AbstractVector,continuity)
