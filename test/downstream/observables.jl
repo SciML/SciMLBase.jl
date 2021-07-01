@@ -15,7 +15,7 @@ lorenz2 = ODESystem(eqs,name=:lorenz2)
 @variables a(t), α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a*γ,
                α ~ 2lorenz1.x + a*γ]
-sys = ODESystem(connections,t,[a,α],[γ],systems=[lorenz1,lorenz2])               
+sys = ODESystem(connections,t,[a,α],[γ],systems=[lorenz1,lorenz2])
 sys_simplified = structural_simplify(sys)
 
 u0 = [lorenz1.x => 1.0,
@@ -106,7 +106,9 @@ sol9 = sol(0.0:1.0:10.0, idxs=2)
 sol10 = sol(0.1, idxs=2)
 @test sol10 isa Real
 
-@test_throws ErrorException sol(0.1, Val{1})
+@test_throws MethodError sol(0.1, Val{1})
+@test_throws MethodError sol(0.1, Val{2})
+@test_throws MethodError sol(0.1, Val{3})
 
 #=
 using Plots

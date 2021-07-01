@@ -71,10 +71,8 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::Abstr
   DiffEqArray(u, t)
 end
 
-for T in 1:3
-  function (sol::ODESolution)(t,::Type{Val{T}},idxs,continuity)
-    error("Higher-order interpolation is not implemented.")
-  end
+function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{N}},idxs::AbstractVector,continuity) where N
+  N == 0 || error("Higher-order interpolation is not implemented.")
 end
 
 function build_solution(
