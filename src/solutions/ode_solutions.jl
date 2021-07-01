@@ -70,7 +70,7 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::Abstr
   DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t)
 end
 
-function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{N}},idxs::AbstractVector,continuity) where N
+function (sol::ODESolution)(t,::Type{Val{N}},idxs,continuity) where N
   N == 0 || error("Higher-order interpolation is not implemented.")
 end
 

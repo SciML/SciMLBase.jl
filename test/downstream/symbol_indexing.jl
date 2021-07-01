@@ -106,9 +106,8 @@ sol9 = sol(0.0:1.0:10.0, idxs=2)
 sol10 = sol(0.1, idxs=2)
 @test sol10 isa Real
 
-@test_throws MethodError sol(0.1, Val{1})
-@test_throws MethodError sol(0.1, Val{2})
-@test_throws MethodError sol(0.1, Val{3})
+@test_throws ErrorException sol(0.1, Val{1})
+@test_throws ErrorException sol([0.0:0.1:1.0], Val{2})
 
 #=
 using Plots
