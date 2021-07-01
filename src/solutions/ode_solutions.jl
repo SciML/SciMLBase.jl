@@ -40,32 +40,24 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::Abstr
 end
 
 function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs,continuity)
-  if !issymbollike(idxs)
-    error("Incorrect specification of `idxs`")
-  end
+  issymbollike(idxs) || error("Incorrect specification of `idxs`")
   augment(sol.interp([t],nothing,Val{0},sol.prob.p,continuity), sol)[idxs][1]
 end
 
 function (sol::ODESolution)(t::Real,::Type{Val{0}},idxs::AbstractVector,continuity)
-  if any(.!issymbollike.(idxs))
-    error("Incorrect specification of `idxs`")
-  end
+  all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp([t],nothing,Val{0},sol.prob.p,continuity), sol)
   [first(interp_sol[idx]) for idx in idxs]
 end
 
 function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs,continuity)
-  if !issymbollike(idxs)
-    error("Incorrect specification of `idxs`")
-  end
+  issymbollike(idxs) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp(t,nothing,Val{0},sol.prob.p,continuity), sol)
   DiffEqArray(interp_sol[idxs], t)
 end
 
 function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::AbstractVector,continuity)
-  if any(.!issymbollike.(idxs))
-    error("Incorrect specification of `idxs`")
-  end
+  all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp(t,nothing,Val{0},sol.prob.p,continuity), sol)
   DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t)
 end
