@@ -67,8 +67,7 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{0}},idxs::Abstr
     error("Incorrect specification of `idxs`")
   end
   interp_sol = augment(sol.interp(t,nothing,Val{0},sol.prob.p,continuity), sol)
-  u = [[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)]
-  DiffEqArray(u, t)
+  DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t)
 end
 
 function (sol::ODESolution)(t::AbstractVector{<:Real},::Type{Val{N}},idxs::AbstractVector,continuity) where N
