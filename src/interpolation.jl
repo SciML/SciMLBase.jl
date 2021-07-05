@@ -248,9 +248,7 @@ times t (sorted), with values u and derivatives ks
   end
 end
 
-@inline function interpolant(Θ,id::AbstractDiffEqInterpolation,dt,y₀,y₁,dy₀,dy₁,idxs,::Type{Val{D}}) where D
-  error("$(string(typeof(id))) for $(D)th order not implemented")
-end
+
 ##################### Hermite Interpolants
 
 """
