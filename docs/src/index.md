@@ -19,6 +19,8 @@ The SciML common interface covers the following domains:
 - Nonlinear Systems (`NonlinearProblem`)
   - Systems of nonlinear equations
   - Scalar bracketing systems
+- Integrals
+  - Explicit integraion (quadrature) (`QuadratureProblem`)
 - Differential Equations
   - Discrete equations (function maps, discrete stochastic (Gillespie/Markov)
     simulations) (`DiscreteProblem`)
@@ -82,8 +84,11 @@ all of the problem domains. Underlying high level ideas include:
 - [ModelingToolkit.jl](https://mtk.sciml.ai/stable/)
     - The symbolic modeling package which implements the SciML symbolic common
       interface.
-- [NonlinearSolve.jl](https://github.com/JuliaComputing/NonlinearSolve.jl)
+- [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl)
     - High performance numerical solving of nonlinear systems.
+- [Quadrature.jl](https://github.com/SciML/Quadrature.jl)
+    - Multi-package interface for high performance, batched, and parallelized 
+      numerical quadrature.
 - [GalacticOptim.jl](https://github.com/SciML/GalacticOptim.jl)
     - Multi-package interface for numerical solving of optimization problems.
 - [NeuralPDE.jl](https://github.com/SciML/NeuralPDE.jl)
