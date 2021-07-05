@@ -14,6 +14,12 @@ Base.size(A::AbstractNoTimeSolution) = size(A.u)
 
 Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u: ");show(io,m,A.u))
 
+# For augmenting system information to enable symbol based indexing of interpolated solutions
+function augment(A::DiffEqArray, sol::AbstractODESolution)
+  observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
+  DiffEqArray(A.u, A.t, sol.prob.f.syms,getindepsym(sol),observed,sol.prob.p)
+end
+
 # Symbol Handling
 
 # For handling ambiguities
@@ -294,13 +300,15 @@ end
 
 sym_to_index(sym,sol::SciMLSolution) = sym_to_index(sym,getsyms(sol))
 sym_to_index(sym,syms) = findfirst(isequal(Symbol(sym)),syms)
-issymbollike(x) = x isa Symbol ||
+function issymbollike(x)
+                  x isa Symbol ||
                   x isa AllObserved ||
-                  Symbol(parameterless_type(typeof(x))) == :Operation ||
-                  Symbol(parameterless_type(typeof(x))) == :Variable ||
-                  Symbol(parameterless_type(typeof(x))) == :Sym ||
-                  Symbol(parameterless_type(typeof(x))) == :Num ||
-                  Symbol(parameterless_type(typeof(x))) == :Term
+                  Symbol(parameterless_type(typeof(x))) == :Operation || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Operation") ||
+                  Symbol(parameterless_type(typeof(x))) == :Variable || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Variable") ||
+                  Symbol(parameterless_type(typeof(x))) == :Sym || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Sym") ||
+                  Symbol(parameterless_type(typeof(x))) == :Num || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Num") ||
+                  Symbol(parameterless_type(typeof(x))) == :Term || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Term")       
+end
 
 function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_safety,vars,int_vars,tscale,strs)
   if tspan === nothing
