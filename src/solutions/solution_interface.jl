@@ -302,16 +302,7 @@ end
 
 sym_to_index(sym,sol::SciMLSolution) = sym_to_index(sym,getsyms(sol))
 sym_to_index(sym,syms) = findfirst(isequal(Symbol(sym)),syms)
-function issymbollike(x)
-  x isa Symbol ||
-  x isa AllObserved ||
-  Symbol(parameterless_type(typeof(x))) == :Operation || Symbol(parameterless_type(typeof(x))) == Symbol("SymbolicUtils.Operation") ||
-  Symbol(parameterless_type(typeof(x))) == :Variable || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Variable") ||
-  Symbol(parameterless_type(typeof(x))) == :Sym || Symbol(parameterless_type(typeof(x))) == Symbol("SymbolicUtils.Sym") ||
-  Symbol(parameterless_type(typeof(x))) == :Num || Symbol(parameterless_type(typeof(x))) == Symbol("Symbolics.Num") ||
-  Symbol(parameterless_type(typeof(x))) == :Term || Symbol(parameterless_type(typeof(x))) == Symbol("SymbolicUtils.Term")
-end
-
+const issymbollike = RecursiveArrayTools.issymbollike
 
 function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_safety,vars,int_vars,tscale,strs)
   if tspan === nothing
