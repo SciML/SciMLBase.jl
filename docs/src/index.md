@@ -102,6 +102,10 @@ all of the problem domains. Underlying high level ideas include:
 - [ModelingToolkit.jl](https://mtk.sciml.ai/stable/)
     - The symbolic modeling package which implements the SciML symbolic common
       interface.
+- [LinearSolve.jl](https://github.com/SciML/LinearSolvers.jl)
+    - Multi-package interface for specifying linear solvers (direct, sparse,
+      and iterative), along with tools for caching and preconditioners
+      for use in large-scale modeling.
 - [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl)
     - High performance numerical solving of nonlinear systems.
 - [Quadrature.jl](https://github.com/SciML/Quadrature.jl)
