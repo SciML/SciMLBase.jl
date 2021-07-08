@@ -50,6 +50,24 @@ for defining such systems symbolically, allowing for optimizations like automate
 generation of parallel code, symbolic simplification, and generation of sparsity
 patterns.
 
+## Extended SciML Domain
+
+In addition to the purely numerical representations of mathematical objects, there are also
+sets of problem types associated with common mathematical algorithms. These are:
+
+- Data-driven modeling
+  - Discrete-time data-driven dynamical systems (`DiscreteDataDrivenProblem`)
+  - Continuous-time data-driven dynamical systems (`ContinuousDataDrivenProblem`)
+  - Symbolic regression (`DirectDataDrivenProblem`)
+- Uncertainty quantification and expected values (`ExpectationProblem`)
+
+## Inverse Problems, Parameter Estimation, and Structural Identification
+
+We note that parameter estimation and inverse problems are solved directly on their
+constituant problem types using tools like [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl).
+Thus for example, there is no `ODEInverseProblem`, and instead `ODEProblem` is used to
+find the parameters `p` that solve the inverse problem.
+
 ## Common Interface High Level
 
 The SciML interface is common as the usage of arguments is standardized across
@@ -84,6 +102,10 @@ all of the problem domains. Underlying high level ideas include:
 - [ModelingToolkit.jl](https://mtk.sciml.ai/stable/)
     - The symbolic modeling package which implements the SciML symbolic common
       interface.
+- [LinearSolve.jl](https://github.com/SciML/LinearSolvers.jl)
+    - Multi-package interface for specifying linear solvers (direct, sparse,
+      and iterative), along with tools for caching and preconditioners
+      for use in large-scale modeling.
 - [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl)
     - High performance numerical solving of nonlinear systems.
 - [Quadrature.jl](https://github.com/SciML/Quadrature.jl)
@@ -102,7 +124,14 @@ all of the problem domains. Underlying high level ideas include:
     - High level package for scientific machine learning applications, such as
       neural and universal differential equations, solving of inverse problems,
       parameter estimation, nonlinear optimal control, and more.
-
+- [DataDrivenDiffEq.jl](https://github.com/SciML/DataDrivenDiffEq.jl)
+    - Multi-package interface for data-driven modeling, Koopman dynamic mode
+      decomposition, symbolic regression/sparsification, and automated model
+      discovery.
+- [DiffEqUncertainty.jl](https://github.com/SciML/DiffEqUncertainty.jl)
+    - Extension to the dynamical modeling tools for performing uncertainty
+      quantification and calculating expectations.
+ 
 ## Interface Implementation Libraries
 
 - [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)
@@ -124,6 +153,13 @@ all of the problem domains. Underlying high level ideas include:
 ## Using-Facing Modeling Libraries
 
 There are too many to name here and this will be populated when there is time!
+
+## External Binding Libraries
+
+- [diffeqr](https://github.com/SciML/diffeqr)
+    - Solving differential equations in R using DifferentialEquations.jl with ModelingToolkit for JIT compilation and GPU-acceleration
+- [diffeqpy](https://github.com/SciML/diffeqpy)
+    - Solving differential equations in Python using DifferentialEquations.jl
 
 ## Solver Libraries
 
