@@ -19,8 +19,7 @@ The SciML common interface covers the following domains:
 - Nonlinear Systems (`NonlinearProblem`)
   - Systems of nonlinear equations
   - Scalar bracketing systems
-- Integrals
-  - Explicit integraion (quadrature) (`QuadratureProblem`)
+- Integrals (quadrature) (`QuadratureProblem`)
 - Differential Equations
   - Discrete equations (function maps, discrete stochastic (Gillespie/Markov)
     simulations) (`DiscreteProblem`)
