@@ -78,6 +78,8 @@ sol3 = sol(0.0:1.0:10.0, idxs=[lorenz1.x, lorenz2.x])
 @test first(sol3.u) isa Vector
 @test length(sol3.u) == 11
 @test length(sol3.t) == 11
+@test collect(sol3[t]) ≈ sol3.t
+@test collect(sol3[t, 1:5]) ≈ sol3.t[1:5]
 @test_throws ErrorException sol(0.0:1.0:10.0, idxs=[lorenz1.x, 1])
 
 sol4 = sol(0.1, idxs=[lorenz1.x, lorenz2.x])
@@ -91,6 +93,8 @@ sol5 = sol(0.0:1.0:10.0, idxs=lorenz1.x)
 @test first(sol5.u) isa Real
 @test length(sol5.u) == 11
 @test length(sol5.t) == 11
+@test collect(sol5[t]) ≈ sol3.t
+@test collect(sol5[t, 1:5]) ≈ sol3.t[1:5]
 @test_throws ErrorException sol(0.0:1.0:10.0, idxs=1.2)
 
 sol6 = sol(0.1, idxs=lorenz1.x)
@@ -102,6 +106,8 @@ sol7 = sol(0.0:1.0:10.0, idxs=[2,1])
 @test first(sol7.u) isa Vector
 @test length(sol7.u) == 11
 @test length(sol7.t) == 11
+@test collect(sol3[t]) ≈ sol3.t
+@test collect(sol3[t, 1:5]) ≈ sol3.t[1:5]
 
 sol8 = sol(0.1, idxs=[2,1])
 @test sol8 isa Vector
