@@ -49,12 +49,8 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
       i = sym
   end
 
-  if i == nothing
-      if issymbollike(i) && Symbol(i) == getindepsym(A)
-        A.t
-      else
-        observed(A,sym,:)
-      end
+  if i === nothing     
+      observed(A,sym,:)
   else
       A[i,:]
   end
@@ -67,12 +63,8 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
         i = sym
     end
 
-    if i == nothing
-      if issymbollike(i) && Symbol(i) == getindepsym(A)
-        A.t[args...]
-      else
+    if i === nothing
         observed(A,sym,args...)
-      end
     else
         A[i,args...]
     end
