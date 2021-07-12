@@ -50,7 +50,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
   end
 
     indepsym = getindepsym(A)
-    if i === nothing     
+    if i == nothing     
       if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
           A.t
       else
@@ -69,7 +69,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
     end
 
     indepsym = getindepsym(A)
-    if i === nothing
+    if i == nothing
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t[args...]
         else
