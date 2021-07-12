@@ -106,8 +106,8 @@ sol7 = sol(0.0:1.0:10.0, idxs=[2,1])
 @test first(sol7.u) isa Vector
 @test length(sol7.u) == 11
 @test length(sol7.t) == 11
-@test collect(sol3[t]) ≈ sol3.t
-@test collect(sol3[t, 1:5]) ≈ sol3.t[1:5]
+@test collect(sol7[t]) ≈ sol3.t
+@test collect(sol7[t, 1:5]) ≈ sol3.t[1:5]
 
 sol8 = sol(0.1, idxs=[2,1])
 @test sol8 isa Vector
@@ -119,6 +119,8 @@ sol9 = sol(0.0:1.0:10.0, idxs=2)
 @test first(sol9.u) isa Real
 @test length(sol9.u) == 11
 @test length(sol9.t) == 11
+@test collect(sol9[t]) ≈ sol3.t
+@test collect(sol9[t, 1:5]) ≈ sol3.t[1:5]
 
 sol10 = sol(0.1, idxs=2)
 @test sol10 isa Real
