@@ -12,7 +12,7 @@ lorenz1 = ODESystem(eqs,name=:lorenz1)
 lorenz2 = ODESystem(eqs,name=:lorenz2)
 
 @parameters γ
-@variables a(t), α(t)
+@variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a*γ,
                α ~ 2lorenz1.x + a*γ]
 sys = ODESystem(connections,t,[a,α],[γ],systems=[lorenz1,lorenz2])
@@ -41,6 +41,9 @@ sol = solve(prob,Rodas4())
 @test sol[lorenz1.x] isa Vector
 @test sol[lorenz1.x,2] isa Float64
 @test sol[lorenz1.x,:] isa Vector
+@test sol[t] isa Vector
+@test sol[t,2] isa Float64
+@test sol[t,:] isa Vector
 @test length(sol[lorenz1.x,1:5]) == 5
 @test sol[α] isa Vector
 @test sol[α,3] isa Float64
@@ -53,6 +56,10 @@ interpolated_sol = sol(0.0:1.0:10.0)
 @test interpolated_sol[α,2] isa Float64
 @test length(interpolated_sol[α,1:5]) == 5
 @test interpolated_sol[α] ≈ 2interpolated_sol[lorenz1.x] .+ interpolated_sol[a].*2.0
+@test collect(interpolated_sol[t]) isa Vector
+@test collect(interpolated_sol[t,:]) isa Vector
+@test interpolated_sol[t,2] isa Float64
+@test length(interpolated_sol[t,1:5]) == 5
 
 
 sol1 = sol(0.0:1.0:10.0)
