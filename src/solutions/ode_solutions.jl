@@ -33,10 +33,18 @@ function (sol::ODESolution)(t::Real,deriv,idxs::AbstractVector{<:Integer},contin
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
 end
 function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::Integer,continuity)
-  sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+  A = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+  syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ? [sol.prob.f.syms[idxs]] : nothing
+  observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+  DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
 end
 function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::AbstractVector{<:Integer},continuity)
-  sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+  A = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+  syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ? sol.prob.f.syms[idxs] : nothing
+  observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+  DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
 end
 
 function (sol::ODESolution)(t::Real,deriv,idxs,continuity)
@@ -53,13 +61,17 @@ end
 function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs,continuity)
   issymbollike(idxs) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
-  DiffEqArray(interp_sol[idxs], t)
+  observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+  DiffEqArray(interp_sol[idxs], t, [idxs], getindepsym(sol), observed, p)
 end
 
 function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::AbstractVector,continuity)
   all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
-  DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t)
+  observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+  DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, idxs, getindepsym(sol), observed, p)
 end
 
 function build_solution(
