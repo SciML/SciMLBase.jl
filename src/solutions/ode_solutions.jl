@@ -34,14 +34,14 @@ function (sol::ODESolution)(t::Real,deriv,idxs::AbstractVector{<:Integer},contin
 end
 function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::Integer,continuity)
   A = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
-  syms = hasproperty(sol.prob.f, :syms) ? [sol.prob.f.syms[idxs]] : nothing
+  syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ? [sol.prob.f.syms[idxs]] : nothing
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
   p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
   DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
 end
 function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::AbstractVector{<:Integer},continuity)
   A = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
-  syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms[idxs] : nothing
+  syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ? sol.prob.f.syms[idxs] : nothing
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
   p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
   DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
