@@ -11,6 +11,7 @@ using StaticArrays
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
+import ZygoteRules, Zygote
 
 function __solve end
 function __init end
@@ -521,6 +522,7 @@ include("solutions/rode_solutions.jl")
 include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
 include("solutions/solution_interface.jl")
+include("solutions/zygote.jl")
 
 include("ensemble/ensemble_solutions.jl")
 include("ensemble/ensemble_problems.jl")
