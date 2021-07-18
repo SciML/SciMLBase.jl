@@ -7,11 +7,12 @@ using LinearAlgebra
 using Statistics
 using Distributed
 using StaticArrays
+using ZygoteRules: @adjoint
+using Zygote: pullback
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
-import ZygoteRules, Zygote
 
 function __solve end
 function __init end
