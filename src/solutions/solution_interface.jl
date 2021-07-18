@@ -1,6 +1,5 @@
 ### Abstract Interface
-struct AllObserved
-end
+const AllObserved = RecursiveArrayTools.AllObserved
 
 # No Time Solution : Forward to `A.u`
 Base.getindex(A::AbstractNoTimeSolution,i::Int) = A.u[i]
@@ -14,6 +13,14 @@ Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
 
 Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution) = (print(io,"u: ");show(io,m,A.u))
+
+# For augmenting system information to enable symbol based indexing of interpolated solutions
+function augment(A::DiffEqArray, sol::AbstractODESolution)
+  syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
+  observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+  DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
+end
 
 # Symbol Handling
 
@@ -42,11 +49,12 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
       i = sym
   end
 
-  if i == nothing
-      if issymbollike(i) && Symbol(i) == getindepsym(A)
-        A.t
+    indepsym = getindepsym(A)
+    if i === nothing     
+      if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+          A.t
       else
-        observed(A,sym,:)
+          observed(A,sym,:)
       end
   else
       A[i,:]
@@ -60,12 +68,13 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
         i = sym
     end
 
-    if i == nothing
-      if issymbollike(i) && Symbol(i) == getindepsym(A)
-        A.t[args...]
-      else
-        observed(A,sym,args...)
-      end
+    indepsym = getindepsym(A)
+    if i === nothing
+        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+            A.t[args...]
+        else
+            observed(A,sym,args...)
+        end
     else
         A[i,args...]
     end
@@ -169,10 +178,13 @@ DEFAULT_PLOT_FUNC(x,y,z) = (x,y,z) # For v0.5.2 bug
 
   # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
   if typeof(vars) <: Tuple && (issymbollike(vars[1]) && issymbollike(vars[2]))
-    xguide --> issymbollike(int_vars[1][2]) ? Symbol(int_vars[1][2]) : strs[int_vars[1][2]]
-    yguide --> issymbollike(int_vars[1][3]) ? Symbol(int_vars[1][3]) : strs[int_vars[1][3]]
+    val = issymbollike(int_vars[1][2]) ? String(Symbol(int_vars[1][2])) : strs[int_vars[1][2]]
+    xguide --> val
+    val = issymbollike(int_vars[1][3]) ? String(Symbol(int_vars[1][3])) : strs[int_vars[1][3]]
+    yguide --> val
     if length(vars) > 2
-      zguide --> issymbollike(int_vars[1][4]) ? Symbol(int_vars[1][4]) : strs[int_vars[1][4]]
+      val = issymbollike(int_vars[1][4]) ? String(Symbol(int_vars[1][4])) : strs[int_vars[1][4]]
+      zguide --> val
     end
   end
 
@@ -292,13 +304,7 @@ end
 
 sym_to_index(sym,sol::SciMLSolution) = sym_to_index(sym,getsyms(sol))
 sym_to_index(sym,syms) = findfirst(isequal(Symbol(sym)),syms)
-issymbollike(x) = x isa Symbol ||
-                  x isa AllObserved ||
-                  Symbol(parameterless_type(typeof(x))) == :Operation ||
-                  Symbol(parameterless_type(typeof(x))) == :Variable ||
-                  Symbol(parameterless_type(typeof(x))) == :Sym ||
-                  Symbol(parameterless_type(typeof(x))) == :Num ||
-                  Symbol(parameterless_type(typeof(x))) == :Term
+const issymbollike = RecursiveArrayTools.issymbollike
 
 function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_safety,vars,int_vars,tscale,strs)
   if tspan === nothing
@@ -344,7 +350,7 @@ function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_saf
     # Plot for sparse output: use the timeseries itself
     if sol.tslocation == 0
       plott = sol.t
-      plot_timeseries = DiffEqArray(sol.t, sol.u)
+      plot_timeseries = DiffEqArray(sol.u, sol.t)
       if plot_analytic
         plot_analytic_timeseries = sol.u_analytic
       else
@@ -357,7 +363,7 @@ function diffeq_to_arrays(sol,plot_analytic,denseplot,plotdensity,tspan,axis_saf
         plott = collect(densetspacer(tspan[1],tspan[2],plotdensity))
       end
 
-      plot_timeseries = DiffEqArray(sol.t[start_idx:end_idx], sol.u[start_idx:end_idx])
+      plot_timeseries = sol.u[start_idx:end_idx]
       if plot_analytic
         plot_analytic_timeseries = sol.u_analytic[start_idx:end_idx]
       else

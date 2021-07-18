@@ -1,7 +1,7 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
-version = "1.13.3"
+version = "1.18.0"
 
 [deps]
 ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
@@ -28,7 +28,7 @@ ConstructionBase = "1"
 DocStringExtensions = "0.8"
 IteratorInterfaceExtensions = "^0.1, ^1"
 RecipesBase = "0.7.0, 0.8, 1.0"
-RecursiveArrayTools = "2"
+RecursiveArrayTools = "2.14"
 StaticArrays = "0.11, 0.12, 1.0"
 Tables = "1"
 TreeViews = "0.3"
