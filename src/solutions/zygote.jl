@@ -3,7 +3,7 @@
         i = issymbollike(sym) ? sym_to_index(sym, VA) : sym
         if i === nothing
             getter = getobserved(VA)
-            grz = Zygote.pullback(getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
+            grz = pullback(getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
             du = [k == j ? grz[2] : zero(VA.u[1]) for k in 1:length(VA.u)] 
             dp = grz[3] # pullback for p
             dprob = remake(VA.prob, p = dp)
