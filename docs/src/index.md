@@ -153,6 +153,13 @@ all of the problem domains. Underlying high level ideas include:
 
 There are too many to name here and this will be populated when there is time!
 
+## Flowchart Example for PDE-Constrained Optimal Control
+
+The following example showcases how the pieces of the common interface connect to solve a problem
+that mixes inference, symbolics, and numerics.
+
+![](https://user-images.githubusercontent.com/1814174/126318252-1e4152df-e6e2-42a3-8669-f8608f81a095.png)
+
 ## External Binding Libraries
 
 - [diffeqr](https://github.com/SciML/diffeqr)
