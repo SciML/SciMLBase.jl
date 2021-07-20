@@ -38,6 +38,24 @@ tspan = (0.0,100.0)
 prob = ODEProblem(sys_simplified,u0,tspan,p)
 sol = solve(prob,Rodas4())
 
+@test_throws UndefVarError sol[b]
+@test_throws UndefVarError sol[b, 1]
+@test_throws UndefVarError sol[b, 1:5]
+@test_throws UndefVarError sol[b, [1,2,3]]
+@test_throws ErrorException sol['a']
+@test_throws ErrorException sol['a',  1]
+@test_throws ErrorException sol['a',  1:5]
+@test_throws ErrorException sol['a',  [1,2,3]]
+
+@test sol[a] isa AbstractVector
+@test sol[a,  1] isa Real
+@test sol[a,  1:5] isa AbstractVector
+@test sol[a,  [1,2,3]] isa AbstractVector
+
+@test sol[1] isa AbstractVector
+@test sol[1:2] isa AbstractArray
+@test sol[[1,2]] isa AbstractArray
+
 @test sol[lorenz1.x] isa Vector
 @test sol[lorenz1.x,2] isa Float64
 @test sol[lorenz1.x,:] isa Vector

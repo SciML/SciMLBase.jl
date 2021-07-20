@@ -49,15 +49,17 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
       i = sym
   end
 
-    indepsym = getindepsym(A)
-    if i === nothing     
+  indepsym = getindepsym(A)
+  if i === nothing     
       if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
           A.t
       else
           observed(A,sym,:)
       end
-  else
+  elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
       A[i,:]
+  else
+      error("Invalid indexing of solution")
   end
 end
 
@@ -75,8 +77,10 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sy
         else
             observed(A,sym,args...)
         end
-    else
+    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
         A[i,args...]
+    else
+        error("Invalid indexing of solution")
     end
 end
 
@@ -424,7 +428,7 @@ function interpret_vars(vars,sol,syms)
     end
   end
 
-  if typeof(vars) <: Integer
+  if typeof(vars) <: Base.Integer
     vars = [(DEFAULT_PLOT_FUNC,0, vars)]
   end
 
