@@ -1,27 +1,39 @@
 # Skip the DiffEqBase handling
+struct InverseScale{T}
+    scale::T
+end
+
+(inv_scale::InverseScale)(x, compute_inverse::Bool = false) =
+    compute_inverse ? x .* inv_scale.scale : x ./ inv_scale.scale
+
 function solve(prob::OptimizationProblem, opt, args...;
-               scale::Bool = false,
-               scaling_functions::Union{Nothing, Tuple{Function, Function}} = nothing,
-               cb = (args...) -> (false),
-               kwargs...)
+               scale::Bool = false, scaling_function = nothing,
+               cb = (args...) -> (false), kwargs...)
     !scale && return __solve(prob, opt, args...; kwargs...)
 
     θ_start = copy(prob.u0)
-    
-    scale_function, inv_scale_function =
-        isnothing(scaling_functions) ? (x -> x ./ θ_start, x -> x .* θ_start) : scaling_functions
 
-    if isnothing(scaling_functions) && any(iszero.(θ_start))
+    if isnothing(scaling_function) && any(iszero.(θ_start))
         error("Default Inverse Scaling is not compatible with `0` as initial guess")
     end
 
-    normalized_f(α, args...) = prob.f.f(inv_scale_function(α), args...)
-    normalized_cb(α, args...) = cb(inv_scale_function(α), args...)
+    scaling_function = if isnothing(scaling_function)
+            InverseScale(θ_start)
+        else
+            # Check if arguments are compatible
+            # First arg is the parameter
+            # 2nd one denotes inverse computation or not
+            scaling_function(θ_start, false)
+            scaling_function
+        end
 
-    lb = isnothing(prob.lb) ? nothing : scale_function(prob.lb)
-    ub = isnothing(prob.ub) ? nothing : scale_function(prob.ub)
+    normalized_f(α, args...) = prob.f.f(scaling_function(α, true), args...)
+    normalized_cb(α, args...) = cb(scaling_function(α, true), args...)
 
-    _prob = remake(prob, u0 = scale_function(prob.u0), lb = lb,
+    lb = isnothing(prob.lb) ? nothing : scaling_function(prob.lb, false)
+    ub = isnothing(prob.ub) ? nothing : scaling_function(prob.ub, false)
+
+    _prob = remake(prob, u0 = scaling_function(prob.u0, false), lb = lb,
                    ub = ub,
                    f = OptimizationFunction(normalized_f, prob.f.adtype,
                                             grad = prob.f.grad, hess = prob.f.hess,
@@ -29,6 +41,6 @@ function solve(prob::OptimizationProblem, opt, args...;
                                             cons_j = prob.f.cons_j, cons_h = prob.f.cons_h))
 
     optsol = solve(_prob, opt, args...; cb = normalized_cb, kwargs...)
-    optsol.u .= inv_scale_function(optsol.u)
+    optsol.u .= scaling_function(optsol.u, true)
     optsol
 end
