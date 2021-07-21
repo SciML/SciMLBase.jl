@@ -135,9 +135,17 @@ function __solve(prob::AbstractEnsembleProblem,
 
 end
 
-function batch_func(i,prob,alg;kwargs...)
+function batch_func(i,prob,alg,ensemblealg;kwargs...)
   iter = 1
-  _prob = prob.safetycopy ? deepcopy(prob.prob) : prob.prob
+
+  # if running in serial or on one thread we disable safetycopy as a default
+  if prob.safetycopy === nothing
+    safetycopy = ((Threads.nthreads() == 1) || (ensemblealg isa EnsembleSerial)) ? false : DEFAULT_SAFETYCOPY(prob.prob_func)
+  else 
+    safetycopy = prob.safetycopy
+  end
+
+  _prob = safetycopy ? deepcopy(prob.prob) : prob.prob
   new_prob = prob.prob_func(_prob,i,iter)
   rerun = true
   x = prob.output_func(solve(new_prob,alg;kwargs...),i)
@@ -150,7 +158,7 @@ function batch_func(i,prob,alg;kwargs...)
   rerun = _x[2]
   while rerun
       iter += 1
-      _prob = prob.safetycopy ? deepcopy(prob.prob) : prob.prob
+      _prob = safetycopy ? deepcopy(prob.prob) : prob.prob
       new_prob = prob.prob_func(_prob,i,iter)
       x = prob.output_func(solve(new_prob,alg;kwargs...),i)
       if !(typeof(x) <: Tuple)
@@ -176,7 +184,7 @@ function solve_batch(prob,alg,ensemblealg::EnsembleDistributed,II,pmap_batch_siz
   =#
 
   batch_data = pmap(wp,II,batch_size=pmap_batch_size) do i
-    batch_func(i,prob,alg;kwargs...)
+    batch_func(i,prob,alg,ensemblealg;kwargs...)
   end
 
   tighten_container_eltype(batch_data)
@@ -190,9 +198,9 @@ function responsible_map(f,II...)
   batch_data
 end
 
-function SciMLBase.solve_batch(prob,alg,::EnsembleSerial,II,pmap_batch_size;kwargs...)
+function SciMLBase.solve_batch(prob,alg,ensemblealg::EnsembleSerial,II,pmap_batch_size;kwargs...)
   batch_data = responsible_map(II) do i
-    SciMLBase.batch_func(i,prob,alg;kwargs...)
+    SciMLBase.batch_func(i,prob,alg,ensemblealg;kwargs...)
   end
   SciMLBase.tighten_container_eltype(batch_data)
 end
@@ -210,7 +218,7 @@ function solve_batch(prob,alg,ensemblealg::EnsembleThreads,II,pmap_batch_size;kw
   end
   
   batch_data = tmap(II) do i
-    batch_func(i,prob,alg;kwargs...)
+    batch_func(i,prob,alg,ensemblealg;kwargs...)
   end
   tighten_container_eltype(batch_data)
 end
