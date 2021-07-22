@@ -119,7 +119,7 @@ end
 """
 $(TYPEDEF)
 """
-struct OptimizationProblem{iip,F,uType,P,B,LC,UC,K} <: AbstractOptimizationProblem{isinplace}
+struct OptimizationProblem{iip,F,uType,P,B,LC,UC,S,K} <: AbstractOptimizationProblem{isinplace}
     f::F
     u0::uType
     p::P
@@ -127,14 +127,15 @@ struct OptimizationProblem{iip,F,uType,P,B,LC,UC,K} <: AbstractOptimizationProbl
     ub::B
     lcons::LC
     ucons::UC
+    sense::S
     kwargs::K
     @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0, p=NullParameters();
                                                   lb = nothing, ub = nothing,
                                                   lcons = nothing, ucons = nothing,
-                                                  kwargs...) where iip
+                                                  sense = nothing, kwargs...) where iip
         new{iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(lcons), typeof(ucons),
-            typeof(kwargs)}(f, u0, p, lb, ub, lcons, ucons, kwargs)
+            typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, lcons, ucons, sense, kwargs)
     end
 end
 
