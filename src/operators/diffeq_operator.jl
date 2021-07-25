@@ -1,7 +1,7 @@
 """
 AffineDiffEqOperator{T} <: AbstractDiffEqOperator{T}
 
-`Ex: (A₁(t) + ... + Aₙ(t))*u + B₁(t) + ... + Bₙ(t)`
+`Ex: (A₁(t) + ... + Aₙ(t))*u + B₁(t) + ... + Bₘ(t)`
 
 AffineDiffEqOperator{T}(As,Bs,du_cache=nothing)
 
