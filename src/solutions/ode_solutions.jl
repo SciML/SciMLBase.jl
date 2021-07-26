@@ -75,6 +75,10 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::AbstractVector
   DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, idxs, getindepsym(sol), observed, p)
 end
 
+function interpolation_residual(sol::ODESolution, t)
+  sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
+end
+
 function build_solution(
         prob::Union{AbstractODEProblem,AbstractDDEProblem},
         alg,t,u;timeseries_errors=length(u)>2,
@@ -93,7 +97,6 @@ function build_solution(
     f = prob.f
   end
 
-  residual(t) = interp(t,Val{1}) - f(interp(t), prob.p, t)
   if has_analytic(f)
     u_analytic = Vector{typeof(prob.u0)}()
     errors = Dict{Symbol,real(eltype(prob.u0))}()
@@ -144,33 +147,29 @@ function calculate_solution_errors!(sol::AbstractODESolution;fill_uanalytic=true
 end
 
 function build_solution(sol::AbstractODESolution{T,N},u_analytic,errors) where {T,N}
-  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(u_analytic),typeof(errors),typeof(sol.t),typeof(sol.k),
                      typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
                      sol.u,u_analytic,errors,sol.t,sol.k,sol.prob,
-                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,sol.retcode,residual)
+                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,sol.retcode)
 end
 
 function solution_new_retcode(sol::AbstractODESolution{T,N},retcode) where {T,N}
-  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(sol.u_analytic),typeof(sol.errors),
                      typeof(sol.t),typeof(sol.k),
                      typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
                      sol.u,sol.u_analytic,sol.errors,sol.t,sol.k,sol.prob,
-                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,retcode,residual)
+                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,retcode)
  end
 
 function solution_new_tslocation(sol::AbstractODESolution{T,N},tslocation) where {T,N}
-  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(sol.u_analytic),typeof(sol.errors),
                     typeof(sol.t),typeof(sol.k),
                     typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
                     sol.u,sol.u_analytic,sol.errors,sol.t,sol.k,sol.prob,
-                    sol.alg,sol.interp,sol.dense,tslocation,sol.destats,sol.retcode,residual)
+                    sol.alg,sol.interp,sol.dense,tslocation,sol.destats,sol.retcode)
 end
 
 function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
-  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(sol.u_analytic),typeof(sol.errors),
                      typeof(sol.t),typeof(sol.k),
                      typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
@@ -179,7 +178,7 @@ function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
                      sol.errors,sol.t[I],
                      sol.dense ? sol.k[I] : sol.k,
                      sol.prob,
-                     sol.alg,sol.interp,false,sol.tslocation,sol.destats,sol.retcode,residual)
+                     sol.alg,sol.interp,false,sol.tslocation,sol.destats,sol.retcode)
  end
 
  function sensitivity_solution(sol::AbstractODESolution,u,t)
@@ -193,12 +192,11 @@ function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
      SensitivityInterpolation(t,u)
    end
 
-   residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
    ODESolution{T,N,typeof(u),typeof(sol.u_analytic),typeof(sol.errors),
                typeof(t),Nothing,typeof(sol.prob),typeof(sol.alg),
                typeof(interp),typeof(sol.destats)}(
                u,sol.u_analytic,sol.errors,t,nothing,sol.prob,
                sol.alg,interp,
                sol.dense,sol.tslocation,
-               sol.destats,sol.retcode,residual)
+               sol.destats,sol.retcode)
  end
