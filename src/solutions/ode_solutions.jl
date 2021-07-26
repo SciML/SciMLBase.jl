@@ -14,6 +14,7 @@ struct ODESolution{T,N,uType,uType2,DType,tType,rateType,P,A,IType,DE} <: Abstra
   tslocation::Int
   destats::DE
   retcode::Symbol
+  residual::Function
 end
 (sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol(t,deriv,idxs,continuity)
 (sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
@@ -92,12 +93,13 @@ function build_solution(
     f = prob.f
   end
 
+  residual(t) = interp(t,Val{1}) - f(interp(t), prob.p, t)
   if has_analytic(f)
     u_analytic = Vector{typeof(prob.u0)}()
     errors = Dict{Symbol,real(eltype(prob.u0))}()
     sol = ODESolution{T,N,typeof(u),typeof(u_analytic),typeof(errors),typeof(t),typeof(k),
                       typeof(prob),typeof(alg),typeof(interp),typeof(destats)}(u,u_analytic,
-                       errors,t,k,prob,alg,interp,dense,0,destats,retcode)
+                       errors,t,k,prob,alg,interp,dense,0,destats,retcode,residual)
     if calculate_error
       calculate_solution_errors!(sol;timeseries_errors=timeseries_errors,dense_errors=dense_errors)
     end
@@ -105,7 +107,7 @@ function build_solution(
   else
     return ODESolution{T,N,typeof(u),Nothing,Nothing,typeof(t),typeof(k),
                        typeof(prob),typeof(alg),typeof(interp),typeof(destats)}(u,nothing,nothing,
-                       t,k,prob,alg,interp,dense,0,destats,retcode)
+                       t,k,prob,alg,interp,dense,0,destats,retcode,residual)
   end
 end
 
@@ -142,29 +144,33 @@ function calculate_solution_errors!(sol::AbstractODESolution;fill_uanalytic=true
 end
 
 function build_solution(sol::AbstractODESolution{T,N},u_analytic,errors) where {T,N}
+  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(u_analytic),typeof(errors),typeof(sol.t),typeof(sol.k),
                      typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
                      sol.u,u_analytic,errors,sol.t,sol.k,sol.prob,
-                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,sol.retcode)
+                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,sol.retcode,residual)
 end
 
 function solution_new_retcode(sol::AbstractODESolution{T,N},retcode) where {T,N}
+  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(sol.u_analytic),typeof(sol.errors),
                      typeof(sol.t),typeof(sol.k),
                      typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
                      sol.u,sol.u_analytic,sol.errors,sol.t,sol.k,sol.prob,
-                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,retcode)
+                     sol.alg,sol.interp,sol.dense,sol.tslocation,sol.destats,retcode,residual)
  end
 
 function solution_new_tslocation(sol::AbstractODESolution{T,N},tslocation) where {T,N}
+  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(sol.u_analytic),typeof(sol.errors),
                     typeof(sol.t),typeof(sol.k),
                     typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
                     sol.u,sol.u_analytic,sol.errors,sol.t,sol.k,sol.prob,
-                    sol.alg,sol.interp,sol.dense,tslocation,sol.destats,sol.retcode)
+                    sol.alg,sol.interp,sol.dense,tslocation,sol.destats,sol.retcode,residual)
 end
 
 function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
+  residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
   ODESolution{T,N,typeof(sol.u),typeof(sol.u_analytic),typeof(sol.errors),
                      typeof(sol.t),typeof(sol.k),
                      typeof(sol.prob),typeof(sol.alg),typeof(sol.interp),typeof(sol.destats)}(
@@ -173,7 +179,7 @@ function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
                      sol.errors,sol.t[I],
                      sol.dense ? sol.k[I] : sol.k,
                      sol.prob,
-                     sol.alg,sol.interp,false,sol.tslocation,sol.destats,sol.retcode)
+                     sol.alg,sol.interp,false,sol.tslocation,sol.destats,sol.retcode,residual)
  end
 
  function sensitivity_solution(sol::AbstractODESolution,u,t)
@@ -187,11 +193,12 @@ function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
      SensitivityInterpolation(t,u)
    end
 
+   residual(t) = sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
    ODESolution{T,N,typeof(u),typeof(sol.u_analytic),typeof(sol.errors),
                typeof(t),Nothing,typeof(sol.prob),typeof(sol.alg),
                typeof(interp),typeof(sol.destats)}(
                u,sol.u_analytic,sol.errors,t,nothing,sol.prob,
                sol.alg,interp,
                sol.dense,sol.tslocation,
-               sol.destats,sol.retcode)
+               sol.destats,sol.retcode,residual)
  end
