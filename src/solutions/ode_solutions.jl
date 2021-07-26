@@ -78,6 +78,40 @@ function interpolation_residual(sol::AbstractODESolution, t)
   sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
 end
 
+function max_residual_estimate(sol::AbstractODESolution)
+  max_res = 0
+  for i in 1:length(sol.t)
+    tᵢ = sol.t[i]
+    uᵢ = sol.u[i]
+    abs_res = abs(sol(tᵢ,Val{1}) - sol.prob.f(uᵢ, sol.prob.p, tᵢ))
+    if abs_res > max_res
+      max_res = abs_res
+    end
+  end
+
+  for i in 1:length(sol.t)-1
+    tᵢ = sol.t[i]
+    tᵢ₊₁ = sol.t[i+1]
+    Δᵢ = tᵢ₊₁ - tᵢ
+    t = tᵢ + Δᵢ/4
+    abs_res = abs(sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t))
+    if abs_res > max_res
+      max_res = abs_res
+    end
+    t = tᵢ + Δᵢ/2
+    abs_res = abs(sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t))
+    if abs_res > max_res
+      max_res = abs_res
+    end
+    t = tᵢ + 3Δᵢ/4
+    abs_res = abs(sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t))
+    if abs_res > max_res
+      max_res = abs_res
+    end
+  end
+  max_res
+end
+
 function build_solution(
         prob::Union{AbstractODEProblem,AbstractDDEProblem},
         alg,t,u;timeseries_errors=length(u)>2,
