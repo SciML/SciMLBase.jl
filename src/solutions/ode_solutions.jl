@@ -74,7 +74,7 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::AbstractVector
   DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, idxs, getindepsym(sol), observed, p)
 end
 
-function interpolation_residual(sol::ODESolution, t)
+function interpolation_residual(sol::AbstractODESolution, t)
   sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
 end
 
