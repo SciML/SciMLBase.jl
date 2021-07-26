@@ -14,7 +14,6 @@ struct ODESolution{T,N,uType,uType2,DType,tType,rateType,P,A,IType,DE} <: Abstra
   tslocation::Int
   destats::DE
   retcode::Symbol
-  residual::Function
 end
 (sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol(t,deriv,idxs,continuity)
 (sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
@@ -102,7 +101,7 @@ function build_solution(
     errors = Dict{Symbol,real(eltype(prob.u0))}()
     sol = ODESolution{T,N,typeof(u),typeof(u_analytic),typeof(errors),typeof(t),typeof(k),
                       typeof(prob),typeof(alg),typeof(interp),typeof(destats)}(u,u_analytic,
-                       errors,t,k,prob,alg,interp,dense,0,destats,retcode,residual)
+                       errors,t,k,prob,alg,interp,dense,0,destats,retcode)
     if calculate_error
       calculate_solution_errors!(sol;timeseries_errors=timeseries_errors,dense_errors=dense_errors)
     end
@@ -110,7 +109,7 @@ function build_solution(
   else
     return ODESolution{T,N,typeof(u),Nothing,Nothing,typeof(t),typeof(k),
                        typeof(prob),typeof(alg),typeof(interp),typeof(destats)}(u,nothing,nothing,
-                       t,k,prob,alg,interp,dense,0,destats,retcode,residual)
+                       t,k,prob,alg,interp,dense,0,destats,retcode)
   end
 end
 
