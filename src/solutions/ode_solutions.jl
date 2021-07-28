@@ -74,16 +74,35 @@ function (sol::ODESolution)(t::AbstractVector{<:Real},deriv,idxs::AbstractVector
   DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, idxs, getindepsym(sol), observed, p)
 end
 
-function interpolation_residual(sol::AbstractODESolution, t)
-  sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t)
+function residual(sol::AbstractODESolution, t)
+  f = sol.prob.f
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+  if isinplace(f)
+    if f.cache === nothing
+      # Actually I feel like this should be 'similar(sol.prob.f(du,u,p,t))', but
+      # to call it, I need the type of du!
+      cache = similar(sol.u)
+      f(cache, sol(t), p, t)
+      return sol(t,Val{1}) - cache
+    else
+      f(f.cache, sol(t), p, t)
+      return sol(t,Val{1}) - cache
+    end
+  end
+  sol(t,Val{1}) - f(sol(t), p, t)
 end
 
 function max_residual_estimate(sol::AbstractODESolution)
+  f = sol.prob.f
+  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
   max_res = 0
   for i in 1:length(sol.t)
     tᵢ = sol.t[i]
     uᵢ = sol.u[i]
-    abs_res = abs(sol(tᵢ,Val{1}) - sol.prob.f(uᵢ, sol.prob.p, tᵢ))
+    u̇ᵢ = sol(tᵢ,Val{1})
+    # For vector valued ODEs, does abs = sup-norm?
+    # If not, we need something like abs_ = norm
+    abs_res = abs(u̇ᵢ - f(uᵢ, p, tᵢ))
     if abs_res > max_res
       max_res = abs_res
     end
@@ -94,17 +113,23 @@ function max_residual_estimate(sol::AbstractODESolution)
     tᵢ₊₁ = sol.t[i+1]
     Δᵢ = tᵢ₊₁ - tᵢ
     t = tᵢ + Δᵢ/4
-    abs_res = abs(sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t))
+    u = sol(t)
+    u̇ = sol(t,Val{1})
+    abs_res = abs(u̇ - f(u, p, t))
     if abs_res > max_res
       max_res = abs_res
     end
     t = tᵢ + Δᵢ/2
-    abs_res = abs(sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t))
+    u = sol(t)
+    u̇ = sol(t,Val{1})
+    abs_res = abs(u̇ - f(u, p, t))
     if abs_res > max_res
       max_res = abs_res
     end
     t = tᵢ + 3Δᵢ/4
-    abs_res = abs(sol(t,Val{1}) - sol.prob.f(sol(t), sol.prob.p, t))
+    u = sol(t)
+    u̇ = sol(t,Val{1})
+    abs_res = abs(u̇ - f(u, p, t))
     if abs_res > max_res
       max_res = abs_res
     end
