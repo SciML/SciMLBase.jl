@@ -543,7 +543,7 @@ function unwrap_fw end
 
 export isinplace
 
-export solve, solve!, init, discretize, symbolic_discretize
+export solve, solve!, init, discretize, symbolic_discretize, max_residual_estimate
 
 export LinearProblem, NonlinearProblem, QuadratureProblem, OptimizationProblem
 
