@@ -15,8 +15,11 @@
                               VA.dense, 0, nothing, VA.retcode)
             (Δ′, nothing, nothing)
         else
-            Δ′ = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] : zero(VA.u[1]) for m in 1:length(VA.u)]
-            (Δ′, nothing, nothing)
+            du = [ m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] : zero(VA.u[1]) for m in 1:length(VA.u)]
+            dp = zero(VA.prob.p)
+            dprob = remake(VA.prob,p=dp)
+            Δ′ = ODESolution{T,N,typeof(du),Nothing,Nothing,typeof(VA.t),typeof(VA.k), typeof(dprob),typeof(VA.alg),typeof(VA.interp),typeof(VA.destats)}(du,nothing,nothing,VA.t,VA.k,dprob,VA.alg,VA.interp,VA.dense,0,VA.destats,VA.retcode)
+            (Δ′,nothing,nothing)
         end
     end
     VA[sym, j], ODESolution_getindex_pullback
