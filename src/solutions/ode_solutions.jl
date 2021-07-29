@@ -1,3 +1,6 @@
+# for norm in max_residual_estimate:
+using LinearAlgebra
+
 """
 $(TYPEDEF)
 """
@@ -77,34 +80,23 @@ end
 function residual(sol::AbstractODESolution, t)
   f = sol.prob.f
   p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-  if isinplace(f)
-    if f.cache === nothing
-      # Actually I feel like this should be 'similar(sol.prob.f(du,u,p,t))', but
-      # to call it, I need the type of du!
-      cache = similar(sol.u)
-      f(cache, sol(t), p, t)
-      return sol(t,Val{1}) - cache
-    else
-      f(f.cache, sol(t), p, t)
-      return sol(t,Val{1}) - cache
-    end
-  end
-  u̇ = sol(t,Val{1})
   u = sol(t)
+  u̇ = sol(t,Val{1})
+  if isinplace(f)
+    cache = similar(u̇)
+    f(cache, u, p, t)
+    return u̇ - cache
+  end
   u̇ - f(u, p, t)
 end
 
 function max_residual_estimate(sol::AbstractODESolution)
-  f = sol.prob.f
-  p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
   max_res = 0
   for i in 1:length(sol.t)
     tᵢ = sol.t[i]
-    uᵢ = sol.u[i]
-    u̇ᵢ = sol(tᵢ,Val{1})
-    # For vector valued ODEs, does abs = sup-norm?
-    # If not, we need something like abs_ = norm
-    abs_res = abs(u̇ᵢ - f(uᵢ, p, tᵢ))
+    # For vector valued ODEs, we need norm(residual(sol,t), Inf)
+    # If not, norm(Float64, Inf) is still fine: It just does what abs does.
+    abs_res = norm(residual(sol,tᵢ), Inf)
     if abs_res > max_res
       max_res = abs_res
     end
@@ -115,23 +107,17 @@ function max_residual_estimate(sol::AbstractODESolution)
     tᵢ₊₁ = sol.t[i+1]
     Δᵢ = tᵢ₊₁ - tᵢ
     t = tᵢ + Δᵢ/4
-    u = sol(t)
-    u̇ = sol(t,Val{1})
-    abs_res = abs(u̇ - f(u, p, t))
+    abs_res = norm(residual(sol,t), Inf)
     if abs_res > max_res
       max_res = abs_res
     end
     t = tᵢ + Δᵢ/2
-    u = sol(t)
-    u̇ = sol(t,Val{1})
-    abs_res = abs(u̇ - f(u, p, t))
+    abs_res = norm(residual(sol,t), Inf)
     if abs_res > max_res
       max_res = abs_res
     end
     t = tᵢ + 3Δᵢ/4
-    u = sol(t)
-    u̇ = sol(t,Val{1})
-    abs_res = abs(u̇ - f(u, p, t))
+    abs_res = norm(residual(sol,t), Inf)
     if abs_res > max_res
       max_res = abs_res
     end
