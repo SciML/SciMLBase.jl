@@ -89,7 +89,9 @@ function residual(sol::AbstractODESolution, t)
       return sol(t,Val{1}) - cache
     end
   end
-  sol(t,Val{1}) - f(sol(t), p, t)
+  u̇ = sol(t,Val{1})
+  u = sol(t)
+  u̇ - f(u, p, t)
 end
 
 function max_residual_estimate(sol::AbstractODESolution)
