@@ -40,8 +40,8 @@ function remake(prob::ODEProblem; f=missing,
                                   kwargs...)
   if f === missing
     f = prob.f
-  elseif !isrecompile(thing)
-    if isinplace(thing)
+  elseif !isrecompile(prob)
+    if isinplace(prob)
       f = wrapfun_iip(unwrap_fw(f),(u0,u0,p,tspan[1]))
     else
       f = wrapfun_oop(unwrap_fw(f),(u0,p,tspan[1]))
