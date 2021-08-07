@@ -8,14 +8,14 @@ eqs = [D(x) ~ σ*(y-x),
        D(y) ~ x*(ρ-z)-y,
        D(z) ~ x*y - β*z]
 
-lorenz1 = ODESystem(eqs,name=:lorenz1)
-lorenz2 = ODESystem(eqs,name=:lorenz2)
+@named lorenz1 = ODESystem(eqs)
+@named lorenz2 = ODESystem(eqs)
 
 @parameters γ
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a*γ,
                α ~ 2lorenz1.x + a*γ]
-sys = ODESystem(connections,t,[a,α],[γ],systems=[lorenz1,lorenz2])
+@named sys = ODESystem(connections,t,[a,α],[γ],systems=[lorenz1,lorenz2])
 sys_simplified = structural_simplify(sys)
 
 u0 = [lorenz1.x => 1.0,
