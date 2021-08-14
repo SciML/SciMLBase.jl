@@ -93,7 +93,7 @@ QuadratureProblem(f,lb,ub,args...;kwargs...) = QuadratureProblem{isinplace(f, 3)
 
 struct NoAD <: AbstractADType end
 
-struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH} <: AbstractOptimizationFunction
+struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH} <: AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G

@@ -467,7 +467,7 @@ $(TYPEDEF)
 
 Base for types defining optimization functions.
 """
-abstract type AbstractOptimizationFunction end
+abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
