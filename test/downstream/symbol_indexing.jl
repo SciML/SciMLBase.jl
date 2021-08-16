@@ -42,10 +42,10 @@ sol = solve(prob,Rodas4())
 @test_throws UndefVarError sol[b, 1]
 @test_throws UndefVarError sol[b, 1:5]
 @test_throws UndefVarError sol[b, [1,2,3]]
-@test_throws ErrorException sol['a']
-@test_throws ErrorException sol['a',  1]
-@test_throws ErrorException sol['a',  1:5]
-@test_throws ErrorException sol['a',  [1,2,3]]
+@test_throws Any sol['a']
+@test_throws Any sol['a',  1]
+@test_throws Any sol['a',  1:5]
+@test_throws Any sol['a',  [1,2,3]]
 
 @test sol[a] isa AbstractVector
 @test sol[a,  1] isa Real
@@ -98,13 +98,13 @@ sol3 = sol(0.0:1.0:10.0, idxs=[lorenz1.x, lorenz2.x])
 @test length(sol3.t) == 11
 @test collect(sol3[t]) ≈ sol3.t
 @test collect(sol3[t, 1:5]) ≈ sol3.t[1:5]
-@test_throws ErrorException sol(0.0:1.0:10.0, idxs=[lorenz1.x, 1])
+@test_throws Any sol(0.0:1.0:10.0, idxs=[lorenz1.x, 1])
 
 sol4 = sol(0.1, idxs=[lorenz1.x, lorenz2.x])
 @test sol4 isa Vector
 @test length(sol4) == 2
 @test first(sol4) isa Real
-@test_throws ErrorException sol(0.1, idxs=[lorenz1.x, 1])
+@test_throws Any sol(0.1, idxs=[lorenz1.x, 1])
 
 sol5 = sol(0.0:1.0:10.0, idxs=lorenz1.x)
 @test sol5.u isa Vector
@@ -113,11 +113,11 @@ sol5 = sol(0.0:1.0:10.0, idxs=lorenz1.x)
 @test length(sol5.t) == 11
 @test collect(sol5[t]) ≈ sol3.t
 @test collect(sol5[t, 1:5]) ≈ sol3.t[1:5]
-@test_throws ErrorException sol(0.0:1.0:10.0, idxs=1.2)
+@test_throws Any sol(0.0:1.0:10.0, idxs=1.2)
 
 sol6 = sol(0.1, idxs=lorenz1.x)
 @test sol6 isa Real
-@test_throws ErrorException sol(0.1, idxs=1.2)
+@test_throws Any sol(0.1, idxs=1.2)
 
 sol7 = sol(0.0:1.0:10.0, idxs=[2,1])
 @test sol7.u isa Vector
