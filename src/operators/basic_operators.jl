@@ -115,6 +115,7 @@ Base.copyto!(L::DiffEqArrayOperator, rhs::Base.Broadcast.Broadcasted{<:StaticArr
 Base.Broadcast.broadcastable(L::DiffEqArrayOperator) = L
 Base.ndims(::Type{<:DiffEqArrayOperator{T,AType}}) where {T,AType} = ndims(AType)
 ArrayInterface.issingular(L::DiffEqArrayOperator) = ArrayInterface.issingular(L.A)
+Base.copy(L::DiffEqArrayOperator) = DiffEqArrayOperator(copy(L.A);update_func=L.update_func)
 
 """
     FactorizedDiffEqArrayOperator(F)
