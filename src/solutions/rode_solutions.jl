@@ -18,8 +18,8 @@ struct RODESolution{T,N,uType,uType2,DType,tType,randType,P,A,IType,DE} <: Abstr
   retcode::Symbol
   seed::UInt64
 end
-(sol::RODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
-(sol::RODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
+(sol::RODESolution)(t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
+(sol::RODESolution)(v,t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
 
 function build_solution(
         prob::Union{AbstractRODEProblem,AbstractSDDEProblem},

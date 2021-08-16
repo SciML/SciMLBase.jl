@@ -15,8 +15,8 @@ struct ODESolution{T,N,uType,uType2,DType,tType,rateType,P,A,IType,DE} <: Abstra
   destats::DE
   retcode::Symbol
 end
-(sol::ODESolution)(t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol(t,deriv,idxs,continuity)
-(sol::ODESolution)(v,t,deriv::Type=Val{0};idxs=nothing,continuity=:left) = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
+(sol::ODESolution)(t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol(t,deriv,idxs,continuity)
+(sol::ODESolution)(v,t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
 
 function (sol::ODESolution)(t::Real,deriv,idxs::Nothing,continuity)
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
