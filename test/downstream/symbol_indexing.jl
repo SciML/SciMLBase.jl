@@ -152,3 +152,18 @@ plot(sol,vars=(lorenz2.x,α))
 plot(sol,vars=α)
 plot(sol,vars=(t,α))
 =#
+
+using LinearAlgebra
+@variables t
+sts = @variables x[1:3](t)=[1,2,3.0] y(t)=1.0
+ps = @parameters p[1:3] = [1, 2, 3]
+D = Differential(t)
+eqs = [
+       collect(D.(x) .~ x)
+       D(y) ~ norm(x)*y - x[1]
+      ]
+@named sys = ODESystem(eqs, t, [sts...;], [ps...;])
+prob = ODEProblem(sys, [], (0, 1.0))
+sol = solve(prob, Tsit5())
+sol[x] isa Vector{<:Vector}
+sol[@nonamespace sys.x] isa Vector{<:Vector}
