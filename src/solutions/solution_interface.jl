@@ -43,14 +43,17 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,sym)
-  if issymbollike(sym)
+  if issymbollike(sym) || all(issymbollike, sym)
+      if sym isa AbstractArray
+          return map(s->A[s], collect(sym))
+      end
       i = sym_to_index(sym,A)
   else
       i = sym
   end
 
   indepsym = getindepsym(A)
-  if i === nothing     
+  if i === nothing
       if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
           A.t
       else
