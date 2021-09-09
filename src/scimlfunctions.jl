@@ -979,6 +979,7 @@ function DAEFunction{iip,false}(f;
 
                  DAEFunction{iip,Any,Any,Any,
                  Any,Any,Any,Any,Any,
+                 Any,Any,
                  Any,typeof(syms),typeof(_colorvec)}(
                  f,analytic,tgrad,jac,jvp,vjp,jac_prototype,sparsity,Wfact,Wfact_t,
                  paramjac,syms,_colorvec)
