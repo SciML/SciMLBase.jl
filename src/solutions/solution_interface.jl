@@ -29,7 +29,8 @@ for T in [Int, Colon]
     @eval Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, I::$T) = A.u[I]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                I::Union{Int,AbstractArray{Int},CartesianIndex,Colon,BitArray,AbstractArray{Bool}}...)
+                                                I::Union{Int,AbstractArray{Int},CartesianIndex,Colon,BitArray,AbstractArray{Bool},
+                                                FillArrays.Ones{Bool, N, Tuple{Vararg{Base.OneTo{Int}, N}}}}...) where N
   RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 Base.@propagate_inbounds Base.getindex(A::AbstractTimeseriesSolution, i::Int,::Colon) = [A.u[j][i] for j in 1:length(A)]

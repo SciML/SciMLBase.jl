@@ -11,6 +11,7 @@ using StaticArrays
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
+import FillArrays
 
 function __solve end
 function __init end
