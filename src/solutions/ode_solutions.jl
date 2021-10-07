@@ -178,7 +178,7 @@ function solution_slice(sol::AbstractODESolution{T,N},I) where {T,N}
 
  function sensitivity_solution(sol::AbstractODESolution,u,t)
    T = eltype(eltype(u))
-   N = length((size(sol.prob.u0)..., length(u)))
+   N = length((size(u)..., length(u)))
    interp = if typeof(sol.interp) <: LinearInterpolation
      LinearInterpolation(t,u)
    elseif typeof(sol.interp) <: ConstantInterpolation

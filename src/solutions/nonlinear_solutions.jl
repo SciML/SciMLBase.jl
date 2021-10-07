@@ -32,7 +32,7 @@ end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution,u)
   T = eltype(eltype(u))
-  N = length((size(sol.prob.u0)...,))
+  N = ndims(u)
 
   NonlinearSolution{T,N,typeof(u),typeof(sol.resid),
                     typeof(sol.prob),typeof(sol.alg),
