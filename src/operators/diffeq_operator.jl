@@ -102,7 +102,15 @@ Base.getindex(L::DiffEqScaledOperator, i::Int) = L.coeff * L.op[i]
 Base.getindex(L::DiffEqScaledOperator, I::Vararg{Int, N}) where {N} =
   L.coeff * L.op[I...]
 Base.:*(L::DiffEqScaledOperator, x::AbstractArray) = L.coeff * (L.op * x)
-Base.:*(x::AbstractArray, L::DiffEqScaledOperator) = (L.op * x) * L.coeff
+Base.:*(x::AbstractArray, L::DiffEqScaledOperator) = (x * L.op) * L.coeff
+function LinearAlgebra.mul!(r::AbstractArray, L::DiffEqScaledOperator, x::AbstractArray)
+  mul!(r, L.op, x)
+  r .= r * L.coeff
+end
+function LinearAlgebra.mul!(r::AbstractArray, x::AbstractArray, L::DiffEqScaledOperator)
+  mul!(r, x, L.op)
+  r .= r * L.coeff
+end
 Base.:/(L::DiffEqScaledOperator, x::AbstractArray) = L.coeff * (L.op / x)
 Base.:/(x::AbstractArray, L::DiffEqScaledOperator) = 1/L.coeff * (x / L.op)
 Base.:\(L::DiffEqScaledOperator, x::AbstractArray) = 1/L.coeff * (L.op \ x)
