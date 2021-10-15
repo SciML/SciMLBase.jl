@@ -270,7 +270,7 @@ export EnsembleSolution, EnsembleTestSolution, EnsembleSummary
 """
 $(TYPEDEF)
 """
-abstract type AbstractDiffEqInterpolation <: Function end
+abstract type AbstractDiffEqInterpolation end
 
 """
 $(TYPEDEF)
@@ -474,7 +474,7 @@ $(TYPEDEF)
 
 Base for types which define the history of a delay differential equation.
 """
-abstract type AbstractHistoryFunction <: Function end
+abstract type AbstractHistoryFunction end
 
 """
 $(TYPEDEF)
