@@ -270,7 +270,7 @@ export EnsembleSolution, EnsembleTestSolution, EnsembleSummary
 """
 $(TYPEDEF)
 """
-abstract type AbstractDiffEqInterpolation <: Function end
+abstract type AbstractDiffEqInterpolation end
 
 """
 $(TYPEDEF)
