@@ -66,14 +66,6 @@ function remake(prob::ODEProblem; f=missing,
   ODEProblem{isinplace(prob)}(f,u0,tspan,p,prob.problem_type;prob.kwargs..., kwargs...)
 end
 
-# function remake(thing::AbstractJumpProblem; kwargs...)
-#   parameterless_type(thing)(remake(thing.prob;kwargs...))
-# end
-
-# function remake(thing::AbstractEnsembleProblem; kwargs...)
-#   parameterless_type(thing)(remake(thing.prob;kwargs...))
-# end
-
 for T in [
     AbstractJumpProblem,
     AbstractEnsembleProblem,
