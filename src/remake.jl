@@ -69,3 +69,7 @@ end
 function remake(thing::AbstractJumpProblem; kwargs...)
   parameterless_type(thing)(remake(thing.prob;kwargs...))
 end
+
+function remake(thing::AbstractEnsembleProblem; kwargs...)
+  parameterless_type(thing)(remake(thing.prob;kwargs...))
+end
