@@ -12,6 +12,7 @@ for T in [
     NoiseProblem,
     SplitFunction,  # TODO: use isinplace path for type-stability
     TwoPointBVPFunction,
+    # EnsembleProblem,
     ]
   @eval remaker_of(::$T) = $T
 end
@@ -66,9 +67,12 @@ function remake(prob::ODEProblem; f=missing,
   ODEProblem{isinplace(prob)}(f,u0,tspan,p,prob.problem_type;prob.kwargs..., kwargs...)
 end
 
-for T in [
-    AbstractJumpProblem,
-    AbstractEnsembleProblem,
-    ]
-  @eval remake(thing::$T;kwargs...) = parameterless_type(thing)(remake(thing.prob;kwargs...))
+function remake(thing::AbstractJumpProblem; kwargs...)
+  parameterless_type(thing)(remake(thing.prob;kwargs...))
+end
+
+function remake(thing::AbstractEnsembleProblem; kwargs...)
+  T = parameterless_type(thing)
+  en_kwargs = [k for k in kwargs if first(k) ∈ fieldnames(T)]
+  T(remake(thing.prob;setdiff(kwargs,en_kwargs)...); en_kwargs...)
 end
