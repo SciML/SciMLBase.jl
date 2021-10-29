@@ -29,5 +29,6 @@ if !is_APPVEYOR && GROUP == "Downstream"
     activate_downstream_env()
     @time @safetestset "Ensembles of Zero Length Solutions" begin include("downstream/ensemble_zero_length.jl") end
     @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin include("downstream/symbol_indexing.jl") end
+    @time @safetestset "Unitful interoplations" begin include("downstream/unitful_interpolations.jl") end
 end
 end
