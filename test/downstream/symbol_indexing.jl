@@ -1,4 +1,4 @@
-using ModelingToolkit, OrdinaryDiffEq, Test
+using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, Test
 
 @parameters t σ ρ β
 @variables x(t) y(t) z(t)
@@ -38,10 +38,10 @@ tspan = (0.0,100.0)
 prob = ODEProblem(sys_simplified,u0,tspan,p)
 sol = solve(prob,Rodas4())
 
-@test_throws ErrorException sol[b]
-@test_throws ErrorException sol[b, 1]
-@test_throws ErrorException sol[b, 1:5]
-@test_throws ErrorException sol[b, [1,2,3]]
+@test_throws Any sol[b]
+@test_throws Any sol[b, 1]
+@test_throws Any sol[b, 1:5]
+@test_throws Any sol[b, [1,2,3]]
 @test_throws Any sol['a']
 @test_throws Any sol['a',  1]
 @test_throws Any sol['a',  1:5]
@@ -98,7 +98,7 @@ sol3 = sol(0.0:1.0:10.0, idxs=[lorenz1.x, lorenz2.x])
 @test length(sol3.t) == 11
 @test collect(sol3[t]) ≈ sol3.t
 @test collect(sol3[t, 1:5]) ≈ sol3.t[1:5]
-@test sol(0.0:1.0:10.0, idxs=[lorenz1.x, 1]) isa DiffEqArray
+@test sol(0.0:1.0:10.0, idxs=[lorenz1.x, 1]) isa RecursiveArrayTools.DiffEqArray
 
 sol4 = sol(0.1, idxs=[lorenz1.x, lorenz2.x])
 @test sol4 isa Vector
