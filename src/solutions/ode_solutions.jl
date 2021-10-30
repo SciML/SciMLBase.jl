@@ -29,7 +29,7 @@ end
 function (sol::ODESolution)(t::Number,::Type{deriv},idxs::Integer,continuity) where deriv
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
 end
-function (sol::ODESolution)(t::Number,deriv,idxs::AbstractVector{<:Integer},continuity)
+function (sol::ODESolution)(t::Number,::Type{deriv},idxs::AbstractVector{<:Integer},continuity) where deriv
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
 end
 function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::Integer,continuity) where deriv
