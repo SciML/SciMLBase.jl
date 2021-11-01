@@ -133,6 +133,9 @@ struct OptimizationProblem{iip,F,uType,P,B,LC,UC,S,K} <: AbstractOptimizationPro
                                                   lb = nothing, ub = nothing,
                                                   lcons = nothing, ucons = nothing,
                                                   sense = nothing, kwargs...) where iip
+        if xor(lb === nothing, ub === nothing)
+            error("If any of `lb` or `ub` is provided, both must be provided.")
+        end
         new{iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(lcons), typeof(ucons),
             typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, lcons, ucons, sense, kwargs)
