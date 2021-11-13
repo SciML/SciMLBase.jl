@@ -164,6 +164,6 @@ eqs = [
       ]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
-@test_broken sol = solve(prob, Tsit5())
-@test_broken sol[x] isa Vector{<:Vector}
-@test_broken sol[@nonamespace sys.x] isa Vector{<:Vector}
+@test sol = solve(prob, Tsit5())
+@test sol[x] isa Vector{<:Vector}
+@test sol[@nonamespace sys.x] isa Vector{<:Vector}
