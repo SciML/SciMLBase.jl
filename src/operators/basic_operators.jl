@@ -124,7 +124,11 @@ Like DiffEqArrayOperator, but stores a Factorization instead.
 
 Supports left division and `ldiv!` when applied to an array.
 """
-struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{Factorization{T},Diagonal{T},Bidiagonal{T}} <: AbstractDiffEqLinearOperator{T}
+struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{Factorization{T},
+                                                               Diagonal{T},
+                                                               Bidiagonal{T},
+                                                              }
+                                    } <: AbstractDiffEqLinearOperator{T}
   F::FType
 end
 
