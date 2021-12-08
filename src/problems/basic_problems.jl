@@ -43,7 +43,7 @@ struct NonlinearProblem{uType,isinplace,P,F,K} <: AbstractNonlinearProblem{uType
     This is determined automatically, but not inferred.
     """
     function NonlinearProblem{iip}(f,u0,p=NullParameters()) where iip
-      NonlinearProblem(NonlinearFunction{iip}(f),u0,p)
+      NonlinearProblem{iip}(NonlinearFunction{iip}(f),u0,p)
     end
 end
 

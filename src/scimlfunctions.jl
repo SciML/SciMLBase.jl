@@ -437,7 +437,7 @@ function ODEFunction{iip,true}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if mass_matrix == I && typeof(f) <: Tuple
+                 if mass_matrix === I && typeof(f) <: Tuple
                   mass_matrix = ((I for i in 1:length(f))...,)
                  end
 
@@ -1216,7 +1216,7 @@ function NonlinearFunction{iip,true}(f;
   observed = DEFAULT_OBSERVED_NO_TIME,
   colorvec = nothing) where iip
 
-  if mass_matrix == I && typeof(f) <: Tuple
+  if mass_matrix === I && typeof(f) <: Tuple
    mass_matrix = ((I for i in 1:length(f))...,)
   end
 
