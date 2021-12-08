@@ -35,11 +35,8 @@ is called by `update_coefficients!` and is assumed to have the following
 signature:
 
     update_func(oldval,u,p,t) -> newval
-
-You can also use `setval!(α,val)` to bypass the `update_coefficients!`
-interface and directly mutate the scalar's value.
 """
-mutable struct DiffEqScalar{T<:Number,F} <: AbstractDiffEqLinearOperator{T}
+struct DiffEqScalar{T<:Number,F} <: AbstractDiffEqLinearOperator{T}
   val::T
   update_func::F
   DiffEqScalar(val::T; update_func=DEFAULT_UPDATE_FUNC) where {T} =
@@ -51,7 +48,6 @@ Base.convert(::Type{DiffEqScalar}, α::Number) = DiffEqScalar(α)
 Base.size(::DiffEqScalar) = ()
 Base.size(::DiffEqScalar, ::Integer) = 1
 update_coefficients!(α::DiffEqScalar,u,p,t) = (α.val = α.update_func(α.val,u,p,t); α)
-setval!(α::DiffEqScalar, val) = (α.val = val; α)
 isconstant(α::DiffEqScalar) = α.update_func == DEFAULT_UPDATE_FUNC
 
 for op in (:*, :/, :\)
@@ -82,11 +78,8 @@ update function is called by `update_coefficients!` and is assumed to have
 the following signature:
 
     update_func(A::AbstractMatrix,u,p,t) -> [modifies A]
-
-You can also use `setval!(α,A)` to bypass the `update_coefficients!` interface
-and directly mutate the array's value.
 """
-mutable struct DiffEqArrayOperator{T,AType<:AbstractMatrix{T},F} <: AbstractDiffEqLinearOperator{T}
+struct DiffEqArrayOperator{T,AType<:AbstractMatrix{T},F} <: AbstractDiffEqLinearOperator{T}
   A::AType
   update_func::F
   DiffEqArrayOperator(A::AType; update_func=DEFAULT_UPDATE_FUNC) where {AType} =
@@ -94,7 +87,6 @@ mutable struct DiffEqArrayOperator{T,AType<:AbstractMatrix{T},F} <: AbstractDiff
 end
 
 update_coefficients!(L::DiffEqArrayOperator,u,p,t) = (L.update_func(L.A,u,p,t); L)
-setval!(L::DiffEqArrayOperator, A) = (L.A = A; L)
 isconstant(L::DiffEqArrayOperator) = L.update_func == DEFAULT_UPDATE_FUNC
 Base.similar(L::DiffEqArrayOperator, ::Type{T}, dims::Dims) where T = similar(L.A, T, dims)
 
