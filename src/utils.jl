@@ -94,10 +94,10 @@ end
 """
 $(SIGNATURES)
 
-Emit a warning with a link to the solver compatibility chart in the documenation.
+Emit a warning with a link to the solver compatibility chart in the documentation.
 """
 warn_compat() =
-    @warn("Please see http://docs.juliadiffeq.org/dev/basics/compatibility_chart.html")
+    @warn("https://diffeq.sciml.ai/dev/basics/compatibility_chart/")
 
 
 """
