@@ -532,6 +532,7 @@ include("interpolation.jl")
 include("integrator_interface.jl")
 include("tabletraits.jl")
 include("remake.jl")
+include("callbacks.jl")
 
 function discretize end
 function symbolic_discretize end
@@ -596,5 +597,7 @@ export step!, deleteat!,addat!,get_tmp_cache,
 
 export update_coefficients!, update_coefficients,
        has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
+
+export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
 end
