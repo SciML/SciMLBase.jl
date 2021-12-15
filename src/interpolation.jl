@@ -99,7 +99,6 @@ to AD-based derivatives.
       Θ = (tval-t[i-1])/dt
       idxs_internal = idxs
       if typeof(id) <: HermiteInterpolation
-        @show Main.@which interpolant(Θ,id,dt,u[i-1],u[i],du[i-1],du[i],idxs_internal,deriv)
         vals[j] = interpolant(Θ,id,dt,u[i-1],u[i],du[i-1],du[i],idxs_internal,deriv)
       else
         vals[j] = interpolant(Θ,id,dt,u[i-1],u[i],idxs_internal,deriv)
