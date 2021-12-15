@@ -261,6 +261,10 @@ Hermite Interpolation
 @inline function interpolant(Θ,id::HermiteInterpolation,dt,y₀,y₁,dy₀,dy₁,idxs,T::Type{Val{0}})
   if idxs === nothing
     out = @. (1-Θ)*y₀+Θ*y₁+Θ*(Θ-1)*((1-2Θ)*(y₁-y₀)+(Θ-1)*dt*dy₀ + Θ*dt*dy₁)
+  elseif idxs isa Number
+    out = (1-Θ)*y₀[idxs]+Θ*y₁[idxs]+
+                    Θ*(Θ-1)*((1-2Θ)*(y₁[idxs]-y₀[idxs])+
+                    (Θ-1)*dt*dy₀[idxs] + Θ*dt*dy₁[idxs])
   else
     out = similar(y₀,axes(idxs))
     @views @. out = (1-Θ)*y₀[idxs]+Θ*y₁[idxs]+
@@ -276,6 +280,11 @@ Hermite Interpolation
 @inline function interpolant(Θ,id::HermiteInterpolation,dt,y₀,y₁,dy₀,dy₁,idxs,T::Type{Val{1}})
   if idxs === nothing
     out = @. dy₀ + Θ*(-4*dt*dy₀ - 2*dt*dy₁ - 6*y₀ + Θ*(3*dt*dy₀ + 3*dt*dy₁ + 6*y₀ - 6*y₁) + 6*y₁)/dt
+  elseif idxs isa Number
+    out = dy₀[idxs] + Θ*(-4*dt*dy₀[idxs] -
+                    2*dt*dy₁[idxs] - 6*y₀[idxs] +
+                    Θ*(3*dt*dy₀[idxs] + 3*dt*dy₁[idxs] +
+                    6*y₀[idxs] - 6*y₁[idxs]) + 6*y₁[idxs])/dt
   else
     out = similar(y₀,axes(idxs))
     @views @. out = dy₀[idxs] + Θ*(-4*dt*dy₀[idxs] -
@@ -292,6 +301,10 @@ Hermite Interpolation
 @inline function interpolant(Θ,id::HermiteInterpolation,dt,y₀,y₁,dy₀,dy₁,idxs,T::Type{Val{2}})
   if idxs === nothing
     out = @. (-4*dt*dy₀ - 2*dt*dy₁ - 6*y₀ + Θ*(6*dt*dy₀ + 6*dt*dy₁ + 12*y₀ - 12*y₁) + 6*y₁)/(dt*dt)
+  elseif idxs isa Number
+    out = (-4*dt*dy₀[idxs] - 2*dt*dy₁[idxs] - 6*y₀[idxs] +
+                    Θ*(6*dt*dy₀[idxs] + 6*dt*dy₁[idxs] + 12*y₀[idxs] -
+                    12*y₁[idxs]) + 6*y₁[idxs])/(dt*dt)
   else
     out = similar(y₀,axes(idxs))
     @views @. out = (-4*dt*dy₀[idxs] - 2*dt*dy₁[idxs] - 6*y₀[idxs] +
@@ -307,6 +320,9 @@ Hermite Interpolation
 @inline function interpolant(Θ,id::HermiteInterpolation,dt,y₀,y₁,dy₀,dy₁,idxs,T::Type{Val{3}})
   if idxs === nothing
     out = @. (6*dt*dy₀ + 6*dt*dy₁ + 12*y₀ - 12*y₁)/(dt*dt*dt)
+  elseif idxs isa Number
+    out = (6*dt*dy₀[idxs] + 6*dt*dy₁[idxs] +
+                    12*y₀[idxs] - 12*y₁[idxs])/(dt*dt*dt)
   else
     out = similar(y₀,axes(idxs))
     @views @. out = (6*dt*dy₀[idxs] + 6*dt*dy₁[idxs] +
@@ -378,6 +394,8 @@ Linear Interpolation
 @inline function interpolant(Θ,id::LinearInterpolation,dt,y₀,y₁,idxs,T::Type{Val{0}})
   if idxs === nothing
     out = @. (1-Θ)*y₀ + Θ*y₁
+  elseif idxs isa Number
+    out = Θm1*y₀[idxs] + Θ*y₁[idxs]
   else
     out = similar(y₀,axes(idxs))
     Θm1 = (1-Θ)
@@ -389,6 +407,8 @@ end
 @inline function interpolant(Θ,id::LinearInterpolation,dt,y₀,y₁,idxs,T::Type{Val{1}})
   if idxs === nothing
     out = @. (y₁ - y₀)/dt
+  elseif idxs isa Number
+    out = (y₁[idxs] - y₀[idxs])/dt
   else
     out = similar(y₀,axes(idxs))
     @views @. out = (y₁[idxs] - y₀[idxs])/dt
@@ -431,6 +451,8 @@ Constant Interpolation
 @inline function interpolant(Θ,id::ConstantInterpolation,dt,y₀,y₁,idxs,T::Type{Val{0}})
   if idxs === nothing
     out = @. y₀
+  elseif idxs isa Number
+    out = y₀[idxs]
   else
     out = similar(y₀,axes(idxs))
     @views @. out = y₀[idxs]
@@ -441,6 +463,8 @@ end
 @inline function interpolant(Θ,id::ConstantInterpolation,dt,y₀,y₁,idxs,T::Type{Val{1}})
   if idxs === nothing
     out = zeros(eltype(y₀),length(y₀))
+  elseif idxs isa Number
+    out = zero(eltype(y₀))
   else
     out = similar(y₀,axes(idxs))
     @views @. out = 0

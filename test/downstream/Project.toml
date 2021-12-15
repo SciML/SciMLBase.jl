@@ -1,4 +1,5 @@
 [deps]
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
