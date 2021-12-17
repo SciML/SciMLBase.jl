@@ -1,18 +1,19 @@
 """
 $(TYPEDEF)
 """
-struct LinearSolution{T,N,uType,R,A} <: AbstractLinearSolution{T,N}
+struct LinearSolution{T,N,uType,R,A,C} <: AbstractLinearSolution{T,N}
   u::uType
   resid::R
   alg::A
   retcode::Symbol
+  cache::C
 end
 
-function build_linear_solution(alg,u,resid;
+function build_linear_solution(alg,u,resid,cache;
                                retcode = :Default)
   T = eltype(eltype(u))
   N = length((size(u)...,))
-  LinearSolution{T,N,typeof(u),typeof(resid),typeof(alg)}(u,resid,alg,retcode)
+  LinearSolution{T,N,typeof(u),typeof(resid),typeof(alg),typeof(cache)}(u,resid,alg,retcode,cache)
 end
 
 struct QuadratureSolution{T,N,uType,R,P,A,C} <: AbstractQuadratureSolution{T,N}
