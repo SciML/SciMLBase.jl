@@ -17,9 +17,9 @@ end
 
 function LinearProblem(A,b,args...;kwargs...)
     if A isa AbstractArray
-        LinearProblem{true}(DiffEqArrayOperator(A),b,args...;kwargs...)
+        LinearProblem{true}(A,b,args...;kwargs...)
     elseif A isa Number
-        LinearProblem{true}(DiffEqScalar(A),b,args...;kwargs...)
+        LinearProblem{false}(A,b,args...;kwargs...)
     else
         LinearProblem{isinplace(A, 4)}(A,b,args...;kwargs...)
     end
