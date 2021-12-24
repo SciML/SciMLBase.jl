@@ -26,7 +26,11 @@ arguments.
 function remake(thing; kwargs...)
   T = remaker_of(thing)
   if :kwargs ∈ fieldnames(typeof(thing))
-    T(; struct_as_namedtuple(thing)...,thing.kwargs...,kwargs...)
+    if :kwargs ∉ keys(kwargs)
+      T(; struct_as_namedtuple(thing)...,thing.kwargs...,kwargs...)
+    else
+      T(; struct_as_namedtuple(thing)...,kwargs[:kwargs]...)
+    end
   else
     T(; struct_as_namedtuple(thing)...,kwargs...)
   end
@@ -38,7 +42,8 @@ function remake(prob::ODEProblem; f=missing,
                                   u0=missing,
                                   tspan=missing,
                                   p=missing,
-                                  kwargs...)
+                                  kwargs=missing,
+                                  _kwargs...)
   if f === missing
     f = prob.f
   elseif !isrecompile(prob)
@@ -64,7 +69,11 @@ function remake(prob::ODEProblem; f=missing,
     p = prob.p
   end
 
-  ODEProblem{isinplace(prob)}(f,u0,tspan,p,prob.problem_type;prob.kwargs..., kwargs...)
+  if kwargs === missing
+    ODEProblem{isinplace(prob)}(f,u0,tspan,p,prob.problem_type;prob.kwargs..., _kwargs...)
+  else
+    ODEProblem{isinplace(prob)}(f,u0,tspan,p,prob.problem_type;kwargs...)
+  end
 end
 
 function remake(thing::AbstractJumpProblem; kwargs...)
