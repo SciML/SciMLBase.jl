@@ -6,14 +6,16 @@ struct LinearSolution{T,N,uType,R,A,C} <: AbstractLinearSolution{T,N}
   resid::R
   alg::A
   retcode::Symbol
+  iters::Int
   cache::C
 end
 
 function build_linear_solution(alg,u,resid,cache;
-                               retcode = :Default)
+                               retcode = :Default,
+                               iters = 0)
   T = eltype(eltype(u))
   N = length((size(u)...,))
-  LinearSolution{T,N,typeof(u),typeof(resid),typeof(alg),typeof(cache)}(u,resid,alg,retcode,cache)
+  LinearSolution{T,N,typeof(u),typeof(resid),typeof(alg),typeof(cache)}(u,resid,alg,retcode,iters,cache)
 end
 
 struct QuadratureSolution{T,N,uType,R,P,A,C} <: AbstractQuadratureSolution{T,N}
