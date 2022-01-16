@@ -62,7 +62,8 @@ Contains a single callback whose `condition` is a continuous function. The callb
   event location. If this is set to `LeftRootfind`, the solution will be backtracked to the point where
   `condition==0` and if the solution isn't exact, the left limit of root is used. If set to
   `RightRootFind`, the solution would be set to the right limit of the root. Otherwise the systems and
-  the `affect!` will occur at `t+dt`.
+  the `affect!` will occur at `t+dt`. Note that these enums are not exported and thus one needs to
+  reference them as `SciMLBase.LeftRootFind`, `SciMLBase.RightRootFind`, or `SciMLBase.NoRootFind`.
 - `interp_points=10`: The number of interpolated points to check the condition. The
   condition is found by checking whether any interpolation point / endpoint has
   a different sign. If `interp_points=0`, then conditions will only be noticed if
