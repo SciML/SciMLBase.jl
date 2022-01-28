@@ -41,9 +41,9 @@ struct EnsembleSummary{T,N,Tt,S,S2,S3,S4,S5} <: AbstractEnsembleSolution{T,N,S}
   t::Tt
   u::S
   v::S2
-  med::S5
-  qlow::S3
-  qhigh::S4
+  med::S3
+  qlow::S4
+  qhigh::S5
   num_monte::Int
   elapsedTime::Float64
   converged::Bool
