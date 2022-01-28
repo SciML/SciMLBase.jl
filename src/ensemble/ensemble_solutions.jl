@@ -37,10 +37,11 @@ end
 """
 $(TYPEDEF)
 """
-struct EnsembleSummary{T,N,Tt,S,S2,S3,S4} <: AbstractEnsembleSolution{T,N,S}
+struct EnsembleSummary{T,N,Tt,S,S2,S3,S4,S5} <: AbstractEnsembleSolution{T,N,S}
   t::Tt
   u::S
   v::S2
+  med::S5
   qlow::S3
   qhigh::S4
   num_monte::Int
@@ -120,12 +121,12 @@ end
 @recipe function f(sim::EnsembleSummary;
                    idxs= typeof(sim.u[1])<:AbstractArray ? eachindex(sim.u[1]) : 1,
                    error_style=:ribbon,ci_type=:quantile)
-  if typeof(sim.u[1])<:AbstractArray
-    u = vecarr_to_vectors(sim.u)
-  else
-    u = [sim.u.u]
-  end
   if ci_type == :SEM
+    if typeof(sim.u[1])<:AbstractArray
+        u = vecarr_to_vectors(sim.u)
+    else
+        u = [sim.u.u]
+    end
     if typeof(sim.u[1])<:AbstractArray
       ci_low = vecarr_to_vectors(VectorOfArray([sqrt.(sim.v[i]/sim.num_monte).*1.96 for i in 1:length(sim.v)]))
       ci_high = ci_low
@@ -134,6 +135,11 @@ end
       ci_high = ci_low
     end
   elseif ci_type == :quantile
+    if typeof(sim.med[1])<:AbstractArray
+        u = vecarr_to_vectors(sim.med)
+    else
+        u = [sim.med.u]
+    end
     if typeof(sim.u[1])<:AbstractArray
       ci_low = u - vecarr_to_vectors(sim.qlow)
       ci_high = vecarr_to_vectors(sim.qhigh) - u
