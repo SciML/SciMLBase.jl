@@ -2158,7 +2158,7 @@ for S in [
         Base.convert(::Type{$S}, x::$S) = x
         Base.convert(::Type{$S{iip}}, x::T) where {T<:$S{iip}} where iip = x
         function ConstructionBase.constructorof(::Type{<:$S{iip}}) where iip
-            (args...) -> $S{IIP, map(typeof, args)...}(args...)
+            (args...) -> $S{iip, map(typeof, args)...}(args...)
         end
     end
 end
