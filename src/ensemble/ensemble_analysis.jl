@@ -108,16 +108,18 @@ function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T,N},
                          t=sim[1].t;quantiles=[0.05,0.95]) where {T,N}
   if typeof(sim[1]) <: SciMLSolution
     m,v = timeseries_point_meanvar(sim,t)
+    med = timeseries_point_median(sim,t)
     qlow = timeseries_point_quantile(sim,quantiles[1],t)
     qhigh = timeseries_point_quantile(sim,quantiles[2],t)
   else
     m,v = timeseries_steps_meanvar(sim)
+    med = timeseries_steps_median(sim)
     qlow = timeseries_steps_quantile(sim,quantiles[1])
     qhigh = timeseries_steps_quantile(sim,quantiles[2])
   end
 
   trajectories = length(sim)
-  EnsembleSummary{T,N,typeof(t),typeof(m),typeof(v),typeof(qlow),typeof(qhigh)}(t,m,v,qlow,qhigh,trajectories,sim.elapsedTime,sim.converged)
+  EnsembleSummary{T,N,typeof(t),typeof(m),typeof(v),typeof(med),typeof(qlow),typeof(qhigh)}(t,m,v,med,qlow,qhigh,trajectories,sim.elapsedTime,sim.converged)
 end
 
 function timeseries_point_mean(sim,ts)
