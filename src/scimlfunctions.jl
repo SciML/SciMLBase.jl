@@ -147,10 +147,11 @@ abstract type AbstractDiscreteFunction{iip} <: AbstractDiffEqFunction{iip} end
 """
 $(TYPEDEF)
 """
-struct DiscreteFunction{iip,F,Ta,S} <: AbstractDiscreteFunction{iip}
+struct DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip}
   f::F
   analytic::Ta
   syms::S
+  observed::O
 end
 
 """
@@ -627,14 +628,16 @@ DynamicalODEFunction{iip,RECOMPILE_BY_DEFAULT}(ODEFunction{iip}(f1), ODEFunction
 DynamicalODEFunction(f::DynamicalODEFunction; kwargs...) = f
 
 function DiscreteFunction{iip,true}(f;
-                 analytic=nothing, syms=nothing) where iip
-                 DiscreteFunction{iip,typeof(f),typeof(analytic),typeof(syms)}(
-                 f,analytic,syms)
+                 analytic=nothing, 
+                 syms=nothing, 
+                 observed=DEFAULT_OBSERVED) where iip
+        DiscreteFunction{iip,typeof(f),typeof(analytic),typeof(syms),typeof(observed)}(f,analytic,syms,observed)
 end
 function DiscreteFunction{iip,false}(f;
-                 analytic=nothing, syms=nothing) where iip
-                 DiscreteFunction{iip,Any,Any,Any}(
-                 f,analytic,syms)
+                 analytic=nothing, 
+                 syms=nothing, 
+                 observed=DEFAULT_OBSERVED) where iip
+        DiscreteFunction{iip,Any,Any,Any,Any}(f,analytic,syms,observed)
 end
 DiscreteFunction{iip}(f; kwargs...) where iip = DiscreteFunction{iip,RECOMPILE_BY_DEFAULT}(f; kwargs...)
 DiscreteFunction{iip}(f::DiscreteFunction; kwargs...) where iip = f
@@ -1510,7 +1513,12 @@ function Base.convert(::Type{DiscreteFunction},f)
   else
     syms = nothing
   end
-  DiscreteFunction(f;analytic=analytic,syms=syms)
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
+  DiscreteFunction(f;analytic=analytic,syms=syms,observed=observed)
 end
 function Base.convert(::Type{DiscreteFunction{iip}},f) where iip
   if __has_analytic(f)
@@ -1523,7 +1531,12 @@ function Base.convert(::Type{DiscreteFunction{iip}},f) where iip
   else
     syms = nothing
   end
-  DiscreteFunction{iip,RECOMPILE_BY_DEFAULT}(f;analytic=analytic,syms=syms)
+  if __has_observed(f)
+    observed = f.observed
+  else
+    observed = DEFAULT_OBSERVED
+  end
+  DiscreteFunction{iip,RECOMPILE_BY_DEFAULT}(f;analytic=analytic,syms=syms,observed=observed)
 end
 
 function Base.convert(::Type{DAEFunction},f)
