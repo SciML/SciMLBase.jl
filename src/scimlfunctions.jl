@@ -746,7 +746,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
   f2 = SDEFunction(f2)
   SplitFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(g),typeof(mass_matrix),
               typeof(cache),typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
-              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed)
+              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed),
               typeof(colorvec)}(f1,f2,mass_matrix,cache,analytic,tgrad,jac,
               jac_prototype,Wfact,Wfact_t,paramjac,syms,observed,colorvec)
 end
@@ -769,7 +769,7 @@ function SplitSDEFunction{iip,true}(f1,f2,g; mass_matrix=I,
               typeof(mass_matrix),typeof(_func_cache),
               typeof(analytic),
               typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),
-              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed)
+              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed),
               typeof(colorvec)}(f1,f2,g,mass_matrix,_func_cache,analytic,
               tgrad,jac,jvp,vjp,jac_prototype,sparsity,
               Wfact,Wfact_t,paramjac,syms,observed,colorvec)
@@ -807,7 +807,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
   f2 = SDEFunction(f2)
   DynamicalSDEFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(g),typeof(mass_matrix),
               typeof(cache),typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
-              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed)
+              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed),
               typeof(colorvec)}(f1,f2,g,mass_matrix,cache,analytic,tgrad,jac,
               jac_prototype,Wfact,Wfact_t,paramjac,syms,observed,colorvec)
 end
@@ -830,7 +830,7 @@ function DynamicalSDEFunction{iip,true}(f1,f2,g; mass_matrix=I,
               typeof(mass_matrix),typeof(_func_cache),
               typeof(analytic),
               typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),
-              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed)
+              typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed),
               typeof(colorvec)}(f1,f2,g,mass_matrix,_func_cache,analytic,
               tgrad,jac,jvp,vjp,jac_prototype,sparsity,
               Wfact,Wfact_t,paramjac,syms,observed,colorvec)
@@ -1122,7 +1122,7 @@ function DynamicalDDEFunction{iip,true}(f1,f2;mass_matrix=I,
   DynamicalDDEFunction{iip,typeof(f1),typeof(f2),typeof(mass_matrix),
                        typeof(analytic),
                        typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),
-                       typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed)
+                       typeof(Wfact),typeof(Wfact_t),typeof(paramjac),typeof(syms),typeof(observed),
                        typeof(colorvec)}(
                          f1,f2,mass_matrix,analytic,tgrad,jac,jvp,vjp,jac_prototype,sparsity,
                          Wfact,Wfact_t,paramjac,syms,observed,colorvec)
