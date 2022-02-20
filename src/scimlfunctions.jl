@@ -740,7 +740,7 @@ SDEFunction(f,g; kwargs...) = SDEFunction{isinplace(f, 4),RECOMPILE_BY_DEFAULT}(
 SDEFunction(f::SDEFunction; kwargs...) = f
 
 @add_kwonly function SplitSDEFunction(f1,f2,g,mass_matrix,cache,analytic,tgrad,jac,jvp,vjp,
-                                   jac_prototype,Wfact,Wfact_t,paramjac,observed
+                                   jac_prototype,Wfact,Wfact_t,paramjac,observed,
                                    syms,colorvec)
   f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
   f2 = SDEFunction(f2)
