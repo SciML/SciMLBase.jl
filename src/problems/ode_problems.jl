@@ -115,7 +115,7 @@ Define a dynamical ODE problem from the two functions `f1` and `f2`.
 This is determined automatically, but not inferred.
 """
 function DynamicalODEProblem{iip}(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...) where iip
-  ODEProblem(DynamicalODEFunction{iip}(f1,f2),ArrayPartition(du0,u0),tspan,p;kwargs...)
+  ODEProblem(DynamicalODEFunction{iip}(f1,f2),ArrayPartition(du0,u0),tspan,p,DynamicalODEProblem{iip}();kwargs...)
 end
 
 # u'' = f(t,u,du,ddu)
