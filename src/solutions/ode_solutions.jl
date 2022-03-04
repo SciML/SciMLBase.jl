@@ -15,31 +15,31 @@ struct ODESolution{T,N,uType,uType2,DType,tType,rateType,P,A,IType,DE} <: Abstra
   destats::DE
   retcode::Symbol
 end
-(sol::ODESolution)(t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol(t,deriv,idxs,continuity)
-(sol::ODESolution)(v,t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
+(sol::AbstractODESolution)(t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol(t,deriv,idxs,continuity)
+(sol::AbstractODESolution)(v,t,::Type{deriv}=Val{0};idxs=nothing,continuity=:left) where {deriv} = sol.interp(v,t,idxs,deriv,sol.prob.p,continuity)
 
-function (sol::ODESolution)(t::Number,::Type{deriv},idxs::Nothing,continuity) where deriv
+function (sol::AbstractODESolution)(t::Number,::Type{deriv},idxs::Nothing,continuity) where deriv
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
 end
 
-function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::Nothing,continuity) where deriv
+function (sol::AbstractODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::Nothing,continuity) where deriv
   augment(sol.interp(t,idxs,deriv,sol.prob.p,continuity), sol)
 end
 
-function (sol::ODESolution)(t::Number,::Type{deriv},idxs::Integer,continuity) where deriv
+function (sol::AbstractODESolution)(t::Number,::Type{deriv},idxs::Integer,continuity) where deriv
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
 end
-function (sol::ODESolution)(t::Number,::Type{deriv},idxs::AbstractVector{<:Integer},continuity) where deriv
+function (sol::AbstractODESolution)(t::Number,::Type{deriv},idxs::AbstractVector{<:Integer},continuity) where deriv
   sol.interp(t,idxs,deriv,sol.prob.p,continuity)
 end
-function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::Integer,continuity) where deriv
+function (sol::AbstractODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::Integer,continuity) where deriv
   A = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
   syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ? [sol.prob.f.syms[idxs]] : nothing
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
   p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
   DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
 end
-function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::AbstractVector{<:Integer},continuity) where deriv
+function (sol::AbstractODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::AbstractVector{<:Integer},continuity) where deriv
   A = sol.interp(t,idxs,deriv,sol.prob.p,continuity)
   syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ? sol.prob.f.syms[idxs] : nothing
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
@@ -47,18 +47,18 @@ function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::Abst
   DiffEqArray(A.u, A.t, syms, getindepsym(sol),observed,p)
 end
 
-function (sol::ODESolution)(t::Number,::Type{deriv},idxs,continuity) where deriv
+function (sol::AbstractODESolution)(t::Number,::Type{deriv},idxs,continuity) where deriv
   issymbollike(idxs) || error("Incorrect specification of `idxs`")
   augment(sol.interp([t],nothing,deriv,sol.prob.p,continuity), sol)[idxs][1]
 end
 
-function (sol::ODESolution)(t::Number,::Type{deriv},idxs::AbstractVector,continuity) where deriv
+function (sol::AbstractODESolution)(t::Number,::Type{deriv},idxs::AbstractVector,continuity) where deriv
   all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp([t],nothing,deriv,sol.prob.p,continuity), sol)
   [first(interp_sol[idx]) for idx in idxs]
 end
 
-function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs,continuity) where deriv
+function (sol::AbstractODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs,continuity) where deriv
   issymbollike(idxs) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
@@ -66,7 +66,7 @@ function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs,conti
   DiffEqArray(interp_sol[idxs], t, [idxs], getindepsym(sol), observed, p)
 end
 
-function (sol::ODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::AbstractVector,continuity) where deriv
+function (sol::AbstractODESolution)(t::AbstractVector{<:Number},::Type{deriv},idxs::AbstractVector,continuity) where deriv
   all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
   interp_sol = augment(sol.interp(t,nothing,deriv,sol.prob.p,continuity), sol)
   observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
