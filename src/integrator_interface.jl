@@ -205,7 +205,7 @@ Runs the DAE initialization to find a consistent state vector. The optional
 argument `initializealg` can be used to specify a different initialization
 algorithm to use.
 """
-initialize_dae!(integrator::DEIntegrator) =
+initialize_dae!(integrator::DEIntegrator, initializealg = integrator.initializealg) =
        error("initialize_dae!: method has not been implemented for the integrator")
 
 """
