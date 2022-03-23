@@ -246,6 +246,11 @@ $(TYPEDEF)
 """
 abstract type DAEInitializationAlgorithm <: SciMLAlgorithm end
 
+"""
+$(TYPEDEF)
+"""
+struct NoInit <: DAEInitializationAlgorithm end
+
 # PDE Discretizations
 
 """
