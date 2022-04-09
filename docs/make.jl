@@ -5,7 +5,7 @@ makedocs(
     authors="Chris Rackauckas",
     modules=[SciMLBase],
     clean=true,doctest=false,
-    format = Documenter.HTML(#analytics = "UA-90474609-3",
+    format = Documenter.HTML(analytics = "UA-90474609-3",
                              assets = ["assets/favicon.ico"],
                              canonical="https://scimlbase.sciml.ai/stable/"),
     pages=[
