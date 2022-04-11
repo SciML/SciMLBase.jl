@@ -33,7 +33,7 @@ function __solve(prob::AbstractEnsembleProblem,
     else
       ensemblealg = EnsembleThreads()
     end
-    __solve(prob,alg,ensemblealg;trajectories=trajectories,kwargs...)
+    __solve(prob,alg,ensemblealg;kwargs...)
 end
 
 @noinline function rerun_warn()
