@@ -23,70 +23,18 @@ $(TYPEDEF)
 """
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
-#=
-if (kwargs[:parallel_type] == != :none && kwargs[:parallel_type] == != :threads)
-  error("Distributed arrays cannot be generated via none or threads")
-end
-(batch_size != trajectories) && warn("batch_size and reductions are ignored when !collect_result")
-
-elapsed_time = @elapsed u = DArray((trajectories,)) do II
-    solve_batch(prob,alg,kwargs[:parallel_type] ==,II[1],pmap_batch_size,kwargs...)
-end
-return EnsembleSolution(u,elapsed_time,false)
-=#
-
-@noinline function parallel_type_warn()
-  @warn "parallel_type has been deprecated. Please refer to the docs for the new dispatch-based system."
-end
-
-@noinline function not_recognized_error()
-  @error "parallel_type value not recognized"
-end
-
-@noinline function num_monte_warn()
-  @warn "num_monte has been replaced by trajectories"
-end
-
 function __solve(prob::AbstractEnsembleProblem,
                  alg::Union{DEAlgorithm,Nothing};
                  kwargs...)
-    #=
     if alg isa EnsembleAlgorithm
-      @error "You forgot to pass a DE solver algorithm! Only a EnsembleAlgorithm has been supplied. Exiting"
-    end
-    =#
-    if :parallel_type ∈ keys(kwargs)
-      if kwargs[:parallel_type] == :none
-        ensemblealg = EnsembleSerial()
-      elseif kwargs[:parallel_type] == :pmap || kwargs[:parallel_type] == :parfor
-        ensemblealg = EnsembleDistributed()
-      elseif kwargs[:parallel_type] == :threads
-        ensemblealg = EnsembleThreads()
-      elseif kwargs[:parallel_type] == :split_threads
-        ensemblealg = EnsembleSplitThreads()
-      else
-        not_recognized_error()
-      end
-    elseif alg isa EnsembleAlgorithm
       # Assume DifferentialEquations.jl is being used, so default alg
       ensemblealg = alg
       alg = nothing
     else
       ensemblealg = EnsembleThreads()
     end
-    if :num_monte ∈ keys(kwargs)
-      num_monte_warn()
-      trajectories = kwargs[:num_monte]
-    else
-      @assert :trajectories ∈ keys(kwargs)
-      trajectories = kwargs[:trajectories]
-    end
-    if :parallel_type ∈ keys(kwargs)
-      parallel_type_warn()
-    end
-    __solve(prob,alg,ensemblealg;trajectories=trajectories,kwargs...)
+    __solve(prob,alg,ensemblealg;kwargs...)
 end
-
 
 @noinline function rerun_warn()
   @warn("output_func should return (out,rerun). See docs for updated details")
