@@ -2,10 +2,26 @@ using SciMLBase
 using LinearAlgebra
 
 @testset "DiffEqOperator" begin
-    A = rand(10,10);
-    @test eachindex(A) === eachindex(SciMLBase.DiffEqArrayOperator(A))
-    @test eachindex(A') === eachindex(SciMLBase.DiffEqArrayOperator(A'))
+    n = 10
+    A = rand(n,n)
+    u = rand(n)
 
-    A = Matrix(I,10,10) |> SciMLBase.DiffEqArrayOperator
+    AA  = SciMLBase.DiffEqArrayOperator(A)
+    AAt = SciMLBase.DiffEqArrayOperator(A')
+    @test eachindex(A) === eachindex(AA)
+    @test eachindex(A') === eachindex(AAt)
+
+    @test A * u  ≈ AA  * u
+    @test A' * u ≈ AAt * u
+
+    AAt = AA'
+    @test eachindex(A') === eachindex(AAt)
+    @test A' * u ≈ AAt * u
+
+    update_coefficients!(AAt,nothing, nothing, nothing)
+    @test eachindex(A') === eachindex(AAt)
+    @test A' * u ≈ AAt * u
+
+    A = Matrix(I,n,n) |> SciMLBase.DiffEqArrayOperator
     @test factorize(A) isa SciMLBase.FactorizedDiffEqArrayOperator
 end
