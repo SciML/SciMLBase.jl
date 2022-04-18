@@ -86,6 +86,7 @@ struct DiffEqArrayOperator{T,AType<:AbstractMatrix{T},F} <: AbstractDiffEqLinear
     new{eltype(A),AType,typeof(update_func)}(A, update_func)
 end
 
+has_adjoint(::DiffEqArrayOperator) = true
 update_coefficients!(L::DiffEqArrayOperator,u,p,t) = (L.update_func(L.A,u,p,t); L)
 isconstant(L::DiffEqArrayOperator) = L.update_func == DEFAULT_UPDATE_FUNC
 Base.similar(L::DiffEqArrayOperator, ::Type{T}, dims::Dims) where T = similar(L.A, T, dims)
