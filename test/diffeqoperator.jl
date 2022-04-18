@@ -14,6 +14,9 @@ using LinearAlgebra
     @test A * u  ≈ AA  * u
     @test A' * u ≈ AAt * u
 
+
+    @test has_adjoint(AA) === true
+
     AAt = AA'
     @test eachindex(A') === eachindex(AAt)
     @test A' * u ≈ AAt * u
