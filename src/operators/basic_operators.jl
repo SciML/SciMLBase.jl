@@ -126,14 +126,26 @@ struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{
   F::FType
 end
 
-Base.Matrix(L::FactorizedDiffEqArrayOperator) = Matrix(L.F)
-Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator) = convert(AbstractMatrix, L.F)
+function Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator)
+    if L.F isa Adjoint
+        convert(AbstractMatrix,L.F')'
+    else
+        convert(AbstractMatrix, L.F)
+    end
+end
+function Base.Matrix(L::FactorizedDiffEqArrayOperator)
+    if L.F isa Adjoint
+        Matrix(L.F')'
+    else
+        Matrix(L.F)
+    end
+end
+Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
 Base.size(L::FactorizedDiffEqArrayOperator, args...) = size(L.F, args...)
 LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::FactorizedDiffEqArrayOperator, B::AbstractVecOrMat) = ldiv!(Y, L.F, B)
 LinearAlgebra.ldiv!(L::FactorizedDiffEqArrayOperator, B::AbstractVecOrMat) = ldiv!(L.F, B)
 Base.:\(L::FactorizedDiffEqArrayOperator, x::AbstractVecOrMat) = L.F \ x
 LinearAlgebra.issuccess(L::FactorizedDiffEqArrayOperator) = issuccess(L.F)
-Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
 
 LinearAlgebra.ldiv!(y, L::FactorizedDiffEqArrayOperator, x) = ldiv!(y, L.F, x)
 #isconstant(::FactorizedDiffEqArrayOperator) = true
