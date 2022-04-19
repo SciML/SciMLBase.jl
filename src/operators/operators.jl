@@ -48,6 +48,15 @@ has_ldiv!(L::AbstractSciMLOperator) = false # ldiv!(du, L, u)
 isconstant(::AbstractDiffEqLinearOperator) = true
 islinear(o::AbstractDiffEqLinearOperator) = isconstant(o)
 
+isconstant(::AbstractMatrix) = true
+islinear(::AbstractMatrix) = true
+has_adjoint(::AbstractMatrix) = true
+has_mul(::AbstractMatrix) = true
+has_mul!(::AbstractMatrix) = true
+has_ldiv(::AbstractMatrix) = true
+has_ldiv!(::AbstractMatrix) = false
+has_ldiv!(::Union{Diagonal, Factorization}) = true
+
 # Other ones from LinearMaps.jl
 # Generic fallbacks
 LinearAlgebra.exp(L::AbstractDiffEqLinearOperator,t) = exp(t*L)
