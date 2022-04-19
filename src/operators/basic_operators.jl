@@ -118,9 +118,9 @@ Like DiffEqArrayOperator, but stores a Factorization instead.
 
 Supports left division and `ldiv!` when applied to an array.
 """
-struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{Factorization{T},
-                                                               Diagonal{T},
-                                                               Bidiagonal{T},
+struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{
+                                                               Factorization{T}, Diagonal{T}, Bidiagonal{T},
+                                                               Adjoint{T,<:Factorization{T}},
                                                               }
                                     } <: AbstractDiffEqLinearOperator{T}
   F::FType
@@ -133,6 +133,12 @@ LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::FactorizedDiffEqArrayOperator, B::Ab
 LinearAlgebra.ldiv!(L::FactorizedDiffEqArrayOperator, B::AbstractVecOrMat) = ldiv!(L.F, B)
 Base.:\(L::FactorizedDiffEqArrayOperator, x::AbstractVecOrMat) = L.F \ x
 LinearAlgebra.issuccess(L::FactorizedDiffEqArrayOperator) = issuccess(L.F)
+Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
+
+LinearAlgebra.ldiv!(y, L::FactorizedDiffEqArrayOperator, x) = ldiv!(y, L.F, x)
+#isconstant(::FactorizedDiffEqArrayOperator) = true
+has_ldiv(::FactorizedDiffEqArrayOperator) = true
+has_ldiv!(::FactorizedDiffEqArrayOperator) = true
 
 # The (u,p,t) and (du,u,p,t) interface
 for T in [DiffEqScalar, DiffEqArrayOperator, FactorizedDiffEqArrayOperator, DiffEqIdentity]
