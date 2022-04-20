@@ -601,7 +601,7 @@ export step!, deleteat!,addat!,get_tmp_cache,
        isdiscrete, reeval_internals_due_to_modification!
 
 export update_coefficients!, update_coefficients,
-       has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
+       has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 

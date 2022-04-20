@@ -18,6 +18,7 @@ update_coefficients(L,u,p,t) = L
 # Traits
 isconstant(::AbstractSciMLOperator) = false
 islinear(::AbstractSciMLOperator) = false
+has_adjoint(L::AbstractSciMLOperator) = false # L', adjoint(L)
 has_expmv!(L::AbstractSciMLOperator) = false # expmv!(v, L, t, u)
 has_expmv(L::AbstractSciMLOperator) = false # v = exp(L, t, u)
 has_exp(L::AbstractSciMLOperator) = false # v = exp(L, t)*u
@@ -46,6 +47,15 @@ has_ldiv!(L::AbstractSciMLOperator) = false # ldiv!(du, L, u)
 # Extra standard assumptions
 isconstant(::AbstractDiffEqLinearOperator) = true
 islinear(o::AbstractDiffEqLinearOperator) = isconstant(o)
+
+isconstant(::AbstractMatrix) = true
+islinear(::AbstractMatrix) = true
+has_adjoint(::AbstractMatrix) = true
+has_mul(::AbstractMatrix) = true
+has_mul!(::AbstractMatrix) = true
+has_ldiv(::AbstractMatrix) = true
+has_ldiv!(::AbstractMatrix) = false
+has_ldiv!(::Union{Diagonal, Factorization}) = true
 
 # Other ones from LinearMaps.jl
 # Generic fallbacks

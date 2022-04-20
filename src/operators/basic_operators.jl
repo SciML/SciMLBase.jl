@@ -86,9 +86,11 @@ struct DiffEqArrayOperator{T,AType<:AbstractMatrix{T},F} <: AbstractDiffEqLinear
     new{eltype(A),AType,typeof(update_func)}(A, update_func)
 end
 
+has_adjoint(::DiffEqArrayOperator) = true
 update_coefficients!(L::DiffEqArrayOperator,u,p,t) = (L.update_func(L.A,u,p,t); L)
 isconstant(L::DiffEqArrayOperator) = L.update_func == DEFAULT_UPDATE_FUNC
 Base.similar(L::DiffEqArrayOperator, ::Type{T}, dims::Dims) where T = similar(L.A, T, dims)
+Base.adjoint(L::DiffEqArrayOperator) = DiffEqArrayOperator(L.A'; update_func = (A,u,p,t) -> L.update_func(L.A,u,p,t)')
 
 # propagate_inbounds here for the getindex fallback
 Base.@propagate_inbounds Base.convert(::Type{AbstractMatrix}, L::DiffEqArrayOperator) = L.A
@@ -116,21 +118,39 @@ Like DiffEqArrayOperator, but stores a Factorization instead.
 
 Supports left division and `ldiv!` when applied to an array.
 """
-struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{Factorization{T},
-                                                               Diagonal{T},
-                                                               Bidiagonal{T},
+struct FactorizedDiffEqArrayOperator{T<:Number, FType <: Union{
+                                                               Factorization{T}, Diagonal{T}, Bidiagonal{T},
+                                                               Adjoint{T,<:Factorization{T}},
                                                               }
                                     } <: AbstractDiffEqLinearOperator{T}
   F::FType
 end
 
-Base.Matrix(L::FactorizedDiffEqArrayOperator) = Matrix(L.F)
-Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator) = convert(AbstractMatrix, L.F)
+function Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator)
+    if L.F isa Adjoint
+        convert(AbstractMatrix,L.F')'
+    else
+        convert(AbstractMatrix, L.F)
+    end
+end
+function Base.Matrix(L::FactorizedDiffEqArrayOperator)
+    if L.F isa Adjoint
+        Matrix(L.F')'
+    else
+        Matrix(L.F)
+    end
+end
+Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
 Base.size(L::FactorizedDiffEqArrayOperator, args...) = size(L.F, args...)
 LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::FactorizedDiffEqArrayOperator, B::AbstractVecOrMat) = ldiv!(Y, L.F, B)
 LinearAlgebra.ldiv!(L::FactorizedDiffEqArrayOperator, B::AbstractVecOrMat) = ldiv!(L.F, B)
 Base.:\(L::FactorizedDiffEqArrayOperator, x::AbstractVecOrMat) = L.F \ x
 LinearAlgebra.issuccess(L::FactorizedDiffEqArrayOperator) = issuccess(L.F)
+
+LinearAlgebra.ldiv!(y, L::FactorizedDiffEqArrayOperator, x) = ldiv!(y, L.F, x)
+#isconstant(::FactorizedDiffEqArrayOperator) = true
+has_ldiv(::FactorizedDiffEqArrayOperator) = true
+has_ldiv!(::FactorizedDiffEqArrayOperator) = true
 
 # The (u,p,t) and (du,u,p,t) interface
 for T in [DiffEqScalar, DiffEqArrayOperator, FactorizedDiffEqArrayOperator, DiffEqIdentity]
