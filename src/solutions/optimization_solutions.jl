@@ -39,6 +39,10 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
     return getfield(x,s)
 end
 
+function Base.propertynames(x::AbstractOptimizationSolution)
+    return (:minimizer, fieldnames(typeof(x))...)
+end
+
 function Base.summary(io::IO, A::AbstractOptimizationSolution)
     type_color, no_color = get_colorizers(io)
     print(io,
