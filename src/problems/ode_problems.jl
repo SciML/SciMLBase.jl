@@ -3,19 +3,72 @@ $(TYPEDEF)
 """
 struct StandardODEProblem end
 
-# Mu' = f
-"""
+@doc doc"""
 $(TYPEDEF)
 
-Defines an ODE problem.
+Defines an ordinary differential equation (ODE) problem.
+Documentation Page: https://diffeq.sciml.ai/stable/types/ode_types/
 
-# Fields
+## Mathematical Specification of an ODE Problem
+
+To define an ODE Problem, you simply need to give the function ``f`` and the initial
+condition ``u₀`` which define an ODE:
+
+```math
+\frac{du}{dt} = f(u,p,t)
+```
+
+There are two different ways of specifying `f`:
+- `f(du,u,p,t)`: in-place. Memory-efficient when avoiding allocations. Best option for most cases unless mutation is not allowed. 
+- `f(u,p,t)`: returning `du`. Less memory-efficient way, particularly suitable when mutation is not allowed (e.g. with certain automatic differentiation packages such as Zygote).
+
+`u₀` should be an AbstractArray (or number) whose geometry matches the desired geometry of `u`.
+Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
+provide `u₀` as arbitrary matrices / higher dimension tensors as well.
+
+## Problem Type
+
+### Constructors
+
+`ODEProblem` can be constructed by first building an `ODEFunction` or
+by simply passing the ODE right-hand side to the constructor. The constructors
+are:
+
+- `ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters();kwargs...)`
+- `ODEProblem{isinplace}(f,u0,tspan,p=NullParameters();kwargs...)` :
+  Defines the ODE with the specified functions. `isinplace` optionally sets whether
+  the function is inplace or not. This is determined automatically, but not inferred.
+
+Parameters are optional, and if not given then a `NullParameters()` singleton
+will be used which will throw nice errors if you try to index non-existent
+parameters. Any extra keyword arguments are passed on to the solvers. For example,
+if you set a `callback` in the problem, then that `callback` will be added in
+every solve call.
+
+For specifying Jacobians and mass matrices, see the `ODEFunction` documentation.
+
+### Fields
 
 $(FIELDS)
+
+## Example Problems
+
+Example problems can be found in [DiffEqProblemLibrary.jl](https://github.com/JuliaDiffEq/DiffEqProblemLibrary.jl/tree/master/src/ode).
+
+To use a sample problem, such as `prob_ode_linear`, you can do something like:
+
+```julia
+#] add DiffEqProblemLibrary
+using DiffEqProblemLibrary.ODEProblemLibrary
+# load problems
+ODEProblemLibrary.importodeproblems()
+prob = ODEProblemLibrary.prob_ode_linear
+sol = solve(prob)
+```
 """
 struct ODEProblem{uType,tType,isinplace,P,F,K,PT} <:
                AbstractODEProblem{uType,tType,isinplace}
-  """The ODE is `du/dt = f(u,p,t)`."""
+  """The ODE is `du = f(u,p,t)` for out-of-place and f(du,u,p,t) for in-place."""
   f::F
   """The initial condition is `u(tspan[1]) = u0`."""
   u0::uType
@@ -25,8 +78,8 @@ struct ODEProblem{uType,tType,isinplace,P,F,K,PT} <:
   p::P
   """A callback to be applied to every solver which uses the problem."""
   kwargs::K
-  # TODO
   problem_type::PT
+  """An internal argument for storing traits about the solving process."""
   @add_kwonly function ODEProblem{iip}(f::AbstractODEFunction{iip},
                                        u0,tspan,p=NullParameters(),
                                        problem_type=StandardODEProblem();
@@ -99,20 +152,63 @@ function DynamicalODEProblem(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...)
   ODEProblem(DynamicalODEFunction(f1,f2),ArrayPartition(du0,u0),tspan,p;kwargs...)
 end
 
-"""
-    DynamicalODEProblem{isinplace}(f1,f2,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+@doc doc"""
+$(TYPEDEF)
 
-Define a dynamical ODE problem from the two functions `f1` and `f2`.
+Defines an dynamical ordinary differential equation (ODE) problem.
+Documentation Page: https://diffeq.sciml.ai/stable/types/dynamical_types/
 
-# Arguments
+Dynamical ordinary differential equations, such as those arising from the definition
+of a Hamiltonian system or a second order ODE, have a special structure that can be
+utilized in the solution of the differential equation. On this page we describe
+how to define second order differential equations for their efficient numerical solution.
+
+## Mathematical Specification of a Dynamical ODE Problem
+
+These algorithms require a Partitioned ODE of the form:
+
+```math
+\frac{dv}{dt} = f_1(u,t) \\
+\frac{du}{dt} = f_2(v) \\
+```
+This is a Partitioned ODE partitioned into two groups, so the functions should be
+specified as `f1(dv,v,u,p,t)` and `f2(du,v,u,p,t)` (in the inplace form), where `f1`
+is independent of `v` (unless specified by the solver), and `f2` is independent
+of `u` and `t`. This includes discretizations arising from
+`SecondOrderODEProblem`s where the velocity is not used in the acceleration function,
+and Hamiltonians where the potential is (or can be) time-dependent but the kinetic
+energy is only dependent on `v`.
+
+Note that some methods assume that the integral of `f2` is a quadratic form. That
+means that `f2=v'*M*v`, i.e. ``\int f_2 = \frac{1}{2} m v^2``, giving `du = v`.
+This is equivalent to saying that the kinetic energy is related to ``v^2``. The
+methods which require this assumption will lose accuracy if this assumption is
+violated. Methods listed make note of this requirement with "Requires
+quadratic kinetic energy".
+
+### Constructor
+
+```julia
+DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters();kwargs...)
+DynamicalODEProblem{isinplace}(f1,f2,v0,u0,tspan,p=NullParameters();kwargs...)
+```
+
+Defines the ODE with the specified functions. `isinplace` optionally sets whether
+the function is inplace or not. This is determined automatically, but not inferred.
+
+Parameters are optional, and if not given then a `NullParameters()` singleton
+will be used which will throw nice errors if you try to index non-existent
+parameters. Any extra keyword arguments are passed on to the solvers. For example,
+if you set a `callback` in the problem, then that `callback` will be added in
+every solve call.
+
+### Fields
+
 * `f1` and `f2`: The functions in the ODE.
 * `v0` and `u0`: The initial conditions.
 * `tspan`: The timespan for the problem.
-* `p`: Parameter values for `f1` and `f2`.
-* `callback`: A callback to be applied to every solver which uses the problem. Defaults to nothing.
-
-`isinplace` optionally sets whether the function is inplace or not.
-This is determined automatically, but not inferred.
+* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `kwargs`: The keyword arguments passed onto the solves.
 """
 function DynamicalODEProblem{iip}(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...) where iip
   ODEProblem(DynamicalODEFunction{iip}(f1,f2),ArrayPartition(du0,u0),tspan,p,DynamicalODEProblem{iip}();kwargs...)
@@ -128,17 +224,52 @@ function SecondOrderODEProblem(f,du0,u0,tspan,p=NullParameters();kwargs...)
   SecondOrderODEProblem{iip}(f,du0,u0,tspan,p;kwargs...)
 end
 
-"""
-    SecondOrderODEProblem{isinplace}(f,du0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+@doc doc"""
+$(TYPEDEF)
 
-Define a second order ODE problem with the specified function.
+Defines a second order ordinary differential equation (ODE) problem.
+Documentation Page: https://diffeq.sciml.ai/stable/types/dynamical_types/
 
-# Arguments
+## Mathematical Specification of a 2nd Order ODE Problem
+
+To define a 2nd Order ODE Problem, you simply need to give the function ``f``
+and the initial condition ``u_0`` which define an ODE:
+
+```math
+u'' = f(u',u,p,t)
+```
+
+`f` should be specified as `f(du,u,p,t)` (or in-place as `f(ddu,du,u,p,t)`), and `u₀`
+should be an AbstractArray (or number) whose geometry matches the desired
+geometry of `u`. Note that we are not limited to numbers or vectors for `u₀`;
+one is allowed to provide `u₀` as arbitrary matrices / higher dimension tensors
+as well.
+
+From this form, a dynamical ODE:
+
+```math
+v' = f(v,u,p,t) \\
+u' = v \\
+```
+
+is generated.
+
+### Constructors
+
+```julia
+SecondOrderODEProblem{isinplace}(f,du0,u0,tspan,callback=CallbackSet())
+```
+
+Defines the ODE with the specified functions.
+
+### Fields
+
 * `f`: The function for the second derivative.
 * `du0`: The initial derivative.
 * `u0`: The initial condition.
 * `tspan`: The timespan for the problem.
-* `callback`: A callback to be applied to every solver which uses the problem. Defaults to nothing.
+* `callback`: A callback to be applied to every solver which uses the problem.
+  Defaults to nothing.
 """
 function SecondOrderODEProblem{iip}(f,du0,u0,tspan,p=NullParameters();kwargs...) where iip
   if iip
@@ -189,22 +320,68 @@ function SplitODEProblem(f1,f2,u0,tspan,p=NullParameters();kwargs...)
   f = SplitFunction(f1,f2)
   SplitODEProblem(f,u0,tspan,p;kwargs...)
 end
-"""
-    SplitODEProblem{isinplace}(f1,f2,u0,tspan,p=NullParameters();kwargs...)
 
-Define a split ODE problem from separate functions `f1` and `f2`.
+@doc doc"""
+$(TYPEDEF)
 
-# Arguments
+Defines a split ordinary differential equation (ODE) problem.
+Documentation Page: https://diffeq.sciml.ai/stable/types/split_ode_types/
+
+## Mathematical Specification of a Split ODE Problem
+
+To define a `SplitODEProblem`, you simply need to give a two functions 
+``f_1`` and ``f_2`` along with an initial condition ``u₀`` which
+define an ODE:
+
+```math
+\frac{du}{dt} =  f_1(u,p,t) + f_2(u,p,t)
+```
+
+`f` should be specified as `f(u,p,t)` (or in-place as `f(du,u,p,t)`), and `u₀` should
+be an AbstractArray (or number) whose geometry matches the desired geometry of `u`.
+Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
+provide `u₀` as arbitrary matrices / higher dimension tensors as well.
+
+Many splits are at least partially linear. That is the equation:
+
+```math
+\frac{du}{dt} =  Au + f_2(u,p,t)
+```
+
+For how to define a linear function `A`, see the documentation for the [DiffEqOperators](@ref).
+
+### Constructors
+
+```julia
+SplitODEProblem(f::SplitFunction,u0,tspan,p=NullParameters();kwargs...)
+SplitODEProblem{isinplace}(f1,f2,u0,tspan,p=NullParameters();kwargs...)
+```
+
+The `isinplace` parameter can be omitted and will be determined using the signature of `f2`.
+Note that both `f1` and `f2` should support the in-place style if `isinplace` is `true` or they
+should both support the out-of-place style if `isinplace` is `false`. You cannot mix up the two styles.
+
+Parameters are optional, and if not given then a `NullParameters()` singleton
+will be used which will throw nice errors if you try to index non-existent
+parameters. Any extra keyword arguments are passed on to the solvers. For example,
+if you set a `callback` in the problem, then that `callback` will be added in
+every solve call.
+
+Under the hood, a `SplitODEProblem` is just a regular `ODEProblem` whose `f` is a `SplitFunction`.
+Therefore you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
+dedicated to split problems, see [Split ODE Solvers](@ref split_ode_solve).
+
+For specifying Jacobians and mass matrices, see the
+[DiffEqFunctions](@ref performance_overloads)
+page.
+
+### Fields
+
 * `f1`, `f2`: The functions in the ODE.
 * `u0`: The initial condition.
 * `tspan`: The timespan for the problem.
-* `p`: The parameters for the problem.
-* `callback`: A callback to be applied to every solver which uses the problem. Defaults to nothing.
-
-The `isinplace parameter` can be omitted and will be determined using the
-signature of `f2`. Note that both `f1` and `f2` should support the in-place style if
-`isinplace` is true or they should both support the out-of-place style if
-`isinplace` is false. You cannot mix up the two styles.
+* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `kwargs`: The keyword arguments passed onto the solves.
 """
 function SplitODEProblem{iip}(f1,f2,u0,tspan,p=NullParameters();kwargs...) where iip
   f = SplitFunction{iip}(f1,f2)
