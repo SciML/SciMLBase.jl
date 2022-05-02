@@ -13,7 +13,7 @@ which defines the ODE:
 \frac{du}{dt} = f(u,p,t)
 ```
 
-and an initial guess ``u₀`` of where `f(u,p,t)=0`. `f` should be specified as `f(u,p,t)`
+and an initial guess ``u_0`` of where `f(u,p,t)=0`. `f` should be specified as `f(u,p,t)`
 (or in-place as `f(du,u,p,t)`), and `u₀` should be an AbstractArray (or number)
 whose geometry matches the desired geometry of `u`. Note that we are not limited
 to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary
