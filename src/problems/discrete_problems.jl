@@ -10,13 +10,13 @@ Documentation Page: https://diffeq.sciml.ai/stable/types/discrete_types/
 ## Mathematical Specification of a Discrete Problem
 
 To define an Discrete Problem, you simply need to give the function ``f`` and the initial
-condition ``u₀`` which define a function map:
+condition ``u_0`` which define a function map:
 
 ```math
 u_{n+1} = f(u_{n},p,t_{n+1})
 ```
 
-`f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and `u₀` should
+`f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and `u_0` should
 be an AbstractArray (or number) whose geometry matches the desired geometry of `u`.
 Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
 provide `u₀` as arbitrary matrices / higher dimension tensors as well. ``u_{n+1}`` only depends on the previous
