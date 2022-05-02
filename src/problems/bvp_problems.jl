@@ -12,7 +12,7 @@ Documentation Page: https://diffeq.sciml.ai/stable/types/bvp_types/
 ## Mathematical Specification of a BVP Problem
 
 To define a BVP Problem, you simply need to give the function ``f`` and the initial
-condition ``u₀`` which define an ODE:
+condition ``u_0`` which define an ODE:
 
 ```math
 \frac{du}{dt} = f(u,p,t)
