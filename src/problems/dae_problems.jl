@@ -8,7 +8,7 @@ Documentation Page: https://diffeq.sciml.ai/stable/types/dae_types/
 ## Mathematical Specification of an DAE Problem
 
 To define a DAE Problem, you simply need to give the function ``f`` and the initial
-condition ``u₀`` which define an ODE:
+condition ``u_0`` which define an ODE:
 
 ```math
 0 = f(du,u,p,t)
