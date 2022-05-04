@@ -53,7 +53,11 @@ page.
 
 ### Fields
 
-$(FIELDS)
+* `f`: The function in the map.
+* `u0`: The initial condition.
+* `tspan`: The timespan for the problem.
+* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `kwargs`: The keyword arguments passed onto the solves.
 
 #### Note About Timing
 

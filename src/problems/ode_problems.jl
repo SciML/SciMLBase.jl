@@ -48,7 +48,11 @@ For specifying Jacobians and mass matrices, see the `ODEFunction` documentation.
 
 ### Fields
 
-$(FIELDS)
+- `f`: The function in the ODE.
+- `u0`: The initial condition.
+- `tspan`: The timespan for the problem.
+- `p`: The parameters.
+- `kwargs`: The keyword arguments passed onto the solves.
 
 ## Example Problems
 
