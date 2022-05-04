@@ -1,5 +1,4 @@
 @doc doc"""
-$(TYPEDEF)
 
 Defines an Defines a steady state ODE problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/steady_state_types/

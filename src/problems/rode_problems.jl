@@ -1,5 +1,4 @@
 @doc doc"""
-$(TYPEDEF)
 
 Defines a random ordinary differential equation (RODE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/rode_types/

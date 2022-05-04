@@ -4,7 +4,6 @@ $(TYPEDEF)
 struct StandardODEProblem end
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines an ordinary differential equation (ODE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/ode_types/
@@ -153,7 +152,6 @@ function DynamicalODEProblem(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...)
 end
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines an dynamical ordinary differential equation (ODE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/dynamical_types/
@@ -225,7 +223,6 @@ function SecondOrderODEProblem(f,du0,u0,tspan,p=NullParameters();kwargs...)
 end
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines a second order ordinary differential equation (ODE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/dynamical_types/
@@ -322,7 +319,6 @@ function SplitODEProblem(f1,f2,u0,tspan,p=NullParameters();kwargs...)
 end
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines a split ordinary differential equation (ODE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/split_ode_types/

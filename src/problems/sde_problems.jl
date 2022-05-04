@@ -4,7 +4,6 @@ $(TYPEDEF)
 struct StandardSDEProblem end
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines an stochastic differential equation (SDE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/sde_types/
