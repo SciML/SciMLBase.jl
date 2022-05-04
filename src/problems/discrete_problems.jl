@@ -2,7 +2,6 @@ const DISCRETE_INPLACE_DEFAULT = convert(DiscreteFunction{true},(du,u,p,t) -> du
 const DISCRETE_OUTOFPLACE_DEFAULT = convert(DiscreteFunction{false},(u,p,t) -> u)
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines a discrete dynamical system problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/discrete_types/

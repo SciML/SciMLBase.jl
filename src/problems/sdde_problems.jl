@@ -1,5 +1,4 @@
 @doc doc"""
-$(TYPEDEF)
 
 Defines a stochastic delay differential equation (SDDE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/sdde_types/

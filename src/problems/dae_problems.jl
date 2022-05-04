@@ -1,5 +1,4 @@
 @doc doc"""
-$(TYPEDEF)
 
 Defines an implicit ordinary differential equation (ODE) or 
 differential-algebraic equation (DAE) problem.

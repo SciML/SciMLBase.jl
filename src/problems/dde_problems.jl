@@ -4,7 +4,6 @@ $(TYPEDEF)
 struct StandardDDEProblem end
 
 @doc doc"""
-$(TYPEDEF)
 
 Defines a delay differential equation (DDE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/dde_types/
