@@ -137,24 +137,6 @@ $(TYPEDEF)
 """
 abstract type AbstractDynamicalODEProblem end
 
-"""
-$(TYPEDEF)
-"""
-struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
-# u' = f2(v)
-# v' = f1(t,u)
-"""
-    DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
-
-Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
-"""
-function DynamicalODEProblem(f::DynamicalODEFunction,du0,u0,tspan,p=NullParameters();kwargs...)
-  ODEProblem(f,ArrayPartition(du0,u0),tspan,p;kwargs...)
-end
-function DynamicalODEProblem(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...)
-  ODEProblem(DynamicalODEFunction(f1,f2),ArrayPartition(du0,u0),tspan,p;kwargs...)
-end
-
 @doc doc"""
 
 Defines an dynamical ordinary differential equation (ODE) problem.
@@ -212,18 +194,22 @@ every solve call.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `kwargs`: The keyword arguments passed onto the solves.
 """
-function DynamicalODEProblem{iip}(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...) where iip
-  ODEProblem(DynamicalODEFunction{iip}(f1,f2),ArrayPartition(du0,u0),tspan,p,DynamicalODEProblem{iip}();kwargs...)
+struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
+
+"""
+    DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+
+Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
+"""
+function DynamicalODEProblem(f::DynamicalODEFunction,du0,u0,tspan,p=NullParameters();kwargs...)
+  ODEProblem(f,ArrayPartition(du0,u0),tspan,p;kwargs...)
+end
+function DynamicalODEProblem(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...)
+  ODEProblem(DynamicalODEFunction(f1,f2),ArrayPartition(du0,u0),tspan,p;kwargs...)
 end
 
-# u'' = f(t,u,du,ddu)
-"""
-$(TYPEDEF)
-"""
-struct SecondOrderODEProblem{iip} <: AbstractDynamicalODEProblem end
-function SecondOrderODEProblem(f,du0,u0,tspan,p=NullParameters();kwargs...)
-  iip = isinplace(f,5)
-  SecondOrderODEProblem{iip}(f,du0,u0,tspan,p;kwargs...)
+function DynamicalODEProblem{iip}(f1,f2,du0,u0,tspan,p=NullParameters();kwargs...) where iip
+  ODEProblem(DynamicalODEFunction{iip}(f1,f2),ArrayPartition(du0,u0),tspan,p,DynamicalODEProblem{iip}();kwargs...)
 end
 
 @doc doc"""
@@ -272,6 +258,12 @@ Defines the ODE with the specified functions.
 * `callback`: A callback to be applied to every solver which uses the problem.
   Defaults to nothing.
 """
+struct SecondOrderODEProblem{iip} <: AbstractDynamicalODEProblem end
+function SecondOrderODEProblem(f,du0,u0,tspan,p=NullParameters();kwargs...)
+  iip = isinplace(f,5)
+  SecondOrderODEProblem{iip}(f,du0,u0,tspan,p;kwargs...)
+end
+
 function SecondOrderODEProblem{iip}(f,du0,u0,tspan,p=NullParameters();kwargs...) where iip
   if iip
     f2 = function (du,v,u,p,t)
@@ -311,16 +303,6 @@ end
 $(TYPEDEF)
 """
 abstract type AbstractSplitODEProblem end
-
-"""
-$(TYPEDEF)
-"""
-struct SplitODEProblem{iip} <: AbstractSplitODEProblem end
-# u' = Au + f
-function SplitODEProblem(f1,f2,u0,tspan,p=NullParameters();kwargs...)
-  f = SplitFunction(f1,f2)
-  SplitODEProblem(f,u0,tspan,p;kwargs...)
-end
 
 @doc doc"""
 
@@ -383,6 +365,13 @@ page.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `kwargs`: The keyword arguments passed onto the solves.
 """
+struct SplitODEProblem{iip} <: AbstractSplitODEProblem end
+
+function SplitODEProblem(f1,f2,u0,tspan,p=NullParameters();kwargs...)
+  f = SplitFunction(f1,f2)
+  SplitODEProblem(f,u0,tspan,p;kwargs...)
+end
+
 function SplitODEProblem{iip}(f1,f2,u0,tspan,p=NullParameters();kwargs...) where iip
   f = SplitFunction{iip}(f1,f2)
   SplitODEProblem(f,u0,tspan,p;kwargs...)
