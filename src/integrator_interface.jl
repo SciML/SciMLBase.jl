@@ -328,7 +328,7 @@ function check_error(integrator::DEIntegrator)
   end
   if integrator.iter > integrator.opts.maxiters
     if integrator.opts.verbose
-      @warn("Interrupted. Larger maxiters is needed.")
+      @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://diffeq.sciml.ai/stable/solvers/ode_solve/#Stiff-Problems).")
     end
     return :MaxIters
   end
