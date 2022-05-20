@@ -1,6 +1,23 @@
-abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N} end
+abstract type AbstractOptimizationSolution{T,N} <: AbstractNoTimeSolution{T,N} end
 
-struct OptimizationSolution{T, N, uType, P, A, Tf, O} <: AbstractOptimizationSolution{T, N}
+"""
+$(TYPEDEF)
+
+Representation of the solution to an nonlinear optimization defined by an OptimizationProblem
+
+## Fields
+
+- `u`: the representation of the optimization's solution.
+- `prob`: the original NonlinearProblem/SteadyStateProblem that was solved.
+- `alg`: the algorithm type used by the solver.
+- `original`: if the solver is wrapped from an alternative solver ecosystem, such as
+  Optim.jl, then this is the original return from said solver library.
+- `retcode`: the return code from the solver. Used to determine whether the solver solved
+  successfully (`sol.retcode === :Success`), whether it terminated due to a user-defined
+  callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
+  details, see the return code section of the DifferentialEquations.jl documentation.
+"""
+struct OptimizationSolution{T,N,uType,P,A,Tf,O} <: AbstractOptimizationSolution{T,N}
     u::uType # minimizer
     prob::P # optimization problem
     alg::A # algorithm
@@ -10,33 +27,33 @@ struct OptimizationSolution{T, N, uType, P, A, Tf, O} <: AbstractOptimizationSol
 end
 
 function build_solution(prob::AbstractOptimizationProblem,
-                        alg, u, minimum;
-                        retcode = :Default,
-                        original = nothing,
-                        kwargs...)
+    alg, u, minimum;
+    retcode=:Default,
+    original=nothing,
+    kwargs...)
 
     T = eltype(eltype(u))
     N = ndims(u)
 
-    OptimizationSolution{T, N, typeof(u), typeof(prob), typeof(alg),
-                         typeof(minimum), typeof(original)}(
-                         u, prob, alg, minimum, retcode, original)
+    OptimizationSolution{T,N,typeof(u),typeof(prob),typeof(alg),
+        typeof(minimum),typeof(original)}(
+        u, prob, alg, minimum, retcode, original)
 end
 
 function Base.show(io::IO, A::AbstractOptimizationSolution)
-    println(io,string("retcode: ",A.retcode))
-    print(io,"u: ")
+    println(io, string("retcode: ", A.retcode))
+    print(io, "u: ")
     show(io, A.u)
     println(io)
-    print(io,"Final objective value:     $(A.minimum)\n")
+    print(io, "Final objective value:     $(A.minimum)\n")
     return
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,s::Symbol)
+Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution, s::Symbol)
     if s === :minimizer
-        return getfield(x,:u)
+        return getfield(x, :u)
     end
-    return getfield(x,s)
+    return getfield(x, s)
 end
 
 function Base.summary(io::IO, A::AbstractOptimizationSolution)
