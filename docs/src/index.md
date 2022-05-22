@@ -145,7 +145,7 @@ all of the problem domains. Underlying high level ideas include:
 - [RecursiveArrayTools.jl](https://github.com/SciML/RecursiveArrayTools.jl)
     - A package which defines the underlying `AbstractVectorOfArray` structure
       used as the output for all time series results.
-- [ArrayInterface.jl](https://github.com/JuliaArrays/ArrayInterface.jl)
+- [ArrayInterfaceCore.jl](https://github.com/JuliaArrays/ArrayInterfaceCore.jl)
     - The package which defines the extended `AbstractArray` interface employed
       throughout the SciML ecosystem.
 
