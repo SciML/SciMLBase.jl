@@ -28,8 +28,170 @@ $(TYPEDEF)
 """
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
+
+A representation of an ODE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f(u,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+ODEFunction{iip,recompile}(f;
+                           mass_matrix=I,
+                           analytic=nothing,
+                           tgrad=nothing,
+                           jac=nothing,
+                           jvp=nothing,
+                           vjp=nothing,
+                           jac_prototype=nothing,
+                           sparsity=jac_prototype,
+                           paramjac = nothing,
+                           syms = nothing,
+                           indepsym = nothing,
+                           colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+`iip` is the the optional boolean for determining whether a given function is written to
+be used in-place or out-of-place. In-place functions are `f!(du,u,p,t)` where the return
+is ignored and the result is expected to be mutated into the value of `du`. Out-of-place
+functions are `du=f(u,p,t)`.
+
+Normally this is determined automatically by looking at the method table for `f` and seeing
+the maximum number of arguments in available dispatches. For this reason, the constructor
+`ODEFunction(f)` generally works (but is type-unstable). However, for type-stability or
+to enforce correctness, this option is passed via `ODEFunction{true}(f)`.
+
+## recompile: Controlling Compilation and Specialization
+
+The `recompile` parameter controls whether the ODEFunction will fully specialize on the
+`typeof(f)`. This causes recompilation of the solver for each new `f` function, but
+gives the maximum compiler information and runtime speed. By default `recompile = true`.
+If `recompile = false`, the `ODEFunction` uses `Any` type parameters for each of the
+functions, allowing for the reuse of compilation caches but adding a dynamic dispatch
+at the `f` call sites, potentially leading to runtime regressions.
+
+Overriding the `true` default is done by passing a second type parameter after `iip`,
+for example `ODEFunction{true,false}(f)` is an in-place function with no recompilation
+specialization.
+
+## Fields
+
+The fields of the ODEFunction type directly match the names of the inputs.
+
+## More Details on Jacobians
+
+The following example creates an inplace `ODEFunction` whose jacobian is a `Diagonal`:
+
+```julia
+using LinearAlgebra
+f = (du,u,p,t) -> du .= t .* u
+jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
+jp = Diagonal(zeros(2))
+fun = ODEFunction(f; jac=jac, jac_prototype=jp)
+```
+
+Note that the integrators will always make a deep copy of `fun.jac_prototype`, so
+there's no worry of aliasing.
+
+In general the jacobian prototype can be anything that has `mul!` defined, in
+particular sparse matrices or custom lazy types that support `mul!`. A special case
+is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
+do not need to supply `jac` as it is automatically set to `update_coefficients!`.
+Refer to the AbstractSciMLOperators documentation for more information
+on setting up time/parameter dependent operators.
+
+## Examples
+
+### Declaring Explicit Jacobians for ODEs
+
+The most standard case, declaring a function for a Jacobian is done by overloading
+the function `f(du,u,p,t)` with an in-place updating function for the Jacobian:
+`f_jac(J,u,p,t)` where the value type is used for dispatch. For example,
+take the LotkaVolterra model:
+
+```julia
+function f(du,u,p,t)
+  du[1] = 2.0 * u[1] - 1.2 * u[1]*u[2]
+  du[2] = -3 * u[2] + u[1]*u[2]
+end
+```
+
+To declare the Jacobian we simply add the dispatch:
+
+```julia
+function f_jac(J,u,p,t)
+  J[1,1] = 2.0 - 1.2 * u[2]
+  J[1,2] = -1.2 * u[1]
+  J[2,1] = 1 * u[2]
+  J[2,2] = -3 + u[1]
+  nothing
+end
+```
+
+Then we can supply the Jacobian with our ODE as:
+
+```julia
+ff = ODEFunction(f;jac=f_jac)
+```
+
+and use this in an `ODEProblem`:
+
+```julia
+prob = ODEProblem(ff,ones(2),(0.0,10.0))
+```
+
+## Symbolically Generating the Functions
+
+See the `modelingtoolkitize` function from
+[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+automatically symbolically generating the Jacobian and more from the 
+numerically-defined functions.
 """
 struct ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
   f::F
@@ -50,8 +212,103 @@ struct ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: Ab
   colorvec::TCV
 end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
+
+A representation of a split ODE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f_1(u,p,t) + f_2(u,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+Generally, for ODE integrators the `f_1` portion should be considered the
+"stiff portion of the model" with larger time scale separation, while the
+`f_2` portion should be considered the "non-stiff portion". This interpretation
+is directly used in integrators like IMEX (implicit-explicit integrators)
+and exponential integrators.
+
+## Constructor
+
+```julia
+SplitFunction{iip,recompile}(f1,f2;
+                             mass_matrix=I,
+                             analytic=nothing,
+                             tgrad=nothing,
+                             jac=nothing,
+                             jvp=nothing,
+                             vjp=nothing,
+                             jac_prototype=nothing,
+                             sparsity=jac_prototype,
+                             paramjac = nothing,
+                             syms = nothing,
+                             indepsym = nothing,
+                             colorvec = nothing)
+```
+
+Note that only the functions `f_i` themselves are required. These functions should
+be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df_1}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df_1}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df_1}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## Note on the Derivative Definition
+
+The derivatives, such as the Jacobian, are only defined on the `f1` portion of the split ODE.
+This is used to treat the `f1` implicit while keeping the `f2` portion explicit.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the SplitFunction type directly match the names of the inputs.
+
+## Symbolically Generating the Functions
+
+See the `modelingtoolkitize` function from
+[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+automatically symbolically generating the Jacobian and more from the 
+numerically-defined functions. See `ModelingToolkit.SplitODEProblem` for
+information on generating the SplitFunction from this symbolic engine.
 """
 struct SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
   f1::F1
@@ -73,8 +330,93 @@ struct SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} 
   colorvec::TCV
 end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
+
+A representation of an ODE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f(u,p,t)
+```
+
+as a partitioned ODE:
+
+```math
+M_1 \frac{du}{dt} = f_1(u,p,t)
+M_2 \frac{du}{dt} = f_2(u,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DynamicalODEFunction{iip,recompile}(f1,f2;
+                                    mass_matrix=I,
+                                    analytic=nothing,
+                                    tgrad=nothing,
+                                    jac=nothing,
+                                    jvp=nothing,
+                                    vjp=nothing,
+                                    jac_prototype=nothing,
+                                    sparsity=jac_prototype,
+                                    paramjac = nothing,
+                                    syms = nothing,
+                                    indepsym = nothing,
+                                    colorvec = nothing)
+```
+
+Note that only the functions `f_i` themselves are required. These functions should
+be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
+  of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
+  respectively.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DynamicalODEFunction type directly match the names of the inputs.
 """
 struct DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
   f1::F1
@@ -100,8 +442,86 @@ $(TYPEDEF)
 """
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
+
+A representation of a DDE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f(u,h,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DDEFunction{iip,recompile}(f;
+                 mass_matrix=I,
+                 analytic=nothing,
+                 tgrad=nothing,
+                 jac=nothing,
+                 jvp=nothing,
+                 vjp=nothing,
+                 jac_prototype=nothing,
+                 sparsity=jac_prototype,
+                 paramjac = nothing,
+                 syms = nothing,
+                 indepsym = nothing,
+                 colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,h,p,t)` or `du = f(u,h,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling. The histroy function
+`h` acts as an interpolator over time, i.e. `h(t)` with options matching
+the solution interface, i.e. `h(t; save_idxs = 2)`.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DDEFunction type directly match the names of the inputs.
 """
 struct DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
   f::F
@@ -121,8 +541,95 @@ struct DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: Abstr
   colorvec::TCV
 end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
+
+A representation of a DDE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f(u,h,p,t)
+```
+
+as a partitioned ODE:
+
+```math
+M_1 \frac{du}{dt} = f_1(u,h,p,t)
+M_2 \frac{du}{dt} = f_2(u,h,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DynamicalDDEFunction{iip,recompile}(f1,f2;
+                                    mass_matrix=I,
+                                    analytic=nothing,
+                                    tgrad=nothing,
+                                    jac=nothing,
+                                    jvp=nothing,
+                                    vjp=nothing,
+                                    jac_prototype=nothing,
+                                    sparsity=jac_prototype,
+                                    paramjac = nothing,
+                                    syms = nothing,
+                                    indepsym = nothing,
+                                    colorvec = nothing)
+```
+
+Note that only the functions `f_i` themselves are required. These functions should
+be given as `f_i!(du,u,h,p,t)` or `du = f_i(u,h,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling. The histroy function
+`h` acts as an interpolator over time, i.e. `h(t)` with options matching
+the solution interface, i.e. `h(t; save_idxs = 2)`.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
+  of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
+  respectively.
+- `analytic(u0,h,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,h,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,h,p,t)` or `J=jac(u,h,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,h,p,t)` or `Jv=jvp(v,u,h,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,h,p,t)` or `Jv=vjp(v,u,h,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,h,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DynamicalDDEFunction type directly match the names of the inputs.
 """
 struct DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
   f1::F1
@@ -148,8 +655,51 @@ $(TYPEDEF)
 """
 abstract type AbstractDiscreteFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip}
+
+A representation of an discrete dynamical system `f`, defined by:
+
+```math
+u_{n+1} = f(u,p,t_{n+1})
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DiscreteFunction{iip,recompile}(f;
+                                analytic=nothing, 
+                                syms=nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DiscreteFunction type directly match the names of the inputs.
 """
 struct DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip}
   f::F
@@ -163,8 +713,87 @@ $(TYPEDEF)
 """
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDEFunction{iip}
+
+A representation of an SDE function `f`, defined by:
+
+```math
+M du = f(u,p,t)dt + g(u,p,t) dW 
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+SDEFunction{iip,recompile}(f,g;
+                           mass_matrix=I,
+                           analytic=nothing,
+                           tgrad=nothing,
+                           jac=nothing,
+                           jvp=nothing,
+                           vjp=nothing,
+                           ggprime = nothing,
+                           jac_prototype=nothing,
+                           sparsity=jac_prototype,
+                           paramjac = nothing,
+                           syms = nothing,
+                           indepsym = nothing,
+                           colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative 
+  ``\frac{dg(u,p,t)}{du} g(u,p,t)``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the ODEFunction type directly match the names of the inputs.
 """
 struct SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDEFunction{iip}
   f::F
@@ -186,8 +815,94 @@ struct SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: 
   colorvec::TCV
 end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
+
+A representation of a split SDE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f_1(u,p,t) + f_2(u,p,t) + g(u,p,t) dW
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+Generally, for SDE integrators the `f_1` portion should be considered the
+"stiff portion of the model" with larger time scale separation, while the
+`f_2` portion should be considered the "non-stiff portion". This interpretation
+is directly used in integrators like IMEX (implicit-explicit integrators)
+and exponential integrators.
+
+## Constructor
+
+```julia
+SplitSDEFunction{iip,recompile}(f1,f2,g;
+                 mass_matrix=I,
+                 analytic=nothing,
+                 tgrad=nothing,
+                 jac=nothing,
+                 jvp=nothing,
+                 vjp=nothing,
+                 ggprime = nothing,
+                 jac_prototype=nothing,
+                 sparsity=jac_prototype,
+                 paramjac = nothing,
+                 syms = nothing,
+                 indepsym = nothing,
+                 colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. All of the remaining functions
+are optional for improving or accelerating the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the SDE function. Can be used
+  to determine that the equation is actually a stochastic differential-algebraic equation (SDAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/sdae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df_1}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df_1}{du}^\ast v``
+- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative 
+  ``\frac{dg(u,p,t)}{du} g(u,p,t)``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df_1}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## Note on the Derivative Definition
+
+The derivatives, such as the Jacobian, are only defined on the `f1` portion of the split ODE.
+This is used to treat the `f1` implicit while keeping the `f2` portion explicit.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the SplitSDEFunction type directly match the names of the inputs.
 """
 struct SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
   f1::F1
@@ -210,8 +925,96 @@ struct SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,
   colorvec::TCV
 end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
+
+A representation of an SDE function `f` and `g`, defined by:
+
+```math
+M du = f(u,p,t) dt + g(u,p,t) dW_t
+```
+
+as a partitioned ODE:
+
+```math
+M_1 du = f_1(u,p,t) dt + g(u,p,t) dW_t
+M_2 du = f_2(u,p,t) dt + g(u,p,t) dW_t
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DynamicalSDEFunction{iip,recompile}(f1,f2;
+                                    mass_matrix=I,
+                                    analytic=nothing,
+                                    tgrad=nothing,
+                                    jac=nothing,
+                                    jvp=nothing,
+                                    vjp=nothing,
+                                    ggprime=nothing,
+                                    jac_prototype=nothing,
+                                    sparsity=jac_prototype,
+                                    paramjac = nothing,
+                                    syms = nothing,
+                                    indepsym = nothing,
+                                    colorvec = nothing)
+```
+
+Note that only the functions `f_i` themselves are required. These functions should
+be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
+  of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
+  respectively.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative 
+  ``\frac{dg(u,p,t)}{du} g(u,p,t)``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DynamicalSDEFunction type directly match the names of the inputs.
 """
 struct DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
   # This is a direct copy of the SplitSDEFunction, maybe it's not necessary and the above can be used instead.
@@ -240,8 +1043,84 @@ $(TYPEDEF)
 """
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip}
+
+A representation of an RODE function `f`, defined by:
+
+```math
+M \frac{du}{dt} = f(u,p,t,W)dt
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+RODEFunction{iip,recompile}(f;
+                           mass_matrix=I,
+                           analytic=nothing,
+                           tgrad=nothing,
+                           jac=nothing,
+                           jvp=nothing,
+                           vjp=nothing,
+                           jac_prototype=nothing,
+                           sparsity=jac_prototype,
+                           paramjac = nothing,
+                           syms = nothing,
+                           indepsym = nothing,
+                           colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the RODEFunction type directly match the names of the inputs.
 """
 struct RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip}
   f::F
@@ -266,8 +1145,124 @@ $(TYPEDEF)
 """
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip}
+
+A representation of an implicit DAE function `f`, defined by:
+
+```math
+0 = f(\frac{du}{dt},u,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DAEFunction{iip,recompile}(f;
+                           analytic=nothing,
+                           jac=nothing,
+                           jvp=nothing,
+                           vjp=nothing,
+                           jac_prototype=nothing,
+                           sparsity=jac_prototype,
+                           syms = nothing,
+                           indepsym = nothing,
+                           colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(out,du,u,p,t)` or `out = f(du,u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns the implicit DAE Jacobian
+  defined as ``gamma \frac{dG}{d(du)} + \frac{dG}{du}``
+- `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional 
+  derivative``\frac{df}{du} v``
+- `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint 
+  derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DAEFunction type directly match the names of the inputs.
+
+## Examples
+
+
+### Declaring Explicit Jacobians for DAEs
+
+For fully implicit ODEs (`DAEProblem`s), a slightly different Jacobian function
+is necessary. For the DAE
+
+```math
+G(du,u,p,t) = res
+```
+
+The Jacobian should be given in the form `gamma*dG/d(du) + dG/du ` where `gamma`
+is given by the solver. This means that the signature is:
+
+```julia
+f(J,du,u,p,gamma,t)
+```
+
+For example, for the equation
+
+```julia
+function testjac(res,du,u,p,t)
+  res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1]*u[2]
+  res[2] = du[2] -3 * u[2] - u[1]*u[2]
+end
+```
+
+we would define the Jacobian as:
+
+```julia
+function testjac(J,du,u,p,gamma,t)
+  J[1,1] = gamma - 2.0 + 1.2 * u[2]
+  J[1,2] = 1.2 * u[1]
+  J[2,1] = - 1 * u[2]
+  J[2,2] = gamma - 3 - u[1]
+  nothing
+end
+```
+
+## Symbolically Generating the Functions
+
+See the `modelingtoolkitize` function from
+[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+automatically symbolically generating the Jacobian and more from the 
+numerically-defined functions.
 """
 struct DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip}
   f::F
@@ -292,8 +1287,86 @@ $(TYPEDEF)
 """
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDDEFunction{iip}
+
+A representation of a SDDE function `f`, defined by:
+
+```math
+M du = f(u,h,p,t) dt + g(u,h,p,t) dW_t
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+SDDEFunction{iip,recompile}(f,g;
+                 mass_matrix=I,
+                 analytic=nothing,
+                 tgrad=nothing,
+                 jac=nothing,
+                 jvp=nothing,
+                 vjp=nothing,
+                 jac_prototype=nothing,
+                 sparsity=jac_prototype,
+                 paramjac = nothing,
+                 syms = nothing,
+                 indepsym = nothing,
+                 colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,h,p,t)` or `du = f(u,h,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling. The histroy function
+`h` acts as an interpolator over time, i.e. `h(t)` with options matching
+the solution interface, i.e. `h(t; save_idxs = 2)`.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DDEFunction type directly match the names of the inputs.
 """
 struct SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDDEFunction{iip}
   f::F
@@ -320,8 +1393,78 @@ $(TYPEDEF)
 """
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
-"""
-$(TYPEDEF)
+@doc doc"""
+NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip}
+
+A representation of an nonlinear system of equations `f`, defined by:
+
+```math
+0 = f(u,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+ODEFunction{iip,recompile}(f;
+                           analytic=nothing,
+                           tgrad=nothing,
+                           jac=nothing,
+                           jvp=nothing,
+                           vjp=nothing,
+                           jac_prototype=nothing,
+                           sparsity=jac_prototype,
+                           paramjac = nothing,
+                           syms = nothing,
+                           indepsym = nothing,
+                           colorvec = nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating 
+the usage of `f`. These include:
+
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the NonlinearFunction type directly match the names of the inputs.
 """
 struct NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip}
   f::F
