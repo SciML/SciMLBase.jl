@@ -14,7 +14,7 @@ To define an ODE Problem, you simply need to give the function ``f`` and the ini
 condition ``u_0`` which define an ODE:
 
 ```math
-\frac{du}{dt} = f(u,p,t)
+M \frac{du}{dt} = f(u,p,t)
 ```
 
 There are two different ways of specifying `f`:
@@ -24,6 +24,8 @@ There are two different ways of specifying `f`:
 `u₀` should be an AbstractArray (or number) whose geometry matches the desired geometry of `u`.
 Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
 provide `u₀` as arbitrary matrices / higher dimension tensors as well.
+
+For the mass matrix ``M``, see the documentation of `ODEFunction`.
 
 ## Problem Type
 
