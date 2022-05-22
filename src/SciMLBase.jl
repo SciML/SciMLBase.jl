@@ -9,7 +9,7 @@ using Distributed
 using StaticArrays
 using Markdown
 
-import Logging, ArrayInterface
+import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 
