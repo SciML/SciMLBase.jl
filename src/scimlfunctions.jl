@@ -123,6 +123,75 @@ specialization.
 ## Fields
 
 The fields of the ODEFunction type directly match the names of the inputs.
+
+## More Details on Jacobians
+
+The following example creates an inplace `ODEFunction` whose jacobian is a `Diagonal`:
+
+```julia
+using LinearAlgebra
+f = (du,u,p,t) -> du .= t .* u
+jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
+jp = Diagonal(zeros(2))
+fun = ODEFunction(f; jac=jac, jac_prototype=jp)
+```
+
+Note that the integrators will always make a deep copy of `fun.jac_prototype`, so
+there's no worry of aliasing.
+
+In general the jacobian prototype can be anything that has `mul!` defined, in
+particular sparse matrices or custom lazy types that support `mul!`. A special case
+is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
+do not need to supply `jac` as it is automatically set to `update_coefficients!`.
+Refer to the AbstractSciMLOperators documentation for more information
+on setting up time/parameter dependent operators.
+
+## Examples
+
+### Declaring Explicit Jacobians for ODEs
+
+The most standard case, declaring a function for a Jacobian is done by overloading
+the function `f(du,u,p,t)` with an in-place updating function for the Jacobian:
+`f_jac(J,u,p,t)` where the value type is used for dispatch. For example,
+take the LotkaVolterra model:
+
+```julia
+function f(du,u,p,t)
+  du[1] = 2.0 * u[1] - 1.2 * u[1]*u[2]
+  du[2] = -3 * u[2] + u[1]*u[2]
+end
+```
+
+To declare the Jacobian we simply add the dispatch:
+
+```julia
+function f_jac(J,u,p,t)
+  J[1,1] = 2.0 - 1.2 * u[2]
+  J[1,2] = -1.2 * u[1]
+  J[2,1] = 1 * u[2]
+  J[2,2] = -3 + u[1]
+  nothing
+end
+```
+
+Then we can supply the Jacobian with our ODE as:
+
+```julia
+ff = ODEFunction(f;jac=f_jac)
+```
+
+and use this in an `ODEProblem`:
+
+```julia
+prob = ODEProblem(ff,ones(2),(0.0,10.0))
+```
+
+## Symbolically Generating the Functions
+
+See the `modelingtoolkitize` function from
+[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+automatically symbolically generating the Jacobian and more from the 
+numerically-defined functions.
 """
 struct ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
   f::F
@@ -232,6 +301,14 @@ For more details on this argument, see the ODEFunction documentation.
 ## Fields
 
 The fields of the SplitFunction type directly match the names of the inputs.
+
+## Symbolically Generating the Functions
+
+See the `modelingtoolkitize` function from
+[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+automatically symbolically generating the Jacobian and more from the 
+numerically-defined functions. See `ModelingToolkit.SplitODEProblem` for
+information on generating the SplitFunction from this symbolic engine.
 """
 struct SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
   f1::F1
@@ -1139,6 +1216,53 @@ For more details on this argument, see the ODEFunction documentation.
 ## Fields
 
 The fields of the DAEFunction type directly match the names of the inputs.
+
+## Examples
+
+
+### Declaring Explicit Jacobians for DAEs
+
+For fully implicit ODEs (`DAEProblem`s), a slightly different Jacobian function
+is necessary. For the DAE
+
+```math
+G(du,u,p,t) = res
+```
+
+The Jacobian should be given in the form `gamma*dG/d(du) + dG/du ` where `gamma`
+is given by the solver. This means that the signature is:
+
+```julia
+f(J,du,u,p,gamma,t)
+```
+
+For example, for the equation
+
+```julia
+function testjac(res,du,u,p,t)
+  res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1]*u[2]
+  res[2] = du[2] -3 * u[2] - u[1]*u[2]
+end
+```
+
+we would define the Jacobian as:
+
+```julia
+function testjac(J,du,u,p,gamma,t)
+  J[1,1] = gamma - 2.0 + 1.2 * u[2]
+  J[1,2] = 1.2 * u[1]
+  J[2,1] = - 1 * u[2]
+  J[2,2] = gamma - 3 - u[1]
+  nothing
+end
+```
+
+## Symbolically Generating the Functions
+
+See the `modelingtoolkitize` function from
+[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+automatically symbolically generating the Jacobian and more from the 
+numerically-defined functions.
 """
 struct DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip}
   f::F
