@@ -16,6 +16,9 @@ makedocs(
             "fundamentals/SciMLFunctions.md",
             "fundamentals/Differentiation.md",
             "fundamentals/FAQ.md"
+        ],
+        "Interfaces" => Any[
+            "interfaces/DEAlgorithm.md",
         ]
     ]
 )
