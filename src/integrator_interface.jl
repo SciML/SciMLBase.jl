@@ -164,6 +164,27 @@ Adds a `tstop` at time `t`.
 add_tstop!(i::DEIntegrator,t) = error("add_tstop!: method has not been implemented for the integrator")
 
 """
+    has_tstop(i::DEIntegrator)
+
+Checks if integrator has any stopping times defined.
+"""
+has_tstop(i::DEIntegrator) = error("has_tstop: method has not been implemented for the integrator")
+
+"""
+    first_tstop(i::DEIntegrator)
+
+Gets the first stopping time of the integrator.
+"""
+first_tstop(i::DEIntegrator) = error("first_tstop: method has not been implemented for the integrator")
+
+"""
+    pop_tstop!(i::DEIntegrator)
+
+Pops the last stopping time from the integrator.
+"""
+pop_tstop!(i::DEIntegrator) = error("pop_tstop!: method has not been implemented for the integrator")
+
+"""
     add_saveat!(i::DEIntegrator,t)
 
 Adds a `saveat` time point at `t`.
