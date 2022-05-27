@@ -114,7 +114,7 @@ library documentations.
 ## Traits
 
 ```@docs
-isinplace(f::SciMLBase.AbstractSciMLFunction)
+SciMLBase.isinplace(f::SciMLBase.AbstractSciMLFunction)
 ```
 
 ## AbstractSciMLFunction API
@@ -150,5 +150,4 @@ DAEFunction
 SDDEFunction
 NonlinearFunction
 OptimizationFunction
-SDEProblem
 ```
