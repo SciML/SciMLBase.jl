@@ -101,38 +101,21 @@ Note that if a method does not have adaptivity, the following rules apply:
 
 ## Memory Optimizations
 
-* `calck`: Turns on and off the internal ability for intermediate
-  interpolations (also known as intermediate density). Not the same as `dense`, which is post-solution interpolation.
-  This defaults to `dense || !isempty(saveat) ||  "no custom callback is given"`.
-  This can be used to turn off interpolations
-  (to save memory) if one isn't using interpolations when a custom callback is
-  used. Another case where this may be used is to turn on interpolations for
-  usage in the integrator interface even when interpolations are used nowhere else.
-  Note that this is only required if the algorithm doesn't have
-  a free or lazy interpolation (`DP8()`). If `calck = false`, `saveat` cannot be used.
-  The rare keyword `calck` can be useful in event handling.
 * `alias_u0`: allows the solver to alias the initial condition array that is contained
   in the problem struct. Defaults to false.
+* `cache`: pass a solver cache to decrease the construction time. This is not implemented
+  for any of the problem interfaces at this moment.
 
 ## Miscellaneous
 
-* `maxiters`: Maximum number of iterations before stopping. Defaults to 1e5.
-* `callback`: Specifies a callback. Defaults to a callback function which
-  performs the saving routine. For more information, see the
-  [Event Handling and Callback Functions manual page](@ref callbacks).
-* `isoutofdomain`: Specifies a function `isoutofdomain(u,p,t)` where, when it
-  returns true, it will reject the timestep. Disabled by default.
-* `unstable_check`: Specifies a function `unstable_check(dt,u,p,t)` where, when
-  it returns true, it will cause the solver to exit and throw a warning. Defaults
-  to `any(isnan,u)`, i.e. checking if any value is a NaN.
+* `maxiters`: Maximum number of iterations before stopping.
+* `callback`: Specifies a callback function that is called between iterations.
 * `verbose`: Toggles whether warnings are thrown when the solver exits early.
   Defaults to true.
-* `merge_callbacks`: Toggles whether to merge `prob.callback` with the `solve` keyword
-  argument `callback`. Defaults to `true`.
 
 ## Progress Monitoring
 
-These arguments control the usage of the progressbar in the Juno IDE.
+These arguments control the usage of the progressbar in the logger.
 
 * `progress`: Turns on/off the Juno progressbar. Default is false.
 * `progress_steps`: Numbers of steps between updates of the progress bar.
@@ -142,13 +125,21 @@ These arguments control the usage of the progressbar in the Juno IDE.
 * `progress_message`: Controls the message with the progressbar. Defaults to
   showing `dt`, `t`, the maximum of `u`.
 
+The progress bars all use the Julia Logging interface in order to be generic
+to the IDE or programming tool that is used. For more information on how this
+is all put together, see [this discussion](https://github.com/FedeClaudi/Term.jl/discussions/67).
+
 ## Error Calculations
 
-If you are using the test problems (ex: `ODETestProblem`), then the following
-options control the errors which are calculated:
+If you are using the test problems (i.e. `SciMLFunction`s where `f.analytic` is
+defined), then options control the errors which are calculated. By default,
+any cheap error estimates are always calculated. Extra keyword arguments include:
 
-* `timeseries_errors`: Turns on and off the calculation of errors at the steps
-  which were taken, such as the `l2` error. Default is true.
-* `dense_errors`: Turns on and off the calculation of errors at the steps which
-  require dense output and calculate the error at 100 evenly-spaced points
-  throughout `tspan`. An example is the `L2` error. Default is false.
+* `timeseries_errors`
+* `dense_errors`
+
+for specifying more expensive errors.
+
+## Automatic Differentiation Control
+
+See the [Automatic Differentiation page for a full description of `sensealg`](@ref sensealg)

@@ -372,6 +372,8 @@ abstract type AbstractNoiseProcess{T,N,A,isinplace} <: AbstractDiffEqArray{T,N,A
 
 """
 Union of all base solution types.
+
+Uses a Union so that solution types can be `<: AbstractArray`
 """
 const SciMLSolution = Union{AbstractTimeseriesSolution,
                          AbstractNoTimeSolution,
