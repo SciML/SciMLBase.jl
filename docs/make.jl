@@ -10,15 +10,17 @@ makedocs(
                              canonical="https://scimlbase.sciml.ai/stable/"),
     pages=[
         "Home" => "index.md",
-        "Fundamentals" => Any[
-            "fundamentals/Problems.md",
-            "fundamentals/PDE.md",
-            "fundamentals/SciMLFunctions.md",
-            "fundamentals/Differentiation.md",
-            "fundamentals/FAQ.md"
-        ],
         "Interfaces" => Any[
-            "interfaces/DEAlgorithm.md",
+            "interfaces/Problems.md",
+            "interfaces/SciMLFunctions.md",
+            "interfaces/Algorithms.md",
+            "interfaces/Solutions.md",
+            "interfaces/Common_Keywords.md",
+            "interfaces/Differentiation.md",
+            "interfaces/PDE.md",
+        ],
+        "Fundamentals" => Any[
+            "fundamentals/FAQ.md"
         ]
     ]
 )

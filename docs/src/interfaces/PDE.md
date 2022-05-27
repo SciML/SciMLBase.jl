@@ -77,9 +77,9 @@ The only functions which act on a PDESystem are the following:
 discretizer which uses a [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl)
 neural network to solve the differential equation.
 
-### DiffEqOperators.jl: MOLFiniteDifference (WIP)
+### MethodOfLines.jl: MOLFiniteDifference (WIP)
 
-[DiffEqOperators.jl](https://github.com/SciML/DiffEqOperators.jl) defines the
+[MethodOfLines.jl](https://github.com/SciML/MethodOfLines.jl) defines the
 `MOLFiniteDifference` discretizer which performs a finite difference discretization
 using the DiffEqOperators.jl stencils. These stencils make use of NNLib.jl for
 fast operations on semi-linear domains.
