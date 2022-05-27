@@ -28,11 +28,11 @@ Commonly used algorithm keyword arguments are:
 ## Traits
 
 ```@docs
-isautodifferentiable
-allows_arbitrary_number_types
-allowscomplex
-isadaptive
-isdiscrete
+SciMLBase.isautodifferentiable
+SciMLBase.allows_arbitrary_number_types
+SciMLBase.allowscomplex
+SciMLBase.isadaptive
+SciMLBase.isdiscrete
 ```
 
 ### Abstract SciML Algorithms
