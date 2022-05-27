@@ -83,32 +83,31 @@ error state of the solution. The retcodes are as follows:
 ### Abstract SciML Solutions
 
 ```@docs
-SciMLSolution
-DESolution
-AbstractNoTimeSolution
-AbstractTimeseriesSolution
-AbstractNoiseProcess
-AbstractEnsembleSolution
-AbstractLinearSolution
-AbstractNonlinearSolution
-AbstractQuadratureSolution
-AbstractSteadyStateSolution
-AbstractAnalyticalSolution
-AbstractODESolution
-AbstractDDESolution
-AbstractRODESolution
-AbstractDAESolution
+SciMLBase.SciMLSolution
+SciMLBase.DESolution
+SciMLBase.AbstractNoTimeSolution
+SciMLBase.AbstractTimeseriesSolution
+SciMLBase.AbstractNoiseProcess
+SciMLBase.AbstractEnsembleSolution
+SciMLBase.AbstractLinearSolution
+SciMLBase.AbstractNonlinearSolution
+SciMLBase.AbstractQuadratureSolution
+SciMLBase.AbstractSteadyStateSolution
+SciMLBase.AbstractAnalyticalSolution
+SciMLBase.AbstractODESolution
+SciMLBase.AbstractDDESolution
+SciMLBase.AbstractRODESolution
+SciMLBase.AbstractDAESolution
 ```
 
 ### Concrete SciML Solutions
 
 ```@docs
-LinearSolution
-QuadratureSolution
-DAESolution
-NonlinearSolution
-SteadyStateSolution
-ODESolution
-OptimizationSolution
-RODESolution
+SciMLBase.LinearSolution
+SciMLBase.QuadratureSolution
+SciMLBase.DAESolution
+SciMLBase.NonlinearSolution
+SciMLBase.ODESolution
+SciMLBase.OptimizationSolution
+SciMLBase.RODESolution
 ```
