@@ -1399,7 +1399,7 @@ NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: Abstra
 A representation of an nonlinear system of equations `f`, defined by:
 
 ```math
-0 = f(u,p,t)
+0 = f(u,p)
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1409,9 +1409,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-ODEFunction{iip,recompile}(f;
+NonlinearFunction{iip,recompile}(f;
                            analytic=nothing,
-                           tgrad=nothing,
                            jac=nothing,
                            jvp=nothing,
                            vjp=nothing,
@@ -1424,24 +1423,23 @@ ODEFunction{iip,recompile}(f;
 ```
 
 Note that only the function `f` itself is required. This function should
-be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+be given as `f!(du,u,p)` or `du = f(u,p)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
 All of the remaining functions are optional for improving or accelerating 
 the usage of `f`. These include:
 
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p)`: used to pass an analytical solution function for the analytical 
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac(J,u,p)` or `J=jac(u,p)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p)` or `Jv=jvp(v,u,p)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p)` or `Jv=vjp(v,u,p)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``.
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
