@@ -14,9 +14,11 @@ as a distributed multi-GPU discrete Galerkin method.
 The key to the common PDE interface is a separation of the symbolic handling from
 the numerical world. All of the discretizers should not "solve" the PDE, but
 instead be a conversion of the mathematical specification to a numerical problem.
-Preferably, the transformation should be to another ModelingToolkit.jl `AbstractSystem`,
-but in some cases this cannot be done or will not be performant, so a `SciMLProblem` is
-the other choice.
+Preferably, the transformation should be to another ModelingToolkit.jl `AbstractSystem`
+via a `symbolic_discretize` dispatch, but in some cases this cannot be done or will 
+not be performant. Thus in some cases, only a `discretize` definition is given to a 
+`SciMLProblem`, with `symbolic_discretize` simply providing diagnostic or lower level
+information about the construction process.
 
 These elementary problems, such as solving linear systems `Ax=b`, solving nonlinear
 systems `f(x)=0`, ODEs, etc. are all defined by SciMLBase.jl, which then numerical

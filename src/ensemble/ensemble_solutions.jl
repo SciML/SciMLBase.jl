@@ -80,7 +80,7 @@ function calculate_ensemble_errors(u;elapsedTime=0.0,converged=false,
   end
   if weak_dense_errors
     densetimes = collect(range(u[1].t[1], stop=u[1].t[end], length=100))
-    u_analytic = [[sol.prob.f(Val{:analytic},sol.prob.u0,sol.prob.p,densetimes[i],sol.W(densetimes[i])[1]) for i in eachindex(densetimes)] for sol in u]
+    u_analytic = [[sol.prob.f.analytic(sol.prob.u0,sol.prob.p,densetimes[i],sol.W(densetimes[i])[1]) for i in eachindex(densetimes)] for sol in u]
     udense = [u[j](densetimes) for j in 1:length(u)]
     dense_weak_errors = [mean([udense[j][i] - u_analytic[j][i] for j in 1:length(u)]) for i in eachindex(densetimes)]
     dense_L2_errors = [sqrt.(sum(abs2,err)/length(err)) for err in dense_weak_errors]
