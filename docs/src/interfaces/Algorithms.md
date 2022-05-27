@@ -38,19 +38,19 @@ isdiscrete
 ### Abstract SciML Algorithms
 
 ```@docs
-SciMLAlgorithm
-DEAlgorithm
-AbstractLinearAlgorithm
-AbstractNonlinearAlgorithm
-AbstractQuadratureAlgorithm
-AbstractSteadyStateAlgorithm
-AbstractODEAlgorithm
-AbstractSecondOrderODEAlgorithm
-AbstractRODEAlgorithm
-AbstractSDEAlgorithm
-AbstractDAEAlgorithm
-AbstractDDEAlgorithm
-AbstractSDDEAlgorithm
+SciMLBase.SciMLAlgorithm
+SciMLBase.DEAlgorithm
+SciMLBase.AbstractLinearAlgorithm
+SciMLBase.AbstractNonlinearAlgorithm
+SciMLBase.AbstractQuadratureAlgorithm
+SciMLBase.AbstractSteadyStateAlgorithm
+SciMLBase.AbstractODEAlgorithm
+SciMLBase.AbstractSecondOrderODEAlgorithm
+SciMLBase.AbstractRODEAlgorithm
+SciMLBase.AbstractSDEAlgorithm
+SciMLBase.AbstractDAEAlgorithm
+SciMLBase.AbstractDDEAlgorithm
+SciMLBase.AbstractSDDEAlgorithm
 ```
 
 ### Concrete SciML Algorithms

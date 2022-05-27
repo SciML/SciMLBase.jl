@@ -122,15 +122,15 @@ isinplace(f::AbstractSciMLFunction{iip})
 ### Abstract SciML Functions
 
 ```@docs
-AbstractDiffEqFunction
-AbstractODEFunction
-AbstractSDEFunction
-AbstractDDEFunction
-AbstractDAEFunction
-AbstractRODEFunction
-AbstractDiscreteFunction
-AbstractSDDEFunction
-AbstractNonlinearFunction
+SciMLBase.AbstractDiffEqFunction
+SciMLBase.AbstractODEFunction
+SciMLBase.AbstractSDEFunction
+SciMLBase.AbstractDDEFunction
+SciMLBase.AbstractDAEFunction
+SciMLBase.AbstractRODEFunction
+SciMLBase.AbstractDiscreteFunction
+SciMLBase.AbstractSDDEFunction
+SciMLBase.AbstractNonlinearFunction
 ```
 
 ### Concrete SciML Functions

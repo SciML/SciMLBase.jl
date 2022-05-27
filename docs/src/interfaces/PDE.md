@@ -35,7 +35,7 @@ block symbolic functions like Jacobians.
 ## Constructors
 
 ```@docs
-PDESystem
+ModelingToolkit.PDESystem
 ```
 
 ### Domains (WIP)

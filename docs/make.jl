@@ -1,9 +1,9 @@
-using Documenter, SciMLBase
+using Documenter, SciMLBase, ModelingToolkit
 
 makedocs(
     sitename="SciMLBase.jl",
     authors="Chris Rackauckas",
-    modules=[SciMLBase],
+    modules=[SciMLBase,ModelingToolkit],
     clean=true,doctest=false,
     format = Documenter.HTML(analytics = "UA-90474609-3",
                              assets = ["assets/favicon.ico"],

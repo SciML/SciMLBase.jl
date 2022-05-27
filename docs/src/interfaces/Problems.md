@@ -76,29 +76,29 @@ is_diagonal_noise
 ### Abstract SciMLProblems
 
 ```@docs
-SciMLProblem
-DEProblem
-AbstractLinearProblem
-AbstractNonlinearProblem
-AbstractQuadratureProblem
-AbstractOptimizationProblem
-AbstractSteadyStateProblem
-AbstractNoiseProblem
-AbstractODEProblem
-AbstractDiscreteProblem
-AbstractAnalyticalProblem
-AbstractRODEProblem
-AbstractSDEProblem
-AbstractDAEProblem
-AbstractDDEProblem
-AbstractConstantLagDDEProblem
-AbstractSecondOrderODEProblem
-AbstractBVProblem
-AbstractJumpProblem
-AbstractSDDEProblem
-AbstractConstantLagSDDEProblem
-AbstractSDDEProblem
-AbstractPDEProblem
+SciMLBase.SciMLProblem
+SciMLBase.DEProblem
+SciMLBase.AbstractLinearProblem
+SciMLBase.AbstractNonlinearProblem
+SciMLBase.AbstractQuadratureProblem
+SciMLBase.AbstractOptimizationProblem
+SciMLBase.AbstractSteadyStateProblem
+SciMLBase.AbstractNoiseProblem
+SciMLBase.AbstractODEProblem
+SciMLBase.AbstractDiscreteProblem
+SciMLBase.AbstractAnalyticalProblem
+SciMLBase.AbstractRODEProblem
+SciMLBase.AbstractSDEProblem
+SciMLBase.AbstractDAEProblem
+SciMLBase.AbstractDDEProblem
+SciMLBase.AbstractConstantLagDDEProblem
+SciMLBase.AbstractSecondOrderODEProblem
+SciMLBase.AbstractBVProblem
+SciMLBase.AbstractJumpProblem
+SciMLBase.AbstractSDDEProblem
+SciMLBase.AbstractConstantLagSDDEProblem
+SciMLBase.AbstractSDDEProblem
+SciMLBase.AbstractPDEProblem
 ```
 
 ### Concrete SciMLProblems
