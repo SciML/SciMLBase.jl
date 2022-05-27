@@ -67,7 +67,7 @@ remake
 ## Problem Traits
 
 ```@docs
-SciMLBase.isinplace(prob::DEProblem)
+SciMLBase.isinplace(prob::SciMLBase.DEProblem)
 SciMLBase.is_diagonal_noise
 ```
 
