@@ -16,6 +16,9 @@ import CommonSolve: solve, init, solve!
 function __solve end
 function __init end
 
+"""
+$(TYPEDEF)
+"""
 abstract type SciMLProblem end
 
 # Problems
@@ -85,13 +88,13 @@ $(TYPEDEF)
 Base for types which define discrete problems.
 """
 abstract type AbstractDiscreteProblem{uType,tType,isinplace} <:
-                      AbstractODEProblem{uType,tType,isinplace} end
+              AbstractODEProblem{uType,tType,isinplace} end
 
 """
 $(TYPEDEF)
 """
 abstract type AbstractAnalyticalProblem{uType,tType,isinplace} <:
-                      AbstractODEProblem{uType,tType,isinplace} end
+              AbstractODEProblem{uType,tType,isinplace} end
 
 """
 $(TYPEDEF)
@@ -106,7 +109,7 @@ $(TYPEDEF)
 Base for types which define SDE problems.
 """
 abstract type AbstractSDEProblem{uType,tType,isinplace,ND} <:
-                      AbstractRODEProblem{uType,tType,isinplace,ND} end
+              AbstractRODEProblem{uType,tType,isinplace,ND} end
 
 """
 $(TYPEDEF)
@@ -126,7 +129,7 @@ abstract type AbstractDDEProblem{uType,tType,lType,isinplace} <: DEProblem end
 $(TYPEDEF)
 """
 abstract type AbstractConstantLagDDEProblem{uType,tType,lType,isinplace} <:
-                      AbstractDDEProblem{uType,tType,lType,isinplace} end
+              AbstractDDEProblem{uType,tType,lType,isinplace} end
 
 """
 $(TYPEDEF)
@@ -158,7 +161,7 @@ abstract type AbstractSDDEProblem{uType,tType,lType,isinplace,ND} <: DEProblem e
 $(TYPEDEF)
 """
 abstract type AbstractConstantLagSDDEProblem{uType,tType,lType,isinplace,ND} <:
-                      AbstractSDDEProblem{uType,tType,lType,isinplace,ND} end
+              AbstractSDDEProblem{uType,tType,lType,isinplace,ND} end
 
 """
 $(TYPEDEF)
@@ -307,47 +310,47 @@ abstract type AbstractDiscreteCallback <: DECallback end
 """
 $(TYPEDEF)
 """
-abstract type DEIntegrator{Alg, IIP, U, T} end
+abstract type DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSteadyStateIntegrator{Alg, IIP, U} <: DEIntegrator{Alg, IIP, U, Nothing} end
+abstract type AbstractSteadyStateIntegrator{Alg,IIP,U} <: DEIntegrator{Alg,IIP,U,Nothing} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractODEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSecondOrderODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractSecondOrderODEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractRODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractRODEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractSDEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractDDEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDAEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractDAEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
+abstract type AbstractSDDEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
 
 # Solutions
 """
@@ -376,9 +379,9 @@ Union of all base solution types.
 Uses a Union so that solution types can be `<: AbstractArray`
 """
 const SciMLSolution = Union{AbstractTimeseriesSolution,
-                         AbstractNoTimeSolution,
-                         AbstractEnsembleSolution,
-                         AbstractNoiseProcess}
+    AbstractNoTimeSolution,
+    AbstractEnsembleSolution,
+    AbstractNoiseProcess}
 const DESolution = SciMLSolution
 export SciMLSolution, DESolution
 
@@ -561,14 +564,14 @@ export SteadyStateProblem, SteadyStateSolution
 export NoiseProblem
 export ODEProblem, ODESolution
 export DynamicalODEFunction, DynamicalODEProblem,
-       SecondOrderODEProblem, SplitFunction, SplitODEProblem
+    SecondOrderODEProblem, SplitFunction, SplitODEProblem
 export SplitSDEProblem
 export DynamicalSDEFunction, DynamicalSDEProblem
 export RODEProblem, RODESolution, SDEProblem
 export DAEProblem, DAESolution
 export DDEProblem
 export DynamicalDDEFunction, DynamicalDDEProblem,
-       SecondOrderDDEProblem
+    SecondOrderDDEProblem
 export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
@@ -578,7 +581,7 @@ export BVProblem, TwoPointBVProblem
 export remake
 
 export ODEFunction, DiscreteFunction, SplitFunction, DAEFunction, DDEFunction,
-       SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction, IncrementingODEFunction, NonlinearFunction
+    SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction, IncrementingODEFunction, NonlinearFunction
 
 export OptimizationFunction
 
@@ -592,20 +595,20 @@ export AffineDiffEqOperator, DiffEqScaledOperator
 
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
-export step!, deleteat!,addat!,get_tmp_cache,
-       full_cache,user_cache,u_cache,du_cache,
-       rand_cache,ratenoise_cache,
-       resize_non_user_cache!,deleteat_non_user_cache!,addat_non_user_cache!,
-       terminate!,
-       add_tstop!,has_tstop,first_tstop,pop_tstop!,
-       add_saveat!,set_abstol!,
-       set_reltol!,get_du, get_du!, get_dt,get_proposed_dt,set_proposed_dt!,
-       u_modified!, savevalues!,reinit!, auto_dt_reset!, set_t!,
-       set_u!, check_error, change_t_via_interpolation!, addsteps!,
-       isdiscrete, reeval_internals_due_to_modification!
+export step!, deleteat!, addat!, get_tmp_cache,
+    full_cache, user_cache, u_cache, du_cache,
+    rand_cache, ratenoise_cache,
+    resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
+    terminate!,
+    add_tstop!, has_tstop, first_tstop, pop_tstop!,
+    add_saveat!, set_abstol!,
+    set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
+    u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
+    set_u!, check_error, change_t_via_interpolation!, addsteps!,
+    isdiscrete, reeval_internals_due_to_modification!
 
 export update_coefficients!, update_coefficients,
-       has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
+    has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 

@@ -397,6 +397,11 @@ end
 
 abstract type AbstractIncrementingODEProblem end
 
+"""
+$(SIGNATURES)
+
+Experimental
+"""
 struct IncrementingODEProblem{iip} <: AbstractIncrementingODEProblem end
 
 function IncrementingODEProblem(f,u0,tspan,p=NullParameters();kwargs...)

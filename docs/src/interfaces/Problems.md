@@ -82,7 +82,6 @@ SciMLBase.AbstractLinearProblem
 SciMLBase.AbstractNonlinearProblem
 SciMLBase.AbstractQuadratureProblem
 SciMLBase.AbstractOptimizationProblem
-SciMLBase.AbstractSteadyStateProblem
 SciMLBase.AbstractNoiseProblem
 SciMLBase.AbstractODEProblem
 SciMLBase.AbstractDiscreteProblem
@@ -97,7 +96,6 @@ SciMLBase.AbstractBVProblem
 SciMLBase.AbstractJumpProblem
 SciMLBase.AbstractSDDEProblem
 SciMLBase.AbstractConstantLagSDDEProblem
-SciMLBase.AbstractSDDEProblem
 SciMLBase.AbstractPDEProblem
 ```
 

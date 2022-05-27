@@ -114,7 +114,7 @@ library documentations.
 ## Traits
 
 ```@docs
-isinplace(f::AbstractSciMLFunction{iip})
+isinplace(f::SciMLBase.AbstractSciMLFunction{iip})
 ```
 
 ## AbstractSciMLFunction API
