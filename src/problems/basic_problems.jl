@@ -211,36 +211,6 @@ end
 
 QuadratureProblem(f, lb, ub, args...; kwargs...) = QuadratureProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 
-struct NoAD <: AbstractADType end
-
-struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP} <: AbstractOptimizationFunction{iip}
-    f::F
-    adtype::AD
-    grad::G
-    hess::H
-    hv::HV
-    cons::C
-    cons_j::CJ
-    cons_h::CH
-    hess_prototype::HP
-    cons_jac_prototype::CJP
-    cons_hess_prototype::CHP
-end
-
-(f::OptimizationFunction)(args...) = f.f(args...)
-
-OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
-
-function OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
-                     grad=nothing,hess=nothing,hv=nothing,
-                     cons=nothing, cons_j=nothing,cons_h=nothing,
-                     hess_prototype=nothing,cons_jac_prototype=nothing,cons_hess_prototype = nothing) where iip
-    OptimizationFunction{iip,typeof(adtype),typeof(f),typeof(grad),typeof(hess),typeof(hv),
-                         typeof(cons),typeof(cons_j),typeof(cons_h),typeof(hess_prototype),
-                         typeof(cons_jac_prototype),typeof(cons_hess_prototype)}(
-                         f,adtype,grad,hess,hv,cons,cons_j,cons_h,hess_prototype,cons_jac_prototype,cons_hess_prototype)
-end
-
 @doc doc"""
 
 Defines a optimization problem.

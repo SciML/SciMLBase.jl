@@ -14,9 +14,11 @@ as a distributed multi-GPU discrete Galerkin method.
 The key to the common PDE interface is a separation of the symbolic handling from
 the numerical world. All of the discretizers should not "solve" the PDE, but
 instead be a conversion of the mathematical specification to a numerical problem.
-Preferably, the transformation should be to another ModelingToolkit.jl `AbstractSystem`,
-but in some cases this cannot be done or will not be performant, so a `SciMLProblem` is
-the other choice.
+Preferably, the transformation should be to another ModelingToolkit.jl `AbstractSystem`
+via a `symbolic_discretize` dispatch, but in some cases this cannot be done or will 
+not be performant. Thus in some cases, only a `discretize` definition is given to a 
+`SciMLProblem`, with `symbolic_discretize` simply providing diagnostic or lower level
+information about the construction process.
 
 These elementary problems, such as solving linear systems `Ax=b`, solving nonlinear
 systems `f(x)=0`, ODEs, etc. are all defined by SciMLBase.jl, which then numerical
@@ -33,7 +35,7 @@ block symbolic functions like Jacobians.
 ## Constructors
 
 ```@docs
-PDESystem
+ModelingToolkit.PDESystem
 ```
 
 ### Domains (WIP)
@@ -77,9 +79,9 @@ The only functions which act on a PDESystem are the following:
 discretizer which uses a [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl)
 neural network to solve the differential equation.
 
-### DiffEqOperators.jl: MOLFiniteDifference (WIP)
+### MethodOfLines.jl: MOLFiniteDifference (WIP)
 
-[DiffEqOperators.jl](https://github.com/SciML/DiffEqOperators.jl) defines the
+[MethodOfLines.jl](https://github.com/SciML/MethodOfLines.jl) defines the
 `MOLFiniteDifference` discretizer which performs a finite difference discretization
 using the DiffEqOperators.jl stencils. These stencils make use of NNLib.jl for
 fast operations on semi-linear domains.

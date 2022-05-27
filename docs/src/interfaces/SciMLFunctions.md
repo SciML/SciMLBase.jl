@@ -1,4 +1,4 @@
-# SciMLFunctions (Jacobians, Sparsity, Etc.)
+# [SciMLFunctions (Jacobians, Sparsity, Etc.)](@id scimlfunctions)
 
 The SciML ecosystem provides an extensive interface for declaring extra functions
 associated with the differential equation's data. In traditional libraries there
@@ -6,7 +6,10 @@ is usually only one option: the Jacobian. However, we allow for a large array
 of pre-computed functions to speed up the calculations. This is offered via the
 `SciMLFunction` types which can be passed to the problems.
 
-## Function Type Definitions
+## Definition of the AbstractSciMLFunction Interface
+
+The following standard principles should be adhered to across all 
+`AbstractSciMLFunction` instantiations.
 
 ### Common Function Choice Definitions
 
@@ -33,7 +36,7 @@ The full interface available to the solvers is as follows:
 Each function type additionally has some specific arguments, refer to their
 documentation for details.
 
-## In-place Specification and No-Recompile Mode
+### In-place Specification and No-Recompile Mode
 
 Each SciMLFunction type can be called with an "is inplace" (iip) choice.
 
@@ -60,7 +63,7 @@ the function will not cause recompilation. One can change the default value
 by changing the `const RECOMPILE_BY_DEFAULT = true` to false in the SciMLBase.jl
 source code.
 
-## Specifying Jacobian Types
+### Specifying Jacobian Types
 
 The `jac` field of an inplace style `SciMLFunction` has the signature `jac(J,u,p,t)`,
 which updates the jacobian `J` in-place. The intended type for `J` can sometimes be
@@ -87,7 +90,7 @@ do not need to supply `jac` as it is automatically set to `update_coefficients!`
 Refer to the [DiffEqOperators](@ref) section for more information
 on setting up time/parameter dependent operators.
 
-## Sparsity Handling
+### Sparsity Handling
 
 The solver libraries internally use packages such as [FiniteDiff.jl](https://github.com/JuliaDiff/FiniteDiff.jl)
 and [SparseDiffTools.jl](https://github.com/JuliaDiff/SparseDiffTools.jl) for
@@ -108,6 +111,44 @@ be specified directly via `colorvec`. For more information on how these argument
 control the differentiation process, see the aforementioned differentiation
 library documentations.
 
-## SciMLFunctions API
+## Traits
 
-Should be generated from docstrings!
+```@docs
+isinplace(f::SciMLBase.AbstractSciMLFunction)
+```
+
+## AbstractSciMLFunction API
+
+### Abstract SciML Functions
+
+```@docs
+SciMLBase.AbstractDiffEqFunction
+SciMLBase.AbstractODEFunction
+SciMLBase.AbstractSDEFunction
+SciMLBase.AbstractDDEFunction
+SciMLBase.AbstractDAEFunction
+SciMLBase.AbstractRODEFunction
+SciMLBase.AbstractDiscreteFunction
+SciMLBase.AbstractSDDEFunction
+SciMLBase.AbstractNonlinearFunction
+```
+
+### Concrete SciML Functions
+
+```@docs
+ODEFunction
+SplitFunction
+DynamicalODEFunction
+DDEFunction
+DynamicalDDEFunction
+DiscreteFunction
+SDEFunction
+SplitSDEFunction
+DynamicalSDEFunction
+RODEFunction
+DAEFunction
+SDDEFunction
+NonlinearFunction
+OptimizationFunction
+SDEProblem
+```

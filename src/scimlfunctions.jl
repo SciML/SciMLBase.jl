@@ -1481,23 +1481,25 @@ struct NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <:
   observed::O
   colorvec::TCV
 end
+
+struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP} <: AbstractOptimizationFunction{iip}
+    f::F
+    adtype::AD
+    grad::G
+    hess::H
+    hv::HV
+    cons::C
+    cons_j::CJ
+    cons_h::CH
+    hess_prototype::HP
+    cons_jac_prototype::CJP
+    cons_hess_prototype::CHP
+end
+
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
-(f::ODEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
-(f::ODEFunction)(::Type{Val{:tgrad}},args...) = f.tgrad(args...)
-(f::ODEFunction)(::Type{Val{:jac}},args...) = f.jac(args...)
-(f::ODEFunction)(::Type{Val{:Wfact}},args...) = f.Wfact(args...)
-(f::ODEFunction)(::Type{Val{:Wfact_t}},args...) = f.Wfact_t(args...)
-(f::ODEFunction)(::Type{Val{:paramjac}},args...) = f.paramjac(args...)
-
 (f::NonlinearFunction)(args...) = f.f(args...)
-(f::NonlinearFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
-(f::NonlinearFunction)(::Type{Val{:tgrad}},args...) = f.tgrad(args...)
-(f::NonlinearFunction)(::Type{Val{:jac}},args...) = f.jac(args...)
-(f::NonlinearFunction)(::Type{Val{:Wfact}},args...) = f.Wfact(args...)
-(f::NonlinearFunction)(::Type{Val{:Wfact_t}},args...) = f.Wfact_t(args...)
-(f::NonlinearFunction)(::Type{Val{:paramjac}},args...) = f.paramjac(args...)
 
 function (f::DynamicalODEFunction)(u,p,t)
   ArrayPartition(f.f1(u.x[1],u.x[2],p,t),f.f2(u.x[1],u.x[2],p,t))
@@ -1508,7 +1510,6 @@ function (f::DynamicalODEFunction)(du,u,p,t)
 end
 
 (f::SplitFunction)(u,p,t) = f.f1(u,p,t) + f.f2(u,p,t)
-(f::SplitFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
 function (f::SplitFunction)(du,u,p,t)
   f.f1(f.cache,u,p,t)
   f.f2(du,u,p,t)
@@ -1516,18 +1517,8 @@ function (f::SplitFunction)(du,u,p,t)
 end
 
 (f::DiscreteFunction)(args...) = f.f(args...)
-(f::DiscreteFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
-
 (f::DAEFunction)(args...) = f.f(args...)
-(f::DAEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
-(f::DAEFunction)(::Type{Val{:tgrad}},args...) = f.tgrad(args...)
-(f::DAEFunction)(::Type{Val{:jac}},args...) = f.jac(args...)
-(f::DAEFunction)(::Type{Val{:Wfact}},args...) = f.Wfact(args...)
-(f::DAEFunction)(::Type{Val{:Wfact_t}},args...) = f.Wfact_t(args...)
-(f::DAEFunction)(::Type{Val{:paramjac}},args...) = f.paramjac(args...)
-
 (f::DDEFunction)(args...) = f.f(args...)
-(f::DDEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
 
 function (f::DynamicalDDEFunction)(u,h,p,t)
   ArrayPartition(f.f1(u.x[1],u.x[2],h,p,t),f.f2(u.x[1],u.x[2],h,p,t))
@@ -1545,23 +1536,9 @@ function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
 end
 
 (f::SDEFunction)(args...) = f.f(args...)
-(f::SDEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
-(f::SDEFunction)(::Type{Val{:tgrad}},args...) = f.tgrad(args...)
-(f::SDEFunction)(::Type{Val{:jac}},args...) = f.jac(args...)
-(f::SDEFunction)(::Type{Val{:Wfact}},args...) = f.Wfact(args...)
-(f::SDEFunction)(::Type{Val{:Wfact_t}},args...) = f.Wfact_t(args...)
-(f::SDEFunction)(::Type{Val{:paramjac}},args...) = f.paramjac(args...)
-
 (f::SDDEFunction)(args...) = f.f(args...)
-(f::SDDEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
-(f::SDDEFunction)(::Type{Val{:tgrad}},args...) = f.tgrad(args...)
-(f::SDDEFunction)(::Type{Val{:jac}},args...) = f.jac(args...)
-(f::SDDEFunction)(::Type{Val{:Wfact}},args...) = f.Wfact(args...)
-(f::SDDEFunction)(::Type{Val{:Wfact_t}},args...) = f.Wfact_t(args...)
-(f::SDDEFunction)(::Type{Val{:paramjac}},args...) = f.paramjac(args...)
-
 (f::SplitSDEFunction)(u,p,t) = f.f1(u,p,t) + f.f2(u,p,t)
-(f::SplitSDEFunction)(::Type{Val{:analytic}},args...) = f.analytic(args...)
+
 function (f::SplitSDEFunction)(du,u,p,t)
   f.f1(f.cache,u,p,t)
   f.f2(du,u,p,t)
@@ -2416,6 +2393,7 @@ function NonlinearFunction{iip,true}(f;
      jvp, vjp, jac_prototype, sparsity, Wfact,
      Wfact_t, paramjac, syms, observed, _colorvec)
 end
+
 function NonlinearFunction{iip,false}(f;
   mass_matrix=I,
   analytic=nothing,
@@ -2458,6 +2436,22 @@ NonlinearFunction{iip}(f; kwargs...) where iip = NonlinearFunction{iip,RECOMPILE
 NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where iip = f
 NonlinearFunction(f; kwargs...) = NonlinearFunction{isinplace(f, 4),RECOMPILE_BY_DEFAULT}(f; kwargs...)
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
+
+struct NoAD <: AbstractADType end
+
+(f::OptimizationFunction)(args...) = f.f(args...)
+OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
+
+function OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
+                     grad=nothing,hess=nothing,hv=nothing,
+                     cons=nothing, cons_j=nothing,cons_h=nothing,
+                     hess_prototype=nothing,cons_jac_prototype=nothing,cons_hess_prototype = nothing) where iip
+    OptimizationFunction{iip,typeof(adtype),typeof(f),typeof(grad),typeof(hess),typeof(hv),
+                         typeof(cons),typeof(cons_j),typeof(cons_h),typeof(hess_prototype),
+                         typeof(cons_jac_prototype),typeof(cons_hess_prototype)}(
+                         f,adtype,grad,hess,hv,cons,cons_j,cons_h,hess_prototype,cons_jac_prototype,cons_hess_prototype)
+end
+
 ########## Existance Functions
 
 # Check that field/property exists (may be nothing)
