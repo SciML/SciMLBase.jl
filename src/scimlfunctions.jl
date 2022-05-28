@@ -2548,7 +2548,7 @@ function OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
                          typeof(syms),typeof(hess_colorvec),typeof(cons_jac_colorvec),
                          typeof(cons_hess_colorvec)}(
                          f,adtype,grad,hess,hv,cons,cons_j,cons_h,hess_prototype,cons_jac_prototype,
-                         cons_hess_prototype,syms,hess_colorvec,cons_jac_colorvec)
+                         cons_hess_prototype,syms,hess_colorvec,cons_jac_colorvec,cons_hess_colorvec)
 end
 
 ########## Existance Functions
