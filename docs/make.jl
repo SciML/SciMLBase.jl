@@ -15,6 +15,7 @@ makedocs(
             "interfaces/SciMLFunctions.md",
             "interfaces/Algorithms.md",
             "interfaces/Solutions.md",
+            "interfaces/Init_Solve.md",
             "interfaces/Common_Keywords.md",
             "interfaces/Differentiation.md",
             "interfaces/PDE.md",
