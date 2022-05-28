@@ -136,6 +136,9 @@ all of the problem domains. Underlying high level ideas include:
 - [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)
     - The core package defining the interface which is consumed by the modeling
       and solver packages.
+- [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)
+    - The core package defining the extended interface which is consumed by the
+      differential equation solver packages.
 - [DiffEqSensitivity.jl](https://github.com/SciML/DiffEqSensitivity.jl)
     - A package which pools together the definition of derivative overloads to
       define the common `sensealg` automatic differentiation interface.
@@ -145,7 +148,7 @@ all of the problem domains. Underlying high level ideas include:
 - [RecursiveArrayTools.jl](https://github.com/SciML/RecursiveArrayTools.jl)
     - A package which defines the underlying `AbstractVectorOfArray` structure
       used as the output for all time series results.
-- [ArrayInterfaceCore.jl](https://github.com/JuliaArrays/ArrayInterfaceCore.jl)
+- [ArrayInterface.jl](https://github.com/JuliaArrays/ArrayInterface.jl)
     - The package which defines the extended `AbstractArray` interface employed
       throughout the SciML ecosystem.
 
