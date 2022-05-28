@@ -1505,8 +1505,7 @@ OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
                           cons_jac_colorvec = nothing,
                           cons_hess_colorvec = nothing)
 
-SplitFunction
-
+- `adtype`: see the section "Defining Optimization Functions via AD"
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
 - `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
 - `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``\frac{d^2 f}{du^2} v``.
@@ -1540,6 +1539,24 @@ SplitFunction
   pattern of the `cons_jac_prototype`.
 - `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for 
   the sparsity pattern of the `cons_hess_prototype`.
+
+## Defining Optimization Functions Via AD
+
+While using the keyword arguments gives the user control over defining
+all of the possible functions, the simplest way to handle the generation
+of an `OptimizationFunction` is by specifying an AD type. By doing so,
+this will automatically fill in all of the extra functions. For example,
+
+```julia
+OptimizationFunction(f,AutoZygote())
+```
+
+will use [Zygote.jl](https://github.com/FluxML/Zygote.jl) to define
+all of the necessary functions. Note that if any functions are defined
+directly, the auto-AD definition does not overwrite the user's choice.
+
+Each of the AD-based constructors are documented separately via their
+own dispatches.
 
 ## iip: In-Place vs Out-Of-Place
 
