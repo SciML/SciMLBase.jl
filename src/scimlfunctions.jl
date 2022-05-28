@@ -1482,7 +1482,78 @@ struct NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <:
   colorvec::TCV
 end
 
-struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP} <: AbstractOptimizationFunction{iip}
+"""
+OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip}
+
+A representation of an optimization of an objective function `f`, defined by:
+
+```math
+min_{u} f(u,p)
+```
+
+and all of its related functions, such as the gradient of `f`, its Hessian, 
+and more. For all cases, `u` is the state and `p` are the parameters.
+
+## Constructor
+
+OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
+                          grad=nothing,hess=nothing,hv=nothing,
+                          cons=nothing, cons_j=nothing,cons_h=nothing,
+                          hess_prototype=nothing,cons_jac_prototype=nothing,
+                          cons_hess_prototype = nothing,
+                          syms = nothing, hess_colorvec = nothing,
+                          cons_jac_colorvec = nothing,
+                          cons_hess_colorvec = nothing)
+
+SplitFunction
+
+- `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
+- `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``\frac{d^2 f}{du^2} v``.
+- `cons(res,x,p)` or `res=cons(x,p)`: the equality constraints vector, where the constraints
+  are satisfied when `res = 0`.
+- `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the equality constraints.
+- `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the equality constratins, provided as
+  and array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
+  if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Hessian.
+  The default is `nothing`, which means a dense Hessian.
+- `cons_jac_prototype`: a prototype matrix matching the type that matches the constraint Jacobian. 
+  The default is `nothing`, which means a dense constraint Jacobian.
+- `cons_hess_prototype`: a prototype matrix matching the type that matches the constraint Hessian.
+  This is defined as an array of matrices, where `hess[i]` is the Hessian w.r.t. the `i`th output.
+  For example, if the Hessian is sparse, then `hess` is a `Vector{SparseMatrixCSC}`.
+  The default is `nothing`, which means a dense constraint Hessian.  
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `hess_colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `hess_prototype`. This specializes the Hessian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+- `cons_jac_colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `cons_jac_prototype`.
+- `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for 
+  the sparsity pattern of the `cons_hess_prototype`.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## recompile: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the OptimizationFunction type directly match the names of the inputs.
+"""
+struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
@@ -1494,6 +1565,10 @@ struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP} <: AbstractOptim
     hess_prototype::HP
     cons_jac_prototype::CJP
     cons_hess_prototype::CHP
+    syms::S
+    hess_colorvec::HCV
+    cons_jac_colorvec::CJCV 
+    cons_hess_colorvec::CHCV
 end
 
 ######### Backwards Compatibility Overloads
@@ -2443,13 +2518,20 @@ struct NoAD <: AbstractADType end
 OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
 
 function OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
-                     grad=nothing,hess=nothing,hv=nothing,
-                     cons=nothing, cons_j=nothing,cons_h=nothing,
-                     hess_prototype=nothing,cons_jac_prototype=nothing,cons_hess_prototype = nothing) where iip
+                                   grad=nothing,hess=nothing,hv=nothing,
+                                   cons=nothing, cons_j=nothing,cons_h=nothing,
+                                   hess_prototype=nothing,cons_jac_prototype=nothing,
+                                   cons_hess_prototype = nothing,
+                                   syms = nothing, hess_colorvec = nothing,
+                                   cons_jac_colorvec = nothing,
+                                   cons_hess_colorvec = nothing) where iip
     OptimizationFunction{iip,typeof(adtype),typeof(f),typeof(grad),typeof(hess),typeof(hv),
                          typeof(cons),typeof(cons_j),typeof(cons_h),typeof(hess_prototype),
-                         typeof(cons_jac_prototype),typeof(cons_hess_prototype)}(
-                         f,adtype,grad,hess,hv,cons,cons_j,cons_h,hess_prototype,cons_jac_prototype,cons_hess_prototype)
+                         typeof(cons_jac_prototype),typeof(cons_hess_prototype),
+                         typeof(syms),typeof(hess_colorvec),typeof(cons_jac_colorvec),
+                         typeof(cons_hess_colorvec)}(
+                         f,adtype,grad,hess,hv,cons,cons_j,cons_h,hess_prototype,cons_jac_prototype,
+                         cons_hess_prototype,syms,hess_colorvec,cons_jac_colorvec)
 end
 
 ########## Existance Functions
