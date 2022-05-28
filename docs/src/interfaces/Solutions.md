@@ -84,7 +84,6 @@ error state of the solution. The retcodes are as follows:
 
 ```@docs
 SciMLBase.SciMLSolution
-SciMLBase.DESolution
 SciMLBase.AbstractNoTimeSolution
 SciMLBase.AbstractTimeseriesSolution
 SciMLBase.AbstractNoiseProcess
