@@ -43,6 +43,7 @@ SciMLBase.DEAlgorithm
 SciMLBase.AbstractLinearAlgorithm
 SciMLBase.AbstractNonlinearAlgorithm
 SciMLBase.AbstractQuadratureAlgorithm
+SciMLBase.AbstractOptimizationAlgorithm
 SciMLBase.AbstractSteadyStateAlgorithm
 SciMLBase.AbstractODEAlgorithm
 SciMLBase.AbstractSecondOrderODEAlgorithm

@@ -199,6 +199,11 @@ abstract type AbstractQuadratureAlgorithm <: SciMLAlgorithm end
 """
 $(TYPEDEF)
 """
+abstract type AbstractOptimizationAlgorithm <: DEAlgorithm end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractSteadyStateAlgorithm <: DEAlgorithm end
 
 """
@@ -235,6 +240,7 @@ abstract type AbstractDDEAlgorithm <: DEAlgorithm end
 $(TYPEDEF)
 """
 abstract type AbstractSDDEAlgorithm <: DEAlgorithm end
+
 """
 $(TYPEDEF)
 """
