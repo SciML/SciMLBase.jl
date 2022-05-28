@@ -136,7 +136,7 @@ all of the problem domains. Underlying high level ideas include:
 - [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)
     - The core package defining the interface which is consumed by the modeling
       and solver packages.
-- [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)
+- [DiffEqBase.jl](https://github.com/SciML/DiffEqBase.jl)
     - The core package defining the extended interface which is consumed by the
       differential equation solver packages.
 - [DiffEqSensitivity.jl](https://github.com/SciML/DiffEqSensitivity.jl)
