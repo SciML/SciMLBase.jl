@@ -228,7 +228,7 @@ end
 
 IntegralProblem(f, lb, ub, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 
-@deprecate IntegralProblem IntegralProblem
+@deprecate QuadratureProblem IntegralProblem
 
 @doc doc"""
 
