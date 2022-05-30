@@ -76,7 +76,7 @@ function Base.show(io::IO, mime::MIME"text/plain", A::AbstractOptimizationProble
   show(io, mime, A.u0)
 end
 
-function Base.summary(io::IO, prob::AbstractQuadratureProblem)
+function Base.summary(io::IO, prob::AbstractIntegralProblem)
   type_color,no_color = get_colorizers(io)
   print(io,
     type_color,nameof(typeof(prob)),
@@ -84,7 +84,7 @@ function Base.summary(io::IO, prob::AbstractQuadratureProblem)
     type_color,isinplace(prob),
     no_color)
 end
-function Base.show(io::IO, mime::MIME"text/plain", A::AbstractQuadratureProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractIntegralProblem)
   summary(io,A)
   println(io)
 end

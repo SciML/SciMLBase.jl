@@ -53,7 +53,7 @@ $(TYPEDEF)
 
 Base for types which define integrals suitable for quadrature.
 """
-abstract type AbstractQuadratureProblem{isinplace} <: SciMLProblem end
+abstract type AbstractIntegralProblem{isinplace} <: SciMLProblem end
 
 """
 $(TYPEDEF)
@@ -194,7 +194,7 @@ abstract type AbstractNonlinearAlgorithm <: SciMLAlgorithm end
 """
 $(TYPEDEF)
 """
-abstract type AbstractQuadratureAlgorithm <: SciMLAlgorithm end
+abstract type AbstractIntegralAlgorithm <: SciMLAlgorithm end
 
 """
 $(TYPEDEF)
@@ -406,7 +406,7 @@ abstract type AbstractNonlinearSolution{T,N} <: AbstractNoTimeSolution{T,N} end
 """
 $(TYPEDEF)
 """
-abstract type AbstractQuadratureSolution{T,N} <: AbstractNoTimeSolution{T,N} end
+abstract type AbstractIntegralSolution{T,N} <: AbstractNoTimeSolution{T,N} end
 
 """
 $(TYPEDEF)
@@ -559,11 +559,16 @@ function wrapfun_oop end
 function wrapfun_iip end
 function unwrap_fw end
 
+# Deprecated Quadrature things
+const AbstractQuadratureProblem = AbstractIntegralProblem
+const AbstractQuadratureAlgorithm = AbstractIntegralAlgorithm
+const AbstractQuadratureSolution = AbstractIntegralSolution
+
 export isinplace
 
 export solve, solve!, init, discretize, symbolic_discretize
 
-export LinearProblem, NonlinearProblem, QuadratureProblem, OptimizationProblem
+export LinearProblem, NonlinearProblem, IntegralProblem, OptimizationProblem
 
 export DiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
