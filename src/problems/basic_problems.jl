@@ -170,12 +170,12 @@ NonlinearProblem(prob::AbstractNonlinearProblem) =
 
 @doc doc"""
 
-Defines a quadrature problem.
-Documentation Page: https://github.com/SciML/Quadrature.jl
+Defines an integral problem.
+Documentation Page: https://github.com/SciML/Integrals.jl
 
-## Mathematical Specification of a Quadrature Problem
+## Mathematical Specification of a Integral Problem
 
-Quadrature problems are multi-dimensional integrals defined as:
+Integral problems are multi-dimensional integrals defined as:
 
 ```math
 \int_{lb}^{ub} f(u,p) du
@@ -210,7 +210,7 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct QuadratureProblem{isinplace,P,F,L,U,K} <: AbstractQuadratureProblem{isinplace}
+struct IntegralProblem{isinplace,P,F,L,U,K} <: AbstractQuadratureProblem{isinplace}
     f::F
     lb::L
     ub::U
@@ -218,7 +218,7 @@ struct QuadratureProblem{isinplace,P,F,L,U,K} <: AbstractQuadratureProblem{isinp
     p::P
     batch::Int
     kwargs::K
-    @add_kwonly function QuadratureProblem{iip}(f, lb, ub, p=NullParameters();
+    @add_kwonly function IntegralProblem{iip}(f, lb, ub, p=NullParameters();
         nout=1,
         batch=0, kwargs...) where {iip}
         new{iip,typeof(p),typeof(f),typeof(lb),
@@ -226,7 +226,9 @@ struct QuadratureProblem{isinplace,P,F,L,U,K} <: AbstractQuadratureProblem{isinp
     end
 end
 
-QuadratureProblem(f, lb, ub, args...; kwargs...) = QuadratureProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
+IntegralProblem(f, lb, ub, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
+
+@deprecate QuadratureProblem IntegralProblem
 
 @doc doc"""
 
