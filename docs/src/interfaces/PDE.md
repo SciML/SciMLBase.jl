@@ -9,7 +9,7 @@ a high-level symbolic description of the PDE to be consumed by other packages.
 The vision for the common PDE interface is that a user should only have to specify
 their PDE once, mathematically, and have instant access to everything as simple
 as a finite difference method with constant grid spacing, to something as complex
-as a distributed multi-GPU discrete Galerkin method.
+as a distributed multi-GPU discontinuous Galerkin method.
 
 The key to the common PDE interface is a separation of the symbolic handling from
 the numerical world. All of the discretizers should not "solve" the PDE, but
