@@ -570,6 +570,9 @@ export solve, solve!, init, discretize, symbolic_discretize
 
 export LinearProblem, NonlinearProblem, IntegralProblem, OptimizationProblem
 
+# Deprecated
+export IntegralProblem
+
 export DiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
 export NoiseProblem
