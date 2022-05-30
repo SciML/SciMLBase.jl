@@ -39,7 +39,7 @@ end
 """
 $(TYPEDEF)
 
-Representation of the solution to an quadrature integral_lb^ub f(x) dx defined by a QuadratureProblem
+Representation of the solution to an quadrature integral_lb^ub f(x) dx defined by a IntegralProblem
 
 ## Fields
 
@@ -52,7 +52,7 @@ Representation of the solution to an quadrature integral_lb^ub f(x) dx defined b
   details, see the return code section of the DifferentialEquations.jl documentation.
 - `chi`: the variance estimate of the estimator from Monte Carlo quadrature methods.
 """
-struct QuadratureSolution{T,N,uType,R,P,A,C} <: AbstractQuadratureSolution{T,N}
+struct IntegralSolution{T,N,uType,R,P,A,C} <: AbstractIntegralSolution{T,N}
   u::uType
   resid::R
   prob::P
@@ -61,7 +61,9 @@ struct QuadratureSolution{T,N,uType,R,P,A,C} <: AbstractQuadratureSolution{T,N}
   chi::C
 end
 
-function build_solution(prob::AbstractQuadratureProblem,
+@deprecate QuadratureSolution IntegralSolution
+
+function build_solution(prob::AbstractIntegralProblem,
   alg, u, resid; calculate_error=true,
   chi=nothing,
   retcode=:Default, kwargs...)
@@ -69,7 +71,7 @@ function build_solution(prob::AbstractQuadratureProblem,
   T = eltype(eltype(u))
   N = length((size(u)...,))
 
-  QuadratureSolution{T,N,typeof(u),typeof(resid),
+  IntegralSolution{T,N,typeof(u),typeof(resid),
     typeof(prob),typeof(alg),typeof(chi)}(
     u, resid, prob, alg, retcode, chi)
 end

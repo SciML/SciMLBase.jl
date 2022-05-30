@@ -188,7 +188,7 @@ whose geometry matches the space being integrated.
 
 ### Constructors
 
-QuadratureProblem{iip}(f,lb,ub,p=NullParameters();
+IntegralProblem{iip}(f,lb,ub,p=NullParameters();
                   nout=1, batch = 0, kwargs...)
 
 - f: the integrand, `dx=f(x,p)` for out-of-place or `f(dx,x,p)` for in-place.
@@ -203,14 +203,14 @@ QuadratureProblem{iip}(f,lb,ub,p=NullParameters();
   batchsize in all algorithms.
 - kwargs:: Keyword arguments copied to the solvers.
 
-Additionally, we can supply iip like QuadratureProblem{iip}(...) as true or false to declare at 
+Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at 
 compile time whether the integrator function is in-place.
 
 ### Fields
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace,P,F,L,U,K} <: AbstractQuadratureProblem{isinplace}
+struct IntegralProblem{isinplace,P,F,L,U,K} <: AbstractIntegralProblem{isinplace}
     f::F
     lb::L
     ub::U
@@ -228,7 +228,7 @@ end
 
 IntegralProblem(f, lb, ub, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 
-@deprecate QuadratureProblem IntegralProblem
+@deprecate IntegralProblem IntegralProblem
 
 @doc doc"""
 
