@@ -61,7 +61,8 @@ struct IntegralSolution{T,N,uType,R,P,A,C} <: AbstractIntegralSolution{T,N}
   chi::C
 end
 
-@deprecate QuadratureSolution IntegralSolution
+struct QuadratureSolution end
+@deprecate QuadratureSolution(args...;kwargs...) IntegralSolution(args...;kwargs...)
 
 function build_solution(prob::AbstractIntegralProblem,
   alg, u, resid; calculate_error=true,
