@@ -1,5 +1,7 @@
 using Documenter, SciMLBase, ModelingToolkit
 
+include("pages.jl")
+
 makedocs(
     sitename="SciMLBase.jl",
     authors="Chris Rackauckas",
@@ -8,22 +10,7 @@ makedocs(
     format = Documenter.HTML(analytics = "UA-90474609-3",
                              assets = ["assets/favicon.ico"],
                              canonical="https://scimlbase.sciml.ai/stable/"),
-    pages=[
-        "Home" => "index.md",
-        "Interfaces" => Any[
-            "interfaces/Problems.md",
-            "interfaces/SciMLFunctions.md",
-            "interfaces/Algorithms.md",
-            "interfaces/Solutions.md",
-            "interfaces/Init_Solve.md",
-            "interfaces/Common_Keywords.md",
-            "interfaces/Differentiation.md",
-            "interfaces/PDE.md",
-        ],
-        "Fundamentals" => Any[
-            "fundamentals/FAQ.md"
-        ]
-    ]
+    pages=pages
 )
 
 deploydocs(
