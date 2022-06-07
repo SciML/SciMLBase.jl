@@ -1570,7 +1570,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip}
+struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV,EX,CEX} <: AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
@@ -1586,6 +1586,8 @@ struct OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} 
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV 
     cons_hess_colorvec::CHCV
+    expr::EX
+    cons_expr::CEX
 end
 
 ######### Backwards Compatibility Overloads
@@ -2541,14 +2543,16 @@ function OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
                                    cons_hess_prototype = nothing,
                                    syms = nothing, hess_colorvec = nothing,
                                    cons_jac_colorvec = nothing,
-                                   cons_hess_colorvec = nothing) where iip
+                                   cons_hess_colorvec = nothing,
+                                   expr = nothing, cons_expr = nothing) where iip
     OptimizationFunction{iip,typeof(adtype),typeof(f),typeof(grad),typeof(hess),typeof(hv),
                          typeof(cons),typeof(cons_j),typeof(cons_h),typeof(hess_prototype),
                          typeof(cons_jac_prototype),typeof(cons_hess_prototype),
                          typeof(syms),typeof(hess_colorvec),typeof(cons_jac_colorvec),
-                         typeof(cons_hess_colorvec)}(
+                         typeof(cons_hess_colorvec), typeof(expr), typeof(cons_expr)}(
                          f,adtype,grad,hess,hv,cons,cons_j,cons_h,hess_prototype,cons_jac_prototype,
-                         cons_hess_prototype,syms,hess_colorvec,cons_jac_colorvec,cons_hess_colorvec)
+                         cons_hess_prototype,syms,hess_colorvec,cons_jac_colorvec,cons_hess_colorvec,
+                         expr,cons_expr)
 end
 
 ########## Existance Functions
