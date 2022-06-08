@@ -24,6 +24,7 @@ if GROUP == "Core" || GROUP == "All"
     @time @safetestset "Table Traits" begin include("traits.jl") end
     @time @safetestset "Ensemble functionality" begin include("ensemble_tests.jl") end
     @time @safetestset "DiffEqOperator tests" begin include("diffeqoperator.jl") end
+    @time @safetestset "Solution interface" begin include("solution_interface.jl") end
 end
 
 if !is_APPVEYOR && GROUP == "Downstream"
