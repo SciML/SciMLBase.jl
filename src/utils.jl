@@ -170,11 +170,25 @@ function isinplace(f,inplace_param_number,fname="f")
   oop_dispatch = any(x->x==inplace_param_number-1,nargs)
 
   if !iip_dispatch && !oop_dispatch
-    if nargs == 0
+    if length(nargs) == 0
       throw(NoMethodsError(fname))
     elseif all(x->x>inplace_param_number,nargs)
       throw(TooManyArgumentsError(fname))
     elseif all(x->x<inplace_param_number-1,nargs)
+
+      #=
+      # Possible extra safety?
+      # Find if there's a `f(args...)` dispatch
+      # If so, no error
+      for i in 1:length(nargs)
+        if nargs[i] < inplace_param_number && any(isequal(Vararg{Any}),methods(f)[1].sig.parameters)
+          return iip_dispatch
+        end
+      end
+
+      # No varargs detected, error that there are dispatches but not the right ones
+      =#
+
       throw(TooFewArgumentsError(fname))
     else
       throw(FunctionArgumentsError(fname))
@@ -187,7 +201,7 @@ function isinplace(f,inplace_param_number,fname="f")
 end
 
 isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
-isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number) where {iip} = iip
+isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number,fname=nothing) where {iip} = iip
 
 """
     @CSI_str cmd

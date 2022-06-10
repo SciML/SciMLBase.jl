@@ -1,5 +1,20 @@
 using SciMLBase, Test
 
+function test_num_args()
+    f(x) = 2x
+    f(x,y) = 2xy
+  
+    numpar = SciMLBase.numargs(f) # Should be [1,2]
+    g = (x,y) -> x^2
+    numpar2 = SciMLBase.numargs(g) # [2]
+    @show numpar,minimum(numpar) == 1,maximum(numpar) == 2
+    minimum(numpar) == 1 && maximum(numpar) == 2 && 
+                            maximum(numpar2) == 2 &&
+                            minimum(numpar2) == 2
+end
+  
+@test test_num_args()
+
 ftoomany(u,p,t,x,y) = 2u
 u0 = 0.5
 tspan = (0.0,1.0)
