@@ -23,6 +23,24 @@ function TreeViews.treelabel(io::IO,x::AbstractSciMLFunction,
   summary(io, x)
 end
 
+const NONCONFORMING_FUNCTIONS_ERROR_MESSAGE = 
+"""
+Nonconforming functions detected. If a model function `f` is defined
+as in-place, then all constituant functions like `jac` and `paramjac`
+must be in-place (and vice versa with out-of-place). Detected that
+some overloads did not conform to the same convention as `f`.
+"""
+
+struct NonconformingFunctionsError <: Exception 
+  nonconforming::Vector{String}
+end
+
+function Base.showerror(io::IO, e::NonconformingFunctionsError)
+  println(io, NONCONFORMING_FUNCTIONS_ERROR_MESSAGE)
+  print(io,"Nonconforming functions: ")
+  printstyled(io, e.nonconforming; bold=true, color=:red)
+end
+
 """
 $(TYPEDEF)
 """
@@ -1678,6 +1696,21 @@ function ODEFunction{iip,true}(f;
                    _colorvec = colorvec
                  end
 
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+
+                nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
+                 end
+
                  ODEFunction{iip,
                   typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
                   typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(sparsity), typeof(Wfact),
@@ -1718,6 +1751,21 @@ function ODEFunction{iip,false}(f;
                    _colorvec = colorvec
                  end
 
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+
+                 nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
+                 end
+
                  ODEFunction{iip,
                   Any, Any, Any, Any, Any,
                   Any, Any, Any, Any, Any,
@@ -1736,6 +1784,11 @@ ODEFunction(f::ODEFunction; kwargs...) = f
                                    syms, observed, colorvec)
   f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : ODEFunction(f1)
   f2 = ODEFunction(f2)
+
+  if isinplace(f1) != isinplace(f2)
+    throw(NonconformingFunctionsError(["f2"]))
+  end
+
   SplitFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(mass_matrix),
               typeof(cache),typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
               typeof(jac_prototype),typeof(sparsity),
@@ -1795,6 +1848,11 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                                    syms,observed,colorvec) where iip
   f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : ODEFunction(f1)
   f2 = ODEFunction(f2)
+
+  if isinplace(f1) != isinplace(f2)
+    throw(NonconformingFunctionsError(["f2"]))
+  end
+
   DynamicalODEFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(mass_matrix),
               typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
               typeof(jac_prototype),
@@ -1901,6 +1959,22 @@ function SDEFunction{iip,true}(f,g;
                    _colorvec = colorvec
                  end
 
+                 giip = isinplace(g,4,"g")
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+
+                 nonconforming = (giip,jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["g","jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
+                 end
+
                  SDEFunction{iip,typeof(f),typeof(g),
                  typeof(mass_matrix),typeof(analytic),typeof(tgrad),
                  typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),typeof(Wfact),typeof(Wfact_t),
@@ -1938,6 +2012,22 @@ function SDEFunction{iip,false}(f,g;
                    _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
                  else
                    _colorvec = colorvec
+                 end
+
+                 giip = isinplace(g,4,"g")
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+
+                 nonconforming = (giip,jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["g","jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
                  end
 
                  SDEFunction{iip,Any,Any,Any,Any,Any,
@@ -2104,6 +2194,25 @@ function RODEFunction{iip,true}(f;
                    _colorvec = colorvec
                  end
 
+                 # Setup when the design is finalized by useful integrators
+
+                 #=
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+
+                 nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
+                 end
+                 =#
+
                  RODEFunction{iip,typeof(f),typeof(mass_matrix),
                  typeof(analytic),typeof(tgrad),
                  typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),typeof(Wfact),typeof(Wfact_t),
@@ -2140,6 +2249,25 @@ function RODEFunction{iip,false}(f;
                  else
                    _colorvec = colorvec
                  end
+
+                 # Setup when the design is finalized by useful integrators
+
+                 #=
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+
+                 nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
+                 end
+                 =#
 
                  RODEFunction{iip,Any,Any,Any,Any,
                  Any,Any,Any,Any,Any,
@@ -2181,6 +2309,17 @@ function DAEFunction{iip,true}(f;
                    _colorvec = colorvec
                  end
 
+                 jaciip = jac !== nothing ? isinplace(jac,6,"jac") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp") : iip
+
+                 nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["jac","jvp","vjp"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
+                 end
+
                  DAEFunction{iip,typeof(f),typeof(analytic),typeof(tgrad),
                  typeof(jac),typeof(jvp),typeof(vjp),typeof(jac_prototype),typeof(sparsity),typeof(Wfact),typeof(Wfact_t),
                  typeof(paramjac),typeof(syms),typeof(observed),typeof(_colorvec)}(
@@ -2214,6 +2353,17 @@ function DAEFunction{iip,false}(f;
                    _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
                  else
                    _colorvec = colorvec
+                 end
+
+                 jaciip = jac !== nothing ? isinplace(jac,6,"jac") : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp") : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp") : iip
+
+                 nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
+                 if any(nonconforming)
+                    nonconforming = findall(nonconforming)
+                    functions = ["jac","jvp","vjp"][nonconforming]
+                    throw(NonconformingFunctionsError(functions))
                  end
 
                  DAEFunction{iip,Any,Any,Any,
@@ -2477,6 +2627,17 @@ function NonlinearFunction{iip,true}(f;
     _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
   else
     _colorvec = colorvec
+  end
+
+  jaciip = jac !== nothing ? isinplace(jac,6,"jac") : iip
+  jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp") : iip
+  vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp") : iip
+
+  nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
+  if any(nonconforming)
+     nonconforming = findall(nonconforming)
+     functions = ["jac","jvp","vjp"][nonconforming]
+     throw(NonconformingFunctionsError(functions))
   end
 
   NonlinearFunction{iip,

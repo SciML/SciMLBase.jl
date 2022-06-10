@@ -20,6 +20,7 @@ end
 if GROUP == "Core" || GROUP == "All"
     @time @safetestset "Display" begin include("display.jl") end
     @time @safetestset "Existence functions" begin include("existence_functions.jl") end
+    @time @safetestset "Function Building Error Messages" begin include("function_building_error_messages.jl") end
     @time @safetestset "Integrator interface" begin include("integrator_tests.jl") end
     @time @safetestset "Table Traits" begin include("traits.jl") end
     @time @safetestset "Ensemble functionality" begin include("ensemble_tests.jl") end

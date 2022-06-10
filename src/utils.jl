@@ -1,11 +1,10 @@
 """
 $(SIGNATURES)
 
-Returns the number of arguments of `f` for the method which has the most arguments.
+Returns the number of arguments of `f` for each method.
 """
 function numargs(f)
-  numparam = maximum([num_types_in_tuple(m.sig) for m in methods(f)])
-  return (numparam-1) #-1 since f is the first parameter
+  return [num_types_in_tuple(m.sig)-1 for m in methods(f)] #-1 since f is the first parameter
 end
 
 """
@@ -21,19 +20,170 @@ function num_types_in_tuple(sig::UnionAll)
   length(Base.unwrap_unionall(sig).parameters)
 end
 
+const NO_METHODS_ERROR_MESSAGE = 
 """
-    isinplace(f, inplace_param_number)
+No methods were found for the model function passed to the equation solver.
+The function `f` needs to have dispatches, for example, for an ODEProblem
+`f` must define either `f(u,p,t)` or `f(du,u,p,t)`. For more information
+on how the model function `f` should be defined, consult the docstring for 
+the appropriate `AbstractSciMLFunction`.
+"""
+
+struct NoMethodsError <: Exception 
+  fname::String
+end
+
+function Base.showerror(io::IO, e::NoMethodsError)
+  println(io, NO_METHODS_ERROR_MESSAGE)
+  print(io,"Offending function: ")
+  printstyled(io, e.fname; bold=true, color=:red)
+end
+
+const TOO_MANY_ARGUMENTS_ERROR_MESSAGE = 
+"""
+All methods for the model function `f` had too many arguments. For example,
+an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
+can be thrown if you define an ODE model for example as `f(du,u,p1,p2,t)`.
+For more information on the required number of arguments for the function
+you were defining, consult the documentation for the `SciMLProblem` or
+`SciMLFunction` type that was being constructed.
+
+A common reason for this occurance is due to following the MATLAB or SciPy
+convention for parameter passing, i.e. to add each parameter as an arguemnt.
+In the SciML convention, if you wish to pass multiple parameters, use a
+struct or other collection to hold the parameters. For example, here is the
+parameterized Lorenz equation:
+
+```julia
+function lorenz(du,u,p,t)
+  du[1] = p[1]*(u[2]-u[1])
+  du[2] = u[1]*(p[2]-u[3]) - u[2]
+  du[3] = u[1]*u[2] - p[3]*u[3]
+ end
+ u0 = [1.0;0.0;0.0]
+ p = [10.0,28.0,8/3]
+ tspan = (0.0,100.0)
+ prob = ODEProblem(lorenz,u0,tspan,p)
+```
+
+Notice that `f` is defined with a single `p`, an array which matches the definition
+of the `p` in the `ODEProblem`. Note that `p` can be any Julia struct.
+"""
+
+struct TooManyArgumentsError <: Exception 
+  fname::String
+end
+
+function Base.showerror(io::IO, e::TooManyArgumentsError)
+  println(io, TOO_MANY_ARGUMENTS_ERROR_MESSAGE)
+  print(io,"Offending function: ")
+  printstyled(io, e.fname; bold=true, color=:red)
+end
+
+const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = 
+"""
+All methods for the model function `f` had too few arguments. For example,
+an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
+can be thrown if you define an ODE model for example as `f(u,t)`. The parameters
+`p` are not optional in the defintion of `f`! For more information on the required 
+number of arguments for the function you were defining, consult the documentation 
+for the `SciMLProblem` or `SciMLFunction` type that was being constructed.
+
+For example, here is the no parameter Lorenz equation. The two valid versions
+are out of place:
+
+```julia
+function lorenz(u,p,t)
+  du1 = 10.0*(u[2]-u[1])
+  du2 = u[1]*(28.0-u[3]) - u[2]
+  du3 = u[1]*u[2] - 8/3*u[3]
+  [du1,du2,du3]
+ end
+ u0 = [1.0;0.0;0.0]
+ tspan = (0.0,100.0)
+ prob = ODEProblem(lorenz,u0,tspan)
+```
+
+and in-place:
+
+```julia
+function lorenz!(du,u,p,t)
+  du[1] = 10.0*(u[2]-u[1])
+  du[2] = u[1]*(28.0-u[3]) - u[2]
+  du[3] = u[1]*u[2] - 8/3*u[3]
+ end
+ u0 = [1.0;0.0;0.0]
+ tspan = (0.0,100.0)
+ prob = ODEProblem(lorenz!,u0,tspan)
+```
+"""
+
+struct TooFewArgumentsError <: Exception 
+  fname::String
+end
+
+function Base.showerror(io::IO, e::TooFewArgumentsError)
+  println(io, TOO_FEW_ARGUMENTS_ERROR_MESSAGE)
+  print(io,"Offending function: ")
+  printstyled(io, e.fname; bold=true, color=:red)
+end
+
+const ARGUMENTS_ERROR_MESSAGE = 
+"""
+Methods dispatches for the model function `f` do not match the required number. 
+For example, an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. 
+This error can be thrown if you define an ODE model for example as `f(u,t)`
+and `f(u,p,t,x,y)` as both of those are not valid dispatches! For more information
+on the required dispatches for the given model function, consult the documentation
+for the appropriate `SciMLProblem` or `AbstractSciMLFunction`.
+"""
+
+struct FunctionArgumentsError <: Exception 
+  fname::String
+end
+
+function Base.showerror(io::IO, e::FunctionArgumentsError)
+  println(io, ARGUMENTS_ERROR_MESSAGE)
+  print(io,"Offending function: ")
+  printstyled(io, e.fname; bold=true, color=:red)
+end
+
+"""
+    isinplace(f, inplace_param_number[,fname="f"])
     isinplace(f::AbstractSciMLFunction[, inplace_param_number])
 
 Check whether a function operates in place by comparing its number of arguments
-to the expected number. The second parameter is optional if `f` is an
-[`AbstractDiffEqFunction`](@ref AbstractDiffEqFunction).
+to the expected number. If `f` is an `AbstractSciMLFunction`, then the type
+parameter is assumed to be correct and is used. Otherwise `inplace_param_number`
+is checked against the methods table, where `inplace_param_number` is the number
+of arguments for the in-place dispatch. The out-of-place dispatch is assumed
+to have one less. If neither of these dispatches exist, an error is thrown.
+If the error is thrown, `fname` is used to tell the user which function has the
+incorrect dispatches.
 
 # See also
 * [`numargs`](@ref numargs)
 """
-function isinplace(f,inplace_param_number)
-  numargs(f)>=inplace_param_number
+function isinplace(f,inplace_param_number,fname="f")
+  nargs = numargs(f)
+  iip_dispatch = any(x->x==inplace_param_number,nargs)
+  oop_dispatch = any(x->x==inplace_param_number-1,nargs)
+
+  if !iip_dispatch && !oop_dispatch
+    if nargs == 0
+      throw(NoMethodsError(fname))
+    elseif all(x->x>inplace_param_number,nargs)
+      throw(TooManyArgumentsError(fname))
+    elseif all(x->x<inplace_param_number-1,nargs)
+      throw(TooFewArgumentsError(fname))
+    else
+      throw(FunctionArgumentsError(fname))
+    end
+  else
+    # Equivalent to, if iip_dispatch exists, treat as iip
+    # Otherwise, it's oop
+    iip_dispatch
+  end
 end
 
 isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
