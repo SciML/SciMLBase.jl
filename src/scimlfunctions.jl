@@ -2629,9 +2629,9 @@ function NonlinearFunction{iip,true}(f;
     _colorvec = colorvec
   end
 
-  jaciip = jac !== nothing ? isinplace(jac,6,"jac") : iip
-  jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp") : iip
-  vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp") : iip
+  jaciip = jac !== nothing ? isinplace(jac,3,"jac") : iip
+  jvpiip = jvp !== nothing ? isinplace(jvp,4,"jvp") : iip
+  vjpiip = vjp !== nothing ? isinplace(vjp,4,"vjp") : iip
 
   nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
   if any(nonconforming)
