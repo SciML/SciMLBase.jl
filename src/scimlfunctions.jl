@@ -2689,7 +2689,7 @@ function NonlinearFunction{iip,false}(f;
 end
 NonlinearFunction{iip}(f; kwargs...) where iip = NonlinearFunction{iip,RECOMPILE_BY_DEFAULT}(f; kwargs...)
 NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where iip = f
-NonlinearFunction(f; kwargs...) = NonlinearFunction{isinplace(f, 4),RECOMPILE_BY_DEFAULT}(f; kwargs...)
+NonlinearFunction(f; kwargs...) = NonlinearFunction{isinplace(f, 3),RECOMPILE_BY_DEFAULT}(f; kwargs...)
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 
 struct NoAD <: AbstractADType end

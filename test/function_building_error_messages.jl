@@ -229,3 +229,43 @@ dvjp(res,du,u,v,p,gamma,t) = [1.0]
 DAEFunction(dfiip,vjp=dvjp)
 @test_broken DAEFunction(dfoop,vjp=dvjp)
 
+# NonlinearFunction
+
+nfoop(u,p) = u
+nfiip(du,u,p) = du .= u
+
+njac(u) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,jac=njac)
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfoop,jac=njac)
+njac(u,p) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError NonlinearFunction(nfiip,jac=njac)
+NonlinearFunction(nfoop,jac=njac)
+njac(du,u,p) = [1.0]
+NonlinearFunction(nfiip,jac=njac)
+@test_broken NonlinearFunction(nfoop,jac=njac)
+
+njvp(u) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,jvp=njvp)
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfoop,jvp=njvp)
+njvp(u,p) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,jvp=njvp)
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfoop,jvp=njvp)
+njvp(u,v,p) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError NonlinearFunction(nfiip,jvp=njvp)
+NonlinearFunction(nfoop,jvp=njvp)
+njvp(du,u,v,p) = [1.0]
+NonlinearFunction(nfiip,jvp=njvp)
+@test_broken NonlinearFunction(nfoop,jvp=njvp)
+
+nvjp(u) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,vjp=nvjp)
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfoop,vjp=nvjp)
+nvjp(u,p) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,vjp=nvjp)
+@test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfoop,vjp=nvjp)
+nvjp(u,v,p) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError NonlinearFunction(nfiip,vjp=nvjp)
+NonlinearFunction(nfoop,vjp=nvjp)
+nvjp(du,u,v,p) = [1.0]
+NonlinearFunction(nfiip,vjp=nvjp)
+@test_broken NonlinearFunction(nfoop,vjp=nvjp)
