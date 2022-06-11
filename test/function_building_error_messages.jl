@@ -18,6 +18,7 @@ end
 ftoomany(u,p,t,x,y) = 2u
 u0 = 0.5
 tspan = (0.0,1.0)
+ODEProblem(ftoomany,u0,tspan)
 @test_throws SciMLBase.TooManyArgumentsError ODEProblem(ftoomany,u0,tspan)
 
 ftoofew(u,t) = 2u
