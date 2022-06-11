@@ -2158,10 +2158,10 @@ function DynamicalSDEFunction{iip,false}(f1,f2,g; mass_matrix=I,
                    tgrad,jac,jvp,vjp,jac_prototype,sparsity,
                    Wfact,Wfact_t,paramjac,syms,observed,colorvec)
 end
-# Here I changed `isinplace(f2, 4) -> isinplace(f2, 5)` to allow for extra arguments for dynamical functions.
-DynamicalSDEFunction(f1,f2,g; kwargs...) = DynamicalSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
+
+DynamicalSDEFunction(f1,f2,g; kwargs...) = DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
 DynamicalSDEFunction{iip}(f1,f2, g; kwargs...) where iip =
-DynamicalSDEFunction{iip,RECOMPILE_BY_DEFAULT}(SDEFunction(f1,g), SDEFunction{iip}(f2,g), g; kwargs...)
+DynamicalSDEFunction{iip,RECOMPILE_BY_DEFAULT}(SDEFunction{iip}(f1,g), SDEFunction{iip}(f2,g), g; kwargs...)
 DynamicalSDEFunction(f::DynamicalSDEFunction; kwargs...) = f
 
 function RODEFunction{iip,true}(f;
