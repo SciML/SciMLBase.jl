@@ -170,10 +170,14 @@ incorrect dispatches.
 for 4 args exist, then it will be chosen as in-place. `iip_dispatch` flips this
 decision.
 
+If `has_two_dispatches = false`, then it is assumed that there is only one correct
+dispatch, i.e. `f(u,p)` for OptimizationFunction, and thus the check for the oop
+form is disabled and the 2-argument signature is ensured to be matched.
+
 # See also
 * [`numargs`](@ref numargs)
 """
-function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true)
+function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true; has_two_dispatches = true)
     nargs = numargs(f)
     iip_dispatch = any(x -> x == inplace_param_number, nargs)
     oop_dispatch = any(x -> x == inplace_param_number - 1, nargs)
@@ -183,7 +187,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true)
             throw(NoMethodsError(fname))
         elseif all(x -> x > inplace_param_number, nargs)
             throw(TooManyArgumentsError(fname, f))
-        elseif all(x -> x < inplace_param_number - 1, nargs)
+        elseif all(x -> x < inplace_param_number - 1, nargs) || !has_two_dispatches
             # Possible extra safety?
             # Find if there's a `f(args...)` dispatch
             # If so, no error

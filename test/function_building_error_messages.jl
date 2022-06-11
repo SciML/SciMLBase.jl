@@ -357,3 +357,19 @@ NonlinearFunction(nfoop, vjp = nvjp)
 nvjp(du, u, v, p) = [1.0]
 NonlinearFunction(nfiip, vjp = nvjp)
 NonlinearFunction(nfoop, vjp = nvjp)
+
+# Integrals
+intf(u) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intf,0.0,1.0)
+intf(u,p) = 1.0
+IntegralProblem(intf,0.0,1.0)
+
+# Optimization
+
+@which OptimizationFunction(optf2)
+optf(u) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError OptimizationFunction(optf)
+@test_throws SciMLBase.TooFewArgumentsError OptimizationProblem(optf,1.0)
+optf(u,p) = 1.0
+OptimizationFunction(optf)
+OptimizationProblem(optf,1.0)
