@@ -1,4 +1,4 @@
-using SciMLBase
+using SciMLBase, SciMLOperators
 using LinearAlgebra
 
 @testset "DiffEqOperator" begin
@@ -10,20 +10,20 @@ using LinearAlgebra
     A  = rand(n,n)
     At = A'
 
-    AA  = SciMLBase.DiffEqArrayOperator(A)
+    AA  = SciMLBase.SciMLOperators.MatrixOperator(A)
     AAt = AA'
 
-    @test AA  isa SciMLBase.DiffEqArrayOperator
-    @test AAt isa SciMLBase.DiffEqArrayOperator
+    @test AA  isa SciMLBase.SciMLOperators.MatrixOperator
+    @test AAt isa SciMLBase.SciMLOperators.MatrixOperator
 
     FF  = factorize(AA)
     FFt = FF'
 
-    @test FF  isa SciMLBase.FactorizedDiffEqArrayOperator
-    @test FFt isa SciMLBase.FactorizedDiffEqArrayOperator
+    @test FF  isa SciMLBase.SciMLOperators.InverseOperator
+    @test FFt isa SciMLBase.SciMLOperators.InverseOperator
 
     @test eachindex(A)  === eachindex(AA)
-    @test eachindex(A') === eachindex(AAt) === eachindex(DiffEqArrayOperator(At))
+    @test eachindex(A') === eachindex(AAt) === eachindex(SciMLOperators.MatrixOperator(At))
 
     @test A  ≈ convert(AbstractMatrix, AA ) ≈ convert(AbstractMatrix, FF )
     @test At ≈ convert(AbstractMatrix, AAt) ≈ convert(AbstractMatrix, FFt)
