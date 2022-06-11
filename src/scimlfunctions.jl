@@ -159,7 +159,7 @@ there's no worry of aliasing.
 
 In general the jacobian prototype can be anything that has `mul!` defined, in
 particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
+is when the `jac_prototype` is a `AbstractSciMLLinearOperator `, in which case you
 do not need to supply `jac` as it is automatically set to `update_coefficients!`.
 Refer to the AbstractSciMLOperators documentation for more information
 on setting up time/parameter dependent operators.
@@ -1682,7 +1682,7 @@ function ODEFunction{iip,true}(f;
                   mass_matrix = ((I for i in 1:length(f))...,)
                  end
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -1737,7 +1737,7 @@ function ODEFunction{iip,false}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -1945,7 +1945,7 @@ function SDEFunction{iip,true}(f,g;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2000,7 +2000,7 @@ function SDEFunction{iip,false}(f,g;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2180,7 +2180,7 @@ function RODEFunction{iip,true}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2236,7 +2236,7 @@ function RODEFunction{iip,false}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2295,7 +2295,7 @@ function DAEFunction{iip,true}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2341,7 +2341,7 @@ function DAEFunction{iip,false}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2394,7 +2394,7 @@ function DDEFunction{iip,true}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2430,7 +2430,7 @@ function DDEFunction{iip,false}(f;
                  observed = DEFAULT_OBSERVED,
                  colorvec = nothing) where iip
 
-                 if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+                 if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
                   if iip
                     jac = update_coefficients! #(J,u,p,t)
                   else
@@ -2530,7 +2530,7 @@ function SDDEFunction{iip,true}(f,g;
                                 syms = nothing,
                                 observed = DEFAULT_OBSERVED,
                                 colorvec = nothing)  where iip
-  if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+  if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
    if iip
      jac = update_coefficients! #(J,u,p,t)
    else
@@ -2570,7 +2570,7 @@ function SDDEFunction{iip,false}(f,g;
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where iip
 
-  if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+  if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
    if iip
      jac = update_coefficients! #(J,u,p,t)
    else
@@ -2615,7 +2615,7 @@ function NonlinearFunction{iip,true}(f;
    mass_matrix = ((I for i in 1:length(f))...,)
   end
 
-  if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+  if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
    if iip
      jac = update_coefficients! #(J,u,p,t)
    else
@@ -2665,7 +2665,7 @@ function NonlinearFunction{iip,false}(f;
   observed = DEFAULT_OBSERVED_NO_TIME,
   colorvec = nothing) where iip
 
-  if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+  if jac === nothing && isa(jac_prototype, AbstractSciMLLinearOperator )
    if iip
      jac = update_coefficients! #(J,u,p,t)
    else
