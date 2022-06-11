@@ -132,22 +132,3 @@ SciMLBase.AbstractDiscreteFunction
 SciMLBase.AbstractSDDEFunction
 SciMLBase.AbstractNonlinearFunction
 ```
-
-### Concrete SciML Functions
-
-```@docs
-ODEFunction
-SplitFunction
-DynamicalODEFunction
-DDEFunction
-DynamicalDDEFunction
-DiscreteFunction
-SDEFunction
-SplitSDEFunction
-DynamicalSDEFunction
-RODEFunction
-DAEFunction
-SDDEFunction
-NonlinearFunction
-OptimizationFunction
-```

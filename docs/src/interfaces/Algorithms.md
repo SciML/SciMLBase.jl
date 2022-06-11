@@ -53,7 +53,3 @@ SciMLBase.AbstractDAEAlgorithm
 SciMLBase.AbstractDDEAlgorithm
 SciMLBase.AbstractSDDEAlgorithm
 ```
-
-### Concrete SciML Algorithms
-
-The concrete SciML algorithms are found in the respective solver documentations.
