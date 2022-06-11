@@ -98,15 +98,3 @@ SciMLBase.AbstractDDESolution
 SciMLBase.AbstractRODESolution
 SciMLBase.AbstractDAESolution
 ```
-
-### Concrete SciML Solutions
-
-```@docs
-SciMLBase.LinearSolution
-SciMLBase.QuadratureSolution
-SciMLBase.DAESolution
-SciMLBase.NonlinearSolution
-SciMLBase.ODESolution
-SciMLBase.OptimizationSolution
-SciMLBase.RODESolution
-```
