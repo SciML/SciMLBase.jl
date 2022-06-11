@@ -179,7 +179,7 @@ function isinplace(f,inplace_param_number,fname="f")
       # Find if there's a `f(args...)` dispatch
       # If so, no error
       for i in 1:length(nargs)
-        if nargs[i] < inplace_param_number && any(isequal(Vararg{Any}),methods(f)[1].sig.parameters)
+        if nargs[i] < inplace_param_number && any(isequal(Vararg{Any}),methods(f).ms[1].sig.parameters)
           # If varargs, assume iip
           return true
         end
