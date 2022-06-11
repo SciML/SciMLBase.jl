@@ -34,6 +34,7 @@ jobs:
           - {user: SciML, repo: Integrals.jl, group: All}
           - {user: SciML, repo: DiffEqSensitivity.jl, group: All}
           - {user: SciML, repo: ModelingToolkit.jl, group: All}
+          - {user: SciML, repo: DiffEqOperators.jl, group: All}
 
     steps:
       - uses: actions/checkout@v2
