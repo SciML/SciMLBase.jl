@@ -3308,6 +3308,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    lag_hess_colorvec = nothing,
                                    expr = nothing, cons_expr = nothing,
                                    sys = __has_sys(f) ? f.sys : nothing) where {iip}
+    isinplace(f,2,has_two_dispatches=false)                   
     OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
                          typeof(hv),
                          typeof(cons), typeof(cons_j), typeof(cons_h), typeof(lag_h),
