@@ -366,7 +366,6 @@ IntegralProblem(intf,0.0,1.0)
 
 # Optimization
 
-@which OptimizationFunction(optf2)
 optf(u) = 1.0
 @test_throws SciMLBase.TooFewArgumentsError OptimizationFunction(optf)
 @test_throws SciMLBase.TooFewArgumentsError OptimizationProblem(optf,1.0)
