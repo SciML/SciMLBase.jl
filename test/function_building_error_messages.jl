@@ -32,6 +32,13 @@ fmessedup(u,p,t,x,y) = 2u
 foop(u,p,t) = u
 fiip(du,u,p,t) = du .= u
 
+ofboth(u,p,t) = u
+ofboth(du,u,p,t) = du .= u
+
+ODEFunction(ofboth)
+ODEFunction{true}(ofboth)
+ODEFunction{false}(ofboth)
+
 jac(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,jac=jac)
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop,jac=jac)
@@ -40,7 +47,7 @@ jac(u,p,t) = [1.0]
 ODEFunction(foop,jac=jac)
 jac(du,u,p,t) = [1.0]
 ODEFunction(fiip,jac=jac)
-@test_broken ODEFunction(foop,jac=jac)
+ODEFunction(foop,jac=jac)
 
 Wfact(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,Wfact=Wfact)
@@ -50,7 +57,7 @@ Wfact(u,p,t) = [1.0]
 ODEFunction(foop,Wfact=Wfact)
 Wfact(du,u,p,t) = [1.0]
 ODEFunction(fiip,Wfact=Wfact)
-@test_broken ODEFunction(foop,Wfact=Wfact)
+ODEFunction(foop,Wfact=Wfact)
 
 Wfact_t(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,Wfact_t=Wfact_t)
@@ -60,7 +67,7 @@ Wfact_t(u,p,t) = [1.0]
 ODEFunction(foop,Wfact_t=Wfact_t)
 Wfact_t(du,u,p,t) = [1.0]
 ODEFunction(fiip,Wfact_t=Wfact_t)
-@test_broken ODEFunction(foop,Wfact_t=Wfact_t)
+ODEFunction(foop,Wfact_t=Wfact_t)
 
 tgrad(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,tgrad=tgrad)
@@ -70,7 +77,7 @@ tgrad(u,p,t) = [1.0]
 ODEFunction(foop,tgrad=tgrad)
 tgrad(du,u,p,t) = [1.0]
 ODEFunction(fiip,tgrad=tgrad)
-@test_broken ODEFunction(foop,tgrad=tgrad)
+ODEFunction(foop,tgrad=tgrad)
 
 paramjac(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,paramjac=paramjac)
@@ -80,7 +87,7 @@ paramjac(u,p,t) = [1.0]
 ODEFunction(foop,paramjac=paramjac)
 paramjac(du,u,p,t) = [1.0]
 ODEFunction(fiip,paramjac=paramjac)
-@test_broken ODEFunction(foop,paramjac=paramjac)
+ODEFunction(foop,paramjac=paramjac)
 
 jvp(u,p,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,jvp=jvp)
@@ -90,7 +97,7 @@ jvp(u,v,p,t) = [1.0]
 ODEFunction(foop,jvp=jvp)
 jvp(du,u,v,p,t) = [1.0]
 ODEFunction(fiip,jvp=jvp)
-@test_broken ODEFunction(foop,jvp=jvp)
+ODEFunction(foop,jvp=jvp)
 
 vjp(u,p,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip,vjp=vjp)
@@ -100,7 +107,7 @@ vjp(u,v,p,t) = [1.0]
 ODEFunction(foop,vjp=vjp)
 vjp(du,u,v,p,t) = [1.0]
 ODEFunction(fiip,vjp=vjp)
-@test_broken ODEFunction(foop,vjp=vjp)
+ODEFunction(foop,vjp=vjp)
 
 # SDE
 
@@ -115,6 +122,15 @@ SDEFunction(foop,goop)
 @test_throws SciMLBase.NonconformingFunctionsError SDEFunction(foop,giip)
 @test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip,goop)
 
+sfboth(u,p,t) = u
+sfboth(du,u,p,t) = du .= u
+sgboth(u,p,t) = u
+sgboth(du,u,p,t) = du .= u
+
+SDEFunction(sfboth,sgboth)
+SDEFunction{true}(sfboth,sgboth)
+SDEFunction{false}(sfboth,sgboth)
+
 sjac(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip,giip,jac=sjac)
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop,goop,jac=sjac)
@@ -123,7 +139,7 @@ sjac(u,p,t) = [1.0]
 SDEFunction(foop,goop,jac=sjac)
 sjac(du,u,p,t) = [1.0]
 SDEFunction(fiip,giip,jac=sjac)
-@test_broken SDEFunction(foop,goop,jac=sjac)
+SDEFunction(foop,goop,jac=sjac)
 
 sWfact(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip,giip,Wfact=sWfact)
@@ -134,7 +150,7 @@ sWfact(u,p,t) = [1.0]
 SDEFunction(foop,goop,Wfact=sWfact)
 sWfact(du,u,p,t) = [1.0]
 SDEFunction(fiip,giip,Wfact=sWfact)
-@test_broken SDEFunction(foop,goop,Wfact=sWfact)
+SDEFunction(foop,goop,Wfact=sWfact)
 
 sWfact_t(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip,giip,Wfact_t=sWfact_t)
@@ -153,7 +169,7 @@ stgrad(u,p,t) = [1.0]
 SDEFunction(foop,goop,tgrad=stgrad)
 stgrad(du,u,p,t) = [1.0]
 SDEFunction(fiip,giip,tgrad=stgrad)
-@test_broken SDEFunction(foop,goop,tgrad=stgrad)
+SDEFunction(foop,goop,tgrad=stgrad)
 
 sparamjac(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip,giip,paramjac=sparamjac)
@@ -163,7 +179,7 @@ sparamjac(u,p,t) = [1.0]
 SDEFunction(foop,goop,paramjac=sparamjac)
 sparamjac(du,u,p,t) = [1.0]
 SDEFunction(fiip,giip,paramjac=sparamjac)
-@test_broken SDEFunction(foop,goop,paramjac=sparamjac)
+SDEFunction(foop,goop,paramjac=sparamjac)
 
 sjvp(u,p,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip,giip,jvp=sjvp)
@@ -173,7 +189,7 @@ sjvp(u,v,p,t) = [1.0]
 SDEFunction(foop,goop,jvp=sjvp)
 sjvp(du,u,v,p,t) = [1.0]
 SDEFunction(fiip,giip,jvp=sjvp)
-@test_broken SDEFunction(foop,goop,jvp=sjvp)
+SDEFunction(foop,goop,jvp=sjvp)
 
 svjp(u,p,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip,giip,vjp=svjp)
@@ -183,12 +199,20 @@ svjp(u,v,p,t) = [1.0]
 SDEFunction(foop,goop,vjp=svjp)
 svjp(du,u,v,p,t) = [1.0]
 SDEFunction(fiip,giip,vjp=svjp)
-@test_broken SDEFunction(foop,goop,vjp=svjp)
+SDEFunction(foop,goop,vjp=svjp)
 
 # DAEFunction
 
 dfoop(du,u,p,t) = du .+ u
 dfiip(res,du,u,p,t) = res .= du .+ u
+
+dfboth(du,u,p,t) = du .+ u
+dfboth(res,du,u,p,t) = res .= du .+ u
+
+DAEFunction(dfboth)
+DAEFunction{true}(dfboth)
+DAEFunction{false}(dfboth)
+
 
 djac(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DAEFunction(dfiip,jac=djac)
@@ -204,7 +228,7 @@ djac(du,u,p,gamma,t) = [1.0]
 DAEFunction(dfoop,jac=djac)
 djac(res,du,u,p,gamma,t) = [1.0]
 DAEFunction(dfiip,jac=djac)
-@test_broken DAEFunction(dfoop,jac=djac)
+DAEFunction(dfoop,jac=djac)
 
 djvp(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DAEFunction(dfiip,jvp=djvp)
@@ -223,7 +247,7 @@ djvp(du,u,v,p,gamma,t) = [1.0]
 DAEFunction(dfoop,jvp=djvp)
 djvp(res,du,u,v,p,gamma,t) = [1.0]
 DAEFunction(dfiip,jvp=djvp)
-@test_broken DAEFunction(dfoop,jvp=djvp)
+DAEFunction(dfoop,jvp=djvp)
 
 dvjp(u,t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DAEFunction(dfiip,vjp=dvjp)
@@ -242,12 +266,20 @@ dvjp(du,u,v,p,gamma,t) = [1.0]
 DAEFunction(dfoop,vjp=dvjp)
 dvjp(res,du,u,v,p,gamma,t) = [1.0]
 DAEFunction(dfiip,vjp=dvjp)
-@test_broken DAEFunction(dfoop,vjp=dvjp)
+DAEFunction(dfoop,vjp=dvjp)
 
 # NonlinearFunction
 
 nfoop(u,p) = u
 nfiip(du,u,p) = du .= u
+
+nfboth(u,p) = u
+nfboth(du,u,p) = du .= u
+
+NonlinearFunction(nfboth)
+NonlinearFunction{true}(nfboth)
+NonlinearFunction{false}(nfboth)
+
 
 njac(u) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,jac=njac)
@@ -257,7 +289,7 @@ njac(u,p) = [1.0]
 NonlinearFunction(nfoop,jac=njac)
 njac(du,u,p) = [1.0]
 NonlinearFunction(nfiip,jac=njac)
-@test_broken NonlinearFunction(nfoop,jac=njac)
+NonlinearFunction(nfoop,jac=njac)
 
 njvp(u) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,jvp=njvp)
@@ -270,7 +302,7 @@ njvp(u,v,p) = [1.0]
 NonlinearFunction(nfoop,jvp=njvp)
 njvp(du,u,v,p) = [1.0]
 NonlinearFunction(nfiip,jvp=njvp)
-@test_broken NonlinearFunction(nfoop,jvp=njvp)
+NonlinearFunction(nfoop,jvp=njvp)
 
 nvjp(u) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip,vjp=nvjp)
@@ -283,4 +315,4 @@ nvjp(u,v,p) = [1.0]
 NonlinearFunction(nfoop,vjp=nvjp)
 nvjp(du,u,v,p) = [1.0]
 NonlinearFunction(nfiip,vjp=nvjp)
-@test_broken NonlinearFunction(nfoop,vjp=nvjp)
+NonlinearFunction(nfoop,vjp=nvjp)

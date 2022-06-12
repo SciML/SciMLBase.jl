@@ -1696,13 +1696,13 @@ function ODEFunction{iip,true}(f;
                    _colorvec = colorvec
                  end
 
-                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
-                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
-                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                 nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
                  if any(nonconforming)
@@ -1751,13 +1751,13 @@ function ODEFunction{iip,false}(f;
                    _colorvec = colorvec
                  end
 
-                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
-                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
-                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
                  if any(nonconforming)
@@ -1959,14 +1959,14 @@ function SDEFunction{iip,true}(f,g;
                    _colorvec = colorvec
                  end
 
-                 giip = isinplace(g,4,"g")
-                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
-                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
-                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+                 giip = isinplace(g,4,"g",iip)
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (giip,jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
                  if any(nonconforming)
@@ -2015,13 +2015,13 @@ function SDEFunction{iip,false}(f,g;
                  end
 
                  giip = isinplace(g,4,"g")
-                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
-                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
-                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (giip,jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
                  if any(nonconforming)
@@ -2197,13 +2197,13 @@ function RODEFunction{iip,true}(f;
                  # Setup when the design is finalized by useful integrators
 
                  #=
-                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
-                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
-                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
                  if any(nonconforming)
@@ -2253,13 +2253,13 @@ function RODEFunction{iip,false}(f;
                  # Setup when the design is finalized by useful integrators
 
                  #=
-                 jaciip = jac !== nothing ? isinplace(jac,4,"jac") : iip
-                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp") : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact") : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t") : iip
-                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
+                 tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
                  if any(nonconforming)
@@ -2309,9 +2309,9 @@ function DAEFunction{iip,true}(f;
                    _colorvec = colorvec
                  end
 
-                 jaciip = jac !== nothing ? isinplace(jac,6,"jac") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,6,"jac",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp",iip) : iip
 
                  nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
                  if any(nonconforming)
@@ -2355,9 +2355,9 @@ function DAEFunction{iip,false}(f;
                    _colorvec = colorvec
                  end
 
-                 jaciip = jac !== nothing ? isinplace(jac,6,"jac") : iip
-                 jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp") : iip
-                 vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp") : iip
+                 jaciip = jac !== nothing ? isinplace(jac,6,"jac",iip) : iip
+                 jvpiip = jvp !== nothing ? isinplace(jvp,7,"jvp",iip) : iip
+                 vjpiip = vjp !== nothing ? isinplace(vjp,7,"vjp",iip) : iip
 
                  nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
                  if any(nonconforming)
@@ -2629,9 +2629,9 @@ function NonlinearFunction{iip,true}(f;
     _colorvec = colorvec
   end
 
-  jaciip = jac !== nothing ? isinplace(jac,3,"jac") : iip
-  jvpiip = jvp !== nothing ? isinplace(jvp,4,"jvp") : iip
-  vjpiip = vjp !== nothing ? isinplace(vjp,4,"vjp") : iip
+  jaciip = jac !== nothing ? isinplace(jac,3,"jac",iip) : iip
+  jvpiip = jvp !== nothing ? isinplace(jvp,4,"jvp",iip) : iip
+  vjpiip = vjp !== nothing ? isinplace(vjp,4,"vjp",iip) : iip
 
   nonconforming = (jaciip,jvpiip,vjpiip) .!= iip
   if any(nonconforming)
