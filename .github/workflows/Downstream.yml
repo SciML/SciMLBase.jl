@@ -31,6 +31,7 @@ jobs:
           - {user: SciML, repo: NonlinearSolve.jl, group: All}
           - {user: SciML, repo: Optimization.jl, group: All}
           - {user: SciML, repo: Integrals.jl, group: All}
+          - {user: SciML, repo: ModelingToolkit.jl, group: All}
 
     steps:
       - uses: actions/checkout@v2
