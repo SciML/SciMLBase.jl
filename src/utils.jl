@@ -159,12 +159,16 @@ is checked against the methods table, where `inplace_param_number` is the number
 of arguments for the in-place dispatch. The out-of-place dispatch is assumed
 to have one less. If neither of these dispatches exist, an error is thrown.
 If the error is thrown, `fname` is used to tell the user which function has the
-incorrect dispatches.
+incorrect dispatches. 
+
+`iip_preferred` means that if `inplace_param_number=4` and methods of both 3 and 
+for 4 args exist, then it will be chosen as in-place. `iip_dispatch` flips this 
+decision.
 
 # See also
 * [`numargs`](@ref numargs)
 """
-function isinplace(f,inplace_param_number,fname="f")
+function isinplace(f,inplace_param_number,fname="f",iip_preferred=true)
   nargs = numargs(f)
   iip_dispatch = any(x->x==inplace_param_number,nargs)
   oop_dispatch = any(x->x==inplace_param_number-1,nargs)
@@ -181,7 +185,7 @@ function isinplace(f,inplace_param_number,fname="f")
       for i in 1:length(nargs)
         if nargs[i] < inplace_param_number && any(isequal(Vararg{Any}),methods(f).ms[1].sig.parameters)
           # If varargs, assume iip
-          return true
+          return iip_preferred
         end
       end
 
@@ -192,9 +196,17 @@ function isinplace(f,inplace_param_number,fname="f")
       throw(FunctionArgumentsError(fname))
     end
   else
-    # Equivalent to, if iip_dispatch exists, treat as iip
-    # Otherwise, it's oop
-    iip_dispatch
+
+
+    if iip_preferred
+      # Equivalent to, if iip_dispatch exists, treat as iip
+      # Otherwise, it's oop
+      iip_dispatch
+    else
+      # Equivalent to, if oop_dispatch exists, treat as oop
+      # Otherwise, it's iip
+      !oop_dispatch
+    end
   end
 end
 
