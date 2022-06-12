@@ -19,8 +19,8 @@ using LinearAlgebra
     FF  = factorize(AA)
     FFt = FF'
 
-    @test FF  isa SciMLBase.SciMLOperators.InverseOperator
-    @test FFt isa SciMLBase.SciMLOperators.InverseOperator
+    @test FF  isa SciMLBase.SciMLOperators.InvertibleOperator
+    @test FFt isa SciMLBase.SciMLOperators.InvertibleOperator
 
     @test eachindex(A)  === eachindex(AA)
     @test eachindex(A') === eachindex(AAt) === eachindex(SciMLOperators.MatrixOperator(At))
