@@ -46,12 +46,52 @@ callback = (x,other_args) -> false
 ```
 
 where `other_args` is are the extra return arguments of the optimization `f`.
-For example, if `f(x,p) = 5x`, then `callback = (x) -> ...` is used. If `f(x,p) = 5x,55x`,
-then ` = (x,extra) -> ...` is used, where `extra = 55x`. This allows for saving
-values from the optimization and using them for plotting and display without
-recalculating. The callback should return a Boolean value, and the default 
-should be `false`, such that the optimization gets stopped if it returns `true`.
+This allows for saving values from the optimization and using them for 
+plotting and display without recalculating. The callback should return a 
+Boolean value, and the default should be `false`, such that the optimization 
+gets stopped if it returns `true`.
+
+### Callback Example
+
+```julia
+function loss(p) 
+    # Some calculations
+    lossval,x,y,z
+end
+
+function callback(p,lossval,x,y,z)
+    # Do some analysis
+
+    # When lossval < 0.01, stop the optimization
+    lossval < 0.01
+end
+```
 """
 function solve(prob::OptimizationProblem, alg, args...;kwargs...)
     __solve(prob, alg, args...; kwargs...)
+end
+
+const OPTIMIZER_MISSING_ERROR_MESSAGE = 
+"""
+Optimization algorithm not found. Either the chosen algorithm is not a valid solver
+choice for the `OptimizationProblem`, or the Optimization solver library is not loaded.
+Make sure that you have loaded an appropriate Optimization.jl solver library, for example, 
+`solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and 
+`solve(prob,Adam())` requires `using OptimizationOptimisers`. 
+
+For more information, see the Optimization.jl documentation: optimization.sciml.ai/dev.
+"""
+
+struct OptimizerMissingError <: Exception 
+    alg
+end
+  
+function Base.showerror(io::IO, e::OptimizerMissingError)
+    println(io, OPTIMIZER_MISSING_ERROR_MESSAGE)
+    print(io,"Chosen Optimizer: ")
+    print(e.alg)
+end
+
+function __solve(prob::OptimizationProblem, alg, args...;kwargs...)
+   throw(OptimizerMissingError(alg)) 
 end
