@@ -89,9 +89,9 @@ end
 function Base.showerror(io::IO, e::OptimizerMissingError)
     println(io, OPTIMIZER_MISSING_ERROR_MESSAGE)
     print(io,"Chosen Optimizer: ")
-    print(alg)
+    print(e.alg)
 end
 
 function __solve(prob::OptimizationProblem, alg, args...;kwargs...)
-   throw(OptimizerMissingError()) 
+   throw(OptimizerMissingError(alg)) 
 end
