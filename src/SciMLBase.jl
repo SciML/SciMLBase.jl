@@ -505,6 +505,20 @@ Base type for AD choices.
 """
 abstract type AbstractADType end
 
+"""
+$(TYPEDEF)
+
+Internal. Used for signifying which AD context a derivative calculation is in.
+"""
+abstract type ADOriginator end
+
+"""
+$(TYPEDEF)
+
+Internal. Used for signifying the AD context comes from a ChainRules.jl definition.
+"""
+struct ChainRulesOriginator <: ADOriginator end
+
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
