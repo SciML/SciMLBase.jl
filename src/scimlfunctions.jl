@@ -1782,12 +1782,14 @@ ODEFunction(f::ODEFunction; kwargs...) = f
 @add_kwonly function SplitFunction(f1,f2,mass_matrix,cache,analytic,tgrad,jac,jvp,vjp,
                                    jac_prototype,sparsity,Wfact,Wfact_t,paramjac,
                                    syms, observed, colorvec)
-  f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : ODEFunction(f1)
+
+  f1 = ODEFunction(f1)
   f2 = ODEFunction(f2)
 
-  if isinplace(f1) != isinplace(f2)
+  if !(typeof(f1) <: AbstractDiffEqOperator || typeof(f1.f) <: AbstractDiffEqOperator) && isinplace(f1) != isinplace(f2)
     throw(NonconformingFunctionsError(["f2"]))
   end
+  
 
   SplitFunction{isinplace(f2),typeof(f1),typeof(f2),typeof(mass_matrix),
               typeof(cache),typeof(analytic),typeof(tgrad),typeof(jac),typeof(jvp),typeof(vjp),
