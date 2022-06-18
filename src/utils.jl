@@ -241,8 +241,8 @@ end
 using Base: typename
 
 Base.@pure __parameterless_type(T) = typename(T).wrapper
-parameterless_type(x) = parameterless_type(typeof(x))
-parameterless_type(x::Type) = __parameterless_type(x)
+parameterless_type(x) = __parameterless_type(typeof(x))
+parameterless_type(::Type{T}) where T = __parameterless_type(T)
 
 # support functions
 export check_keywords, warn_compat
