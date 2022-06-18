@@ -519,6 +519,20 @@ Internal. Used for signifying the AD context comes from a ChainRules.jl definiti
 """
 struct ChainRulesOriginator <: ADOriginator end
 
+"""
+$(TYPEDEF)
+
+Internal. Used for signifying the AD context comes from a ReverseDiff.jl context.
+"""
+struct ReverseDiffOriginator <: ADOriginator end
+
+"""
+$(TYPEDEF)
+
+Internal. Used for signifying the AD context comes from a Tracker.jl context.
+"""
+struct TrackerOriginator <: ADOriginator end
+
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
