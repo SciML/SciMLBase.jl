@@ -242,7 +242,7 @@ To define an Optimization Problem, you simply need to give the function ``f``
 which defines the cost function to minimize:
 
 ```math
-min_u f(u,p) = 0
+min_u f(u,p)
 ```
 
 ``u₀`` is an initial guess of the minimum. `f` should be specified as `f(u,p)`
