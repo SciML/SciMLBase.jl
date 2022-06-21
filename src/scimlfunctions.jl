@@ -1700,8 +1700,8 @@ function ODEFunction{iip,true}(f;
                  tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
                  jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
                  vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,5,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,5,"Wfact_t",iip) : iip
                  paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                 nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
@@ -1755,8 +1755,8 @@ function ODEFunction{iip,false}(f;
                  tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
                  jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
                  vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,5,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,5,"Wfact_t",iip) : iip
                  paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
@@ -1966,8 +1966,8 @@ function SDEFunction{iip,true}(f,g;
                  tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
                  jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
                  vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,5,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,5,"Wfact_t",iip) : iip
                  paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (giip,jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
@@ -2021,8 +2021,8 @@ function SDEFunction{iip,false}(f,g;
                  tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
                  jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
                  vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
-                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
-                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
+                 Wfactiip = Wfact !== nothing ? isinplace(Wfact,5,"Wfact",iip) : iip
+                 Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,5,"Wfact_t",iip) : iip
                  paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
 
                  nonconforming = (giip,jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
