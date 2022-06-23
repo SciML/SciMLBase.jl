@@ -19,21 +19,23 @@ Representation of the solution to an linear system Ax=b defined by a LinearProbl
   `A` and a new `b` without refactorizing `A`. See the caching interface tutorial for details
   on how to use the `cache` effectively: http://linearsolve.sciml.ai/dev/tutorials/caching_interface/ 
 """
-struct LinearSolution{T,N,uType,R,A,C} <: AbstractLinearSolution{T,N}
-  u::uType
-  resid::R
-  alg::A
-  retcode::Symbol
-  iters::Int
-  cache::C
+struct LinearSolution{T, N, uType, R, A, C} <: AbstractLinearSolution{T, N}
+    u::uType
+    resid::R
+    alg::A
+    retcode::Symbol
+    iters::Int
+    cache::C
 end
 
 function build_linear_solution(alg, u, resid, cache;
-  retcode=:Default,
-  iters=0)
-  T = eltype(eltype(u))
-  N = length((size(u)...,))
-  LinearSolution{T,N,typeof(u),typeof(resid),typeof(alg),typeof(cache)}(u, resid, alg, retcode, iters, cache)
+                               retcode = :Default,
+                               iters = 0)
+    T = eltype(eltype(u))
+    N = length((size(u)...,))
+    LinearSolution{T, N, typeof(u), typeof(resid), typeof(alg), typeof(cache)}(u, resid,
+                                                                               alg, retcode,
+                                                                               iters, cache)
 end
 
 """
@@ -52,27 +54,26 @@ Representation of the solution to an quadrature integral_lb^ub f(x) dx defined b
   details, see the return code section of the DifferentialEquations.jl documentation.
 - `chi`: the variance estimate of the estimator from Monte Carlo quadrature methods.
 """
-struct IntegralSolution{T,N,uType,R,P,A,C} <: AbstractIntegralSolution{T,N}
-  u::uType
-  resid::R
-  prob::P
-  alg::A
-  retcode::Symbol
-  chi::C
+struct IntegralSolution{T, N, uType, R, P, A, C} <: AbstractIntegralSolution{T, N}
+    u::uType
+    resid::R
+    prob::P
+    alg::A
+    retcode::Symbol
+    chi::C
 end
 
 struct QuadratureSolution end
-@deprecate QuadratureSolution(args...;kwargs...) IntegralSolution(args...;kwargs...)
+@deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
 
 function build_solution(prob::AbstractIntegralProblem,
-  alg, u, resid; calculate_error=true,
-  chi=nothing,
-  retcode=:Default, kwargs...)
+                        alg, u, resid; calculate_error = true,
+                        chi = nothing,
+                        retcode = :Default, kwargs...)
+    T = eltype(eltype(u))
+    N = length((size(u)...,))
 
-  T = eltype(eltype(u))
-  N = length((size(u)...,))
-
-  IntegralSolution{T,N,typeof(u),typeof(resid),
-    typeof(prob),typeof(alg),typeof(chi)}(
-    u, resid, prob, alg, retcode, chi)
+    IntegralSolution{T, N, typeof(u), typeof(resid),
+                     typeof(prob), typeof(alg), typeof(chi)}(u, resid, prob, alg, retcode,
+                                                             chi)
 end

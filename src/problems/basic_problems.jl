@@ -52,17 +52,17 @@ parameters. Any extra keyword arguments are passed on to the solvers.
 * `u0`: The initial condition used by iterative solvers.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct LinearProblem{uType,isinplace,F,bType,P,K} <: AbstractLinearProblem{bType,isinplace}
+struct LinearProblem{uType, isinplace, F, bType, P, K} <:
+       AbstractLinearProblem{bType, isinplace}
     A::F
     b::bType
     u0::uType
     p::P
     kwargs::K
-    @add_kwonly function LinearProblem{iip}(A, b, p=NullParameters(); u0=nothing,
-        kwargs...) where {iip}
-        new{typeof(u0),iip,typeof(A),typeof(b),typeof(p),typeof(kwargs)}(
-            A, b, u0, p, kwargs
-        )
+    @add_kwonly function LinearProblem{iip}(A, b, p = NullParameters(); u0 = nothing,
+                                            kwargs...) where {iip}
+        new{typeof(u0), iip, typeof(A), typeof(b), typeof(p), typeof(kwargs)}(A, b, u0, p,
+                                                                              kwargs)
     end
 end
 
@@ -124,13 +124,15 @@ page.
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct NonlinearProblem{uType,isinplace,P,F,K} <: AbstractNonlinearProblem{uType,isinplace}
+struct NonlinearProblem{uType, isinplace, P, F, K} <:
+       AbstractNonlinearProblem{uType, isinplace}
     f::F
     u0::uType
     p::P
     kwargs::K
-    @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0, p=NullParameters(); kwargs...) where {iip}
-        new{typeof(u0),iip,typeof(p),typeof(f),typeof(kwargs)}(f, u0, p, kwargs)
+    @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
+                                               p = NullParameters(); kwargs...) where {iip}
+        new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs)}(f, u0, p, kwargs)
     end
 
     """
@@ -140,11 +142,10 @@ struct NonlinearProblem{uType,isinplace,P,F,K} <: AbstractNonlinearProblem{uType
     `isinplace` optionally sets whether the function is inplace or not.
     This is determined automatically, but not inferred.
     """
-    function NonlinearProblem{iip}(f, u0, p=NullParameters()) where {iip}
+    function NonlinearProblem{iip}(f, u0, p = NullParameters()) where {iip}
         NonlinearProblem{iip}(NonlinearFunction{iip}(f), u0, p)
     end
 end
-
 
 """
 $(SIGNATURES)
@@ -152,11 +153,11 @@ $(SIGNATURES)
 Define a steady state problem using an instance of
 [`AbstractNonlinearFunction`](@ref AbstractNonlinearFunction).
 """
-function NonlinearProblem(f::AbstractNonlinearFunction, u0, p=NullParameters(); kwargs...)
+function NonlinearProblem(f::AbstractNonlinearFunction, u0, p = NullParameters(); kwargs...)
     NonlinearProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
-function NonlinearProblem(f, u0, p=NullParameters(); kwargs...)
+function NonlinearProblem(f, u0, p = NullParameters(); kwargs...)
     NonlinearProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
 
@@ -165,8 +166,9 @@ $(SIGNATURES)
 
 Define a steady state problem from a standard ODE problem.
 """
-NonlinearProblem(prob::AbstractNonlinearProblem) =
+function NonlinearProblem(prob::AbstractNonlinearProblem)
     NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+end
 
 @doc doc"""
 
@@ -210,7 +212,7 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace,P,F,L,U,K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, L, U, K} <: AbstractIntegralProblem{isinplace}
     f::F
     lb::L
     ub::U
@@ -218,18 +220,20 @@ struct IntegralProblem{isinplace,P,F,L,U,K} <: AbstractIntegralProblem{isinplace
     p::P
     batch::Int
     kwargs::K
-    @add_kwonly function IntegralProblem{iip}(f, lb, ub, p=NullParameters();
-        nout=1,
-        batch=0, kwargs...) where {iip}
-        new{iip,typeof(p),typeof(f),typeof(lb),
-            typeof(ub),typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
+    @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
+                                              nout = 1,
+                                              batch = 0, kwargs...) where {iip}
+        new{iip, typeof(p), typeof(f), typeof(lb),
+            typeof(ub), typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
     end
 end
 
-IntegralProblem(f, lb, ub, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
+function IntegralProblem(f, lb, ub, args...; kwargs...)
+    IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
+end
 
 struct QuadratureProblem end
-@deprecate QuadratureProblem(args...;kwargs...) IntegralProblem(args...;kwargs...)
+@deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
 
 @doc doc"""
 
@@ -305,7 +309,8 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `sense`:
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct OptimizationProblem{iip,F,uType,P,B,LC,UC,S,K} <: AbstractOptimizationProblem{isinplace}
+struct OptimizationProblem{iip, F, uType, P, B, LC, UC, S, K} <:
+       AbstractOptimizationProblem{isinplace}
     f::F
     u0::uType
     p::P
@@ -315,21 +320,26 @@ struct OptimizationProblem{iip,F,uType,P,B,LC,UC,S,K} <: AbstractOptimizationPro
     ucons::UC
     sense::S
     kwargs::K
-    @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0, p=NullParameters();
-        lb=nothing, ub=nothing,
-        lcons=nothing, ucons=nothing,
-        sense=nothing, kwargs...) where {iip}
+    @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0,
+                                                  p = NullParameters();
+                                                  lb = nothing, ub = nothing,
+                                                  lcons = nothing, ucons = nothing,
+                                                  sense = nothing, kwargs...) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
-        new{iip,typeof(f),typeof(u0),typeof(p),
-            typeof(lb),typeof(lcons),typeof(ucons),
-            typeof(sense),typeof(kwargs)}(f, u0, p, lb, ub, lcons, ucons, sense, kwargs)
+        new{iip, typeof(f), typeof(u0), typeof(p),
+            typeof(lb), typeof(lcons), typeof(ucons),
+            typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, lcons, ucons, sense, kwargs)
     end
 end
 
-OptimizationProblem(f::OptimizationFunction, args...; kwargs...) = OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
-OptimizationProblem(f, args...; kwargs...) = OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
+function OptimizationProblem(f::OptimizationFunction, args...; kwargs...)
+    OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
+end
+function OptimizationProblem(f, args...; kwargs...)
+    OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
+end
 
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip

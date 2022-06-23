@@ -7,7 +7,9 @@ there is a temporal difference `≥ dt` in `integ.t`.  When `true` is
 passed to the optional third argument, the integrator advances exactly
 `dt`.
 """
-function step!(d::DEIntegrator) error("Integrator stepping is not implemented") end
+function step!(d::DEIntegrator)
+    error("Integrator stepping is not implemented")
+end
 
 """
     resize!(integrator::DEIntegrator,k::Int)
@@ -15,21 +17,27 @@ function step!(d::DEIntegrator) error("Integrator stepping is not implemented") 
 Resizes the DE to a size `k`. This chops off the end of the array, or adds blank values at the end, depending on whether
 `k > length(integrator.u)`.
 """
-Base.resize!(i::DEIntegrator,ii::Int) = error("resize!: method has not been implemented for the integrator")
+function Base.resize!(i::DEIntegrator, ii::Int)
+    error("resize!: method has not been implemented for the integrator")
+end
 
 """
     deleteat!(integrator::DEIntegrator,idxs)
 
 Shrinks the ODE by deleting the `idxs` components.
 """
-Base.deleteat!(i::DEIntegrator,ii) = error("deleteat!: method has not been implemented for the integrator")
+function Base.deleteat!(i::DEIntegrator, ii)
+    error("deleteat!: method has not been implemented for the integrator")
+end
 
 """
     addat!(integrator::DEIntegrator,idxs,val)
 
 Grows the ODE by adding the `idxs` components. Must be contiguous indices.
 """
-addat!(i::DEIntegrator,idxs,val=zeros(length(idxs))) = error("addat!: method has not been implemented for the integrator")
+function addat!(i::DEIntegrator, idxs, val = zeros(length(idxs)))
+    error("addat!: method has not been implemented for the integrator")
+end
 
 """
     get_tmp_cache(i::DEIntegrator)
@@ -38,10 +46,18 @@ Returns a tuple of internal cache vectors which are safe to use as temporary arr
 for integrator interface and callbacks which need arrays to write into in order to be non-allocating.
 The length of the tuple is dependent on the method.
 """
-get_tmp_cache(i::DEIntegrator) = error("get_tmp_cache!: method has not been implemented for the integrator")
-user_cache(i::DEIntegrator) = error("user_cache: method has not been implemented for the integrator")
-u_cache(i::DEIntegrator) = error("u_cache: method has not been implemented for the integrator")
-du_cache(i::DEIntegrator) = error("du_cache: method has not been implemented for the integrator")
+function get_tmp_cache(i::DEIntegrator)
+    error("get_tmp_cache!: method has not been implemented for the integrator")
+end
+function user_cache(i::DEIntegrator)
+    error("user_cache: method has not been implemented for the integrator")
+end
+function u_cache(i::DEIntegrator)
+    error("u_cache: method has not been implemented for the integrator")
+end
+function du_cache(i::DEIntegrator)
+    error("du_cache: method has not been implemented for the integrator")
+end
 ratenoise_cache(i::DEIntegrator) = ()
 rand_cache(i::DEIntegrator) = ()
 
@@ -50,7 +66,9 @@ rand_cache(i::DEIntegrator) = ()
 
 Returns an iterator over the cache arrays of the method. This can be used to change internal values as needed.
 """
-full_cache(i::DEIntegrator) = error("full_cache: method has not been implemented for the integrator")
+function full_cache(i::DEIntegrator)
+    error("full_cache: method has not been implemented for the integrator")
+end
 
 """
     resize_non_user_cache!(integrator::DEIntegrator,k::Int)
@@ -62,7 +80,9 @@ Resizes the non-user facing caches to be compatible with a DE of size `k`. This 
     calls this function. This finer control is required for some `AbstractArray`
     operations.
 """
-resize_non_user_cache!(i::DEIntegrator,ii::Int) = error("resize_non_user_cache!: method has not been implemented for the integrator")
+function resize_non_user_cache!(i::DEIntegrator, ii::Int)
+    error("resize_non_user_cache!: method has not been implemented for the integrator")
+end
 
 """
     deleteat_non_user_cache!(integrator::DEIntegrator,idxs)
@@ -74,7 +94,9 @@ resize_non_user_cache!(i::DEIntegrator,ii::Int) = error("resize_non_user_cache!:
     calls this function. This finer control is required for some `AbstractArray`
     operations.
 """
-deleteat_non_user_cache!(i::DEIntegrator,idxs) = error("deleteat_non_user_cache!: method has not been implemented for the integrator")
+function deleteat_non_user_cache!(i::DEIntegrator, idxs)
+    error("deleteat_non_user_cache!: method has not been implemented for the integrator")
+end
 
 """
     addat_non_user_cache!(i::DEIntegrator,idxs)
@@ -85,7 +107,9 @@ deleteat_non_user_cache!(i::DEIntegrator,idxs) = error("deleteat_non_user_cache!
     calls this function. This finer control is required for some `AbstractArray`
     operations.
 """
-addat_non_user_cache!(i::DEIntegrator,idxs) = error("addat_non_user_cache!: method has not been implemented for the integrator")
+function addat_non_user_cache!(i::DEIntegrator, idxs)
+    error("addat_non_user_cache!: method has not been implemented for the integrator")
+end
 
 """
     terminate!(i::DEIntegrator[, retcode = :Terminated])
@@ -93,29 +117,39 @@ addat_non_user_cache!(i::DEIntegrator,idxs) = error("addat_non_user_cache!: meth
 Terminates the integrator by emptying `tstops`. This can be used in events and callbacks to immediately
 end the solution process.  Optionally, `retcode` may be specified (see: [Return Codes (RetCodes)](@ref retcodes)).
 """
-terminate!(i::DEIntegrator) = error("terminate!: method has not been implemented for the integrator")
+function terminate!(i::DEIntegrator)
+    error("terminate!: method has not been implemented for the integrator")
+end
 
 """
     get_du(i::DEIntegrator)
 
 Returns the derivative at `t`.
 """
-get_du(i::DEIntegrator) = error("get_du: method has not been implemented for the integrator")
+function get_du(i::DEIntegrator)
+    error("get_du: method has not been implemented for the integrator")
+end
 
 """
     get_du!(out,i::DEIntegrator)
 
 Write the current derivative at `t` into `out`.
 """
-get_du!(out,i::DEIntegrator) = error("get_du: method has not been implemented for the integrator")
-get_dt(i::DEIntegrator) = error("get_dt: method has not been implemented for the integrator")
+function get_du!(out, i::DEIntegrator)
+    error("get_du: method has not been implemented for the integrator")
+end
+function get_dt(i::DEIntegrator)
+    error("get_dt: method has not been implemented for the integrator")
+end
 
 """
     get_proposed_dt(i::DEIntegrator)
 
 Gets the proposed `dt` for the next timestep.
 """
-get_proposed_dt(i::DEIntegrator) = error("get_proposed_dt: method has not been implemented for the integrator")
+function get_proposed_dt(i::DEIntegrator)
+    error("get_proposed_dt: method has not been implemented for the integrator")
+end
 
 """
     set_proposed_dt(i::DEIntegrator,dt)
@@ -125,7 +159,9 @@ Sets the proposed `dt` for the next timestep. If second argument isa `DEIntegrat
 first argument to match that of second one. Note that due to PI control and step acceleration this is more than matching
 the factors in most cases.
 """
-set_proposed_dt!(i::DEIntegrator,dt) = error("set_proposed_dt!: method has not been implemented for the integrator")
+function set_proposed_dt!(i::DEIntegrator, dt)
+    error("set_proposed_dt!: method has not been implemented for the integrator")
+end
 
 """
     savevalues!(integrator::DEIntegrator,
@@ -143,7 +179,9 @@ The saving priority/order is as follows:
     - `force_save`
     - `save_everystep`
 """
-savevalues!(i::DEIntegrator) = error("savevalues!: method has not been implemented for the integrator")
+function savevalues!(i::DEIntegrator)
+    error("savevalues!: method has not been implemented for the integrator")
+end
 
 """
     u_modified!(i::DEIntegrator,bool)
@@ -154,45 +192,61 @@ this is assumed to be true if a callback is used. This will result in the re-cal
 end of the interval. Thus if `u` is unmodified in a callback, a single call to the derivative calculation can be
 eliminated by `u_modified!(integrator,false)`.
 """
-u_modified!(i::DEIntegrator,bool) = error("u_modified!: method has not been implemented for the integrator")
+function u_modified!(i::DEIntegrator, bool)
+    error("u_modified!: method has not been implemented for the integrator")
+end
 
 """
     add_tstop!(i::DEIntegrator,t)
 
 Adds a `tstop` at time `t`.
 """
-add_tstop!(i::DEIntegrator,t) = error("add_tstop!: method has not been implemented for the integrator")
+function add_tstop!(i::DEIntegrator, t)
+    error("add_tstop!: method has not been implemented for the integrator")
+end
 
 """
     has_tstop(i::DEIntegrator)
 
 Checks if integrator has any stopping times defined.
 """
-has_tstop(i::DEIntegrator) = error("has_tstop: method has not been implemented for the integrator")
+function has_tstop(i::DEIntegrator)
+    error("has_tstop: method has not been implemented for the integrator")
+end
 
 """
     first_tstop(i::DEIntegrator)
 
 Gets the first stopping time of the integrator.
 """
-first_tstop(i::DEIntegrator) = error("first_tstop: method has not been implemented for the integrator")
+function first_tstop(i::DEIntegrator)
+    error("first_tstop: method has not been implemented for the integrator")
+end
 
 """
     pop_tstop!(i::DEIntegrator)
 
 Pops the last stopping time from the integrator.
 """
-pop_tstop!(i::DEIntegrator) = error("pop_tstop!: method has not been implemented for the integrator")
+function pop_tstop!(i::DEIntegrator)
+    error("pop_tstop!: method has not been implemented for the integrator")
+end
 
 """
     add_saveat!(i::DEIntegrator,t)
 
 Adds a `saveat` time point at `t`.
 """
-add_saveat!(i::DEIntegrator,t) = error("add_saveat!: method has not been implemented for the integrator")
+function add_saveat!(i::DEIntegrator, t)
+    error("add_saveat!: method has not been implemented for the integrator")
+end
 
-set_abstol!(i::DEIntegrator,t) = error("set_abstol!: method has not been implemented for the integrator")
-set_reltol!(i::DEIntegrator,t) = error("set_reltol!: method has not been implemented for the integrator")
+function set_abstol!(i::DEIntegrator, t)
+    error("set_abstol!: method has not been implemented for the integrator")
+end
+function set_reltol!(i::DEIntegrator, t)
+    error("set_reltol!: method has not been implemented for the integrator")
+end
 
 """
     reinit!(integrator::DEIntegrator,args...; kwargs...)
@@ -216,8 +270,9 @@ The reinit function lets you restart the integration at a new value.
 
 Additionally, once can access [`auto_dt_reset!`](@ref) which will run the auto `dt` initialization algorithm.
 """
-reinit!(integrator::DEIntegrator,args...; kwargs...) =
-       error("reinit!: method has not been implemented for the integrator")
+function reinit!(integrator::DEIntegrator, args...; kwargs...)
+    error("reinit!: method has not been implemented for the integrator")
+end
 
 """
 initialize_dae!(integrator::DEIntegrator,initializealg = integrator.initializealg)
@@ -226,15 +281,18 @@ Runs the DAE initialization to find a consistent state vector. The optional
 argument `initializealg` can be used to specify a different initialization
 algorithm to use.
 """
-initialize_dae!(integrator::DEIntegrator) =
-       error("initialize_dae!: method has not been implemented for the integrator")
+function initialize_dae!(integrator::DEIntegrator)
+    error("initialize_dae!: method has not been implemented for the integrator")
+end
 
 """
     auto_dt_reset!(integrator::DEIntegrator)
 
 Run the auto `dt` initialization algorithm.
 """
-auto_dt_reset!(integrator::DEIntegrator) = error("auto_dt_reset!: method has not been implemented for the integrator")
+function auto_dt_reset!(integrator::DEIntegrator)
+    error("auto_dt_reset!: method has not been implemented for the integrator")
+end
 
 """
     change_t_via_interpolation!(integrator::DEIntegrator,t,modify_save_endpoint=Val{false})
@@ -243,9 +301,11 @@ Modifies the current `t` and changes all of the corresponding values using the l
 has already been saved, one can provide the optional value `modify_save_endpoint` to also modify the endpoint of `sol` in the
 same manner.
 """
-change_t_via_interpolation!(i::DEIntegrator,args...) = error("change_t_via_interpolation!: method has not been implemented for the integrator")
+function change_t_via_interpolation!(i::DEIntegrator, args...)
+    error("change_t_via_interpolation!: method has not been implemented for the integrator")
+end
 
-addsteps!(i::DEIntegrator,args...) = nothing
+addsteps!(i::DEIntegrator, args...) = nothing
 
 """
     reeval_internals_due_to_modification!(integrator::DDEIntegrator)
@@ -259,17 +319,18 @@ reeval_internals_due_to_modification!(integrator::DEIntegrator) = nothing
 
 Set current time point of the `integrator` to `t`.
 """
-set_t!(integrator::DEIntegrator, t) =
+function set_t!(integrator::DEIntegrator, t)
     error("set_t!: method has not been implemented for the integrator")
+end
 
 """
     set_u!(integrator::DEIntegrator, u)
 
 Set current state of the `integrator` to `u`.
 """
-set_u!(integrator::DEIntegrator, u) =
+function set_u!(integrator::DEIntegrator, u)
     error("set_u!: method has not been implemented for the integrator")
-
+end
 
 """
     set_ut!(integrator::DEIntegrator, u, t)
@@ -277,23 +338,23 @@ set_u!(integrator::DEIntegrator, u) =
 Set current state of the `integrator` to `u` and `t`
 """
 function set_ut!(integrator::DEIntegrator, u, t)
-  set_u!(integrator, u)
-  set_t!(integrator, t)
+    set_u!(integrator, u)
+    set_t!(integrator, t)
 end
 
 ### Addat isn't a real thing. Let's make it a real thing Gretchen
 
-function addat!(a::AbstractArray,idxs,val=nothing)
-  if val === nothing
-    resize!(a,length(a)+length(idxs))
-  else
-    error("real addat! on arrays isn't supported yet")
-    #=
-    flip_range = last(idxs):-1:idxs.start
-    @show idxs,flip_range
-    splice!(a,flip_range,val)
-    =#
-  end
+function addat!(a::AbstractArray, idxs, val = nothing)
+    if val === nothing
+        resize!(a, length(a) + length(idxs))
+    else
+        error("real addat! on arrays isn't supported yet")
+        #=
+        flip_range = last(idxs):-1:idxs.start
+        @show idxs,flip_range
+        splice!(a,flip_range,val)
+        =#
+    end
 end
 
 ### Integrator traits
@@ -303,29 +364,29 @@ has_reinit(i::DEIntegrator) = false
 ### Display
 
 function Base.summary(io::IO, I::DEIntegrator)
-  type_color,no_color = get_colorizers(io)
-  print(io,
-    type_color, nameof(typeof(I)),
-    no_color, " with uType ",
-    type_color, typeof(I.u),
-    no_color, " and tType ",
-    type_color, typeof(I.t),
-    no_color)
+    type_color, no_color = get_colorizers(io)
+    print(io,
+          type_color, nameof(typeof(I)),
+          no_color, " with uType ",
+          type_color, typeof(I.u),
+          no_color, " and tType ",
+          type_color, typeof(I.t),
+          no_color)
 end
 function Base.show(io::IO, A::DEIntegrator)
-  println(io,string("t: ",A.t))
-  print(io,"u: ")
-  show(io, A.u)
+    println(io, string("t: ", A.t))
+    print(io, "u: ")
+    show(io, A.u)
 end
 function Base.show(io::IO, m::MIME"text/plain", A::DEIntegrator)
-  println(io,string("t: ",A.t))
-  print(io,"u: ")
-  show(io,m,A.u)
+    println(io, string("t: ", A.t))
+    print(io, "u: ")
+    show(io, m, A.u)
 end
 TreeViews.hastreeview(x::DEIntegrator) = true
-function TreeViews.treelabel(io::IO,x::DEIntegrator,
+function TreeViews.treelabel(io::IO, x::DEIntegrator,
                              mime::MIME"text/plain" = MIME"text/plain"())
-  summary(io,x)
+    summary(io, x)
 end
 
 ### Error check (retcode)
@@ -339,47 +400,48 @@ Check state of `integrator` and return one of the
 [Return Codes](http://diffeq.sciml.ai/dev/basics/solution.html#Return-Codes-(RetCodes)-1)
 """
 function check_error(integrator::DEIntegrator)
-  # This implementation is intended to be used for ODEIntegrator and
-  # SDEIntegrator.
-  if isnan(integrator.dt)
-    if integrator.opts.verbose
-      @warn("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.")
+    # This implementation is intended to be used for ODEIntegrator and
+    # SDEIntegrator.
+    if isnan(integrator.dt)
+        if integrator.opts.verbose
+            @warn("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.")
+        end
+        return :DtNaN
     end
-    return :DtNaN
-  end
-  if integrator.iter > integrator.opts.maxiters
-    if integrator.opts.verbose
-      @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://diffeq.sciml.ai/stable/solvers/ode_solve/#Stiff-Problems).")
+    if integrator.iter > integrator.opts.maxiters
+        if integrator.opts.verbose
+            @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://diffeq.sciml.ai/stable/solvers/ode_solve/#Stiff-Problems).")
+        end
+        return :MaxIters
     end
-    return :MaxIters
-  end
 
-  # The last part:
-  # If you are close to the end, don't exit: let the user hit the end!
-  # However, if we try that and the step fails, exit instead of infinite loop
-  if !integrator.opts.force_dtmin && integrator.opts.adaptive &&
-     abs(integrator.dt) <= abs(integrator.opts.dtmin) &&
-     (((hasproperty(integrator,:opts) && hasproperty(integrator.opts,:tstops)) ?
-     integrator.t + integrator.dt < integrator.tdir*first(integrator.opts.tstops) :
-     true) || (hasproperty(integrator,:accept_step) && !integrator.accept_step))
-    if integrator.opts.verbose
-      @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t). Aborting. There is either an error in your model specification or the true solution is unstable.")
+    # The last part:
+    # If you are close to the end, don't exit: let the user hit the end!
+    # However, if we try that and the step fails, exit instead of infinite loop
+    if !integrator.opts.force_dtmin && integrator.opts.adaptive &&
+       abs(integrator.dt) <= abs(integrator.opts.dtmin) &&
+       (((hasproperty(integrator, :opts) && hasproperty(integrator.opts, :tstops)) ?
+         integrator.t + integrator.dt < integrator.tdir * first(integrator.opts.tstops) :
+         true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
+        if integrator.opts.verbose
+            @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t). Aborting. There is either an error in your model specification or the true solution is unstable.")
+        end
+        return :DtLessThanMin
     end
-    return :DtLessThanMin
-  end
-  if integrator.opts.unstable_check(integrator.dt,integrator.u,integrator.p,integrator.t)
-    if integrator.opts.verbose
-      @warn("Instability detected. Aborting")
+    if integrator.opts.unstable_check(integrator.dt, integrator.u, integrator.p,
+                                      integrator.t)
+        if integrator.opts.verbose
+            @warn("Instability detected. Aborting")
+        end
+        return :Unstable
     end
-    return :Unstable
-  end
-  if last_step_failed(integrator)
-    if integrator.opts.verbose
-      @warn("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.")
+    if last_step_failed(integrator)
+        if integrator.opts.verbose
+            @warn("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.")
+        end
+        return :ConvergenceFailure
     end
-    return :ConvergenceFailure
-  end
-  return :Success
+    return :Success
 end
 
 function postamble! end
@@ -391,56 +453,60 @@ Same as `check_error` but also set solution's return code
 (`integrator.sol.retcode`) and run `postamble!`.
 """
 function check_error!(integrator::DEIntegrator)
-  code = check_error(integrator)
-  if code != :Success
-    integrator.sol = solution_new_retcode(integrator.sol, code)
-    postamble!(integrator)
-  end
-  return code
+    code = check_error(integrator)
+    if code != :Success
+        integrator.sol = solution_new_retcode(integrator.sol, code)
+        postamble!(integrator)
+    end
+    return code
 end
 
 ### Default Iterator Interface
 function done(integrator::DEIntegrator)
-  if ! (integrator.sol.retcode in (:Default, :Success))
-    return true
-  elseif isempty(integrator.opts.tstops)
-    postamble!(integrator)
-    return true
-  elseif integrator.just_hit_tstop
-    integrator.just_hit_tstop = false
-    if integrator.opts.stop_at_next_tstop
-      postamble!(integrator)
-      return true
+    if !(integrator.sol.retcode in (:Default, :Success))
+        return true
+    elseif isempty(integrator.opts.tstops)
+        postamble!(integrator)
+        return true
+    elseif integrator.just_hit_tstop
+        integrator.just_hit_tstop = false
+        if integrator.opts.stop_at_next_tstop
+            postamble!(integrator)
+            return true
+        end
     end
-  end
-  false
+    false
 end
-function Base.iterate(integrator::DEIntegrator,state=0)
-  done(integrator) && return nothing
-  state += 1
-  step!(integrator) # Iter updated in the step! header
-  # Next is callbacks -> iterator  -> top
-  return integrator,state
+function Base.iterate(integrator::DEIntegrator, state = 0)
+    done(integrator) && return nothing
+    state += 1
+    step!(integrator) # Iter updated in the step! header
+    # Next is callbacks -> iterator  -> top
+    return integrator, state
 end
 
-Base.eltype(::Type{T}) where {T<:DEIntegrator} = T
+Base.eltype(::Type{T}) where {T <: DEIntegrator} = T
 Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
 
 ### Other Iterators
 
 struct IntegratorTuples{I}
- integrator::I
+    integrator::I
 end
 
-function Base.iterate(tup::IntegratorTuples, state=0)
-  done(tup.integrator) && return nothing
-  step!(tup.integrator) # Iter updated in the step! header
-  state += 1
-  # Next is callbacks -> iterator  -> top
-  return (tup.integrator.u,tup.integrator.t),state
+function Base.iterate(tup::IntegratorTuples, state = 0)
+    done(tup.integrator) && return nothing
+    step!(tup.integrator) # Iter updated in the step! header
+    state += 1
+    # Next is callbacks -> iterator  -> top
+    return (tup.integrator.u, tup.integrator.t), state
 end
 
-Base.eltype(::Type{IntegratorTuples{I}}) where {U, T, I<:DEIntegrator{<:Any, <:Any, U, T}} = Tuple{U, T}
+function Base.eltype(::Type{IntegratorTuples{I}}) where {U, T,
+                                                         I <:
+                                                         DEIntegrator{<:Any, <:Any, U, T}}
+    Tuple{U, T}
+end
 Base.IteratorSize(::Type{<:IntegratorTuples}) = Base.SizeUnknown()
 
 RecursiveArrayTools.tuples(integrator::DEIntegrator) = IntegratorTuples(integrator)
@@ -449,157 +515,172 @@ RecursiveArrayTools.tuples(integrator::DEIntegrator) = IntegratorTuples(integrat
 $(TYPEDEF)
 """
 struct IntegratorIntervals{I}
- integrator::I
+    integrator::I
 end
 
-function Base.iterate(tup::IntegratorIntervals,state=0)
-  done(tup.integrator) && return nothing
-  state += 1
-  step!(tup.integrator) # Iter updated in the step! header
-  # Next is callbacks -> iterator  -> top
-  return (tup.integrator.uprev,tup.integrator.tprev,tup.integrator.u,tup.integrator.t),state
+function Base.iterate(tup::IntegratorIntervals, state = 0)
+    done(tup.integrator) && return nothing
+    state += 1
+    step!(tup.integrator) # Iter updated in the step! header
+    # Next is callbacks -> iterator  -> top
+    return (tup.integrator.uprev, tup.integrator.tprev, tup.integrator.u, tup.integrator.t),
+           state
 end
 
-Base.eltype(::Type{IntegratorIntervals{I}}) where {U, T, I<:DEIntegrator{<:Any, <:Any, U, T}} = Tuple{U, T, U, T}
+function Base.eltype(::Type{IntegratorIntervals{I}}) where {U, T,
+                                                            I <:
+                                                            DEIntegrator{<:Any, <:Any, U, T
+                                                                         }}
+    Tuple{U, T, U, T}
+end
 Base.IteratorSize(::Type{<:IntegratorIntervals}) = Base.SizeUnknown()
 
 intervals(integrator::DEIntegrator) = IntegratorIntervals(integrator)
 
-struct TimeChoiceIterator{T,T2}
-  integrator::T
-  ts::T2
+struct TimeChoiceIterator{T, T2}
+    integrator::T
+    ts::T2
 end
 
-function Base.iterate(iter::TimeChoiceIterator,state=1)
-  state > length(iter.ts) && return nothing
-  t = iter.ts[state]
-  integrator = iter.integrator
-  if isinplace(integrator.sol.prob)
-    tmp = first(get_tmp_cache(integrator))
-    if t == integrator.t
-      tmp .= integrator.u
-    elseif t < integrator.t
-      integrator(tmp,t)
+function Base.iterate(iter::TimeChoiceIterator, state = 1)
+    state > length(iter.ts) && return nothing
+    t = iter.ts[state]
+    integrator = iter.integrator
+    if isinplace(integrator.sol.prob)
+        tmp = first(get_tmp_cache(integrator))
+        if t == integrator.t
+            tmp .= integrator.u
+        elseif t < integrator.t
+            integrator(tmp, t)
+        else
+            step!(integrator, t - integrator.t)
+            integrator(tmp, t)
+        end
+        return (tmp, t), state + 1
     else
-      step!(integrator,t-integrator.t)
-      integrator(tmp,t)
+        if t == integrator.t
+            tmp = integrator.u
+        elseif t < integrator.t
+            tmp = integrator(t)
+        else
+            step!(integrator, t - integrator.t)
+            tmp = integrator(t)
+        end
+        return (tmp, t), state + 1
     end
-    return (tmp,t),state+1
-  else
-    if t == integrator.t
-      tmp = integrator.u
-    elseif t < integrator.t
-      tmp = integrator(t)
-    else
-      step!(integrator,t-integrator.t)
-      tmp = integrator(t)
-    end
-    return (tmp,t),state+1
-  end
 end
 
 Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
 @recipe function f(integrator::DEIntegrator;
-                    denseplot=(integrator.opts.calck || typeof(integrator) <: AbstractSDEIntegrator)  && integrator.iter>0,
-                    plotdensity =10,
-                    plot_analytic=false,vars=nothing)
+                   denseplot = (integrator.opts.calck ||
+                                typeof(integrator) <: AbstractSDEIntegrator) &&
+                               integrator.iter > 0,
+                   plotdensity = 10,
+                   plot_analytic = false, vars = nothing)
+    int_vars = interpret_vars(vars, integrator.sol)
 
-  int_vars = interpret_vars(vars,integrator.sol)
-
-  if denseplot
-    # Generate the points from the plot from dense function
-    plott = collect(range(integrator.tprev;step=integrator.t,length=plotdensity))
-    plot_timeseries = integrator(plott)
-    if plot_analytic
-      plot_analytic_timeseries = [integrator.sol.prob.f(Val{:analytic},t,integrator.sol.prob.u0) for t in plott]
-    end
-  end # if not denseplot, we'll just get the values right from the integrator.
-
-  dims = length(int_vars[1])
-  for var in int_vars
-    @assert length(var) == dims
-  end
-  # Should check that all have the same dims!
-
-
-  plot_vecs = []
-  for i in 2:dims
-    push!(plot_vecs,[])
-  end
-
-  labels = String[]# Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
-  for x in int_vars
-    for j in 2:dims
-      if denseplot
-        push!(plot_vecs[j-1], u_n(plot_timeseries, x[j],integrator.sol,plott,plot_timeseries))
-      else # just get values
-        if x[j] == 0
-          push!(plot_vecs[j-1], integrator.t)
-        elseif x[j]==1 && !(typeof(integrator.u) <: AbstractArray)
-          push!(plot_vecs[j-1], integrator.u)
-        else
-          push!(plot_vecs[j-1], integrator.u[x[j]])
+    if denseplot
+        # Generate the points from the plot from dense function
+        plott = collect(range(integrator.tprev; step = integrator.t, length = plotdensity))
+        plot_timeseries = integrator(plott)
+        if plot_analytic
+            plot_analytic_timeseries = [integrator.sol.prob.f(Val{:analytic}, t,
+                                                              integrator.sol.prob.u0)
+                                        for t in plott]
         end
-      end
-    end
-    add_labels!(labels,x,dims,integrator.sol)
-  end
+    end # if not denseplot, we'll just get the values right from the integrator.
 
-  if plot_analytic
+    dims = length(int_vars[1])
+    for var in int_vars
+        @assert length(var) == dims
+    end
+    # Should check that all have the same dims!
+
+    plot_vecs = []
+    for i in 2:dims
+        push!(plot_vecs, [])
+    end
+
+    labels = String[]# Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
     for x in int_vars
-      for j in 1:dims
-        if denseplot
-          push!(plot_vecs[j], u_n(plot_timeseries, x[j],sol,plott,plot_timeseries))
-        else # Just get values
-          if x[j] == 0
-            push!(plot_vecs[j], integrator.t)
-          elseif x[j]==1 && !(typeof(integrator.u) <: AbstractArray)
-            push!(plot_vecs[j], integrator.sol.prob.f(Val{:analytic},integrator.t,integrator.sol[1]))
-          else
-            push!(plot_vecs[j], integrator.sol.prob.f(Val{:analytic},integrator.t,integrator.sol[1])[x[j]])
-          end
+        for j in 2:dims
+            if denseplot
+                push!(plot_vecs[j - 1],
+                      u_n(plot_timeseries, x[j], integrator.sol, plott, plot_timeseries))
+            else # just get values
+                if x[j] == 0
+                    push!(plot_vecs[j - 1], integrator.t)
+                elseif x[j] == 1 && !(typeof(integrator.u) <: AbstractArray)
+                    push!(plot_vecs[j - 1], integrator.u)
+                else
+                    push!(plot_vecs[j - 1], integrator.u[x[j]])
+                end
+            end
         end
-      end
-      add_labels!(labels,x,dims,integrator.sol)
+        add_labels!(labels, x, dims, integrator.sol)
     end
-  end
 
-  xflip --> integrator.tdir < 0
-
-  if denseplot
-    seriestype --> :path
-  else
-    seriestype --> :scatter
-  end
-
-  # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
-  if typeof(vars) <: Tuple && (typeof(vars[1]) == Symbol && typeof(vars[2]) == Symbol)
-    xlabel --> vars[1]
-    ylabel --> vars[2]
-    if length(vars) > 2
-      zlabel --> vars[3]
+    if plot_analytic
+        for x in int_vars
+            for j in 1:dims
+                if denseplot
+                    push!(plot_vecs[j],
+                          u_n(plot_timeseries, x[j], sol, plott, plot_timeseries))
+                else # Just get values
+                    if x[j] == 0
+                        push!(plot_vecs[j], integrator.t)
+                    elseif x[j] == 1 && !(typeof(integrator.u) <: AbstractArray)
+                        push!(plot_vecs[j],
+                              integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                                    integrator.sol[1]))
+                    else
+                        push!(plot_vecs[j],
+                              integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                                    integrator.sol[1])[x[j]])
+                    end
+                end
+            end
+            add_labels!(labels, x, dims, integrator.sol)
+        end
     end
-  end
-  if getindex.(int_vars,1) == zeros(length(int_vars)) || getindex.(int_vars,2) == zeros(length(int_vars))
-    xlabel --> "t"
-  end
 
-  linewidth --> 3
-  #xtickfont --> font(11)
-  #ytickfont --> font(11)
-  #legendfont --> font(11)
-  #guidefont  --> font(11)
-  label --> reshape(labels,1,length(labels))
-  (plot_vecs...,)
+    xflip --> integrator.tdir < 0
+
+    if denseplot
+        seriestype --> :path
+    else
+        seriestype --> :scatter
+    end
+
+    # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
+    if typeof(vars) <: Tuple && (typeof(vars[1]) == Symbol && typeof(vars[2]) == Symbol)
+        xlabel --> vars[1]
+        ylabel --> vars[2]
+        if length(vars) > 2
+            zlabel --> vars[3]
+        end
+    end
+    if getindex.(int_vars, 1) == zeros(length(int_vars)) ||
+       getindex.(int_vars, 2) == zeros(length(int_vars))
+        xlabel --> "t"
+    end
+
+    linewidth --> 3
+    #xtickfont --> font(11)
+    #ytickfont --> font(11)
+    #legendfont --> font(11)
+    #guidefont  --> font(11)
+    label --> reshape(labels, 1, length(labels))
+    (plot_vecs...,)
 end
 
 function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     (dt * integ.tdir) < 0 * oneunit(dt) && error("Cannot step backward.")
     t = integ.t
-    next_t = t+dt
-    stop_at_tdt && add_tstop!(integ,next_t)
-    while integ.t*integ.tdir < next_t*integ.tdir
+    next_t = t + dt
+    stop_at_tdt && add_tstop!(integ, next_t)
+    while integ.t * integ.tdir < next_t * integ.tdir
         step!(integ)
         integ.sol.retcode in (:Default, :Success) || break
     end
@@ -612,5 +693,6 @@ has_destats(i::DEIntegrator) = false
 
 Checks if the integrator is adaptive
 """
-isadaptive(integrator::DEIntegrator) =
-        isdefined(integrator.opts, :adaptive) ? integrator.opts.adaptive : false
+function isadaptive(integrator::DEIntegrator)
+    isdefined(integrator.opts, :adaptive) ? integrator.opts.adaptive : false
+end
