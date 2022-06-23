@@ -210,19 +210,19 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace,P,F,L,U,K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace,P,F,L,U,N,B,K} <: AbstractIntegralProblem{isinplace}
     f::F
     lb::L
     ub::U
-    nout::Int
+    nout::N
     p::P
-    batch::Int
+    batch::B
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p=NullParameters();
         nout=1,
         batch=0, kwargs...) where {iip}
         new{iip,typeof(p),typeof(f),typeof(lb),
-            typeof(ub),typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
+            typeof(ub),typeof(nout),typeof(batch),typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
     end
 end
 
