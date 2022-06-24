@@ -220,11 +220,12 @@ struct IntegralProblem{isinplace, P, F, L, U, N, B, K} <: AbstractIntegralProble
     p::P
     batch::B
     kwargs::K
-   @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
-                                          nout = 1,
-                                          batch = 0, kwargs...) where {iip}
-    new{iip, typeof(p), typeof(f), typeof(lb),
-        typeof(ub), typeof(nout), typeof(batch), typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
+    @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
+                                              nout = 1,
+                                              batch = 0, kwargs...) where {iip}
+        new{iip, typeof(p), typeof(f), typeof(lb),
+            typeof(ub), typeof(nout), typeof(batch), typeof(kwargs)}(f, lb, ub, nout, p,
+                                                                     batch, kwargs)
     end
 end
 
