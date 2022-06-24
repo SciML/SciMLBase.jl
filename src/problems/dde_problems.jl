@@ -198,50 +198,60 @@ prob = ODEProblemLibrary.prob_ode_linear
 sol = solve(prob)
 ```
 """
-struct DDEProblem{uType,tType,lType,lType2,isinplace,P,F,H,K,PT} <:
-                          AbstractDDEProblem{uType,tType,lType,isinplace}
-  f::F
-  u0::uType
-  h::H
-  tspan::tType
-  p::P
-  constant_lags::lType
-  dependent_lags::lType2
-  kwargs::K
-  neutral::Bool
-  order_discontinuity_t0::Int
-  problem_type::PT
+struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
+       AbstractDDEProblem{uType, tType, lType, isinplace}
+    f::F
+    u0::uType
+    h::H
+    tspan::tType
+    p::P
+    constant_lags::lType
+    dependent_lags::lType2
+    kwargs::K
+    neutral::Bool
+    order_discontinuity_t0::Int
+    problem_type::PT
 
-  @add_kwonly function DDEProblem{iip}(f::AbstractDDEFunction{iip}, u0, h, tspan, p=NullParameters();
-                                       constant_lags = (),
-                                       dependent_lags = (),
-                                       neutral = f.mass_matrix !== I && det(f.mass_matrix) != 1,
-                                       order_discontinuity_t0 = 0,
-                                       problem_type = StandardDDEProblem(),
-                                       kwargs...) where {iip}
-    _tspan = promote_tspan(tspan)
-    new{typeof(u0),typeof(_tspan),typeof(constant_lags),typeof(dependent_lags),isinplace(f),
-        typeof(p),typeof(f),typeof(h),typeof(kwargs),typeof(problem_type)}(
-          f, u0, h, _tspan, p, constant_lags, dependent_lags, kwargs, neutral,
-          order_discontinuity_t0, problem_type)
-  end
+    @add_kwonly function DDEProblem{iip}(f::AbstractDDEFunction{iip}, u0, h, tspan,
+                                         p = NullParameters();
+                                         constant_lags = (),
+                                         dependent_lags = (),
+                                         neutral = f.mass_matrix !== I &&
+                                                   det(f.mass_matrix) != 1,
+                                         order_discontinuity_t0 = 0,
+                                         problem_type = StandardDDEProblem(),
+                                         kwargs...) where {iip}
+        _tspan = promote_tspan(tspan)
+        new{typeof(u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
+            isinplace(f),
+            typeof(p), typeof(f), typeof(h), typeof(kwargs), typeof(problem_type)}(f, u0, h,
+                                                                                   _tspan,
+                                                                                   p,
+                                                                                   constant_lags,
+                                                                                   dependent_lags,
+                                                                                   kwargs,
+                                                                                   neutral,
+                                                                                   order_discontinuity_t0,
+                                                                                   problem_type)
+    end
 
-  function DDEProblem{iip}(f::AbstractDDEFunction{iip}, h, tspan::Tuple, p=NullParameters();
-                           order_discontinuity_t0 = 1, kwargs...) where iip
-    DDEProblem{iip}(f, h(p, first(tspan)), h, tspan, p;
-                    order_discontinuity_t0 = max(1, order_discontinuity_t0), kwargs...)
-  end
+    function DDEProblem{iip}(f::AbstractDDEFunction{iip}, h, tspan::Tuple,
+                             p = NullParameters();
+                             order_discontinuity_t0 = 1, kwargs...) where {iip}
+        DDEProblem{iip}(f, h(p, first(tspan)), h, tspan, p;
+                        order_discontinuity_t0 = max(1, order_discontinuity_t0), kwargs...)
+    end
 
-  function DDEProblem{iip}(f, args...; kwargs...) where iip
-    DDEProblem{iip}(convert(DDEFunction{iip}, f), args...; kwargs...)
-  end
+    function DDEProblem{iip}(f, args...; kwargs...) where {iip}
+        DDEProblem{iip}(convert(DDEFunction{iip}, f), args...; kwargs...)
+    end
 end
 
-DDEProblem(f, args...; kwargs...) =
-  DDEProblem(convert(DDEFunction, f), args...; kwargs...)
+DDEProblem(f, args...; kwargs...) = DDEProblem(convert(DDEFunction, f), args...; kwargs...)
 
-DDEProblem(f::AbstractDDEFunction, args...; kwargs...) =
-  DDEProblem{isinplace(f)}(f, args...; kwargs...)
+function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)
+    DDEProblem{isinplace(f)}(f, args...; kwargs...)
+end
 
 """
 $(TYPEDEF)
@@ -260,17 +270,20 @@ struct DynamicalDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 
 Define a dynamical DDE problem from a [`DynamicalDDEFunction`](@ref).
 """
-function DynamicalDDEProblem(f::DynamicalDDEFunction,v0,u0,h,tspan,p=NullParameters();dependent_lags=(),kwargs...)
-  DDEProblem(f,ArrayPartition(v0,u0),h,tspan,p;
-             problem_type=DynamicalDDEProblem{isinplace(f)}(),
-             dependent_lags=ntuple(i->(u,p,t)->dependent_lags[i](u[1],u[2],p,t),length(dependent_lags)),
-             kwargs...)
+function DynamicalDDEProblem(f::DynamicalDDEFunction, v0, u0, h, tspan,
+                             p = NullParameters(); dependent_lags = (), kwargs...)
+    DDEProblem(f, ArrayPartition(v0, u0), h, tspan, p;
+               problem_type = DynamicalDDEProblem{isinplace(f)}(),
+               dependent_lags = ntuple(i -> (u, p, t) -> dependent_lags[i](u[1], u[2], p, t),
+                                       length(dependent_lags)),
+               kwargs...)
 end
-function DynamicalDDEProblem(f::DynamicalDDEFunction,h,tspan,p=NullParameters();kwargs...)
-  DynamicalDDEProblem(f,h(p,first(tspan))...,h,tspan,p;kwargs...)
+function DynamicalDDEProblem(f::DynamicalDDEFunction, h, tspan, p = NullParameters();
+                             kwargs...)
+    DynamicalDDEProblem(f, h(p, first(tspan))..., h, tspan, p; kwargs...)
 end
-function DynamicalDDEProblem(f1,f2,args...;kwargs...)
-  DynamicalDDEProblem(DynamicalDDEFunction(f1,f2),args...;kwargs...)
+function DynamicalDDEProblem(f1, f2, args...; kwargs...)
+    DynamicalDDEProblem(DynamicalDDEFunction(f1, f2), args...; kwargs...)
 end
 
 """
@@ -289,8 +302,8 @@ Define a dynamical DDE problem from the two functions `f1` and `f2`.
 `isinplace` optionally sets whether the function is inplace or not.
 This is determined automatically, but not inferred.
 """
-function DynamicalDDEProblem{iip}(f1,f2,args...;kwargs...) where iip
-  DynamicalDDEProblem(DynamicalDDEFunction{iip}(f1,f2),args...;kwargs...)
+function DynamicalDDEProblem{iip}(f1, f2, args...; kwargs...) where {iip}
+    DynamicalDDEProblem(DynamicalDDEFunction{iip}(f1, f2), args...; kwargs...)
 end
 
 # u'' = f(du,u,h,p,t)
@@ -298,9 +311,9 @@ end
 $(TYPEDEF)
 """
 struct SecondOrderDDEProblem{iip} <: AbstractDynamicalDDEProblem end
-function SecondOrderDDEProblem(f,args...;kwargs...)
-  iip = isinplace(f,6)
-  SecondOrderDDEProblem{iip}(f,args...;kwargs...)
+function SecondOrderDDEProblem(f, args...; kwargs...)
+    iip = isinplace(f, 6)
+    SecondOrderDDEProblem{iip}(f, args...; kwargs...)
 end
 
 """
@@ -320,34 +333,41 @@ Define a second order DDE problem with the specified function.
 `isinplace` optionally sets whether the function is inplace or not.
 This is determined automatically, but not inferred.
 """
-function SecondOrderDDEProblem{iip}(f,args...;kwargs...) where iip
-  if iip
-    f2 = function (du,v,u,h,p,t)
-      du .= v
-    end
-  else
-    f2 = function (v,u,h,p,t)
-      v
-    end
-  end
-  DynamicalDDEProblem{iip}(f,f2,args...;problem_type=SecondOrderDDEProblem{iip}(),kwargs...)
-end
-function SecondOrderDDEProblem(f::DynamicalDDEFunction,args...;kwargs...)
-  iip = isinplace(f.f1, 6)
-  if f.f2.f === nothing
+function SecondOrderDDEProblem{iip}(f, args...; kwargs...) where {iip}
     if iip
-      f2 = function (du,v,u,h,p,t)
-        du .= v
-      end
+        f2 = function (du, v, u, h, p, t)
+            du .= v
+        end
     else
-      f2 = function (v,u,h,p,t)
-        v
-      end
+        f2 = function (v, u, h, p, t)
+            v
+        end
     end
-    return DynamicalDDEProblem(DynamicalDDEFunction{iip}(f.f1,f2;mass_matrix=f.mass_matrix,analytic=f.analytic),
-                               args...;problem_type=SecondOrderDDEProblem{iip}(),kwargs...)
-  else
-    return DynamicalDDEProblem(DynamicalDDEFunction{iip}(f.f1,f.f2;mass_matrix=f.mass_matrix,analytic=f.analytic),
-                               args...;problem_type=SecondOrderDDEProblem{iip}(),kwargs...)
-  end
+    DynamicalDDEProblem{iip}(f, f2, args...; problem_type = SecondOrderDDEProblem{iip}(),
+                             kwargs...)
+end
+function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
+    iip = isinplace(f.f1, 6)
+    if f.f2.f === nothing
+        if iip
+            f2 = function (du, v, u, h, p, t)
+                du .= v
+            end
+        else
+            f2 = function (v, u, h, p, t)
+                v
+            end
+        end
+        return DynamicalDDEProblem(DynamicalDDEFunction{iip}(f.f1, f2;
+                                                             mass_matrix = f.mass_matrix,
+                                                             analytic = f.analytic),
+                                   args...; problem_type = SecondOrderDDEProblem{iip}(),
+                                   kwargs...)
+    else
+        return DynamicalDDEProblem(DynamicalDDEFunction{iip}(f.f1, f.f2;
+                                                             mass_matrix = f.mass_matrix,
+                                                             analytic = f.analytic),
+                                   args...; problem_type = SecondOrderDDEProblem{iip}(),
+                                   kwargs...)
+    end
 end

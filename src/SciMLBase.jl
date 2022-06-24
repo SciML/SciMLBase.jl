@@ -46,7 +46,7 @@ $(TYPEDEF)
 
 Base for types which define linear systems.
 """
-abstract type AbstractLinearProblem{bType,isinplace} <: SciMLProblem end
+abstract type AbstractLinearProblem{bType, isinplace} <: SciMLProblem end
 
 """
 $(TYPEDEF)
@@ -67,8 +67,9 @@ $(TYPEDEF)
 
 Base for types which define nonlinear solve problems (f(u)=0).
 """
-abstract type AbstractNonlinearProblem{uType,isinplace} <: DEProblem end
-const AbstractSteadyStateProblem{uType,isinplace} = AbstractNonlinearProblem{uType,isinplace}
+abstract type AbstractNonlinearProblem{uType, isinplace} <: DEProblem end
+const AbstractSteadyStateProblem{uType, isinplace} = AbstractNonlinearProblem{uType,
+                                                                              isinplace}
 
 """
 $(TYPEDEF)
@@ -80,88 +81,90 @@ $(TYPEDEF)
 
 Base for types which define ODE problems.
 """
-abstract type AbstractODEProblem{uType,tType,isinplace} <: DEProblem end
+abstract type AbstractODEProblem{uType, tType, isinplace} <: DEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define discrete problems.
 """
-abstract type AbstractDiscreteProblem{uType,tType,isinplace} <:
-              AbstractODEProblem{uType,tType,isinplace} end
+abstract type AbstractDiscreteProblem{uType, tType, isinplace} <:
+              AbstractODEProblem{uType, tType, isinplace} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractAnalyticalProblem{uType,tType,isinplace} <:
-              AbstractODEProblem{uType,tType,isinplace} end
+abstract type AbstractAnalyticalProblem{uType, tType, isinplace} <:
+              AbstractODEProblem{uType, tType, isinplace} end
 
 """
 $(TYPEDEF)
 
 Base for types which define RODE problems.
 """
-abstract type AbstractRODEProblem{uType,tType,isinplace,ND} <: DEProblem end
+abstract type AbstractRODEProblem{uType, tType, isinplace, ND} <: DEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define SDE problems.
 """
-abstract type AbstractSDEProblem{uType,tType,isinplace,ND} <:
-              AbstractRODEProblem{uType,tType,isinplace,ND} end
+abstract type AbstractSDEProblem{uType, tType, isinplace, ND} <:
+              AbstractRODEProblem{uType, tType, isinplace, ND} end
 
 """
 $(TYPEDEF)
 
 Base for types which define DAE problems.
 """
-abstract type AbstractDAEProblem{uType,duType,tType,isinplace} <: DEProblem end
+abstract type AbstractDAEProblem{uType, duType, tType, isinplace} <: DEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define DDE problems.
 """
-abstract type AbstractDDEProblem{uType,tType,lType,isinplace} <: DEProblem end
+abstract type AbstractDDEProblem{uType, tType, lType, isinplace} <: DEProblem end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractConstantLagDDEProblem{uType,tType,lType,isinplace} <:
-              AbstractDDEProblem{uType,tType,lType,isinplace} end
+abstract type AbstractConstantLagDDEProblem{uType, tType, lType, isinplace} <:
+              AbstractDDEProblem{uType, tType, lType, isinplace} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSecondOrderODEProblem{uType,tType,isinplace} <: AbstractODEProblem{uType,tType,isinplace} end
+abstract type AbstractSecondOrderODEProblem{uType, tType, isinplace} <:
+              AbstractODEProblem{uType, tType, isinplace} end
 
 """
 $(TYPEDEF)
 
 Base for types which define BVP problems.
 """
-abstract type AbstractBVProblem{uType,tType,isinplace} <: AbstractODEProblem{uType,tType,isinplace} end
+abstract type AbstractBVProblem{uType, tType, isinplace} <:
+              AbstractODEProblem{uType, tType, isinplace} end
 
 """
 $(TYPEDEF)
 
 Base for types which define jump problems.
 """
-abstract type AbstractJumpProblem{P,J} <: DEProblem end
+abstract type AbstractJumpProblem{P, J} <: DEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define SDDE problems.
 """
-abstract type AbstractSDDEProblem{uType,tType,lType,isinplace,ND} <: DEProblem end
+abstract type AbstractSDDEProblem{uType, tType, lType, isinplace, ND} <: DEProblem end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractConstantLagSDDEProblem{uType,tType,lType,isinplace,ND} <:
-              AbstractSDDEProblem{uType,tType,lType,isinplace,ND} end
+abstract type AbstractConstantLagSDDEProblem{uType, tType, lType, isinplace, ND} <:
+              AbstractSDDEProblem{uType, tType, lType, isinplace, ND} end
 
 """
 $(TYPEDEF)
@@ -249,7 +252,7 @@ abstract type EnsembleAlgorithm <: SciMLAlgorithm end
 """
 $(TYPEDEF)
 """
-abstract type AbstractSensitivityAlgorithm{CS,AD,FDT} <: SciMLAlgorithm end
+abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: SciMLAlgorithm end
 
 """
 $(TYPEDEF)
@@ -316,68 +319,70 @@ abstract type AbstractDiscreteCallback <: DECallback end
 """
 $(TYPEDEF)
 """
-abstract type DEIntegrator{Alg,IIP,U,T} end
+abstract type DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSteadyStateIntegrator{Alg,IIP,U} <: DEIntegrator{Alg,IIP,U,Nothing} end
+abstract type AbstractSteadyStateIntegrator{Alg, IIP, U} <:
+              DEIntegrator{Alg, IIP, U, Nothing} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractODEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSecondOrderODEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractSecondOrderODEIntegrator{Alg, IIP, U, T} <:
+              DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractRODEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractRODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSDEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractSDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDDEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDAEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractDAEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSDDEIntegrator{Alg,IIP,U,T} <: DEIntegrator{Alg,IIP,U,T} end
+abstract type AbstractSDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 # Solutions
 """
 $(TYPEDEF)
 """
-abstract type AbstractNoTimeSolution{T,N} <: AbstractArray{T,N} end
+abstract type AbstractNoTimeSolution{T, N} <: AbstractArray{T, N} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractTimeseriesSolution{T,N,A} <: AbstractDiffEqArray{T,N,A} end
+abstract type AbstractTimeseriesSolution{T, N, A} <: AbstractDiffEqArray{T, N, A} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractEnsembleSolution{T,N,A} <: AbstractVectorOfArray{T,N,A} end
+abstract type AbstractEnsembleSolution{T, N, A} <: AbstractVectorOfArray{T, N, A} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractNoiseProcess{T,N,A,isinplace} <: AbstractDiffEqArray{T,N,A} end
+abstract type AbstractNoiseProcess{T, N, A, isinplace} <: AbstractDiffEqArray{T, N, A} end
 
 """
 Union of all base solution types.
@@ -385,9 +390,9 @@ Union of all base solution types.
 Uses a Union so that solution types can be `<: AbstractArray`
 """
 const SciMLSolution = Union{AbstractTimeseriesSolution,
-    AbstractNoTimeSolution,
-    AbstractEnsembleSolution,
-    AbstractNoiseProcess}
+                            AbstractNoTimeSolution,
+                            AbstractEnsembleSolution,
+                            AbstractNoiseProcess}
 const DESolution = SciMLSolution
 export SciMLSolution, DESolution
 
@@ -396,53 +401,53 @@ export AllObserved
 """
 $(TYPEDEF)
 """
-abstract type AbstractLinearSolution{T,N} <: AbstractNoTimeSolution{T,N} end
+abstract type AbstractLinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractNonlinearSolution{T,N} <: AbstractNoTimeSolution{T,N} end
+abstract type AbstractNonlinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractIntegralSolution{T,N} <: AbstractNoTimeSolution{T,N} end
+abstract type AbstractIntegralSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
 """
-const AbstractSteadyStateSolution{T,N} = AbstractNonlinearSolution{T,N}
+const AbstractSteadyStateSolution{T, N} = AbstractNonlinearSolution{T, N}
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractAnalyticalSolution{T,N,S} <: AbstractTimeseriesSolution{T,N,S} end
+abstract type AbstractAnalyticalSolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractODESolution{T,N,S} <: AbstractTimeseriesSolution{T,N,S} end
+abstract type AbstractODESolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Needed for plot recipes
 """
 $(TYPEDEF)
 """
-abstract type AbstractDDESolution{T,N,S} <: AbstractODESolution{T,N,S} end
+abstract type AbstractDDESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractRODESolution{T,N,S} <: AbstractODESolution{T,N,S} end
+abstract type AbstractRODESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDAESolution{T,N,S} <: AbstractODESolution{T,N,S} end
+abstract type AbstractDAESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSensitivitySolution{T,N,S} <: AbstractTimeseriesSolution{T,N,S} end
+abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Misc
 """
@@ -606,14 +611,14 @@ export SteadyStateProblem, SteadyStateSolution
 export NoiseProblem
 export ODEProblem, ODESolution
 export DynamicalODEFunction, DynamicalODEProblem,
-    SecondOrderODEProblem, SplitFunction, SplitODEProblem
+       SecondOrderODEProblem, SplitFunction, SplitODEProblem
 export SplitSDEProblem
 export DynamicalSDEFunction, DynamicalSDEProblem
 export RODEProblem, RODESolution, SDEProblem
 export DAEProblem, DAESolution
 export DDEProblem
 export DynamicalDDEFunction, DynamicalDDEProblem,
-    SecondOrderDDEProblem
+       SecondOrderDDEProblem
 export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
@@ -623,7 +628,8 @@ export BVProblem, TwoPointBVProblem
 export remake
 
 export ODEFunction, DiscreteFunction, SplitFunction, DAEFunction, DDEFunction,
-    SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction, IncrementingODEFunction, NonlinearFunction
+       SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction, IncrementingODEFunction,
+       NonlinearFunction
 
 export OptimizationFunction
 
@@ -638,19 +644,19 @@ export AffineDiffEqOperator, DiffEqScaledOperator
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
 export step!, deleteat!, addat!, get_tmp_cache,
-    full_cache, user_cache, u_cache, du_cache,
-    rand_cache, ratenoise_cache,
-    resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
-    terminate!,
-    add_tstop!, has_tstop, first_tstop, pop_tstop!,
-    add_saveat!, set_abstol!,
-    set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
-    u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
-    set_u!, check_error, change_t_via_interpolation!, addsteps!,
-    isdiscrete, reeval_internals_due_to_modification!
+       full_cache, user_cache, u_cache, du_cache,
+       rand_cache, ratenoise_cache,
+       resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
+       terminate!,
+       add_tstop!, has_tstop, first_tstop, pop_tstop!,
+       add_saveat!, set_abstol!,
+       set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
+       u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
+       set_u!, check_error, change_t_via_interpolation!, addsteps!,
+       isdiscrete, reeval_internals_due_to_modification!
 
 export update_coefficients!, update_coefficients,
-    has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
+       has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
