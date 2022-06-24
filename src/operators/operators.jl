@@ -10,10 +10,10 @@
 4. islinear(A) trait for whether the operator is linear or not.
 =#
 
-Base.eltype(::Type{AbstractSciMLOperator{T}}) where T = T
-Base.eltype(::AbstractSciMLOperator{T}) where T = T
-update_coefficients!(L,u,p,t) = nothing
-update_coefficients(L,u,p,t) = L
+Base.eltype(::Type{AbstractSciMLOperator{T}}) where {T} = T
+Base.eltype(::AbstractSciMLOperator{T}) where {T} = T
+update_coefficients!(L, u, p, t) = nothing
+update_coefficients(L, u, p, t) = L
 
 # Traits
 isconstant(::AbstractSciMLOperator) = false
@@ -59,8 +59,8 @@ has_ldiv!(::Union{Diagonal, Factorization}) = true
 
 # Other ones from LinearMaps.jl
 # Generic fallbacks
-LinearAlgebra.exp(L::AbstractDiffEqLinearOperator,t) = exp(t*L)
+LinearAlgebra.exp(L::AbstractDiffEqLinearOperator, t) = exp(t * L)
 has_exp(L::AbstractDiffEqLinearOperator) = true
-expmv(L::AbstractDiffEqLinearOperator,u,p,t) = exp(L,t)*u
-expmv!(v,L::AbstractDiffEqLinearOperator,u,p,t) = mul!(v,exp(L,t),u)
+expmv(L::AbstractDiffEqLinearOperator, u, p, t) = exp(L, t) * u
+expmv!(v, L::AbstractDiffEqLinearOperator, u, p, t) = mul!(v, exp(L, t), u)
 # Factorizations have no fallback and just error

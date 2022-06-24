@@ -67,31 +67,30 @@ function callback(p,lossval,x,y,z)
 end
 ```
 """
-function solve(prob::OptimizationProblem, alg, args...;kwargs...)
+function solve(prob::OptimizationProblem, alg, args...; kwargs...)
     __solve(prob, alg, args...; kwargs...)
 end
 
-const OPTIMIZER_MISSING_ERROR_MESSAGE = 
-"""
-Optimization algorithm not found. Either the chosen algorithm is not a valid solver
-choice for the `OptimizationProblem`, or the Optimization solver library is not loaded.
-Make sure that you have loaded an appropriate Optimization.jl solver library, for example, 
-`solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and 
-`solve(prob,Adam())` requires `using OptimizationOptimisers`. 
+const OPTIMIZER_MISSING_ERROR_MESSAGE = """
+                                        Optimization algorithm not found. Either the chosen algorithm is not a valid solver
+                                        choice for the `OptimizationProblem`, or the Optimization solver library is not loaded.
+                                        Make sure that you have loaded an appropriate Optimization.jl solver library, for example, 
+                                        `solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and 
+                                        `solve(prob,Adam())` requires `using OptimizationOptimisers`. 
 
-For more information, see the Optimization.jl documentation: optimization.sciml.ai/dev.
-"""
+                                        For more information, see the Optimization.jl documentation: optimization.sciml.ai/dev.
+                                        """
 
-struct OptimizerMissingError <: Exception 
-    alg
+struct OptimizerMissingError <: Exception
+    alg::Any
 end
-  
+
 function Base.showerror(io::IO, e::OptimizerMissingError)
     println(io, OPTIMIZER_MISSING_ERROR_MESSAGE)
-    print(io,"Chosen Optimizer: ")
+    print(io, "Chosen Optimizer: ")
     print(e.alg)
 end
 
-function __solve(prob::OptimizationProblem, alg, args...;kwargs...)
-   throw(OptimizerMissingError(alg)) 
+function __solve(prob::OptimizationProblem, alg, args...; kwargs...)
+    throw(OptimizerMissingError(alg))
 end
