@@ -120,10 +120,6 @@ function Base.IndexStyle(::Type{<:DiffEqArrayOperator{T, AType}}) where {T, ATyp
     Base.IndexStyle(AType)
 end
 Base.copyto!(L::DiffEqArrayOperator, rhs) = (copyto!(L.A, rhs); L)
-function Base.copyto!(L::DiffEqArrayOperator,
-                      rhs::Base.Broadcast.Broadcasted{<:StaticArrays.StaticArrayStyle})
-    (copyto!(L.A, rhs); L)
-end
 Base.Broadcast.broadcastable(L::DiffEqArrayOperator) = L
 Base.ndims(::Type{<:DiffEqArrayOperator{T, AType}}) where {T, AType} = ndims(AType)
 ArrayInterfaceCore.issingular(L::DiffEqArrayOperator) = ArrayInterfaceCore.issingular(L.A)
