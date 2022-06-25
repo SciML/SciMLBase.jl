@@ -6,7 +6,6 @@ using DocStringExtensions
 using LinearAlgebra
 using Statistics
 using Distributed
-using StaticArrays
 using Markdown
 
 import Logging, ArrayInterfaceCore
