@@ -110,7 +110,7 @@ all of the problem domains. Underlying high level ideas include:
 - [Quadrature.jl](https://github.com/SciML/Quadrature.jl)
     - Multi-package interface for high performance, batched, and parallelized 
       numerical quadrature.
-- [GalacticOptim.jl](https://github.com/SciML/GalacticOptim.jl)
+- [Optimization.jl](https://github.com/SciML/Optimization.jl)
     - Multi-package interface for numerical solving of optimization problems.
 - [NeuralPDE.jl](https://github.com/SciML/NeuralPDE.jl)
     - Physics-Informed Neural Network (PINN) package for transforming partial
