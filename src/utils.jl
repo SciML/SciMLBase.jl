@@ -182,7 +182,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true)
         if length(nargs) == 0
             throw(NoMethodsError(fname))
         elseif all(x -> x > inplace_param_number, nargs)
-            throw(TooManyArgumentsError(fname,f))
+            throw(TooManyArgumentsError(fname, f))
         elseif all(x -> x < inplace_param_number - 1, nargs)
             # Possible extra safety?
             # Find if there's a `f(args...)` dispatch
@@ -197,9 +197,9 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true)
 
             # No varargs detected, error that there are dispatches but not the right ones
 
-            throw(TooFewArgumentsError(fname,f))
+            throw(TooFewArgumentsError(fname, f))
         else
-            throw(FunctionArgumentsError(fname,f))
+            throw(FunctionArgumentsError(fname, f))
         end
     else
         if iip_preferred

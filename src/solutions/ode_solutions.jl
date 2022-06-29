@@ -14,7 +14,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
 
 - `u`: the representation of the ODE solution. Given as an array of solutions, where `u[i]`
   corresponds to the solution at time `t[i]`. It is recommended in most cases one does not
-  access `sol.u` directly and instead use the array interface described in the Solution 
+  access `sol.u` directly and instead use the array interface described in the Solution
   Handling page of the DifferentialEquations.jl documentation.
 - `t`: the time points corresponding to the saved values of the ODE solution.
 - `prob`: the original ODEProblem that was solved.
@@ -129,7 +129,12 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         interp = LinearInterpolation(t, u),
                         retcode = :Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
-    N = length((size(prob.u0)..., length(u)))
+
+    if prob.u0 === nothing
+        N = 2
+    else
+        N = length((size(prob.u0)..., length(u)))
+    end
 
     if typeof(prob.f) <: Tuple
         f = prob.f[1]
