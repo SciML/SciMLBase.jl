@@ -310,7 +310,7 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
 struct OptimizationProblem{iip, F, uType, P, B, LC, UC, S, K} <:
-       AbstractOptimizationProblem{isinplace}
+       AbstractOptimizationProblem{iip}
     f::F
     u0::uType
     p::P
