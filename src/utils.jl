@@ -24,7 +24,7 @@ const NO_METHODS_ERROR_MESSAGE = """
                                  No methods were found for the model function passed to the equation solver.
                                  The function `f` needs to have dispatches, for example, for an ODEProblem
                                  `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. For more information
-                                 on how the model function `f` should be defined, consult the docstring for 
+                                 on how the model function `f` should be defined, consult the docstring for
                                  the appropriate `AbstractSciMLFunction`.
                                  """
 
@@ -70,20 +70,23 @@ const TOO_MANY_ARGUMENTS_ERROR_MESSAGE = """
 
 struct TooManyArgumentsError <: Exception
     fname::String
+    f::Any
 end
 
 function Base.showerror(io::IO, e::TooManyArgumentsError)
     println(io, TOO_MANY_ARGUMENTS_ERROR_MESSAGE)
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
+    println(io, "\nMethods:")
+    println(io, methods(e.f))
 end
 
 const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
                                         All methods for the model function `f` had too few arguments. For example,
                                         an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
                                         can be thrown if you define an ODE model for example as `f(u,t)`. The parameters
-                                        `p` are not optional in the defintion of `f`! For more information on the required 
-                                        number of arguments for the function you were defining, consult the documentation 
+                                        `p` are not optional in the defintion of `f`! For more information on the required
+                                        number of arguments for the function you were defining, consult the documentation
                                         for the `SciMLProblem` or `SciMLFunction` type that was being constructed.
 
                                         For example, here is the no parameter Lorenz equation. The two valid versions
@@ -117,17 +120,20 @@ const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
 
 struct TooFewArgumentsError <: Exception
     fname::String
+    f::Any
 end
 
 function Base.showerror(io::IO, e::TooFewArgumentsError)
     println(io, TOO_FEW_ARGUMENTS_ERROR_MESSAGE)
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
+    println(io, "\nMethods:")
+    println(io, methods(e.f))
 end
 
 const ARGUMENTS_ERROR_MESSAGE = """
-                                Methods dispatches for the model function `f` do not match the required number. 
-                                For example, an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. 
+                                Methods dispatches for the model function `f` do not match the required number.
+                                For example, an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`.
                                 This error can be thrown if you define an ODE model for example as `f(u,t)`
                                 and `f(u,p,t,x,y)` as both of those are not valid dispatches! For more information
                                 on the required dispatches for the given model function, consult the documentation
@@ -136,12 +142,15 @@ const ARGUMENTS_ERROR_MESSAGE = """
 
 struct FunctionArgumentsError <: Exception
     fname::String
+    f::Any
 end
 
 function Base.showerror(io::IO, e::FunctionArgumentsError)
     println(io, ARGUMENTS_ERROR_MESSAGE)
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
+    println(io, "\nMethods:")
+    println(io, methods(e.f))
 end
 
 """
@@ -155,10 +164,10 @@ is checked against the methods table, where `inplace_param_number` is the number
 of arguments for the in-place dispatch. The out-of-place dispatch is assumed
 to have one less. If neither of these dispatches exist, an error is thrown.
 If the error is thrown, `fname` is used to tell the user which function has the
-incorrect dispatches. 
+incorrect dispatches.
 
-`iip_preferred` means that if `inplace_param_number=4` and methods of both 3 and 
-for 4 args exist, then it will be chosen as in-place. `iip_dispatch` flips this 
+`iip_preferred` means that if `inplace_param_number=4` and methods of both 3 and
+for 4 args exist, then it will be chosen as in-place. `iip_dispatch` flips this
 decision.
 
 # See also
@@ -173,7 +182,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true)
         if length(nargs) == 0
             throw(NoMethodsError(fname))
         elseif all(x -> x > inplace_param_number, nargs)
-            throw(TooManyArgumentsError(fname))
+            throw(TooManyArgumentsError(fname,f))
         elseif all(x -> x < inplace_param_number - 1, nargs)
             # Possible extra safety?
             # Find if there's a `f(args...)` dispatch
@@ -188,9 +197,9 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true)
 
             # No varargs detected, error that there are dispatches but not the right ones
 
-            throw(TooFewArgumentsError(fname))
+            throw(TooFewArgumentsError(fname,f))
         else
-            throw(FunctionArgumentsError(fname))
+            throw(FunctionArgumentsError(fname,f))
         end
     else
         if iip_preferred
