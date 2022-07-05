@@ -198,14 +198,14 @@ IntegralProblem{iip}(f,lb,ub,p=NullParameters();
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
 - nout: The output size of the function f. Defaults to 1, i.e., a scalar integral output.
-- batch: The preferred number of points to batch. This allows user-side parallelization 
-  of the integrand. If batch != 0, then each x[:,i] is a different point of the integral 
-  to calculate, and the output should be nout x batchsize. Note that batch is a suggestion 
-  for the number of points, and it is not necessarily true that batch is the same as 
+- batch: The preferred number of points to batch. This allows user-side parallelization
+  of the integrand. If batch != 0, then each x[:,i] is a different point of the integral
+  to calculate, and the output should be nout x batchsize. Note that batch is a suggestion
+  for the number of points, and it is not necessarily true that batch is the same as
   batchsize in all algorithms.
 - kwargs:: Keyword arguments copied to the solvers.
 
-Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at 
+Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
 compile time whether the integrator function is in-place.
 
 ### Fields
@@ -250,9 +250,9 @@ min_u f(u,p)
 ```
 
 ``u₀`` is an initial guess of the minimum. `f` should be specified as `f(u,p)`
-and `u₀` should be an AbstractArray (or number) whose geometry matches the 
-desired geometry of `u`. Note that we are not limited to numbers or vectors 
-for `u₀`; one is allowed to provide `u₀` as arbitrary matrices / 
+and `u₀` should be an AbstractArray (or number) whose geometry matches the
+desired geometry of `u`. Note that we are not limited to numbers or vectors
+for `u₀`; one is allowed to provide `u₀` as arbitrary matrices /
 higher-dimension tensors as well.
 
 ## Problem Type
@@ -299,15 +299,17 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 
 ### Fields
 
-* `f`: The function in the problem.
-* `u0`: The initial guess for the optima.
-* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `f`: the function in the problem.
+* `u0`: the initial guess for the optima.
+* `p`: the parameters for the problem. Defaults to `NullParameters`.
 * `lb`: the lower bounds for the optimization of `u`.
 * `ub`: the upper bounds for the optimization of `u`.
-* `lcons`:
-* `ucons`:
-* `sense`:
-* `kwargs`: The keyword arguments passed on to the solvers.
+* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
+    Defaults to `nothing`, implying no lower bounds for the constraints.
+* `ucons`: the vector of upper bounds for the constraints passed to [OptimizationFunction](@ref).
+    Defaults to `nothing`, implying no upper bounds for the constraints.
+* `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
+* `kwargs`: the keyword arguments passed on to the solvers.
 """
 struct OptimizationProblem{iip, F, uType, P, B, LC, UC, S, K} <:
        AbstractOptimizationProblem{iip}
