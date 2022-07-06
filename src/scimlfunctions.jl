@@ -1537,9 +1537,9 @@ OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
 - `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
 - `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``\frac{d^2 f}{du^2} v``.
-- `cons(res,x,p)` or `res=cons(x,p)`: the constraints function, should return a vector
+- `cons(x,p)` : the constraints function, should return a vector
     with value of the `i`th constraint, evaluated at the current values of variables
-    inside the optimization routine, at `res[i]`. This takes just the function evaluations
+    inside the optimization routine. This takes just the function evaluations
     and the equality or inequality assertion is applied by the solver based on the constraint
     bounds passed as `lcons` and `ucons` to [OptimizationProblem](@ref), in case of equality
     constraints `lcons` and `ucons` should be passed equal values.

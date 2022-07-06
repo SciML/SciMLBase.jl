@@ -305,11 +305,24 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `lb`: the lower bounds for the optimization of `u`.
 * `ub`: the upper bounds for the optimization of `u`.
 * `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
-    Defaults to `nothing`, implying no lower bounds for the constraints.
+    Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
 * `ucons`: the vector of upper bounds for the constraints passed to [OptimizationFunction](@ref).
-    Defaults to `nothing`, implying no upper bounds for the constraints.
+    Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
 * `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
 * `kwargs`: the keyword arguments passed on to the solvers.
+
+## Inequality and Equality Constraints
+
+Both inequality and equality constraints are defined by the `f.cons` function in the `OptimizationFunction`
+description of the problem structure. This `f.cons` is given as a function `f.cons(u,p)` which computes
+the value at `u` of the constraints. For example, take `f.cons(u,p) = u[1] - u[2]` 
+With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
+If `lcons` and `ucons` are `nothing`, then there are no constraints bounds, meaning that the constraint is satisfied when `-Inf < f.cons < Inf` (which of course is always!). If `lcons[i] = ucons[i] = 0`, then the constraint is satisfied when `f.cons(u,p)[i] = 0`, and so this implies the equality constraint ``u[1] = u[2]`. If `lcons[i] = ucons[i] = a`, then ``u[1] - u[2] = a`` is the equality constraint. 
+
+Inequality constraints are then given by making `lcons[i] != ucons[i]`. For example, `lcons[i] = -Inf` and `ucons[i] = 0` would imply the inequality constraint ``u[1] < u[2]`` since any `f.cons[i] < 0` satisfies the constraint. Similarly, `lcons[i] = -1` and `ucons[i] = 1` would imply that `-1 < f.cons[i] < 1` is required or ``-1 < u[1] - u[2] < 1``.
+
+Note that these vectors must be sized to match the number of constraints, with one set of conditions for each constraint.
+
 """
 struct OptimizationProblem{iip, F, uType, P, B, LC, UC, S, K} <:
        AbstractOptimizationProblem{iip}
