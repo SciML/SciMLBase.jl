@@ -3899,14 +3899,40 @@ Converts a NonlinearFunction into a ODEFunction.
 function Base.convert(::Type{ODEFunction}, f::NonlinearFunction)
     iip = isinplace(f)
     _f = iip ? (du, u, p, t) -> (f.f(du, u, p); nothing) : (u, p, t) -> f.f(u, p)
+    if f.analytic !== nothing
+        _analytic = (u0, p, t) -> f.analytic(u0, p)
+    else
+        _analytic = nothing
+    end
+    if f.tgrad !== nothing
+        _tgrad = iip ? (dT, u, p, t) -> (f.tgrad(dT, u, p); nothing) :
+                 (u, p, t) -> f.tgrad(u, p)
+    else
+        _tgrad = nothing
+    end
+    if f.jac !== nothing
+        _jac = iip ? (J, u, p, t) -> (f.jac(J, u, p); nothing) : (u, p, t) -> f.jac(u, p)
+    else
+        _jac = nothing
+    end
+    if f.jvp !== nothing
+        _jvp = iip ? (Jv, u, p, t) -> (f.jvp(Jv, u, p); nothing) : (u, p, t) -> f.jvp(u, p)
+    else
+        _jvp = nothing
+    end
+    if f.vjp !== nothing
+        _vjp = iip ? (vJ, u, p, t) -> (f.vjp(vJ, u, p); nothing) : (u, p, t) -> f.vjp(u, p)
+    else
+        _vjp = nothing
+    end
 
     ODEFunction{iip}(_f;
                      mass_matrix = f.mass_matrix,
-                     analytic = f.analytic,
-                     tgrad = f.tgrad,
-                     jac = f.jac,
-                     jvp = f.jvp,
-                     vjp = f.vjp,
+                     analytic = _analytic,
+                     tgrad = _tgrad,
+                     jac = _jac,
+                     jvp = _jvp,
+                     vjp = _vjp,
                      jac_prototype = f.jac_prototype,
                      sparsity = f.sparsity,
                      paramjac = f.paramjac,
