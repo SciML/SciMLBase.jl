@@ -315,7 +315,7 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 
 Both inequality and equality constraints are defined by the `f.cons` function in the `OptimizationFunction`
 description of the problem structure. This `f.cons` is given as a function `f.cons(u,p)` which computes
-the value at `u` of the constraints. For example, take `f.cons(u,p) = u[1] - u[2]` 
+the value of the constraints at `u`. For example, take `f.cons(u,p) = u[1] - u[2]`.
 With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
 If `lcons` and `ucons` are `nothing`, then there are no constraints bounds, meaning that the constraint is satisfied when `-Inf < f.cons < Inf` (which of course is always!). If `lcons[i] = ucons[i] = 0`, then the constraint is satisfied when `f.cons(u,p)[i] = 0`, and so this implies the equality constraint ``u[1] = u[2]`. If `lcons[i] = ucons[i] = a`, then ``u[1] - u[2] = a`` is the equality constraint. 
 
