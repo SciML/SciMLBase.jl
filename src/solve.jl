@@ -34,7 +34,7 @@ kewyword arguments for the `local_method` of a global optimizer are passed as a
 
 Over time we hope to cover more of these keyword arguments under the common interface.
 
-If a common argument is not implemented for a optimizer a warning will be shown.  
+If a common argument is not implemented for a optimizer a warning will be shown.
 
 ## Callback Functions
 
@@ -46,15 +46,15 @@ callback = (x,other_args) -> false
 ```
 
 where `other_args` is are the extra return arguments of the optimization `f`.
-This allows for saving values from the optimization and using them for 
-plotting and display without recalculating. The callback should return a 
-Boolean value, and the default should be `false`, such that the optimization 
+This allows for saving values from the optimization and using them for
+plotting and display without recalculating. The callback should return a
+Boolean value, and the default should be `false`, such that the optimization
 gets stopped if it returns `true`.
 
 ### Callback Example
 
 ```julia
-function loss(p) 
+function loss(p)
     # Some calculations
     lossval,x,y,z
 end
@@ -74,9 +74,9 @@ end
 const OPTIMIZER_MISSING_ERROR_MESSAGE = """
                                         Optimization algorithm not found. Either the chosen algorithm is not a valid solver
                                         choice for the `OptimizationProblem`, or the Optimization solver library is not loaded.
-                                        Make sure that you have loaded an appropriate Optimization.jl solver library, for example, 
-                                        `solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and 
-                                        `solve(prob,Adam())` requires `using OptimizationOptimisers`. 
+                                        Make sure that you have loaded an appropriate Optimization.jl solver library, for example,
+                                        `solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and
+                                        `solve(prob,Adam())` requires `using OptimizationOptimisers`.
 
                                         For more information, see the Optimization.jl documentation: optimization.sciml.ai/dev.
                                         """
