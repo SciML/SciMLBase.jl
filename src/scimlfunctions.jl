@@ -80,7 +80,7 @@ Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
@@ -88,7 +88,7 @@ the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
@@ -207,7 +207,7 @@ prob = ODEProblem(ff,ones(2),(0.0,10.0))
 
 See the `modelingtoolkitize` function from
 [ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
-automatically symbolically generating the Jacobian and more from the 
+automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
 struct ODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S2, O, TCV
@@ -271,7 +271,7 @@ Note that only the functions `f_i` themselves are required. These functions shou
 be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
@@ -279,7 +279,7 @@ the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
@@ -324,7 +324,7 @@ The fields of the SplitFunction type directly match the names of the inputs.
 
 See the `modelingtoolkitize` function from
 [ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
-automatically symbolically generating the Jacobian and more from the 
+automatically symbolically generating the Jacobian and more from the
 numerically-defined functions. See `ModelingToolkit.SplitODEProblem` for
 information on generating the SplitFunction from this symbolic engine.
 """
@@ -391,7 +391,7 @@ Note that only the functions `f_i` themselves are required. These functions shou
 be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
@@ -401,7 +401,7 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
@@ -499,7 +499,7 @@ for more details on in-place vs out-of-place handling. The histroy function
 `h` acts as an interpolator over time, i.e. `h(t)` with options matching
 the solution interface, i.e. `h(t; save_idxs = 2)`.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
@@ -507,7 +507,7 @@ the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
@@ -606,7 +606,7 @@ for more details on in-place vs out-of-place handling. The histroy function
 `h` acts as an interpolator over time, i.e. `h(t)` with options matching
 the solution interface, i.e. `h(t; save_idxs = 2)`.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
@@ -616,7 +616,7 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
-- `analytic(u0,h,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,h,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,h,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,h,p,t)` or `J=jac(u,h,p,t)`: returns ``\frac{df}{du}``
@@ -694,7 +694,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DiscreteFunction{iip,recompile}(f;
-                                analytic=nothing, 
+                                analytic=nothing,
                                 syms=nothing)
 ```
 
@@ -702,10 +702,10 @@ Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
@@ -741,7 +741,7 @@ SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: Abstrac
 A representation of an SDE function `f`, defined by:
 
 ```math
-M du = f(u,p,t)dt + g(u,p,t) dW 
+M du = f(u,p,t)dt + g(u,p,t) dW
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -771,7 +771,7 @@ Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
@@ -779,13 +779,13 @@ the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
 - `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
 - `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
-- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative 
+- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
   ``\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
@@ -884,13 +884,13 @@ are optional for improving or accelerating the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/sdae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
 - `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df_1}{du} v``
 - `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df_1}{du}^\ast v``
-- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative 
+- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
   ``\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
@@ -992,7 +992,7 @@ Note that only the functions `f_i` themselves are required. These functions shou
 be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
@@ -1002,13 +1002,13 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
 - `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
 - `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
-- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative 
+- `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
   ``\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
@@ -1103,7 +1103,7 @@ Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
@@ -1111,7 +1111,7 @@ the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
@@ -1203,16 +1203,16 @@ Note that only the function `f` itself is required. This function should
 be given as `f!(out,du,u,p,t)` or `out = f(du,u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns the implicit DAE Jacobian
   defined as ``gamma \frac{dG}{d(du)} + \frac{dG}{du}``
-- `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional 
+- `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
   derivative``\frac{df}{du} v``
-- `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint 
+- `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
   derivative``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
@@ -1287,7 +1287,7 @@ end
 
 See the `modelingtoolkitize` function from
 [ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
-automatically symbolically generating the Jacobian and more from the 
+automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
 struct DAEFunction{iip, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV} <:
@@ -1350,7 +1350,7 @@ for more details on in-place vs out-of-place handling. The histroy function
 `h` acts as an interpolator over time, i.e. `h(t)` with options matching
 the solution interface, i.e. `h(t; save_idxs = 2)`.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
@@ -1358,7 +1358,7 @@ the usage of `f`. These include:
   if `M` is singular. Note that in this case special solvers are required, see the
   DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
@@ -1453,10 +1453,10 @@ Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p)` or `du = f(u,p)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
-All of the remaining functions are optional for improving or accelerating 
+All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
-- `analytic(u0,p)`: used to pass an analytical solution function for the analytical 
+- `analytic(u0,p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `jac(J,u,p)` or `J=jac(u,p)`: returns ``\frac{df}{du}``
 - `jvp(Jv,v,u,p)` or `Jv=jvp(v,u,p)`: returns the directional derivative``\frac{df}{du} v``
@@ -1519,7 +1519,7 @@ A representation of an optimization of an objective function `f`, defined by:
 min_{u} f(u,p)
 ```
 
-and all of its related functions, such as the gradient of `f`, its Hessian, 
+and all of its related functions, such as the gradient of `f`, its Hessian,
 and more. For all cases, `u` is the state and `p` are the parameters.
 
 ## Constructor
@@ -1548,12 +1548,12 @@ OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Hessian.
   The default is `nothing`, which means a dense Hessian.
-- `cons_jac_prototype`: a prototype matrix matching the type that matches the constraint Jacobian. 
+- `cons_jac_prototype`: a prototype matrix matching the type that matches the constraint Jacobian.
   The default is `nothing`, which means a dense constraint Jacobian.
 - `cons_hess_prototype`: a prototype matrix matching the type that matches the constraint Hessian.
   This is defined as an array of matrices, where `hess[i]` is the Hessian w.r.t. the `i`th output.
   For example, if the Hessian is sparse, then `hess` is a `Vector{SparseMatrixCSC}`.
-  The default is `nothing`, which means a dense constraint Hessian.  
+  The default is `nothing`, which means a dense constraint Hessian.
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
@@ -1565,7 +1565,7 @@ OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
   on the sparsity pattern.
 - `cons_jac_colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `cons_jac_prototype`.
-- `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for 
+- `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for
   the sparsity pattern of the `cons_hess_prototype`.
 
 ## Defining Optimization Functions Via AD
@@ -3889,4 +3889,55 @@ for S in [:ODEFunction
             (args...) -> $S{iip, map(typeof, args)...}(args...)
         end
     end
+end
+
+"""
+$(SIGNATURES)
+
+Converts a NonlinearFunction into a ODEFunction.
+"""
+function Base.convert(::Type{ODEFunction}, f::NonlinearFunction)
+    iip = isinplace(f)
+    _f = iip ? (du, u, p, t) -> (f.f(du, u, p); nothing) : (u, p, t) -> f.f(u, p)
+    if f.analytic !== nothing
+        _analytic = (u0, p, t) -> f.analytic(u0, p)
+    else
+        _analytic = nothing
+    end
+    if f.tgrad !== nothing
+        _tgrad = iip ? (dT, u, p, t) -> (f.tgrad(dT, u, p); nothing) :
+                 (u, p, t) -> f.tgrad(u, p)
+    else
+        _tgrad = nothing
+    end
+    if f.jac !== nothing
+        _jac = iip ? (J, u, p, t) -> (f.jac(J, u, p); nothing) : (u, p, t) -> f.jac(u, p)
+    else
+        _jac = nothing
+    end
+    if f.jvp !== nothing
+        _jvp = iip ? (Jv, u, p, t) -> (f.jvp(Jv, u, p); nothing) : (u, p, t) -> f.jvp(u, p)
+    else
+        _jvp = nothing
+    end
+    if f.vjp !== nothing
+        _vjp = iip ? (vJ, u, p, t) -> (f.vjp(vJ, u, p); nothing) : (u, p, t) -> f.vjp(u, p)
+    else
+        _vjp = nothing
+    end
+
+    ODEFunction{iip}(_f;
+                     mass_matrix = f.mass_matrix,
+                     analytic = _analytic,
+                     tgrad = _tgrad,
+                     jac = _jac,
+                     jvp = _jvp,
+                     vjp = _vjp,
+                     jac_prototype = f.jac_prototype,
+                     sparsity = f.sparsity,
+                     paramjac = f.paramjac,
+                     syms = f.syms,
+                     indepsym = nothing,
+                     observed = f.observed,
+                     colorvec = f.colorvec)
 end
