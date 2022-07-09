@@ -198,14 +198,14 @@ IntegralProblem{iip}(f,lb,ub,p=NullParameters();
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
 - nout: The output size of the function f. Defaults to 1, i.e., a scalar integral output.
-- batch: The preferred number of points to batch. This allows user-side parallelization 
-  of the integrand. If batch != 0, then each x[:,i] is a different point of the integral 
-  to calculate, and the output should be nout x batchsize. Note that batch is a suggestion 
-  for the number of points, and it is not necessarily true that batch is the same as 
+- batch: The preferred number of points to batch. This allows user-side parallelization
+  of the integrand. If batch != 0, then each x[:,i] is a different point of the integral
+  to calculate, and the output should be nout x batchsize. Note that batch is a suggestion
+  for the number of points, and it is not necessarily true that batch is the same as
   batchsize in all algorithms.
 - kwargs:: Keyword arguments copied to the solvers.
 
-Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at 
+Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
 compile time whether the integrator function is in-place.
 
 ### Fields
@@ -250,9 +250,9 @@ min_u f(u,p)
 ```
 
 ``u₀`` is an initial guess of the minimum. `f` should be specified as `f(u,p)`
-and `u₀` should be an AbstractArray (or number) whose geometry matches the 
-desired geometry of `u`. Note that we are not limited to numbers or vectors 
-for `u₀`; one is allowed to provide `u₀` as arbitrary matrices / 
+and `u₀` should be an AbstractArray (or number) whose geometry matches the
+desired geometry of `u`. Note that we are not limited to numbers or vectors
+for `u₀`; one is allowed to provide `u₀` as arbitrary matrices /
 higher-dimension tensors as well.
 
 ## Problem Type
@@ -299,15 +299,30 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 
 ### Fields
 
-* `f`: The function in the problem.
-* `u0`: The initial guess for the optima.
-* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `f`: the function in the problem.
+* `u0`: the initial guess for the optima.
+* `p`: the parameters for the problem. Defaults to `NullParameters`.
 * `lb`: the lower bounds for the optimization of `u`.
 * `ub`: the upper bounds for the optimization of `u`.
-* `lcons`:
-* `ucons`:
-* `sense`:
-* `kwargs`: The keyword arguments passed on to the solvers.
+* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
+    Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
+* `ucons`: the vector of upper bounds for the constraints passed to [OptimizationFunction](@ref).
+    Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
+* `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
+* `kwargs`: the keyword arguments passed on to the solvers.
+
+## Inequality and Equality Constraints
+
+Both inequality and equality constraints are defined by the `f.cons` function in the `OptimizationFunction`
+description of the problem structure. This `f.cons` is given as a function `f.cons(u,p)` which computes
+the value of the constraints at `u`. For example, take `f.cons(u,p) = u[1] - u[2]`.
+With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
+If `lcons` and `ucons` are `nothing`, then there are no constraints bounds, meaning that the constraint is satisfied when `-Inf < f.cons < Inf` (which of course is always!). If `lcons[i] = ucons[i] = 0`, then the constraint is satisfied when `f.cons(u,p)[i] = 0`, and so this implies the equality constraint ``u[1] = u[2]`. If `lcons[i] = ucons[i] = a`, then ``u[1] - u[2] = a`` is the equality constraint. 
+
+Inequality constraints are then given by making `lcons[i] != ucons[i]`. For example, `lcons[i] = -Inf` and `ucons[i] = 0` would imply the inequality constraint ``u[1] <= u[2]`` since any `f.cons[i] <= 0` satisfies the constraint. Similarly, `lcons[i] = -1` and `ucons[i] = 1` would imply that `-1 <= f.cons[i] <= 1` is required or ``-1 <= u[1] - u[2] <= 1``.
+
+Note that these vectors must be sized to match the number of constraints, with one set of conditions for each constraint.
+
 """
 struct OptimizationProblem{iip, F, uType, P, B, LC, UC, S, K} <:
        AbstractOptimizationProblem{iip}
