@@ -397,7 +397,7 @@ last_step_failed(integrator::DEIntegrator) = false
     check_error(integrator)
 
 Check state of `integrator` and return one of the
-[Return Codes](http://diffeq.sciml.ai/dev/basics/solution.html#Return-Codes-(RetCodes)-1)
+[Return Codes](https://diffeq.sciml.ai/stable/basics/solution/#retcodes)
 """
 function check_error(integrator::DEIntegrator)
     # This implementation is intended to be used for ODEIntegrator and
