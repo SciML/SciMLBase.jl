@@ -358,6 +358,32 @@ function addat!(a::AbstractArray, idxs, val = nothing)
 end
 
 ### Indexing
+function getsyms(integrator::DEIntegrator)
+    if has_syms(integrator.f)
+        return integrator.f.syms
+    else
+        return keys(integrator.u[1])
+    end
+end
+
+function getindepsym(integrator::DEIntegrator)
+    if has_indepsym(integrator.f)
+        return integrator.f.indepsym
+    else
+        return nothing
+    end
+end
+
+function getobserved(integrator::DEIntegrator)
+    if has_syms(integrator.f)
+        return integrator.f.observed
+    else
+        return DEFAULT_OBSERVED
+    end
+end
+
+sym_to_index(sym, integrator::DEIntegrator) = sym_to_index(sym, getsyms(integrator))
+
 for T in [Int, Colon]
     @eval Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
                                                           I::$T)
@@ -433,6 +459,18 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym, args...)
     else
         error("Invalid indexing of solution")
     end
+end
+
+function observed(A::DEIntegrator, sym, i::Int)
+    getobserved(A)(sym, A[i], A.p, A.t[i])
+end
+
+function observed(A::DEIntegrator, sym, i::AbstractArray{Int})
+    getobserved(A).((sym,), A.u[i], (A.p,), A.t[i])
+end
+
+function observed(A::DEIntegrator, sym, i::Colon)
+    getobserved(A).((sym,), A.u, (A.p,), A.t)
 end
 
 ### Integrator traits
