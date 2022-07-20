@@ -1,7 +1,7 @@
 """
-    is_diagonal_noise(prob::SciMLProblem)
+    is_diagonal_noise(prob::AbstractSciMLProblem)
 """
-is_diagonal_noise(prob::SciMLProblem) = false
+is_diagonal_noise(prob::AbstractSciMLProblem) = false
 function is_diagonal_noise(prob::AbstractRODEProblem{uType, tType, iip, Nothing}) where {
                                                                                          uType,
                                                                                          tType,
@@ -20,11 +20,11 @@ function is_diagonal_noise(prob::AbstractSDDEProblem{uType, tType, lType, iip, N
 end
 
 """
-    isinplace(prob::SciMLProblem)
+    isinplace(prob::AbstractSciMLProblem)
 
 Determine whether the function of the given problem operates in place or not.
 """
-function isinplace(prob::SciMLProblem) end
+function isinplace(prob::AbstractSciMLProblem) end
 isinplace(prob::AbstractLinearProblem{bType, iip}) where {bType, iip} = iip
 isinplace(prob::AbstractNonlinearProblem{uType, iip}) where {uType, iip} = iip
 isinplace(prob::AbstractIntegralProblem{iip}) where {iip} = iip

@@ -1,7 +1,7 @@
 """
     promote_tspan(tspan)
 
-Convert the `tspan` field of a `DEProblem` to a `(tmin, tmax)` tuple, where both
+Convert the `tspan` field of a `AbstractDEProblem` to a `(tmin, tmax)` tuple, where both
 elements are of the same type. If `tspan` is a function, returns it as-is.
 """
 promote_tspan((t1, t2)::Tuple{T, S}) where {T, S} = promote(t1, t2)
@@ -15,7 +15,7 @@ end
 
 ### Displays
 
-function Base.summary(io::IO, prob::DEProblem)
+function Base.summary(io::IO, prob::AbstractDEProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
           type_color, nameof(typeof(prob)),
@@ -96,7 +96,7 @@ function Base.summary(io::IO, prob::AbstractNoiseProblem)
           nameof(typeof(prob)), " with WType ", typeof(prob.noise.W[1]), " and tType ",
           typeof(prob.tspan[1]), ". In-place: ", isinplace(prob))
 end
-function Base.show(io::IO, mime::MIME"text/plain", A::DEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractDEProblem)
     summary(io, A)
     println(io)
     print(io, "timespan: ")
@@ -133,11 +133,6 @@ function Base.summary(io::IO, prob::AbstractEnsembleProblem)
           nameof(typeof(prob.prob)))
 end
 Base.show(io::IO, mime::MIME"text/plain", A::AbstractEnsembleProblem) = summary(io, A)
-TreeViews.hastreeview(x::DEProblem) = true
-function TreeViews.treelabel(io::IO, x::DEProblem,
-                             mime::MIME"text/plain" = MIME"text/plain"())
-    summary(io, x)
-end
 
 struct NullParameters end
 function Base.getindex(::NullParameters, i...)

@@ -3,7 +3,7 @@
     Expr(:tuple, A...)
 end
 
-Base.@pure function remaker_of(prob::T) where {T <: SciMLProblem}
+Base.@pure function remaker_of(prob::T) where {T <: AbstractSciMLProblem}
     parameterless_type(T){isinplace(prob)}
 end
 Base.@pure remaker_of(alg::T) where {T} = parameterless_type(T)

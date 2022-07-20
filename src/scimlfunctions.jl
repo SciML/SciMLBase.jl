@@ -17,12 +17,6 @@ function Base.summary(io::IO, prob::AbstractSciMLFunction)
           no_color)
 end
 
-TreeViews.hastreeview(x::AbstractSciMLFunction) = true
-function TreeViews.treelabel(io::IO, x::AbstractSciMLFunction,
-                             mime::MIME"text/plain" = MIME"text/plain"())
-    summary(io, x)
-end
-
 const NONCONFORMING_FUNCTIONS_ERROR_MESSAGE = """
                                               Nonconforming functions detected. If a model function `f` is defined
                                               as in-place, then all constituant functions like `jac` and `paramjac`

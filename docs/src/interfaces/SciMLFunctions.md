@@ -8,7 +8,7 @@ of pre-computed functions to speed up the calculations. This is offered via the
 
 ## Definition of the AbstractSciMLFunction Interface
 
-The following standard principles should be adhered to across all 
+The following standard principles should be adhered to across all
 `AbstractSciMLFunction` instantiations.
 
 ### Common Function Choice Definitions
@@ -47,7 +47,7 @@ ODEFunction{iip}(f)
 
 which is a boolean for whether the function is in the inplace form (mutating to
 change the first value). This is automatically determined using the methods table
-but note that for full type-inferrability of the `SciMLProblem` this iip-ness should
+but note that for full type-inferrability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
 Additionally, the functions are fully specialized to reduce the runtimes. If one

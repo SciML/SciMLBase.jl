@@ -7,7 +7,7 @@ of automatic differentiation overloads to dispatches defined in DiffEqSensitivit
 a top-level `solve` definition, for example:
 
 ```julia
-function solve(prob::DEProblem, args...; sensealg=nothing,
+function solve(prob::AbstractDEProblem, args...; sensealg=nothing,
   u0=nothing, p=nothing, kwargs...)
   u0 = u0 !== nothing ? u0 : prob.u0
   p = p !== nothing ? p : prob.p
@@ -30,7 +30,7 @@ function ChainRulesCore.frule(::typeof(solve_up), prob,
   _solve_forward(prob, sensealg, u0, p, args...; kwargs...)
 end
 
-function ChainRulesCore.rrule(::typeof(solve_up), prob::SciMLBase.DEProblem,
+function ChainRulesCore.rrule(::typeof(solve_up), prob::SciMLBase.AbstractDEProblem,
   sensealg::Union{Nothing,AbstractSensitivityAlgorithm},
   u0, p, args...;
   kwargs...)
@@ -57,7 +57,7 @@ choices of automatic differentiation are then selected by the `sensealg` keyword
 in `solve`, which is made into a positional argument in the `_solve_adjoint` and other
 functions in order to allow dispatch.
 
-## SensitivityADPassThrough 
+## SensitivityADPassThrough
 
 The special sensitivity algorithm `SensitivityADPassThrough` is used to ignore the
 internal sensitivity dispatches and instead do automatic differentiation directly
@@ -67,4 +67,3 @@ through the solver. Generally this `sensealg` is only used internally.
 
 ForwardDiff does not use ChainRules.jl and thus it completely ignores the special
 handling.
-

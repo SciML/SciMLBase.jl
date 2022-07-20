@@ -383,11 +383,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::DEIntegrator)
     print(io, "u: ")
     show(io, m, A.u)
 end
-TreeViews.hastreeview(x::DEIntegrator) = true
-function TreeViews.treelabel(io::IO, x::DEIntegrator,
-                             mime::MIME"text/plain" = MIME"text/plain"())
-    summary(io, x)
-end
 
 ### Error check (retcode)
 

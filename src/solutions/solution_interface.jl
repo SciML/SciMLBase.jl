@@ -156,11 +156,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
     print(io, "u: ")
     show(io, m, A.u)
 end
-TreeViews.hastreeview(x::DESolution) = true
-function TreeViews.treelabel(io::IO, x::DESolution,
-                             mime::MIME"text/plain" = MIME"text/plain"())
-    summary(io, x)
-end
 
 RecursiveArrayTools.tuples(sol::AbstractTimeseriesSolution) = tuple.(sol.u, sol.t)
 
@@ -339,7 +334,7 @@ function cleansym(sym::Symbol)
     return str
 end
 
-sym_to_index(sym, sol::SciMLSolution) = sym_to_index(sym, getsyms(sol))
+sym_to_index(sym, sol::AbstractSciMLSolution) = sym_to_index(sym, getsyms(sol))
 sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
 const issymbollike = RecursiveArrayTools.issymbollike
 
