@@ -357,6 +357,84 @@ function addat!(a::AbstractArray, idxs, val = nothing)
     end
 end
 
+### Indexing
+for T in [Int, Colon]
+    @eval Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
+                                                          I::$T)
+        A.u[I]
+    end
+end
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
+                                                I::Union{Int, AbstractArray{Int},
+                                                         CartesianIndex, Colon, BitArray,
+                                                         AbstractArray{Bool}}...)
+    RecursiveArrayTools.VectorOfArray(A.u)[I...]
+end
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, i::Int,
+                                                ::Colon)
+    [A.u[j][i] for j in 1:length(A)]
+end
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::Colon,
+                                                i::Int)
+    A.u[i]
+end
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, i::Int,
+                                                II::AbstractArray{Int})
+    [A.u[j][i] for j in II]
+end
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
+                                                ii::CartesianIndex)
+    ti = Tuple(ii)
+    i = last(ti)
+    jj = CartesianIndex(Base.front(ti))
+    return A.u[i][jj]
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
+    if issymbollike(sym) || all(issymbollike, sym)
+        if sym isa AbstractArray
+            return map(s -> A[s], collect(sym))
+        end
+        i = sym_to_index(sym, A)
+    else
+        i = sym
+    end
+
+    indepsym = getindepsym(A)
+    if i === nothing
+        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+            A.t
+        else
+            observed(A, sym, :)
+        end
+    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
+        A[i, :]
+    else
+        error("Invalid indexing of solution")
+    end
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym, args...)
+    if issymbollike(sym)
+        i = sym_to_index(sym, A)
+    else
+        i = sym
+    end
+
+    indepsym = getindepsym(A)
+    if i === nothing
+        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+            A.t[args...]
+        else
+            observed(A, sym, args...)
+        end
+    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
+        A[i, args...]
+    else
+        error("Invalid indexing of solution")
+    end
+end
+
 ### Integrator traits
 
 has_reinit(i::DEIntegrator) = false
