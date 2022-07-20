@@ -73,7 +73,8 @@ interpolated_integrator = integrator(0.0:1.0:10.0)
 @test interpolated_integrator[α, :] isa Vector
 @test interpolated_integrator[α, 2] isa Float64
 @test length(interpolated_integrator[α, 1:5]) == 5
-@test interpolated_integrator[α] ≈ 2interpolated_integrator[lorenz1.x] .+ interpolated_integrator[a] .* 2.0
+@test interpolated_integrator[α] ≈
+      2interpolated_integrator[lorenz1.x] .+ interpolated_integrator[a] .* 2.0
 @test collect(interpolated_integrator[t]) isa Vector
 @test collect(interpolated_integrator[t, :]) isa Vector
 @test interpolated_integrator[t, 2] isa Float64
