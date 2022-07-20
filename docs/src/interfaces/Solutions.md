@@ -1,11 +1,11 @@
 # SciMLSolutions
 
-## Definition of the SciMLSolution Interface
+## Definition of the AbstractSciMLSolution Interface
 
-All `SciMLSolution` types are a subset of some `AbstractArray`. Types with time series
-(like `ODESolution`) are subtypes of `RecursiveArrayTools.AbstractVectorOfArray` and 
+All `AbstractSciMLSolution` types are a subset of some `AbstractArray`. Types with time series
+(like `ODESolution`) are subtypes of `RecursiveArrayTools.AbstractVectorOfArray` and
 `RecursiveArrayTools.AbstractDiffEqArray` where appropriate. Types without a time series
-(like `OptimizationSolution`) are directly subsets of `AbstractArray`. 
+(like `OptimizationSolution`) are directly subsets of `AbstractArray`.
 
 ### Array Interface
 
@@ -78,12 +78,12 @@ error state of the solution. The retcodes are as follows:
 
 ## Traits
 
-## SciMLSolution API
+## AbstractSciMLSolution API
 
 ### Abstract SciML Solutions
 
 ```@docs
-SciMLBase.SciMLSolution
+SciMLBase.AbstractSciMLSolution
 SciMLBase.AbstractNoTimeSolution
 SciMLBase.AbstractTimeseriesSolution
 SciMLBase.AbstractNoiseProcess

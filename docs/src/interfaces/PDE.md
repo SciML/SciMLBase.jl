@@ -15,9 +15,9 @@ The key to the common PDE interface is a separation of the symbolic handling fro
 the numerical world. All of the discretizers should not "solve" the PDE, but
 instead be a conversion of the mathematical specification to a numerical problem.
 Preferably, the transformation should be to another ModelingToolkit.jl `AbstractSystem`
-via a `symbolic_discretize` dispatch, but in some cases this cannot be done or will 
-not be performant. Thus in some cases, only a `discretize` definition is given to a 
-`SciMLProblem`, with `symbolic_discretize` simply providing diagnostic or lower level
+via a `symbolic_discretize` dispatch, but in some cases this cannot be done or will
+not be performant. Thus in some cases, only a `discretize` definition is given to a
+`AbstractSciMLProblem`, with `symbolic_discretize` simply providing diagnostic or lower level
 information about the construction process.
 
 These elementary problems, such as solving linear systems `Ax=b`, solving nonlinear
@@ -61,7 +61,7 @@ import from `DomainSets.jl`, but a 2-tuple can be used instead)
 The only functions which act on a PDESystem are the following:
 
 - `discretize(sys,discretizer)`: produces the outputted `AbstractSystem` or
-  `SciMLProblem`.
+  `AbstractSciMLProblem`.
 - `symbolic_discretize(sys,discretizer)`: produces a debugging symbolic description
   of the discretized problem.
 

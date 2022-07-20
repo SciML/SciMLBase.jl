@@ -39,7 +39,7 @@ interp_summary(::Nothing) = "No interpolation"
 function interp_summary(::SensitivityInterpolation)
     "Interpolation disabled due to sensitivity analysis"
 end
-interp_summary(sol::DESolution) = interp_summary(sol.interp)
+interp_summary(sol::AbstractSciMLSolution) = interp_summary(sol.interp)
 
 const SENSITIVITY_INTERP_MESSAGE = """
                                    Standard interpolation is disabled due to sensitivity analysis being

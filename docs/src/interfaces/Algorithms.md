@@ -1,11 +1,11 @@
 # SciMLAlgorithms
 
-## Definition of the SciMLAlgorithm Interface
+## Definition of the AbstractSciMLAlgorithm Interface
 
 `SciMLAlgorithms` are defined as types which have dispatches to the function signature:
 
 ```julia
-CommonSolve.solve(prob::SciMLProblem,alg::SciMLAlgorithm;kwargs...)
+CommonSolve.solve(prob::AbstractSciMLProblem,alg::AbstractSciMLAlgorithm;kwargs...)
 ```
 
 ### Algorithm-Specific Arguments
@@ -18,7 +18,7 @@ handled via `Rodas5(autodiff=true)`.
 
 ### Remake
 
-Note that `remake` is applicable to `SciMLAlgorithm` types, but this is not used in the public API.
+Note that `remake` is applicable to `AbstractSciMLAlgorithm` types, but this is not used in the public API.
 It's used for solvers to swap out components like ForwardDiff chunk sizes.
 
 ## Common Algorithm Keyword Arguments
@@ -38,8 +38,8 @@ SciMLBase.isdiscrete
 ### Abstract SciML Algorithms
 
 ```@docs
-SciMLBase.SciMLAlgorithm
-SciMLBase.DEAlgorithm
+SciMLBase.AbstractSciMLAlgorithm
+SciMLBase.AbstractDEAlgorithm
 SciMLBase.AbstractLinearAlgorithm
 SciMLBase.AbstractNonlinearAlgorithm
 SciMLBase.AbstractQuadratureAlgorithm

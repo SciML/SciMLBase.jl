@@ -33,7 +33,7 @@ The SciML common interface covers the following domains:
   - Neutral, retarded, and algebraic delay differential equations (NDDEs, RDDEs, and DDAEs)
   - Stochastic delay differential equations (SDDEs) (`SDDEProblem`)
   - Experimental support for stochastic neutral, retarded, and algebraic delay differential equations (SNDDEs, SRDDEs, and SDDAEs)
-  - Mixed discrete and continuous equations (Hybrid Equations, Jump Diffusions) (`DEProblem`s with callbacks)
+  - Mixed discrete and continuous equations (Hybrid Equations, Jump Diffusions) (`AbstractDEProblem`s with callbacks)
 - Optimization (`OptimizationProblem`)
   - Nonlinear (constrained) optimization
 - (Stochastic/Delay/Differential-Algebraic) Partial Differential Equations (`PDESystem`)
@@ -72,10 +72,10 @@ find the parameters `p` that solve the inverse problem.
 The SciML interface is common as the usage of arguments is standardized across
 all of the problem domains. Underlying high level ideas include:
 
-- All domains use the same interface of defining a `SciMLProblem` which is then
-  solved via `solve(prob,alg;kwargs)`, where `alg` is a `SciMLAlgorithm`. The
+- All domains use the same interface of defining a `AbstractSciMLProblem` which is then
+  solved via `solve(prob,alg;kwargs)`, where `alg` is a `AbstractSciMLAlgorithm`. The
   keyword argument namings are standardized across the organization.
-- `SciMLProblem`s are generally defined by a `SciMLFunction` which can define
+- `AbstractSciMLProblem`s are generally defined by a `SciMLFunction` which can define
   extra details about a model function, such as its analytical Jacobian, its
   sparsity patterns and so on.
 - There is an organization-wide method for defining linear and nonlinear solvers
@@ -108,7 +108,7 @@ all of the problem domains. Underlying high level ideas include:
 - [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl)
     - High performance numerical solving of nonlinear systems.
 - [Quadrature.jl](https://github.com/SciML/Quadrature.jl)
-    - Multi-package interface for high performance, batched, and parallelized 
+    - Multi-package interface for high performance, batched, and parallelized
       numerical quadrature.
 - [Optimization.jl](https://github.com/SciML/Optimization.jl)
     - Multi-package interface for numerical solving of optimization problems.
@@ -130,7 +130,7 @@ all of the problem domains. Underlying high level ideas include:
 - [DiffEqUncertainty.jl](https://github.com/SciML/DiffEqUncertainty.jl)
     - Extension to the dynamical modeling tools for performing uncertainty
       quantification and calculating expectations.
- 
+
 ## Interface Implementation Libraries
 
 - [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)

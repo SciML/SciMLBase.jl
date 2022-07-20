@@ -18,17 +18,17 @@ function __init end
 """
 $(TYPEDEF)
 """
-abstract type SciMLProblem end
+abstract type AbstractSciMLProblem end
 
 # Problems
 """
 $(TYPEDEF)
 
 Base type for all DifferentialEquations.jl problems. Concrete subtypes of
-`DEProblem` contain the necessary information to fully define a differential
+`AbstractDEProblem` contain the necessary information to fully define a differential
 equation of the corresponding type.
 """
-abstract type DEProblem <: SciMLProblem end
+abstract type AbstractDEProblem <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
@@ -45,42 +45,42 @@ $(TYPEDEF)
 
 Base for types which define linear systems.
 """
-abstract type AbstractLinearProblem{bType, isinplace} <: SciMLProblem end
+abstract type AbstractLinearProblem{bType, isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define integrals suitable for quadrature.
 """
-abstract type AbstractIntegralProblem{isinplace} <: SciMLProblem end
+abstract type AbstractIntegralProblem{isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define equations for optimization.
 """
-abstract type AbstractOptimizationProblem{isinplace} <: SciMLProblem end
+abstract type AbstractOptimizationProblem{isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define nonlinear solve problems (f(u)=0).
 """
-abstract type AbstractNonlinearProblem{uType, isinplace} <: DEProblem end
+abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem end
 const AbstractSteadyStateProblem{uType, isinplace} = AbstractNonlinearProblem{uType,
                                                                               isinplace}
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractNoiseProblem <: DEProblem end
+abstract type AbstractNoiseProblem <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define ODE problems.
 """
-abstract type AbstractODEProblem{uType, tType, isinplace} <: DEProblem end
+abstract type AbstractODEProblem{uType, tType, isinplace} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
@@ -101,7 +101,7 @@ $(TYPEDEF)
 
 Base for types which define RODE problems.
 """
-abstract type AbstractRODEProblem{uType, tType, isinplace, ND} <: DEProblem end
+abstract type AbstractRODEProblem{uType, tType, isinplace, ND} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
@@ -116,14 +116,14 @@ $(TYPEDEF)
 
 Base for types which define DAE problems.
 """
-abstract type AbstractDAEProblem{uType, duType, tType, isinplace} <: DEProblem end
+abstract type AbstractDAEProblem{uType, duType, tType, isinplace} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define DDE problems.
 """
-abstract type AbstractDDEProblem{uType, tType, lType, isinplace} <: DEProblem end
+abstract type AbstractDDEProblem{uType, tType, lType, isinplace} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
@@ -150,14 +150,14 @@ $(TYPEDEF)
 
 Base for types which define jump problems.
 """
-abstract type AbstractJumpProblem{P, J} <: DEProblem end
+abstract type AbstractJumpProblem{P, J} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
 Base for types which define SDDE problems.
 """
-abstract type AbstractSDDEProblem{uType, tType, lType, isinplace, ND} <: DEProblem end
+abstract type AbstractSDDEProblem{uType, tType, lType, isinplace, ND} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
@@ -170,93 +170,98 @@ $(TYPEDEF)
 
 Base for types which define PDE problems.
 """
-abstract type AbstractPDEProblem <: DEProblem end
+abstract type AbstractPDEProblem <: AbstractDEProblem end
 
 # Algorithms
 """
 $(TYPEDEF)
 """
-abstract type SciMLAlgorithm end
+abstract type AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type DEAlgorithm <: SciMLAlgorithm end
+abstract type AbstractDEAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractLinearAlgorithm <: SciMLAlgorithm end
+abstract type AbstractLinearAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractNonlinearAlgorithm <: SciMLAlgorithm end
+abstract type AbstractNonlinearAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractIntegralAlgorithm <: SciMLAlgorithm end
+abstract type AbstractIntegralAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractOptimizationAlgorithm <: DEAlgorithm end
+abstract type AbstractOptimizationAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSteadyStateAlgorithm <: DEAlgorithm end
+abstract type AbstractSteadyStateAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractODEAlgorithm <: DEAlgorithm end
+abstract type AbstractBVPAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSecondOrderODEAlgorithm <: DEAlgorithm end
+abstract type AbstractODEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractRODEAlgorithm <: DEAlgorithm end
+abstract type AbstractSecondOrderODEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSDEAlgorithm <: DEAlgorithm end
+abstract type AbstractRODEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDAEAlgorithm <: DEAlgorithm end
+abstract type AbstractSDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractDDEAlgorithm <: DEAlgorithm end
+abstract type AbstractDAEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSDDEAlgorithm <: DEAlgorithm end
+abstract type AbstractDDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type EnsembleAlgorithm <: SciMLAlgorithm end
+abstract type AbstractSDDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: SciMLAlgorithm end
+abstract type EnsembleAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
 """
-abstract type DAEInitializationAlgorithm <: SciMLAlgorithm end
+abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: AbstractSciMLAlgorithm end
+
+"""
+$(TYPEDEF)
+"""
+abstract type DAEInitializationAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
@@ -268,18 +273,18 @@ struct NoInit <: DAEInitializationAlgorithm end
 """
 $(TYPEDEF)
 """
-abstract type AbstractDiscretization <: SciMLAlgorithm end
+abstract type AbstractDiscretization <: AbstractSciMLAlgorithm end
 
 # Monte Carlo Simulations
 """
 $(TYPEDEF)
 """
-abstract type AbstractEnsembleProblem <: SciMLProblem end
+abstract type AbstractEnsembleProblem <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 """
-abstract type AbstractEnsembleEstimator <: SciMLAlgorithm end
+abstract type AbstractEnsembleEstimator <: AbstractSciMLAlgorithm end
 
 export EnsembleProblem
 export EnsembleSolution, EnsembleTestSolution, EnsembleSummary
@@ -388,14 +393,10 @@ Union of all base solution types.
 
 Uses a Union so that solution types can be `<: AbstractArray`
 """
-const SciMLSolution = Union{AbstractTimeseriesSolution,
-                            AbstractNoTimeSolution,
-                            AbstractEnsembleSolution,
-                            AbstractNoiseProcess}
-const DESolution = SciMLSolution
-export SciMLSolution, DESolution
-
-export AllObserved
+const AbstractSciMLSolution = Union{AbstractTimeseriesSolution,
+                                    AbstractNoTimeSolution,
+                                    AbstractEnsembleSolution,
+                                    AbstractNoiseProcess}
 
 """
 $(TYPEDEF)
@@ -596,13 +597,27 @@ const AbstractQuadratureProblem = AbstractIntegralProblem
 const AbstractQuadratureAlgorithm = AbstractIntegralAlgorithm
 const AbstractQuadratureSolution = AbstractIntegralSolution
 
+# Deprecated High Level things
+# All downstream uses need to be removed before removing
+
+const DEAlgorithm = AbstractDEAlgorithm
+const SciMLAlgorithm = AbstractSciMLAlgorithm
+const DEProblem = AbstractDEProblem
+const DEAlgorithm = AbstractDEAlgorithm
+const DESolution = AbstractSciMLSolution
+const SciMLSolution = AbstractSciMLSolution
+
+export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
+
+# Exports
+export AllObserved
+
 export isinplace
 
 export solve, solve!, init, discretize, symbolic_discretize
 
 export LinearProblem, NonlinearProblem, IntegralProblem, OptimizationProblem
 
-# Deprecated
 export IntegralProblem
 
 export DiscreteProblem

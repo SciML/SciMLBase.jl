@@ -1,7 +1,7 @@
 # Common Keyword Arguments
 
 The following defines the keyword arguments which are meant to be preserved
-throughout all of the SciMLProblem cases (where applicable).
+throughout all of the AbstractSciMLProblem cases (where applicable).
 
 ## Default Algorithm Hinting
 

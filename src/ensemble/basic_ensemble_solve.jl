@@ -24,7 +24,7 @@ $(TYPEDEF)
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function __solve(prob::AbstractEnsembleProblem,
-                 alg::Union{DEAlgorithm, Nothing};
+                 alg::Union{AbstractDEAlgorithm, Nothing};
                  kwargs...)
     if alg isa EnsembleAlgorithm
         # Assume DifferentialEquations.jl is being used, so default alg
@@ -43,7 +43,7 @@ tighten_container_eltype(u::Vector{Any}) = map(identity, u)
 tighten_container_eltype(u) = u
 
 function __solve(prob::AbstractEnsembleProblem,
-                 alg::Union{DEAlgorithm, Nothing},
+                 alg::Union{AbstractDEAlgorithm, Nothing},
                  ensemblealg::BasicEnsembleAlgorithm;
                  trajectories, batch_size = trajectories,
                  pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...)
