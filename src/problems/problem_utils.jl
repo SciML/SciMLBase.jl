@@ -133,11 +133,6 @@ function Base.summary(io::IO, prob::AbstractEnsembleProblem)
           nameof(typeof(prob.prob)))
 end
 Base.show(io::IO, mime::MIME"text/plain", A::AbstractEnsembleProblem) = summary(io, A)
-TreeViews.hastreeview(x::AbstractDEProblem) = true
-function TreeViews.treelabel(io::IO, x::AbstractDEProblem,
-                             mime::MIME"text/plain" = MIME"text/plain"())
-    summary(io, x)
-end
 
 struct NullParameters end
 function Base.getindex(::NullParameters, i...)
