@@ -384,36 +384,11 @@ end
 
 sym_to_index(sym, integrator::DEIntegrator) = sym_to_index(sym, getsyms(integrator))
 
-for T in [Int, Colon]
-    @eval Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
-                                                          I::$T)
-        A.u[I]
-    end
-end
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
                                                 I::Union{Int, AbstractArray{Int},
                                                          CartesianIndex, Colon, BitArray,
                                                          AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
-end
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, i::Int,
-                                                ::Colon)
-    [A.u[j][i] for j in 1:length(A)]
-end
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::Colon,
-                                                i::Int)
-    A.u[i]
-end
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, i::Int,
-                                                II::AbstractArray{Int})
-    [A.u[j][i] for j in II]
-end
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
-                                                ii::CartesianIndex)
-    ti = Tuple(ii)
-    i = last(ti)
-    jj = CartesianIndex(Base.front(ti))
-    return A.u[i][jj]
 end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
@@ -431,46 +406,17 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
         else
-            observed(A, sym, :)
+            observed(A, sym)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i, :]
+        A[i]
     else
-        error("Invalid indexing of solution")
+        error("Invalid indexing of integrator")
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym, args...)
-    if issymbollike(sym)
-        i = sym_to_index(sym, A)
-    else
-        i = sym
-    end
-
-    indepsym = getindepsym(A)
-    if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
-            A.t[args...]
-        else
-            observed(A, sym, args...)
-        end
-    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i, args...]
-    else
-        error("Invalid indexing of solution")
-    end
-end
-
-function observed(A::DEIntegrator, sym, i::Int)
-    getobserved(A)(sym, A[i], A.p, A.t[i])
-end
-
-function observed(A::DEIntegrator, sym, i::AbstractArray{Int})
-    getobserved(A).((sym,), A.u[i], (A.p,), A.t[i])
-end
-
-function observed(A::DEIntegrator, sym, i::Colon)
-    getobserved(A).((sym,), A.u, (A.p,), A.t)
+function observed(A::DEIntegrator, sym)
+    getobserved(A)(sym, A.u, A.p, A.t)
 end
 
 ### Integrator traits
