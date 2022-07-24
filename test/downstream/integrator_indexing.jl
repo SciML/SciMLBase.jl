@@ -43,9 +43,9 @@ step!(integrator, 100.0, true)
 @test_throws Any integrator['a']
 
 @test integrator[a] isa Real
-# @test integrator[a, 1] isa Real
-# @test integrator[a, 1:5] isa AbstractVector
-# @test integrator[a, [1, 2, 3]] isa AbstractVector
+@test_throws Any integrator[a, 1]
+@test_throws Any integrator[a, 1:5]
+@test_throws Any integrator[a, [1, 2, 3]]
 
 @test integrator[1] isa Real
 @test integrator[1:2] isa AbstractArray
