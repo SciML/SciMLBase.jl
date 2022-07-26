@@ -33,6 +33,8 @@ SciMLBase.allows_arbitrary_number_types
 SciMLBase.allowscomplex
 SciMLBase.isadaptive
 SciMLBase.isdiscrete
+SciMLBase.forwarddiffs_model
+SciMLBase.forwarddiffs_model_time
 ```
 
 ### Abstract SciML Algorithms
