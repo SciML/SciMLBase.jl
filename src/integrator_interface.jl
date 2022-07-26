@@ -357,6 +357,68 @@ function addat!(a::AbstractArray, idxs, val = nothing)
     end
 end
 
+### Indexing
+function getsyms(integrator::DEIntegrator)
+    if has_syms(integrator.f)
+        return integrator.f.syms
+    else
+        return keys(integrator.u[1])
+    end
+end
+
+function getindepsym(integrator::DEIntegrator)
+    if has_indepsym(integrator.f)
+        return integrator.f.indepsym
+    else
+        return nothing
+    end
+end
+
+function getobserved(integrator::DEIntegrator)
+    if has_syms(integrator.f)
+        return integrator.f.observed
+    else
+        return DEFAULT_OBSERVED
+    end
+end
+
+sym_to_index(sym, integrator::DEIntegrator) = sym_to_index(sym, getsyms(integrator))
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
+                                                I::Union{Int, AbstractArray{Int},
+                                                         CartesianIndex, Colon, BitArray,
+                                                         AbstractArray{Bool}}...)
+    RecursiveArrayTools.VectorOfArray(A.u)[I...]
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
+    if issymbollike(sym) || all(issymbollike, sym)
+        if sym isa AbstractArray
+            return map(s -> A[s], collect(sym))
+        end
+        i = sym_to_index(sym, A)
+    else
+        i = sym
+    end
+
+    indepsym = getindepsym(A)
+    if i === nothing
+        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+            A.t
+        else
+            observed(A, sym)
+        end
+    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
+        A[i]
+    else
+        error("Invalid indexing of integrator")
+    end
+end
+
+function observed(A::DEIntegrator, sym)
+    getobserved(A)(sym, A.u, A.p, A.t)
+end
+
 ### Integrator traits
 
 has_reinit(i::DEIntegrator) = false
