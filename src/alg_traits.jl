@@ -8,7 +8,7 @@ through the solver.
 
 Defaults to false as only pure-Julia algorithms can have this be true.
 """
-isautodifferentiable(alg::AbstractDEAlgorithm) = false
+isautodifferentiable(alg::AbstractSciMLAlgorithm) = false
 
 """
 forwarddiffs_model(alg::AbstractDEAlgorithm)
@@ -18,7 +18,7 @@ on the model function is called with ForwardDiff.jl
 
 Defaults to false as only pure-Julia algorithms can have this be true.
 """
-forwarddiffs_model(alg::AbstractDEAlgorithm) = false
+forwarddiffs_model(alg::AbstractSciMLAlgorithm) = false
 
 """
 forwarddiffs_model_time(alg::AbstractDEAlgorithm)
@@ -29,7 +29,7 @@ on the model `f(u,p,t)` function is called with ForwardDiff.jl on the `t` argume
 Defaults to false as only a few pure-Julia algorithms (Rosenbrock methods)
 have this as true
 """
-forwarddiffs_model_time(alg::AbstractDEAlgorithm) = false
+forwarddiffs_model_time(alg::AbstractSciMLAlgorithm) = false
 
 """
 allows_arbitrary_number_types(alg::AbstractDEAlgorithm)
@@ -41,7 +41,7 @@ through the solver.
 
 Defaults to false as only pure-Julia algorithms can have this be true.
 """
-allows_arbitrary_number_types(alg::AbstractDEAlgorithm) = false
+allows_arbitrary_number_types(alg::AbstractSciMLAlgorithm) = false
 
 """
 allowscomplex(alg::AbstractDEAlgorithm)
@@ -51,7 +51,7 @@ having complex numbers as the state variables.
 
 Defaults to false.
 """
-allowscomplex(alg::AbstractDEAlgorithm) = false
+allowscomplex(alg::AbstractSciMLAlgorithm) = false
 
 """
 isadaptive(alg::AbstractDEAlgorithm)
