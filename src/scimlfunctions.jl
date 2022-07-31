@@ -1540,7 +1540,7 @@ OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
 - `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
 - `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
-- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``. // This (and for hv) renders incorrectly, but didn't find why.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
