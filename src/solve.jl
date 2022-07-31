@@ -29,7 +29,7 @@ The common local optimizer arguments are:
 Some optimizer algorithms have special keyword arguments documented in the
 solver portion of the documentation and their respective documentation.
 These arguments can be passed as `kwargs...` to `solve`. Similiarly, the special
-kewyword arguments for the `local_method` of a global optimizer are passed as a
+keyword arguments for the `local_method` of a global optimizer are passed as a
 `NamedTuple` to `local_options`.
 
 Over time we hope to cover more of these keyword arguments under the common interface.
