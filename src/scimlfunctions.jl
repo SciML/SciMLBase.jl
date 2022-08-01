@@ -1430,13 +1430,13 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-NonlinearFunction{iip,recompile}(f;
-                           analytic=nothing,
-                           jac=nothing,
-                           jvp=nothing,
-                           vjp=nothing,
-                           jac_prototype=nothing,
-                           sparsity=jac_prototype,
+NonlinearFunction{iip, recompile}(f;
+                           analytic = nothing,
+                           jac = nothing,
+                           jvp = nothing,
+                           vjp = nothing,
+                           jac_prototype = nothing,
+                           sparsity = jac_prototype,
                            paramjac = nothing,
                            syms = nothing,
                            indepsym = nothing,
@@ -1510,7 +1510,7 @@ OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: Abst
 A representation of an optimization of an objective function `f`, defined by:
 
 ```math
-min_{u} f(u,p)
+\min_{u} f(u,p)
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
@@ -1518,14 +1518,16 @@ and more. For all cases, `u` is the state and `p` are the parameters.
 
 ## Constructor
 
-OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
-                          grad=nothing,hess=nothing,hv=nothing,
-                          cons=nothing, cons_j=nothing,cons_h=nothing,
-                          hess_prototype=nothing,cons_jac_prototype=nothing,
+```julia
+OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
+                          grad = nothing, hess = nothing, hv = nothing,
+                          cons = nothing, cons_j = nothing, cons_h = nothing,
+                          hess_prototype = nothing, cons_jac_prototype = nothing,
                           cons_hess_prototype = nothing,
                           syms = nothing, hess_colorvec = nothing,
                           cons_jac_colorvec = nothing,
                           cons_hess_colorvec = nothing)
+```
 
 - `adtype`: see the section "Defining Optimization Functions via AD"
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
@@ -1540,7 +1542,7 @@ OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
 - `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
 - `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
-- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``. // This (and for hv) renders incorrectly, but didn't find why.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``. // This renders incorrectly (as does the hv doc), but didn't find why, fixes welcome.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
