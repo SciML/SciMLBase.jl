@@ -1430,13 +1430,13 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-NonlinearFunction{iip,recompile}(f;
-                           analytic=nothing,
-                           jac=nothing,
-                           jvp=nothing,
-                           vjp=nothing,
-                           jac_prototype=nothing,
-                           sparsity=jac_prototype,
+NonlinearFunction{iip, recompile}(f;
+                           analytic = nothing,
+                           jac = nothing,
+                           jvp = nothing,
+                           vjp = nothing,
+                           jac_prototype = nothing,
+                           sparsity = jac_prototype,
                            paramjac = nothing,
                            syms = nothing,
                            indepsym = nothing,
@@ -1510,7 +1510,7 @@ OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: Abst
 A representation of an optimization of an objective function `f`, defined by:
 
 ```math
-min_{u} f(u,p)
+\min_{u} f(u,p)
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
@@ -1518,14 +1518,16 @@ and more. For all cases, `u` is the state and `p` are the parameters.
 
 ## Constructor
 
-OptimizationFunction{iip}(f,adtype::AbstractADType=NoAD();
-                          grad=nothing,hess=nothing,hv=nothing,
-                          cons=nothing, cons_j=nothing,cons_h=nothing,
-                          hess_prototype=nothing,cons_jac_prototype=nothing,
+```julia
+OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
+                          grad = nothing, hess = nothing, hv = nothing,
+                          cons = nothing, cons_j = nothing, cons_h = nothing,
+                          hess_prototype = nothing, cons_jac_prototype = nothing,
                           cons_hess_prototype = nothing,
                           syms = nothing, hess_colorvec = nothing,
                           cons_jac_colorvec = nothing,
                           cons_hess_colorvec = nothing)
+```
 
 - `adtype`: see the section "Defining Optimization Functions via AD"
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
