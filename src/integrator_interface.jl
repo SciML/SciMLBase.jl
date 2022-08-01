@@ -333,6 +333,15 @@ function set_u!(integrator::DEIntegrator, u)
 end
 
 """
+    set_u!(integrator::DEIntegrator, sym, val)
+
+Set current state of symbol `sym` in `integrator` to `val`.
+"""
+function set_u!(integrator::DEIntegrator, sym, val)
+    error("set_u!: method has not been implemented for the integrator")
+end
+
+"""
     set_ut!(integrator::DEIntegrator, u, t)
 
 Set current state of the `integrator` to `u` and `t`
