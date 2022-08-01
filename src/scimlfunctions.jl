@@ -1510,7 +1510,7 @@ OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: Abst
 A representation of an optimization of an objective function `f`, defined by:
 
 ```math
-\min_{u} f(u,p)
+\\min_{u} f(u,p)
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
@@ -1532,7 +1532,7 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 - `adtype`: see the section "Defining Optimization Functions via AD"
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
 - `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
-- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``\frac{d^2 f}{du^2} v``.
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``\\frac{d^2 f}{du^2} v``.
 - `cons(res,x,p)` or `cons(x,p)` : the constraints function, should mutate or return a vector
     with value of the `i`th constraint, evaluated at the current values of variables
     inside the optimization routine. This takes just the function evaluations
@@ -1542,7 +1542,7 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 - `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
 - `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
-- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
