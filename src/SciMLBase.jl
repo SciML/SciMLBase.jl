@@ -11,7 +11,7 @@ import Preferences
 
 using Reexport
 @reexport using SciMLOperators
-using SciMLOperators: AbstractSciMLOperator, IdentityOperator, InvertedOperator
+using SciMLOperators: AbstractSciMLOperator
 
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
@@ -648,13 +648,12 @@ const SciMLSolution = AbstractSciMLSolution
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
 # deprecated operator interface
-@deprecare AbstractDiffEqOperator
-@deprecate AbstractDiffEqLinearOperator
-@deprecate AbstractDiffEqCompositeOperator
-@deprecate DiffEqScaledOperator
-@deprecate FactorizedDiffEqArrayOperator
-
-@deprecate DiffEqIdentity IdentityOperator
+@deprecate AbstractDiffEqOperator AbstractSciMLOperator
+@deprecate AbstractDiffEqLinearOperator AbstractSciMLLinearOperator
+@deprecate AbstractDiffEqCompositeOperator SciMLOperators.ComposedOperator
+@deprecate DiffEqScaledOperator SciMLOperators.ScaledOperator
+@deprecate FactorizedDiffEqArrayOperator SciMLOperators.InvertedOperator
+@deprecate DiffEqIdentity SciMLOperators.IdentityOperator
 @deprecate DiffEqScalar ScalarOperator
 @deprecate DiffEqArrayOperator MatrixOperator
 @deprecate AffineDiffEqOperator AffineOperator
