@@ -342,17 +342,17 @@ function set_u!(integrator::DEIntegrator, sym, val)
     set_u!(integrator, integrator.u)
 
     if !issymbollike(sym)
-      error("sym must be a symbol")
+        error("sym must be a symbol")
     end
     i = sym_to_index(sym, integrator)
-  
+
     if isnothing(i)
-      error("sym is not a state variable")
+        error("sym is not a state variable")
     end
-  
+
     integrator.u[i] = val
     u_modified!(integrator, true)
-  end
+end
 
 """
     set_ut!(integrator::DEIntegrator, u, t)

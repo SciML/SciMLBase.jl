@@ -58,21 +58,21 @@ step!(integrator, 100.0, true)
 @testset "Symbolic set_u!" begin
     @variables u(t)
     eqs = [D(u) ~ u]
-  
+
     @named sys2 = ODESystem(eqs)
-  
+
     tspan = (0.0, 5.0)
-  
+
     prob1 = ODEProblem(sys2, [u => 1.0], tspan)
     prob2 = ODEProblem(sys2, [u => 2.0], tspan)
-  
-    integrator1 = init(prob1, Tsit5(); save_everystep=false)
-    integrator2 = init(prob2, Tsit5(); save_everystep=false)
-  
+
+    integrator1 = init(prob1, Tsit5(); save_everystep = false)
+    integrator2 = init(prob2, Tsit5(); save_everystep = false)
+
     set_u!(integrator1, u, 2.0)
-  
+
     @test integrator1.u ≈ integrator2.u
-  end
+end
 
 # Check if indexing using variable names from interpolated integrator works
 # It doesn't because this returns a Vector{Vector{T}} and not a DiffEqArray
