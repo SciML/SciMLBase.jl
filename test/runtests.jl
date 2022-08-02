@@ -24,7 +24,6 @@ end
         @time @safetestset "Integrator interface" begin include("integrator_tests.jl") end
         @time @safetestset "Table Traits" begin include("traits.jl") end
         @time @safetestset "Ensemble functionality" begin include("ensemble_tests.jl") end
-        @time @safetestset "DiffEqOperator tests" begin include("diffeqoperator.jl") end
         @time @safetestset "Solution interface" begin include("solution_interface.jl") end
         @time @safetestset "DE functon conversion" begin include("convert_tests.jl") end
     end
