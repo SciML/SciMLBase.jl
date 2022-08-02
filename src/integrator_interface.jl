@@ -325,11 +325,32 @@ end
 
 """
     set_u!(integrator::DEIntegrator, u)
+    set_u!(integrator::DEIntegrator, sym, val)
 
-Set current state of the `integrator` to `u`.
+Set current state of the `integrator` to `u`. Alternatively, set the state of variable
+`sym` to value `val`.
 """
+function set_u! end
+
 function set_u!(integrator::DEIntegrator, u)
     error("set_u!: method has not been implemented for the integrator")
+end
+
+function set_u!(integrator::DEIntegrator, sym, val)
+    # So any error checking happens to ensure we actually _can_ set state
+    set_u!(integrator, integrator.u)
+
+    if !issymbollike(sym)
+        error("sym must be a symbol")
+    end
+    i = sym_to_index(sym, integrator)
+
+    if isnothing(i)
+        error("sym is not a state variable")
+    end
+
+    integrator.u[i] = val
+    u_modified!(integrator, true)
 end
 
 """
