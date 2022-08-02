@@ -8,6 +8,10 @@ using Statistics
 using Distributed
 using Markdown
 
+using Reexport
+@reexport using SciMLOperators
+using SciMLOperators: AbstractSciMLOperator, IdentityOperator, InvertedOperator
+
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
@@ -452,26 +456,6 @@ abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution
 # Misc
 """
 $(TYPEDEF)
-"""
-abstract type AbstractSciMLOperator{T} end
-
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractDiffEqOperator{T} <: AbstractSciMLOperator{T} end
-
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractDiffEqLinearOperator{T} <: AbstractDiffEqOperator{T} end
-
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractDiffEqCompositeOperator{T} <: AbstractDiffEqLinearOperator{T} end
-
-"""
-$(TYPEDEF)
 
 Base for types defining SciML functions.
 """
@@ -543,11 +527,6 @@ include("function_wrappers.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
 
-include("operators/operators.jl")
-include("operators/basic_operators.jl")
-include("operators/diffeq_operator.jl")
-include("operators/common_defaults.jl")
-
 include("problems/problem_utils.jl")
 include("problems/discrete_problems.jl")
 include("problems/steady_state_problems.jl")
@@ -609,6 +588,18 @@ const SciMLSolution = AbstractSciMLSolution
 
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
+# deprecated operator interface
+@deprecare AbstractDiffEqOperator
+@deprecate AbstractDiffEqLinearOperator
+@deprecate AbstractDiffEqCompositeOperator
+@deprecate DiffEqScaledOperator
+@deprecate FactorizedDiffEqArrayOperator
+
+@deprecate DiffEqIdentity IdentityOperator
+@deprecate DiffEqScalar ScalarOperator
+@deprecate DiffEqArrayOperator MatrixOperator
+@deprecate AffineDiffEqOperator AffineOperator
+
 # Exports
 export AllObserved
 
@@ -653,10 +644,6 @@ export EnsembleAnalysis, EnsembleSummary
 
 export tuples, intervals, TimeChoiceIterator
 
-export AffineDiffEqOperator, DiffEqScaledOperator
-
-export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
-
 export step!, deleteat!, addat!, get_tmp_cache,
        full_cache, user_cache, u_cache, du_cache,
        rand_cache, ratenoise_cache,
@@ -668,9 +655,6 @@ export step!, deleteat!, addat!, get_tmp_cache,
        u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
        set_u!, check_error, change_t_via_interpolation!, addsteps!,
        isdiscrete, reeval_internals_due_to_modification!
-
-export update_coefficients!, update_coefficients,
-       has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 

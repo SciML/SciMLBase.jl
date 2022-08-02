@@ -152,7 +152,7 @@ there's no worry of aliasing.
 
 In general the jacobian prototype can be anything that has `mul!` defined, in
 particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
+is when the `jac_prototype` is a `AbstractSciMLOperator`, in which case you
 do not need to supply `jac` as it is automatically set to `update_coefficients!`.
 Refer to the AbstractSciMLOperators documentation for more information
 on setting up time/parameter dependent operators.
@@ -1692,7 +1692,7 @@ function ODEFunction{iip, true}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -1751,7 +1751,7 @@ function ODEFunction{iip, false}(f;
                                  indepsym = nothing,
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -1815,7 +1815,7 @@ ODEFunction(f::ODEFunction; kwargs...) = f
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
-    if !(typeof(f1) <: AbstractDiffEqOperator || typeof(f1.f) <: AbstractDiffEqOperator) &&
+    if !(typeof(f1) <: AbstractSciMLOperator || typeof(f1.f) <: AbstractSciMLOperator) &&
        isinplace(f1) != isinplace(f2)
         throw(NonconformingFunctionsError(["f2"]))
     end
@@ -1889,7 +1889,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                                                jac_prototype, sparsity, Wfact, Wfact_t,
                                                paramjac,
                                                syms, observed, colorvec) where {iip}
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : ODEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : ODEFunction(f1)
     f2 = ODEFunction(f2)
 
     if isinplace(f1) != isinplace(f2)
@@ -2005,7 +2005,7 @@ function SDEFunction{iip, true}(f, g;
                                 syms = nothing,
                                 observed = DEFAULT_OBSERVED,
                                 colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2065,7 +2065,7 @@ function SDEFunction{iip, false}(f, g;
                                  syms = nothing,
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2119,7 +2119,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
                                       jvp, vjp,
                                       jac_prototype, Wfact, Wfact_t, paramjac, observed,
                                       syms, colorvec)
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     SplitFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
                   typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
@@ -2192,7 +2192,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                                           jac, jvp, vjp,
                                           jac_prototype, Wfact, Wfact_t, paramjac,
                                           syms, observed, colorvec)
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     DynamicalSDEFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g),
                          typeof(mass_matrix),
@@ -2280,7 +2280,7 @@ function RODEFunction{iip, true}(f;
                                  syms = nothing,
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2349,7 +2349,7 @@ function RODEFunction{iip, false}(f;
                                   syms = nothing,
                                   observed = DEFAULT_OBSERVED,
                                   colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2414,7 +2414,7 @@ function DAEFunction{iip, true}(f;
                                 syms = nothing,
                                 observed = DEFAULT_OBSERVED,
                                 colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2472,7 +2472,7 @@ function DAEFunction{iip, false}(f;
                                  syms = nothing,
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2529,7 +2529,7 @@ function DDEFunction{iip, true}(f;
                                 syms = nothing,
                                 observed = DEFAULT_OBSERVED,
                                 colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2578,7 +2578,7 @@ function DDEFunction{iip, false}(f;
                                  syms = nothing,
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2613,7 +2613,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
                                                jac_prototype, sparsity, Wfact, Wfact_t,
                                                paramjac,
                                                syms, observed, colorvec) where {iip}
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : DDEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : DDEFunction(f1)
     f2 = DDEFunction(f2)
     DynamicalDDEFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(mass_matrix),
                          typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
@@ -2697,7 +2697,7 @@ function SDDEFunction{iip, true}(f, g;
                                  syms = nothing,
                                  observed = DEFAULT_OBSERVED,
                                  colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2742,7 +2742,7 @@ function SDDEFunction{iip, false}(f, g;
                                   syms = nothing,
                                   observed = DEFAULT_OBSERVED,
                                   colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2794,7 +2794,7 @@ function NonlinearFunction{iip, true}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2846,7 +2846,7 @@ function NonlinearFunction{iip, false}(f;
                                        syms = nothing,
                                        observed = DEFAULT_OBSERVED_NO_TIME,
                                        colorvec = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
