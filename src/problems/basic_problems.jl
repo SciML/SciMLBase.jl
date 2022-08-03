@@ -33,7 +33,7 @@ methods.
 
 ```julia
 LinearProblem{isinplace}(A,x,p=NullParameters();u0=nothing,kwargs...)
-LinearProblem(f::AbstractDiffEqOperator,u0,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem(f::AbstractSciMLOperator,u0,p=NullParameters();u0=nothing,kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not, i.e. whether
@@ -67,8 +67,8 @@ struct LinearProblem{uType, isinplace, F, bType, P, K} <:
 end
 
 function LinearProblem(A, b, args...; kwargs...)
-    if A isa AbstractArray
-        LinearProblem{true}(A, b, args...; kwargs...)
+    if A isa AbstractMatrix
+        LinearProblem{true}(MatrixOperator(A), b, args...; kwargs...)
     elseif A isa Number
         LinearProblem{false}(A, b, args...; kwargs...)
     else
