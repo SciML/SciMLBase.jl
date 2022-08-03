@@ -68,7 +68,7 @@ end
 
 function LinearProblem(A, b, args...; kwargs...)
     if A isa AbstractMatrix
-        LinearProblem{true}(MatrixOperator(A), b, args...; kwargs...)
+        LinearProblem{true}(A, b, args...; kwargs...)
     elseif A isa Number
         LinearProblem{false}(A, b, args...; kwargs...)
     else
