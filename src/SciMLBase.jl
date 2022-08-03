@@ -11,7 +11,7 @@ import Preferences
 
 using Reexport
 @reexport using SciMLOperators
-using SciMLOperators: AbstractSciMLOperator
+using SciMLOperators: AbstractSciMLOperator, DEFAULT_UPDATE_FUNC
 
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
