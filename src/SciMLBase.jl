@@ -589,15 +589,15 @@ const SciMLSolution = AbstractSciMLSolution
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
 # deprecated operator interface
-@deprecate AbstractDiffEqOperator AbstractSciMLOperator
-@deprecate AbstractDiffEqLinearOperator AbstractSciMLLinearOperator
-@deprecate AbstractDiffEqCompositeOperator SciMLOperators.ComposedOperator
-@deprecate DiffEqScaledOperator SciMLOperators.ScaledOperator
-@deprecate FactorizedDiffEqArrayOperator SciMLOperators.InvertedOperator
-@deprecate DiffEqIdentity SciMLOperators.IdentityOperator
-@deprecate DiffEqScalar ScalarOperator
-@deprecate DiffEqArrayOperator MatrixOperator
-@deprecate AffineDiffEqOperator AffineOperator
+const AbstractDiffEqOperator = SciMLOperators.AbstractSciMLOperator
+const AbstractDiffEqLinearOperator = SciMLOperators.AbstractSciMLLinearOperator
+const AbstractDiffEqCompositeOperator = SciMLOperators.ComposedOperator
+const DiffEqScaledOperator = SciMLOperators.ScaledOperator
+const FactorizedDiffEqArrayOperator = SciMLOperators.InvertedOperator
+const DiffEqIdentity = SciMLOperators.IdentityOperator
+const DiffEqScalar = SciMLOperators.ScalarOperator
+const DiffEqArrayOperator = SciMLOperators.MatrixOperator
+const AffineDiffEqOperator = SciMLOperators.AffineOperator
 
 # Exports
 export AllObserved
