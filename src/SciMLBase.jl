@@ -11,7 +11,10 @@ import Preferences
 
 using Reexport
 @reexport using SciMLOperators
-using SciMLOperators: AbstractSciMLOperator, DEFAULT_UPDATE_FUNC
+using SciMLOperators: AbstractSciMLOperator, AbstractSciMLLinearOperator,
+                      IdentityOperator, ComposedOperator, ScaledOperator,
+                      InvertedOperator, InvertibleOperator,
+                      DEFAULT_UPDATE_FUNC
 
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
@@ -648,15 +651,63 @@ const SciMLSolution = AbstractSciMLSolution
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
 # deprecated operator interface
-const AbstractDiffEqOperator = SciMLOperators.AbstractSciMLOperator
-const AbstractDiffEqLinearOperator = SciMLOperators.AbstractSciMLLinearOperator
-const AbstractDiffEqCompositeOperator = SciMLOperators.ComposedOperator
-const DiffEqScaledOperator = SciMLOperators.ScaledOperator
-const FactorizedDiffEqArrayOperator = SciMLOperators.InvertedOperator
-const DiffEqIdentity = SciMLOperators.IdentityOperator
+const AbstractDiffEqOperator = AbstractSciMLOperator
+const AbstractDiffEqLinearOperator = AbstractSciMLLinearOperator
+const AbstractDiffEqCompositeOperator = ComposedOperator
+
+const DiffEqScaledOperator = ScaledOperator
+function DiffEqScaledOperator(args...; kwargs...)
+    @warn "SciMLBase.DiffEqScaledOperator is deprecated.
+    Use SciMLOperators.ScaledOperator instead"
+
+    ScaledOperator(args...; kwargs...)
+end
+
+const FactorizedDiffEqArrayOperator = InvertedOperator
+function FactorizedDiffEqArrayOperator(args...; kwargs...)
+    @warn "SciMLBase.FactorizedDiffEqArrayOperator is deprecated.
+    Use SciMLOperators.InvertedOperator instead"
+
+    InvertedOperator(args...; kwargs...)
+end
+
+const DiffEqIdentity = IdentityOperator
+function DiffEqIdentity(u)
+    @warn "SciMLBase.DiffEqIdentity is deprecated.
+    Use SciMLOperators.IdentityOperator instead"
+
+    IdentityOperator{size(u, 1)}()
+end
+
 const DiffEqScalar = SciMLOperators.ScalarOperator
-const DiffEqArrayOperator = SciMLOperators.MatrixOperator
+function DiffEqScalar(args...; kwargs...)
+    @warn "SciMLBase.DiffEqScalar is deprecated.
+    Use SciMLOperators.ScaledOperator instead"
+
+    ScalarOperator(args...; kwargs...)
+end
+
 const AffineDiffEqOperator = SciMLOperators.AffineOperator
+function AffineDiffEqOperator(As, bs, cache = nothing)
+    @warn "SciMLBase.AffineDiffEqOperator is deprecated.
+    Use SciMLOperators.AffineOperator instead"
+
+    A = AddedOperator(As)
+    b = sum(bs)
+    B = IdentityOperator{size(b, 1)}()
+    AffineOperator(A, B, b)
+end
+
+const DiffEqArrayOperator = SciMLOperators.MatrixOperator
+function DiffEqArrayOperator(args...; kwargs...)
+    @warn "SciMLBase.DiffEqArrayOperator is deprecated.
+    Use SciMLOperators.MatrixOperator instead"
+
+    MatrixOperator(args...; kwargs...)
+end
+
+export DiffEqScaledOperator, FactorizedDiffEqArrayOperator, DiffEqIdentity,
+       DiffEqScalar, AffineDiffEqOperator, DiffEqArrayOperator
 
 # Exports
 export AllObserved
