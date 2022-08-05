@@ -1,2 +1,6 @@
 /Manifest.toml
 .*.swp
+
+# vscode stuff
+.vscode
+.vscode/*

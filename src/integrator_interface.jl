@@ -655,8 +655,18 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
                                 typeof(integrator) <: AbstractSDEIntegrator) &&
                                integrator.iter > 0,
                    plotdensity = 10,
-                   plot_analytic = false, vars = nothing)
-    int_vars = interpret_vars(vars, integrator.sol)
+                   plot_analytic = false, vars = nothing, idxs = nothing)
+    if vars !== nothing
+        Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
+                     :f; force = true)
+        (idxs !== nothing) &&
+            error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
+        idxs = vars
+    end
+
+    syms = getsyms(integrator)
+    int_vars = interpret_vars(idxs, integrator.sol, syms)
+    strs = cleansyms(syms)
 
     if denseplot
         # Generate the points from the plot from dense function
@@ -696,7 +706,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
                 end
             end
         end
-        add_labels!(labels, x, dims, integrator.sol)
+        add_labels!(labels, x, dims, integrator.sol, strs)
     end
 
     if plot_analytic
@@ -719,7 +729,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
                     end
                 end
             end
-            add_labels!(labels, x, dims, integrator.sol)
+            add_labels!(labels, x, dims, integrator.sol, strs)
         end
     end
 
@@ -731,12 +741,12 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         seriestype --> :scatter
     end
 
-    # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if typeof(vars) <: Tuple && (typeof(vars[1]) == Symbol && typeof(vars[2]) == Symbol)
-        xlabel --> vars[1]
-        ylabel --> vars[2]
-        if length(vars) > 2
-            zlabel --> vars[3]
+    # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
+    if typeof(idxs) <: Tuple && (typeof(idxs[1]) == Symbol && typeof(idxs[2]) == Symbol)
+        xlabel --> idxs[1]
+        ylabel --> idxs[2]
+        if length(idxs) > 2
+            zlabel --> idxs[3]
         end
     end
     if getindex.(int_vars, 1) == zeros(length(int_vars)) ||
