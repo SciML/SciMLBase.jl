@@ -1,5 +1,6 @@
 [deps]
 BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
+DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
