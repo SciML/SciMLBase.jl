@@ -14,7 +14,7 @@ using Reexport
 using SciMLOperators: AbstractSciMLOperator, AbstractSciMLLinearOperator,
                       IdentityOperator, ComposedOperator, ScaledOperator,
                       InvertedOperator, InvertibleOperator,
-                      DEFAULT_UPDATE_FUNC
+                      DEFAULT_UPDATE_FUNC, isconstant
 
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
