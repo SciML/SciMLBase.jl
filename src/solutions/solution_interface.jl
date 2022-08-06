@@ -182,29 +182,37 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
                                       max(1000, 10 * length(sol))) :
                                      1000 * sol.tslocation),
                    tspan = nothing, axis_safety = 0.1,
-                   vars = nothing)
+                   vars = nothing, idxs = nothing)
+    if vars !== nothing
+        Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
+                     :f; force = true)
+        (idxs !== nothing) &&
+            error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
+        idxs = vars
+    end
+
     syms = getsyms(sol)
-    int_vars = interpret_vars(vars, sol, syms)
+    int_vars = interpret_vars(idxs, sol, syms)
     strs = cleansyms(syms)
 
     tscale = get(plotattributes, :xscale, :identity)
     plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
                                          plotdensity, tspan, axis_safety,
-                                         vars, int_vars, tscale, strs)
+                                         idxs, int_vars, tscale, strs)
 
     tdir = sign(sol.t[end] - sol.t[1])
     xflip --> tdir < 0
     seriestype --> :path
 
-    # Special case labels when vars = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if typeof(vars) <: Tuple && (issymbollike(vars[1]) && issymbollike(vars[2]))
+    # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
+    if typeof(idxs) <: Tuple && (issymbollike(idxs[1]) && issymbollike(idxs[2]))
         val = issymbollike(int_vars[1][2]) ? String(Symbol(int_vars[1][2])) :
               strs[int_vars[1][2]]
         xguide --> val
         val = issymbollike(int_vars[1][3]) ? String(Symbol(int_vars[1][3])) :
               strs[int_vars[1][3]]
         yguide --> val
-        if length(vars) > 2
+        if length(idxs) > 2
             val = issymbollike(int_vars[1][4]) ? String(Symbol(int_vars[1][4])) :
                   strs[int_vars[1][4]]
             zguide --> val

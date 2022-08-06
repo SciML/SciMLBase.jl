@@ -153,11 +153,11 @@ end
 
 #=
 using Plots
-plot(sol,vars=(lorenz2.x,lorenz2.z))
-plot(sol,vars=(α,lorenz2.z))
-plot(sol,vars=(lorenz2.x,α))
-plot(sol,vars=α)
-plot(sol,vars=(t,α))
+plot(sol,idxs=(lorenz2.x,lorenz2.z))
+plot(sol,idxs=(α,lorenz2.z))
+plot(sol,idxs=(lorenz2.x,α))
+plot(sol,idxs=α)
+plot(sol,idxs=(t,α))
 =#
 
 using LinearAlgebra
