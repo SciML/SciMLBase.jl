@@ -30,6 +30,16 @@ end
 
     if !is_APPVEYOR && GROUP == "Downstream"
         activate_downstream_env()
+        #using Test
+        #using ModelingToolkit
+        #using OrdinaryDiffEq
+        #using RecursiveArrayTools
+        #using Plots
+        #using LinearAlgebra
+        #using DelayDiffEq
+        #using BoundaryValueDiffEq
+        #using Random
+        #using StaticArrays
         @time @safetestset "Ensembles of Zero Length Solutions" begin include("downstream/ensemble_zero_length.jl") end
         @time @safetestset "Timing first batch when solving Ensembles" begin include("downstream/ensemble_first_batch.jl") end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin include("downstream/symbol_indexing.jl") end
