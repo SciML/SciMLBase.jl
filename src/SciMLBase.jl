@@ -653,7 +653,7 @@ export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSol
 # deprecated operator interface
 const AbstractDiffEqOperator = AbstractSciMLOperator
 const AbstractDiffEqLinearOperator = AbstractSciMLLinearOperator
-const AbstractDiffEqCompositeOperator = ComposedOperator
+const AbstractDiffEqCompositeOperator = AbstractSciMLOperator
 
 const DiffEqScaledOperator = ScaledOperator
 function DiffEqScaledOperator(args...; kwargs...)
