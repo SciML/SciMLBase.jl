@@ -218,7 +218,7 @@ function calculate_solution_errors!(sol::AbstractODESolution; fill_uanalytic = t
     end
 end
 
-function build_solution(sol::AbstractODESolution{T, N}, u_analytic, errors) where {T, N}
+function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
     ODESolution{T, N, typeof(sol.u), typeof(u_analytic), typeof(errors), typeof(sol.t),
                 typeof(sol.k),
                 typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
@@ -235,7 +235,7 @@ function build_solution(sol::AbstractODESolution{T, N}, u_analytic, errors) wher
                                                                                             sol.retcode)
 end
 
-function solution_new_retcode(sol::AbstractODESolution{T, N}, retcode) where {T, N}
+function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
     ODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
                 typeof(sol.t), typeof(sol.k),
                 typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
@@ -252,7 +252,7 @@ function solution_new_retcode(sol::AbstractODESolution{T, N}, retcode) where {T,
                                                                                             retcode)
 end
 
-function solution_new_tslocation(sol::AbstractODESolution{T, N}, tslocation) where {T, N}
+function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N}
     ODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
                 typeof(sol.t), typeof(sol.k),
                 typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
@@ -269,7 +269,7 @@ function solution_new_tslocation(sol::AbstractODESolution{T, N}, tslocation) whe
                                                                                             sol.retcode)
 end
 
-function solution_slice(sol::AbstractODESolution{T, N}, I) where {T, N}
+function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     ODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
                 typeof(sol.t), typeof(sol.k),
                 typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u[I],
@@ -291,7 +291,7 @@ function solution_slice(sol::AbstractODESolution{T, N}, I) where {T, N}
                                                                                             sol.retcode)
 end
 
-function sensitivity_solution(sol::AbstractODESolution, u, t)
+function sensitivity_solution(sol::ODESolution, u, t)
     T = eltype(eltype(u))
     N = length((size(sol.prob.u0)..., length(u)))
     interp = if typeof(sol.interp) <: LinearInterpolation
