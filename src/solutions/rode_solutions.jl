@@ -114,8 +114,16 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
     end
 
     if fill_uanalytic
-        for i in 1:length(sol)
-            push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[i]))
+        empty!(sol.u_analytic)
+        if sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
+            for i in 1:length(sol)
+            
+                push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i]))))
+            end
+        else
+            for i in 1:length(sol)
+                push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[i]))                
+            end
         end
     end
 
