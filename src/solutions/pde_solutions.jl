@@ -1,3 +1,6 @@
+"""
+$(TYPEDEF)
+"""
 struct PDESolution{T, N, uType, Sol, DType, ivtype, Disc, tType, P, A, IType}  <: AbstractPDESolution{T, N, S}
     u::uType
     original_sol::Sol
@@ -13,17 +16,6 @@ struct PDESolution{T, N, uType, Sol, DType, ivtype, Disc, tType, P, A, IType}  <
     retcode::Symbol
 end
 
-struct Indexer{U, IT}
-    u::U
-    I::It
-end
-
-function Indexer(u, I)
-    return Indexer{typeof(u), typeof(I)}(u, I)
-end
-
-index(indexer::Indexer) = indexer.u[indexer.I]
-
 function PDESolution(sol::ODESolution{T}, disc_data::MOLMetadata) where T
     odesys = disc_data.odesys
     metadata = disc_data.metadata
@@ -36,16 +28,14 @@ function PDESolution(sol::ODESolution{T}, disc_data::MOLMetadata) where T
     indexof(sym,syms) = findfirst(isequal(sym),syms)
     umap = Dict(map(discretespace.ū) do u
         let discu = discretespace.discvars[u]
-            indexmap = Array{AbstractIndexer, ndims(discu)}(undef, size(discu))
-            for I in CartesianIndices(discu)
+            solu = map(CartesianIndices(discu)) do I
                 i = indexof(discu[I], states)
                 if i !== nothing
-                    out[I] = Indexer(sol.u, i)
+                    sol.u[i]
                 else
-                    out[I] = Indexer(sol, discu[I])
+                    sol[discu[I]]
                 end
             end
-            solu = index.(indexmap)
             out = [zeros(T, size(discu)) for i in 1:length(sol.t)]
             for I in CartesianIndices(discu), i in 1:length(sol.t)
                 out[i][I] = solu[I][i]
