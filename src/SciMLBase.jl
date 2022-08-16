@@ -447,6 +447,11 @@ abstract type AbstractDAESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 """
 $(TYPEDEF)
 """
+abstract type AbstractPDESolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Misc
