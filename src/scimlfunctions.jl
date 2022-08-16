@@ -3157,7 +3157,8 @@ function Base.convert(::Type{ODEFunction{iip}}, f) where {iip}
                                            jvp = jvp, vjp = vjp, Wfact = Wfact,
                                            Wfact_t = Wfact_t, paramjac = paramjac,
                                            syms = syms, indepsym = indepsym,
-                                           observed = observed, colorvec = colorvec, sys = sys)
+                                           observed = observed, colorvec = colorvec,
+                                           sys = sys)
 end
 
 function Base.convert(::Type{DiscreteFunction}, f)
@@ -3388,7 +3389,8 @@ function Base.convert(::Type{DDEFunction{iip}}, f) where {iip}
         sys = nothing
     end
     DDEFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic, syms = syms,
-                                           observed = observed, colorvec = colorvec, sys = sys)
+                                           observed = observed, colorvec = colorvec,
+                                           sys = sys)
 end
 
 function Base.convert(::Type{SDEFunction}, f, g)
