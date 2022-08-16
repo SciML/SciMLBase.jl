@@ -1845,7 +1845,7 @@ ODEFunction(f::ODEFunction; kwargs...) = f
                   typeof(observed), typeof(colorvec), typeof(sys)
                   }(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp, vjp,
                     jac_prototype, sparsity, Wfact, Wfact_t, paramjac, syms,
-                    observed, colorvec)
+                    observed, colorvec, sys)
 end
 function SplitFunction{iip, true}(f1, f2;
                                   mass_matrix = I, _func_cache = nothing,
@@ -1904,10 +1904,9 @@ end
 SplitFunction(f::SplitFunction; kwargs...) = f
 
 @add_kwonly function DynamicalODEFunction{iip}(f1, f2, mass_matrix, analytic, tgrad, jac,
-                                               jvp, vjp,
-                                               jac_prototype, sparsity, Wfact, Wfact_t,
-                                               paramjac,
-                                               syms, observed, colorvec) where {iip}
+                                               jvp, vjp, jac_prototype, sparsity, Wfact,
+                                               Wfact_t, paramjac, syms, observed,
+                                               colorvec, sys) where {iip}
     f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -1920,11 +1919,10 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                          typeof(vjp),
                          typeof(jac_prototype),
                          typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                         typeof(observed),
-                         typeof(colorvec)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
-                                           vjp,
-                                           jac_prototype, sparsity, Wfact, Wfact_t,
-                                           paramjac, syms, observed, colorvec)
+                         typeof(observed), typeof(colorvec),
+                         typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
+                                      vjp, jac_prototype, sparsity, Wfact, Wfact_t,
+                                      paramjac, syms, observed, colorvec, sys)
 end
 
 function DynamicalODEFunction{iip, true}(f1, f2; mass_matrix = I,
