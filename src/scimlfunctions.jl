@@ -2945,6 +2945,7 @@ __has_indepsym(f) = isdefined(f, :indepsym)
 __has_observed(f) = isdefined(f, :observed)
 __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
+__has_sys(f) = isdefined(f, :sys)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
@@ -3073,10 +3074,15 @@ function Base.convert(::Type{ODEFunction}, f)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     ODEFunction(f; analytic = analytic, tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                 Wfact = Wfact,
                 Wfact_t = Wfact_t, paramjac = paramjac, syms = syms, indepsym = indepsym,
-                observed = observed, colorvec = colorvec)
+                observed = observed, colorvec = colorvec, sys = sys)
 end
 function Base.convert(::Type{ODEFunction{iip}}, f) where {iip}
     if __has_analytic(f)
@@ -3142,11 +3148,16 @@ function Base.convert(::Type{ODEFunction{iip}}, f) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     ODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic, tgrad = tgrad, jac = jac,
                                            jvp = jvp, vjp = vjp, Wfact = Wfact,
                                            Wfact_t = Wfact_t, paramjac = paramjac,
                                            syms = syms, indepsym = indepsym,
-                                           observed = observed, colorvec = colorvec)
+                                           observed = observed, colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{DiscreteFunction}, f)
@@ -3243,10 +3254,15 @@ function Base.convert(::Type{DAEFunction}, f)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     DAEFunction(f; analytic = analytic, tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                 Wfact = Wfact,
                 Wfact_t = Wfact_t, paramjac = paramjac, syms = syms, observed = observed,
-                colorvec = colorvec)
+                colorvec = colorvec, sys = sys)
 end
 function Base.convert(::Type{DAEFunction{iip}}, f) where {iip}
     if __has_analytic(f)
@@ -3304,11 +3320,16 @@ function Base.convert(::Type{DAEFunction{iip}}, f) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     DAEFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic, tgrad = tgrad, jac = jac,
                                            jvp = jvp, vjp = vjp, Wfact = Wfact,
                                            Wfact_t = Wfact_t, paramjac = paramjac,
                                            syms = syms, observed = observed,
-                                           colorvec = colorvec)
+                                           colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{DDEFunction}, f)
@@ -3332,8 +3353,13 @@ function Base.convert(::Type{DDEFunction}, f)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     DDEFunction(f; analytic = analytic, syms = syms, observed = observed,
-                colorvec = colorvec)
+                colorvec = colorvec, sys = sys)
 end
 function Base.convert(::Type{DDEFunction{iip}}, f) where {iip}
     if __has_analytic(f)
@@ -3356,8 +3382,13 @@ function Base.convert(::Type{DDEFunction{iip}}, f) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     DDEFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic, syms = syms,
-                                           observed = observed, colorvec = colorvec)
+                                           observed = observed, colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{SDEFunction}, f, g)
@@ -3416,10 +3447,14 @@ function Base.convert(::Type{SDEFunction}, f, g)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     SDEFunction(f, g; analytic = analytic, tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
-                Wfact = Wfact,
-                Wfact_t = Wfact_t, paramjac = paramjac, syms = syms, observed = observed,
-                colorvec = colorvec)
+                Wfact = Wfact, Wfact_t = Wfact_t, paramjac = paramjac, syms = syms,
+                observed = observed, colorvec = colorvec, sys = sys)
 end
 function Base.convert(::Type{SDEFunction{iip}}, f, g) where {iip}
     if __has_analytic(f)
@@ -3477,12 +3512,17 @@ function Base.convert(::Type{SDEFunction{iip}}, f, g) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     SDEFunction{iip, RECOMPILE_BY_DEFAULT}(f, g; analytic = analytic,
                                            tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                                            Wfact = Wfact,
                                            Wfact_t = Wfact_t, paramjac = paramjac,
                                            syms = syms, observed = observed,
-                                           colorvec = colorvec)
+                                           colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{RODEFunction}, f)
@@ -3541,10 +3581,15 @@ function Base.convert(::Type{RODEFunction}, f)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     RODEFunction(f; analytic = analytic, tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                  Wfact = Wfact,
                  Wfact_t = Wfact_t, paramjac = paramjac, syms = syms, observed = observed,
-                 colorvec = colorvec)
+                 colorvec = colorvec, sys = sys)
 end
 function Base.convert(::Type{RODEFunction{iip}}, f) where {iip}
     if __has_analytic(f)
@@ -3602,12 +3647,17 @@ function Base.convert(::Type{RODEFunction{iip}}, f) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     RODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic,
                                             tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                                             Wfact = Wfact,
                                             Wfact_t = Wfact_t, paramjac = paramjac,
                                             syms = syms, observed = observed,
-                                            colorvec = colorvec)
+                                            colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{SDDEFunction}, f, g)
@@ -3666,10 +3716,15 @@ function Base.convert(::Type{SDDEFunction}, f, g)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     SDDEFunction(f, g; analytic = analytic, tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                  Wfact = Wfact,
                  Wfact_t = Wfact_t, paramjac = paramjac, syms = syms, observed = observed,
-                 colorvec = colorvec)
+                 colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{SDDEFunction{iip}}, f, g) where {iip}
@@ -3728,12 +3783,17 @@ function Base.convert(::Type{SDDEFunction{iip}}, f, g) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     SDDEFunction{iip, RECOMPILE_BY_DEFAULT}(f, g; analytic = analytic,
                                             tgrad = tgrad, jac = jac, jvp = jvp, vjp = vjp,
                                             Wfact = Wfact,
                                             Wfact_t = Wfact_t, paramjac = paramjac,
                                             syms = syms, observed = observed,
-                                            colorvec = colorvec)
+                                            colorvec = colorvec, sys = sys)
 end
 
 function Base.convert(::Type{NonlinearFunction}, f)
@@ -3792,10 +3852,15 @@ function Base.convert(::Type{NonlinearFunction}, f)
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     NonlinearFunction(f; analytic = analytic, tgrad = tgrad, jac = jac, jvp = jvp,
                       vjp = vjp, Wfact = Wfact,
                       Wfact_t = Wfact_t, paramjac = paramjac, syms = syms,
-                      observed = observed, colorvec = colorvec)
+                      observed = observed, colorvec = colorvec, sys = sys)
 end
 function Base.convert(::Type{NonlinearFunction{iip}}, f) where {iip}
     if __has_analytic(f)
@@ -3853,12 +3918,17 @@ function Base.convert(::Type{NonlinearFunction{iip}}, f) where {iip}
     else
         colorvec = nothing
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     NonlinearFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic, tgrad = tgrad,
                                                  jac = jac, jvp = jvp, vjp = vjp,
                                                  Wfact = Wfact,
                                                  Wfact_t = Wfact_t, paramjac = paramjac,
                                                  syms = syms, observed = observed,
-                                                 colorvec = colorvec)
+                                                 colorvec = colorvec, sys = sys)
 end
 
 struct IncrementingODEFunction{iip, F} <: AbstractODEFunction{iip}
