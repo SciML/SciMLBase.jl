@@ -40,7 +40,7 @@ $(TYPEDEF)
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
+    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
 
 A representation of an ODE function `f`, defined by:
 
@@ -225,7 +225,7 @@ struct ODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S
 end
 
 @doc doc"""
-SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
+    SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
 
 A representation of a split ODE function `f`, defined by:
 
@@ -344,7 +344,7 @@ struct SplitFunction{iip, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
 end
 
 @doc doc"""
-DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
+    DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
 
 A representation of an ODE function `f`, defined by:
 
@@ -457,7 +457,7 @@ $(TYPEDEF)
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
+    DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
 
 A representation of a DDE function `f`, defined by:
 
@@ -557,7 +557,7 @@ struct DDEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O
 end
 
 @doc doc"""
-DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
+    DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
 
 A representation of a DDE function `f`, defined by:
 
@@ -672,7 +672,7 @@ $(TYPEDEF)
 abstract type AbstractDiscreteFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip}
+    DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip}
 
 A representation of an discrete dynamical system `f`, defined by:
 
@@ -730,7 +730,7 @@ $(TYPEDEF)
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDEFunction{iip}
+    SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDEFunction{iip}
 
 A representation of an SDE function `f`, defined by:
 
@@ -833,7 +833,7 @@ struct SDEFunction{iip, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, G
 end
 
 @doc doc"""
-SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
+    SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
 
 A representation of a split SDE function `f`, defined by:
 
@@ -944,7 +944,7 @@ struct SplitSDEFunction{iip, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW
 end
 
 @doc doc"""
-DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
+    DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
 
 A representation of an SDE function `f` and `g`, defined by:
 
@@ -1063,7 +1063,7 @@ $(TYPEDEF)
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip}
+    RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip}
 
 A representation of an RODE function `f`, defined by:
 
@@ -1166,7 +1166,7 @@ $(TYPEDEF)
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip}
+    DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip}
 
 A representation of an implicit DAE function `f`, defined by:
 
@@ -1308,7 +1308,7 @@ $(TYPEDEF)
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDDEFunction{iip}
+    SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDDEFunction{iip}
 
 A representation of a SDDE function `f`, defined by:
 
@@ -1415,7 +1415,7 @@ $(TYPEDEF)
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
 @doc doc"""
-NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip}
+    NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip}
 
 A representation of an nonlinear system of equations `f`, defined by:
 
@@ -1505,7 +1505,7 @@ struct NonlinearFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ
 end
 
 """
-OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip}
+    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip}
 
 A representation of an optimization of an objective function `f`, defined by:
 
@@ -1532,17 +1532,17 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 - `adtype`: see the section "Defining Optimization Functions via AD"
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
 - `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
-- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``\\frac{d^2 f}{du^2} v``.
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``.
 - `cons(res,x,p)` or `cons(x,p)` : the constraints function, should mutate or return a vector
     with value of the `i`th constraint, evaluated at the current values of variables
     inside the optimization routine. This takes just the function evaluations
     and the equality or inequality assertion is applied by the solver based on the constraint
-    bounds passed as `lcons` and `ucons` to [OptimizationProblem](@ref), in case of equality
+    bounds passed as `lcons` and `ucons` to [`OptimizationProblem`](@ref), in case of equality
     constraints `lcons` and `ucons` should be passed equal values.
 - `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
 - `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
-- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``df/dp``.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
