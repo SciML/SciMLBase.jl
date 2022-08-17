@@ -1,8 +1,8 @@
 """
 $(TYPEDEF)
 """
-struct PDESolution{T, N, uType, Disc, Sol, DType, tType, gridType, ivtype, dvType, P, A, IType} <:
-       AbstractPDESolution{T, N, S}
+struct PDESolution{T, N, uType, Disc, Sol, DType, tType, gridType, ivtype, dvType, P, A,
+                   IType} <: AbstractPDESolution{T, N, S}
     u::uType
     original_sol::Sol
     errors::DType
@@ -49,27 +49,28 @@ function PDESolution(sol::ODESolution{T}, metadata::MOLMetadata) where {T}
     # Build Interpolations
     # TODO: Check if the grid is uniform and use the higher order interpolations that are supported
     interp = Dict(map(keys(umap)) do k
-        args = arguments(k) #! Do without Symbolics
-        nodes = ((map(args) do arg
-            i = findfirst(arg, ivs)
-            @assert i !== nothing "Independent variable $arg not found in ivs"
-            ivgrid[i]
-        end)...)
-        k => interpolate(nodes, umap[k], Gridded(Linear()))
-    end)
+                      args = arguments(k) #! Do without Symbolics
+                      nodes = ((map(args) do arg
+                                    i = findfirst(arg, ivs)
+                                    @assert i !==nothing "Independent variable $arg not found in ivs"
+                                    ivgrid[i]
+                                end)...)
+                      k => interpolate(nodes, umap[k], Gridded(Linear()))
+                  end)
 
     return PDESolution{T, length(discretespace.ū), typeof(umap), typeof(metadata),
-                       typeof(sol), typeof(sol.errors), typeof(sol.t),typeof(ivgrid),
+                       typeof(sol), typeof(sol.errors), typeof(sol.t), typeof(ivgrid),
                        typeof(ivs), typeof(pdesys.dvs), typeof(sol.prob), typeof(sol.alg),
                        typeof(interp)}(umap, sol, sol.errors, sol.t, ivgrid, ivs,
-                                           pdesys.dvs, metadata, sol.prob, sol.alg,
-                                           interp, sol.dense, sol.tslocation,
-                                           sol.retcode)
+                                       pdesys.dvs, metadata, sol.prob, sol.alg,
+                                       interp, sol.dense, sol.tslocation,
+                                       sol.retcode)
 end
 
 wrap_sol(sol::ODESolution, disc_data::MOLMetadata) = PDESolution(sol, disc_data)
 
-function (sol::PDESolution{T, N, S, D})(args...; dv = nothing) where {T, N, S, D <: MOLMetadata}
+function (sol::PDESolution{T, N, S, D})(args...;
+                                        dv = nothing) where {T, N, S, D <: MOLMetadata}
     # Colon reconstructs on gridpoints
     args = map(enumerate(args)) do (i, arg)
         if arg isa Colon
@@ -80,12 +81,12 @@ function (sol::PDESolution{T, N, S, D})(args...; dv = nothing) where {T, N, S, D
     end
     # If no dv is given, return interpolations for every dv
     if dv === nothing
-        @assert length(args) == length(sol.ivs) + 1 "Not enough arguments for the number of independent variables (including time), got $(length(args)) expected $(length(sol.ivs) + 1)."
+        @assert length(args)==length(sol.ivs) + 1 "Not enough arguments for the number of independent variables (including time), got $(length(args)) expected $(length(sol.ivs) + 1)."
         return map(dvs) do dv
             ivs = arguments(dv) #! Do this without Symbolics
             is = map(ivs) do iv
                 i = findfirst(iv, sol.ivs)
-                @assert i !== nothing "Independent variable $(iv) in dependent variable $(dv) not found in the solution."
+                @assert i!==nothing "Independent variable $(iv) in dependent variable $(dv) not found in the solution."
                 i
             end
 
@@ -106,7 +107,6 @@ Base.@propagate_inbounds function Base.getindex(A::PDESolution{T, N, S, D},
         i = sym
     end
 
-    indepsym = getindepsym(A)
     iv = nothing
     dv = nothing
     if i === nothing
@@ -132,14 +132,14 @@ Base.@propagate_inbounds function Base.getindex(A::PDESolution{T, N, S, D},
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::PDESolution{T, N, S, D}, sym, args...) where {T, N, S, D <: MOLMetadata}
+Base.@propagate_inbounds function Base.getindex(A::PDESolution{T, N, S, D}, sym,
+                                                args...) where {T, N, S, D <: MOLMetadata}
     if issymbollike(sym)
         i = sym_to_index(sym, A.original_sol)
     else
         i = sym
     end
 
-    indepsym = getindepsym(A)
     iv = nothing
     dv = nothing
     if i === nothing
@@ -151,10 +151,8 @@ Base.@propagate_inbounds function Base.getindex(A::PDESolution{T, N, S, D}, sym,
         if idv !== nothing
             dv = A.dvs[idv]
         end
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
-            A.t[args...]
-        elseif issymbollike(sym) && iv !== nothing && isequal(sym, iv)
-            A.disc_data.discretespace.grid[sym]
+        if issymbollike(sym) && iv !== nothing && isequal(sym, iv)
+            A.ivgrid[iiv]
         elseif issymbollike(sym) && dv !== nothing && isequal(sym, dv)
             A.u[sym][args...]
         else
