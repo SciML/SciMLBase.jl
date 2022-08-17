@@ -676,6 +676,8 @@ export AffineDiffEqOperator, DiffEqScaledOperator
 
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
+export MOLMetadata
+
 export step!, deleteat!, addat!, get_tmp_cache,
        full_cache, user_cache, u_cache, du_cache,
        rand_cache, ratenoise_cache,
