@@ -25,15 +25,14 @@ function PDESolution(sol::ODESolution{T}, disc_data::MOLMetadata) where T
     pdesys = metadata.pdesys
     discretespace = metadata.discretespace
 
-    indexof(sym,syms) = findfirst(isequal(sym),syms)
     umap = Dict(map(discretespace.ū) do u
         let discu = discretespace.discvars[u]
             solu = map(CartesianIndices(discu)) do I
-                i = indexof(discu[I], states)
+                i = sym_to_index(discu[I], states)
                 if i !== nothing
                     sol.u[i]
                 else
-                    sol[discu[I]]
+                    observed(sol, discu[I])
                 end
             end
             out = [zeros(T, size(discu)) for i in 1:length(sol.t)]
