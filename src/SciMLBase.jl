@@ -575,6 +575,7 @@ include("solutions/ode_solutions.jl")
 include("solutions/rode_solutions.jl")
 include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
+include("solutions/pde_solutions.jl")
 include("solutions/solution_interface.jl")
 
 include("ensemble/ensemble_solutions.jl")
