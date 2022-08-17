@@ -66,12 +66,13 @@ function PDESolution(sol::ODESolution{T}, metadata::MOLMetadata) where {T}
                     end
                 end)
     # Build Interpolations
-    # TODO: Check if the grid is uniform and use the higher order interpolations that are supported
+    # TODO: Check if the grid is uniform and use the supported higher order interpolations
     interp = Dict(map(keys(umap)) do k
                       args = arguments(k) #! Do without Symbolics
                       nodes = Tuple((map(args) do arg
                                     i = findfirst(arg, ivs)
-                                    @assert i!==nothing "Independent variable $arg not found in ivs"
+                                    @assert i!==nothing "Independent variable $arg
+                                                         not found in ivs"
                                     ivgrid[i]
                                 end)...)
                       k => interpolate(nodes, umap[k], Gridded(Linear()))
@@ -100,12 +101,16 @@ function (sol::PDESolution{T, N, S, D})(args...;
     end
     # If no dv is given, return interpolations for every dv
     if dv === nothing
-        @assert length(args)==length(sol.ivs) + 1 "Not enough arguments for the number of independent variables (including time), got $(length(args)) expected $(length(sol.ivs) + 1)."
+        @assert length(args)==length(sol.ivs) + 1 "Not enough arguments for the number of
+                                                   independent variables (including time),
+                                                   got $(length(args)) expected
+                                                   $(length(sol.ivs) + 1)."
         return map(dvs) do dv
             ivs = arguments(dv) #! Do this without Symbolics
             is = map(ivs) do iv
                 i = findfirst(iv, sol.ivs)
-                @assert i!==nothing "Independent variable $(iv) in dependent variable $(dv) not found in the solution."
+                @assert i!==nothing "Independent variable $(iv) in
+                                     dependent variable $(dv) not found in the solution."
                 i
             end
 
