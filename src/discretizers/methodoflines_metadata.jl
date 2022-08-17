@@ -9,7 +9,7 @@ Used to unpack the solution.
           MOLFiniteDifference object.
 - `pdesys`: a PDESystem object, used in the discretization.
 """
-struct MOLMetadata{N, M, Ds, Disc, PDE} <: AbstractDiscretizerMetadata{N, M}
+struct MOLMetadata{Ds, Disc, PDE} <: AbstractDiscretizationMetadata
     discretespace::Ds
     disc::Disc
     pdesys::PDE

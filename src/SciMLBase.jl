@@ -276,6 +276,13 @@ $(TYPEDEF)
 """
 abstract type AbstractDiscretization <: AbstractSciMLAlgorithm end
 
+# Discretization metadata
+"""
+$(TYPEDEF)
+
+"""
+abstract type AbstractDiscretizationMetadata end
+
 # Monte Carlo Simulations
 """
 $(TYPEDEF)
@@ -367,16 +374,6 @@ abstract type AbstractDAEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U,
 $(TYPEDEF)
 """
 abstract type AbstractSDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
-
-# Discretizers
-"""
-$(TYPEDEF)
-
-## Type parameters:
-- `N` The number of discretized independent variables.
-- `M` The number of discretized dependent variables.
-"""
-abstract type AbstractDiscretizerMetadata{N, M} end
 
 # Solutions
 """
