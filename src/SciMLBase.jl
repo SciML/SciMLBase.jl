@@ -368,6 +368,16 @@ $(TYPEDEF)
 """
 abstract type AbstractSDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
+# Discretizers
+"""
+$(TYPEDEF)
+
+## Type parameters:
+- `N` The number of discretized independent variables.
+- `M` The number of discretized dependent variables.
+"""
+abstract type AbstractDiscretizerMetadata{N, M} end
+
 # Solutions
 """
 $(TYPEDEF)
@@ -569,6 +579,8 @@ include("problems/dde_problems.jl")
 include("problems/sdde_problems.jl")
 include("problems/pde_problems.jl")
 include("problems/problem_traits.jl")
+
+include("discretizers/methodoflines_metadata.jl")
 
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
