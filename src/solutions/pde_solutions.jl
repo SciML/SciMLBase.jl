@@ -69,7 +69,7 @@ function PDESolution(sol::ODESolution{T}, metadata::MOLMetadata) where {T}
     # TODO: Check if the grid is uniform and use the higher order interpolations that are supported
     interp = Dict(map(keys(umap)) do k
                       args = arguments(k) #! Do without Symbolics
-                      nodes = ((map(args) do arg
+                      nodes = Tuple((map(args) do arg
                                     i = findfirst(arg, ivs)
                                     @assert i!==nothing "Independent variable $arg not found in ivs"
                                     ivgrid[i]
