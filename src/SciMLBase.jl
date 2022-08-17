@@ -4,6 +4,7 @@ using ConstructionBase
 using RecipesBase, RecursiveArrayTools, Tables
 using DocStringExtensions
 using LinearAlgebra
+using Interpolations
 using Statistics
 using Distributed
 using Markdown
