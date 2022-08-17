@@ -1,5 +1,5 @@
 """
-`MOLMetadata`
+$(TYPEDEF)
 
 A type used to store data about a PDESystem, and how it was discretized by MethodOfLines.jl. Used to unpack the solution.
 
@@ -14,5 +14,6 @@ struct MOLMetadata{N, M, Ds, Disc, PDE} <: AbstractDiscretizerMetadata{N, M}
 end
 
 function MOLMetadata(discretespace, disc, pdesys)
-    return MOLMetadata{typeof(discretespace), typeof(disc), typeof(pdesys)}(discretespace, disc, pdesys)
+    return MOLMetadata{typeof(discretespace), typeof(disc), typeof(pdesys)}(discretespace,
+                                                                            disc, pdesys)
 end
