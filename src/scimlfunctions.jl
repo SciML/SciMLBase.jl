@@ -2012,8 +2012,9 @@ end
 function DiscreteFunction{iip, false}(f;
                                       analytic = nothing,
                                       syms = nothing,
-                                      observed = DEFAULT_OBSERVED) where {iip}
-    DiscreteFunction{iip, Any, Any, Any, Any}(f, analytic, syms, observed)
+                                      observed = DEFAULT_OBSERVED,
+                                      sys = nothing) where {iip}
+    DiscreteFunction{iip, Any, Any, Any, Any, Any}(f, analytic, syms, observed, sys)
 end
 function DiscreteFunction{iip}(f; kwargs...) where {iip}
     DiscreteFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
@@ -3191,7 +3192,12 @@ function Base.convert(::Type{DiscreteFunction}, f)
     else
         observed = DEFAULT_OBSERVED
     end
-    DiscreteFunction(f; analytic = analytic, syms = syms, observed = observed)
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
+    DiscreteFunction(f; analytic = analytic, syms = syms, observed = observed, sys = sys)
 end
 function Base.convert(::Type{DiscreteFunction{iip}}, f) where {iip}
     if __has_analytic(f)
@@ -3209,8 +3215,13 @@ function Base.convert(::Type{DiscreteFunction{iip}}, f) where {iip}
     else
         observed = DEFAULT_OBSERVED
     end
+    if __has_sys(f)
+        sys = f.sys
+    else
+        sys = nothing
+    end
     DiscreteFunction{iip, RECOMPILE_BY_DEFAULT}(f; analytic = analytic, syms = syms,
-                                                observed = observed)
+                                                observed = observed, sys = sys)
 end
 
 function Base.convert(::Type{DAEFunction}, f)
