@@ -67,7 +67,8 @@ ODEFunction{iip,recompile}(f;
                            paramjac = nothing,
                            syms = nothing,
                            indepsym = nothing,
-                           colorvec = nothing)
+                           colorvec = nothing,
+                           sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -259,7 +260,8 @@ SplitFunction{iip,recompile}(f1,f2;
                              paramjac = nothing,
                              syms = nothing,
                              indepsym = nothing,
-                             colorvec = nothing)
+                             colorvec = nothing,
+                             sys = nothing)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -380,7 +382,8 @@ DynamicalODEFunction{iip,recompile}(f1,f2;
                                     paramjac = nothing,
                                     syms = nothing,
                                     indepsym = nothing,
-                                    colorvec = nothing)
+                                    colorvec = nothing,
+                                    sys = nothing)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -487,7 +490,8 @@ DDEFunction{iip,recompile}(f;
                  paramjac = nothing,
                  syms = nothing,
                  indepsym = nothing,
-                 colorvec = nothing)
+                 colorvec = nothing,
+                 sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -596,7 +600,8 @@ DynamicalDDEFunction{iip,recompile}(f1,f2;
                                     paramjac = nothing,
                                     syms = nothing,
                                     indepsym = nothing,
-                                    colorvec = nothing)
+                                    colorvec = nothing,
+                                    sys = nothing)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -765,7 +770,8 @@ SDEFunction{iip,recompile}(f,g;
                            paramjac = nothing,
                            syms = nothing,
                            indepsym = nothing,
-                           colorvec = nothing)
+                           colorvec = nothing,
+                           sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -876,7 +882,8 @@ SplitSDEFunction{iip,recompile}(f1,f2,g;
                  paramjac = nothing,
                  syms = nothing,
                  indepsym = nothing,
-                 colorvec = nothing)
+                 colorvec = nothing,
+                 sys = nothing)
 ```
 
 Note that only the function `f` itself is required. All of the remaining functions
@@ -989,7 +996,8 @@ DynamicalSDEFunction{iip,recompile}(f1,f2;
                                     paramjac = nothing,
                                     syms = nothing,
                                     indepsym = nothing,
-                                    colorvec = nothing)
+                                    colorvec = nothing,
+                                    sys = nothing)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -1101,7 +1109,8 @@ RODEFunction{iip,recompile}(f;
                            paramjac = nothing,
                            syms = nothing,
                            indepsym = nothing,
-                           colorvec = nothing)
+                           colorvec = nothing,
+                           sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1203,7 +1212,8 @@ DAEFunction{iip,recompile}(f;
                            sparsity=jac_prototype,
                            syms = nothing,
                            indepsym = nothing,
-                           colorvec = nothing)
+                           colorvec = nothing,
+                           sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1349,7 +1359,8 @@ SDDEFunction{iip,recompile}(f,g;
                  paramjac = nothing,
                  syms = nothing,
                  indepsym = nothing,
-                 colorvec = nothing)
+                 colorvec = nothing
+                 sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1403,7 +1414,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the DDEFunction type directly match the names of the inputs.
 """
 struct SDDEFunction{iip, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, GG, S, O,
-                    TCV} <: AbstractSDDEFunction{iip}
+                    TCV, SYS} <: AbstractSDDEFunction{iip}
     f::F
     g::G
     mass_matrix::TMM
@@ -1421,6 +1432,7 @@ struct SDDEFunction{iip, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, 
     syms::S
     observed::O
     colorvec::TCV
+    sys::SYS
 end
 
 """
@@ -1454,7 +1466,8 @@ NonlinearFunction{iip, recompile}(f;
                            paramjac = nothing,
                            syms = nothing,
                            indepsym = nothing,
-                           colorvec = nothing)
+                           colorvec = nothing,
+                           sys = nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1542,7 +1555,8 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           cons_hess_prototype = nothing,
                           syms = nothing, hess_colorvec = nothing,
                           cons_jac_colorvec = nothing,
-                          cons_hess_colorvec = nothing)
+                          cons_hess_colorvec = nothing,
+                          sys = nothing)
 ```
 
 - `adtype`: see the section "Defining Optimization Functions via AD"
