@@ -101,7 +101,7 @@ function (sol::PDESolution{T, N, S, D})(args...;
     end
     # If no dv is given, return interpolations for every dv
     if dv === nothing
-        @assert length(args)==length(sol.ivs) + 1 "Not enough arguments for the number of
+        @assert length(args)==length(sol.ivs) "Not enough arguments for the number of
                                                    independent variables (including time),
                                                    got $(length(args)) expected
                                                    $(length(sol.ivs) + 1)."
