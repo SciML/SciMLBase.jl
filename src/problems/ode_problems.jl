@@ -18,7 +18,7 @@ M \frac{du}{dt} = f(u,p,t)
 ```
 
 There are two different ways of specifying `f`:
-- `f(du,u,p,t)`: in-place. Memory-efficient when avoiding allocations. Best option for most cases unless mutation is not allowed. 
+- `f(du,u,p,t)`: in-place. Memory-efficient when avoiding allocations. Best option for most cases unless mutation is not allowed.
 - `f(u,p,t)`: returning `du`. Less memory-efficient way, particularly suitable when mutation is not allowed (e.g. with certain automatic differentiation packages such as Zygote).
 
 `u₀` should be an AbstractArray (or number) whose geometry matches the desired geometry of `u`.
@@ -110,12 +110,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
                                                     kwargs...) where {iip, recompile}
         if !recompile
-            if iip
-                ODEProblem{iip}(wrapfun_iip(f, (u0, u0, p, tspan[1])), u0, tspan, p;
-                                kwargs...)
-            else
-                ODEProblem{iip}(wrapfun_oop(f, (u0, p, tspan[1])), u0, tspan, p; kwargs...)
-            end
+            ODEProblem{iip}(ODEFunction{iip,recompile}(f), u0, tspan, p; kwargs...)
         else
             ODEProblem{iip}(f, u0, tspan, p; kwargs...)
         end
@@ -321,7 +316,7 @@ Documentation Page: https://diffeq.sciml.ai/stable/types/split_ode_types/
 
 ## Mathematical Specification of a Split ODE Problem
 
-To define a `SplitODEProblem`, you simply need to give a two functions 
+To define a `SplitODEProblem`, you simply need to give a two functions
 ``f_1`` and ``f_2`` along with an initial condition ``u_0`` which
 define an ODE:
 

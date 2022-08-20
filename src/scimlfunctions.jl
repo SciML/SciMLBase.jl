@@ -1765,75 +1765,7 @@ function ODEFunction{iip, true}(f;
                              Wfact_t, paramjac, syms, indepsym,
                              observed, _colorvec, sys)
 end
-function ODEFunction{iip, false}(f;
-                                 mass_matrix = I,
-                                 analytic = nothing,
-                                 tgrad = nothing,
-                                 jac = nothing,
-                                 jvp = nothing,
-                                 vjp = nothing,
-                                 jac_prototype = nothing,
-                                 sparsity = jac_prototype,
-                                 Wfact = nothing,
-                                 Wfact_t = nothing,
-                                 paramjac = nothing,
-                                 syms = nothing,
-                                 indepsym = nothing,
-                                 observed = DEFAULT_OBSERVED,
-                                 colorvec = nothing,
-                                 sys = nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
 
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
-    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
-    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
-    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
-    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
-
-    nonconforming = (jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
-                     paramjaciip) .!= iip
-    if any(nonconforming)
-        nonconforming = findall(nonconforming)
-        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
-        throw(NonconformingFunctionsError(functions))
-    end
-
-    ODEFunction{iip,
-                Any, Any, Any, Any, Any,
-                Any, Any, Any, Any, Any,
-                Any, Any, typeof(syms),
-                typeof(indepsym), Any, typeof(_colorvec), typeof(sys)}(f,
-                                                                       mass_matrix,
-                                                                       analytic,
-                                                                       tgrad,
-                                                                       jac,
-                                                                       jvp, vjp,
-                                                                       jac_prototype,
-                                                                       sparsity,
-                                                                       Wfact,
-                                                                       Wfact_t,
-                                                                       paramjac,
-                                                                       syms,
-                                                                       indepsym,
-                                                                       observed,
-                                                                       _colorvec,
-                                                                       sys)
-end
 function ODEFunction{iip}(f; kwargs...) where {iip}
     ODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
 end
