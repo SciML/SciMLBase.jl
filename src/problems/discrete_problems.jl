@@ -117,7 +117,7 @@ end
 function DiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
                          kwargs...)
     iip = isinplace(f, 4)
-    DiscreteProblem(cDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
 """

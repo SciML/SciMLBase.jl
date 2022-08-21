@@ -3046,8 +3046,6 @@ for S in [:ODEFunction
           :NonlinearFunction
           :IncrementingODEFunction]
     @eval begin
-        Base.convert(::Type{$S}, x::$S) = x
-        Base.convert(::Type{$S{iip}}, x::T) where {T <: $S{iip}} where {iip} = x
         function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {iip}
             (args...) -> $S{iip, map(typeof, args)...}(args...)
         end
@@ -3059,7 +3057,7 @@ $(SIGNATURES)
 
 Converts a NonlinearFunction into a ODEFunction.
 """
-function Base.convert(::Type{ODEFunction}, f::NonlinearFunction)
+function ODEFunction(f::NonlinearFunction)
     iip = isinplace(f)
     _f = iip ? (du, u, p, t) -> (f.f(du, u, p); nothing) : (u, p, t) -> f.f(u, p)
     if f.analytic !== nothing
