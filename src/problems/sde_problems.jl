@@ -65,7 +65,7 @@ page.
   is the output `g`. It can be any type which overloads `A_mul_B!` with itself
   being the middle argument. Commonly, this is a matrix or sparse matrix. If
   this is not given, it defaults to `nothing`, which means the problem should
-  be interpreted as having diagonal noise.  
+  be interpreted as having diagonal noise.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ## Example Problems
@@ -111,7 +111,7 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     end
 
     function SDEProblem{iip}(f, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        SDEProblem(convert(SDEFunction{iip}, f, g), g, u0, tspan, p; kwargs...)
+        SDEProblem(SDEFunction{iip}(f, g), g, u0, tspan, p; kwargs...)
     end
 end
 
@@ -126,7 +126,7 @@ function SDEProblem(f::AbstractSDEFunction, g, u0, tspan, p = NullParameters(); 
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem(convert(SDEFunction, f, g), g, u0, tspan, p; kwargs...)
+    SDEProblem(SDEFunction(f, g), g, u0, tspan, p; kwargs...)
 end
 
 """

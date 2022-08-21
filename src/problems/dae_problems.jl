@@ -1,6 +1,6 @@
 @doc doc"""
 
-Defines an implicit ordinary differential equation (ODE) or 
+Defines an implicit ordinary differential equation (ODE) or
 differential-algebraic equation (DAE) problem.
 Documentation Page: https://diffeq.sciml.ai/stable/types/dae_types/
 
@@ -94,7 +94,7 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     end
 
     function DAEProblem{iip}(f, du0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        DAEProblem(convert(DAEFunction{iip}, f), du0, u0, tspan, p; kwargs...)
+        DAEProblem(DAEFunction{iip}(f), du0, u0, tspan, p; kwargs...)
     end
 end
 
@@ -103,5 +103,5 @@ function DAEProblem(f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters()
 end
 
 function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
-    DAEProblem(convert(DAEFunction, f), du0, u0, tspan, p; kwargs...)
+    DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
 end

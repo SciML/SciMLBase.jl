@@ -243,11 +243,11 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     end
 
     function DDEProblem{iip}(f, args...; kwargs...) where {iip}
-        DDEProblem{iip}(convert(DDEFunction{iip}, f), args...; kwargs...)
+        DDEProblem{iip}(DDEFunction{iip}(f), args...; kwargs...)
     end
 end
 
-DDEProblem(f, args...; kwargs...) = DDEProblem(convert(DDEFunction, f), args...; kwargs...)
+DDEProblem(f, args...; kwargs...) = DDEProblem(DDEFunction(f), args...; kwargs...)
 
 function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)
     DDEProblem{isinplace(f)}(f, args...; kwargs...)
