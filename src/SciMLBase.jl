@@ -15,6 +15,7 @@ import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
+import Tricks
 
 function __solve end
 function __init end

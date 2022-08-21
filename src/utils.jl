@@ -4,7 +4,7 @@ $(SIGNATURES)
 Returns the number of arguments of `f` for each method.
 """
 function numargs(f)
-    return [num_types_in_tuple(m.sig) - 1 for m in methods(f)] #-1 since f is the first parameter
+    return Tuple(num_types_in_tuple(m.sig) - 1 for m in Tricks.static_methods(f)) #-1 since f is the first parameter
 end
 
 function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{T, V, W, I}) where {
@@ -21,11 +21,11 @@ $(SIGNATURES)
 
 Get the number of parameters of a Tuple type, i.e. the number of fields.
 """
-function num_types_in_tuple(sig)
+Base.@pure function num_types_in_tuple(sig)
     length(sig.parameters)
 end
 
-function num_types_in_tuple(sig::UnionAll)
+Base.@pure function num_types_in_tuple(sig::UnionAll)
     length(Base.unwrap_unionall(sig).parameters)
 end
 
@@ -245,7 +245,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
             # If so, no error
             for i in 1:length(nargs)
                 if nargs[i] < inplace_param_number &&
-                   any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
+                   any(isequal(Vararg{Any}), Tricks.static_methods(f).ms[1].sig.parameters)
                     # If varargs, assume iip
                     return iip_preferred
                 end
