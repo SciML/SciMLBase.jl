@@ -139,12 +139,12 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     end
 
     function SDDEProblem{iip}(f, g, args...; kwargs...) where {iip}
-        SDDEProblem{iip}(convert(SDDEFunction{iip}, f, g), g, args...; kwargs...)
+        SDDEProblem{iip}(SDDEFunction{iip}(f, g), g, args...; kwargs...)
     end
 end
 
 function SDDEProblem(f, g, args...; kwargs...)
-    SDDEProblem(convert(SDDEFunction, f, g), g, args...; kwargs...)
+    SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
 end
 
 function SDDEProblem(f::AbstractSDDEFunction, args...; kwargs...)
