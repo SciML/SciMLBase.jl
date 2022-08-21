@@ -11,6 +11,7 @@ using Markdown
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
+import FunctionWrappersWrappers
 
 function __solve end
 function __init end
