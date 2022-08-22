@@ -106,8 +106,8 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         _f = if iip && typeof(u0) <: Vector{Float64} &&
                 eltype(promote_tspan(tspan)) <: Float64 &&
-                typeof(p) <: Union{Vector{Float64},NullParameters}
-            ODEFunction{iip,false}(f)
+                typeof(p) <: Union{Vector{Float64}, NullParameters}
+            ODEFunction{iip, false}(f)
         else
             ODEFunction{iip}(f)
         end
@@ -143,9 +143,9 @@ function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
 
     _f = if iip && typeof(u0) <: Vector{Float64} &&
-        eltype(promote_tspan(tspan)) <: Float64 &&
-        typeof(p) <: Union{Vector{Float64},NullParameters}
-        ODEFunction{iip,false}(f)
+            eltype(promote_tspan(tspan)) <: Float64 &&
+            typeof(p) <: Union{Vector{Float64}, NullParameters}
+        ODEFunction{iip, false}(f)
     else
         ODEFunction{iip}(f)
     end
