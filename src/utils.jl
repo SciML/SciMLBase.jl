@@ -229,8 +229,8 @@ form is disabled and the 2-argument signature is ensured to be matched.
 function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
                    has_two_dispatches = true, isoptimization = false)
     nargs = numargs(f)
-    iip_dispatch = any(x -> x == inplace_param_number, nargs)
-    oop_dispatch = any(x -> x == inplace_param_number - 1, nargs)
+    iip_dispatch = static_hasmethod(f, Tuple{Vararg{Any,inplace_param_number}})
+    oop_dispatch = static_hasmethod(f, Tuple{Vararg{Any,inplace_param_number - 1}})
 
     if length(nargs) == 0
         throw(NoMethodsError(fname))
