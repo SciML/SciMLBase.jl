@@ -48,17 +48,20 @@ function remake(prob::ODEProblem; f = missing,
                 p = missing,
                 kwargs = missing,
                 _kwargs...)
+
     if f === missing
-        f = prob.f
+        _f = prob.f
+    elseif prob.f isa ODEFunction # avoid the SplitFunction etc. cases
+        _f = ODEFunction{isinplace(prob)}(f)
     elseif !isrecompile(prob)
         if isinplace(prob)
-            f = wrapfun_iip(unwrap_fw(f), (u0, u0, p, tspan[1]))
+            _f = wrapfun_iip(unwrap_fw(f), (u0, u0, p, tspan[1]))
         else
-            f = wrapfun_oop(unwrap_fw(f), (u0, p, tspan[1]))
+            _f = wrapfun_oop(unwrap_fw(f), (u0, p, tspan[1]))
         end
-        f = ODEFunction{isinplace(prob)}(f)
-    elseif prob.f isa ODEFunction # avoid the SplitFunction etc. cases
-        f = ODEFunction{isinplace(prob)}(f)
+        _f = ODEFunction{isinplace(prob)}(f)
+    else
+        _f = f
     end
 
     if u0 === missing
@@ -74,10 +77,10 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if kwargs === missing
-        ODEProblem{isinplace(prob)}(f, u0, tspan, p, prob.problem_type; prob.kwargs...,
+        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
                                     _kwargs...)
     else
-        ODEProblem{isinplace(prob)}(f, u0, tspan, p, prob.problem_type; kwargs...)
+        ODEProblem{isinplace(prob),true}(_f, u0, tspan, p, prob.problem_type; kwargs...)
     end
 end
 
