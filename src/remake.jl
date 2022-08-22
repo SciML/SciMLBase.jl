@@ -56,9 +56,9 @@ function remake(prob::ODEProblem; f = missing,
         else
             f = wrapfun_oop(unwrap_fw(f), (u0, p, tspan[1]))
         end
-        f = convert(ODEFunction{isinplace(prob)}, f)
+        f = ODEFunction{isinplace(prob)}(f)
     elseif prob.f isa ODEFunction # avoid the SplitFunction etc. cases
-        f = convert(ODEFunction{isinplace(prob)}, f)
+        f = ODEFunction{isinplace(prob)}(f)
     end
 
     if u0 === missing
