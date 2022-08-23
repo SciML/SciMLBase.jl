@@ -78,5 +78,5 @@ function build_solution(prob::AbstractIntegralProblem,
                                                              chi)
 end
 
-# Define a default that does nothing
+# Define a default `wrap_sol` that does nothing
 wrap_sol(sol, _) = sol
