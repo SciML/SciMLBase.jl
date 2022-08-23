@@ -455,7 +455,19 @@ abstract type AbstractDAESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 """
 $(TYPEDEF)
 """
-abstract type AbstractPDESolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
+abstract type AbstractPDETimeSeriesSolution{T, N, S, D} <:
+              AbstractTimeseriesSolution{T, N, S} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
+              AbstractNoTimeSolution{T, N, S} end
+
+"""
+$(TYPEDEF)
+"""
+const AbstractPDESolution{T, N, S, D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D}, AbstractPDENoTimeSolution{T, N, S, D}}
 
 """
 $(TYPEDEF)
@@ -577,8 +589,6 @@ include("problems/sdde_problems.jl")
 include("problems/pde_problems.jl")
 include("problems/problem_traits.jl")
 
-include("discretizers/methodoflines_metadata.jl")
-
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
 include("solutions/ode_solutions.jl")
@@ -672,10 +682,6 @@ export tuples, intervals, TimeChoiceIterator
 export AffineDiffEqOperator, DiffEqScaledOperator
 
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
-
-export MOLMetadata
-
-export wrap_sol
 
 export step!, deleteat!, addat!, get_tmp_cache,
        full_cache, user_cache, u_cache, du_cache,
