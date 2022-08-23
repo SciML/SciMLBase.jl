@@ -51,8 +51,8 @@ function remake(prob::ODEProblem; f = missing,
 
     if f === missing
         if prob.f isa ODEFunction && prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper &&
-            !(typeof(u0) <: Vector{Float64} && eltype(promote_type(tspan)) <: Float64 &&
-            typeof(p) <: Union{SciMLBase.NullParameters,Vector{Float64}}
+            !(typeof(u0) <: Vector{Float64} && eltype(promote_tspan(tspan)) <: Float64 &&
+            typeof(p) <: Union{SciMLBase.NullParameters,Vector{Float64}})
             _f = prob.f.f.fw[1].obj[]
         else
             _f = prob.f
