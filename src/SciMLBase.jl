@@ -4,7 +4,6 @@ using ConstructionBase
 using RecipesBase, RecursiveArrayTools, Tables
 using DocStringExtensions
 using LinearAlgebra
-using Interpolations
 using Statistics
 using Distributed
 using Markdown
@@ -462,7 +461,7 @@ abstract type AbstractPDETimeSeriesSolution{T, N, S, D} <:
 $(TYPEDEF)
 """
 abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
-              AbstractNoTimeSolution{T, N, S} end
+              AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
