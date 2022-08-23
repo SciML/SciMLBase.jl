@@ -104,7 +104,15 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        ODEProblem(ODEFunction{iip}(f), u0, tspan, p; kwargs...)
+        _f = if iip && typeof(u0) <: Vector{Float64} &&
+                eltype(promote_tspan(tspan)) <: Float64 &&
+                typeof(p) <: Union{Vector{Float64}, NullParameters}
+            ODEFunction{iip, false}(f)
+        else
+            ODEFunction{iip}(f)
+        end
+
+        ODEProblem(_f, u0, tspan, p; kwargs...)
     end
 
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
@@ -117,7 +125,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
                 ODEProblem{iip}(wrapfun_oop(f, (u0, p, tspan[1])), u0, tspan, p; kwargs...)
             end
         else
-            ODEProblem{iip}(f, u0, tspan, p; kwargs...)
+            ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
         end
     end
 end
@@ -132,7 +140,17 @@ function ODEProblem(f::AbstractODEFunction, u0, tspan, args...; kwargs...)
 end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
-    ODEProblem(ODEFunction(f), u0, tspan, p; kwargs...)
+    iip = isinplace(f, 4)
+
+    _f = if iip && typeof(u0) <: Vector{Float64} &&
+            eltype(promote_tspan(tspan)) <: Float64 &&
+            typeof(p) <: Union{Vector{Float64}, NullParameters}
+        ODEFunction{iip, false}(f)
+    else
+        ODEFunction{iip}(f)
+    end
+
+    ODEProblem(_f, u0, tspan, p; kwargs...)
 end
 
 """
