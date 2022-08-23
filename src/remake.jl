@@ -48,14 +48,13 @@ function remake(prob::ODEProblem; f = missing,
                 p = missing,
                 kwargs = missing,
                 _kwargs...)
-
     if f === missing
-        if prob.f isa ODEFunction && prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper &&
-            (
-            (u0 !== missing && !(typeof(u0) <: Vector{Float64})) ||
+        if prob.f isa ODEFunction &&
+           prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper &&
+           ((u0 !== missing && !(typeof(u0) <: Vector{Float64})) ||
             (tspan !== missing && !(eltype(promote_tspan(tspan)) <: Float64)) ||
-            (p !== missing && !(typeof(p) <: Union{SciMLBase.NullParameters,Vector{Float64}}))
-            )
+            (p !== missing &&
+             !(typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}})))
             _f = ODEFunction{isinplace(prob)}(unwrapped_f(prob.f))
         else
             _f = prob.f
@@ -89,7 +88,7 @@ function remake(prob::ODEProblem; f = missing,
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
                                     _kwargs...)
     else
-        ODEProblem{isinplace(prob),true}(_f, u0, tspan, p, prob.problem_type; kwargs...)
+        ODEProblem{isinplace(prob), true}(_f, u0, tspan, p, prob.problem_type; kwargs...)
     end
 end
 
