@@ -50,7 +50,13 @@ function remake(prob::ODEProblem; f = missing,
                 _kwargs...)
 
     if f === missing
-        _f = prob.f
+        if prob.f isa ODEFunction && prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper &&
+            !(typeof(u0) <: Vector{Float64} && eltype(promote_type(tspan)) <: Float64 &&
+            typeof(p) <: Union{SciMLBase.NullParameters,Vector{Float64}}
+            _f = prob.f.f.fw[1].obj[]
+        else
+            _f = prob.f
+        end
     elseif prob.f isa ODEFunction # avoid the SplitFunction etc. cases
         _f = ODEFunction{isinplace(prob)}(f)
     elseif !isrecompile(prob)
