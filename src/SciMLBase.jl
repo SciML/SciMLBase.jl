@@ -544,6 +544,14 @@ include("function_wrappers.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
 
+unwrapped_f(f) = f
+unwrapped_f(f::Void) = unwrapped_f(f.f)
+unwrapped_f(f::ODEFunction) = unwrapped_f(f.f)
+unwrapped_f(f::SDEFunction) = unwrapped_f(f.f)
+function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
+    unwrapped_f(f.fw[1].obj[])
+end
+
 include("operators/operators.jl")
 include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
