@@ -384,3 +384,11 @@ end
 
 # Overloaded in other repositories
 function unwrap_cache end
+
+struct Void{F}
+    f::F
+end
+function (f::Void)(args...)
+    f.f(args...)
+    nothing
+end
