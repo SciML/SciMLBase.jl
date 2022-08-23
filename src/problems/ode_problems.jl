@@ -125,7 +125,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
                 ODEProblem{iip}(wrapfun_oop(f, (u0, p, tspan[1])), u0, tspan, p; kwargs...)
             end
         else
-            ODEProblem{iip}(f, u0, tspan, p; kwargs...)
+            ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
         end
     end
 end

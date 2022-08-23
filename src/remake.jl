@@ -88,7 +88,7 @@ function remake(prob::ODEProblem; f = missing,
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
                                     _kwargs...)
     else
-        ODEProblem{isinplace(prob), true}(_f, u0, tspan, p, prob.problem_type; kwargs...)
+        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; kwargs...)
     end
 end
 
