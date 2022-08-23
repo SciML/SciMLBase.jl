@@ -91,7 +91,7 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        BVProblem(convert(ODEFunction{iip}, f), bc, u0, tspan, p; kwargs...)
+        BVProblem(cODEFunction{iip}(f), bc, u0, tspan, p; kwargs...)
     end
 end
 
@@ -100,7 +100,7 @@ function BVProblem(f::AbstractODEFunction, bc, u0, tspan, args...; kwargs...)
 end
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem(convert(ODEFunction, f), bc, u0, tspan, p; kwargs...)
+    BVProblem(ODEFunction(f), bc, u0, tspan, p; kwargs...)
 end
 
 # convenience interfaces:

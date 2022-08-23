@@ -1,5 +1,5 @@
-const DISCRETE_INPLACE_DEFAULT = convert(DiscreteFunction{true}, (du, u, p, t) -> du .= u)
-const DISCRETE_OUTOFPLACE_DEFAULT = convert(DiscreteFunction{false}, (u, p, t) -> u)
+const DISCRETE_INPLACE_DEFAULT = DiscreteFunction{true}((du, u, p, t) -> du .= u)
+const DISCRETE_OUTOFPLACE_DEFAULT = DiscreteFunction{false}((u, p, t) -> u)
 
 @doc doc"""
 
@@ -100,7 +100,7 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     end
 
     function DiscreteProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        DiscreteProblem(convert(DiscreteFunction{iip}, f), u0, tspan, p; kwargs...)
+        DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
 
@@ -117,7 +117,7 @@ end
 function DiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
                          kwargs...)
     iip = isinplace(f, 4)
-    DiscreteProblem(convert(DiscreteFunction{iip}, f), u0, tspan, p; kwargs...)
+    DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
 """
