@@ -93,7 +93,7 @@ end
 
 function Base.summary(io::IO, prob::AbstractNoiseProblem)
     print(io,
-          nameof(typeof(prob)), " with WType ", typeof(prob.noise.W[1]), " and tType ",
+          nameof(typeof(prob)), " with WType ", typeof(prob.noise.curW), " and tType ",
           typeof(prob.tspan[1]), ". In-place: ", isinplace(prob))
 end
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractDEProblem)
