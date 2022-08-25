@@ -142,7 +142,8 @@ end
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
 
-    _f = if iip && typeof(u0) <: Vector{Float64} &&
+    _f = if iip && !(f isa AbstractDiffEqOperator) &&
+            typeof(u0) <: Vector{Float64} &&
             eltype(promote_tspan(tspan)) <: Float64 &&
             typeof(p) <: Union{Vector{Float64}, NullParameters}
         ODEFunction{iip, false}(f)
