@@ -101,6 +101,6 @@ function (sol::PDENoTimeSolution{T, N, S, D})(args...; kwargs...) where {T, N, S
 end
 
 """
-Intercept PDE wrapping. Please implement a method for PDESolution that intercepts time dependent and time independent solutions which dispatches to the correct concrete types.
+Intercept PDE wrapping. Please implement a method for PDESolution in your discretizer that intercepts time dependent and time independent solutions and dispatches to the correct concrete types.
 """
 wrap_sol(sol, disc_data::AbstractDiscretizationMetadata) = PDESolution(sol, disc_data)
