@@ -78,5 +78,7 @@ function build_solution(prob::AbstractIntegralProblem,
                                                              chi)
 end
 
+wrap_sol(sol) = wrap_sol(sol, sol.prob.f.sys !== nothing ? sol.prob.f.sys.metadata : nothing)
+
 # Define a default `wrap_sol` that does nothing
 wrap_sol(sol, _) = sol
