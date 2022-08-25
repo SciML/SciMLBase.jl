@@ -356,13 +356,13 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
         end
         start_idx = 1
     else
-        start_idx = something(findfirst(x -> x >= tspan[1], sol.t), 1)
-        end_idx = something(findlast(x -> x <= tspan[end], sol.t), length(sol))
+        start_idx = searchsortedfirst(sol.t, tspan[1])
+        end_idx = searchsortedlast(sol.t, tspan[end])
     end
 
     # determine type of spacing for plott
     densetspacer = if tscale in [:ln, :log10, :log2]
-        (start, stop, n) -> 10.0 .^ range(log10(start), stop = log10(stop), length = n)
+        (start, stop, n) -> exp10.(range(log10(start), stop = log10(stop), length = n))
     else
         (start, stop, n) -> range(start; stop = stop, length = n)
     end

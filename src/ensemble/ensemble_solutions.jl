@@ -124,8 +124,8 @@ end
 @recipe function f(sim::AbstractEnsembleSolution;
                    zcolors = typeof(sim.u) <: AbstractArray ? fill(nothing, length(sim.u)) :
                              nothing,
-                   idxs = typeof(sim.u) <: AbstractArray ? eachindex(sim.u) : 1)
-    for i in idxs
+                   trajectories = eachindex(sim))
+    for i in trajectories
         size(sim[i].u, 1) == 0 && continue
         @series begin
             legend := false
@@ -139,7 +139,8 @@ end
 end
 
 @recipe function f(sim::EnsembleSummary;
-                   idxs = typeof(sim.u[1]) <: AbstractArray ? eachindex(sim.u[1]) : 1,
+                   trajectories = typeof(sim.u[1]) <: AbstractArray ? eachindex(sim.u[1]) :
+                                  1,
                    error_style = :ribbon, ci_type = :quantile)
     if ci_type == :SEM
         if typeof(sim.u[1]) <: AbstractArray
@@ -172,7 +173,7 @@ end
     else
         error("ci_type choice not valid. Must be :variance or :quantile")
     end
-    for i in idxs
+    for i in trajectories
         @series begin
             legend --> false
             linewidth --> 3

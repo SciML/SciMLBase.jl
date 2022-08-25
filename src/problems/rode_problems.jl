@@ -73,7 +73,7 @@ mutable struct RODEProblem{uType, tType, isinplace, P, NP, F, K, ND} <:
                                     rand_prototype, seed)
     end
     function RODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        RODEProblem(convert(RODEFunction{iip}, f), u0, tspan, p; kwargs...)
+        RODEProblem(RODEFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
 
@@ -82,5 +82,5 @@ function RODEProblem(f::RODEFunction, u0, tspan, p = NullParameters(); kwargs...
 end
 
 function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
-    RODEProblem(convert(RODEFunction, f), u0, tspan, p; kwargs...)
+    RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
 end

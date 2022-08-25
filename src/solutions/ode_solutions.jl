@@ -41,6 +41,13 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE}
     destats::DE
     retcode::Symbol
 end
+function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
+                           tslocation, destats, retcode) where {T, N}
+    return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
+                       typeof(k), typeof(prob), typeof(alg), typeof(interp), typeof(destats)
+                       }(u, u_analytic, errors, t, k, prob, alg, interp, dense, tslocation,
+                         destats, retcode)
+end
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                                     continuity = :left) where {deriv}
     sol(t, deriv, idxs, continuity)
@@ -145,37 +152,34 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
-        sol = ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-                          typeof(k),
-                          typeof(prob), typeof(alg), typeof(interp), typeof(destats)}(u,
-                                                                                      u_analytic,
-                                                                                      errors,
-                                                                                      t, k,
-                                                                                      prob,
-                                                                                      alg,
-                                                                                      interp,
-                                                                                      dense,
-                                                                                      0,
-                                                                                      destats,
-                                                                                      retcode)
+        sol = ODESolution{T, N}(u,
+                                u_analytic,
+                                errors,
+                                t, k,
+                                prob,
+                                alg,
+                                interp,
+                                dense,
+                                0,
+                                destats,
+                                retcode)
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
                                        dense_errors = dense_errors)
         end
         return sol
     else
-        return ODESolution{T, N, typeof(u), Nothing, Nothing, typeof(t), typeof(k),
-                           typeof(prob), typeof(alg), typeof(interp), typeof(destats)}(u,
-                                                                                       nothing,
-                                                                                       nothing,
-                                                                                       t, k,
-                                                                                       prob,
-                                                                                       alg,
-                                                                                       interp,
-                                                                                       dense,
-                                                                                       0,
-                                                                                       destats,
-                                                                                       retcode)
+        return ODESolution{T, N}(u,
+                                 nothing,
+                                 nothing,
+                                 t, k,
+                                 prob,
+                                 alg,
+                                 interp,
+                                 dense,
+                                 0,
+                                 destats,
+                                 retcode)
     end
 end
 
@@ -218,80 +222,67 @@ function calculate_solution_errors!(sol::AbstractODESolution; fill_uanalytic = t
     end
 end
 
-function build_solution(sol::AbstractODESolution{T, N}, u_analytic, errors) where {T, N}
-    ODESolution{T, N, typeof(sol.u), typeof(u_analytic), typeof(errors), typeof(sol.t),
-                typeof(sol.k),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
-                                                                                            u_analytic,
-                                                                                            errors,
-                                                                                            sol.t,
-                                                                                            sol.k,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            sol.dense,
-                                                                                            sol.tslocation,
-                                                                                            sol.destats,
-                                                                                            sol.retcode)
+function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
+    ODESolution{T, N}(sol.u,
+                      u_analytic,
+                      errors,
+                      sol.t,
+                      sol.k,
+                      sol.prob,
+                      sol.alg,
+                      sol.interp,
+                      sol.dense,
+                      sol.tslocation,
+                      sol.destats,
+                      sol.retcode)
 end
 
-function solution_new_retcode(sol::AbstractODESolution{T, N}, retcode) where {T, N}
-    ODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
-                typeof(sol.t), typeof(sol.k),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
-                                                                                            sol.u_analytic,
-                                                                                            sol.errors,
-                                                                                            sol.t,
-                                                                                            sol.k,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            sol.dense,
-                                                                                            sol.tslocation,
-                                                                                            sol.destats,
-                                                                                            retcode)
+function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
+    ODESolution{T, N}(sol.u,
+                      sol.u_analytic,
+                      sol.errors,
+                      sol.t,
+                      sol.k,
+                      sol.prob,
+                      sol.alg,
+                      sol.interp,
+                      sol.dense,
+                      sol.tslocation,
+                      sol.destats,
+                      retcode)
 end
 
-function solution_new_tslocation(sol::AbstractODESolution{T, N}, tslocation) where {T, N}
-    ODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
-                typeof(sol.t), typeof(sol.k),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
-                                                                                            sol.u_analytic,
-                                                                                            sol.errors,
-                                                                                            sol.t,
-                                                                                            sol.k,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            sol.dense,
-                                                                                            tslocation,
-                                                                                            sol.destats,
-                                                                                            sol.retcode)
+function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N}
+    ODESolution{T, N}(sol.u,
+                      sol.u_analytic,
+                      sol.errors,
+                      sol.t,
+                      sol.k,
+                      sol.prob,
+                      sol.alg,
+                      sol.interp,
+                      sol.dense,
+                      tslocation,
+                      sol.destats,
+                      sol.retcode)
 end
 
-function solution_slice(sol::AbstractODESolution{T, N}, I) where {T, N}
-    ODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
-                typeof(sol.t), typeof(sol.k),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u[I],
-                                                                                            sol.u_analytic ===
-                                                                                            nothing ?
-                                                                                            nothing :
-                                                                                            sol.u_analytic[I],
-                                                                                            sol.errors,
-                                                                                            sol.t[I],
-                                                                                            sol.dense ?
-                                                                                            sol.k[I] :
-                                                                                            sol.k,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            false,
-                                                                                            sol.tslocation,
-                                                                                            sol.destats,
-                                                                                            sol.retcode)
+function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
+    ODESolution{T, N}(sol.u[I],
+                      sol.u_analytic === nothing ? nothing : sol.u_analytic[I],
+                      sol.errors,
+                      sol.t[I],
+                      sol.dense ? sol.k[I] : sol.k,
+                      sol.prob,
+                      sol.alg,
+                      sol.interp,
+                      false,
+                      sol.tslocation,
+                      sol.destats,
+                      sol.retcode)
 end
 
-function sensitivity_solution(sol::AbstractODESolution, u, t)
+function sensitivity_solution(sol::ODESolution, u, t)
     T = eltype(eltype(u))
     N = length((size(sol.prob.u0)..., length(u)))
     interp = if typeof(sol.interp) <: LinearInterpolation
@@ -302,11 +293,9 @@ function sensitivity_solution(sol::AbstractODESolution, u, t)
         SensitivityInterpolation(t, u)
     end
 
-    ODESolution{T, N, typeof(u), typeof(sol.u_analytic), typeof(sol.errors),
-                typeof(t), Nothing, typeof(sol.prob), typeof(sol.alg),
-                typeof(interp), typeof(sol.destats)}(u, sol.u_analytic, sol.errors, t,
-                                                     nothing, sol.prob,
-                                                     sol.alg, interp,
-                                                     sol.dense, sol.tslocation,
-                                                     sol.destats, sol.retcode)
+    ODESolution{T, N}(u, sol.u_analytic, sol.errors, t,
+                      nothing, sol.prob,
+                      sol.alg, interp,
+                      sol.dense, sol.tslocation,
+                      sol.destats, sol.retcode)
 end
