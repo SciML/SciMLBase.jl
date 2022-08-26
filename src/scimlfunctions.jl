@@ -1786,6 +1786,13 @@ ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
 ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), RECOMPILE_BY_DEFAULT}(f; kwargs...)
 ODEFunction(f::ODEFunction; kwargs...) = f
 
+function unwrapped_f(f::ODEFunction)
+    ODEFunction{isinplace(f)}(unwrapped_f(f.f), f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
+                             f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                             f.observed, f._colorvec, f.sys)
+end
+
 """
 $(SIGNATURES)
 
@@ -2051,6 +2058,10 @@ function DiscreteFunction(f; kwargs...)
 end
 DiscreteFunction(f::DiscreteFunction; kwargs...) = f
 
+function unwrapped_f(f::DiscreteFunction)
+    DiscreteFunction{isinplace(f)}(unwrapped_f(f), f.analytic, f.syms, f.observed, f.sys)
+end
+
 function SDEFunction{iip, true}(f, g;
                                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                 analytic = __has_analytic(f) ? f.analytic : nothing,
@@ -2173,6 +2184,16 @@ function SDEFunction{iip, false}(f, g;
                                              Wfact, Wfact_t, paramjac, ggprime, syms,
                                              observed, _colorvec, sys)
 end
+
+function unwrapped_f(f::SDEFunction)
+    SDEFunction{isinplace(f)}(unwrapped_f(f.f), unwrapped(f.g),
+                f.mass_matrix, f.analytic,
+                f.tgrad, f.jac, f.jvp, f.vjp,
+                f.jac_prototype, f.sparsity,
+                f.Wfact, f.Wfact_t, f.paramjac, f.ggprime, f.syms,
+                f.observed, f._colorvec, f.sys)
+end
+
 function SDEFunction{iip}(f, g; kwargs...) where {iip}
     SDEFunction{iip, RECOMPILE_BY_DEFAULT}(f, g; kwargs...)
 end
