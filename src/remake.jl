@@ -59,7 +59,7 @@ function remake(prob::ODEProblem; f = missing,
         else
             _f = prob.f
         end
-    elseif prob.f isa ODEFunction && !isrecompile(prob) && isinplace(prob) &&
+    elseif prob.f isa ODEFunction && !isrecompile(prob) && isinplace(prob)
         _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
     elseif prob.f isa ODEFunction
         _f = ODEFunction{isinplace(prob)}(f)
