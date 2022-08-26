@@ -48,24 +48,6 @@ function remake(prob::ODEProblem; f = missing,
                 p = missing,
                 kwargs = missing,
                 _kwargs...)
-    if f === missing
-        if prob.f isa ODEFunction && isinplace(prob) &&
-           prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper &&
-           ((u0 !== missing && !(typeof(u0) <: Vector{Float64})) ||
-            (tspan !== missing && !(eltype(promote_tspan(tspan)) <: Float64)) ||
-            (p !== missing &&
-             !(typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}})))
-            _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
-        else
-            _f = prob.f
-        end
-    elseif prob.f isa ODEFunction && !isrecompile(prob) && isinplace(prob)
-        _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
-    elseif prob.f isa ODEFunction
-        _f = ODEFunction{isinplace(prob)}(f)
-    else
-        _f = f
-    end
 
     if u0 === missing
         u0 = prob.u0
@@ -77,6 +59,23 @@ function remake(prob::ODEProblem; f = missing,
 
     if p === missing
         p = prob.p
+    end
+
+    if f === missing
+        if prob.f isa ODEFunction && isinplace(prob) &&
+                            typeof(u0) <: Vector{Float64} &&
+                            eltype(promote_tspan(tspan)) <: Float64 &&
+                            typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+            _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
+        else
+            _f = ODEFunction{isinplace(prob), true}(unwrapped_f(prob.f))
+        end
+    elseif prob.f isa ODEFunction && isinplace(prob)
+        _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
+    elseif prob.f isa ODEFunction
+        _f = ODEFunction{isinplace(prob)}(f)
+    else
+        _f = f
     end
 
     if kwargs === missing
