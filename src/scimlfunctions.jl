@@ -1787,10 +1787,16 @@ ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), RECOMPILE_BY_DEFAULT}(f
 ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction)
-    ODEFunction{isinplace(f)}(unwrapped_f(f.f), f.mass_matrix, f.analytic, f.tgrad, f.jac,
-                              f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-                              f.Wfact_t, f.paramjac, f.syms, f.indepsym,
-                              f.observed, f.colorvec, f.sys)
+    ff = unwrapped_f(f.f)
+    ODEFunction{isinplace(f), typeof(ff), typeof(f.mass_matrix), typeof(f.analytic),
+                typeof(f.tgrad),
+                typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
+                typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.paramjac),
+                typeof(f.syms), typeof(f.indepsym), typeof(f.observed), typeof(f.colorvec),
+                typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                               f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
+                               f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                               f.observed, f.colorvec, f.sys)
 end
 
 """
@@ -2059,7 +2065,10 @@ end
 DiscreteFunction(f::DiscreteFunction; kwargs...) = f
 
 function unwrapped_f(f::DiscreteFunction)
-    DiscreteFunction{isinplace(f)}(unwrapped_f(f), f.analytic, f.syms, f.observed, f.sys)
+    ff = unwrapped_f(f)
+    DiscreteFunction{isinplace(f), typeof(ff), typeof(f.analytic), typeof(f.syms),
+                     typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms, f.observed,
+                                                        f.sys)
 end
 
 function SDEFunction{iip, true}(f, g;
@@ -2186,12 +2195,24 @@ function SDEFunction{iip, false}(f, g;
 end
 
 function unwrapped_f(f::SDEFunction)
-    SDEFunction{isinplace(f)}(unwrapped_f(f.f), unwrapped(f.g),
-                              f.mass_matrix, f.analytic,
-                              f.tgrad, f.jac, f.jvp, f.vjp,
-                              f.jac_prototype, f.sparsity,
-                              f.Wfact, f.Wfact_t, f.paramjac, f.ggprime, f.syms,
-                              f.observed, f.colorvec, f.sys)
+    ff, g = unwrapped_f(f.f), unwrapped(f.g)
+    SDEFunction{isinplace(f), typeof(ff), typeof(g),
+                typeoff(f.mass_matrix), typeof(f.analytic), typeof(f.tgrad),
+                typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
+                typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
+                typeof(f.paramjac), typeof(f.ggprime), typeof(f.syms),
+                typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(ff, g,
+                                                                       f.mass_matrix,
+                                                                       f.analytic,
+                                                                       f.tgrad, f.jac,
+                                                                       f.jvp, f.vjp,
+                                                                       f.jac_prototype,
+                                                                       f.sparsity,
+                                                                       f.Wfact, f.Wfact_t,
+                                                                       f.paramjac,
+                                                                       f.ggprime, f.syms,
+                                                                       f.observed,
+                                                                       f.colorvec, f.sys)
 end
 
 function SDEFunction{iip}(f, g; kwargs...) where {iip}
