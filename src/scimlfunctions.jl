@@ -1788,9 +1788,9 @@ ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction)
     ODEFunction{isinplace(f)}(unwrapped_f(f.f), f.mass_matrix, f.analytic, f.tgrad, f.jac,
-                             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-                             f.Wfact_t, f.paramjac, f.syms, f.indepsym,
-                             f.observed, f._colorvec, f.sys)
+                              f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
+                              f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                              f.observed, f._colorvec, f.sys)
 end
 
 """
@@ -2187,11 +2187,11 @@ end
 
 function unwrapped_f(f::SDEFunction)
     SDEFunction{isinplace(f)}(unwrapped_f(f.f), unwrapped(f.g),
-                f.mass_matrix, f.analytic,
-                f.tgrad, f.jac, f.jvp, f.vjp,
-                f.jac_prototype, f.sparsity,
-                f.Wfact, f.Wfact_t, f.paramjac, f.ggprime, f.syms,
-                f.observed, f._colorvec, f.sys)
+                              f.mass_matrix, f.analytic,
+                              f.tgrad, f.jac, f.jvp, f.vjp,
+                              f.jac_prototype, f.sparsity,
+                              f.Wfact, f.Wfact_t, f.paramjac, f.ggprime, f.syms,
+                              f.observed, f._colorvec, f.sys)
 end
 
 function SDEFunction{iip}(f, g; kwargs...) where {iip}

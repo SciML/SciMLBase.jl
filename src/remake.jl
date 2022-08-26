@@ -55,11 +55,13 @@ function remake(prob::ODEProblem; f = missing,
             (tspan !== missing && !(eltype(promote_tspan(tspan)) <: Float64)) ||
             (p !== missing &&
              !(typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}})))
-            _f = ODEFunction{isinplace(prob)}(unwrapped_f(prob.f))
+            _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
         else
             _f = prob.f
         end
-    elseif prob.f isa ODEFunction # avoid the SplitFunction etc. cases
+    elseif prob.f isa ODEFunction && !isrecompile(prob)
+        _f = ODEFunction{isinplace(prob), false}(unwrapped_f(prob.f))
+    elseif prob.f isa ODEFunction
         _f = ODEFunction{isinplace(prob)}(f)
     else
         _f = f
