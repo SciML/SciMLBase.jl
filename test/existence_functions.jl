@@ -5,7 +5,7 @@ using SciMLBase: __has_jac, __has_tgrad, __has_Wfact, __has_Wfact_t,
                  has_Wfact, has_Wfact_t, has_paramjac, has_syms, has_analytic, has_colorvec,
                  AbstractDiffEqFunction
 
-struct Foo <: AbstractDiffEqFunction{false, SciMLBase.NoSpecialize}
+struct Foo <: AbstractDiffEqFunction{false}
     jac::Any
     tgrad::Any
     Wfact::Any
@@ -36,7 +36,7 @@ f = Foo(1, 1, 1, 1, 1, 1, 1, 1)
 @test has_analytic(f)
 @test has_colorvec(f)
 
-struct Foo2 <: AbstractDiffEqFunction{false, SciMLBase.NoSpecialize}
+struct Foo2 <: AbstractDiffEqFunction{false}
     jac::Any
     tgrad::Any
     Wfact::Any

@@ -212,7 +212,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
                    S2, O, TCV,
-                   SYS} <: AbstractODEFunction{iip, recompile}
+                   SYS} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -333,7 +333,7 @@ information on generating the SplitFunction from this symbolic engine.
 """
 struct SplitFunction{iip, recompile, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
                      TPJ, S, O,
-                     TCV, SYS} <: AbstractODEFunction{iip, recompile}
+                     TCV, SYS} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -445,7 +445,7 @@ The fields of the DynamicalODEFunction type directly match the names of the inpu
 """
 struct DynamicalODEFunction{iip, recompile, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
                             TWt, TPJ, S,
-                            O, TCV, SYS} <: AbstractODEFunction{iip, recompile}
+                            O, TCV, SYS} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -555,7 +555,7 @@ The fields of the DDEFunction type directly match the names of the inputs.
 struct DDEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O,
                    TCV, SYS
                    } <:
-       AbstractDDEFunction{iip, recompile}
+       AbstractDDEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -667,7 +667,7 @@ The fields of the DynamicalDDEFunction type directly match the names of the inpu
 """
 struct DynamicalDDEFunction{iip, recompile, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
                             TWt, TPJ, S,
-                            O, TCV, SYS} <: AbstractDDEFunction{iip, recompile}
+                            O, TCV, SYS} <: AbstractDDEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -740,7 +740,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the DiscreteFunction type directly match the names of the inputs.
 """
 struct DiscreteFunction{iip, recompile, F, Ta, S, O, SYS} <:
-       AbstractDiscreteFunction{iip, recompile}
+       AbstractDiscreteFunction{iip}
     f::F
     analytic::Ta
     syms::S
@@ -839,7 +839,7 @@ The fields of the ODEFunction type directly match the names of the inputs.
 struct SDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
                    GG, S, O,
                    TCV, SYS
-                   } <: AbstractSDEFunction{iip, recompile}
+                   } <: AbstractSDEFunction{iip}
     f::F
     g::G
     mass_matrix::TMM
@@ -952,7 +952,7 @@ The fields of the SplitSDEFunction type directly match the names of the inputs.
 """
 struct SplitSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
                         TWt, TPJ,
-                        S, O, TCV, SYS} <: AbstractSDEFunction{iip, recompile}
+                        S, O, TCV, SYS} <: AbstractSDEFunction{iip}
     f1::F1
     f2::F2
     g::G
@@ -1068,7 +1068,7 @@ The fields of the DynamicalSDEFunction type directly match the names of the inpu
 """
 struct DynamicalSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP,
                             TW, TWt,
-                            TPJ, S, O, TCV, SYS} <: AbstractSDEFunction{iip, recompile}
+                            TPJ, S, O, TCV, SYS} <: AbstractSDEFunction{iip}
     # This is a direct copy of the SplitSDEFunction, maybe it's not necessary and the above can be used instead.
     f1::F1
     f2::F2
@@ -1179,7 +1179,7 @@ The fields of the RODEFunction type directly match the names of the inputs.
 struct RODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
                     O, TCV, SYS
                     } <:
-       AbstractRODEFunction{iip, recompile}
+       AbstractRODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -1325,7 +1325,7 @@ numerically-defined functions.
 """
 struct DAEFunction{iip, recompile, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV,
                    SYS} <:
-       AbstractDAEFunction{iip, recompile}
+       AbstractDAEFunction{iip}
     f::F
     analytic::Ta
     tgrad::Tt
@@ -1432,7 +1432,7 @@ The fields of the DDEFunction type directly match the names of the inputs.
 """
 struct SDDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
                     GG, S, O,
-                    TCV, SYS} <: AbstractSDDEFunction{iip, recompile}
+                    TCV, SYS} <: AbstractSDDEFunction{iip}
     f::F
     g::G
     mass_matrix::TMM
@@ -1534,7 +1534,7 @@ The fields of the NonlinearFunction type directly match the names of the inputs.
 struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
                          S, O, TCV,
                          SYS
-                         } <: AbstractNonlinearFunction{iip, recompile}
+                         } <: AbstractNonlinearFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -2998,7 +2998,7 @@ islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)
 
-struct IncrementingODEFunction{iip, recompile, F} <: AbstractODEFunction{iip, recompile}
+struct IncrementingODEFunction{iip, recompile, F} <: AbstractODEFunction{iip}
     f::F
 end
 

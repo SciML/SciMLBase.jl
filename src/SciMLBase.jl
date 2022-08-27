@@ -476,22 +476,22 @@ $(TYPEDEF)
 
 Base for types defining SciML functions.
 """
-abstract type AbstractSciMLFunction{iip, recompile} <: Function end
+abstract type AbstractSciMLFunction{iip} <: Function end
 
 """
 $(TYPEDEF)
 
 Base for types defining differential equation functions.
 """
-abstract type AbstractDiffEqFunction{iip, recompile} <:
-              AbstractSciMLFunction{iip, recompile} end
+abstract type AbstractDiffEqFunction{iip} <:
+              AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
 
 Base for types defining optimization functions.
 """
-abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip, true} end
+abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
@@ -554,8 +554,7 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractParameterizedFunction{iip, recompile} <:
-              AbstractODEFunction{iip, recompile} end
+abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
 include("operators/operators.jl")
 include("operators/basic_operators.jl")
