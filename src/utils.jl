@@ -220,7 +220,15 @@ function isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number,
     iip
 end
 
-function specialization(f::AbstractSciMLFunction{iip, specialize}) where {iip, specialize}
+function specialization(f::Union{ODEFunction{iip, specialize},
+    SDEFunction{iip, specialize},DDEFunction{iip, specialize},
+    SDDEFunction{iip, specialize},DAEFunction{iip, specialize},
+    DynamicalODEFunction{iip, specialize}, SplitFunction{iip, specialize},
+    DynamicalSDEFunction{iip, specialize}, SplitSDEFunction{iip, specialize},
+    DynamicalDDEFunction{iip, specialize},
+    DiscreteFunction{iip, specialize}, RODEFunction{iip, specialize},
+    NonlinearFunction{iip, specialize}, OptimizationFunction{iip, specialize}
+    ) where {iip, specialize}
     specialize
 end
 

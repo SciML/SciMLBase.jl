@@ -690,8 +690,8 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractDiscreteFunction{iip, recompile} <:
-              AbstractDiffEqFunction{iip, recompile} end
+abstract type AbstractDiscreteFunction{iip} <:
+              AbstractDiffEqFunction{iip} end
 
 @doc doc"""
     DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip,recompile}
