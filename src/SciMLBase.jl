@@ -551,6 +551,12 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
     unwrapped_f(f.fw[1].obj[])
 end
 
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractParameterizedFunction{iip, recompile} <:
+              AbstractODEFunction{iip, recompile} end
+
 include("operators/operators.jl")
 include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
