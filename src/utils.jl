@@ -220,6 +220,8 @@ function isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number,
     iip
 end
 
+specialization(f::AbstractSciMLFunction{iip,specialize}) where {iip,specialize} = specialize
+
 """
     @CSI_str cmd
 

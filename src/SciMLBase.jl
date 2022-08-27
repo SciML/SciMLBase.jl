@@ -476,21 +476,21 @@ $(TYPEDEF)
 
 Base for types defining SciML functions.
 """
-abstract type AbstractSciMLFunction{iip} <: Function end
+abstract type AbstractSciMLFunction{iip,recompile} <: Function end
 
 """
 $(TYPEDEF)
 
 Base for types defining differential equation functions.
 """
-abstract type AbstractDiffEqFunction{iip} <: AbstractSciMLFunction{iip} end
+abstract type AbstractDiffEqFunction{iip,recompile} <: AbstractSciMLFunction{iip,recompile} end
 
 """
 $(TYPEDEF)
 
 Base for types defining optimization functions.
 """
-abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip} end
+abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip,true} end
 
 """
 $(TYPEDEF)
