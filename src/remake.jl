@@ -48,7 +48,6 @@ function remake(prob::ODEProblem; f = missing,
                 p = missing,
                 kwargs = missing,
                 _kwargs...)
-
     if u0 === missing
         u0 = prob.u0
     end
@@ -62,11 +61,10 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if f === missing
-
         if prob.f isa ODEFunction && isinplace(prob) &&
-                            typeof(u0) <: Vector{Float64} &&
-                            eltype(promote_tspan(tspan)) <: Float64 &&
-                            typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+           typeof(u0) <: Vector{Float64} &&
+           eltype(promote_tspan(tspan)) <: Float64 &&
+           typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
             # If it's possible to FunctionWrapperSpecialize then do it
             _f = ODEFunction{isinplace(prob), FunctionWrapperSpecialize}(unwrapped_f(prob.f))
         elseif specialization(f) === FunctionWrapperSpecialize
@@ -79,9 +77,9 @@ function remake(prob::ODEProblem; f = missing,
             _f = ODEFunction{isinplace(prob), specialization(prob.f)}(unwrapped_f(prob.f))
         end
     elseif prob.f isa ODEFunction && isinplace(prob) &&
-            typeof(u0) <: Vector{Float64} &&
-            eltype(promote_tspan(tspan)) <: Float64 &&
-            typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+           typeof(u0) <: Vector{Float64} &&
+           eltype(promote_tspan(tspan)) <: Float64 &&
+           typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
         _f = ODEFunction{isinplace(prob), FunctionWrapperSpecialize}(f)
     elseif prob.f isa ODEFunction
         _f = ODEFunction{isinplace(prob)}(f)
