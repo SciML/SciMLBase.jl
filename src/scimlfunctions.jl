@@ -1790,7 +1790,7 @@ function ODEFunction{iip, recompile}(f;
     end
 
     if recompile === NoSpecialize
-        ODEFunction{iip,
+        ODEFunction{iip, recompile,
                     Any, Any, Any, Any,
                     Any, Any, Any, typeof(jac_prototype),
                     typeof(sparsity), Any, Any, Any,
@@ -1800,7 +1800,7 @@ function ODEFunction{iip, recompile}(f;
                                  Wfact_t, paramjac, syms, indepsym,
                                  observed, _colorvec, sys)
     else
-        ODEFunction{iip,
+        ODEFunction{iip, recompile,
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
