@@ -436,7 +436,7 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
         elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            paramsyms[findfirst(sym, paramsyms)]
+            paramsyms[findfirst(Symbol(sym), paramsyms)]
         else
             observed(A, sym)
         end

@@ -2062,8 +2062,8 @@ function DynamicalODEFunction{iip, true}(f1, f2;
                          typeof(paramsyms), typeof(observed), typeof(colorvec),
                          typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
                                       vjp, jac_prototype, sparsity,
-                                      Wfact, Wfact_t, paramjac, syms, observed,
-                                      colorvec, sys)
+                                      Wfact, Wfact_t, paramjac, syms, paramsyms,
+                                      observed, colorvec, sys)
 end
 
 function DynamicalODEFunction{iip, false}(f1, f2;

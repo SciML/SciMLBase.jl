@@ -71,11 +71,12 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 
     indepsym = getindepsym(A)
-    paramsyms = getparamsm
+    paramsyms = getparamsyms(A)
     if i === nothing
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
-        else
+        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
+            paramsyms(findfirst(Symbol(sym), paramsyms))
             observed(A, sym, :)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
@@ -93,12 +94,9 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 
     indepsym = getindepsym(A)
-    paramsyms = get_paramsyms(A)
     if i === nothing
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t[args...]
-        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            paramsyms[findfirst(sym, paramsyms)]
         else
             observed(A, sym, args...)
         end
