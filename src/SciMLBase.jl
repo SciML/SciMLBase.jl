@@ -551,6 +551,23 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
     unwrapped_f(f.fw[1].obj[])
 end
 
+function specialization(f::Union{ODEFunction{iip, specialize},
+    SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
+    SDDEFunction{iip, specialize},
+    DAEFunction{iip, specialize},
+    DynamicalODEFunction{iip, specialize},
+    SplitFunction{iip, specialize},
+    DynamicalSDEFunction{iip, specialize},
+    SplitSDEFunction{iip, specialize},
+    DynamicalDDEFunction{iip, specialize},
+    DiscreteFunction{iip, specialize},
+    RODEFunction{iip, specialize},
+    NonlinearFunction{iip, specialize},
+    OptimizationFunction{iip, specialize}}) where {iip,
+                                                   specialize}
+    specialize
+end
+
 """
 $(TYPEDEF)
 """
