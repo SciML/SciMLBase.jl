@@ -2160,7 +2160,7 @@ function SDEFunction{iip, recompile}(f, g;
     if recompile === NoSpecialize
         SDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any,
                     Any, Any, Any, Any, typeof(syms), Any,
-                    typeof(_colorvec), Any, Any}(f, g, mass_matrix, analytic,
+                    typeof(_colorvec), typeof(sys)}(f, g, mass_matrix, analytic,
                                                  tgrad, jac, jvp, vjp,
                                                  jac_prototype, sparsity,
                                                  Wfact, Wfact_t, paramjac, ggprime, syms,
@@ -2401,7 +2401,7 @@ function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
 end
 DynamicalSDEFunction(f::DynamicalSDEFunction; kwargs...) = f
 
-function RODEFunction{iip, true}(f;
+function RODEFunction{iip, recompile}(f;
                                  mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                  analytic = __has_analytic(f) ? f.analytic : nothing,
                                  tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -2418,7 +2418,7 @@ function RODEFunction{iip, true}(f;
                                  observed = __has_observed(f) ? f.observed :
                                             DEFAULT_OBSERVED,
                                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                 sys = __has_sys(f) ? f.sys : nothing) where {iip}
+                                 sys = __has_sys(f) ? f.sys : nothing) where {iip, recompile}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
