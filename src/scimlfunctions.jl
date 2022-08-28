@@ -722,7 +722,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ```julia
 DiscreteFunction{iip,recompile}(f;
                                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                                syms = __has_syms(f) ? f.syms : nothing)
+                                syms = __has_syms(f) ? f.syms : nothing,
+                                paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -2117,8 +2118,9 @@ function DiscreteFunction{iip, true}(f;
                                      observed = __has_observed(f) ? f.observed :
                                                 DEFAULT_OBSERVED,
                                      sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    DiscreteFunction{iip, typeof(f), typeof(analytic), typeof(syms), typeof(observed),
-                     typeof(sys)}(f, analytic, syms, paramsyms, observed, sys)
+    DiscreteFunction{iip, typeof(f), typeof(analytic), typeof(syms), typeof(paramsyms),
+                     typeof(observed), typeof(sys)}(f, analytic, syms, paramsyms, observed,
+                                                    sys)
 end
 function DiscreteFunction{iip, false}(f;
                                       analytic = __has_analytic(f) ? f.analytic : nothing,
