@@ -1750,7 +1750,7 @@ function ODEFunction{iip, recompile}(f;
     end
 
     if recompile === false
-      recompile = FunctionWrapperSpecialize
+        recompile = FunctionWrapperSpecialize
     end
 
     if (recompile === FunctionWrapperSpecialize) &&
