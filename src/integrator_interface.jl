@@ -395,6 +395,14 @@ function getindepsym(integrator::DEIntegrator)
     end
 end
 
+function getparamsyms(integrator::DEIntegrator)
+    if has_paramsyms(integrator.f)
+        return integrator.f.paramsyms
+    else
+        return nothing
+    end
+end
+
 function getobserved(integrator::DEIntegrator)
     if has_syms(integrator.f)
         return integrator.f.observed
@@ -423,9 +431,12 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
     end
 
     indepsym = getindepsym(A)
+    paramsyms = getparamsyms(A)
     if i === nothing
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
+        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
+            paramsyms[findfirst(sym, paramsyms)]
         else
             observed(A, sym)
         end

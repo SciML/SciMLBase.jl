@@ -66,6 +66,7 @@ sol = solve(prob, Rodas4())
 @test sol[α] isa Vector
 @test sol[α, 3] isa Float64
 @test length(sol[α, 5:10]) == 6
+@test sol[γ] isa Real
 
 # Check if indexing using variable names from interpolated solution works
 interpolated_sol = sol(0.0:1.0:10.0)

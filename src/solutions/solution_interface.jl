@@ -71,6 +71,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 
     indepsym = getindepsym(A)
+    paramsyms = getparamsm
     if i === nothing
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
@@ -92,9 +93,12 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 
     indepsym = getindepsym(A)
+    paramsyms = get_paramsyms(A)
     if i === nothing
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t[args...]
+        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
+            paramsyms[findfirst(sym, paramsyms)]
         else
             observed(A, sym, args...)
         end
@@ -303,6 +307,14 @@ end
 function getindepsym(sol)
     if has_indepsym(sol.prob.f)
         return sol.prob.f.indepsym
+    else
+        return nothing
+    end
+end
+
+function getparamsyms(sol)
+    if has_paramsyms(sol.prob.f)
+        return sol.prob.f.paramsyms
     else
         return nothing
     end
