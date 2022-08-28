@@ -64,10 +64,10 @@ function remake(prob::ODEProblem; f = missing,
         ptspan = promote_tspan(tspan)
         if specialization(prob.f) === AutoSpecialize
             if prob.f isa ODEFunction && isinplace(prob) &&
-            specialization(prob.f) !== FullSpecialize &&
-            typeof(u0) <: Vector{Float64} &&
-            eltype(promote_tspan(tspan)) <: Float64 &&
-            typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+               specialization(prob.f) !== FullSpecialize &&
+               typeof(u0) <: Vector{Float64} &&
+               eltype(promote_tspan(tspan)) <: Float64 &&
+               typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
                 # If it's possible to FunctionWrapperSpecialize then do it
                 if prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
                     _f = prob.f
@@ -80,10 +80,10 @@ function remake(prob::ODEProblem; f = missing,
             end
         elseif specialization(prob.f) === FunctionWrapperSpecialize
             if prob.f isa ODEFunction && isinplace(prob) &&
-                specialization(prob.f) !== FullSpecialize &&
-                typeof(u0) <: Vector{Float64} &&
-                eltype(promote_tspan(tspan)) <: Float64 &&
-                typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+               specialization(prob.f) !== FullSpecialize &&
+               typeof(u0) <: Vector{Float64} &&
+               eltype(promote_tspan(tspan)) <: Float64 &&
+               typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
                 _f = prob.f
             else
                 _f = ODEFunction{isinplace(prob), NoSpecialize}(unwrapped_f(prob.f))
@@ -101,7 +101,7 @@ function remake(prob::ODEProblem; f = missing,
            typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
         _f = ODEFunction{isinplace(prob), FunctionWrapperSpecialize}(f)
     else
-        _f = ODEFunction{isinplace(prob),specialization(prob.f)}(f)
+        _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
 
     if kwargs === missing
