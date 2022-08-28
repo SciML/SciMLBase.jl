@@ -1,6 +1,7 @@
 const RECOMPILE_BY_DEFAULT = true
 
 abstract type AbstractSpecialization end
+struct AutoSpecialize <: AbstractSpecialization end
 struct NoSpecialize <: AbstractSpecialization end
 struct FunctionWrapperSpecialize <: AbstractSpecialization end
 struct FullSpecialize <: AbstractSpecialization end
