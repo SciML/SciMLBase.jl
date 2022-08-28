@@ -2186,7 +2186,7 @@ function SDEFunction{iip, recompile}(f, g;
 end
 
 function unwrapped_f(f::SDEFunction)
-    ff, g = unwrapped_f(f.f), unwrapped(f.g)
+    ff, g = unwrapped_f(f.f), unwrapped_f(f.g)
     recompile = specialization(f)
 
     if recompile === NoSpecialize
