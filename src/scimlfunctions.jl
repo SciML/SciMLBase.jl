@@ -3023,6 +3023,6 @@ for S in [:ODEFunction
     @eval begin function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
                                                                                   iip
                                                                                   }
-        (args...) -> $S{iip, map(typeof, args)...}(args...)
+        (args...) -> $S{iip, FullSpecialize, map(typeof, args)...}(args...)
     end end
 end
