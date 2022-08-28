@@ -61,6 +61,7 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if f === missing
+        ptspan = promote_tspan(tspan)
         if specialization(prob.f) === AutoSpecialize
             if prob.f isa ODEFunction && isinplace(prob) &&
             specialization(prob.f) !== FullSpecialize &&
@@ -71,7 +72,7 @@ function remake(prob::ODEProblem; f = missing,
                 if prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
                     _f = prob.f
                 else
-                    ff = wrapfun_iip(prob.f.f, (u0, u0, p, tspan[1]))
+                    ff = wrapfun_iip(prob.f.f, (u0, u0, p, ptspan[1]))
                     _f = ODEFunction{isinplace(prob), AutoSpecialize}(ff)
                 end
             else

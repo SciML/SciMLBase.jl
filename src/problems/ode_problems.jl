@@ -134,11 +134,12 @@ end
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
 
+    ptspan = promote_tspan(tspan)
     _f = if iip && !(f isa AbstractDiffEqOperator) &&
             typeof(u0) <: Vector{Float64} &&
-            eltype(promote_tspan(tspan)) <: Float64 &&
+            eltype(ptspan) <: Float64 &&
             typeof(p) <: Union{Vector{Float64}, NullParameters}
-        ff = wrapfun_iip(f, (u0, u0, p, tspan[1]))
+        ff = wrapfun_iip(f, (u0, u0, p, ptspan[1]))
         ODEFunction{iip, AutoSpecialize}(ff)
     else
         ODEFunction{iip}(f)
