@@ -2091,12 +2091,12 @@ function unwrapped_f(f::DiscreteFunction)
     recompile = specialization(f)
 
     if recompile === NoSpecialize
-        DiscreteFunction{isinplace(f), typeof(ff), typeof(f.analytic), typeof(f.syms),
+        DiscreteFunction{isinplace(f), recompile, typeof(ff), typeof(f.analytic), typeof(f.syms),
                          typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms,
                                                             f.observed,
                                                             f.sys)
     else
-        DiscreteFunction{isinplace(f), typeof(ff), typeof(f.analytic), typeof(f.syms),
+        DiscreteFunction{isinplace(f), recompile, typeof(ff), typeof(f.analytic), typeof(f.syms),
                          typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms,
                                                             f.observed,
                                                             f.sys)
@@ -2158,7 +2158,7 @@ function SDEFunction{iip, recompile}(f, g;
     end
 
     if recompile === NoSpecialize
-        SDEFunction{iip, Any, Any, Any, Any, Any, Any, Any, Any,
+        SDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any,
                     Any, Any, Any, Any, typeof(syms), Any,
                     typeof(_colorvec), Any, Any}(f, g, mass_matrix, analytic,
                                                  tgrad, jac, jvp, vjp,
@@ -2166,7 +2166,7 @@ function SDEFunction{iip, recompile}(f, g;
                                                  Wfact, Wfact_t, paramjac, ggprime, syms,
                                                  observed, _colorvec, sys)
     else
-        SDEFunction{iip, typeof(f), typeof(g),
+        SDEFunction{iip, recompile, typeof(f), typeof(g),
                     typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
@@ -2189,7 +2189,7 @@ function unwrapped_f(f::SDEFunction)
     recompile = specialization(f)
 
     if recompile === NoSpecialize
-        SDEFunction{isinplace(f), Any, Any,
+        SDEFunction{isinplace(f), recompile, Any, Any,
                     typeoff(f.mass_matrix), Any, Any,
                     Any, Any, Any, typeof(f.jac_prototype),
                     typeof(f.sparsity), Any, Any,
@@ -2210,7 +2210,7 @@ function unwrapped_f(f::SDEFunction)
                                                                            f.colorvec,
                                                                            f.sys)
     else
-        SDEFunction{isinplace(f), typeof(ff), typeof(g),
+        SDEFunction{isinplace(f), recompile, typeof(ff), typeof(g),
                     typeoff(f.mass_matrix), typeof(f.analytic), typeof(f.tgrad),
                     typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
                     typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
