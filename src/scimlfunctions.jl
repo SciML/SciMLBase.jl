@@ -46,7 +46,7 @@ $(TYPEDEF)
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip,recompile}
+    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip}
 
 A representation of an ODE function `f`, defined by:
 
@@ -72,7 +72,8 @@ ODEFunction{iip,recompile}(f;
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                            syms = __has_syms(f) ? f.syms : nothing,
-                           indepsym= __has_indepsym(f) ? f.indepsym : nothing,
+                           indepsym = __has_indepsym(f) ? f.indepsym : nothing,
+                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -106,6 +107,9 @@ the usage of `f`. These include:
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
 - `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
   internally uses `t` as the representation in any plots.
+- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
+  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
+  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -211,9 +215,8 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct ODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
-                   S2, O, TCV,
-                   SYS} <: AbstractODEFunction{iip}
+struct ODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S2, S3, O,
+                   TCV, SYS} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -228,6 +231,7 @@ struct ODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt
     paramjac::TPJ
     syms::S
     indepsym::S2
+    paramsyms::S3
     observed::O
     colorvec::TCV
     sys::SYS
@@ -1766,6 +1770,7 @@ function ODEFunction{iip, recompile}(f;
                                      paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                      syms = __has_syms(f) ? f.syms : nothing,
                                      indepsym = __has_indepsym(f) ? f.indepsym : nothing,
+                                     paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                      observed = __has_observed(f) ? f.observed :
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -1811,37 +1816,15 @@ function ODEFunction{iip, recompile}(f;
         throw(NonconformingFunctionsError(functions))
     end
 
-    if recompile === NoSpecialize
-        ODEFunction{iip, recompile,
-                    Any, Any, Any, Any,
-                    Any, Any, Any, typeof(jac_prototype),
-                    typeof(sparsity), Any, Any, Any,
-                    typeof(syms), typeof(indepsym), Any, typeof(_colorvec),
-                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                 jvp, vjp, jac_prototype, sparsity, Wfact,
-                                 Wfact_t, paramjac, syms, indepsym,
-                                 observed, _colorvec, sys)
-    elseif recompile === false
-        ODEFunction{iip, FunctionWrapperSpecialize,
-                    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
-                    typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
-                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                 jvp, vjp, jac_prototype, sparsity, Wfact,
-                                 Wfact_t, paramjac, syms, indepsym,
-                                 observed, _colorvec, sys)
-    else
-        ODEFunction{iip, recompile,
-                    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
-                    typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
-                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                 jvp, vjp, jac_prototype, sparsity, Wfact,
-                                 Wfact_t, paramjac, syms, indepsym,
-                                 observed, _colorvec, sys)
-    end
+    ODEFunction{iip,
+                typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+                typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
+                typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                                jvp, vjp, jac_prototype, sparsity, Wfact,
+                                                Wfact_t, paramjac, syms, indepsym,
+                                                paramsyms, observed, _colorvec, sys)
 end
 
 function ODEFunction{iip}(f; kwargs...) where {iip}
@@ -2977,6 +2960,7 @@ __has_sparsity(f) = isdefined(f, :sparsity)
 __has_mass_matrix(f) = isdefined(f, :mass_matrix)
 __has_syms(f) = isdefined(f, :syms)
 __has_indepsym(f) = isdefined(f, :indepsym)
+__has_paramsyms(f) = isdefined(f, :paramsyms)
 __has_observed(f) = isdefined(f, :observed)
 __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
@@ -2995,6 +2979,7 @@ has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothin
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
 has_syms(f::AbstractSciMLFunction) = __has_syms(f) && f.syms !== nothing
 has_indepsym(f::AbstractSciMLFunction) = __has_indepsym(f) && f.indepsym !== nothing
+has_paramsyms(f::AbstractSciMLFunction) = __has_paramsyms(f) && f.paramsyms !== nothing
 function has_observed(f::AbstractSciMLFunction)
     __has_observed(f) && f.observed !== DEFAULT_OBSERVED && f.observed !== nothing
 end
