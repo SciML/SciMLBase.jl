@@ -1456,8 +1456,7 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractNonlinearFunction{iip, recompile} <:
-              AbstractSciMLFunction{iip, recompile} end
+abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
 @doc doc"""
     NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip,recompile}
@@ -1723,7 +1722,7 @@ end
 
 ######### Basic Constructor
 
-function ODEFunction{iip}(f;
+function ODEFunction{iip, recompile}(f;
                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                           analytic = __has_analytic(f) ? f.analytic : nothing,
                           tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -1997,7 +1996,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                                       paramjac, syms, observed, colorvec, sys)
 end
 
-function DynamicalODEFunction{iip}(f1, f2;
+function DynamicalODEFunction{iip, recompile}(f1, f2;
                                    mass_matrix = __has_mass_matrix(f1) ?
                                                  f1.mass_matrix : I,
                                    analytic = __has_analytic(f1) ? f1.analytic :
@@ -2059,7 +2058,7 @@ function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
 end
 DynamicalODEFunction(f::DynamicalODEFunction; kwargs...) = f
 
-function DiscretEFunction{iip}(f;
+function DiscreteFunction{iip, recompile}(f;
                                analytic = __has_analytic(f) ? f.analytic :
                                           nothing,
                                syms = __has_syms(f) ? f.syms : nothing,
@@ -2104,7 +2103,7 @@ function unwrapped_f(f::DiscreteFunction)
     end
 end
 
-function SDEFunction{iip}(f, g;
+function SDEFunction{iip, recompile}(f, g;
                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                           analytic = __has_analytic(f) ? f.analytic : nothing,
                           tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -2260,7 +2259,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
                                colorvec, sys)
 end
 
-function SplitSDEFunction{iip}(f1, f2, g;
+function SplitSDEFunction{iip, recompile}(f1, f2, g;
                                mass_matrix = __has_mass_matrix(f1) ?
                                              f1.mass_matrix :
                                              I,
@@ -2341,7 +2340,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                                       observed, colorvec, sys)
 end
 
-function DynamicalSDEFunction{iip}(f1, f2, g;
+function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
                                    mass_matrix = __has_mass_matrix(f1) ?
                                                  f1.mass_matrix : I,
                                    _func_cache = nothing,
@@ -2486,7 +2485,7 @@ function RODEFunction(f; kwargs...)
 end
 RODEFunction(f::RODEFunction; kwargs...) = f
 
-function DAEFunction{iip}(f;
+function DAEFunction{iip, recompile}(f;
                           analytic = __has_analytic(f) ? f.analytic : nothing,
                           tgrad = __has_tgrad(f) ? f.tgrad : nothing,
                           jac = __has_jac(f) ? f.jac : nothing,
@@ -2559,7 +2558,7 @@ DAEFunction{iip}(f::DAEFunction; kwargs...) where {iip} = f
 DAEFunction(f; kwargs...) = DAEFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
 DAEFunction(f::DAEFunction; kwargs...) = f
 
-function DDEFunction{iip}(f;
+function DDEFunction{iip, recompile}(f;
                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                           analytic = __has_analytic(f) ? f.analytic : nothing,
                           tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -2647,7 +2646,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
                                       vjp, jac_prototype, sparsity, Wfact, Wfact_t,
                                       paramjac, syms, observed, colorvec, sys)
 end
-function DynamicalDDEFunction{iip}(f1, f2;
+function DynamicalDDEFunction{iip, recompile}(f1, f2;
                                    mass_matrix = __has_mass_matrix(f1) ?
                                                  f1.mass_matrix : I,
                                    analytic = __has_analytic(f1) ? f1.analytic :
@@ -2709,7 +2708,7 @@ function DynamicalDDEFunction{iip}(f1, f2; kwargs...) where {iip}
 end
 DynamicalDDEFunction(f::DynamicalDDEFunction; kwargs...) = f
 
-function SDDEFunction{iip}(f, g;
+function SDDEFunction{iip, recompile}(f, g;
                            mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                                          I,
                            analytic = __has_analytic(f) ? f.analytic : nothing,
