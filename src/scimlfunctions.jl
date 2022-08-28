@@ -1749,11 +1749,7 @@ function ODEFunction{iip, recompile}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if recompile === false
-        recompile = FunctionWrapperSpecialize
-    end
-
-    if (recompile === FunctionWrapperSpecialize) &&
+    if (recompile === FunctionWrapperSpecialize || recompile === false) &&
        !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
         if iip
             f = wrapfun_iip(f)
@@ -1799,6 +1795,16 @@ function ODEFunction{iip, recompile}(f;
                     Any, Any, Any, typeof(jac_prototype),
                     typeof(sparsity), Any, Any, Any,
                     typeof(syms), typeof(indepsym), Any, typeof(_colorvec),
+                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                 jvp, vjp, jac_prototype, sparsity, Wfact,
+                                 Wfact_t, paramjac, syms, indepsym,
+                                 observed, _colorvec, sys)
+    elseif recompile === false
+        ODEFunction{iip, FunctionWrapperSpecialize,
+                    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+                    typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
                     typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
                                  jvp, vjp, jac_prototype, sparsity, Wfact,
                                  Wfact_t, paramjac, syms, indepsym,
