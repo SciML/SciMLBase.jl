@@ -67,7 +67,7 @@ function remake(prob::ODEProblem; f = missing,
            typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
             # If it's possible to FunctionWrapperSpecialize then do it
             _f = ODEFunction{isinplace(prob), FunctionWrapperSpecialize}(unwrapped_f(prob.f))
-        elseif specialization(f) === FunctionWrapperSpecialize
+        elseif specialization(prob.f) === FunctionWrapperSpecialize
             # It would FunctionWrapperSpecialize on types which are not allowed
             # Thus don't allow it and full specialize
             _f = ODEFunction{isinplace(prob), FullSpecialize}(unwrapped_f(prob.f))

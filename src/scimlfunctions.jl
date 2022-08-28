@@ -1671,7 +1671,7 @@ end
 
 ######### Backwards Compatibility Overloads
 
-(f::ODEFunction)(args...) = f.f(args...)
+ (f::ODEFunction)(args...) = f.f(args...)
 (f::NonlinearFunction)(args...) = f.f(args...)
 
 function (f::DynamicalODEFunction)(u, p, t)
