@@ -104,10 +104,12 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+        ptspan = promote_tspan(tspan)
         _f = if iip && typeof(u0) <: Vector{Float64} &&
                 eltype(promote_tspan(tspan)) <: Float64 &&
                 typeof(p) <: Union{Vector{Float64}, NullParameters}
-            ODEFunction{iip, false}(f)
+            ff = wrapfun_iip(f, (u0, u0, p, ptspan[1]))
+            ODEFunction{iip, AutoSpecialize}(ff)
         else
             ODEFunction{iip}(f)
         end
@@ -117,16 +119,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
 
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
                                                     kwargs...) where {iip, recompile}
-        if !recompile
-            if iip
-                ODEProblem{iip}(wrapfun_iip(f, (u0, u0, p, tspan[1])), u0, tspan, p;
-                                kwargs...)
-            else
-                ODEProblem{iip}(wrapfun_oop(f, (u0, p, tspan[1])), u0, tspan, p; kwargs...)
-            end
-        else
-            ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
-        end
+        ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
     end
 end
 
@@ -142,11 +135,13 @@ end
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
 
+    ptspan = promote_tspan(tspan)
     _f = if iip && !(f isa AbstractDiffEqOperator) &&
             typeof(u0) <: Vector{Float64} &&
-            eltype(promote_tspan(tspan)) <: Float64 &&
+            eltype(ptspan) <: Float64 &&
             typeof(p) <: Union{Vector{Float64}, NullParameters}
-        ODEFunction{iip, false}(f)
+        ff = wrapfun_iip(f, (u0, u0, p, ptspan[1]))
+        ODEFunction{iip, AutoSpecialize}(ff)
     else
         ODEFunction{iip}(f)
     end
