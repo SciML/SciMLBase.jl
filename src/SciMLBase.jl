@@ -483,7 +483,8 @@ $(TYPEDEF)
 
 Base for types defining differential equation functions.
 """
-abstract type AbstractDiffEqFunction{iip} <: AbstractSciMLFunction{iip} end
+abstract type AbstractDiffEqFunction{iip} <:
+              AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
@@ -546,11 +547,31 @@ include("alg_traits.jl")
 
 unwrapped_f(f) = f
 unwrapped_f(f::Void) = unwrapped_f(f.f)
-unwrapped_f(f::ODEFunction) = unwrapped_f(f.f)
-unwrapped_f(f::SDEFunction) = unwrapped_f(f.f)
 function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
     unwrapped_f(f.fw[1].obj[])
 end
+
+function specialization(f::Union{ODEFunction{iip, specialize},
+                                 SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
+                                 SDDEFunction{iip, specialize},
+                                 DAEFunction{iip, specialize},
+                                 DynamicalODEFunction{iip, specialize},
+                                 SplitFunction{iip, specialize},
+                                 DynamicalSDEFunction{iip, specialize},
+                                 SplitSDEFunction{iip, specialize},
+                                 DynamicalDDEFunction{iip, specialize},
+                                 DiscreteFunction{iip, specialize},
+                                 RODEFunction{iip, specialize},
+                                 NonlinearFunction{iip, specialize},
+                                 OptimizationFunction{iip, specialize}}) where {iip,
+                                                                                specialize}
+    specialize
+end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
 include("operators/operators.jl")
 include("operators/basic_operators.jl")
