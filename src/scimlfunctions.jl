@@ -2387,8 +2387,8 @@ function RODEFunction{iip, true}(f;
                                             DEFAULT_OBSERVED,
                                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                  sys = __has_sys(f) ? f.sys : nothing,
-                                 analytic_full =  __has_analytic_full(f) ?
-                                     f.analytic_full : false) where {iip}
+                                 analytic_full = __has_analytic_full(f) ?
+                                                 f.analytic_full : false) where {iip}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2489,11 +2489,14 @@ function RODEFunction{iip, false}(f;
 
     RODEFunction{iip, Any, Any, Any, Any, Any,
                  Any, Any, Any, Any, Any,
-                 typeof(syms), Any, typeof(_colorvec), Any, Bool}(f, mass_matrix, analytic, tgrad,
-                                                            jac, jvp, vjp, jac_prototype,
-                                                            sparsity, Wfact, Wfact_t,
-                                                            paramjac, syms, observed,
-                                                            _colorvec, sys, analytic_full)
+                 typeof(syms), Any, typeof(_colorvec), Any, Bool}(f, mass_matrix, analytic,
+                                                                  tgrad,
+                                                                  jac, jvp, vjp,
+                                                                  jac_prototype,
+                                                                  sparsity, Wfact, Wfact_t,
+                                                                  paramjac, syms, observed,
+                                                                  _colorvec, sys,
+                                                                  analytic_full)
 end
 function RODEFunction{iip}(f; kwargs...) where {iip}
     RODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
