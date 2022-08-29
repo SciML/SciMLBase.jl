@@ -1180,7 +1180,7 @@ struct RODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, 
     observed::O
     colorvec::TCV
     sys::SYS
-    analytic_with_full_noise::FN
+    analytic_full::FN
 end
 
 """
@@ -2387,7 +2387,7 @@ function RODEFunction{iip, true}(f;
                                             DEFAULT_OBSERVED,
                                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                  sys = __has_sys(f) ? f.sys : nothing,
-                                 analytic_with_full_noise = __has_analytic_with_full_noise(f) = f.analytic_with_full_noise : nothing) where {iip}
+                                 analytic_full = __has_analytic_full(f) = f.analytic_full : nothing) where {iip}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2427,10 +2427,10 @@ function RODEFunction{iip, true}(f;
                  typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                  typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
                  typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
-                 typeof(sys), typeof(analytic_with_full_noise)}(f, mass_matrix, analytic, tgrad,
+                 typeof(sys), typeof(analytic_full)}(f, mass_matrix, analytic, tgrad,
                               jac, jvp, vjp, jac_prototype, sparsity,
                               Wfact, Wfact_t, paramjac, syms, observed,
-                              _colorvec, sys, analytic_with_full_noise)
+                              _colorvec, sys, analytic_full)
 end
 function RODEFunction{iip, false}(f;
                                   mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
@@ -2450,7 +2450,7 @@ function RODEFunction{iip, false}(f;
                                              DEFAULT_OBSERVED,
                                   colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                   sys = __has_sys(f) ? f.sys : nothing,
-                                  analytic_with_full_noise = __has_analytic_with_full_noise(f) = f.analytic_with_full_noise : nothing) where {iip}
+                                  analytic_full = __has_analytic_full(f) = f.analytic_full : nothing) where {iip}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2491,7 +2491,7 @@ function RODEFunction{iip, false}(f;
                                                             jac, jvp, vjp, jac_prototype,
                                                             sparsity, Wfact, Wfact_t,
                                                             paramjac, syms, observed,
-                                                            _colorvec, sys, analytic_with_full_noise)
+                                                            _colorvec, sys, analytic_full)
 end
 function RODEFunction{iip}(f; kwargs...) where {iip}
     RODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
@@ -3076,7 +3076,7 @@ __has_observed(f) = isdefined(f, :observed)
 __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
 __has_sys(f) = isdefined(f, :sys)
-__has_analytic_with_full_noise(f) = isdefined(f, :analytic_with_full_noise)
+__has_analytic_full(f) = isdefined(f, :analytic_full)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
