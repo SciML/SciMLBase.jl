@@ -2452,9 +2452,8 @@ function RODEFunction{iip, false}(f;
                                              DEFAULT_OBSERVED,
                                   colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                   sys = __has_sys(f) ? f.sys : nothing,
-                                  analytic_full = function __has_analytic_full(f)
-                                      (f.analytic_full):false
-                                  end) where {iip}
+                                  analytic_full = __has_analytic_full(f) ? f.analytic_full :
+                                                  false) where {iip}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
