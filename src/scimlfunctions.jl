@@ -1161,7 +1161,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the RODEFunction type directly match the names of the inputs.
 """
-struct RODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV, SYS, FN
+struct RODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV, SYS
                     } <:
        AbstractRODEFunction{iip}
     f::F
@@ -1180,7 +1180,7 @@ struct RODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, 
     observed::O
     colorvec::TCV
     sys::SYS
-    analytic_full::FN
+    analytic_full::Bool
 end
 
 """
@@ -2387,7 +2387,7 @@ function RODEFunction{iip, true}(f;
                                             DEFAULT_OBSERVED,
                                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                  sys = __has_sys(f) ? f.sys : nothing,
-                                 analytic_full = __has_analytic_full(f) = f.analytic_full : nothing) where {iip}
+                                 analytic_full = __has_analytic_full(f) = f.analytic_full : false) where {iip}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2427,7 +2427,7 @@ function RODEFunction{iip, true}(f;
                  typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                  typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
                  typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
-                 typeof(sys), typeof(analytic_full)}(f, mass_matrix, analytic, tgrad,
+                 typeof(sys)}(f, mass_matrix, analytic, tgrad,
                               jac, jvp, vjp, jac_prototype, sparsity,
                               Wfact, Wfact_t, paramjac, syms, observed,
                               _colorvec, sys, analytic_full)
@@ -2450,7 +2450,7 @@ function RODEFunction{iip, false}(f;
                                              DEFAULT_OBSERVED,
                                   colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                   sys = __has_sys(f) ? f.sys : nothing,
-                                  analytic_full = __has_analytic_full(f) = f.analytic_full : nothing) where {iip}
+                                  analytic_full = __has_analytic_full(f) = f.analytic_full : false) where {iip}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
