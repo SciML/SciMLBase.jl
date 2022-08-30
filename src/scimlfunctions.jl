@@ -2437,9 +2437,10 @@ function RODEFunction{iip, recompile}(f;
                                                  DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                       sys = __has_sys(f) ? f.sys : nothing,
-                                      analytic_full = __has_analytic_full(f) ? f.analytic_full : false) where {iip,
-                                                                                   recompile
-                                                                                   }
+                                      analytic_full = __has_analytic_full(f) ?
+                                                      f.analytic_full : false) where {iip,
+                                                                                      recompile
+                                                                                      }
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2483,7 +2484,8 @@ function RODEFunction{iip, recompile}(f;
                                                                 jac_prototype,
                                                                 sparsity, Wfact, Wfact_t,
                                                                 paramjac, syms, observed,
-                                                                _colorvec, sys, analytic_full)
+                                                                _colorvec, sys,
+                                                                analytic_full)
     else
         RODEFunction{iip, recompile, typeof(f), typeof(mass_matrix),
                      typeof(analytic), typeof(tgrad),
