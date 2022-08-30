@@ -1126,7 +1126,8 @@ RODEFunction{iip,recompile}(f;
                            syms = __has_syms(f) ? f.syms : nothing,
                            indepsym= __has_indepsym(f) ? f.indepsym : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+                           sys = __has_sys(f) ? f.sys : nothing,
+                           analytic_full = __has_analytic_full(f) ? f.analytic_full : false)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -2435,7 +2436,8 @@ function RODEFunction{iip, recompile}(f;
                                       observed = __has_observed(f) ? f.observed :
                                                  DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                      sys = __has_sys(f) ? f.sys : nothing,
+                                      analytic_full = __has_analytic_full(f) ? f.analytic_full : false) where {iip,
                                                                                    recompile
                                                                                    }
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
@@ -2481,7 +2483,7 @@ function RODEFunction{iip, recompile}(f;
                                                                 jac_prototype,
                                                                 sparsity, Wfact, Wfact_t,
                                                                 paramjac, syms, observed,
-                                                                _colorvec, sys)
+                                                                _colorvec, sys, analytic_full)
     else
         RODEFunction{iip, recompile, typeof(f), typeof(mass_matrix),
                      typeof(analytic), typeof(tgrad),
@@ -2491,7 +2493,7 @@ function RODEFunction{iip, recompile}(f;
                      typeof(sys)}(f, mass_matrix, analytic, tgrad,
                                   jac, jvp, vjp, jac_prototype, sparsity,
                                   Wfact, Wfact_t, paramjac, syms, observed,
-                                  _colorvec, sys)
+                                  _colorvec, sys, analytic_full)
     end
 end
 
