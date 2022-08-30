@@ -1864,11 +1864,12 @@ function ODEFunction{iip, recompile}(f;
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
-                    typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
-                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                 jvp, vjp, jac_prototype, sparsity, Wfact,
-                                 Wfact_t, paramjac, syms, indepsym,
-                                 paramsyms, observed, _colorvec, sys)
+                    typeof(syms), typeof(paramsyms), typeof(indepsym), typeof(observed),
+                    typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                                    jvp, vjp, jac_prototype, sparsity,
+                                                    Wfact, Wfact_t, paramjac, syms,
+                                                    indepsym, paramsyms, observed,
+                                                    _colorvec, sys)
     end
 end
 
@@ -1884,22 +1885,21 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
         ODEFunction{isinplace(f), specialization(f), Any, Any, Any,
                     Any, Any, Any, Any, typeof(f.jac_prototype),
                     typeof(f.sparsity), Any, Any, Any,
-                    typeof(f.syms), Any, Any, typeof(f.colorvec),
-                    typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                    typeof(f.syms), Any, typeof(f.paramsyms), Any, typeof(f.colorvec),
+                    typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
                                    f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-                                   f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                                   f.Wfact_t, f.paramjac, f.syms, f.indepsym, f.paramsyms,
                                    f.observed, f.colorvec, f.sys)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
                     typeof(f.analytic), typeof(f.tgrad),
                     typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
                     typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
-                    typeof(f.paramjac),
-                    typeof(f.syms), typeof(f.indepsym), typeof(f.observed),
-                    typeof(f.colorvec),
-                    typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                    typeof(f.paramjac), typeof(f.syms), typeof(f.paramsyms),
+                    typeof(f.indepsym), typeof(f.observed), typeof(f.colorvec),
+                    typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
                                    f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-                                   f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                                   f.Wfact_t, f.paramjac, f.syms, f.indepsym, f.paramsyms,
                                    f.observed, f.colorvec, f.sys)
     end
 end
@@ -2185,7 +2185,7 @@ function SDEFunction{iip, recompile}(f, g;
                                      paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                      ggprime = nothing,
                                      syms = __has_syms(f) ? f.syms : nothing,
-                                     paramsyms = __has_paramsyms(f1) ? f1.paramsyms :
+                                     paramsyms = __has_paramsyms(f) ? f.paramsyms :
                                                  nothing,
                                      observed = __has_observed(f) ? f.observed :
                                                 DEFAULT_OBSERVED,
@@ -2530,7 +2530,7 @@ function RODEFunction{iip, recompile}(f;
                                       paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                       ggprime = nothing,
                                       syms = __has_syms(f) ? f.syms : nothing,
-                                      paramsyms = __has_paramsyms(f1) ? f1.paramsyms :
+                                      paramsyms = __has_paramsyms(f) ? f.paramsyms :
                                                   nothing,
                                       observed = __has_observed(f) ? f.observed :
                                                  DEFAULT_OBSERVED,
@@ -2858,6 +2858,7 @@ function DAEFunction{iip, recompile}(f;
                                      Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
                                      paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                      syms = __has_syms(f) ? f.syms : nothing,
+                                     paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                      observed = __has_observed(f) ? f.observed :
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2892,20 +2893,22 @@ function DAEFunction{iip, recompile}(f;
     if recompile === NoSpecialize
         DAEFunction{iip, recompile, Any, Any, Any,
                     Any, Any, Any, Any, Any,
-                    Any, Any, Any, typeof(syms),
+                    Any, Any, Any, typeof(syms), typeof(paramsyms),
                     Any, typeof(_colorvec), Any}(f, analytic, tgrad, jac, jvp,
                                                  vjp, jac_prototype, sparsity,
                                                  Wfact, Wfact_t,
-                                                 paramjac, observed, syms,
+                                                 paramjac, observed, syms, paramsyms,
                                                  _colorvec, sys)
     else
         DAEFunction{iip, recompile, typeof(f), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                    typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
+                    typeof(paramjac), typeof(syms), typeof(paramsyms),
+                    typeof(observed), typeof(_colorvec),
                     typeof(sys)}(f, analytic, tgrad, jac, jvp, vjp,
                                  jac_prototype, sparsity, Wfact, Wfact_t,
-                                 paramjac, syms, observed, _colorvec, sys)
+                                 paramjac, syms, paramsyms, observed, _colorvec,
+                                 sys)
     end
 end
 
@@ -2932,6 +2935,7 @@ function DDEFunction{iip, recompile}(f;
                                      Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
                                      paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                      syms = __has_syms(f) ? f.syms : nothing,
+                                     paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                      observed = __has_observed(f) ? f.observed :
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2955,20 +2959,22 @@ function DDEFunction{iip, recompile}(f;
     if recompile === NoSpecialize
         DDEFunction{iip, recompile, Any, Any, Any, Any,
                     Any, Any, Any, Any, Any,
-                    Any, typeof(syms), Any, typeof(_colorvec),
+                    Any, typeof(syms), typeof(paramsyms), Any, typeof(_colorvec),
                     Any}(f, mass_matrix, analytic, tgrad, jac, jvp, vjp, jac_prototype,
-                         sparsity, Wfact, Wfact_t, paramjac, syms, observed, _colorvec, sys)
+                         sparsity, Wfact, Wfact_t, paramjac, syms, paramsyms, observed,
+                         _colorvec, sys)
     else
         DDEFunction{iip, recompile, typeof(f), typeof(mass_matrix), typeof(analytic),
                     typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                    typeof(paramjac), typeof(syms), typeof(observed),
+                    typeof(paramjac), typeof(syms), typeof(paramsyms), typeof(observed),
                     typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic,
                                                     tgrad, jac, jvp, vjp,
                                                     jac_prototype, sparsity,
                                                     Wfact, Wfact_t, paramjac,
-                                                    syms, observed, _colorvec, sys)
+                                                    syms, paramsyms, observed, _colorvec,
+                                                    sys)
     end
 end
 
@@ -3181,7 +3187,7 @@ function NonlinearFunction{iip, true}(f;
                                       paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                       ggprime = nothing,
                                       syms = __has_syms(f) ? f.syms : nothing,
-                                      paramsyms = __has_paramsyms(f1) ? f1.paramsyms :
+                                      paramsyms = __has_paramsyms(f) ? f.paramsyms :
                                                   nothing,
                                       observed = __has_observed(f) ? f.observed :
                                                  DEFAULT_OBSERVED,
