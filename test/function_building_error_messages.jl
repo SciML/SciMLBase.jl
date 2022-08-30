@@ -234,11 +234,15 @@ frboth(du, u, p, t, W) = (du .= W)
 
 frode(u, p, t, W) = p * u
 rode_analytic(u0, t, p, W) = u0 * exp(p * t)
-rode_analytic!(sol) = (empty!(sol.u_analytic); append!(sol.u_analytic, sol.u0 * exp.(sol.t)))
+function rode_analytic!(sol)
+    empty!(sol.u_analytic)
+    append!(sol.u_analytic, sol.prob.u0 * exp.(sol.prob.p * sol.t))
+end
 @test_nowarn RODEFunction(frode)
-@test_nowarn RODEFunction(frode, analytic=rode_analytic)
-@test_nowarn RODEFunction(frode, analytic=rode_analytic!, analytic_full=true)
-@test_throws MethodError RODEFunction(frode, analytic=rode_analytic!, analytic_full = nothing)
+@test_nowarn RODEFunction(frode, analytic = rode_analytic)
+@test_nowarn RODEFunction(frode, analytic = rode_analytic!, analytic_full = true)
+@test_throws MethodError RODEFunction(frode, analytic = rode_analytic!,
+                                      analytic_full = nothing)
 
 # DAEFunction
 
