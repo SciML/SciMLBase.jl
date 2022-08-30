@@ -1969,9 +1969,8 @@ function SplitFunction{iip, recompile}(f1, f2;
                   typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
                   typeof(paramsyms), typeof(observed), typeof(colorvec),
                   typeof(sys)}(f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac,
-                               jvp, vjp, jac_prototype,
-                               sparsity, Wfact, Wfact_t, paramjac, syms, observed,
-                               colorvec, sys)
+                               jvp, vjp, jac_prototype, sparsity, Wfact, Wfact_t,
+                               paramjac, syms, paramsyms, observed, colorvec, sys)
 end
 function SplitFunction{iip, false}(f1, f2;
                                    mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,

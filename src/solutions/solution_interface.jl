@@ -76,7 +76,8 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
         elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            paramsyms(findfirst(Symbol(sym), paramsyms))
+            paramsyms[findfirst(Symbol(sym), paramsyms)]
+        else
             observed(A, sym, :)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
