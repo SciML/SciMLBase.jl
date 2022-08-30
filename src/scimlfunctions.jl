@@ -1140,9 +1140,9 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the RODE function. Can be used
   to determine that the equation is actually a random differential-algebraic equation (RDAE)
   if `M` is singular. Currently, however, all solvers assume `M` is the identity and do not take this term into account. Special solvers still need to be written to use a non-identity mass matrix.
-- `analytic(u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
+- `analytic`: (u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
   solution of the RODE. Generally only used for testing and development of the solvers. The exact form depends on the field `analytic_full`.
-- `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) or the form `analytic(sol)` (if `true`). The former is expected to return the solution `u(t)` of the equation, given the initial condition `u0`, the parameters `p`, the current time `t` and the value `W=W(t)` of the noise at the given time `t`. The latter case, on the other hand, is useful when the solution of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic` with the corresponding expected solution at `sol.t`/`sol.W.t`.
+- `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) or the form `analytic!(sol)` (if `true`). The former is expected to return the solution `u(t)` of the equation, given the initial condition `u0`, the parameter `p`, the current time `t` and the value `W=W(t)` of the noise at the given time `t`. The latter case is useful when the solution of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic` with the corresponding expected solution at `sol.W.t` or `sol.t`.
 - `tgrad(dT,u,p,t,W)` or dT=tgrad(u,p,t,W): returns ``\frac{\partial f(u,p,t,W)}{\partial t}``
 - `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\frac{df}{du}``
 - `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative``\frac{df}{du} v``
