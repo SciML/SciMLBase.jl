@@ -1100,7 +1100,7 @@ abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 @doc doc"""
     RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip,recompile}
 
-A representation of an RODE function `f`, defined by:
+A representation of a RODE function `f`, defined by:
 
 ```math
 M \frac{du}{dt} = f(u,p,t,W)dt
@@ -1131,29 +1131,28 @@ RODEFunction{iip,recompile}(f;
 ```
 
 Note that only the function `f` itself is required. This function should
-be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+be given as `f!(du,u,p,t,W)` or `du = f(u,p,t,W)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
 All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
-- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
-  to determine that the equation is actually a differential-algebraic equation (DAE)
-  if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
-  Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
-  solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `mass_matrix`: the mass matrix `M` represented in the RODE function. Can be used
+  to determine that the equation is actually a random differential-algebraic equation (RDAE)
+  if `M` is singular. Currently, however, all solvers assume `M` is the identity and do not take this term into account. Special solvers still need to be written to use a non-identity mass matrix.
+- `analytic(u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
+  solution of the RODE. Generally only used for testing and development of the solvers. The exact form depends on the field `analytic_full`.
+- `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) or the form `analytic(sol)` (if `true`). The former is expected to return the solution `u(t)` of the equation, given the initial condition `u0`, the parameters `p`, the current time `t` and the value `W=W(t)` of the noise at the given time `t`. The latter case, on the other hand, is useful when the solution of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic` with the corresponding expected solution at `sol.t`/`sol.W.t`.
+- `tgrad(dT,u,p,t,W)` or dT=tgrad(u,p,t,W): returns ``\frac{\partial f(u,p,t,W)}{\partial t}``
+- `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t,W)` or `Jv=vjp(v,u,p,t,W)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t,W)`: returns the parameter Jacobian ``\frac{df}{dp}``.
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
