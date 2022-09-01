@@ -1760,15 +1760,6 @@ function ODEFunction{iip, recompile}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if (recompile === FunctionWrapperSpecialize || recompile === false) &&
-       !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
-        if iip
-            f = wrapfun_iip(f)
-        else
-            f = wrapfun_oop(f)
-        end
-    end
-
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
