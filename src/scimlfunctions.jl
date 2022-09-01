@@ -1,5 +1,11 @@
 const RECOMPILE_BY_DEFAULT = true
 
+abstract type AbstractSpecialization end
+struct AutoSpecialize <: AbstractSpecialization end
+struct NoSpecialize <: AbstractSpecialization end
+struct FunctionWrapperSpecialize <: AbstractSpecialization end
+struct FullSpecialize <: AbstractSpecialization end
+
 function DEFAULT_OBSERVED(sym, u, p, t)
     error("Indexing symbol $sym is unknown.")
 end
@@ -40,7 +46,7 @@ $(TYPEDEF)
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip}
+    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractODEFunction{iip,recompile}
 
 A representation of an ODE function `f`, defined by:
 
@@ -205,7 +211,8 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct ODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S2, O, TCV,
+struct ODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+                   S2, O, TCV,
                    SYS} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
@@ -227,7 +234,7 @@ struct ODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S
 end
 
 @doc doc"""
-    SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
+    SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip,recompile}
 
 A representation of a split ODE function `f`, defined by:
 
@@ -325,7 +332,8 @@ automatically symbolically generating the Jacobian and more from the
 numerically-defined functions. See `ModelingToolkit.SplitODEProblem` for
 information on generating the SplitFunction from this symbolic engine.
 """
-struct SplitFunction{iip, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O,
+struct SplitFunction{iip, recompile, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
+                     TPJ, S, O,
                      TCV, SYS} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
@@ -348,7 +356,7 @@ struct SplitFunction{iip, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
 end
 
 @doc doc"""
-    DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip}
+    DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractODEFunction{iip,recompile}
 
 A representation of an ODE function `f`, defined by:
 
@@ -436,7 +444,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DynamicalODEFunction type directly match the names of the inputs.
 """
-struct DynamicalODEFunction{iip, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+struct DynamicalODEFunction{iip, recompile, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+                            TWt, TPJ, S,
                             O, TCV, SYS} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
@@ -463,7 +472,7 @@ $(TYPEDEF)
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
+    DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip,recompile}
 
 A representation of a DDE function `f`, defined by:
 
@@ -544,7 +553,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DDEFunction type directly match the names of the inputs.
 """
-struct DDEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV, SYS
+struct DDEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O,
+                   TCV, SYS
                    } <:
        AbstractDDEFunction{iip}
     f::F
@@ -566,7 +576,7 @@ struct DDEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O
 end
 
 @doc doc"""
-    DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip}
+    DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDDEFunction{iip,recompile}
 
 A representation of a DDE function `f`, defined by:
 
@@ -656,7 +666,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DynamicalDDEFunction type directly match the names of the inputs.
 """
-struct DynamicalDDEFunction{iip, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+struct DynamicalDDEFunction{iip, recompile, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+                            TWt, TPJ, S,
                             O, TCV, SYS} <: AbstractDDEFunction{iip}
     f1::F1
     f2::F2
@@ -680,10 +691,11 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractDiscreteFunction{iip} <: AbstractDiffEqFunction{iip} end
+abstract type AbstractDiscreteFunction{iip} <:
+              AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip}
+    DiscreteFunction{iip,F,Ta,S,O} <: AbstractDiscreteFunction{iip,recompile}
 
 A representation of an discrete dynamical system `f`, defined by:
 
@@ -728,7 +740,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DiscreteFunction type directly match the names of the inputs.
 """
-struct DiscreteFunction{iip, F, Ta, S, O, SYS} <: AbstractDiscreteFunction{iip}
+struct DiscreteFunction{iip, recompile, F, Ta, S, O, SYS} <:
+       AbstractDiscreteFunction{iip}
     f::F
     analytic::Ta
     syms::S
@@ -742,7 +755,7 @@ $(TYPEDEF)
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDEFunction{iip}
+    SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDEFunction{iip,recompile}
 
 A representation of an SDE function `f`, defined by:
 
@@ -824,7 +837,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the ODEFunction type directly match the names of the inputs.
 """
-struct SDEFunction{iip, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, GG, S, O,
+struct SDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+                   GG, S, O,
                    TCV, SYS
                    } <: AbstractSDEFunction{iip}
     f::F
@@ -848,7 +862,7 @@ struct SDEFunction{iip, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, G
 end
 
 @doc doc"""
-    SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
+    SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip,recompile}
 
 A representation of a split SDE function `f`, defined by:
 
@@ -937,7 +951,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the SplitSDEFunction type directly match the names of the inputs.
 """
-struct SplitSDEFunction{iip, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+struct SplitSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+                        TWt, TPJ,
                         S, O, TCV, SYS} <: AbstractSDEFunction{iip}
     f1::F1
     f2::F2
@@ -961,7 +976,7 @@ struct SplitSDEFunction{iip, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW
 end
 
 @doc doc"""
-    DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip}
+    DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractSDEFunction{iip,recompile}
 
 A representation of an SDE function `f` and `g`, defined by:
 
@@ -1052,7 +1067,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DynamicalSDEFunction type directly match the names of the inputs.
 """
-struct DynamicalSDEFunction{iip, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
+struct DynamicalSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP,
+                            TW, TWt,
                             TPJ, S, O, TCV, SYS} <: AbstractSDEFunction{iip}
     # This is a direct copy of the SplitSDEFunction, maybe it's not necessary and the above can be used instead.
     f1::F1
@@ -1082,7 +1098,7 @@ $(TYPEDEF)
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip}
+    RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip,recompile}
 
 A representation of an RODE function `f`, defined by:
 
@@ -1161,7 +1177,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the RODEFunction type directly match the names of the inputs.
 """
-struct RODEFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV, SYS
+struct RODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+                    O, TCV, SYS
                     } <:
        AbstractRODEFunction{iip}
     f::F
@@ -1188,7 +1205,7 @@ $(TYPEDEF)
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip}
+    DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractDAEFunction{iip,recompile}
 
 A representation of an implicit DAE function `f`, defined by:
 
@@ -1307,7 +1324,8 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct DAEFunction{iip, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV, SYS} <:
+struct DAEFunction{iip, recompile, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV,
+                   SYS} <:
        AbstractDAEFunction{iip}
     f::F
     analytic::Ta
@@ -1332,7 +1350,7 @@ $(TYPEDEF)
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDDEFunction{iip}
+    SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,O,TCV} <: AbstractSDDEFunction{iip,recompile}
 
 A representation of a SDDE function `f`, defined by:
 
@@ -1413,7 +1431,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DDEFunction type directly match the names of the inputs.
 """
-struct SDDEFunction{iip, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, GG, S, O,
+struct SDDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+                    GG, S, O,
                     TCV, SYS} <: AbstractSDDEFunction{iip}
     f::F
     g::G
@@ -1441,7 +1460,7 @@ $(TYPEDEF)
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
 @doc doc"""
-    NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip}
+    NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractNonlinearFunction{iip,recompile}
 
 A representation of an nonlinear system of equations `f`, defined by:
 
@@ -1512,7 +1531,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the NonlinearFunction type directly match the names of the inputs.
 """
-struct NonlinearFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, O, TCV,
+struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+                         S, O, TCV,
                          SYS
                          } <: AbstractNonlinearFunction{iip}
     f::F
@@ -1534,7 +1554,7 @@ struct NonlinearFunction{iip, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ
 end
 
 """
-    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip}
+    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip,recompile}
 
 A representation of an optimization of an objective function `f`, defined by:
 
@@ -1551,11 +1571,14 @@ and more. For all cases, `u` is the state and `p` are the parameters.
 OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           grad = nothing, hess = nothing, hv = nothing,
                           cons = nothing, cons_j = nothing, cons_h = nothing,
+                          lag_h = nothing,
                           hess_prototype = nothing, cons_jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                           cons_hess_prototype = nothing,
+                          lag_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing, hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                          lag_hess_colorvec = nothing,
                           sys = __has_sys(f) ? f.sys : nothing)
 ```
 
@@ -1572,6 +1595,10 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 - `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
 - `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
+- `lag_h(res,x,sigma,mu,p)` or `res=lag_h(x,sigma,mu,p)`: the Hessian of the Lagrangian,
+    where `sigma` is a multiplier of the cost function and `mu` are the lagrange multipliers
+    multiplying the constraints. This can be provided instead of `hess` and `cons_h`
+    to solvers that directly use the Hessian of the Lagrangian.
 - `paramjac(pJ,u,p)`: returns the parameter Jacobian ``df/dp``.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
@@ -1628,8 +1655,9 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, HCV, CJCV,
-                            CHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
+struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, HCV,
+                            CJCV,
+                            CHCV, LHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
@@ -1638,13 +1666,16 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, HC
     cons::C
     cons_j::CJ
     cons_h::CH
+    lag_h::LH
     hess_prototype::HP
     cons_jac_prototype::CJP
     cons_hess_prototype::CHP
+    lag_hess_prototype::LHP
     syms::S
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV
     cons_hess_colorvec::CHCV
+    lag_hess_colorvec::LHCV
     expr::EX
     cons_expr::CEX
     sys::SYS
@@ -1729,7 +1760,8 @@ function ODEFunction{iip, recompile}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if !recompile && !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+    if (recompile === FunctionWrapperSpecialize || recompile === false) &&
+       !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
         if iip
             f = wrapfun_iip(f)
         else
@@ -1768,23 +1800,71 @@ function ODEFunction{iip, recompile}(f;
         throw(NonconformingFunctionsError(functions))
     end
 
-    ODEFunction{iip,
-                typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
-                typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
-                typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                             jvp, vjp, jac_prototype, sparsity, Wfact,
-                             Wfact_t, paramjac, syms, indepsym,
-                             observed, _colorvec, sys)
+    if recompile === NoSpecialize
+        ODEFunction{iip, recompile,
+                    Any, Any, Any, Any,
+                    Any, Any, Any, typeof(jac_prototype),
+                    typeof(sparsity), Any, Any, Any,
+                    typeof(syms), typeof(indepsym), Any, typeof(_colorvec),
+                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                 jvp, vjp, jac_prototype, sparsity, Wfact,
+                                 Wfact_t, paramjac, syms, indepsym,
+                                 observed, _colorvec, sys)
+    elseif recompile === false
+        ODEFunction{iip, FunctionWrapperSpecialize,
+                    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+                    typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
+                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                 jvp, vjp, jac_prototype, sparsity, Wfact,
+                                 Wfact_t, paramjac, syms, indepsym,
+                                 observed, _colorvec, sys)
+    else
+        ODEFunction{iip, recompile,
+                    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+                    typeof(syms), typeof(indepsym), typeof(observed), typeof(_colorvec),
+                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                 jvp, vjp, jac_prototype, sparsity, Wfact,
+                                 Wfact_t, paramjac, syms, indepsym,
+                                 observed, _colorvec, sys)
+    end
 end
 
 function ODEFunction{iip}(f; kwargs...) where {iip}
-    ODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
+    ODEFunction{iip, FullSpecialize}(f; kwargs...)
 end
 ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), RECOMPILE_BY_DEFAULT}(f; kwargs...)
+ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
 ODEFunction(f::ODEFunction; kwargs...) = f
+
+function unwrapped_f(f::ODEFunction)
+    ff = unwrapped_f(f.f)
+    if specialization(f) === NoSpecialize
+        ODEFunction{isinplace(f), specialization(f), Any, Any, Any,
+                    Any, Any, Any, Any, typeof(f.jac_prototype),
+                    typeof(f.sparsity), Any, Any, Any,
+                    typeof(f.syms), Any, Any, typeof(f.colorvec),
+                    typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                                   f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
+                                   f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                                   f.observed, f.colorvec, f.sys)
+    else
+        ODEFunction{isinplace(f), specialization(f), typeof(ff), typeof(f.mass_matrix),
+                    typeof(f.analytic), typeof(f.tgrad),
+                    typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
+                    typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
+                    typeof(f.paramjac),
+                    typeof(f.syms), typeof(f.indepsym), typeof(f.observed),
+                    typeof(f.colorvec),
+                    typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                                   f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
+                                   f.Wfact_t, f.paramjac, f.syms, f.indepsym,
+                                   f.observed, f.colorvec, f.sys)
+    end
+end
 
 """
 $(SIGNATURES)
@@ -1821,20 +1901,20 @@ function ODEFunction(f::NonlinearFunction)
         _vjp = nothing
     end
 
-    ODEFunction{iip}(_f;
-                     mass_matrix = f.mass_matrix,
-                     analytic = _analytic,
-                     tgrad = _tgrad,
-                     jac = _jac,
-                     jvp = _jvp,
-                     vjp = _vjp,
-                     jac_prototype = f.jac_prototype,
-                     sparsity = f.sparsity,
-                     paramjac = f.paramjac,
-                     syms = f.syms,
-                     indepsym = nothing,
-                     observed = f.observed,
-                     colorvec = f.colorvec)
+    ODEFunction{iip, specialization(f)}(_f;
+                                        mass_matrix = f.mass_matrix,
+                                        analytic = _analytic,
+                                        tgrad = _tgrad,
+                                        jac = _jac,
+                                        jvp = _jvp,
+                                        vjp = _vjp,
+                                        jac_prototype = f.jac_prototype,
+                                        sparsity = f.sparsity,
+                                        paramjac = f.paramjac,
+                                        syms = f.syms,
+                                        indepsym = nothing,
+                                        observed = f.observed,
+                                        colorvec = f.colorvec)
 end
 
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
@@ -1848,7 +1928,8 @@ end
         throw(NonconformingFunctionsError(["f2"]))
     end
 
-    SplitFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(mass_matrix),
+    SplitFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
+                  typeof(mass_matrix),
                   typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
                   typeof(vjp), typeof(jac_prototype), typeof(sparsity),
                   typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
@@ -1857,69 +1938,60 @@ end
                     jac_prototype, sparsity, Wfact, Wfact_t, paramjac, syms,
                     observed, colorvec, sys)
 end
-function SplitFunction{iip, true}(f1, f2;
-                                  mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
-                                  _func_cache = nothing,
-                                  analytic = __has_analytic(f1) ? f1.analytic : nothing,
-                                  tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                  jac = __has_jac(f1) ? f1.jac : nothing,
-                                  jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                  vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                  jac_prototype = __has_jac_prototype(f1) ?
-                                                  f1.jac_prototype :
+function SplitFunction{iip, recompile}(f1, f2;
+                                       mass_matrix = __has_mass_matrix(f1) ?
+                                                     f1.mass_matrix : I,
+                                       _func_cache = nothing,
+                                       analytic = __has_analytic(f1) ? f1.analytic :
                                                   nothing,
-                                  sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                             jac_prototype,
-                                  Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                  Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                  paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                                  syms = __has_syms(f1) ? f1.syms : nothing,
-                                  observed = __has_observed(f1) ? f1.observed :
-                                             DEFAULT_OBSERVED,
-                                  colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
-                                  sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    SplitFunction{iip, typeof(f1), typeof(f2), typeof(mass_matrix),
-                  typeof(_func_cache), typeof(analytic),
-                  typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
-                  typeof(jac_prototype), typeof(sparsity),
-                  typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                  typeof(observed),
-                  typeof(colorvec),
-                  typeof(sys)}(f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac,
-                               jvp, vjp, jac_prototype,
-                               sparsity, Wfact, Wfact_t, paramjac, syms, observed,
-                               colorvec, sys)
+                                       tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
+                                       jac = __has_jac(f1) ? f1.jac : nothing,
+                                       jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                                       vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                                       jac_prototype = __has_jac_prototype(f1) ?
+                                                       f1.jac_prototype :
+                                                       nothing,
+                                       sparsity = __has_sparsity(f1) ? f1.sparsity :
+                                                  jac_prototype,
+                                       Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
+                                       Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
+                                       paramjac = __has_paramjac(f1) ? f1.paramjac :
+                                                  nothing,
+                                       syms = __has_syms(f1) ? f1.syms : nothing,
+                                       observed = __has_observed(f1) ? f1.observed :
+                                                  DEFAULT_OBSERVED,
+                                       colorvec = __has_colorvec(f1) ? f1.colorvec :
+                                                  nothing,
+                                       sys = __has_sys(f1) ? f1.sys : nothing) where {iip,
+                                                                                      recompile
+                                                                                      }
+    if recompile === NoSpecialize
+        SplitFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any, Any,
+                      Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
+                                                    analytic,
+                                                    tgrad, jac, jvp, vjp, jac_prototype,
+                                                    sparsity, Wfact, Wfact_t, paramjac,
+                                                    syms,
+                                                    observed, colorvec, sys)
+    else
+        SplitFunction{iip, recompile, typeof(f1), typeof(f2), typeof(mass_matrix),
+                      typeof(_func_cache), typeof(analytic),
+                      typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
+                      typeof(jac_prototype), typeof(sparsity),
+                      typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                      typeof(observed),
+                      typeof(colorvec),
+                      typeof(sys)}(f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac,
+                                   jvp, vjp, jac_prototype,
+                                   sparsity, Wfact, Wfact_t, paramjac, syms, observed,
+                                   colorvec, sys)
+    end
 end
-function SplitFunction{iip, false}(f1, f2;
-                                   mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
-                                   _func_cache = nothing,
-                                   analytic = __has_analytic(f1) ? f1.analytic : nothing,
-                                   tgrad = __has_tgrad(f1) ? f.tgrad : nothing,
-                                   jac = __has_jac(f1) ? f1.jac : nothing,
-                                   jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                   vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                   jac_prototype = __has_jac_prototype(f1) ?
-                                                   f1.jac_prototype : nothing,
-                                   sparsity = __has_sparsity(f1) ? f.sparsity :
-                                              jac_prototype,
-                                   Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                   Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                   paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                                   syms = __has_syms(f1) ? f1.syms : nothing,
-                                   observed = __has_observed(f1) ? f1.observed :
-                                              DEFAULT_OBSERVED,
-                                   colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
-                                   sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    SplitFunction{iip, Any, Any, Any, Any, Any, Any, Any, Any, Any,
-                  Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache, analytic,
-                                                tgrad, jac, jvp, vjp, jac_prototype,
-                                                sparsity, Wfact, Wfact_t, paramjac, syms,
-                                                observed, colorvec, sys)
-end
+
 SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
-    SplitFunction{iip, RECOMPILE_BY_DEFAULT}(ODEFunction(f1), ODEFunction{iip}(f2);
-                                             kwargs...)
+    SplitFunction{iip, FullSpecialize}(ODEFunction(f1), ODEFunction{iip}(f2);
+                                       kwargs...)
 end
 SplitFunction(f::SplitFunction; kwargs...) = f
 
@@ -1934,7 +2006,8 @@ SplitFunction(f::SplitFunction; kwargs...) = f
         throw(NonconformingFunctionsError(["f2"]))
     end
 
-    DynamicalODEFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(mass_matrix),
+    DynamicalODEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
+                         typeof(mass_matrix),
                          typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
                          typeof(vjp),
                          typeof(jac_prototype),
@@ -1945,131 +2018,137 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                                       paramjac, syms, observed, colorvec, sys)
 end
 
-function DynamicalODEFunction{iip, true}(f1, f2;
-                                         mass_matrix = __has_mass_matrix(f1) ?
-                                                       f1.mass_matrix : I,
-                                         analytic = __has_analytic(f1) ? f1.analytic :
-                                                    nothing,
-                                         tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                         jac = __has_jac(f1) ? f1.jac : nothing,
-                                         jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                         vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                         jac_prototype = __has_jac_prototype(f1) ?
-                                                         f1.jac_prototype : nothing,
-                                         sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                    jac_prototype,
-                                         Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                         Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                         paramjac = __has_paramjac(f1) ? f1.paramjac :
-                                                    nothing,
-                                         syms = __has_syms(f1) ? f1.syms : nothing,
-                                         observed = __has_observed(f1) ? f1.observed :
-                                                    DEFAULT_OBSERVED,
-                                         colorvec = __has_colorvec(f1) ? f1.colorvec :
-                                                    nothing,
-                                         sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    DynamicalODEFunction{iip, typeof(f1), typeof(f2), typeof(mass_matrix),
-                         typeof(analytic),
-                         typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
-                         typeof(jac_prototype), typeof(sparsity),
-                         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                         typeof(observed),
-                         typeof(colorvec),
-                         typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
-                                      vjp, jac_prototype, sparsity,
-                                      Wfact, Wfact_t, paramjac, syms, observed,
-                                      colorvec, sys)
-end
-
-function DynamicalODEFunction{iip, false}(f1, f2;
-                                          mass_matrix = __has_mass_matrix(f1) ?
-                                                        f1.mass_matrix : I,
-                                          analytic = __has_analytic(f1) ? f1.analytic :
-                                                     nothing,
-                                          tgrad = __has_tgrad(f1) ? f.tgrad : nothing,
-                                          jac = __has_jac(f1) ? f1.jac : nothing,
-                                          jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                          vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                          jac_prototype = __has_jac_prototype(f1) ?
-                                                          f1.jac_prototype : nothing,
-                                          sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                     jac_prototype,
-                                          Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                          Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
-                                                    nothing,
-                                          paramjac = __has_paramjac(f1) ? f1.paramjac :
-                                                     nothing,
-                                          syms = __has_syms(f1) ? f1.syms : nothing,
-                                          observed = __has_observed(f1) ? f1.observed :
-                                                     DEFAULT_OBSERVED,
-                                          colorvec = __has_colorvec(f1) ? f1.colorvec :
-                                                     nothing,
-                                          sys = __has_sys(f1) ? f1.sys : nothing) where {iip
-                                                                                         }
-    DynamicalODEFunction{iip, Any, Any, Any, Any, Any, Any, Any,
-                         Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, analytic,
-                                                            tgrad,
-                                                            jac, jvp, vjp, jac_prototype,
-                                                            sparsity,
-                                                            Wfact, Wfact_t, paramjac, syms,
-                                                            observed, colorvec, sys)
+function DynamicalODEFunction{iip, recompile}(f1, f2;
+                                              mass_matrix = __has_mass_matrix(f1) ?
+                                                            f1.mass_matrix : I,
+                                              analytic = __has_analytic(f1) ? f1.analytic :
+                                                         nothing,
+                                              tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
+                                              jac = __has_jac(f1) ? f1.jac : nothing,
+                                              jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                                              vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                                              jac_prototype = __has_jac_prototype(f1) ?
+                                                              f1.jac_prototype : nothing,
+                                              sparsity = __has_sparsity(f1) ? f1.sparsity :
+                                                         jac_prototype,
+                                              Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
+                                              Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
+                                                        nothing,
+                                              paramjac = __has_paramjac(f1) ? f1.paramjac :
+                                                         nothing,
+                                              syms = __has_syms(f1) ? f1.syms : nothing,
+                                              observed = __has_observed(f1) ? f1.observed :
+                                                         DEFAULT_OBSERVED,
+                                              colorvec = __has_colorvec(f1) ? f1.colorvec :
+                                                         nothing,
+                                              sys = __has_sys(f1) ? f1.sys : nothing) where {
+                                                                                             iip,
+                                                                                             recompile
+                                                                                             }
+    if recompile === NoSpecialize
+        DynamicalODEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any,
+                             Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix,
+                                                                analytic,
+                                                                tgrad,
+                                                                jac, jvp, vjp,
+                                                                jac_prototype,
+                                                                sparsity,
+                                                                Wfact, Wfact_t, paramjac,
+                                                                syms,
+                                                                observed, colorvec, sys)
+    else
+        DynamicalODEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(mass_matrix),
+                             typeof(analytic),
+                             typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
+                             typeof(jac_prototype), typeof(sparsity),
+                             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                             typeof(observed),
+                             typeof(colorvec),
+                             typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
+                                          vjp, jac_prototype, sparsity,
+                                          Wfact, Wfact_t, paramjac, syms, observed,
+                                          colorvec, sys)
+    end
 end
 
 function DynamicalODEFunction(f1, f2 = nothing; kwargs...)
     DynamicalODEFunction{isinplace(f1, 5)}(f1, f2; kwargs...)
 end
 function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
-    DynamicalODEFunction{iip, RECOMPILE_BY_DEFAULT}(ODEFunction{iip}(f1),
-                                                    ODEFunction{iip}(f2); kwargs...)
+    DynamicalODEFunction{iip, FullSpecialize}(ODEFunction{iip}(f1),
+                                              ODEFunction{iip}(f2); kwargs...)
 end
 DynamicalODEFunction(f::DynamicalODEFunction; kwargs...) = f
 
-function DiscreteFunction{iip, true}(f;
-                                     analytic = __has_analytic(f) ? f.analytic : nothing,
-                                     syms = __has_syms(f) ? f.syms : nothing,
-                                     observed = __has_observed(f) ? f.observed :
-                                                DEFAULT_OBSERVED,
-                                     sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    DiscreteFunction{iip, typeof(f), typeof(analytic),
-                     typeof(syms), typeof(observed), typeof(sys)}(f, analytic, syms,
+function DiscreteFunction{iip, recompile}(f;
+                                          analytic = __has_analytic(f) ? f.analytic :
+                                                     nothing,
+                                          syms = __has_syms(f) ? f.syms : nothing,
+                                          observed = __has_observed(f) ? f.observed :
+                                                     DEFAULT_OBSERVED,
+                                          sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                       recompile
+                                                                                       }
+    if recompile === NoSpecialize
+        DiscreteFunction{iip, recompile, Any, Any, Any, Any, Any}(f, analytic, syms,
                                                                   observed, sys)
+    else
+        DiscreteFunction{iip, recompile, typeof(f), typeof(analytic),
+                         typeof(syms), typeof(observed), typeof(sys)}(f, analytic, syms,
+                                                                      observed, sys)
+    end
 end
-function DiscreteFunction{iip, false}(f;
-                                      analytic = __has_analytic(f) ? f.analytic : nothing,
-                                      syms = __has_syms(f) ? f.syms : nothing,
-                                      observed = __has_observed(f) ? f.observed :
-                                                 DEFAULT_OBSERVED,
-                                      sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    DiscreteFunction{iip, Any, Any, Any, Any, Any}(f, analytic, syms, observed, sys)
-end
+
 function DiscreteFunction{iip}(f; kwargs...) where {iip}
-    DiscreteFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
+    DiscreteFunction{iip, FullSpecialize}(f; kwargs...)
 end
 DiscreteFunction{iip}(f::DiscreteFunction; kwargs...) where {iip} = f
 function DiscreteFunction(f; kwargs...)
-    DiscreteFunction{isinplace(f, 4), RECOMPILE_BY_DEFAULT}(f; kwargs...)
+    DiscreteFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
 end
 DiscreteFunction(f::DiscreteFunction; kwargs...) = f
 
-function SDEFunction{iip, true}(f, g;
-                                mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                jac = __has_jac(f) ? f.jac : nothing,
-                                jvp = __has_jvp(f) ? f.jvp : nothing,
-                                vjp = __has_vjp(f) ? f.vjp : nothing,
-                                jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                nothing,
-                                sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                ggprime = nothing,
-                                syms = __has_syms(f) ? f.syms : nothing,
-                                observed = __has_observed(f) ? f.observed :
-                                           DEFAULT_OBSERVED,
-                                colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                sys = __has_sys(f) ? f.sys : nothing) where {iip}
+function unwrapped_f(f::DiscreteFunction)
+    ff = unwrapped_f(f)
+    recompile = specialization(f)
+
+    if recompile === NoSpecialize
+        DiscreteFunction{isinplace(f), recompile, typeof(ff), typeof(f.analytic),
+                         typeof(f.syms),
+                         typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms,
+                                                            f.observed,
+                                                            f.sys)
+    else
+        DiscreteFunction{isinplace(f), recompile, typeof(ff), typeof(f.analytic),
+                         typeof(f.syms),
+                         typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms,
+                                                            f.observed,
+                                                            f.sys)
+    end
+end
+
+function SDEFunction{iip, recompile}(f, g;
+                                     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                     analytic = __has_analytic(f) ? f.analytic : nothing,
+                                     tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+                                     jac = __has_jac(f) ? f.jac : nothing,
+                                     jvp = __has_jvp(f) ? f.jvp : nothing,
+                                     vjp = __has_vjp(f) ? f.vjp : nothing,
+                                     jac_prototype = __has_jac_prototype(f) ?
+                                                     f.jac_prototype :
+                                                     nothing,
+                                     sparsity = __has_sparsity(f) ? f.sparsity :
+                                                jac_prototype,
+                                     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+                                     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                     ggprime = nothing,
+                                     syms = __has_syms(f) ? f.syms : nothing,
+                                     observed = __has_observed(f) ? f.observed :
+                                                DEFAULT_OBSERVED,
+                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                     sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                  recompile}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2102,83 +2181,88 @@ function SDEFunction{iip, true}(f, g;
         throw(NonconformingFunctionsError(functions))
     end
 
-    SDEFunction{iip, typeof(f), typeof(g),
-                typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                typeof(paramjac), typeof(ggprime), typeof(syms),
-                typeof(observed), typeof(_colorvec), typeof(sys)}(f, g, mass_matrix,
-                                                                  analytic, tgrad, jac,
-                                                                  jvp, vjp, jac_prototype,
-                                                                  sparsity, Wfact, Wfact_t,
-                                                                  paramjac, ggprime, syms,
-                                                                  observed, _colorvec, sys)
-end
-function SDEFunction{iip, false}(f, g;
-                                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                                 tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                 jac = __has_jac(f) ? f.jac : nothing,
-                                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                 nothing,
-                                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                 Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                 Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                 ggprime = nothing,
-                                 syms = __has_syms(f) ? f.syms : nothing,
-                                 observed = __has_observed(f) ? f.observed :
-                                            DEFAULT_OBSERVED,
-                                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                 sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+    if recompile === NoSpecialize
+        SDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any,
+                    Any, Any, Any, Any, typeof(syms), Any,
+                    typeof(_colorvec), typeof(sys)}(f, g, mass_matrix, analytic,
+                                                    tgrad, jac, jvp, vjp,
+                                                    jac_prototype, sparsity,
+                                                    Wfact, Wfact_t, paramjac, ggprime, syms,
+                                                    observed, _colorvec, sys)
     else
-        _colorvec = colorvec
+        SDEFunction{iip, recompile, typeof(f), typeof(g),
+                    typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
+                    typeof(paramjac), typeof(ggprime), typeof(syms),
+                    typeof(observed), typeof(_colorvec), typeof(sys)}(f, g, mass_matrix,
+                                                                      analytic, tgrad, jac,
+                                                                      jvp, vjp,
+                                                                      jac_prototype,
+                                                                      sparsity, Wfact,
+                                                                      Wfact_t,
+                                                                      paramjac, ggprime,
+                                                                      syms,
+                                                                      observed, _colorvec,
+                                                                      sys)
     end
-
-    giip = isinplace(g, 4, "g")
-    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
-    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
-    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
-    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
-    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
-
-    nonconforming = (giip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
-                     paramjaciip) .!= iip
-    if any(nonconforming)
-        nonconforming = findall(nonconforming)
-        functions = ["g", "jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
-        throw(NonconformingFunctionsError(functions))
-    end
-
-    SDEFunction{iip, Any, Any, Any, Any, Any, Any, Any, Any,
-                Any, Any, Any, Any, typeof(syms), Any,
-                typeof(_colorvec), Any, Any}(f, g, mass_matrix, analytic,
-                                             tgrad, jac, jvp, vjp,
-                                             jac_prototype, sparsity,
-                                             Wfact, Wfact_t, paramjac, ggprime, syms,
-                                             observed, _colorvec, sys)
 end
+
+function unwrapped_f(f::SDEFunction)
+    ff, g = unwrapped_f(f.f), unwrapped_f(f.g)
+    recompile = specialization(f)
+
+    if recompile === NoSpecialize
+        SDEFunction{isinplace(f), recompile, Any, Any,
+                    typeoff(f.mass_matrix), Any, Any,
+                    Any, Any, Any, typeof(f.jac_prototype),
+                    typeof(f.sparsity), Any, Any,
+                    Any, Any, typeof(f.syms),
+                    typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(ff, g,
+                                                                           f.mass_matrix,
+                                                                           f.analytic,
+                                                                           f.tgrad, f.jac,
+                                                                           f.jvp, f.vjp,
+                                                                           f.jac_prototype,
+                                                                           f.sparsity,
+                                                                           f.Wfact,
+                                                                           f.Wfact_t,
+                                                                           f.paramjac,
+                                                                           f.ggprime,
+                                                                           f.syms,
+                                                                           f.observed,
+                                                                           f.colorvec,
+                                                                           f.sys)
+    else
+        SDEFunction{isinplace(f), recompile, typeof(ff), typeof(g),
+                    typeof(f.mass_matrix), typeof(f.analytic), typeof(f.tgrad),
+                    typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
+                    typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
+                    typeof(f.paramjac), typeof(f.ggprime), typeof(f.syms),
+                    typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(ff, g,
+                                                                           f.mass_matrix,
+                                                                           f.analytic,
+                                                                           f.tgrad, f.jac,
+                                                                           f.jvp, f.vjp,
+                                                                           f.jac_prototype,
+                                                                           f.sparsity,
+                                                                           f.Wfact,
+                                                                           f.Wfact_t,
+                                                                           f.paramjac,
+                                                                           f.ggprime,
+                                                                           f.syms,
+                                                                           f.observed,
+                                                                           f.colorvec,
+                                                                           f.sys)
+    end
+end
+
 function SDEFunction{iip}(f, g; kwargs...) where {iip}
-    SDEFunction{iip, RECOMPILE_BY_DEFAULT}(f, g; kwargs...)
+    SDEFunction{iip, FullSpecialize}(f, g; kwargs...)
 end
 SDEFunction{iip}(f::SDEFunction, g; kwargs...) where {iip} = f
 function SDEFunction(f, g; kwargs...)
-    SDEFunction{isinplace(f, 4), RECOMPILE_BY_DEFAULT}(f, g; kwargs...)
+    SDEFunction{isinplace(f, 4), FullSpecialize}(f, g; kwargs...)
 end
 SDEFunction(f::SDEFunction; kwargs...) = f
 
@@ -2199,75 +2283,67 @@ SDEFunction(f::SDEFunction; kwargs...) = f
                                colorvec, sys)
 end
 
-function SplitSDEFunction{iip, true}(f1, f2, g;
-                                     mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix :
-                                                   I,
-                                     _func_cache = nothing,
-                                     analytic = __has_analytic(f1) ? f1.analytic : nothing,
-                                     tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                     jac = __has_jac(f1) ? f1.jac : nothing,
-                                     jac_prototype = __has_jac_prototype(f1) ?
-                                                     f1.jac_prototype : nothing,
-                                     sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                jac_prototype,
-                                     jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                     vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                     Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                     Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                     paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                                     syms = __has_syms(f1) ? f1.syms : nothing,
-                                     observed = __has_observed(f1) ? f1.observed :
-                                                DEFAULT_OBSERVED,
-                                     colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
-                                     sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    SplitSDEFunction{iip, typeof(f1), typeof(f2), typeof(g),
-                     typeof(mass_matrix), typeof(_func_cache),
-                     typeof(analytic),
-                     typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
-                     typeof(jac_prototype), typeof(sparsity),
-                     typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                     typeof(observed),
-                     typeof(colorvec),
-                     typeof(sys)}(f1, f2, g, mass_matrix, _func_cache, analytic,
-                                  tgrad, jac, jvp, vjp, jac_prototype, sparsity,
-                                  Wfact, Wfact_t, paramjac, syms, observed, colorvec, sys)
+function SplitSDEFunction{iip, recompile}(f1, f2, g;
+                                          mass_matrix = __has_mass_matrix(f1) ?
+                                                        f1.mass_matrix :
+                                                        I,
+                                          _func_cache = nothing,
+                                          analytic = __has_analytic(f1) ? f1.analytic :
+                                                     nothing,
+                                          tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
+                                          jac = __has_jac(f1) ? f1.jac : nothing,
+                                          jac_prototype = __has_jac_prototype(f1) ?
+                                                          f1.jac_prototype : nothing,
+                                          sparsity = __has_sparsity(f1) ? f1.sparsity :
+                                                     jac_prototype,
+                                          jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                                          vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                                          Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
+                                          Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
+                                                    nothing,
+                                          paramjac = __has_paramjac(f1) ? f1.paramjac :
+                                                     nothing,
+                                          syms = __has_syms(f1) ? f1.syms : nothing,
+                                          observed = __has_observed(f1) ? f1.observed :
+                                                     DEFAULT_OBSERVED,
+                                          colorvec = __has_colorvec(f1) ? f1.colorvec :
+                                                     nothing,
+                                          sys = __has_sys(f1) ? f1.sys : nothing) where {
+                                                                                         iip,
+                                                                                         recompile
+                                                                                         }
+    if recompile === NoSpecialize
+        SplitSDEFunction{iip, recompile, Any, Any, Any, Any, Any,
+                         Any, Any, Any, Any, Any,
+                         Any, Any, Any, Any, Any, Any}(f1, f2, g, mass_matrix, _func_cache,
+                                                       analytic,
+                                                       tgrad, jac, jvp, vjp, jac_prototype,
+                                                       sparsity,
+                                                       Wfact, Wfact_t, paramjac, syms,
+                                                       observed,
+                                                       colorvec, sys)
+    else
+        SplitSDEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(g),
+                         typeof(mass_matrix), typeof(_func_cache),
+                         typeof(analytic),
+                         typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
+                         typeof(jac_prototype), typeof(sparsity),
+                         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                         typeof(observed),
+                         typeof(colorvec),
+                         typeof(sys)}(f1, f2, g, mass_matrix, _func_cache, analytic,
+                                      tgrad, jac, jvp, vjp, jac_prototype, sparsity,
+                                      Wfact, Wfact_t, paramjac, syms, observed, colorvec,
+                                      sys)
+    end
 end
-function SplitSDEFunction{iip, false}(f1, f2, g;
-                                      mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix :
-                                                    I,
-                                      _func_cache = nothing,
-                                      analytic = __has_analytic(f1) ? f1.analytic : nothing,
-                                      tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                      jac = __has_jac(f1) ? f1.jac : nothing,
-                                      jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                      vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                      jac_prototype = __has_jac_prototype(f1) ?
-                                                      f1.jac_prototype : nothing,
-                                      sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                 jac_prototype,
-                                      Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                      Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                      paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                                      syms = __has_syms(f1) ? f1.syms : nothing,
-                                      observed = __has_observed(f1) ? f1.observed :
-                                                 DEFAULT_OBSERVED,
-                                      colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
-                                      sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    SplitSDEFunction{iip, Any, Any, Any, Any, Any,
-                     Any, Any, Any, Any, Any,
-                     Any, Any, Any, Any, Any, Any}(f1, f2, g, mass_matrix, _func_cache,
-                                                   analytic,
-                                                   tgrad, jac, jvp, vjp, jac_prototype,
-                                                   sparsity,
-                                                   Wfact, Wfact_t, paramjac, syms, observed,
-                                                   colorvec, sys)
-end
+
 function SplitSDEFunction(f1, f2, g; kwargs...)
     SplitSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
-    SplitSDEFunction{iip, RECOMPILE_BY_DEFAULT}(SDEFunction(f1, g), SDEFunction{iip}(f2, g),
-                                                g; kwargs...)
+    SplitSDEFunction{iip, FullSpecialize}(SDEFunction(f1, g), SDEFunction{iip}(f2, g),
+                                          g; kwargs...)
 end
 SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
 
@@ -2277,7 +2353,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                                           syms, observed, colorvec, sys)
     f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
-    DynamicalSDEFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g),
+    DynamicalSDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
                          typeof(mass_matrix),
                          typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac),
                          typeof(jvp), typeof(vjp),
@@ -2288,104 +2364,90 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                                       observed, colorvec, sys)
 end
 
-function DynamicalSDEFunction{iip, true}(f1, f2, g;
-                                         mass_matrix = __has_mass_matrix(f1) ?
-                                                       f1.mass_matrix : I,
-                                         _func_cache = nothing,
-                                         analytic = __has_analytic(f1) ? f1.analytic :
-                                                    nothing,
-                                         tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                         jac = __has_jac(f1) ? f1.jac : nothing,
-                                         jac_prototype = __has_jac_prototype(f1) ?
-                                                         f1.jac_prototype : nothing,
-                                         sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                    jac_prototype,
-                                         jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                         vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                         Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                         Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                         paramjac = __has_paramjac(f1) ? f1.paramjac :
-                                                    nothing,
-                                         syms = __has_syms(f1) ? f1.syms : nothing,
-                                         observed = __has_observed(f1) ? f1.observed :
-                                                    DEFAULT_OBSERVED,
-                                         colorvec = __has_colorvec(f1) ? f1.colorvec :
-                                                    nothing,
-                                         sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    DynamicalSDEFunction{iip, typeof(f1), typeof(f2), typeof(g),
-                         typeof(mass_matrix), typeof(_func_cache),
-                         typeof(analytic),
-                         typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
-                         typeof(jac_prototype), typeof(sparsity),
-                         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                         typeof(observed), typeof(colorvec),
-                         typeof(sys)}(f1, f2, g, mass_matrix, _func_cache, analytic,
-                                      tgrad, jac, jvp, vjp, jac_prototype, sparsity,
-                                      Wfact, Wfact_t, paramjac, syms, observed,
-                                      colorvec, sys)
-end
-function DynamicalSDEFunction{iip, false}(f1, f2, g;
-                                          mass_matrix = __has_mass_matrix(f1) ?
-                                                        f1.mass_matrix : I,
-                                          _func_cache = nothing,
-                                          analytic = __has_analytic(f1) ? f1.analytic :
-                                                     nothing,
-                                          tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                          jac = __has_jac(f1) ? f1.jac : nothing,
-                                          jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                          vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                          jac_prototype = __has_jac_prototype(f1) ?
-                                                          f1.jac_prototype : nothing,
-                                          sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                     jac_prototype,
-                                          Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                          Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
-                                                    nothing,
-                                          paramjac = __has_paramjac(f1) ? f1.paramjac :
-                                                     nothing,
-                                          syms = __has_syms(f1) ? f1.syms : nothing,
-                                          observed = __has_observed(f1) ? f1.observed :
-                                                     DEFAULT_OBSERVED,
-                                          colorvec = __has_colorvec(f1) ? f1.colorvec :
-                                                     nothing,
-                                          sys = __has_sys(f1) ? f1.sys : nothing) where {iip
-                                                                                         }
-    DynamicalSDEFunction{iip, Any, Any, Any, Any, Any,
-                         Any, Any, Any, Any, Any,
-                         Any, Any, Any, Any, Any, Any}(f1, f2, g, mass_matrix, _func_cache,
-                                                       analytic, tgrad, jac, jvp, vjp,
-                                                       jac_prototype, sparsity,
-                                                       Wfact, Wfact_t, paramjac, syms,
-                                                       observed, colorvec, sys)
+function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
+                                              mass_matrix = __has_mass_matrix(f1) ?
+                                                            f1.mass_matrix : I,
+                                              _func_cache = nothing,
+                                              analytic = __has_analytic(f1) ? f1.analytic :
+                                                         nothing,
+                                              tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
+                                              jac = __has_jac(f1) ? f1.jac : nothing,
+                                              jac_prototype = __has_jac_prototype(f1) ?
+                                                              f1.jac_prototype : nothing,
+                                              sparsity = __has_sparsity(f1) ? f1.sparsity :
+                                                         jac_prototype,
+                                              jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                                              vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                                              Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
+                                              Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
+                                                        nothing,
+                                              paramjac = __has_paramjac(f1) ? f1.paramjac :
+                                                         nothing,
+                                              syms = __has_syms(f1) ? f1.syms : nothing,
+                                              observed = __has_observed(f1) ? f1.observed :
+                                                         DEFAULT_OBSERVED,
+                                              colorvec = __has_colorvec(f1) ? f1.colorvec :
+                                                         nothing,
+                                              sys = __has_sys(f1) ? f1.sys : nothing) where {
+                                                                                             iip,
+                                                                                             recompile
+                                                                                             }
+    if recompile === NoSpecialize
+        DynamicalSDEFunction{iip, recompile, Any, Any, Any, Any, Any,
+                             Any, Any, Any, Any, Any,
+                             Any, Any, Any, Any, Any, Any}(f1, f2, g, mass_matrix,
+                                                           _func_cache,
+                                                           analytic, tgrad, jac, jvp, vjp,
+                                                           jac_prototype, sparsity,
+                                                           Wfact, Wfact_t, paramjac, syms,
+                                                           observed, colorvec, sys)
+    else
+        DynamicalSDEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(g),
+                             typeof(mass_matrix), typeof(_func_cache),
+                             typeof(analytic),
+                             typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
+                             typeof(jac_prototype), typeof(sparsity),
+                             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                             typeof(observed), typeof(colorvec),
+                             typeof(sys)}(f1, f2, g, mass_matrix, _func_cache, analytic,
+                                          tgrad, jac, jvp, vjp, jac_prototype, sparsity,
+                                          Wfact, Wfact_t, paramjac, syms, observed,
+                                          colorvec, sys)
+    end
 end
 
 function DynamicalSDEFunction(f1, f2, g; kwargs...)
     DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
 end
 function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
-    DynamicalSDEFunction{iip, RECOMPILE_BY_DEFAULT}(SDEFunction{iip}(f1, g),
-                                                    SDEFunction{iip}(f2, g), g; kwargs...)
+    DynamicalSDEFunction{iip, FullSpecialize}(SDEFunction{iip}(f1, g),
+                                              SDEFunction{iip}(f2, g), g; kwargs...)
 end
 DynamicalSDEFunction(f::DynamicalSDEFunction; kwargs...) = f
 
-function RODEFunction{iip, true}(f;
-                                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                                 tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                 jac = __has_jac(f) ? f.jac : nothing,
-                                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                 nothing,
-                                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                 Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                 Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                 syms = __has_syms(f) ? f.syms : nothing,
-                                 observed = __has_observed(f) ? f.observed :
-                                            DEFAULT_OBSERVED,
-                                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                 sys = __has_sys(f) ? f.sys : nothing) where {iip}
+function RODEFunction{iip, recompile}(f;
+                                      mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
+                                                    I,
+                                      analytic = __has_analytic(f) ? f.analytic : nothing,
+                                      tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+                                      jac = __has_jac(f) ? f.jac : nothing,
+                                      jvp = __has_jvp(f) ? f.jvp : nothing,
+                                      vjp = __has_vjp(f) ? f.vjp : nothing,
+                                      jac_prototype = __has_jac_prototype(f) ?
+                                                      f.jac_prototype :
+                                                      nothing,
+                                      sparsity = __has_sparsity(f) ? f.sparsity :
+                                                 jac_prototype,
+                                      Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+                                      Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+                                      paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                      syms = __has_syms(f) ? f.syms : nothing,
+                                      observed = __has_observed(f) ? f.observed :
+                                                 DEFAULT_OBSERVED,
+                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                   recompile
+                                                                                   }
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2420,286 +2482,179 @@ function RODEFunction{iip, true}(f;
     end
     =#
 
-    RODEFunction{iip, typeof(f), typeof(mass_matrix),
-                 typeof(analytic), typeof(tgrad),
-                 typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                 typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                 typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
-                 typeof(sys)}(f, mass_matrix, analytic, tgrad,
-                              jac, jvp, vjp, jac_prototype, sparsity,
-                              Wfact, Wfact_t, paramjac, syms, observed,
-                              _colorvec, sys)
-end
-function RODEFunction{iip, false}(f;
-                                  mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                  analytic = __has_analytic(f) ? f.analytic : nothing,
-                                  tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                  jac = __has_jac(f) ? f.jac : nothing,
-                                  jvp = __has_jvp(f) ? f.jvp : nothing,
-                                  vjp = __has_vjp(f) ? f.vjp : nothing,
-                                  jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                  nothing,
-                                  sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                  Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                  Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                  syms = __has_syms(f) ? f.syms : nothing,
-                                  observed = __has_observed(f) ? f.observed :
-                                             DEFAULT_OBSERVED,
-                                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                  sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    # Setup when the design is finalized by useful integrators
-
-    #=
-    jaciip = jac !== nothing ? isinplace(jac,4,"jac",iip) : iip
-    tgradiip = tgrad !== nothing ? isinplace(tgrad,4,"tgrad",iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp,5,"jvp",iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp,5,"vjp",iip) : iip
-    Wfactiip = Wfact !== nothing ? isinplace(Wfact,4,"Wfact",iip) : iip
-    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t,4,"Wfact_t",iip) : iip
-    paramjaciip = paramjac !== nothing ? isinplace(paramjac,4,"paramjac",iip) : iip
-
-    nonconforming = (jaciip,tgradiip,jvpiip,vjpiip,Wfactiip,Wfact_tiip,paramjaciip) .!= iip
-    if any(nonconforming)
-       nonconforming = findall(nonconforming)
-       functions = ["jac","tgrad","jvp","vjp","Wfact","Wfact_t","paramjac"][nonconforming]
-       throw(NonconformingFunctionsError(functions))
-    end
-    =#
-
-    RODEFunction{iip, Any, Any, Any, Any, Any,
-                 Any, Any, Any, Any, Any,
-                 typeof(syms), Any, typeof(_colorvec), Any}(f, mass_matrix, analytic, tgrad,
-                                                            jac, jvp, vjp, jac_prototype,
-                                                            sparsity, Wfact, Wfact_t,
-                                                            paramjac, syms, observed,
-                                                            _colorvec, sys)
-end
-function RODEFunction{iip}(f; kwargs...) where {iip}
-    RODEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
-end
-RODEFunction{iip}(f::RODEFunction; kwargs...) where {iip} = f
-function RODEFunction(f; kwargs...)
-    RODEFunction{isinplace(f, 5), RECOMPILE_BY_DEFAULT}(f; kwargs...)
-end
-RODEFunction(f::RODEFunction; kwargs...) = f
-
-function DAEFunction{iip, true}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                jac = __has_jac(f) ? f.jac : nothing,
-                                jvp = __has_jvp(f) ? f.jvp : nothing,
-                                vjp = __has_vjp(f) ? f.vjp : nothing,
-                                jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                nothing,
-                                sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                syms = __has_syms(f) ? f.syms : nothing,
-                                observed = __has_observed(f) ? f.observed :
-                                           DEFAULT_OBSERVED,
-                                colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    jaciip = jac !== nothing ? isinplace(jac, 6, "jac", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 7, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 7, "vjp", iip) : iip
-
-    nonconforming = (jaciip, jvpiip, vjpiip) .!= iip
-    if any(nonconforming)
-        nonconforming = findall(nonconforming)
-        functions = ["jac", "jvp", "vjp"][nonconforming]
-        throw(NonconformingFunctionsError(functions))
-    end
-
-    DAEFunction{iip, typeof(f), typeof(analytic), typeof(tgrad),
-                typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
-                typeof(sys)}(f, analytic, tgrad, jac, jvp, vjp,
-                             jac_prototype, sparsity, Wfact, Wfact_t,
-                             paramjac, syms, observed, _colorvec, sys)
-end
-function DAEFunction{iip, false}(f;
-                                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                                 tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                 jac = __has_jac(f) ? f.jac : nothing,
-                                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                 nothing,
-                                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                 Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                 Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                 syms = __has_syms(f) ? f.syms : nothing,
-                                 observed = __has_observed(f) ? f.observed :
-                                            DEFAULT_OBSERVED,
-                                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                 sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    jaciip = jac !== nothing ? isinplace(jac, 6, "jac", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 7, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 7, "vjp", iip) : iip
-
-    nonconforming = (jaciip, jvpiip, vjpiip) .!= iip
-    if any(nonconforming)
-        nonconforming = findall(nonconforming)
-        functions = ["jac", "jvp", "vjp"][nonconforming]
-        throw(NonconformingFunctionsError(functions))
-    end
-
-    DAEFunction{iip, Any, Any, Any,
-                Any, Any, Any, Any, Any,
-                Any, Any, Any, typeof(syms),
-                Any, typeof(_colorvec), Any}(f, analytic, tgrad, jac, jvp,
-                                             vjp, jac_prototype, sparsity,
-                                             Wfact, Wfact_t,
-                                             paramjac, observed, syms,
-                                             _colorvec, sys)
-end
-function DAEFunction{iip}(f; kwargs...) where {iip}
-    DAEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
-end
-DAEFunction{iip}(f::DAEFunction; kwargs...) where {iip} = f
-DAEFunction(f; kwargs...) = DAEFunction{isinplace(f, 5), RECOMPILE_BY_DEFAULT}(f; kwargs...)
-DAEFunction(f::DAEFunction; kwargs...) = f
-
-function DDEFunction{iip, true}(f;
-                                mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                jac = __has_jac(f) ? f.jac : nothing,
-                                jvp = __has_jvp(f) ? f.jvp : nothing,
-                                vjp = __has_vjp(f) ? f.vjp : nothing,
-                                jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                nothing,
-                                sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                syms = __has_syms(f) ? f.syms : nothing,
-                                observed = __has_observed(f) ? f.observed :
-                                           DEFAULT_OBSERVED,
-                                colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    DDEFunction{iip, typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                typeof(paramjac), typeof(syms), typeof(observed),
-                typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic,
-                                                tgrad, jac, jvp, vjp,
-                                                jac_prototype, sparsity,
-                                                Wfact, Wfact_t, paramjac,
-                                                syms, observed, _colorvec, sys)
-end
-function DDEFunction{iip, false}(f;
-                                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                                 tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                 jac = __has_jac(f) ? f.jac : nothing,
-                                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                 nothing,
-                                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                 Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                 Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                 syms = __has_syms(f) ? f.syms : nothing,
-                                 observed = __has_observed(f) ? f.observed :
-                                            DEFAULT_OBSERVED,
-                                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                 sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    DDEFunction{iip, Any, Any, Any, Any,
-                Any, Any, Any, Any, Any,
-                Any, typeof(syms), Any, typeof(_colorvec), Any}(f, mass_matrix, analytic,
+    if recompile === NoSpecialize
+        RODEFunction{iip, recompile, Any, Any, Any, Any, Any,
+                     Any, Any, Any, Any, Any,
+                     typeof(syms), Any, typeof(_colorvec), Any}(f, mass_matrix, analytic,
                                                                 tgrad,
                                                                 jac, jvp, vjp,
                                                                 jac_prototype,
                                                                 sparsity, Wfact, Wfact_t,
                                                                 paramjac, syms, observed,
                                                                 _colorvec, sys)
+    else
+        RODEFunction{iip, recompile, typeof(f), typeof(mass_matrix),
+                     typeof(analytic), typeof(tgrad),
+                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
+                     typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
+                     typeof(sys)}(f, mass_matrix, analytic, tgrad,
+                                  jac, jvp, vjp, jac_prototype, sparsity,
+                                  Wfact, Wfact_t, paramjac, syms, observed,
+                                  _colorvec, sys)
+    end
 end
+
+function RODEFunction{iip}(f; kwargs...) where {iip}
+    RODEFunction{iip, FullSpecialize}(f; kwargs...)
+end
+RODEFunction{iip}(f::RODEFunction; kwargs...) where {iip} = f
+function RODEFunction(f; kwargs...)
+    RODEFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
+end
+RODEFunction(f::RODEFunction; kwargs...) = f
+
+function DAEFunction{iip, recompile}(f;
+                                     analytic = __has_analytic(f) ? f.analytic : nothing,
+                                     tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+                                     jac = __has_jac(f) ? f.jac : nothing,
+                                     jvp = __has_jvp(f) ? f.jvp : nothing,
+                                     vjp = __has_vjp(f) ? f.vjp : nothing,
+                                     jac_prototype = __has_jac_prototype(f) ?
+                                                     f.jac_prototype :
+                                                     nothing,
+                                     sparsity = __has_sparsity(f) ? f.sparsity :
+                                                jac_prototype,
+                                     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+                                     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                     syms = __has_syms(f) ? f.syms : nothing,
+                                     observed = __has_observed(f) ? f.observed :
+                                                DEFAULT_OBSERVED,
+                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                     sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                  recompile}
+    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+        if iip
+            jac = update_coefficients! #(J,u,p,t)
+        else
+            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+        end
+    end
+
+    if jac_prototype !== nothing && colorvec === nothing &&
+       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+    else
+        _colorvec = colorvec
+    end
+
+    jaciip = jac !== nothing ? isinplace(jac, 6, "jac", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 7, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 7, "vjp", iip) : iip
+
+    nonconforming = (jaciip, jvpiip, vjpiip) .!= iip
+    if any(nonconforming)
+        nonconforming = findall(nonconforming)
+        functions = ["jac", "jvp", "vjp"][nonconforming]
+        throw(NonconformingFunctionsError(functions))
+    end
+
+    if recompile === NoSpecialize
+        DAEFunction{iip, recompile, Any, Any, Any,
+                    Any, Any, Any, Any, Any,
+                    Any, Any, Any, typeof(syms),
+                    Any, typeof(_colorvec), Any}(f, analytic, tgrad, jac, jvp,
+                                                 vjp, jac_prototype, sparsity,
+                                                 Wfact, Wfact_t,
+                                                 paramjac, observed, syms,
+                                                 _colorvec, sys)
+    else
+        DAEFunction{iip, recompile, typeof(f), typeof(analytic), typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
+                    typeof(paramjac), typeof(syms), typeof(observed), typeof(_colorvec),
+                    typeof(sys)}(f, analytic, tgrad, jac, jvp, vjp,
+                                 jac_prototype, sparsity, Wfact, Wfact_t,
+                                 paramjac, syms, observed, _colorvec, sys)
+    end
+end
+
+function DAEFunction{iip}(f; kwargs...) where {iip}
+    DAEFunction{iip, FullSpecialize}(f; kwargs...)
+end
+DAEFunction{iip}(f::DAEFunction; kwargs...) where {iip} = f
+DAEFunction(f; kwargs...) = DAEFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
+DAEFunction(f::DAEFunction; kwargs...) = f
+
+function DDEFunction{iip, recompile}(f;
+                                     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                     analytic = __has_analytic(f) ? f.analytic : nothing,
+                                     tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+                                     jac = __has_jac(f) ? f.jac : nothing,
+                                     jvp = __has_jvp(f) ? f.jvp : nothing,
+                                     vjp = __has_vjp(f) ? f.vjp : nothing,
+                                     jac_prototype = __has_jac_prototype(f) ?
+                                                     f.jac_prototype :
+                                                     nothing,
+                                     sparsity = __has_sparsity(f) ? f.sparsity :
+                                                jac_prototype,
+                                     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+                                     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                     syms = __has_syms(f) ? f.syms : nothing,
+                                     observed = __has_observed(f) ? f.observed :
+                                                DEFAULT_OBSERVED,
+                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                     sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                  recompile}
+    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+        if iip
+            jac = update_coefficients! #(J,u,p,t)
+        else
+            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+        end
+    end
+
+    if jac_prototype !== nothing && colorvec === nothing &&
+       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+    else
+        _colorvec = colorvec
+    end
+
+    if recompile === NoSpecialize
+        DDEFunction{iip, recompile, Any, Any, Any, Any,
+                    Any, Any, Any, Any, Any,
+                    Any, typeof(syms), Any, typeof(_colorvec), Any}(f, mass_matrix,
+                                                                    analytic,
+                                                                    tgrad,
+                                                                    jac, jvp, vjp,
+                                                                    jac_prototype,
+                                                                    sparsity, Wfact,
+                                                                    Wfact_t,
+                                                                    paramjac, syms,
+                                                                    observed,
+                                                                    _colorvec, sys)
+    else
+        DDEFunction{iip, recompile, typeof(f), typeof(mass_matrix), typeof(analytic),
+                    typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
+                    typeof(paramjac), typeof(syms), typeof(observed),
+                    typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic,
+                                                    tgrad, jac, jvp, vjp,
+                                                    jac_prototype, sparsity,
+                                                    Wfact, Wfact_t, paramjac,
+                                                    syms, observed, _colorvec, sys)
+    end
+end
+
 function DDEFunction{iip}(f; kwargs...) where {iip}
-    DDEFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
+    DDEFunction{iip, FullSpecialize}(f; kwargs...)
 end
 DDEFunction{iip}(f::DDEFunction; kwargs...) where {iip} = f
-DDEFunction(f; kwargs...) = DDEFunction{isinplace(f, 5), RECOMPILE_BY_DEFAULT}(f; kwargs...)
+DDEFunction(f; kwargs...) = DDEFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
 DDEFunction(f::DDEFunction; kwargs...) = f
 
 @add_kwonly function DynamicalDDEFunction{iip}(f1, f2, mass_matrix, analytic, tgrad, jac,
@@ -2709,7 +2664,8 @@ DDEFunction(f::DDEFunction; kwargs...) = f
                                                syms, observed, colorvec) where {iip}
     f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : DDEFunction(f1)
     f2 = DDEFunction(f2)
-    DynamicalDDEFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(mass_matrix),
+    DynamicalDDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
+                         typeof(mass_matrix),
                          typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
                          typeof(vjp),
                          typeof(jac_prototype),
@@ -2719,188 +2675,69 @@ DDEFunction(f::DDEFunction; kwargs...) = f
                                       vjp, jac_prototype, sparsity, Wfact, Wfact_t,
                                       paramjac, syms, observed, colorvec, sys)
 end
-function DynamicalDDEFunction{iip, true}(f1, f2;
-                                         mass_matrix = __has_mass_matrix(f1) ?
-                                                       f1.mass_matrix : I,
-                                         analytic = __has_analytic(f1) ? f1.analytic :
-                                                    nothing,
-                                         tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                         jac = __has_jac(f1) ? f1.jac : nothing,
-                                         jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                         vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                         jac_prototype = __has_jac_prototype(f1) ?
-                                                         f1.jac_prototype : nothing,
-                                         sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                    jac_prototype,
-                                         Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                         Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
-                                         paramjac = __has_paramjac(f1) ? f1.paramjac :
-                                                    nothing,
-                                         syms = __has_syms(f1) ? f1.syms : nothing,
-                                         observed = __has_observed(f1) ? f1.observed :
-                                                    DEFAULT_OBSERVED,
-                                         colorvec = __has_colorvec(f1) ? f1.colorvec :
-                                                    nothing,
-                                         sys = __has_sys(f1) ? f1.sys : nothing) where {iip}
-    DynamicalDDEFunction{iip, typeof(f1), typeof(f2), typeof(mass_matrix),
-                         typeof(analytic),
-                         typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
-                         typeof(jac_prototype), typeof(sparsity),
-                         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                         typeof(observed),
-                         typeof(colorvec),
-                         typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
-                                      vjp, jac_prototype, sparsity,
-                                      Wfact, Wfact_t, paramjac, syms, observed,
-                                      colorvec, sys)
+function DynamicalDDEFunction{iip, recompile}(f1, f2;
+                                              mass_matrix = __has_mass_matrix(f1) ?
+                                                            f1.mass_matrix : I,
+                                              analytic = __has_analytic(f1) ? f1.analytic :
+                                                         nothing,
+                                              tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
+                                              jac = __has_jac(f1) ? f1.jac : nothing,
+                                              jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                                              vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                                              jac_prototype = __has_jac_prototype(f1) ?
+                                                              f1.jac_prototype : nothing,
+                                              sparsity = __has_sparsity(f1) ? f1.sparsity :
+                                                         jac_prototype,
+                                              Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
+                                              Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
+                                                        nothing,
+                                              paramjac = __has_paramjac(f1) ? f1.paramjac :
+                                                         nothing,
+                                              syms = __has_syms(f1) ? f1.syms : nothing,
+                                              observed = __has_observed(f1) ? f1.observed :
+                                                         DEFAULT_OBSERVED,
+                                              colorvec = __has_colorvec(f1) ? f1.colorvec :
+                                                         nothing,
+                                              sys = __has_sys(f1) ? f1.sys : nothing) where {
+                                                                                             iip,
+                                                                                             recompile
+                                                                                             }
+    if recompile === NoSpecialize
+        DynamicalDDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any,
+                             Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix,
+                                                                analytic,
+                                                                tgrad,
+                                                                jac, jvp, vjp,
+                                                                jac_prototype,
+                                                                sparsity,
+                                                                Wfact, Wfact_t, paramjac,
+                                                                syms,
+                                                                observed, colorvec, sys)
+    else
+        DynamicalDDEFunction{iip, typeof(f1), typeof(f2), typeof(mass_matrix),
+                             typeof(analytic),
+                             typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
+                             typeof(jac_prototype), typeof(sparsity),
+                             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                             typeof(observed),
+                             typeof(colorvec),
+                             typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
+                                          vjp, jac_prototype, sparsity,
+                                          Wfact, Wfact_t, paramjac, syms, observed,
+                                          colorvec, sys)
+    end
 end
-function DynamicalDDEFunction{iip, false}(f1, f2;
-                                          mass_matrix = __has_mass_matrix(f1) ?
-                                                        f1.mass_matrix : I,
-                                          analytic = __has_analytic(f1) ? f1.analytic :
-                                                     nothing,
-                                          tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
-                                          jac = __has_jac(f1) ? f1.jac : nothing,
-                                          jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                                          vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                                          jac_prototype = __has_jac_prototype(f1) ?
-                                                          f1.jac_prototype : nothing,
-                                          sparsity = __has_sparsity(f1) ? f1.sparsity :
-                                                     jac_prototype,
-                                          Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
-                                          Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t :
-                                                    nothing,
-                                          paramjac = __has_paramjac(f1) ? f1.paramjac :
-                                                     nothing,
-                                          syms = __has_syms(f1) ? f1.syms : nothing,
-                                          observed = __has_observed(f1) ? f1.observed :
-                                                     DEFAULT_OBSERVED,
-                                          colorvec = __has_colorvec(f1) ? f1.colorvec :
-                                                     nothing,
-                                          sys = __has_sys(f1) ? f1.sys : nothing) where {iip
-                                                                                         }
-    DynamicalDDEFunction{iip, Any, Any, Any, Any, Any, Any, Any,
-                         Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, analytic,
-                                                            tgrad,
-                                                            jac, jvp, vjp, jac_prototype,
-                                                            sparsity,
-                                                            Wfact, Wfact_t, paramjac, syms,
-                                                            observed, colorvec, sys)
-end
+
 function DynamicalDDEFunction(f1, f2 = nothing; kwargs...)
     DynamicalDDEFunction{isinplace(f1, 6)}(f1, f2; kwargs...)
 end
 function DynamicalDDEFunction{iip}(f1, f2; kwargs...) where {iip}
-    DynamicalDDEFunction{iip, RECOMPILE_BY_DEFAULT}(DDEFunction{iip}(f1),
-                                                    DDEFunction{iip}(f2); kwargs...)
+    DynamicalDDEFunction{iip, FullSpecialize}(DDEFunction{iip}(f1),
+                                              DDEFunction{iip}(f2); kwargs...)
 end
 DynamicalDDEFunction(f::DynamicalDDEFunction; kwargs...) = f
 
-function SDDEFunction{iip, true}(f, g;
-                                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                                 tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                 jac = __has_jac(f) ? f.jac : nothing,
-                                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                 nothing,
-                                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                 Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                 Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                 ggprime = nothing,
-                                 syms = __has_syms(f) ? f.syms : nothing,
-                                 observed = __has_observed(f) ? f.observed :
-                                            DEFAULT_OBSERVED,
-                                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                 sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    SDDEFunction{iip, typeof(f), typeof(g),
-                 typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                 typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                 typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-                 typeof(paramjac), typeof(ggprime), typeof(syms), typeof(observed),
-                 typeof(_colorvec), typeof(sys)}(f, g, mass_matrix,
-                                                 analytic, tgrad, jac,
-                                                 jvp, vjp, jac_prototype,
-                                                 sparsity, Wfact,
-                                                 Wfact_t,
-                                                 paramjac, ggprime, syms,
-                                                 observed, _colorvec, sys)
-end
-
-function SDDEFunction{iip, false}(f, g;
-                                  mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                  analytic = __has_analytic(f) ? f.analytic : nothing,
-                                  tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                  jac = __has_jac(f) ? f.jac : nothing,
-                                  jvp = __has_jvp(f) ? f.jvp : nothing,
-                                  vjp = __has_vjp(f) ? f.vjp : nothing,
-                                  jac_prototype = __has_jac_prototype(f) ? f.jac_prototype :
-                                                  nothing,
-                                  sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                  Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                  Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                  ggprime = nothing,
-                                  syms = __has_syms(f) ? f.syms : nothing,
-                                  observed = __has_observed(f) ? f.observed :
-                                             DEFAULT_OBSERVED,
-                                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                  sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
-    else
-        _colorvec = colorvec
-    end
-
-    SDDEFunction{iip, Any, Any, Any, Any, Any,
-                 Any, Any, Any, Any, Any,
-                 Any, Any, typeof(syms), Any, typeof(_colorvec), Any}(f, g, mass_matrix,
-                                                                      analytic, tgrad, jac,
-                                                                      jvp,
-                                                                      vjp, jac_prototype,
-                                                                      sparsity, Wfact,
-                                                                      Wfact_t,
-                                                                      paramjac, ggprime,
-                                                                      syms,
-                                                                      observed, _colorvec,
-                                                                      sys)
-end
-function SDDEFunction{iip}(f, g; kwargs...) where {iip}
-    SDDEFunction{iip, RECOMPILE_BY_DEFAULT}(f, g; kwargs...)
-end
-SDDEFunction{iip}(f::SDDEFunction, g; kwargs...) where {iip} = f
-function SDDEFunction(f, g; kwargs...)
-    SDDEFunction{isinplace(f, 5), RECOMPILE_BY_DEFAULT}(f, g; kwargs...)
-end
-SDDEFunction(f::SDDEFunction; kwargs...) = f
-
-function NonlinearFunction{iip, true}(f;
+function SDDEFunction{iip, recompile}(f, g;
                                       mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                                                     I,
                                       analytic = __has_analytic(f) ? f.analytic : nothing,
@@ -2909,17 +2746,103 @@ function NonlinearFunction{iip, true}(f;
                                       jvp = __has_jvp(f) ? f.jvp : nothing,
                                       vjp = __has_vjp(f) ? f.vjp : nothing,
                                       jac_prototype = __has_jac_prototype(f) ?
-                                                      f.jac_prototype : nothing,
+                                                      f.jac_prototype :
+                                                      nothing,
                                       sparsity = __has_sparsity(f) ? f.sparsity :
                                                  jac_prototype,
                                       Wfact = __has_Wfact(f) ? f.Wfact : nothing,
                                       Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
                                       paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                      ggprime = nothing,
                                       syms = __has_syms(f) ? f.syms : nothing,
                                       observed = __has_observed(f) ? f.observed :
-                                                 DEFAULT_OBSERVED_NO_TIME,
+                                                 DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                      sys = __has_sys(f) ? f.sys : nothing) where {iip}
+                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                   recompile
+                                                                                   }
+    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+        if iip
+            jac = update_coefficients! #(J,u,p,t)
+        else
+            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+        end
+    end
+
+    if jac_prototype !== nothing && colorvec === nothing &&
+       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+    else
+        _colorvec = colorvec
+    end
+
+    if recompile === NoSpecialize
+        SDDEFunction{iip, recompile, Any, Any, Any, Any, Any,
+                     Any, Any, Any, Any, Any,
+                     Any, Any, typeof(syms), Any, typeof(_colorvec), Any}(f, g, mass_matrix,
+                                                                          analytic, tgrad,
+                                                                          jac,
+                                                                          jvp,
+                                                                          vjp,
+                                                                          jac_prototype,
+                                                                          sparsity, Wfact,
+                                                                          Wfact_t,
+                                                                          paramjac, ggprime,
+                                                                          syms,
+                                                                          observed,
+                                                                          _colorvec,
+                                                                          sys)
+    else
+        SDDEFunction{iip, recompile, typeof(f), typeof(g),
+                     typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
+                     typeof(paramjac), typeof(ggprime), typeof(syms), typeof(observed),
+                     typeof(_colorvec), typeof(sys)}(f, g, mass_matrix,
+                                                     analytic, tgrad, jac,
+                                                     jvp, vjp, jac_prototype,
+                                                     sparsity, Wfact,
+                                                     Wfact_t,
+                                                     paramjac, ggprime, syms,
+                                                     observed, _colorvec, sys)
+    end
+end
+
+function SDDEFunction{iip}(f, g; kwargs...) where {iip}
+    SDDEFunction{iip, FullSpecialize}(f, g; kwargs...)
+end
+SDDEFunction{iip}(f::SDDEFunction, g; kwargs...) where {iip} = f
+function SDDEFunction(f, g; kwargs...)
+    SDDEFunction{isinplace(f, 5), FullSpecialize}(f, g; kwargs...)
+end
+SDDEFunction(f::SDDEFunction; kwargs...) = f
+
+function NonlinearFunction{iip, recompile}(f;
+                                           mass_matrix = __has_mass_matrix(f) ?
+                                                         f.mass_matrix :
+                                                         I,
+                                           analytic = __has_analytic(f) ? f.analytic :
+                                                      nothing,
+                                           tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+                                           jac = __has_jac(f) ? f.jac : nothing,
+                                           jvp = __has_jvp(f) ? f.jvp : nothing,
+                                           vjp = __has_vjp(f) ? f.vjp : nothing,
+                                           jac_prototype = __has_jac_prototype(f) ?
+                                                           f.jac_prototype : nothing,
+                                           sparsity = __has_sparsity(f) ? f.sparsity :
+                                                      jac_prototype,
+                                           Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+                                           Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+                                           paramjac = __has_paramjac(f) ? f.paramjac :
+                                                      nothing,
+                                           syms = __has_syms(f) ? f.syms : nothing,
+                                           observed = __has_observed(f) ? f.observed :
+                                                      DEFAULT_OBSERVED_NO_TIME,
+                                           colorvec = __has_colorvec(f) ? f.colorvec :
+                                                      nothing,
+                                           sys = __has_sys(f) ? f.sys : nothing) where {iip,
+                                                                                        recompile
+                                                                                        }
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
@@ -2950,72 +2873,40 @@ function NonlinearFunction{iip, true}(f;
         throw(NonconformingFunctionsError(functions))
     end
 
-    NonlinearFunction{iip,
-                      typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-                      typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-                      typeof(sparsity), typeof(Wfact),
-                      typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(observed),
-                      typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                                      jvp, vjp, jac_prototype, sparsity,
-                                                      Wfact,
-                                                      Wfact_t, paramjac, syms, observed,
-                                                      _colorvec, sys)
-end
-
-function NonlinearFunction{iip, false}(f;
-                                       mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
-                                                     I,
-                                       analytic = __has_analytic(f) ? f.analytic : nothing,
-                                       tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-                                       jac = __has_jac(f) ? f.jac : nothing,
-                                       jvp = __has_jvp(f) ? f.jvp : nothing,
-                                       vjp = __has_vjp(f) ? f.vjp : nothing,
-                                       jac_prototype = __has_jac_prototype(f) ?
-                                                       f.jac_prototype : nothing,
-                                       sparsity = __has_sparsity(f) ? f.sparsity :
+    if recompile === NoSpecialize
+        NonlinearFunction{iip, recompile,
+                          Any, Any, Any, Any, Any,
+                          Any, Any, Any, Any, Any,
+                          Any, Any, typeof(syms), Any,
+                          typeof(_colorvec), Any}(f, mass_matrix,
+                                                  analytic, tgrad, jac,
+                                                  jvp, vjp,
                                                   jac_prototype,
-                                       Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-                                       Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-                                       paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                       syms = __has_syms(f) ? f.syms : nothing,
-                                       observed = __has_observed(f) ? f.observed :
-                                                  DEFAULT_OBSERVED_NO_TIME,
-                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                       sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
-        if iip
-            jac = update_coefficients! #(J,u,p,t)
-        else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
-        end
-    end
-
-    if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+                                                  sparsity, Wfact,
+                                                  Wfact_t, paramjac,
+                                                  syms, observed,
+                                                  _colorvec, sys)
     else
-        _colorvec = colorvec
+        NonlinearFunction{iip, recompile,
+                          typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                          typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                          typeof(sparsity), typeof(Wfact),
+                          typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(observed),
+                          typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad,
+                                                          jac,
+                                                          jvp, vjp, jac_prototype, sparsity,
+                                                          Wfact,
+                                                          Wfact_t, paramjac, syms, observed,
+                                                          _colorvec, sys)
     end
-
-    NonlinearFunction{iip,
-                      Any, Any, Any, Any, Any,
-                      Any, Any, Any, Any, Any,
-                      Any, Any, typeof(syms), Any,
-                      typeof(_colorvec), Any}(f, mass_matrix,
-                                              analytic, tgrad, jac,
-                                              jvp, vjp,
-                                              jac_prototype,
-                                              sparsity, Wfact,
-                                              Wfact_t, paramjac,
-                                              syms, observed,
-                                              _colorvec, sys)
 end
+
 function NonlinearFunction{iip}(f; kwargs...) where {iip}
-    NonlinearFunction{iip, RECOMPILE_BY_DEFAULT}(f; kwargs...)
+    NonlinearFunction{iip, FullSpecialize}(f; kwargs...)
 end
 NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where {iip} = f
 function NonlinearFunction(f; kwargs...)
-    NonlinearFunction{isinplace(f, 3), RECOMPILE_BY_DEFAULT}(f; kwargs...)
+    NonlinearFunction{isinplace(f, 3), FullSpecialize}(f; kwargs...)
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 
@@ -3027,30 +2918,37 @@ OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; k
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    grad = nothing, hess = nothing, hv = nothing,
                                    cons = nothing, cons_j = nothing, cons_h = nothing,
+                                   lag_h = nothing,
                                    hess_prototype = nothing,
                                    cons_jac_prototype = __has_jac_prototype(f) ?
                                                         f.jac_prototype : nothing,
                                    cons_hess_prototype = nothing,
+                                   lag_hess_prototype = nothing,
                                    syms = __has_syms(f) ? f.syms : nothing,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
                                                        nothing,
                                    cons_hess_colorvec = __has_colorvec(f) ? f.colorvec :
                                                         nothing,
+                                   lag_hess_colorvec = nothing,
                                    expr = nothing, cons_expr = nothing,
                                    sys = __has_sys(f) ? f.sys : nothing) where {iip}
     OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
                          typeof(hv),
-                         typeof(cons), typeof(cons_j), typeof(cons_h),
+                         typeof(cons), typeof(cons_j), typeof(cons_h), typeof(lag_h),
                          typeof(hess_prototype),
                          typeof(cons_jac_prototype), typeof(cons_hess_prototype),
+                         typeof(lag_hess_prototype),
                          typeof(syms), typeof(hess_colorvec), typeof(cons_jac_colorvec),
-                         typeof(cons_hess_colorvec), typeof(expr), typeof(cons_expr),
+                         typeof(cons_hess_colorvec), typeof(lag_hess_colorvec),
+                         typeof(expr), typeof(cons_expr),
                          typeof(sys)}(f, adtype, grad, hess,
-                                      hv, cons, cons_j, cons_h,
+                                      hv, cons, cons_j, cons_h, lag_h,
                                       hess_prototype, cons_jac_prototype,
-                                      cons_hess_prototype, syms, hess_colorvec,
-                                      cons_jac_colorvec, cons_hess_colorvec, expr,
+                                      cons_hess_prototype, lag_hess_prototype, syms,
+                                      hess_colorvec,
+                                      cons_jac_colorvec, cons_hess_colorvec,
+                                      lag_hess_colorvec, expr,
                                       cons_expr, sys)
 end
 
@@ -3135,15 +3033,15 @@ islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)
 
-struct IncrementingODEFunction{iip, F} <: AbstractODEFunction{iip}
+struct IncrementingODEFunction{iip, recompile, F} <: AbstractODEFunction{iip}
     f::F
 end
 
 function IncrementingODEFunction{iip}(f) where {iip}
-    IncrementingODEFunction{iip, typeof(f)}(f)
+    IncrementingODEFunction{iip, FullSpecialize, typeof(f)}(f)
 end
 function IncrementingODEFunction(f)
-    IncrementingODEFunction{isinplace(f, 7), typeof(f)}(f)
+    IncrementingODEFunction{isinplace(f, 7), FullSpecialize, typeof(f)}(f)
 end
 
 (f::IncrementingODEFunction)(args...; kwargs...) = f.f(args...; kwargs...)
@@ -3157,7 +3055,9 @@ for S in [:ODEFunction
           :SDDEFunction
           :NonlinearFunction
           :IncrementingODEFunction]
-    @eval begin function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {iip}
-        (args...) -> $S{iip, map(typeof, args)...}(args...)
+    @eval begin function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
+                                                                                  iip
+                                                                                  }
+        (args...) -> $S{iip, FullSpecialize, map(typeof, args)...}(args...)
     end end
 end
