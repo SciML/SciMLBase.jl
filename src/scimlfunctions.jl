@@ -1760,7 +1760,7 @@ function ODEFunction{iip, recompile}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if (recompile === FunctionWrapperSpecialize || recompile === false) &&
+    if (recompile === FunctionWrapperSpecialize) &&
        !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
         if iip
             f = wrapfun_iip(f)
