@@ -60,6 +60,8 @@ function remake(prob::ODEProblem; f = missing,
         p = prob.p
     end
 
+    iip = isinplace(prob)
+
     if f === missing
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
