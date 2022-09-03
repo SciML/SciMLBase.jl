@@ -115,14 +115,17 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 
     function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
-
+                                                        kwargs...) where {iip}
         ptspan = promote_tspan(tspan)
         if !(f isa FunctionWrapperWrappers.FunctionWrapperWrapper)
             if iip
-                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f, (u0, u0, p, ptspan[1]))
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
+                                                                             (u0, u0, p,
+                                                                              ptspan[1])))
             else
-                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f, (u0, p, ptspan[1])))
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
+                                                                             (u0, p,
+                                                                              ptspan[1])))
             end
         end
         ODEProblem{iip}(ff, u0, tspan, p; kwargs...)
