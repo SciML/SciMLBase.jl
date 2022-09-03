@@ -1567,9 +1567,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the NonlinearFunction type directly match the names of the inputs.
 """
 struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
-                         S, O, TCV,
-                         SYS
-                         } <: AbstractNonlinearFunction{iip}
+                         S, S2, O, TCV, SYS} <: AbstractNonlinearFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -1583,6 +1581,7 @@ struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, T
     Wfact_t::TWt
     paramjac::TPJ
     syms::S
+    paramsyms::S2
     observed::O
     colorvec::TCV
     sys::SYS
@@ -1697,9 +1696,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, HCV,
-                            CJCV,
-                            CHCV, LHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
+struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2, HCV,
+                            CJCV, CHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
@@ -1714,6 +1712,7 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, L
     cons_hess_prototype::CHP
     lag_hess_prototype::LHP
     syms::S
+    paramsyms::S2
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV
     cons_hess_colorvec::CHCV
@@ -1846,9 +1845,10 @@ function ODEFunction{iip, recompile}(f;
                     typeof(sparsity), Any, Any, Any,
                     typeof(syms), typeof(indepsym), typeof(paramsyms), Any,
                     typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                 jvp, vjp, jac_prototype, sparsity, Wfact,
-                                 Wfact_t, paramjac, syms, indepsym,
-                                 paramsyms, observed, _colorvec, sys)
+                                                    jvp, vjp, jac_prototype, sparsity,
+                                                    Wfact,
+                                                    Wfact_t, paramjac, syms, indepsym,
+                                                    paramsyms, observed, _colorvec, sys)
     elseif recompile === false
         ODEFunction{iip, FunctionWrapperSpecialize,
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -1856,9 +1856,10 @@ function ODEFunction{iip, recompile}(f;
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
                     typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
                     typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
-                                 jvp, vjp, jac_prototype, sparsity, Wfact,
-                                 Wfact_t, paramjac, syms, indepsym,
-                                 paramsyms, observed, _colorvec, sys)
+                                                    jvp, vjp, jac_prototype, sparsity,
+                                                    Wfact,
+                                                    Wfact_t, paramjac, syms, indepsym,
+                                                    paramsyms, observed, _colorvec, sys)
     else
         ODEFunction{iip, recompile,
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -3262,6 +3263,8 @@ function NonlinearFunction{iip, recompile}(f;
                                            paramjac = __has_paramjac(f) ? f.paramjac :
                                                       nothing,
                                            syms = __has_syms(f) ? f.syms : nothing,
+                                           paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                       nothing,
                                            observed = __has_observed(f) ? f.observed :
                                                       DEFAULT_OBSERVED_NO_TIME,
                                            colorvec = __has_colorvec(f) ? f.colorvec :
@@ -3303,27 +3306,26 @@ function NonlinearFunction{iip, recompile}(f;
         NonlinearFunction{iip, recompile,
                           Any, Any, Any, Any, Any,
                           Any, Any, Any, Any, Any,
-                          Any, Any, typeof(syms), Any,
+                          Any, Any, typeof(syms), typeof(paramsyms), Any,
                           typeof(_colorvec), Any}(f, mass_matrix,
                                                   analytic, tgrad, jac,
                                                   jvp, vjp,
                                                   jac_prototype,
                                                   sparsity, Wfact,
                                                   Wfact_t, paramjac,
-                                                  syms, observed,
+                                                  syms, paramsyms, observed,
                                                   _colorvec, sys)
     else
         NonlinearFunction{iip, recompile,
                           typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                           typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                           typeof(sparsity), typeof(Wfact),
-                          typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(observed),
-                          typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad,
-                                                          jac,
-                                                          jvp, vjp, jac_prototype, sparsity,
-                                                          Wfact,
-                                                          Wfact_t, paramjac, syms, observed,
-                                                          _colorvec, sys)
+                          typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                          typeof(paramsyms),
+                          typeof(observed), typeof(_colorvec),
+                          typeof(sys)}(f, mass_matrix, analytic, tgrad, jac, jvp, vjp,
+                                       jac_prototype, sparsity, Wfact, Wfact_t, paramjac,
+                                       syms, paramsyms, observed, _colorvec, sys)
     end
 end
 
@@ -3351,6 +3353,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    cons_hess_prototype = nothing,
                                    lag_hess_prototype = nothing,
                                    syms = __has_syms(f) ? f.syms : nothing,
+                                   paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
                                                        nothing,
@@ -3364,18 +3367,15 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                          typeof(cons), typeof(cons_j), typeof(cons_h), typeof(lag_h),
                          typeof(hess_prototype),
                          typeof(cons_jac_prototype), typeof(cons_hess_prototype),
-                         typeof(lag_hess_prototype),
-                         typeof(syms), typeof(hess_colorvec), typeof(cons_jac_colorvec),
-                         typeof(cons_hess_colorvec), typeof(lag_hess_colorvec),
+                         typeof(syms), typeof(paramsyms), typeof(hess_colorvec),
+                         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
                          typeof(expr), typeof(cons_expr),
                          typeof(sys)}(f, adtype, grad, hess,
                                       hv, cons, cons_j, cons_h, lag_h,
                                       hess_prototype, cons_jac_prototype,
-                                      cons_hess_prototype, lag_hess_prototype, syms,
-                                      hess_colorvec,
-                                      cons_jac_colorvec, cons_hess_colorvec,
-                                      lag_hess_colorvec, expr,
-                                      cons_expr, sys)
+                                      cons_hess_prototype, syms, paramsyms,
+                                      hess_colorvec, cons_jac_colorvec,
+                                      cons_hess_colorvec, expr, cons_expr, sys)
 end
 
 ########## Existance Functions
