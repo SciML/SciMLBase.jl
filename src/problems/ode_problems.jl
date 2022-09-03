@@ -113,6 +113,23 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
                                                     kwargs...) where {iip, recompile}
         ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
     end
+
+    function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
+                                                        kwargs...) where {iip}
+        ptspan = promote_tspan(tspan)
+        if !(f isa FunctionWrapperWrappers.FunctionWrapperWrapper)
+            if iip
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
+                                                                             (u0, u0, p,
+                                                                              ptspan[1])))
+            else
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
+                                                                             (u0, p,
+                                                                              ptspan[1])))
+            end
+        end
+        ODEProblem{iip}(ff, u0, tspan, p; kwargs...)
+    end
 end
 
 """
@@ -126,7 +143,6 @@ end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
-
     ptspan = promote_tspan(tspan)
     _f = ODEFunction{iip, AutoSpecialize}(f)
     ODEProblem(_f, u0, tspan, p; kwargs...)

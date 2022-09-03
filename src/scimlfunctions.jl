@@ -1762,11 +1762,7 @@ function ODEFunction{iip, recompile}(f;
 
     if (recompile === FunctionWrapperSpecialize) &&
        !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
-        if iip
-            f = wrapfun_iip(f)
-        else
-            f = wrapfun_oop(f)
-        end
+        error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
 
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
