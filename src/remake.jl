@@ -61,9 +61,25 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if f === missing
-        _f = prob.f
+        if specialization(prob.f) === FunctionWrapperSpecialize
+            ptspan = promote_tspan(tspan)
+            if iip
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(unwrapped_f(prob.f), (u0, u0, p, ptspan[1]))
+            else
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(unwrapped_f(prob.f), (u0, p, ptspan[1])))
+            end
+        else
+            _f = prob.f
+        end
     elseif f isa AbstractODEFunction
         _f = f
+    elseif specialization(prob.f) === FunctionWrapperSpecialize
+        ptspan = promote_tspan(tspan)
+        if iip
+            _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f, (u0, u0, p, ptspan[1]))
+        else
+            _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f, (u0, p, ptspan[1])))
+        end
     else
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end

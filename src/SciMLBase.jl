@@ -568,6 +568,8 @@ function specialization(f::Union{ODEFunction{iip, specialize},
     specialize
 end
 
+specialization(f::AbstractSciMLFunction) = FullSpecialize
+
 """
 $(TYPEDEF)
 """
