@@ -238,7 +238,7 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
 end
 
 function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
-    wrap_sol(ODESolution{T, N}(sol.u,
+    ODESolution{T, N}(sol.u,
                                sol.u_analytic,
                                sol.errors,
                                sol.t,
@@ -249,7 +249,7 @@ function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
                                sol.dense,
                                sol.tslocation,
                                sol.destats,
-                               retcode))
+                               retcode)
 end
 
 function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N}
