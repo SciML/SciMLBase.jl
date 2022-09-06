@@ -105,21 +105,30 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     """
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         ptspan = promote_tspan(tspan)
-        _f = if iip && typeof(u0) <: Vector{Float64} &&
-                eltype(promote_tspan(tspan)) <: Float64 &&
-                typeof(p) <: Union{Vector{Float64}, NullParameters}
-            ff = wrapfun_iip(f, (u0, u0, p, ptspan[1]))
-            ODEFunction{iip, AutoSpecialize}(ff)
-        else
-            ODEFunction{iip}(f)
-        end
-
+        _f = ODEFunction{iip, AutoSpecialize}(f)
         ODEProblem(_f, u0, tspan, p; kwargs...)
     end
 
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
                                                     kwargs...) where {iip, recompile}
         ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
+    end
+
+    function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
+                                                        kwargs...) where {iip}
+        ptspan = promote_tspan(tspan)
+        if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+            if iip
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
+                                                                             (u0, u0, p,
+                                                                              ptspan[1])))
+            else
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
+                                                                             (u0, p,
+                                                                              ptspan[1])))
+            end
+        end
+        ODEProblem{iip}(ff, u0, tspan, p; kwargs...)
     end
 end
 
@@ -134,18 +143,8 @@ end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
-
     ptspan = promote_tspan(tspan)
-    _f = if iip && !(f isa AbstractDiffEqOperator) &&
-            typeof(u0) <: Vector{Float64} &&
-            eltype(ptspan) <: Float64 &&
-            typeof(p) <: Union{Vector{Float64}, NullParameters}
-        ff = wrapfun_iip(f, (u0, u0, p, ptspan[1]))
-        ODEFunction{iip, AutoSpecialize}(ff)
-    else
-        ODEFunction{iip}(f)
-    end
-
+    _f = ODEFunction{iip, AutoSpecialize}(f)
     ODEProblem(_f, u0, tspan, p; kwargs...)
 end
 
