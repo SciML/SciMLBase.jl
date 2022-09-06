@@ -80,10 +80,10 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
                                          kwargs...) where {iip}
         # Defend against external solvers like Sundials breaking on non-uniform input dimensions.
         size(du0) == size(u0) ||
-            throw(ArgumentError("Sizes of u0 `$(size(u0))` and du0 `$(size(u0))` must be the same."))
+            throw(ArgumentError("Sizes of u0 and du0 must be the same."))
         if !isnothing(differential_vars)
             size(u0) == size(differential_vars) ||
-                throw(ArgumentError("Sizes of u0 `$(size(u0))` and differential_vars `$(size(differential_vars))` must be the same."))
+                throw(ArgumentError("Sizes of u0 and differential_vars must be the same."))
         end
         _tspan = promote_tspan(tspan)
         new{typeof(u0), typeof(du0), typeof(_tspan),
