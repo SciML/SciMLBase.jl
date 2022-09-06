@@ -281,7 +281,7 @@ abstract type AbstractDiscretization <: AbstractSciMLAlgorithm end
 $(TYPEDEF)
 
 """
-abstract type AbstractDiscretizationMetadata end
+abstract type AbstractDiscretizationMetadata{hasTime} end
 
 # Monte Carlo Simulations
 """
