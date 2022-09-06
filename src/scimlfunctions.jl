@@ -1582,7 +1582,14 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           sys = __has_sys(f) ? f.sys : nothing)
 ```
 
+## Positional Arguments
+
+- `f(u,p)`: the function to optimize. `u` are the state variables and `p` are the hyperparameters of the optimization.
+  This function should return a scalar.
 - `adtype`: see the section "Defining Optimization Functions via AD"
+
+## Keyword Arguments
+
 - `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
 - `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
 - `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``.
