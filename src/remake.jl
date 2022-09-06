@@ -60,35 +60,46 @@ function remake(prob::ODEProblem; f = missing,
         p = prob.p
     end
 
-    iip = isinplace(prob)
-
     if f === missing
-        if specialization(prob.f) === FunctionWrapperSpecialize
-            ptspan = promote_tspan(tspan)
-            if iip
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(unwrapped_f(prob.f.f),
-                                                                             (u0, u0, p,
-                                                                              ptspan[1])))
+        ptspan = promote_tspan(tspan)
+        if specialization(prob.f) === AutoSpecialize
+            if prob.f isa ODEFunction && isinplace(prob) &&
+               specialization(prob.f) !== FullSpecialize &&
+               typeof(u0) <: Vector{Float64} &&
+               eltype(promote_tspan(tspan)) <: Float64 &&
+               typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+                # If it's possible to FunctionWrapperSpecialize then do it
+                if prob.f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+                    _f = prob.f
+                else
+                    ff = wrapfun_iip(prob.f.f, (u0, u0, p, ptspan[1]))
+                    _f = ODEFunction{isinplace(prob), AutoSpecialize}(ff)
+                end
             else
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(unwrapped_f(prob.f.f),
-                                                                             (u0, p,
-                                                                              ptspan[1])))
+                _f = ODEFunction{isinplace(prob), AutoSpecialize}(unwrapped_f(prob.f))
+            end
+        elseif specialization(prob.f) === FunctionWrapperSpecialize
+            if prob.f isa ODEFunction && isinplace(prob) &&
+               specialization(prob.f) !== FullSpecialize &&
+               typeof(u0) <: Vector{Float64} &&
+               eltype(promote_tspan(tspan)) <: Float64 &&
+               typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+                _f = prob.f
+            else
+                _f = ODEFunction{isinplace(prob), NoSpecialize}(unwrapped_f(prob.f))
             end
         else
+            # Otherwise just use the previous specialization choice
+            # This would preserve no-specialize for those using it
             _f = prob.f
         end
     elseif f isa AbstractODEFunction
         _f = f
-    elseif specialization(prob.f) === FunctionWrapperSpecialize
-        ptspan = promote_tspan(tspan)
-        if iip
-            _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                                                                         (u0, u0, p,
-                                                                          ptspan[1])))
-        else
-            _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                                                                         (u0, p, ptspan[1])))
-        end
+    elseif isinplace(prob) && specialization(prob.f) === AutoSpecialize &&
+           typeof(u0) <: Vector{Float64} &&
+           eltype(promote_tspan(tspan)) <: Float64 &&
+           typeof(p) <: Union{SciMLBase.NullParameters, Vector{Float64}}
+        _f = ODEFunction{isinplace(prob), FunctionWrapperSpecialize}(f)
     else
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
