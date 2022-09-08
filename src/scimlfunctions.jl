@@ -1139,7 +1139,7 @@ the usage of `f`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the RODE function. Can be used
   to determine that the equation is actually a random differential-algebraic equation (RDAE)
-  if `M` is singular. Currently, however, all solvers assume `M` is the identity and do not take this term into account. Special solvers still need to be written to use a non-identity mass matrix.
+  if `M` is singular.
 - `analytic`: (u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
   solution of the RODE. Generally only used for testing and development of the solvers. The exact form depends on the field `analytic_full`.
 - `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) 
