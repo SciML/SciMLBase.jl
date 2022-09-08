@@ -101,7 +101,7 @@ function (sol::PDENoTimeSolution{T, N, S, D})(args...; kwargs...) where {T, N, S
 end
 
 """
-Intercept PDE wrapping. Please implement a method for PDESolution in your discretizer that intercepts time dependent and time independent solutions and dispatches to the correct concrete types.
+Intercept PDE wrapping. Please implement a method for the PDESolution types in your discretizer.
 """
 function SciMLBase.wrap_sol(sol, metadata::AbstractDiscretizationMetadata{hasTime}) where {hasTime}
     if hasTime isa Val{true}
