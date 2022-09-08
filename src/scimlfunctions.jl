@@ -1141,7 +1141,8 @@ the usage of `f`. These include:
   to determine that the equation is actually a random differential-algebraic equation (RDAE)
   if `M` is singular.
 - `analytic`: (u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
-  solution of the RODE. Generally only used for testing and development of the solvers. The exact form depends on the field `analytic_full`.
+  solution of the RODE. Generally only used for testing and development of the solvers. 
+  The exact form depends on the field `analytic_full`.
 - `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) 
   or the form `analytic!(sol)` (if `true`). The former is expected to return the solution `u(t)` of 
   the equation, given the initial condition `u0`, the parameter `p`, the current time `t` and the 
