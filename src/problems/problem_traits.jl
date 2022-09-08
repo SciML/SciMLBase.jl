@@ -13,8 +13,7 @@ function is_diagonal_noise(prob::AbstractSDDEProblem{uType, tType, lType, iip, N
                                                                                                 uType,
                                                                                                 tType,
                                                                                                 lType,
-                                                                                                iip,
-                                                                                                ND
+                                                                                                iip
                                                                                                 }
     true
 end
