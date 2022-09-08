@@ -217,6 +217,33 @@ svjp(du, u, v, p, t) = [1.0]
 SDEFunction(fiip, giip, vjp = svjp)
 SDEFunction(foop, goop, vjp = svjp)
 
+# RODEFunction
+
+froop(u, p, t, W) = W
+friip(du, p, t, W) = (du .= W)
+
+RODEFunction(froop)
+RODEFunction(friip)
+
+frboth(u, p, t, W) = W
+frboth(du, u, p, t, W) = (du .= W)
+
+@test_nowarn RODEFunction(frboth)
+@test_nowarn RODEFunction{true}(frboth)
+@test_nowarn RODEFunction{false}(frboth)
+
+frode(u, p, t, W) = p * u
+rode_analytic(u0, t, p, W) = u0 * exp(p * t)
+function rode_analytic!(sol)
+    empty!(sol.u_analytic)
+    append!(sol.u_analytic, sol.prob.u0 * exp.(sol.prob.p * sol.t))
+end
+@test_nowarn RODEFunction(frode)
+@test_nowarn RODEFunction(frode, analytic = rode_analytic)
+@test_nowarn RODEFunction(frode, analytic = rode_analytic!, analytic_full = true)
+@test_throws MethodError RODEFunction(frode, analytic = rode_analytic!,
+                                      analytic_full = nothing)
+
 # DAEFunction
 
 dfoop(du, u, p, t) = du .+ u

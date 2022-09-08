@@ -1100,7 +1100,7 @@ abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 @doc doc"""
     RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,O,TCV} <: AbstractRODEFunction{iip,recompile}
 
-A representation of an RODE function `f`, defined by:
+A representation of a RODE function `f`, defined by:
 
 ```math
 M \frac{du}{dt} = f(u,p,t,W)dt
@@ -1126,33 +1126,40 @@ RODEFunction{iip,recompile}(f;
                            syms = __has_syms(f) ? f.syms : nothing,
                            indepsym= __has_indepsym(f) ? f.indepsym : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+                           sys = __has_sys(f) ? f.sys : nothing,
+                           analytic_full = __has_analytic_full(f) ? f.analytic_full : false)
 ```
 
 Note that only the function `f` itself is required. This function should
-be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
+be given as `f!(du,u,p,t,W)` or `du = f(u,p,t,W)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
 All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
-- `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
-  to determine that the equation is actually a differential-algebraic equation (DAE)
-  if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
-  Must be an AbstractArray or an AbstractSciMLOperator.
-- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
-  solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `mass_matrix`: the mass matrix `M` represented in the RODE function. Can be used
+  to determine that the equation is actually a random differential-algebraic equation (RDAE)
+  if `M` is singular.
+- `analytic`: (u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
+  solution of the RODE. Generally only used for testing and development of the solvers. 
+  The exact form depends on the field `analytic_full`.
+- `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) 
+  or the form `analytic!(sol)` (if `true`). The former is expected to return the solution `u(t)` of 
+  the equation, given the initial condition `u0`, the parameter `p`, the current time `t` and the 
+  value `W=W(t)` of the noise at the given time `t`. The latter case is useful when the solution 
+  of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at 
+  times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic` 
+  with the corresponding expected solution at `sol.W.t` or `sol.t`.
+- `tgrad(dT,u,p,t,W)` or dT=tgrad(u,p,t,W): returns ``\frac{\partial f(u,p,t,W)}{\partial t}``
+- `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t,W)` or `Jv=vjp(v,u,p,t,W)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t,W)`: returns the parameter Jacobian ``\frac{df}{dp}``.
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
@@ -1197,6 +1204,7 @@ struct RODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     observed::O
     colorvec::TCV
     sys::SYS
+    analytic_full::Bool
 end
 
 """
@@ -2448,9 +2456,11 @@ function RODEFunction{iip, recompile}(f;
                                       observed = __has_observed(f) ? f.observed :
                                                  DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                   recompile
-                                                                                   }
+                                      sys = __has_sys(f) ? f.sys : nothing,
+                                      analytic_full = __has_analytic_full(f) ?
+                                                      f.analytic_full : false) where {iip,
+                                                                                      recompile
+                                                                                      }
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2494,7 +2504,8 @@ function RODEFunction{iip, recompile}(f;
                                                                 jac_prototype,
                                                                 sparsity, Wfact, Wfact_t,
                                                                 paramjac, syms, observed,
-                                                                _colorvec, sys)
+                                                                _colorvec, sys,
+                                                                analytic_full)
     else
         RODEFunction{iip, recompile, typeof(f), typeof(mass_matrix),
                      typeof(analytic), typeof(tgrad),
@@ -2504,7 +2515,7 @@ function RODEFunction{iip, recompile}(f;
                      typeof(sys)}(f, mass_matrix, analytic, tgrad,
                                   jac, jvp, vjp, jac_prototype, sparsity,
                                   Wfact, Wfact_t, paramjac, syms, observed,
-                                  _colorvec, sys)
+                                  _colorvec, sys, analytic_full)
     end
 end
 
@@ -2974,6 +2985,7 @@ __has_observed(f) = isdefined(f, :observed)
 __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
 __has_sys(f) = isdefined(f, :sys)
+__has_analytic_full(f) = isdefined(f, :analytic_full)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
