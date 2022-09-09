@@ -914,7 +914,7 @@ SplitSDEFunction{iip,recompile}(f1,f2,g;
                  sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                  syms = __has_syms(f) ? f.syms : nothing,
-                 paramsyms
+                 paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                  sys = __has_sys(f) ? f.sys : nothing)
 ```
