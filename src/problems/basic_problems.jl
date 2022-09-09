@@ -79,7 +79,7 @@ end
 """
 $(TYPEDEF)
 """
-struct StandardNonlinearProblem() end
+struct StandardNonlinearProblem end
 
 @doc doc"""
 
@@ -137,7 +137,9 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     problem_type::PT
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
-                                               p = NullParameters(), problem_type = StandardNonlinearProblem(); kwargs...) where {iip}
+                                               p = NullParameters(),
+                                               problem_type = StandardNonlinearProblem();
+                                               kwargs...) where {iip}
         new{typeof(u0), iip, typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f, u0, p, kwargs)
     end
