@@ -78,14 +78,8 @@ function build_solution(prob::AbstractIntegralProblem,
                                                              chi)
 end
 
-function wrap_sol(sol)
-    sys_type = if sol.prob.f.sys !== nothing
-        sol.prob.f.sys.metadata
-    else
-        nothing
-    end
-    wrap_sol(sol, sys_type)
-end
+wrap_sol(sol) = wrap_sol(sol, sol.prob.prob_type)
+
 
 # Define a default `wrap_sol` that does nothing
 wrap_sol(sol, _) = sol

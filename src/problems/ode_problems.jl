@@ -83,8 +83,8 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     p::P
     """A callback to be applied to every solver which uses the problem."""
     kwargs::K
-    problem_type::PT
     """An internal argument for storing traits about the solving process."""
+    problem_type::PT
     @add_kwonly function ODEProblem{iip}(f::AbstractODEFunction{iip},
                                          u0, tspan, p = NullParameters(),
                                          problem_type = StandardODEProblem();
