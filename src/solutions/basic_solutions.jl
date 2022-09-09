@@ -80,6 +80,5 @@ end
 
 wrap_sol(sol) = wrap_sol(sol, sol.prob.problem_type)
 
-
 # Define a default `wrap_sol` that does nothing
 wrap_sol(sol, _) = sol
