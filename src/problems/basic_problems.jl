@@ -141,7 +141,7 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
                                                problem_type = StandardNonlinearProblem();
                                                kwargs...) where {iip}
         new{typeof(u0), iip, typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f, u0, p, kwargs)
+            typeof(kwargs), typeof(problem_type)}(f, u0, p, problem_type, kwargs)
     end
 
     """
