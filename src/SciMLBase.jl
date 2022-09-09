@@ -467,7 +467,8 @@ abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
 """
 $(TYPEDEF)
 """
-const AbstractPDESolution{T, N, S, D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D}, AbstractPDENoTimeSolution{T, N, S, D}}
+const AbstractPDESolution{T, N, S, D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D},
+                                              AbstractPDENoTimeSolution{T, N, S, D}}
 
 """
 $(TYPEDEF)
