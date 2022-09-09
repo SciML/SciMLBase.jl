@@ -1851,26 +1851,25 @@ ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
 ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
 ODEFunction(f::ODEFunction; kwargs...) = f
 
-function unwrapped_f(f::ODEFunction)
-    ff = unwrapped_f(f.f)
+function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
     if specialization(f) === NoSpecialize
         ODEFunction{isinplace(f), specialization(f), Any, Any, Any,
                     Any, Any, Any, Any, typeof(f.jac_prototype),
                     typeof(f.sparsity), Any, Any, Any,
                     typeof(f.syms), Any, Any, typeof(f.colorvec),
-                    typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                    typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
                                    f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
                                    f.Wfact_t, f.paramjac, f.syms, f.indepsym,
                                    f.observed, f.colorvec, f.sys)
     else
-        ODEFunction{isinplace(f), specialization(f), typeof(ff), typeof(f.mass_matrix),
+        ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
                     typeof(f.analytic), typeof(f.tgrad),
                     typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
                     typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
                     typeof(f.paramjac),
                     typeof(f.syms), typeof(f.indepsym), typeof(f.observed),
                     typeof(f.colorvec),
-                    typeof(f.sys)}(ff, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+                    typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
                                    f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
                                    f.Wfact_t, f.paramjac, f.syms, f.indepsym,
                                    f.observed, f.colorvec, f.sys)
@@ -2119,20 +2118,17 @@ function DiscreteFunction(f; kwargs...)
 end
 DiscreteFunction(f::DiscreteFunction; kwargs...) = f
 
-function unwrapped_f(f::DiscreteFunction)
-    ff = unwrapped_f(f)
+function unwrapped_f(f::DiscreteFunction, newf = unwrapped_f(f.f))
     recompile = specialization(f)
 
     if recompile === NoSpecialize
-        DiscreteFunction{isinplace(f), recompile, typeof(ff), typeof(f.analytic),
-                         typeof(f.syms),
-                         typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms,
-                                                            f.observed,
-                                                            f.sys)
+        DiscreteFunction{isinplace(f), recompile, Any, Any,
+                         Any, Any, Any}(newf, f.analytic, f.syms,
+                                        f.observed, f.sys)
     else
-        DiscreteFunction{isinplace(f), recompile, typeof(ff), typeof(f.analytic),
+        DiscreteFunction{isinplace(f), recompile, typeof(newf), typeof(f.analytic),
                          typeof(f.syms),
-                         typeof(f.observed), typeof(f.sys)}(ff, f.analytic, f.syms,
+                         typeof(f.observed), typeof(f.sys)}(newf, f.analytic, f.syms,
                                                             f.observed,
                                                             f.sys)
     end
@@ -2219,8 +2215,8 @@ function SDEFunction{iip, recompile}(f, g;
     end
 end
 
-function unwrapped_f(f::SDEFunction)
-    ff, g = unwrapped_f(f.f), unwrapped_f(f.g)
+function unwrapped_f(f::SDEFunction, newf = unwrapped_f(f.f),
+                     newg = unwrapped_f(f.g))
     recompile = specialization(f)
 
     if recompile === NoSpecialize
@@ -2229,7 +2225,7 @@ function unwrapped_f(f::SDEFunction)
                     Any, Any, Any, typeof(f.jac_prototype),
                     typeof(f.sparsity), Any, Any,
                     Any, Any, typeof(f.syms),
-                    typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(ff, g,
+                    typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(newf, newg,
                                                                            f.mass_matrix,
                                                                            f.analytic,
                                                                            f.tgrad, f.jac,
@@ -2245,12 +2241,12 @@ function unwrapped_f(f::SDEFunction)
                                                                            f.colorvec,
                                                                            f.sys)
     else
-        SDEFunction{isinplace(f), recompile, typeof(ff), typeof(g),
+        SDEFunction{isinplace(f), recompile, typeof(newf), typeof(newg),
                     typeof(f.mass_matrix), typeof(f.analytic), typeof(f.tgrad),
                     typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
                     typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
                     typeof(f.paramjac), typeof(f.ggprime), typeof(f.syms),
-                    typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(ff, g,
+                    typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(newf, newg,
                                                                            f.mass_matrix,
                                                                            f.analytic,
                                                                            f.tgrad, f.jac,
