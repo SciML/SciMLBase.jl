@@ -17,7 +17,7 @@ Representation of the solution to an linear system Ax=b defined by a LinearProbl
 - `cache`: the `LinearCache` object containing the solver's internal cached variables. This
   is given to allow continuation of solver usage, for example, solving `Ax=b` with the same
   `A` and a new `b` without refactorizing `A`. See the caching interface tutorial for details
-  on how to use the `cache` effectively: http://linearsolve.sciml.ai/dev/tutorials/caching_interface/ 
+  on how to use the `cache` effectively: http://linearsolve.sciml.ai/dev/tutorials/caching_interface/
 """
 struct LinearSolution{T, N, uType, R, A, C} <: AbstractLinearSolution{T, N}
     u::uType
@@ -77,3 +77,15 @@ function build_solution(prob::AbstractIntegralProblem,
                      typeof(prob), typeof(alg), typeof(chi)}(u, resid, prob, alg, retcode,
                                                              chi)
 end
+
+function wrap_sol(sol)
+    sys_type = if sol.prob.f.sys !== nothing
+        sol.prob.f.sys.metadata
+    else
+        nothing
+    end
+    wrap_sol(sol, sys_type)
+end
+
+# Define a default `wrap_sol` that does nothing
+wrap_sol(sol, _) = sol
