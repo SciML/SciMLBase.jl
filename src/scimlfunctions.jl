@@ -1630,7 +1630,7 @@ struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, T
 end
 
 """
-    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,S2,S3,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip,recompile}
+    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,S2,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip,recompile}
 
 A representation of an optimization of an objective function `f`, defined by:
 
@@ -1651,7 +1651,6 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           hess_prototype = nothing, cons_jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                           cons_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing,
-                          indepsym = __has_indepsym(f) ? f.indepsym : nothing,
                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                           hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -1699,8 +1698,6 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
 - `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
   size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
   naming to the values, allowing `sol[:a]` in the solution.
@@ -1745,7 +1742,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2, S3, HCV,
+struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2, HCV,
                             CJCV, CHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
@@ -1761,8 +1758,7 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2
     cons_hess_prototype::CHP
     lag_hess_prototype::LHP
     syms::S
-    indepsym::S2
-    paramsyms::S3
+    paramsyms::S2
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV
     cons_hess_colorvec::CHCV
@@ -3413,7 +3409,6 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    cons_hess_prototype = nothing,
                                    lag_hess_prototype = nothing,
                                    syms = __has_syms(f) ? f.syms : nothing,
-                                   indepsym = __has_indepsym(f) ? f.indepsym : nothing,
                                    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
@@ -3428,14 +3423,14 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                          typeof(cons), typeof(cons_j), typeof(cons_h), typeof(lag_h),
                          typeof(hess_prototype),
                          typeof(cons_jac_prototype), typeof(cons_hess_prototype),
-                         typeof(syms), typeof(indepsym), typeof(paramsyms),
+                         typeof(syms), typeof(paramsyms),
                          typeof(hess_colorvec),
                          typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
                          typeof(expr), typeof(cons_expr),
                          typeof(sys)}(f, adtype, grad, hess,
                                       hv, cons, cons_j, cons_h, lag_h,
                                       hess_prototype, cons_jac_prototype,
-                                      cons_hess_prototype, syms, indepsym, paramsyms,
+                                      cons_hess_prototype, syms, paramsyms,
                                       hess_colorvec, cons_jac_colorvec,
                                       cons_hess_colorvec, expr, cons_expr, sys)
 end
