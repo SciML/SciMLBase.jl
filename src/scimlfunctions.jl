@@ -1536,7 +1536,7 @@ $(TYPEDEF)
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
 @doc doc"""
-NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractNonlinearFunction{iip,recompile}
+NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractNonlinearFunction{iip,recompile}
 
 A representation of an nonlinear system of equations `f`, defined by:
 
@@ -1560,7 +1560,6 @@ NonlinearFunction{iip, recompile}(f;
                                   sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                                   paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                   syms = __has_syms(f) ? f.syms : nothing,
-                                  indepsym = __has_indepsym(f) ? f.indepsym : nothing,
                                   paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                   colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                   sys = __has_sys(f) ? f.sys : nothing)
@@ -1587,8 +1586,6 @@ the usage of `f`. These include:
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
 - `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
   size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
   naming to the values, allowing `sol[:a]` in the solution.
@@ -1612,7 +1609,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the NonlinearFunction type directly match the names of the inputs.
 """
 struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
-                         S, S2, S3, O, TCV, SYS} <: AbstractNonlinearFunction{iip}
+                         S, S2, O, TCV, SYS} <: AbstractNonlinearFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -1626,8 +1623,7 @@ struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, T
     Wfact_t::TWt
     paramjac::TPJ
     syms::S
-    indepsym::S2
-    paramsyms::S3
+    paramsyms::S2
     observed::O
     colorvec::TCV
     sys::SYS
@@ -3327,8 +3323,6 @@ function NonlinearFunction{iip, recompile}(f;
                                            paramjac = __has_paramjac(f) ? f.paramjac :
                                                       nothing,
                                            syms = __has_syms(f) ? f.syms : nothing,
-                                           indepsym = __has_indepsym(f) ? f.indepsym :
-                                                      nothing,
                                            paramsyms = __has_paramsyms(f) ? f.paramsyms :
                                                        nothing,
                                            observed = __has_observed(f) ? f.observed :
@@ -3372,14 +3366,14 @@ function NonlinearFunction{iip, recompile}(f;
         NonlinearFunction{iip, recompile,
                           Any, Any, Any, Any, Any,
                           Any, Any, Any, Any, Any,
-                          Any, Any, typeof(syms), typeof(indepsym), typeof(paramsyms), Any,
+                          Any, Any, typeof(syms), typeof(paramsyms), Any,
                           typeof(_colorvec), Any}(f, mass_matrix,
                                                   analytic, tgrad, jac,
                                                   jvp, vjp,
                                                   jac_prototype,
                                                   sparsity, Wfact,
                                                   Wfact_t, paramjac,
-                                                  syms, indepsym, paramsyms, observed,
+                                                  syms, paramsyms, observed,
                                                   _colorvec, sys)
     else
         NonlinearFunction{iip, recompile,
@@ -3387,11 +3381,11 @@ function NonlinearFunction{iip, recompile}(f;
                           typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                           typeof(sparsity), typeof(Wfact),
                           typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                          typeof(indepsym), typeof(paramsyms),
+                          typeof(paramsyms),
                           typeof(observed), typeof(_colorvec),
                           typeof(sys)}(f, mass_matrix, analytic, tgrad, jac, jvp, vjp,
                                        jac_prototype, sparsity, Wfact, Wfact_t, paramjac,
-                                       syms, indepsym, paramsyms, observed, _colorvec, sys)
+                                       syms, paramsyms, observed, _colorvec, sys)
     end
 end
 
