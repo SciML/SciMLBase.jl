@@ -78,7 +78,7 @@ function build_solution(prob::AbstractIntegralProblem,
                                                              chi)
 end
 
-function wrap_sol(sol::T) where {T}
+function wrap_sol(sol)
     if hasfield(typeof(sol.prob), :problem_type)
         wrap_sol(sol, sol.prob.problem_type)
     else
