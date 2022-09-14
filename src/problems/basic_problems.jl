@@ -76,6 +76,11 @@ function LinearProblem(A, b, args...; kwargs...)
     end
 end
 
+"""
+$(TYPEDEF)
+"""
+struct StandardNonlinearProblem end
+
 @doc doc"""
 
 Defines a nonlinear system problem.
@@ -124,15 +129,19 @@ page.
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct NonlinearProblem{uType, isinplace, P, F, K} <:
+struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
        AbstractNonlinearProblem{uType, isinplace}
     f::F
     u0::uType
     p::P
+    problem_type::PT
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
-                                               p = NullParameters(); kwargs...) where {iip}
-        new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs)}(f, u0, p, kwargs)
+                                               p = NullParameters(),
+                                               problem_type = StandardNonlinearProblem();
+                                               kwargs...) where {iip}
+        new{typeof(u0), iip, typeof(p), typeof(f),
+            typeof(kwargs), typeof(problem_type)}(f, u0, p, problem_type, kwargs)
     end
 
     """

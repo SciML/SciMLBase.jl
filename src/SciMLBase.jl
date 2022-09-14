@@ -276,6 +276,13 @@ $(TYPEDEF)
 """
 abstract type AbstractDiscretization <: AbstractSciMLAlgorithm end
 
+# Discretization metadata
+"""
+$(TYPEDEF)
+
+"""
+abstract type AbstractDiscretizationMetadata{hasTime} end
+
 # Monte Carlo Simulations
 """
 $(TYPEDEF)
@@ -448,6 +455,24 @@ abstract type AbstractDAESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 """
 $(TYPEDEF)
 """
+abstract type AbstractPDETimeSeriesSolution{T, N, S, D} <:
+              AbstractTimeseriesSolution{T, N, S} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
+              AbstractNoTimeSolution{T, N} end
+
+"""
+$(TYPEDEF)
+"""
+const AbstractPDESolution{T, N, S, D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D},
+                                              AbstractPDENoTimeSolution{T, N, S, D}}
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Misc
@@ -602,6 +627,7 @@ include("solutions/ode_solutions.jl")
 include("solutions/rode_solutions.jl")
 include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
+include("solutions/pde_solutions.jl")
 include("solutions/solution_interface.jl")
 
 include("ensemble/ensemble_solutions.jl")
