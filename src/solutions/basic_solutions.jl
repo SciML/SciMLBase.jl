@@ -78,7 +78,9 @@ function build_solution(prob::AbstractIntegralProblem,
                                                              chi)
 end
 
-wrap_sol(sol) = wrap_sol(sol, sol.prob.problem_type)
+function wrap_sol(sol::T) where {T}
+    wrap_sol(sol, hasfield(T, :problem_type) ? sol.prob.problem_type : nothing)
+end
 
 # Define a default `wrap_sol` that does nothing
 wrap_sol(sol, _) = sol
