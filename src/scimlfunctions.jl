@@ -1754,7 +1754,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, S2, HCV,
+struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, S2,
+                            HCV,
                             CJCV,
                             CHCV, LHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
     f::F
@@ -1902,7 +1903,8 @@ function ODEFunction{iip, recompile}(f;
                     Any, Any, Any, Any,
                     Any, Any, Any, typeof(jac_prototype),
                     typeof(sparsity), Any, Any, Any,
-                    typeof(syms), typeof(indepsym), typeof(paramsyms), Any, typeof(_colorvec),
+                    typeof(syms), typeof(indepsym), typeof(paramsyms), Any,
+                    typeof(_colorvec),
                     typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
                                  jvp, vjp, jac_prototype, sparsity, Wfact,
                                  Wfact_t, paramjac, syms, indepsym, paramsyms,
@@ -1923,7 +1925,8 @@ function ODEFunction{iip, recompile}(f;
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
-                    typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed), typeof(_colorvec),
+                    typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
+                    typeof(_colorvec),
                     typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
                                  jvp, vjp, jac_prototype, sparsity, Wfact,
                                  Wfact_t, paramjac, syms, indepsym, paramsyms,
@@ -2033,8 +2036,9 @@ end
                   typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
                   typeof(indepsym), typeof(paramsyms), typeof(observed), typeof(colorvec),
                   typeof(sys)}(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp, vjp,
-                    jac_prototype, sparsity, Wfact, Wfact_t, paramjac, syms, indepsym,
-                    paramsyms, observed, colorvec, sys)
+                               jac_prototype, sparsity, Wfact, Wfact_t, paramjac, syms,
+                               indepsym,
+                               paramsyms, observed, colorvec, sys)
 end
 function SplitFunction{iip, recompile}(f1, f2;
                                        mass_matrix = __has_mass_matrix(f1) ?
@@ -2056,8 +2060,10 @@ function SplitFunction{iip, recompile}(f1, f2;
                                        paramjac = __has_paramjac(f1) ? f1.paramjac :
                                                   nothing,
                                        syms = __has_syms(f1) ? f1.syms : nothing,
-                                       indepsym = __has_indepsym(f1) ? f1.indepsym : nothing,
-                                       paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                       indepsym = __has_indepsym(f1) ? f1.indepsym :
+                                                  nothing,
+                                       paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                   nothing,
                                        observed = __has_observed(f1) ? f1.observed :
                                                   DEFAULT_OBSERVED,
                                        colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -2113,10 +2119,12 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                          typeof(vjp),
                          typeof(jac_prototype),
                          typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                         typeof(indepsym), typeof(paramsyms), typeof(observed), typeof(colorvec),
+                         typeof(indepsym), typeof(paramsyms), typeof(observed),
+                         typeof(colorvec),
                          typeof(sys)}(f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
                                       vjp, jac_prototype, sparsity, Wfact, Wfact_t,
-                                      paramjac, syms, indepsym, paramsyms, observed, colorvec, sys)
+                                      paramjac, syms, indepsym, paramsyms, observed,
+                                      colorvec, sys)
 end
 
 function DynamicalODEFunction{iip, recompile}(f1, f2;
@@ -2138,8 +2146,10 @@ function DynamicalODEFunction{iip, recompile}(f1, f2;
                                               paramjac = __has_paramjac(f1) ? f1.paramjac :
                                                          nothing,
                                               syms = __has_syms(f1) ? f1.syms : nothing,
-                                              indepsym = __has_indepsym(f1) ? f1.indepsym : nothing,
-                                              paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                              indepsym = __has_indepsym(f1) ? f1.indepsym :
+                                                         nothing,
+                                              paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                          nothing,
                                               observed = __has_observed(f1) ? f1.observed :
                                                          DEFAULT_OBSERVED,
                                               colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -2189,8 +2199,10 @@ function DiscreteFunction{iip, recompile}(f;
                                           analytic = __has_analytic(f) ? f.analytic :
                                                      nothing,
                                           syms = __has_syms(f) ? f.syms : nothing,
-                                          indepsym = __has_indepsym(f) ? f.indepsym : nothing,
-                                          paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                          indepsym = __has_indepsym(f) ? f.indepsym :
+                                                     nothing,
+                                          paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                      nothing,
                                           observed = __has_observed(f) ? f.observed :
                                                      DEFAULT_OBSERVED,
                                           sys = __has_sys(f) ? f.sys : nothing) where {iip,
@@ -2422,8 +2434,10 @@ function SplitSDEFunction{iip, recompile}(f1, f2, g;
                                           paramjac = __has_paramjac(f1) ? f1.paramjac :
                                                      nothing,
                                           syms = __has_syms(f1) ? f1.syms : nothing,
-                                          indepsym = __has_indepsym(f1) ? f1.indepsym : nothing,
-                                          paramsyms = __has_paramsyms(f1) ? f1.paramsyms : nothing,
+                                          indepsym = __has_indepsym(f1) ? f1.indepsym :
+                                                     nothing,
+                                          paramsyms = __has_paramsyms(f1) ? f1.paramsyms :
+                                                      nothing,
                                           observed = __has_observed(f1) ? f1.observed :
                                                      DEFAULT_OBSERVED,
                                           colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -2470,7 +2484,8 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
 @add_kwonly function DynamicalSDEFunction(f1, f2, g, mass_matrix, cache, analytic, tgrad,
                                           jac, jvp, vjp,
                                           jac_prototype, Wfact, Wfact_t, paramjac,
-                                          syms, indepsym, paramsyms, observed, colorvec, sys)
+                                          syms, indepsym, paramsyms, observed, colorvec,
+                                          sys)
     f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     DynamicalSDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
@@ -2478,7 +2493,8 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                          typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac),
                          typeof(jvp), typeof(vjp),
                          typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
-                         typeof(indepsym), typeof(paramsyms), typeof(observed), typeof(colorvec),
+                         typeof(indepsym), typeof(paramsyms), typeof(observed),
+                         typeof(colorvec),
                          typeof(sys)}(f1, f2, g, mass_matrix, cache, analytic, tgrad,
                                       jac, jac_prototype, Wfact, Wfact_t, paramjac, syms,
                                       indepsym, paramsyms, observed, colorvec, sys)
@@ -2504,8 +2520,10 @@ function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
                                               paramjac = __has_paramjac(f1) ? f1.paramjac :
                                                          nothing,
                                               syms = __has_syms(f1) ? f1.syms : nothing,
-                                              indepsym = __has_indepsym(f1) ? f1.indepsym : nothing,
-                                              paramsyms = __has_paramsyms(f1) ? f1.paramsyms : nothing,
+                                              indepsym = __has_indepsym(f1) ? f1.indepsym :
+                                                         nothing,
+                                              paramsyms = __has_paramsyms(f1) ?
+                                                          f1.paramsyms : nothing,
                                               observed = __has_observed(f1) ? f1.observed :
                                                          DEFAULT_OBSERVED,
                                               colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -2522,7 +2540,8 @@ function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
                                                            analytic, tgrad, jac, jvp, vjp,
                                                            jac_prototype, sparsity,
                                                            Wfact, Wfact_t, paramjac, syms,
-                                                           indepsym, paramsyms, observed, colorvec, sys)
+                                                           indepsym, paramsyms, observed,
+                                                           colorvec, sys)
     else
         DynamicalSDEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(g),
                              typeof(mass_matrix), typeof(_func_cache),
@@ -2566,7 +2585,8 @@ function RODEFunction{iip, recompile}(f;
                                       paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                       syms = __has_syms(f) ? f.syms : nothing,
                                       indepsym = __has_indepsym(f) ? f.indepsym : nothing,
-                                      paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                      paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                  nothing,
                                       observed = __has_observed(f) ? f.observed :
                                                  DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2839,8 +2859,10 @@ function DynamicalDDEFunction{iip, recompile}(f1, f2;
                                               paramjac = __has_paramjac(f1) ? f1.paramjac :
                                                          nothing,
                                               syms = __has_syms(f1) ? f1.syms : nothing,
-                                              indepsym = __has_indepsym(f1) ? f1.indepsym : nothing,
-                                              paramsyms = __has_paramsyms(f1) ? f1.paramsyms : nothing,
+                                              indepsym = __has_indepsym(f1) ? f1.indepsym :
+                                                         nothing,
+                                              paramsyms = __has_paramsyms(f1) ?
+                                                          f1.paramsyms : nothing,
                                               observed = __has_observed(f1) ? f1.observed :
                                                          DEFAULT_OBSERVED,
                                               colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -2908,7 +2930,8 @@ function SDDEFunction{iip, recompile}(f, g;
                                       ggprime = nothing,
                                       syms = __has_syms(f) ? f.syms : nothing,
                                       indepsym = __has_indepsym(f) ? f.indepsym : nothing,
-                                      paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                      paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                  nothing,
                                       observed = __has_observed(f) ? f.observed :
                                                  DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2993,7 +3016,8 @@ function NonlinearFunction{iip, recompile}(f;
                                            paramjac = __has_paramjac(f) ? f.paramjac :
                                                       nothing,
                                            syms = __has_syms(f) ? f.syms : nothing,
-                                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                           paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                       nothing,
                                            observed = __has_observed(f) ? f.observed :
                                                       DEFAULT_OBSERVED_NO_TIME,
                                            colorvec = __has_colorvec(f) ? f.colorvec :
@@ -3049,13 +3073,15 @@ function NonlinearFunction{iip, recompile}(f;
                           typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                           typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                           typeof(sparsity), typeof(Wfact),
-                          typeof(Wfact_t), typeof(paramjac), typeof(syms), typeof(paramsyms),
+                          typeof(Wfact_t), typeof(paramjac), typeof(syms),
+                          typeof(paramsyms),
                           typeof(observed),
                           typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad,
                                                           jac,
                                                           jvp, vjp, jac_prototype, sparsity,
                                                           Wfact,
-                                                          Wfact_t, paramjac, syms, paramsyms,
+                                                          Wfact_t, paramjac, syms,
+                                                          paramsyms,
                                                           observed, _colorvec, sys)
     end
 end
