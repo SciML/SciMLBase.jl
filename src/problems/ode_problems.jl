@@ -105,7 +105,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     """
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         ptspan = promote_tspan(tspan)
-        _f = ODEFunction{iip, AutoSpecialize}(f)
+        _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
         ODEProblem(_f, u0, tspan, p; kwargs...)
     end
 
@@ -144,7 +144,7 @@ end
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
     ptspan = promote_tspan(tspan)
-    _f = ODEFunction{iip, AutoSpecialize}(f)
+    _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
     ODEProblem(_f, u0, tspan, p; kwargs...)
 end
 
