@@ -7,6 +7,7 @@ using LinearAlgebra
 using Statistics
 using Distributed
 using Markdown
+import Preferences
 
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
