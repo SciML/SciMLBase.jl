@@ -6,7 +6,8 @@ struct NoSpecialize <: AbstractSpecialization end
 struct FunctionWrapperSpecialize <: AbstractSpecialization end
 struct FullSpecialize <: AbstractSpecialization end
 
-const DEFAULT_SPECIALIZATION = Preferences.@load_preference("SpecializationLevel", AutoSpecialize)
+const DEFAULT_SPECIALIZATION = Preferences.@load_preference("SpecializationLevel",
+                                                            AutoSpecialize)
 
 function DEFAULT_OBSERVED(sym, u, p, t)
     error("Indexing symbol $sym is unknown.")
