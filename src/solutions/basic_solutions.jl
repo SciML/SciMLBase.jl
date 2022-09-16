@@ -79,7 +79,7 @@ function build_solution(prob::AbstractIntegralProblem,
 end
 
 function wrap_sol(sol)
-    if hasproperty(typeof(sol), :prob) && hasproperty(typeof(sol.prob), :problem_type)
+    if hasproperty(sol, :prob) && hasproperty(sol.prob, :problem_type)
         wrap_sol(sol, sol.prob.problem_type)
     else
         sol
