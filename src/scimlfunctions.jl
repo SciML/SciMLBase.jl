@@ -2148,7 +2148,8 @@ function DynamicalODEFunction{iip, recompile}(f1, f2;
                                               syms = __has_syms(f1) ? f1.syms : nothing,
                                               indepsym = __has_indepsym(f1) ? f1.indepsym :
                                                          nothing,
-                                              paramsyms = __has_paramsyms(f1) ? f1.paramsyms :
+                                              paramsyms = __has_paramsyms(f1) ?
+                                                          f1.paramsyms :
                                                           nothing,
                                               observed = __has_observed(f1) ? f1.observed :
                                                          DEFAULT_OBSERVED,
