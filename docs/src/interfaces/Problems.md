@@ -1,4 +1,4 @@
-# SciMLProblems
+# [SciMLProblems](@id scimlproblems)
 
 The cornerstone of the SciML common interface is the problem type definition.
 These definitions are the encoding of mathematical problems into a numerically
@@ -32,6 +32,43 @@ be specified.
 Additionally, the functions are fully specialized to reduce the runtimes. If one
 would instead like to not specialize on the functions to reduce compile time,
 then one can set `recompile` to false.
+
+### Specialization Levels
+
+Specialization levels in problem definitions are used to control the amount of compilation
+specialization is performed on the model functions in order to trade off between runtime
+performance, simplicity, and compile-time performance. The default choice of specialization
+is `AutoSpecialize`, which seeks to allow for using fully precompiled solvers in common
+scenarios but falls back to a runtime-optimal approach when further customization is used.
+
+Specialization levels are given as the second type parameter in `AbstractSciMLProblem`
+constructors. For example, this is done via:
+
+```julia 
+ODEProblem{iip,specialization}(f,u0,tspan,p)
+```
+
+Note that `iip` choice is required for specialization choices to be made.
+
+#### Specialization Choices
+
+```@docs
+AbstractSpecialization
+AutoSpecialize
+NoSpecialize
+FunctionWrapperSpecialize
+FullSpecialize
+```
+
+!!! note
+
+    The specialization level must be precompile snooped in the appropriate solver
+    package in order to enable the full precompilation and system image generation
+    for zero-latency usage. By default, this is only done with AutoSpecialize and
+    on types `u isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
+    `p isa Union{Vector{Float64}, SciMLBase.NullParameters}`. Precompilation snooping 
+    in the solvers can be done using the Preferences.jl setup on the appropriate
+    solver. See the solver library's documentation for more details.
 
 ### Default Parameters
 
@@ -72,6 +109,18 @@ SciMLBase.is_diagonal_noise
 ```
 
 ## AbstractSciMLProblem API
+
+### Defaults and Preferences
+
+`SpecializationLevel` at `SciMLBase` can be used to set the default specialization level. The following
+shows how to set the specialization default to `FullSpecialize`:
+
+```julia
+using Preferences, UUIDs
+set_preferences!(UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize")
+```
+
+The default is `AutoSpecialize`.
 
 ### Abstract SciMLProblems
 

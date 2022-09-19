@@ -50,18 +50,17 @@ change the first value). This is automatically determined using the methods tabl
 but note that for full type-inferrability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
-Additionally, the functions are fully specialized to reduce the runtimes. If one
-would instead like to not specialize on the functions to reduce compile time,
-then one can set `recompile` to false.
+### Specialization Choices
+
+Each `SciMLFunction` type allows for specialization choices
 
 ```julia
-ODEFunction{iip,false}(f)
+ODEFunction{iip,specialization}(f)
 ```
 
-This makes the ODE solver compilation independent of the function and so changing
-the function will not cause recompilation. One can change the default value
-by changing the `const RECOMPILE_BY_DEFAULT = true` to false in the SciMLBase.jl
-source code.
+which designates how the compiler should specialize on the model function `f`. For
+more details on specialization choices, see the [SciMLProblems](@ref scimlproblems)
+page.
 
 ### Specifying Jacobian Types
 

@@ -1,13 +1,172 @@
 const RECOMPILE_BY_DEFAULT = true
 
+"""
+$(TYPEDEF)
+
+Supertype for the specialization types. Controls the compilation and
+function specialization behavior of SciMLFunctions, ultimately controlling
+the runtime vs compile-time trade-off.
+"""
 abstract type AbstractSpecialization end
+
+"""
+$(TYPEDEF)
+
+The default specialization level for problem functions. `AutoSpecialize`
+works by applying a function wrap just-in-time before the solve process
+to disable just-in-time re-specialization of the solver to the specific
+choice of model `f` and thus allow for using a cached solver compilation 
+from a different `f`. This wrapping process can lead to a small decreased 
+runtime performance with a benefit of a greatly decreased compile-time. 
+
+## Note About Benchmarking and Runtime Optimality
+
+It is recommended that `AutoSpecialize` is not used in any benchmarking
+due to the potential effect of function wrapping on runtimes. `AutoSpecialize`'s
+use case is targetted at decreased latency for REPL performance and
+not for cases where where top runtime performance is required (such as in
+optimization loops). Generally, for non-stiff equations the cost will be minimial
+and potentially not even measurable. For stiff equations, function wrapping
+has the limitation that only chunk sized 1 Dual numbers are allowed, which
+can decrease Jacobian construction performance. 
+
+## Limitations of `AutoSpecialize`
+
+The following limitations are not fundamental to the implementation of `AutoSpecialize`,
+but are instead chosen as a comprimise between default precompilation times and
+ease of maintanance. Please open an issue to discuss lifting any potential
+limitations.
+
+* `AutoSpecialize` is only setup to wrap the functions from in-place ODEs. Other 
+  cases are excluded for the time being due to time limitations.
+* `AutoSpecialize` will only lead to compilation reuse if the ODEFunction's other
+  functions (such as jac and tgrad) are the default `nothing`. These could be
+  JIT wrapped as well in a future version.
+* `AutoSpecialize`'d functions are only compatible with Jacobian calculations
+  performed with chunk size 1, and only with tag `DiffEqBase.OrdinaryDiffEqTag()`.
+  Thus ODE solvers written on the common interface must be careful to detect
+  the `AutoSpecialize` case and perform differentiation under these constraints,
+  use finite differencing, or manually unwrap before solving. This will lead
+  to decreased runtime performance for sufficiently large Jacobians.
+* `AutoSpecialize` only wraps on Julia v1.8 and higher.
+* `AutoSpecialize` does not handle cases with units. If unitful values are detected,
+  wrapping is automatically disabled. 
+* `AutoSpecialize` only wraps cases for which `promote_rule` is defined between `u0`
+  and dual numbers, `u0` and `t`, and for which `ArrayInterfaceCore.promote_eltype`
+  is defined on `u0` to dual numbers.
+* `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
+  default.
+* `AutoSpecialize` does not wrap cases where `f isa AbstractDiffEqOperator`
+* By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
+  `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are precompiled
+  by the solver libraries. Other forms can be precompile specialized with
+  `AutoSpecialize`, but must be done in the precompilation of downstream libraries.
+* `AutoSpecialize`d functions are manually unwrapped in adjoint methods in
+  SciMLSensitivity.jl in order to allow compiler support for automatic differentiation.
+  Improved versions of adjoints which decrease the recompilation surface will come
+  in non-breaking updates.
+
+Cases where automatic wrapping is disabled are equivalent to `FullSpecialize`.
+
+## Example
+
+```
+f(du,u,p,t) = (du .= u)
+
+# Note this is the same as ODEProblem(f, [1.0], (0.0,1.0))
+# If no preferences are set
+ODEProblem{true, SciMLBase.AutoSpecialize}(f, [1.0], (0.0,1.0))
+```
+"""
 struct AutoSpecialize <: AbstractSpecialization end
+
+"""
+$(TYPEDEF)
+
+`NoSpecialize` forces SciMLFunctions to not specialize on the types
+of functions wrapped within it. This ultimately contributes to a
+form such that every `prob.f` type is the same, meaning compilation
+caches are fully reused, with the downside of losing runtime performance.
+`NoSpecialize` is the form that most fully trades off runtime for compile
+time. Unlike `AutoSpecialize`, `NoSpecialize` can be used with any
+`SciMLFunction`.
+
+## Example 
+
+```
+f(du,u,p,t) = (du .= u)
+ODEProblem{true, SciMLBase.NoSpecialize}(f, [1.0], (0.0,1.0))
+```
+"""
 struct NoSpecialize <: AbstractSpecialization end
+
+"""
+($TYPEDEF)
+
+`FunctionWrapperSpecialize` is an eager wrapping choice which
+performs a function wrapping during the `ODEProblem` construction.
+This performs the function wrapping at the earliest possible point,
+giving the best compile-time vs runtime performance, but with the
+difficulty that any usage of `prob.f` needs to account for the
+function wrapper's presence. While optimal in a performance sense,
+this method has many usability issues with nonstandard solvers
+and analyses as it requires unwrapping before re-wrapping for any
+type changes. Thus this method is not used by default. Given that
+the compile-time different is almost undetectable from AutoSpecialize,
+this method is mostly used as a benchmarking reference for speed
+of light for `AutoSpecialize`.
+
+## Limitations of `FunctionWrapperSpecialize`
+
+`FunctionWrapperSpecialize` has all of the limitations of `AutoSpecialize`,
+but also includes the limitations: 
+
+* `prob.f` is directly specialized to the types of `(u,p,t)`, and any usage 
+  of `prob.f` on other types first requires using 
+  `SciMLBase.unwrapped_f(prob.f)` to remove the function wrapper.
+* `FunctionWrapperSpecialize` can only be used by the `ODEProblem` constructor.
+  If an `ODEFunction` is being constructed, the user must manually use
+  `DiffEqBase.wrap_iip` on `f` before calling 
+  `ODEFunction{true,FunctionWrapperSpecialize}(f)`. This is a fundamental
+  limitation of the approach as the types of `(u,p,t)` are required in the
+  construction process and not accessible in the `AbstactSciMLFunction` constructors.
+
+## Example 
+
+```
+f(du,u,p,t) = (du .= u)
+ODEProblem{true, SciMLBase.FunctionWrapperSpecialize}(f, [1.0], (0.0,1.0))
+```
+"""
 struct FunctionWrapperSpecialize <: AbstractSpecialization end
+
+"""
+($TYPEDEF)
+
+`FullSpecialize` is an eager specialization choice which
+directly types the `AbstractSciMLFunction` struct to match the type
+of the model `f`. This forces recompilation of the solver on each
+new function type `f`, leading to the most compile times with the
+benefit of having the best runtime performance. 
+
+`FullSpecialize` should be used in all cases where top runtime performance
+is required, such as in long running simulations and benchmarking.
+
+## Example 
+
+```
+f(du,u,p,t) = (du .= u)
+ODEProblem{true, SciMLBase.FullSpecialize}(f, [1.0], (0.0,1.0))
+```
+"""
 struct FullSpecialize <: AbstractSpecialization end
 
-const DEFAULT_SPECIALIZATION = Preferences.@load_preference("SpecializationLevel",
-                                                            AutoSpecialize)
+specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize")
+if specstring ∉ ("NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize")
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize).")  
+end
+
+const DEFAULT_SPECIALIZATION = getindex(SciMLBase,Symbol(specstring))
 
 function DEFAULT_OBSERVED(sym, u, p, t)
     error("Indexing symbol $sym is unknown.")
