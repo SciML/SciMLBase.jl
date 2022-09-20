@@ -101,7 +101,7 @@ ODEProblem{true, SciMLBase.NoSpecialize}(f, [1.0], (0.0,1.0))
 struct NoSpecialize <: AbstractSpecialization end
 
 """
-($TYPEDEF)
+$(TYPEDEF)
 
 `FunctionWrapperSpecialize` is an eager wrapping choice which
 performs a function wrapping during the `ODEProblem` construction.
@@ -141,7 +141,7 @@ ODEProblem{true, SciMLBase.FunctionWrapperSpecialize}(f, [1.0], (0.0,1.0))
 struct FunctionWrapperSpecialize <: AbstractSpecialization end
 
 """
-($TYPEDEF)
+$(TYPEDEF)
 
 `FullSpecialize` is an eager specialization choice which
 directly types the `AbstractSciMLFunction` struct to match the type
