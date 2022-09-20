@@ -166,7 +166,7 @@ if specstring ∉ ("NoSpecialize", "FullSpecialize", "AutoSpecialize", "Function
     error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize).")  
 end
 
-const DEFAULT_SPECIALIZATION = getindex(SciMLBase,Symbol(specstring))
+const DEFAULT_SPECIALIZATION = getproperty(SciMLBase,Symbol(specstring))
 
 function DEFAULT_OBSERVED(sym, u, p, t)
     error("Indexing symbol $sym is unknown.")
