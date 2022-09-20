@@ -162,11 +162,12 @@ ODEProblem{true, SciMLBase.FullSpecialize}(f, [1.0], (0.0,1.0))
 struct FullSpecialize <: AbstractSpecialization end
 
 specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize")
-if specstring ∉ ("NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize")
-    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize).")  
+if specstring ∉
+   ("NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize")
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize).")
 end
 
-const DEFAULT_SPECIALIZATION = getproperty(SciMLBase,Symbol(specstring))
+const DEFAULT_SPECIALIZATION = getproperty(SciMLBase, Symbol(specstring))
 
 function DEFAULT_OBSERVED(sym, u, p, t)
     error("Indexing symbol $sym is unknown.")
