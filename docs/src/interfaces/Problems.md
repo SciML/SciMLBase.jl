@@ -53,11 +53,11 @@ Note that `iip` choice is required for specialization choices to be made.
 #### Specialization Choices
 
 ```@docs
-AbstractSpecialization
-AutoSpecialize
-NoSpecialize
-FunctionWrapperSpecialize
-FullSpecialize
+SciMLBase.AbstractSpecialization
+SciMLBase.AutoSpecialize
+SciMLBase.NoSpecialize
+SciMLBase.FunctionWrapperSpecialize
+SciMLBase.FullSpecialize
 ```
 
 !!! note
