@@ -64,11 +64,16 @@ Note that algebraic equations can be specified by using a singular mass matrix.
 
 ```
 SDDEProblem(f,g[, u0], h, tspan[, p]; <keyword arguments>)
-SDDEProblem{isinplace}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
+SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 ```
 
-Parameter `isinplace` optionally sets whether the function is inplace or not.
-This is determined automatically, but not inferred.
+`isinplace` optionally sets whether the function is inplace or not. This is 
+determined automatically, but not inferred. `specialize` optionally controls 
+the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+for more details. The default is `AutoSpecialize.
+
+For more details on the in-place and specialization controls, see the ODEFunction documentation.
+
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent

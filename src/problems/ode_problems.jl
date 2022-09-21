@@ -36,9 +36,15 @@ by simply passing the ODE right-hand side to the constructor. The constructors
 are:
 
 - `ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters();kwargs...)`
-- `ODEProblem{isinplace}(f,u0,tspan,p=NullParameters();kwargs...)` :
+- `ODEProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();kwargs...)` :
   Defines the ODE with the specified functions. `isinplace` optionally sets whether
   the function is inplace or not. This is determined automatically, but not inferred.
+  `specialize` optionally controls the specialization level. See the
+  [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels)
+  for more details. The default is `AutoSpecialize`.
+
+For more details on the in-place and specialization controls, see the ODEFunction
+documentation.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
