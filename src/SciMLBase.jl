@@ -16,6 +16,13 @@ using SciMLOperators: AbstractSciMLOperator, AbstractSciMLLinearOperator,
                       InvertedOperator, InvertibleOperator,
                       DEFAULT_UPDATE_FUNC, isconstant
 
+using Reexport
+@reexport using SciMLOperators
+using SciMLOperators: AbstractSciMLOperator, AbstractSciMLLinearOperator,
+                      IdentityOperator, ComposedOperator, ScaledOperator,
+                      InvertedOperator, InvertibleOperator,
+                      DEFAULT_UPDATE_FUNC, isconstant
+
 import Logging, ArrayInterfaceCore
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
