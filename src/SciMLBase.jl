@@ -12,14 +12,8 @@ import Preferences
 using Reexport
 @reexport using SciMLOperators
 using SciMLOperators: AbstractSciMLOperator, AbstractSciMLLinearOperator,
-                      IdentityOperator, ComposedOperator, ScaledOperator,
-                      InvertedOperator, InvertibleOperator,
-                      DEFAULT_UPDATE_FUNC, isconstant
-
-using Reexport
-@reexport using SciMLOperators
-using SciMLOperators: AbstractSciMLOperator, AbstractSciMLLinearOperator,
-                      IdentityOperator, ComposedOperator, ScaledOperator,
+                      IdentityOperator, NullOperator,
+                      AddedOperator, ComposedOperator, ScaledOperator,
                       InvertedOperator, InvertibleOperator,
                       DEFAULT_UPDATE_FUNC, isconstant
 

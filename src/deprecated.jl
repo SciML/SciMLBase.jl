@@ -52,9 +52,11 @@ function DiffEqScalar(args...; kwargs...)
 end
 
 const AffineDiffEqOperator = SciMLOperators.AffineOperator
-function AffineDiffEqOperator{}(As, bs, cache = nothing) where{T}
+function AffineDiffEqOperator{T}(As, bs, cache = nothing) where{T}
     @warn "SciMLBase.AffineDiffEqOperator is deprecated.
     Use SciMLOperators.AffineOperator instead"
+
+    bs = isempty(bs) ? (zeros(Bool, size(As[1], 1)),) : bs
 
     all([size(a) == size(As[1]) for a in As]) || error("Operator sizes do not agree")
     all([size(b) == size(bs[1]) for b in bs]) || error("Vector sizes do not agree")
