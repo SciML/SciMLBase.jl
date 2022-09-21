@@ -1,4 +1,3 @@
-#
 # Deprecated Quadrature things
 const AbstractQuadratureProblem = AbstractIntegralProblem
 const AbstractQuadratureAlgorithm = AbstractIntegralAlgorithm
@@ -74,7 +73,3 @@ function DiffEqArrayOperator(args...; kwargs...)
 
     MatrixOperator(args...; kwargs...)
 end
-
-export DiffEqScaledOperator, FactorizedDiffEqArrayOperator, DiffEqIdentity,
-       DiffEqScalar, AffineDiffEqOperator, DiffEqArrayOperator
-

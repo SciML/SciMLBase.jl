@@ -636,8 +636,6 @@ function wrapfun_iip end
 function unwrap_fw end
 
 # Exports
-export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
-
 export AllObserved
 
 export isinplace
@@ -694,5 +692,11 @@ export step!, deleteat!, addat!, get_tmp_cache,
        isdiscrete, reeval_internals_due_to_modification!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
+
+# deprecated
+export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
+
+export DiffEqScaledOperator, FactorizedDiffEqArrayOperator, DiffEqIdentity,
+       DiffEqScalar, AffineDiffEqOperator, DiffEqArrayOperator
 
 end
