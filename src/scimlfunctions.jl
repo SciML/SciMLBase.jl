@@ -1,4 +1,4 @@
-const RECOMPILE_BY_DEFAULT = true
+const specialize_BY_DEFAULT = true
 
 """
 $(TYPEDEF)
@@ -58,8 +58,8 @@ limitations.
   default.
 * `AutoSpecialize` does not wrap cases where `f isa AbstractDiffEqOperator`
 * By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-  `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are precompiled
-  by the solver libraries. Other forms can be precompile specialized with
+  `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are pspecialized
+  by the solver libraries. Other forms can be pspecialize specialized with
   `AutoSpecialize`, but must be done in the precompilation of downstream libraries.
 * `AutoSpecialize`d functions are manually unwrapped in adjoint methods in
   SciMLSensitivity.jl in order to allow compiler support for automatic differentiation.
@@ -209,7 +209,7 @@ $(TYPEDEF)
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,recompile}
+    ODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,specialize}
 
 A representation of an ODE function `f`, defined by:
 
@@ -224,7 +224,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-ODEFunction{iip,recompile}(f;
+ODEFunction{iip,specialize}(f;
                            mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -292,18 +292,30 @@ the maximum number of arguments in available dispatches. For this reason, the co
 `ODEFunction(f)` generally works (but is type-unstable). However, for type-stability or
 to enforce correctness, this option is passed via `ODEFunction{true}(f)`.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
-The `recompile` parameter controls whether the ODEFunction will fully specialize on the
-`typeof(f)`. This causes recompilation of the solver for each new `f` function, but
-gives the maximum compiler information and runtime speed. By default `recompile = true`.
-If `recompile = false`, the `ODEFunction` uses `Any` type parameters for each of the
-functions, allowing for the reuse of compilation caches but adding a dynamic dispatch
-at the `f` call sites, potentially leading to runtime regressions.
+The `specialize` parameter controls the specialization level of the ODEFunction 
+on the function `f`. This allows for a trade-off between compile and run time performance.
+The available specialization levels are:
 
-Overriding the `true` default is done by passing a second type parameter after `iip`,
-for example `ODEFunction{true,false}(f)` is an in-place function with no recompilation
-specialization.
+* `SciMLBase.AutoSpecialize`: this form performs a lazy function wrapping on the
+  functions of the ODE in order to stop recompilation of the ODE solver, but allow
+  for the `prob.f` to stay unwrapped for normal usage. This is the default specialization
+  level and strikes a balance in compile time vs runtime performance.
+* `SciMLBase.FullSpecialize`: this form fully specializes the `ODEFunction` on the
+  constituant functions that make its fields. As such, each `ODEFunction` in this
+  form is uniquely typed, requiring re-specialization and compilation for each new
+  ODE definition. This form has the highest compile-time at the cost of being the
+  most optimal in runtime. This form should be preferred for long running calculations
+  (such as within optimization loops) and for benchmarking.
+* `SciMLBase.NoSpecialize`: this form fully unspecializes the function types in the ODEFunction
+  definition by using an `Any` type declaration. As a result, it can result in reduced runtime
+  performance, but is the form that induces the least compile-time.
+* `SciMLBase.FunctionWrapperSpecialize`: this is an eager function wrapping form. It is
+  unsafe with many solvers, and thus is mostly used for development testing.
+
+For more details, see the
+[specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels).
 
 ## Fields
 
@@ -378,7 +390,7 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct ODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
                    S2, S3, O, TCV,
                    SYS} <: AbstractODEFunction{iip}
     f::F
@@ -402,7 +414,7 @@ struct ODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt
 end
 
 @doc doc"""
-    SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,recompile}
+    SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,specialize}
 
 A representation of a split ODE function `f`, defined by:
 
@@ -423,7 +435,7 @@ and exponential integrators.
 ## Constructor
 
 ```julia
-SplitFunction{iip,recompile}(f1,f2;
+SplitFunction{iip,specialize}(f1,f2;
                              mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                              analytic = __has_analytic(f) ? f.analytic : nothing,
                              tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -488,7 +500,7 @@ This is used to treat the `f1` implicit while keeping the `f2` portion explicit.
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -504,7 +516,7 @@ automatically symbolically generating the Jacobian and more from the
 numerically-defined functions. See `ModelingToolkit.SplitODEProblem` for
 information on generating the SplitFunction from this symbolic engine.
 """
-struct SplitFunction{iip, recompile, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
+struct SplitFunction{iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
                      TPJ, S, S2, S3, O,
                      TCV, SYS} <: AbstractODEFunction{iip}
     f1::F1
@@ -530,7 +542,7 @@ struct SplitFunction{iip, recompile, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, S
 end
 
 @doc doc"""
-    DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,recompile}
+    DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,specialize}
 
 A representation of an ODE function `f`, defined by:
 
@@ -552,7 +564,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalODEFunction{iip,recompile}(f1,f2;
+DynamicalODEFunction{iip,specialize}(f1,f2;
                                     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -614,7 +626,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -622,7 +634,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DynamicalODEFunction type directly match the names of the inputs.
 """
-struct DynamicalODEFunction{iip, recompile, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+struct DynamicalODEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
                             TWt, TPJ, S, S2, S3,
                             O, TCV, SYS} <: AbstractODEFunction{iip}
     f1::F1
@@ -652,7 +664,7 @@ $(TYPEDEF)
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S.S2,S3,O,TCV} <: AbstractDDEFunction{iip,recompile}
+    DDEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S.S2,S3,O,TCV} <: AbstractDDEFunction{iip,specialize}
 
 A representation of a DDE function `f`, defined by:
 
@@ -667,7 +679,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DDEFunction{iip,recompile}(f;
+DDEFunction{iip,specialize}(f;
                  mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                  analytic = __has_analytic(f) ? f.analytic : nothing,
                  tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -729,7 +741,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -737,7 +749,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DDEFunction type directly match the names of the inputs.
 """
-struct DDEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+struct DDEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
                    S2, S3, O, TCV, SYS
                    } <:
        AbstractDDEFunction{iip}
@@ -762,7 +774,7 @@ struct DDEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt
 end
 
 @doc doc"""
-    DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractDDEFunction{iip,recompile}
+    DynamicalDDEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractDDEFunction{iip,specialize}
 
 A representation of a DDE function `f`, defined by:
 
@@ -784,7 +796,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalDDEFunction{iip,recompile}(f1,f2;
+DynamicalDDEFunction{iip,specialize}(f1,f2;
                                     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -848,7 +860,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -856,7 +868,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DynamicalDDEFunction type directly match the names of the inputs.
 """
-struct DynamicalDDEFunction{iip, recompile, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+struct DynamicalDDEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
                             TWt, TPJ, S, S2, S3,
                             O, TCV, SYS} <: AbstractDDEFunction{iip}
     f1::F1
@@ -887,7 +899,7 @@ abstract type AbstractDiscreteFunction{iip} <:
               AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    DiscreteFunction{iip,F,Ta,S,S2,S3,O} <: AbstractDiscreteFunction{iip,recompile}
+    DiscreteFunction{iip,F,Ta,S,S2,S3,O} <: AbstractDiscreteFunction{iip,specialize}
 
 A representation of an discrete dynamical system `f`, defined by:
 
@@ -902,7 +914,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DiscreteFunction{iip,recompile}(f;
+DiscreteFunction{iip,specialize}(f;
                                 analytic = __has_analytic(f) ? f.analytic : nothing,
                                 syms = __has_syms(f) ? f.syms : nothing
                                 indepsym = __has_indepsym(f) ? f.indepsym : nothing,
@@ -931,7 +943,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -939,7 +951,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DiscreteFunction type directly match the names of the inputs.
 """
-struct DiscreteFunction{iip, recompile, F, Ta, S, S2, S3, O, SYS} <:
+struct DiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS} <:
        AbstractDiscreteFunction{iip}
     f::F
     analytic::Ta
@@ -956,7 +968,7 @@ $(TYPEDEF)
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,recompile}
+    SDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,specialize}
 
 A representation of an SDE function `f`, defined by:
 
@@ -971,7 +983,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-SDEFunction{iip,recompile}(f,g;
+SDEFunction{iip,specialize}(f,g;
                            mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -1034,7 +1046,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1042,7 +1054,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the ODEFunction type directly match the names of the inputs.
 """
-struct SDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+struct SDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
                    GG, S, S2, S3, O,
                    TCV, SYS
                    } <: AbstractSDEFunction{iip}
@@ -1069,7 +1081,7 @@ struct SDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, 
 end
 
 @doc doc"""
-    SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,recompile}
+    SplitSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,specialize}
 
 A representation of a split SDE function `f`, defined by:
 
@@ -1090,7 +1102,7 @@ and exponential integrators.
 ## Constructor
 
 ```julia
-SplitSDEFunction{iip,recompile}(f1,f2,g;
+SplitSDEFunction{iip,specialize}(f1,f2,g;
                  mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                  analytic = __has_analytic(f) ? f.analytic : nothing,
                  tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -1154,7 +1166,7 @@ This is used to treat the `f1` implicit while keeping the `f2` portion explicit.
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1162,7 +1174,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the SplitSDEFunction type directly match the names of the inputs.
 """
-struct SplitSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+struct SplitSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
                         TWt, TPJ,
                         S, S2, S3, O, TCV, SYS} <: AbstractSDEFunction{iip}
     f1::F1
@@ -1189,7 +1201,7 @@ struct SplitSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP,
 end
 
 @doc doc"""
-    DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,recompile}
+    DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,specialize}
 
 A representation of an SDE function `f` and `g`, defined by:
 
@@ -1211,7 +1223,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalSDEFunction{iip,recompile}(f1,f2;
+DynamicalSDEFunction{iip,specialize}(f1,f2;
                                     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -1273,7 +1285,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1281,7 +1293,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DynamicalSDEFunction type directly match the names of the inputs.
 """
-struct DynamicalSDEFunction{iip, recompile, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP,
+struct DynamicalSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP,
                             TW, TWt,
                             TPJ, S, S2, S3, O, TCV, SYS} <: AbstractSDEFunction{iip}
     # This is a direct copy of the SplitSDEFunction, maybe it's not necessary and the above can be used instead.
@@ -1314,7 +1326,7 @@ $(TYPEDEF)
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractRODEFunction{iip,recompile}
+    RODEFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractRODEFunction{iip,specialize}
 
 A representation of a RODE function `f`, defined by:
 
@@ -1329,7 +1341,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-RODEFunction{iip,recompile}(f;
+RODEFunction{iip,specialize}(f;
                            mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -1396,7 +1408,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1404,7 +1416,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the RODEFunction type directly match the names of the inputs.
 """
-struct RODEFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+struct RODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
                     S2, S3, O, TCV, SYS
                     } <:
        AbstractRODEFunction{iip}
@@ -1435,7 +1447,7 @@ $(TYPEDEF)
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractDAEFunction{iip,recompile}
+    DAEFunction{iip,F,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractDAEFunction{iip,specialize}
 
 A representation of an implicit DAE function `f`, defined by:
 
@@ -1450,7 +1462,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DAEFunction{iip,recompile}(f;
+DAEFunction{iip,specialize}(f;
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            jac = __has_jac(f) ? f.jac : nothing,
                            jvp = __has_jvp(f) ? f.jvp : nothing,
@@ -1503,7 +1515,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1558,7 +1570,7 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct DAEFunction{iip, recompile, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S2,
+struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S2,
                    S3, O, TCV,
                    SYS} <:
        AbstractDAEFunction{iip}
@@ -1587,7 +1599,7 @@ $(TYPEDEF)
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,S2,S3,O,TCV} <: AbstractSDDEFunction{iip,recompile}
+    SDDEFunction{iip,F,G,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,GG,S,S2,S3,O,TCV} <: AbstractSDDEFunction{iip,specialize}
 
 A representation of a SDDE function `f`, defined by:
 
@@ -1602,7 +1614,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-SDDEFunction{iip,recompile}(f,g;
+SDDEFunction{iip,specialize}(f,g;
                  mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                  analytic = __has_analytic(f) ? f.analytic : nothing,
                  tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -1664,7 +1676,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1672,7 +1684,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the DDEFunction type directly match the names of the inputs.
 """
-struct SDDEFunction{iip, recompile, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+struct SDDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
                     GG, S, S2, S3, O,
                     TCV, SYS} <: AbstractSDDEFunction{iip}
     f::F
@@ -1703,7 +1715,7 @@ $(TYPEDEF)
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
 @doc doc"""
-    NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractNonlinearFunction{iip,recompile}
+    NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractNonlinearFunction{iip,specialize}
 
 A representation of an nonlinear system of equations `f`, defined by:
 
@@ -1718,7 +1730,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-NonlinearFunction{iip, recompile}(f;
+NonlinearFunction{iip, specialize}(f;
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            jac = __has_jac(f) ? f.jac : nothing,
                            jvp = __has_jvp(f) ? f.jvp : nothing,
@@ -1769,7 +1781,7 @@ the usage of `f`. These include:
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1777,7 +1789,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the NonlinearFunction type directly match the names of the inputs.
 """
-struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
+struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ,
                          S, S2, O, TCV,
                          SYS
                          } <: AbstractNonlinearFunction{iip}
@@ -1801,7 +1813,7 @@ struct NonlinearFunction{iip, recompile, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, T
 end
 
 """
-    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,S2,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip,recompile}
+    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,S2,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip,specialize}
 
 A representation of an optimization of an objective function `f`, defined by:
 
@@ -1906,7 +1918,7 @@ own dispatches.
 
 For more details on this argument, see the ODEFunction documentation.
 
-## recompile: Controlling Compilation and Specialization
+## specialize: Controlling Compilation and Specialization
 
 For more details on this argument, see the ODEFunction documentation.
 
@@ -1995,7 +2007,7 @@ end
 
 ######### Basic Constructor
 
-function ODEFunction{iip, recompile}(f;
+function ODEFunction{iip, specialize}(f;
                                      mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                      analytic = __has_analytic(f) ? f.analytic : nothing,
                                      tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -2017,12 +2029,12 @@ function ODEFunction{iip, recompile}(f;
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                  recompile}
+                                                                                  specialize}
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if (recompile === FunctionWrapperSpecialize) &&
+    if (specialize === FunctionWrapperSpecialize) &&
        !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
         error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
@@ -2058,8 +2070,8 @@ function ODEFunction{iip, recompile}(f;
         throw(NonconformingFunctionsError(functions))
     end
 
-    if recompile === NoSpecialize
-        ODEFunction{iip, recompile,
+    if specialize === NoSpecialize
+        ODEFunction{iip, specialize,
                     Any, Any, Any, Any,
                     Any, Any, Any, typeof(jac_prototype),
                     typeof(sparsity), Any, Any, Any,
@@ -2069,7 +2081,7 @@ function ODEFunction{iip, recompile}(f;
                                  jvp, vjp, jac_prototype, sparsity, Wfact,
                                  Wfact_t, paramjac, syms, indepsym, paramsyms,
                                  observed, _colorvec, sys)
-    elseif recompile === false
+    elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
@@ -2081,7 +2093,7 @@ function ODEFunction{iip, recompile}(f;
                                  Wfact_t, paramjac, syms, indepsym, paramsyms,
                                  observed, _colorvec, sys)
     else
-        ODEFunction{iip, recompile,
+        ODEFunction{iip, specialize,
                     typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
@@ -2200,7 +2212,7 @@ end
                                indepsym,
                                paramsyms, observed, colorvec, sys)
 end
-function SplitFunction{iip, recompile}(f1, f2;
+function SplitFunction{iip, specialize}(f1, f2;
                                        mass_matrix = __has_mass_matrix(f1) ?
                                                      f1.mass_matrix : I,
                                        _func_cache = nothing,
@@ -2229,10 +2241,10 @@ function SplitFunction{iip, recompile}(f1, f2;
                                        colorvec = __has_colorvec(f1) ? f1.colorvec :
                                                   nothing,
                                        sys = __has_sys(f1) ? f1.sys : nothing) where {iip,
-                                                                                      recompile
+                                                                                      specialize
                                                                                       }
-    if recompile === NoSpecialize
-        SplitFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
                       Any, Any, Any, Any, Any,
                       Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
                                                     analytic,
@@ -2241,7 +2253,7 @@ function SplitFunction{iip, recompile}(f1, f2;
                                                     syms, indepsym, paramsyms,
                                                     observed, colorvec, sys)
     else
-        SplitFunction{iip, recompile, typeof(f1), typeof(f2), typeof(mass_matrix),
+        SplitFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
                       typeof(_func_cache), typeof(analytic),
                       typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
                       typeof(jac_prototype), typeof(sparsity),
@@ -2287,7 +2299,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                                       colorvec, sys)
 end
 
-function DynamicalODEFunction{iip, recompile}(f1, f2;
+function DynamicalODEFunction{iip, specialize}(f1, f2;
                                               mass_matrix = __has_mass_matrix(f1) ?
                                                             f1.mass_matrix : I,
                                               analytic = __has_analytic(f1) ? f1.analytic :
@@ -2317,10 +2329,10 @@ function DynamicalODEFunction{iip, recompile}(f1, f2;
                                                          nothing,
                                               sys = __has_sys(f1) ? f1.sys : nothing) where {
                                                                                              iip,
-                                                                                             recompile
+                                                                                             specialize
                                                                                              }
-    if recompile === NoSpecialize
-        DynamicalODEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        DynamicalODEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any,
                              Any, Any, Any, Any, Any,
                              Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix,
                                                                 analytic,
@@ -2332,7 +2344,7 @@ function DynamicalODEFunction{iip, recompile}(f1, f2;
                                                                 syms, indepsym, paramsyms,
                                                                 observed, colorvec, sys)
     else
-        DynamicalODEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(mass_matrix),
+        DynamicalODEFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
                              typeof(analytic),
                              typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
                              typeof(jac_prototype), typeof(sparsity),
@@ -2356,7 +2368,7 @@ function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
 end
 DynamicalODEFunction(f::DynamicalODEFunction; kwargs...) = f
 
-function DiscreteFunction{iip, recompile}(f;
+function DiscreteFunction{iip, specialize}(f;
                                           analytic = __has_analytic(f) ? f.analytic :
                                                      nothing,
                                           syms = __has_syms(f) ? f.syms : nothing,
@@ -2367,15 +2379,15 @@ function DiscreteFunction{iip, recompile}(f;
                                           observed = __has_observed(f) ? f.observed :
                                                      DEFAULT_OBSERVED,
                                           sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                       recompile
+                                                                                       specialize
                                                                                        }
-    if recompile === NoSpecialize
-        DiscreteFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any}(f, analytic,
+    if specialize === NoSpecialize
+        DiscreteFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any}(f, analytic,
                                                                             syms, indepsym,
                                                                             parasmsyms,
                                                                             observed, sys)
     else
-        DiscreteFunction{iip, recompile, typeof(f), typeof(analytic),
+        DiscreteFunction{iip, specialize, typeof(f), typeof(analytic),
                          typeof(syms), typeof(indepsym), typeof(paramsyms),
                          typeof(observed), typeof(sys)}(f, analytic, syms, indepsym,
                                                         paramsyms, observed, sys)
@@ -2392,14 +2404,14 @@ end
 DiscreteFunction(f::DiscreteFunction; kwargs...) = f
 
 function unwrapped_f(f::DiscreteFunction, newf = unwrapped_f(f.f))
-    recompile = specialization(f)
+    specialize = specialization(f)
 
-    if recompile === NoSpecialize
-        DiscreteFunction{isinplace(f), recompile, Any, Any,
+    if specialize === NoSpecialize
+        DiscreteFunction{isinplace(f), specialize, Any, Any,
                          Any, Any, Any, Any, Any}(newf, f.analytic, f.syms, f.indepsym,
                                                   f.paramsyms, f.observed, f.sys)
     else
-        DiscreteFunction{isinplace(f), recompile, typeof(newf), typeof(f.analytic),
+        DiscreteFunction{isinplace(f), specialize, typeof(newf), typeof(f.analytic),
                          typeof(f.syms), typeof(f.indepsym), typeof(f.paramsyms),
                          typeof(f.observed), typeof(f.sys)}(newf, f.analytic, f.syms,
                                                             f.indepsym, f.paramsyms,
@@ -2407,7 +2419,7 @@ function unwrapped_f(f::DiscreteFunction, newf = unwrapped_f(f.f))
     end
 end
 
-function SDEFunction{iip, recompile}(f, g;
+function SDEFunction{iip, specialize}(f, g;
                                      mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                      analytic = __has_analytic(f) ? f.analytic : nothing,
                                      tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -2430,7 +2442,7 @@ function SDEFunction{iip, recompile}(f, g;
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                  recompile}
+                                                                                  specialize}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2463,8 +2475,8 @@ function SDEFunction{iip, recompile}(f, g;
         throw(NonconformingFunctionsError(functions))
     end
 
-    if recompile === NoSpecialize
-        SDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        SDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
                     Any, Any, Any, Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
                     Any,
                     typeof(_colorvec), typeof(sys)}(f, g, mass_matrix, analytic,
@@ -2474,7 +2486,7 @@ function SDEFunction{iip, recompile}(f, g;
                                                     indepsym, paramsyms, observed,
                                                     _colorvec, sys)
     else
-        SDEFunction{iip, recompile, typeof(f), typeof(g),
+        SDEFunction{iip, specialize, typeof(f), typeof(g),
                     typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
@@ -2496,10 +2508,10 @@ end
 
 function unwrapped_f(f::SDEFunction, newf = unwrapped_f(f.f),
                      newg = unwrapped_f(f.g))
-    recompile = specialization(f)
+    specialize = specialization(f)
 
-    if recompile === NoSpecialize
-        SDEFunction{isinplace(f), recompile, Any, Any,
+    if specialize === NoSpecialize
+        SDEFunction{isinplace(f), specialize, Any, Any,
                     typeoff(f.mass_matrix), Any, Any,
                     Any, Any, Any, typeof(f.jac_prototype),
                     typeof(f.sparsity), Any, Any,
@@ -2522,7 +2534,7 @@ function unwrapped_f(f::SDEFunction, newf = unwrapped_f(f.f),
                                                                            f.colorvec,
                                                                            f.sys)
     else
-        SDEFunction{isinplace(f), recompile, typeof(newf), typeof(newg),
+        SDEFunction{isinplace(f), specialize, typeof(newf), typeof(newg),
                     typeof(f.mass_matrix), typeof(f.analytic), typeof(f.tgrad),
                     typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
                     typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
@@ -2574,7 +2586,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
                                paramsyms, observed, colorvec, sys)
 end
 
-function SplitSDEFunction{iip, recompile}(f1, f2, g;
+function SplitSDEFunction{iip, specialize}(f1, f2, g;
                                           mass_matrix = __has_mass_matrix(f1) ?
                                                         f1.mass_matrix :
                                                         I,
@@ -2605,10 +2617,10 @@ function SplitSDEFunction{iip, recompile}(f1, f2, g;
                                                      nothing,
                                           sys = __has_sys(f1) ? f1.sys : nothing) where {
                                                                                          iip,
-                                                                                         recompile
+                                                                                         specialize
                                                                                          }
-    if recompile === NoSpecialize
-        SplitSDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        SplitSDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any,
                          Any, Any, Any, Any, Any, Any, Any, Any, Any,
                          Any, Any, Any, Any, Any, Any}(f1, f2, g, mass_matrix, _func_cache,
                                                        analytic,
@@ -2618,7 +2630,7 @@ function SplitSDEFunction{iip, recompile}(f1, f2, g;
                                                        indepsym, paramsyms, observed,
                                                        colorvec, sys)
     else
-        SplitSDEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(g),
+        SplitSDEFunction{iip, specialize, typeof(f1), typeof(f2), typeof(g),
                          typeof(mass_matrix), typeof(_func_cache),
                          typeof(analytic),
                          typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
@@ -2661,7 +2673,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                                       indepsym, paramsyms, observed, colorvec, sys)
 end
 
-function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
+function DynamicalSDEFunction{iip, specialize}(f1, f2, g;
                                               mass_matrix = __has_mass_matrix(f1) ?
                                                             f1.mass_matrix : I,
                                               _func_cache = nothing,
@@ -2691,10 +2703,10 @@ function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
                                                          nothing,
                                               sys = __has_sys(f1) ? f1.sys : nothing) where {
                                                                                              iip,
-                                                                                             recompile
+                                                                                             specialize
                                                                                              }
-    if recompile === NoSpecialize
-        DynamicalSDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        DynamicalSDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any,
                              Any, Any, Any, Any, Any, Any, Any, Any, Any,
                              Any, Any, Any, Any, Any, Any}(f1, f2, g, mass_matrix,
                                                            _func_cache,
@@ -2704,7 +2716,7 @@ function DynamicalSDEFunction{iip, recompile}(f1, f2, g;
                                                            indepsym, paramsyms, observed,
                                                            colorvec, sys)
     else
-        DynamicalSDEFunction{iip, recompile, typeof(f1), typeof(f2), typeof(g),
+        DynamicalSDEFunction{iip, specialize, typeof(f1), typeof(f2), typeof(g),
                              typeof(mass_matrix), typeof(_func_cache),
                              typeof(analytic),
                              typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
@@ -2728,7 +2740,7 @@ function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
 end
 DynamicalSDEFunction(f::DynamicalSDEFunction; kwargs...) = f
 
-function RODEFunction{iip, recompile}(f;
+function RODEFunction{iip, specialize}(f;
                                       mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                                                     I,
                                       analytic = __has_analytic(f) ? f.analytic : nothing,
@@ -2754,7 +2766,7 @@ function RODEFunction{iip, recompile}(f;
                                       sys = __has_sys(f) ? f.sys : nothing,
                                       analytic_full = __has_analytic_full(f) ?
                                                       f.analytic_full : false) where {iip,
-                                                                                      recompile
+                                                                                      specialize
                                                                                       }
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
@@ -2790,8 +2802,8 @@ function RODEFunction{iip, recompile}(f;
     end
     =#
 
-    if recompile === NoSpecialize
-        RODEFunction{iip, recompile, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        RODEFunction{iip, specialize, Any, Any, Any, Any, Any,
                      Any, Any, Any, Any, Any, Any, Any,
                      typeof(syms), typeof(indepsym), typeof(paramsyms), Any,
                      typeof(_colorvec), Any}(f, mass_matrix, analytic,
@@ -2804,7 +2816,7 @@ function RODEFunction{iip, recompile}(f;
                                              _colorvec, sys,
                                              analytic_full)
     else
-        RODEFunction{iip, recompile, typeof(f), typeof(mass_matrix),
+        RODEFunction{iip, specialize, typeof(f), typeof(mass_matrix),
                      typeof(analytic), typeof(tgrad),
                      typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                      typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
@@ -2826,7 +2838,7 @@ function RODEFunction(f; kwargs...)
 end
 RODEFunction(f::RODEFunction; kwargs...) = f
 
-function DAEFunction{iip, recompile}(f;
+function DAEFunction{iip, specialize}(f;
                                      analytic = __has_analytic(f) ? f.analytic : nothing,
                                      tgrad = __has_tgrad(f) ? f.tgrad : nothing,
                                      jac = __has_jac(f) ? f.jac : nothing,
@@ -2847,7 +2859,7 @@ function DAEFunction{iip, recompile}(f;
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                  recompile}
+                                                                                  specialize}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2874,8 +2886,8 @@ function DAEFunction{iip, recompile}(f;
         throw(NonconformingFunctionsError(functions))
     end
 
-    if recompile === NoSpecialize
-        DAEFunction{iip, recompile, Any, Any, Any,
+    if specialize === NoSpecialize
+        DAEFunction{iip, specialize, Any, Any, Any,
                     Any, Any, Any, Any, Any,
                     Any, Any, Any, typeof(syms),
                     typeof(indepsym), typeof(paramsyms),
@@ -2885,7 +2897,7 @@ function DAEFunction{iip, recompile}(f;
                                                  paramjac, observed, syms,
                                                  indepsym, paramsyms, _colorvec, sys)
     else
-        DAEFunction{iip, recompile, typeof(f), typeof(analytic), typeof(tgrad),
+        DAEFunction{iip, specialize, typeof(f), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
                     typeof(paramjac), typeof(syms), typeof(indepsym), typeof(paramsyms),
@@ -2904,7 +2916,7 @@ DAEFunction{iip}(f::DAEFunction; kwargs...) where {iip} = f
 DAEFunction(f; kwargs...) = DAEFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
 DAEFunction(f::DAEFunction; kwargs...) = f
 
-function DDEFunction{iip, recompile}(f;
+function DDEFunction{iip, specialize}(f;
                                      mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                      analytic = __has_analytic(f) ? f.analytic : nothing,
                                      tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -2926,7 +2938,7 @@ function DDEFunction{iip, recompile}(f;
                                                 DEFAULT_OBSERVED,
                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                      sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                  recompile}
+                                                                                  specialize}
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
@@ -2942,8 +2954,8 @@ function DDEFunction{iip, recompile}(f;
         _colorvec = colorvec
     end
 
-    if recompile === NoSpecialize
-        DDEFunction{iip, recompile, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        DDEFunction{iip, specialize, Any, Any, Any, Any,
                     Any, Any, Any, Any, Any, Any, Any,
                     Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
                     Any, typeof(_colorvec), Any}(f, mass_matrix,
@@ -2958,7 +2970,7 @@ function DDEFunction{iip, recompile}(f;
                                                  observed,
                                                  _colorvec, sys)
     else
-        DDEFunction{iip, recompile, typeof(f), typeof(mass_matrix), typeof(analytic),
+        DDEFunction{iip, specialize, typeof(f), typeof(mass_matrix), typeof(analytic),
                     typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                     typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
@@ -3001,7 +3013,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
                                       paramjac, syms, indepsym, paramsyms, observed,
                                       colorvec, sys)
 end
-function DynamicalDDEFunction{iip, recompile}(f1, f2;
+function DynamicalDDEFunction{iip, specialize}(f1, f2;
                                               mass_matrix = __has_mass_matrix(f1) ?
                                                             f1.mass_matrix : I,
                                               analytic = __has_analytic(f1) ? f1.analytic :
@@ -3030,10 +3042,10 @@ function DynamicalDDEFunction{iip, recompile}(f1, f2;
                                                          nothing,
                                               sys = __has_sys(f1) ? f1.sys : nothing) where {
                                                                                              iip,
-                                                                                             recompile
+                                                                                             specialize
                                                                                              }
-    if recompile === NoSpecialize
-        DynamicalDDEFunction{iip, recompile, Any, Any, Any, Any, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        DynamicalDDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
                              Any, Any,
                              Any, Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix,
                                                                      analytic,
@@ -3072,7 +3084,7 @@ function DynamicalDDEFunction{iip}(f1, f2; kwargs...) where {iip}
 end
 DynamicalDDEFunction(f::DynamicalDDEFunction; kwargs...) = f
 
-function SDDEFunction{iip, recompile}(f, g;
+function SDDEFunction{iip, specialize}(f, g;
                                       mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                                                     I,
                                       analytic = __has_analytic(f) ? f.analytic : nothing,
@@ -3097,7 +3109,7 @@ function SDDEFunction{iip, recompile}(f, g;
                                                  DEFAULT_OBSERVED,
                                       colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                       sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                   recompile
+                                                                                   specialize
                                                                                    }
     if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
         if iip
@@ -3114,8 +3126,8 @@ function SDDEFunction{iip, recompile}(f, g;
         _colorvec = colorvec
     end
 
-    if recompile === NoSpecialize
-        SDDEFunction{iip, recompile, Any, Any, Any, Any, Any,
+    if specialize === NoSpecialize
+        SDDEFunction{iip, specialize, Any, Any, Any, Any, Any,
                      Any, Any, Any, Any, Any, Any, Any,
                      Any, Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
                      Any, typeof(_colorvec), Any}(f, g, mass_matrix,
@@ -3132,7 +3144,7 @@ function SDDEFunction{iip, recompile}(f, g;
                                                   _colorvec,
                                                   sys)
     else
-        SDDEFunction{iip, recompile, typeof(f), typeof(g),
+        SDDEFunction{iip, specialize, typeof(f), typeof(g),
                      typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                      typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                      typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
@@ -3158,7 +3170,7 @@ function SDDEFunction(f, g; kwargs...)
 end
 SDDEFunction(f::SDDEFunction; kwargs...) = f
 
-function NonlinearFunction{iip, recompile}(f;
+function NonlinearFunction{iip, specialize}(f;
                                            mass_matrix = __has_mass_matrix(f) ?
                                                          f.mass_matrix :
                                                          I,
@@ -3184,7 +3196,7 @@ function NonlinearFunction{iip, recompile}(f;
                                            colorvec = __has_colorvec(f) ? f.colorvec :
                                                       nothing,
                                            sys = __has_sys(f) ? f.sys : nothing) where {iip,
-                                                                                        recompile
+                                                                                        specialize
                                                                                         }
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
@@ -3216,8 +3228,8 @@ function NonlinearFunction{iip, recompile}(f;
         throw(NonconformingFunctionsError(functions))
     end
 
-    if recompile === NoSpecialize
-        NonlinearFunction{iip, recompile,
+    if specialize === NoSpecialize
+        NonlinearFunction{iip, specialize,
                           Any, Any, Any, Any, Any,
                           Any, Any, Any, Any, Any,
                           Any, Any, typeof(syms), typeof(paramsyms), Any,
@@ -3230,7 +3242,7 @@ function NonlinearFunction{iip, recompile}(f;
                                                   syms, paramsyms, observed,
                                                   _colorvec, sys)
     else
-        NonlinearFunction{iip, recompile,
+        NonlinearFunction{iip, specialize,
                           typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
                           typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
                           typeof(sparsity), typeof(Wfact),
@@ -3384,7 +3396,7 @@ islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)
 
-struct IncrementingODEFunction{iip, recompile, F} <: AbstractODEFunction{iip}
+struct IncrementingODEFunction{iip, specialize, F} <: AbstractODEFunction{iip}
     f::F
 end
 
