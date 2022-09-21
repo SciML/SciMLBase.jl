@@ -1,4 +1,4 @@
-const specialize_BY_DEFAULT = true
+const RECOMPILE_BY_DEFAULT = true
 
 """
 $(TYPEDEF)
