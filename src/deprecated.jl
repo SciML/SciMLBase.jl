@@ -52,7 +52,7 @@ function DiffEqScalar(args...; kwargs...)
 end
 
 const AffineDiffEqOperator = SciMLOperators.AffineOperator
-function AffineDiffEqOperator(As, bs, cache = nothing)
+function AffineDiffEqOperator{}(As, bs, cache = nothing) where{T}
     @warn "SciMLBase.AffineDiffEqOperator is deprecated.
     Use SciMLOperators.AffineOperator instead"
 
