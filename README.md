@@ -1,7 +1,7 @@
 # SciMLBase
 
 [![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](http://scimlbase.sciml.ai/stable/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://scimlbase.sciml.ai/stable/)
 [![Global Docs](https://img.shields.io/badge/docs-SciML-blue.svg)](https://docs.sciml.ai/dev/modules/SciMLBase/)
 
 [![codecov](https://codecov.io/gh/SciML/SciMLBase.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/SciML/SciMLBase.jl)
