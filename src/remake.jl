@@ -58,6 +58,8 @@ function remake(prob::ODEProblem; f = missing,
 
     if p === missing
         p = prob.p
+    else
+        p = handle_varmap(p, prob)
     end
 
     iip = isinplace(prob)

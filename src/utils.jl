@@ -392,3 +392,5 @@ function (f::Void)(args...)
     f.f(args...)
     nothing
 end
+
+handle_varmap(varmap, _) = varmap
