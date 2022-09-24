@@ -21,10 +21,14 @@ to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary 
 ### Constructors
 
 - `RODEProblem(f::RODEFunction,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing)`
-- `RODEProblem{isinplace}(f,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing,mass_matrix=I)` :
+- `RODEProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing,mass_matrix=I)` :
   Defines the RODE with the specified functions. The default noise is `WHITE_NOISE`.
-  `isinplace` optionally sets whether the function is inplace or not. This is
-  determined automatically, but not inferred.
+  `isinplace` optionally sets whether the function is inplace or not. This is 
+  determined automatically, but not inferred. `specialize` optionally controls 
+  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+  for more details. The default is `AutoSpecialize.
+
+For more details on the in-place and specialization controls, see the ODEFunction documentation.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent

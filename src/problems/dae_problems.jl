@@ -22,10 +22,14 @@ provide `u₀` as arbitrary matrices / higher dimension tensors as well.
 ### Constructors
 
 - `DAEProblem(f::DAEFunction,du0,u0,tspan,p=NullParameters();kwargs...)`
-- `DAEProblem{isinplace}(f,du0,u0,tspan,p=NullParameters();kwargs...)` :
-  Defines the DAE with the specified functions.
-  `isinplace` optionally sets whether the function is inplace or not. This is
-  determined automatically, but not inferred.
+- `DAEProblem{isinplace,specialize}(f,du0,u0,tspan,p=NullParameters();kwargs...)` :
+  Defines the DAE with the specified functions. `isinplace` optionally sets whether
+  the function is inplace or not. This is determined automatically, but not inferred.
+  `specialize` optionally controls the specialization level. See the specialization
+  levels section of the documentation for more details. The default is `AutoSpecialize`.
+
+For more details on the in-place and specialization controls, see the ODEFunction
+documentation.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent

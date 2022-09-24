@@ -36,10 +36,12 @@ with initial condition `u0`.
 ### Constructors
 
 - `SDEProblem(f::SDEFunction,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)`
-- `SDEProblem{isinplace}(f,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)` :
+- `SDEProblem{isinplace,specialize}(f,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)` :
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
-  `isinplace` optionally sets whether the function is inplace or not. This is
-  determined automatically, but not inferred.
+  `isinplace` optionally sets whether the function is inplace or not. This is 
+  determined automatically, but not inferred. `specialize` optionally controls 
+  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+  for more details. The default is `AutoSpecialize.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent

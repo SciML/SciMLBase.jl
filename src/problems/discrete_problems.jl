@@ -34,12 +34,20 @@ u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
 
 ### Constructors
 
-- `DiscreteProblem{isinplace}(f::ODEFunction,u0,tspan,p=NullParameters();kwargs...)` :
+- `DiscreteProblem(f::ODEFunction,u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the specified functions.
-- `DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters();kwargs...)` :
+- `DiscreteProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the specified functions.
-- `DiscreteProblem{isinplace}(u0,tspan,p=NullParameters();kwargs...)` :
+- `DiscreteProblem{isinplace,specialize}(u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the identity map.
+
+`isinplace` optionally sets whether the function is inplace or not. This is 
+determined automatically, but not inferred. `specialize` optionally controls 
+the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+for more details. The default is `AutoSpecialize`.
+
+For more details on the in-place and specialization controls, see the ODEFunction
+documentation.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
