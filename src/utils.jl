@@ -393,4 +393,7 @@ function (f::Void)(args...)
     nothing
 end
 
-handle_varmap(varmap, _) = varmap
+"""
+To be overloaded in ModelingToolkit
+"""
+function handle_varmap end

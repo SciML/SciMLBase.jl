@@ -59,7 +59,13 @@ function remake(prob::ODEProblem; f = missing,
     if p === missing
         p = prob.p
     else
-        p = handle_varmap(p, prob)
+        @show typeof(prob.f.sys)
+        @show typeof(prob.f.sys.ps)
+        if hasproperty(prob.f, :sys) && hasproperty(prob.f.sys, :ps)
+            p = handle_varmap(p, prob.f.sys)
+        elseif p isa Dict || eltype(p) isa Pair
+            throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
+        end
     end
 
     iip = isinplace(prob)
