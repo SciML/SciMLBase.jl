@@ -60,7 +60,8 @@ function remake(prob::ODEProblem; f = missing,
         p = prob.p
     else
         @show typeof(prob.f.sys)
-        @show typeof(prob.f.sys.ps)
+        @show hasproperty(prob.f, :sys)
+        @show hasproperty(prob.f.sys, :ps)
         if hasproperty(prob.f, :sys) && hasproperty(prob.f.sys, :ps)
             p = handle_varmap(p, prob.f.sys)
         elseif p isa Dict || eltype(p) isa Pair
