@@ -51,10 +51,12 @@ function remake(prob::ODEProblem; f = missing,
     if u0 === missing
         u0 = prob.u0
     else
-        if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-            u0 = handle_varmap(u0, prob.f.sys, field = :states)
-        elseif u0 isa Dict || eltype(u0) isa Pair
-            throw(ArgumentError("This problem does not support symbolic default maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to the order of states."))
+        if u0 isa Dict || eltype(u0) isa Pair
+            if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
+                u0 = handle_varmap(u0, prob.f.sys, field = :states, defaults = prob.f.sys.defaults)
+            else
+                throw(ArgumentError("This problem does not support symbolic default maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to the order of states."))
+            end
         end
     end
 
@@ -65,10 +67,12 @@ function remake(prob::ODEProblem; f = missing,
     if p === missing
         p = prob.p
     else
-        if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-            p = handle_varmap(p, prob.f.sys, field = :ps)
-        elseif p isa Dict || eltype(p) isa Pair
-            throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
+        if p isa Dict || eltype(p) isa Pair
+            if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
+                p = handle_varmap(p, prob.f.sys, field = :ps, defaults = prob.f.sys.ps .=> prob.p)
+            else
+                throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
+            end
         end
     end
 
