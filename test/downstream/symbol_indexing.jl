@@ -167,11 +167,11 @@ prob = ODEProblem(sys, [], (0, 1.0))
 @test_broken sol[@nonamespace sys.x] isa Vector{<:Vector}
 
 # accessing parameters
-@variables t x(t) 
+@variables t x(t)
 @parameters tau
 D = Differential(t)
 
-@named fol = ODESystem([D(x)  ~ (1 - x) / tau])
+@named fol = ODESystem([D(x) ~ (1 - x) / tau])
 prob = ODEProblem(fol, [x => 0.0], (0.0, 10.0), [tau => 3.0])
 sol = solve(prob, Tsit5())
 @test sol[tau] == 3
