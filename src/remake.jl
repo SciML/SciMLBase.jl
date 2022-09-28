@@ -53,7 +53,8 @@ function remake(prob::ODEProblem; f = missing,
     else
         if u0 isa Dict || eltype(u0) isa Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-                u0 = handle_varmap(u0, prob.f.sys, field = :states, defaults = prob.f.sys.defaults)
+                u0 = handle_varmap(u0, prob.f.sys, field = :states,
+                                   defaults = getfield(prob.f.sys, :states) .=> prob.u0)
             else
                 throw(ArgumentError("This problem does not support symbolic default maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to the order of states."))
             end
@@ -69,7 +70,9 @@ function remake(prob::ODEProblem; f = missing,
     else
         if p isa Dict || eltype(p) isa Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-                p = handle_varmap(p, prob.f.sys, field = :ps, defaults = prob.f.sys.ps .=> prob.p)
+                p = handle_varmap(p, prob.f.sys, field = :ps,
+                                  defaults = vcat(getfield(prob.f.sys, :ps) .=> prob.p,
+                                                  getfield(prob.f.sys, :states) .=> prob.u0))
             else
                 throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
             end
