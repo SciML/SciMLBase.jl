@@ -73,3 +73,30 @@ discrete state values, such as integers.
 Defaults to false.
 """
 isdiscrete(alg::AbstractDEAlgorithm) = false
+
+"""
+isbounded(opt)
+
+Allows box constraints passed with `lb` and `ub` in `OptimizationProblem`.
+
+Defaults to false.
+"""
+isbounded(opt) = false
+
+"""
+isconstrained(opt)
+
+Allows non-linear constraints specified in `cons` in `OptimizationFunction`.
+
+Defaults to false.
+"""
+isconstrained(opt) = false
+
+"""
+callbacks_support(opt)
+
+Supports callbacks during optimization.
+
+Defaults to true.
+"""
+callbacks_support(opt) = true
