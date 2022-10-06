@@ -68,10 +68,14 @@ end
 ```
 """
 function solve(prob::OptimizationProblem, alg, args...; kwargs...)
-    !isbounded(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) && error("The algorithm $(alg) does not support box constraints.")
-    !isconstrained(alg) && !isnothing(prob.f.cons) && error("The algorithm $(alg) does not support constraints.")
-    isconstrained(alg) && isnothing(prob.f.cons) && error("The algorithm $(alg) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`.")
-    !callbacks_support(alg) && !isnothing(kwargs[:callback]) && error("The algorithm $(alg) does not support callbacks.")
+    !isbounded(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) &&
+        throw(ArgumentError("The algorithm $(typeof(alg)) does not support box constraints."))
+    !isconstrained(alg) && !isnothing(prob.f.cons) &&
+        throw(ArgumentError("The algorithm $(typeof(alg)) does not support constraints."))
+    isconstrained(alg) && isnothing(prob.f.cons) &&
+        throw(ArgumentError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
+    !callbacks_support(alg) && !isnothing(kwargs[:callback]) &&
+        throw(ArgumentError("The algorithm $(typeof(alg)) does not support callbacks."))
     __solve(prob, alg, args...; kwargs...)
 end
 
