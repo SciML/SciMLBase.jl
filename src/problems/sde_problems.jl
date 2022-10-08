@@ -72,15 +72,13 @@ page.
 
 ## Example Problems
 
-Examples problems can be found in [DiffEqProblemLibrary.jl](https://github.com/JuliaDiffEq/DiffEqProblemLibrary.jl/blob/master/src/sde_premade_problems.jl).
+Examples problems can be found in [DiffEqProblemLibrary.jl](https://github.com/SciML/DiffEqProblemLibrary.jl).
 
 To use a sample problem, such as `prob_sde_linear`, you can do something like:
 
 ```julia
-#] add DiffEqProblemLibrary
-using DiffEqProblemLibrary.SDEProblemLibrary
-# load problems
-SDEProblemLibrary.importsdeproblems()
+#] add SDEProblemLibrary
+using SDEProblemLibrary
 prob = SDEProblemLibrary.prob_sde_linear
 sol = solve(prob)
 ```
