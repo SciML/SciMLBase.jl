@@ -68,6 +68,7 @@ sol = solve(prob, Rodas4())
 @test length(sol[α, 5:10]) == 6
 @test sol[γ] isa Real
 @test sol[γ] == 2.0
+@test sol[(lorenz1.σ, lorenz1.ρ)] isa Tuple
 
 # Check if indexing using variable names from interpolated solution works
 interpolated_sol = sol(0.0:1.0:10.0)

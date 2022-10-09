@@ -56,6 +56,7 @@ step!(integrator, 100.0, true)
 @test integrator[α] isa Real
 @test integrator[γ] isa Real
 @test integrator[γ] == 2.0
+@test integrator[(lorenz1.σ, lorenz1.ρ)] isa Tuple
 
 @testset "Symbolic set_u!" begin
     @variables u(t)
