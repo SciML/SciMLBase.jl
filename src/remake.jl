@@ -51,7 +51,7 @@ function remake(prob::ODEProblem; f = missing,
     if tspan === missing
         tspan = prob.tspan
     end
-    defs = Dict([])
+    defs = Dict()
     if hasproperty(prob.f, :sys)
         if hasfield(typeof(prob.f.sys), :ps)
             defs = mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps))
@@ -64,7 +64,7 @@ function remake(prob::ODEProblem; f = missing,
     if p === missing
         p = prob.p
     else
-        if p isa Dict || eltype(p) isa Pair
+        if eltype(p) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
                 p = handle_varmap(p, prob.f.sys, field = :ps, defaults = defs)
                 defs = mergedefaults(defs, p, getfield(prob.f.sys, :ps))
@@ -77,7 +77,7 @@ function remake(prob::ODEProblem; f = missing,
     if u0 === missing
         u0 = prob.u0
     else
-        if u0 isa Dict || eltype(u0) isa Pair
+        if eltype(u0) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
                 u0 = handle_varmap(u0, prob.f.sys, field = :states,
                                    defaults = defs, tofloat = true)
