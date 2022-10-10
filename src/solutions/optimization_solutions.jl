@@ -13,7 +13,7 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === :Success`), whether it terminated due to a user-defined
+  successfully (`sol.retcode === Success`), whether it terminated due to a user-defined
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
@@ -22,13 +22,13 @@ struct OptimizationSolution{T, N, uType, P, A, Tf, O} <: AbstractOptimizationSol
     prob::P # optimization problem
     alg::A # algorithm
     minimum::Tf
-    retcode::Symbol
+    retcode::ReturnCode
     original::O # original output of the optimizer
 end
 
 function build_solution(prob::AbstractOptimizationProblem,
                         alg, u, minimum;
-                        retcode = :Default,
+                        retcode = Default,
                         original = nothing,
                         kwargs...)
     T = eltype(eltype(u))

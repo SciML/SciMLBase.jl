@@ -14,7 +14,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
 
 - `u`: the representation of the DAE solution. Given as an array of solutions, where `u[i]`
   corresponds to the solution at time `t[i]`. It is recommended in most cases one does not
-  access `sol.u` directly and instead use the array interface described in the Solution 
+  access `sol.u` directly and instead use the array interface described in the Solution
   Handling page of the DifferentialEquations.jl documentation.
 - `du`: the representation of the derivatives of the DAE solution.
 - `t`: the time points corresponding to the saved values of the DAE solution.
@@ -23,8 +23,8 @@ https://diffeq.sciml.ai/stable/basics/solution/
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === :Success`), whether it terminated due to a user-defined
-  callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
+  successfully (`sol.retcode === Success`), whether it terminated due to a user-defined
+  callback (`sol.retcode === Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
 struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
@@ -40,7 +40,7 @@ struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
     dense::Bool
     tslocation::Int
     destats::DE
-    retcode::Symbol
+    retcode::ReturnCode
 end
 function (sol::DAESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                             continuity = :left) where {deriv}
@@ -59,7 +59,7 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                         k = nothing,
                         interp = du === nothing ? LinearInterpolation(t, u) :
                                  HermiteInterpolation(t, u, du),
-                        retcode = :Default,
+                        retcode = Default,
                         destats = nothing,
                         kwargs...)
     T = eltype(eltype(u))

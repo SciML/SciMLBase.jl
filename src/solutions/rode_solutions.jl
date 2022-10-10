@@ -17,11 +17,11 @@ https://diffeq.sciml.ai/stable/basics/solution/
 
 - `u`: the representation of the SDE or RODE solution. Given as an array of solutions, where `u[i]`
   corresponds to the solution at time `t[i]`. It is recommended in most cases one does not
-  access `sol.u` directly and instead use the array interface described in the Solution 
+  access `sol.u` directly and instead use the array interface described in the Solution
   Handling page of the DifferentialEquations.jl documentation.
 - `t`: the time points corresponding to the saved values of the ODE solution.
 - `W`: the representation of the saved noise process from the solution. See the Noise Processes
-  page of the DifferentialEquations.jl documentation for more details: 
+  page of the DifferentialEquations.jl documentation for more details:
   https://diffeq.sciml.ai/stable/features/noise_process/ . Note that this noise is only saved
   in full if `save_noise=true` in the solver.
 - `prob`: the original SDEProblem/RODEProblem that was solved.
@@ -29,7 +29,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === :Success`), whether it terminated due to a user-defined
+  successfully (`sol.retcode === Success`), whether it terminated due to a user-defined
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
@@ -46,7 +46,7 @@ struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, DE
     dense::Bool
     tslocation::Int
     destats::DE
-    retcode::Symbol
+    retcode::ReturnCode
     seed::UInt64
 end
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
@@ -62,7 +62,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
                         alg, t, u; W = nothing, timeseries_errors = length(u) > 2,
                         dense = false, dense_errors = dense, calculate_error = true,
                         interp = LinearInterpolation(t, u),
-                        retcode = :Default,
+                        retcode = Default,
                         seed = UInt64(0), destats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))
