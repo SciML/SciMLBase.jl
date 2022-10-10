@@ -392,3 +392,20 @@ function (f::Void)(args...)
     f.f(args...)
     nothing
 end
+
+"""
+To be overloaded in ModelingToolkit
+"""
+function handle_varmap end
+
+function mergedefaults(defaults, varmap, vars)
+    defs = if varmap isa Dict
+        merge(defaults, varmap)
+    elseif eltype(varmap) <: Pair
+        merge(defaults, Dict(varmap))
+    elseif eltype(varmap) <: Number
+        merge(defaults, Dict(zip(vars, varmap)))
+    else
+        defaults
+    end
+end
