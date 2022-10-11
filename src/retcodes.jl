@@ -4,11 +4,11 @@
 function Base.Symbol(retcode::ReturnCode)
     if retcode == Default
         :Default
-    elseif retcode == Success
+    elseif retcode == Success || retcode == :EXACT_SOLUTION_LEFT || retcode == :FLOATING_POINT_LIMIT
         :Success
     elseif retcode == Terminated
         :Terminated
-    elseif retcode == MaxIters
+    elseif retcode == MaxIters || retcode == :MAXITERS_EXCEED
         :MaxIters
     elseif retcode == DtLessThanMin
         :DtLessThanMin
@@ -20,6 +20,8 @@ function Base.Symbol(retcode::ReturnCode)
         :ConvergenceFailure
     elseif retcode == Failure
         :Failure
+    else
+        error("$retcode is not a valid return code")
     end
 end
 
