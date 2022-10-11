@@ -93,9 +93,18 @@ Defaults to false.
 requiresbounds(opt) = false
 
 """
-requiresconstrains(opt)
+allowsconstrains(opt)
 
 Allows non-linear constraints specified in `cons` in `OptimizationFunction`.
+
+Defaults to false.
+"""
+allowsconstraints(opt) = false
+
+"""
+requiresconstrains(opt)
+
+Requires non-linear constraints specified in `cons` in `OptimizationFunction`.
 
 Defaults to false.
 """
