@@ -82,7 +82,7 @@ function solve(prob::OptimizationProblem, alg, args...; kwargs...)
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support constraints. Either remove the `cons` function passed to `OptimizationFunction` or use a different algorithm."))
     isconstrained(alg) && isnothing(prob.f.cons) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
-    !callbacks_support(alg) && !isnothing(kwargs[:callback]) &&
+    !callbacks_support(alg) && haskey(kwargs, :callback) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` kwarg from the `solve` call."))
     __solve(prob, alg, args...; kwargs...)
 end
