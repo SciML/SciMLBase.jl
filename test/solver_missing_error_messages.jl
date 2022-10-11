@@ -18,7 +18,7 @@ prob = OptimizationProblem((x, p) -> sum(x), zeros(2), lb = [-1.0, -1.0], ub = [
 cons = (res, x, p) -> (res .= [x[1]^2 + x[2]^2])
 optf = OptimizationFunction((x, p) -> sum(x), SciMLBase.NoAD(), cons = cons)
 prob = OptimizationProblem(optf, zeros(2))
-@test_throws SciMLBase.IncompatibleOptimizerError solve(prob, OptAlg()) #by default requiresconstrains is false
+@test_throws SciMLBase.IncompatibleOptimizerError solve(prob, OptAlg()) #by default allowsconstraints is false
 
 SciMLBase.requiresconstraints(::OptAlg) = true
 optf = OptimizationFunction((x, p) -> sum(x), SciMLBase.NoAD())
