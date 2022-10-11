@@ -4,11 +4,11 @@
 function Base.Symbol(retcode::ReturnCode)
     if retcode == Default
         :Default
-    elseif retcode == Success || retcode == :EXACT_SOLUTION_LEFT || retcode == :FLOATING_POINT_LIMIT
+    elseif retcode == Success
         :Success
     elseif retcode == Terminated
         :Terminated
-    elseif retcode == MaxIters || retcode == :MAXITERS_EXCEED
+    elseif retcode == MaxIters
         :MaxIters
     elseif retcode == DtLessThanMin
         :DtLessThanMin
@@ -20,8 +20,6 @@ function Base.Symbol(retcode::ReturnCode)
         :ConvergenceFailure
     elseif retcode == Failure
         :Failure
-    else
-        error("$retcode is not a valid return code")
     end
 end
 
@@ -31,11 +29,11 @@ Base.:(!=)(retcode::ReturnCode, s::Symbol) = Symbol(retcode) != s
 function Base.convert(::Type{ReturnCode}, retcode::Symbol)
     if retcode == :Default
         Default
-    elseif retcode == :Success
+    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT || retcode == :FLOATING_POINT_LIMIT
         Success
     elseif retcode == :Terminated
         Terminated
-    elseif retcode == :MaxIters
+    elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
         MaxIters
     elseif retcode == :DtLessThanMin
         DtLessThanMin
@@ -47,6 +45,8 @@ function Base.convert(::Type{ReturnCode}, retcode::Symbol)
         ConvergenceFailure
     elseif retcode == :Failure
         Failure
+    else
+        error("$retcode is not a valid return code")
     end
 end
 
