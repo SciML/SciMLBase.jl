@@ -190,16 +190,14 @@ As above, the history function will return an object with indices 1 and 2, with 
 
 ## Example Problems
 
-Example problems can be found in [DiffEqProblemLibrary.jl](https://github.com/JuliaDiffEq/DiffEqProblemLibrary.jl/tree/master/src/dde).
+Example problems can be found in [DiffEqProblemLibrary.jl](https://github.com/SciML/DiffEqProblemLibrary.jl).
 
-To use a sample problem, such as `prob_ode_linear`, you can do something like:
+To use a sample problem, such as `prob_dde_constant_1delay_ip`, you can do something like:
 
 ```julia
-#] add DiffEqProblemLibrary
-using DiffEqProblemLibrary.ODEProblemLibrary
-# load problems
-ODEProblemLibrary.importodeproblems()
-prob = ODEProblemLibrary.prob_ode_linear
+#] add DDEProblemLibrary
+using DDEProblemLibrary
+prob = DDEProblemLibrary.prob_dde_constant_1delay_ip
 sol = solve(prob)
 ```
 """
