@@ -76,14 +76,16 @@ end
 ```
 """
 function solve(prob::OptimizationProblem, alg, args...; kwargs...)
-    !isbounded(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) &&
+    !allowsbounds(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support box constraints. Either remove the `lb` or `ub` bounds passed to `OptimizationProblem` or use a different algorithm."))
-    !isconstrained(alg) && !isnothing(prob.f.cons) &&
+    requiresbounds(alg) && isnothing(prob.lb) &&
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires box constraints. Either pass `lb` and `ub` bounds to `OptimizationProblem` or use a different algorithm."))
+    !requiresconstraints(alg) && !isnothing(prob.f.cons) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support constraints. Either remove the `cons` function passed to `OptimizationFunction` or use a different algorithm."))
-    isconstrained(alg) && isnothing(prob.f.cons) &&
+    requiresconstraints(alg) && isnothing(prob.f.cons) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
-    !callbacks_support(alg) && !isnothing(kwargs[:callback]) &&
-        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` kwarg from the `solve` call."))
+    !allowscallback(alg) && haskey(kwargs, :callback) &&
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` keyword argument from the `solve` call."))
     __solve(prob, alg, args...; kwargs...)
 end
 

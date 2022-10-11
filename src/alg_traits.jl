@@ -75,28 +75,37 @@ Defaults to false.
 isdiscrete(alg::AbstractDEAlgorithm) = false
 
 """
-isbounded(opt)
+allowsbounds(opt)
 
 Allows box constraints passed with `lb` and `ub` in `OptimizationProblem`.
 
 Defaults to false.
 """
-isbounded(opt) = false
+allowsbounds(opt) = false
 
 """
-isconstrained(opt)
+requiresbounds(opt)
+
+Requires box constraints passed with `lb` and `ub` in `OptimizationProblem`.
+
+Defaults to false.
+"""
+requiresbounds(opt) = false
+
+"""
+requiresconstrains(opt)
 
 Allows non-linear constraints specified in `cons` in `OptimizationFunction`.
 
 Defaults to false.
 """
-isconstrained(opt) = false
+requiresconstraints(opt) = false
 
 """
-callbacks_support(opt)
+allowscallback(opt)
 
-Supports callbacks during optimization.
+Supports passing `callback` to `solve` for optimization.
 
 Defaults to true.
 """
-callbacks_support(opt) = true
+allowscallback(opt) = true
