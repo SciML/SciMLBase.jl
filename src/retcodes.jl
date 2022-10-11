@@ -24,6 +24,8 @@ function Base.Symbol(retcode::ReturnCode)
 end
 
 Base.:(==)(retcode::ReturnCode, s::Symbol) = Symbol(retcode) == s
+Base.:(!=)(retcode::ReturnCode, s::Symbol) = Symbol(retcode) != s
+
 function Base.convert(::Type{ReturnCode}, retcode::Symbol)
     if retcode == :Default
         Default
