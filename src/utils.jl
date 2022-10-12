@@ -81,6 +81,41 @@ function Base.showerror(io::IO, e::TooManyArgumentsError)
     println(io, methods(e.f))
 end
 
+const TOO_FEW_ARGUMENTS_ERROR_MESSAGE_OPTIMIZATION = """
+                                        All methods for the model function `f` had too few arguments. For example,
+                                        an OptimizationProblem `f` must define `f(u,p)` where `u` is the optimization
+                                        state and `p` are the parameters of the optimization (commonly, the hyperparameters
+                                        of the simulation).
+
+                                        A common reason for this error is from defining a single-input loss function
+                                        `f(u)`. While parameters are not required, a loss function which takes parameters
+                                        is required, i.e. `f(u,p)`. If you have a function `f(u)`, ignored parameters
+                                        can be easily added using a closure, i.e. `OptimizationProblem((u,_)->f(u),...)`.
+
+                                        For example, here is a parameterized optimization problem:
+
+                                        ```julia
+                                        using Optimization, OptimizationOptimJL
+                                        rosenbrock(u,p) =  (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
+                                        u0 = zeros(2)
+                                        p  = [1.0,100.0]
+
+                                        prob = OptimizationProblem(rosenbrock,u0,p)
+                                        sol = solve(prob,NelderMead())
+                                        ```
+
+                                        and a parameter-less example:
+
+                                        ```julia
+                                        using Optimization, OptimizationOptimJL
+                                        rosenbrock(u,p) =  (1 - u[1])^2 + (u[2] - u[1]^2)^2
+                                        u0 = zeros(2)
+
+                                        prob = OptimizationProblem(rosenbrock,u0)
+                                        sol = solve(prob,NelderMead())
+                                        ```
+                                        """
+
 const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
                                         All methods for the model function `f` had too few arguments. For example,
                                         an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
@@ -121,10 +156,15 @@ const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
 struct TooFewArgumentsError <: Exception
     fname::String
     f::Any
+    isoptimization::Bool
 end
 
 function Base.showerror(io::IO, e::TooFewArgumentsError)
-    println(io, TOO_FEW_ARGUMENTS_ERROR_MESSAGE)
+    if e.isoptimization
+        println(io, TOO_FEW_ARGUMENTS_ERROR_MESSAGE_OPTIMIZATION)
+    else
+        println(io, TOO_FEW_ARGUMENTS_ERROR_MESSAGE)
+    end
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
     println(io, "\nMethods:")
@@ -177,7 +217,8 @@ form is disabled and the 2-argument signature is ensured to be matched.
 # See also
 * [`numargs`](@ref numargs)
 """
-function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true; has_two_dispatches = true)
+function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
+                   has_two_dispatches = true, isoptimization = false)
     nargs = numargs(f)
     iip_dispatch = any(x -> x == inplace_param_number, nargs)
     oop_dispatch = any(x -> x == inplace_param_number - 1, nargs)
@@ -201,10 +242,12 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true; h
 
             # No varargs detected, error that there are dispatches but not the right ones
 
-            throw(TooFewArgumentsError(fname, f))
+            throw(TooFewArgumentsError(fname, f, isoptimization))
         else
             throw(FunctionArgumentsError(fname, f))
         end
+    elseif oop_dispatch && !iip_dispatch && !has_two_dispatches
+        throw(TooFewArgumentsError(fname, f, isoptimization))
     else
         if iip_preferred
             # Equivalent to, if iip_dispatch exists, treat as iip
