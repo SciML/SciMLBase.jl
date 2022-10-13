@@ -40,7 +40,7 @@ struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
     dense::Bool
     tslocation::Int
     destats::DE
-    retcode::ReturnCode
+    retcode::ReturnCode.T
 end
 function (sol::DAESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                             continuity = :left) where {deriv}
