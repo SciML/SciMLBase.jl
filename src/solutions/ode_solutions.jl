@@ -39,7 +39,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE}
     dense::Bool
     tslocation::Int
     destats::DE
-    retcode::ReturnCode
+    retcode::ReturnCode.T
 end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
                            tslocation, destats, retcode) where {T, N}
