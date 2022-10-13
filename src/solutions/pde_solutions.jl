@@ -88,7 +88,7 @@ struct PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P, A,
     prob::P
     alg::A
     interp::IType
-    retcode::ReturnCode
+    retcode::ReturnCode.T
 end
 
 const PDESolution{T, N, S, D} = Union{PDETimeSeriesSolution{T, N, S, D},
