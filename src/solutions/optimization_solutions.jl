@@ -28,7 +28,7 @@ end
 
 function build_solution(prob::AbstractOptimizationProblem,
                         alg, u, minimum;
-                        retcode = Default,
+                        retcode = ReturnCode.Default,
                         original = nothing,
                         kwargs...)
     T = eltype(eltype(u))
