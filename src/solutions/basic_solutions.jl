@@ -23,7 +23,7 @@ struct LinearSolution{T, N, uType, R, A, C} <: AbstractLinearSolution{T, N}
     u::uType
     resid::R
     alg::A
-    retcode::ReturnCode
+    retcode::ReturnCode.T
     iters::Int
     cache::C
 end
