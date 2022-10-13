@@ -22,7 +22,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === Success`), whether it terminated due to a user-defined
+  successfully (`sol.retcode === ReturnCode.Success`), whether it terminated due to a user-defined
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
