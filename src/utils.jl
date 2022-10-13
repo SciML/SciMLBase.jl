@@ -247,6 +247,18 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
             throw(FunctionArgumentsError(fname, f))
         end
     elseif oop_dispatch && !iip_dispatch && !has_two_dispatches
+
+        # Possible extra safety?
+        # Find if there's a `f(args...)` dispatch
+        # If so, no error
+        for i in 1:length(nargs)
+            if nargs[i] < inplace_param_number &&
+               any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
+                # If varargs, assume iip
+                return iip_preferred
+            end
+        end
+
         throw(TooFewArgumentsError(fname, f, isoptimization))
     else
         if iip_preferred
