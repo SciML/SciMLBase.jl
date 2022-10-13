@@ -46,7 +46,7 @@ struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, DE
     dense::Bool
     tslocation::Int
     destats::DE
-    retcode::ReturnCode
+    retcode::ReturnCode.T
     seed::UInt64
 end
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
