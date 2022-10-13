@@ -45,7 +45,7 @@ struct PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType, ivTy
     interp::IType
     dense::Bool
     tslocation::Int
-    retcode::ReturnCode
+    retcode::ReturnCode.T
 end
 
 """
