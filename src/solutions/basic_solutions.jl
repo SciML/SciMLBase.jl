@@ -59,7 +59,7 @@ struct IntegralSolution{T, N, uType, R, P, A, C} <: AbstractIntegralSolution{T, 
     resid::R
     prob::P
     alg::A
-    retcode::ReturnCode
+    retcode::ReturnCode.T
     chi::C
 end
 
