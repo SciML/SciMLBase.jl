@@ -1,4 +1,4 @@
-Enumx.@enumx(ReturnCode,Default,Success,Terminated,MaxIters,DtLessThanMin,Unstable,
+EnumX.@enumx(ReturnCode,Default,Success,Terminated,MaxIters,DtLessThanMin,Unstable,
       InitialFailure,ConvergenceFailure,Failure)
 
 function Base.Symbol(retcode::ReturnCode)

@@ -14,7 +14,7 @@ import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
-import Enumx
+import EnumX
 
 function __solve end
 function __init end
@@ -668,6 +668,8 @@ const DEProblem = AbstractDEProblem
 const DEAlgorithm = AbstractDEAlgorithm
 const DESolution = AbstractSciMLSolution
 const SciMLSolution = AbstractSciMLSolution
+
+export ReturnCode
 
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
