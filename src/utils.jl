@@ -47,7 +47,7 @@ const TOO_MANY_ARGUMENTS_ERROR_MESSAGE = """
                                          `SciMLFunction` type that was being constructed.
 
                                          A common reason for this occurance is due to following the MATLAB or SciPy
-                                         convention for parameter passing, i.e. to add each parameter as an arguemnt.
+                                         convention for parameter passing, i.e. to add each parameter as an argument.
                                          In the SciML convention, if you wish to pass multiple parameters, use a
                                          struct or other collection to hold the parameters. For example, here is the
                                          parameterized Lorenz equation:
