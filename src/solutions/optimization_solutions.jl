@@ -22,7 +22,7 @@ struct OptimizationSolution{T, N, uType, P, A, Tf, O} <: AbstractOptimizationSol
     prob::P # optimization problem
     alg::A # algorithm
     minimum::Tf
-    retcode::ReturnCode
+    retcode::ReturnCode.T
     original::O # original output of the optimizer
 end
 
