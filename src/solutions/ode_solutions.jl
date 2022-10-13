@@ -134,7 +134,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         calculate_error = true,
                         k = nothing,
                         interp = LinearInterpolation(t, u),
-                        retcode = Default, destats = nothing, kwargs...)
+                        retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
