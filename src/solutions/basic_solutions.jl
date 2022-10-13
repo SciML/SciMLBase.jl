@@ -69,7 +69,7 @@ struct QuadratureSolution end
 function build_solution(prob::AbstractIntegralProblem,
                         alg, u, resid; calculate_error = true,
                         chi = nothing,
-                        retcode = Default, kwargs...)
+                        retcode = ReturnCode.Default, kwargs...)
     T = eltype(eltype(u))
     N = length((size(u)...,))
 
