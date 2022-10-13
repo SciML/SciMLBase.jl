@@ -14,6 +14,7 @@ import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
+import Enumx
 
 function __solve end
 function __init end
