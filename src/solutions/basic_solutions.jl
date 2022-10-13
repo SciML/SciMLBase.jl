@@ -29,7 +29,7 @@ struct LinearSolution{T, N, uType, R, A, C} <: AbstractLinearSolution{T, N}
 end
 
 function build_linear_solution(alg, u, resid, cache;
-                               retcode = Default,
+                               retcode = ReturnCode.Default,
                                iters = 0)
     T = eltype(eltype(u))
     N = length((size(u)...,))
