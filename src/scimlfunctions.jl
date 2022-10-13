@@ -15,9 +15,9 @@ $(TYPEDEF)
 The default specialization level for problem functions. `AutoSpecialize`
 works by applying a function wrap just-in-time before the solve process
 to disable just-in-time re-specialization of the solver to the specific
-choice of model `f` and thus allow for using a cached solver compilation 
-from a different `f`. This wrapping process can lead to a small decreased 
-runtime performance with a benefit of a greatly decreased compile-time. 
+choice of model `f` and thus allow for using a cached solver compilation
+from a different `f`. This wrapping process can lead to a small decreased
+runtime performance with a benefit of a greatly decreased compile-time.
 
 ## Note About Benchmarking and Runtime Optimality
 
@@ -28,7 +28,7 @@ not for cases where where top runtime performance is required (such as in
 optimization loops). Generally, for non-stiff equations the cost will be minimial
 and potentially not even measurable. For stiff equations, function wrapping
 has the limitation that only chunk sized 1 Dual numbers are allowed, which
-can decrease Jacobian construction performance. 
+can decrease Jacobian construction performance.
 
 ## Limitations of `AutoSpecialize`
 
@@ -37,7 +37,7 @@ but are instead chosen as a comprimise between default precompilation times and
 ease of maintanance. Please open an issue to discuss lifting any potential
 limitations.
 
-* `AutoSpecialize` is only setup to wrap the functions from in-place ODEs. Other 
+* `AutoSpecialize` is only setup to wrap the functions from in-place ODEs. Other
   cases are excluded for the time being due to time limitations.
 * `AutoSpecialize` will only lead to compilation reuse if the ODEFunction's other
   functions (such as jac and tgrad) are the default `nothing`. These could be
@@ -50,7 +50,7 @@ limitations.
   to decreased runtime performance for sufficiently large Jacobians.
 * `AutoSpecialize` only wraps on Julia v1.8 and higher.
 * `AutoSpecialize` does not handle cases with units. If unitful values are detected,
-  wrapping is automatically disabled. 
+  wrapping is automatically disabled.
 * `AutoSpecialize` only wraps cases for which `promote_rule` is defined between `u0`
   and dual numbers, `u0` and `t`, and for which `ArrayInterfaceCore.promote_eltype`
   is defined on `u0` to dual numbers.
@@ -91,7 +91,7 @@ caches are fully reused, with the downside of losing runtime performance.
 time. Unlike `AutoSpecialize`, `NoSpecialize` can be used with any
 `SciMLFunction`.
 
-## Example 
+## Example
 
 ```
 f(du,u,p,t) = (du .= u)
@@ -119,19 +119,19 @@ of light for `AutoSpecialize`.
 ## Limitations of `FunctionWrapperSpecialize`
 
 `FunctionWrapperSpecialize` has all of the limitations of `AutoSpecialize`,
-but also includes the limitations: 
+but also includes the limitations:
 
-* `prob.f` is directly specialized to the types of `(u,p,t)`, and any usage 
-  of `prob.f` on other types first requires using 
+* `prob.f` is directly specialized to the types of `(u,p,t)`, and any usage
+  of `prob.f` on other types first requires using
   `SciMLBase.unwrapped_f(prob.f)` to remove the function wrapper.
 * `FunctionWrapperSpecialize` can only be used by the `ODEProblem` constructor.
   If an `ODEFunction` is being constructed, the user must manually use
-  `DiffEqBase.wrap_iip` on `f` before calling 
+  `DiffEqBase.wrap_iip` on `f` before calling
   `ODEFunction{true,FunctionWrapperSpecialize}(f)`. This is a fundamental
   limitation of the approach as the types of `(u,p,t)` are required in the
   construction process and not accessible in the `AbstactSciMLFunction` constructors.
 
-## Example 
+## Example
 
 ```
 f(du,u,p,t) = (du .= u)
@@ -147,12 +147,12 @@ $(TYPEDEF)
 directly types the `AbstractSciMLFunction` struct to match the type
 of the model `f`. This forces recompilation of the solver on each
 new function type `f`, leading to the most compile times with the
-benefit of having the best runtime performance. 
+benefit of having the best runtime performance.
 
 `FullSpecialize` should be used in all cases where top runtime performance
 is required, such as in long running simulations and benchmarking.
 
-## Example 
+## Example
 
 ```
 f(du,u,p,t) = (du .= u)
@@ -294,7 +294,7 @@ to enforce correctness, this option is passed via `ODEFunction{true}(f)`.
 
 ## specialize: Controlling Compilation and Specialization
 
-The `specialize` parameter controls the specialization level of the ODEFunction 
+The `specialize` parameter controls the specialization level of the ODEFunction
 on the function `f`. This allows for a trade-off between compile and run time performance.
 The available specialization levels are:
 
@@ -1372,14 +1372,14 @@ the usage of `f`. These include:
   to determine that the equation is actually a random differential-algebraic equation (RDAE)
   if `M` is singular.
 - `analytic`: (u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
-  solution of the RODE. Generally only used for testing and development of the solvers. 
+  solution of the RODE. Generally only used for testing and development of the solvers.
   The exact form depends on the field `analytic_full`.
-- `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`) 
-  or the form `analytic!(sol)` (if `true`). The former is expected to return the solution `u(t)` of 
-  the equation, given the initial condition `u0`, the parameter `p`, the current time `t` and the 
-  value `W=W(t)` of the noise at the given time `t`. The latter case is useful when the solution 
-  of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at 
-  times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic` 
+- `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`)
+  or the form `analytic!(sol)` (if `true`). The former is expected to return the solution `u(t)` of
+  the equation, given the initial condition `u0`, the parameter `p`, the current time `t` and the
+  value `W=W(t)` of the noise at the given time `t`. The latter case is useful when the solution
+  of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at
+  times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic`
   with the corresponding expected solution at `sol.W.t` or `sol.t`.
 - `tgrad(dT,u,p,t,W)` or dT=tgrad(u,p,t,W): returns ``\frac{\partial f(u,p,t,W)}{\partial t}``
 - `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\frac{df}{du}``
@@ -1628,7 +1628,7 @@ SDDEFunction{iip,specialize}(f,g;
                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                  syms = __has_syms(f) ? f.syms : nothing,
                  indepsym= __has_indepsym(f) ? f.indepsym : nothing,
-                 paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing, 
+                 paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                  colorvec = __has_colorvec(f) ? f.colorvec : nothing
                  sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -3308,6 +3308,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    lag_hess_colorvec = nothing,
                                    expr = nothing, cons_expr = nothing,
                                    sys = __has_sys(f) ? f.sys : nothing) where {iip}
+    isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
                          typeof(hv),
                          typeof(cons), typeof(cons_j), typeof(cons_h), typeof(lag_h),

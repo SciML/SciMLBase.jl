@@ -362,6 +362,7 @@ function OptimizationProblem(f::OptimizationFunction, args...; kwargs...)
     OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
 end
 function OptimizationProblem(f, args...; kwargs...)
+    isinplace(f, 2, has_two_dispatches = false)
     OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
 end
 
