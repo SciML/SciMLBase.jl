@@ -24,7 +24,7 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2} <: AbstractNonlinearSo
     resid::R
     prob::P
     alg::A
-    retcode::ReturnCode
+    retcode::ReturnCode.T
     original::O
     left::uType2
     right::uType2
