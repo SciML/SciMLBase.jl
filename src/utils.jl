@@ -7,6 +7,15 @@ function numargs(f)
     return [num_types_in_tuple(m.sig) - 1 for m in methods(f)] #-1 since f is the first parameter
 end
 
+function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{T, V, W, I}) where {
+                                                                                           T,
+                                                                                           V,
+                                                                                           W,
+                                                                                           I
+                                                                                           }
+    (length(T),)
+end
+
 """
 $(SIGNATURES)
 
