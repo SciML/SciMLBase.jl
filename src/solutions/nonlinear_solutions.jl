@@ -34,7 +34,7 @@ const SteadyStateSolution = NonlinearSolution
 
 function build_solution(prob::AbstractNonlinearProblem,
                         alg, u, resid; calculate_error = true,
-                        retcode = Default,
+                        retcode = ReturnCode.Default,
                         original = nothing,
                         left = nothing,
                         right = nothing,
