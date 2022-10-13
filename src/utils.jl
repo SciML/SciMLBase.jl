@@ -7,6 +7,15 @@ function numargs(f)
     return [num_types_in_tuple(m.sig) - 1 for m in methods(f)] #-1 since f is the first parameter
 end
 
+function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{T, V, W, I}) where {
+                                                                                           T,
+                                                                                           V,
+                                                                                           W,
+                                                                                           I
+                                                                                           }
+    (length(T),)
+end
+
 """
 $(SIGNATURES)
 
@@ -230,7 +239,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
     if !iip_dispatch && !oop_dispatch && !isoptimization
         if all(x -> x > inplace_param_number, nargs)
             throw(TooManyArgumentsError(fname, f))
-        elseif all(x -> x < inplace_param_number - 1, nargs) && !has_two_dispatches
+        elseif all(x -> x < inplace_param_number - 1, nargs) && has_two_dispatches
             # Possible extra safety?
             # Find if there's a `f(args...)` dispatch
             # If so, no error
