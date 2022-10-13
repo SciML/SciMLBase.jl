@@ -49,8 +49,8 @@ Representation of the solution to an quadrature integral_lb^ub f(x) dx defined b
 - `resid`: the residual of the solver.
 - `alg`: the algorithm type used by the solver.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === Success`), whether it terminated due to a user-defined
-  callback (`sol.retcode === Terminated`), or whether it exited due to an error. For more
+  successfully (`sol.retcode === ReturnCode.Success`), whether it terminated due to a user-defined
+  callback (`sol.retcode === ReturnCode.Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 - `chi`: the variance estimate of the estimator from Monte Carlo quadrature methods.
 """
