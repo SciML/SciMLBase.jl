@@ -421,10 +421,11 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
 end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
-    if issymbollike(sym)
+    if issymbollike(sym) || all(issymbollike, sym)
+        if sym isa AbstractArray
+            return map(s -> A[s], collect(sym))
+        end
         i = sym_to_index(sym, A)
-    elseif all(issymbollike, sym)
-        return getindex.((A,), sym)
     else
         i = sym
     end
@@ -435,7 +436,7 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
         if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
             A.t
         elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            A.p[findfirst(isequal(Symbol(sym)), paramsyms)]
+            A.p[findfirst(Symbol(sym), paramsyms)]
         else
             observed(A, sym)
         end
