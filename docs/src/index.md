@@ -63,7 +63,7 @@ sets of problem types associated with common mathematical algorithms. These are:
 ## Inverse Problems, Parameter Estimation, and Structural Identification
 
 We note that parameter estimation and inverse problems are solved directly on their
-constituant problem types using tools like [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl).
+constituent problem types using tools like [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl).
 Thus for example, there is no `ODEInverseProblem`, and instead `ODEProblem` is used to
 find the parameters `p` that solve the inverse problem.
 

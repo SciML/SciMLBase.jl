@@ -9,7 +9,7 @@ Takes in two tuples for split Affine DiffEqs
 
 1. update_coefficients! works by updating the coefficients of the component
    operators.
-2. Function calls L(u, p, t) and L(du, u, p, t) are fallbacks interpretted in this form.
+2. Function calls L(u, p, t) and L(du, u, p, t) are fallbacks interpreted in this form.
    This will allow them to work directly in the nonlinear ODE solvers without
    modification.
 3. f(du, u, p, t) is only allowed if a du_cache is given
