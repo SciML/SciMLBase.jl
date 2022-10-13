@@ -226,7 +226,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
     if !iip_dispatch && !oop_dispatch
         if length(nargs) == 0
             throw(NoMethodsError(fname))
-        elseif all(x -> x > inplace_param_number, nargs)
+        elseif all(x -> x > inplace_param_number, nargs) && !isoptimization
             throw(TooManyArgumentsError(fname, f))
         elseif all(x -> x < inplace_param_number - 1, nargs) || !has_two_dispatches
             # Possible extra safety?
