@@ -59,7 +59,7 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                         k = nothing,
                         interp = du === nothing ? LinearInterpolation(t, u) :
                                  HermiteInterpolation(t, u, du),
-                        retcode = Default,
+                        retcode = ReturnCode.Default,
                         destats = nothing,
                         kwargs...)
     T = eltype(eltype(u))
