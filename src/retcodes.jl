@@ -1,24 +1,24 @@
-EnumX.@enumx(ReturnCode,Default,Success,Terminated,MaxIters,DtLessThanMin,Unstable,
-      InitialFailure,ConvergenceFailure,Failure)
+EnumX.@enumx(ReturnCode, Default, Success, Terminated, MaxIters, DtLessThanMin, Unstable,
+             InitialFailure, ConvergenceFailure, Failure)
 
 function Base.Symbol(retcode::ReturnCode.T)
-    if retcode == Default
+    if retcode == ReturnCode.Default
         :Default
-    elseif retcode == Success
+    elseif retcode == ReturnCode.Success
         :Success
-    elseif retcode == Terminated
+    elseif retcode == ReturnCode.Terminated
         :Terminated
-    elseif retcode == MaxIters
+    elseif retcode == ReturnCode.MaxIters
         :MaxIters
-    elseif retcode == DtLessThanMin
+    elseif retcode == ReturnCode.DtLessThanMin
         :DtLessThanMin
-    elseif retcode == Unstable
+    elseif retcode == ReturnCode.Unstable
         :Unstable
-    elseif retcode == InitialFailure
+    elseif retcode == ReturnCode.InitialFailure
         :InitialFailure
-    elseif retcode == ConvergenceFailure
+    elseif retcode == ReturnCode.ConvergenceFailure
         :ConvergenceFailure
-    elseif retcode == Failure
+    elseif retcode == ReturnCode.Failure
         :Failure
     end
 end
@@ -29,7 +29,8 @@ Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     if retcode == :Default
         ReturnCode.Default
-    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT || retcode == :FLOATING_POINT_LIMIT
+    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
+           retcode == :FLOATING_POINT_LIMIT
         ReturnCode.Success
     elseif retcode == :Terminated
         ReturnCode.Terminated
