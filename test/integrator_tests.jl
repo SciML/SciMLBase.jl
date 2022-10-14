@@ -15,7 +15,7 @@ mutable struct DummyIntegrator{Alg, IIP, U, T} <: SciMLBase.DEIntegrator{Alg, II
 
     function DummyIntegrator()
         new{Bool, Bool, Vector{Float64}, Float64}([0.0], 0, [0.0], 0, 1, 1, [],
-                                                  DummySolution(:Default))
+                                                  DummySolution(ReturnCode.Default))
     end
 end
 

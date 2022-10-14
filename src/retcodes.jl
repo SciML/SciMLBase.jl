@@ -28,23 +28,23 @@ Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     if retcode == :Default
-        Default
+        ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT || retcode == :FLOATING_POINT_LIMIT
-        Success
+        ReturnCode.Success
     elseif retcode == :Terminated
-        Terminated
+        ReturnCode.Terminated
     elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
-        MaxIters
+        ReturnCode.MaxIters
     elseif retcode == :DtLessThanMin
-        DtLessThanMin
+        ReturnCode.DtLessThanMin
     elseif retcode == :Unstable
-        Unstable
+        ReturnCode.Unstable
     elseif retcode == :InitialFailure
-        InitialFailure
+        ReturnCode.InitialFailure
     elseif retcode == :ConvergenceFailure
-        ConvergenceFailure
+        ReturnCode.ConvergenceFailure
     elseif retcode == :Failure
-        Failure
+        ReturnCode.Failure
     else
         error("$retcode is not a valid return code")
     end
