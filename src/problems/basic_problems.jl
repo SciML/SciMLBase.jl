@@ -313,6 +313,7 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `p`: the parameters for the problem. Defaults to `NullParameters`.
 * `lb`: the lower bounds for the optimization of `u`.
 * `ub`: the upper bounds for the optimization of `u`.
+* `int`: integrality indicator for `u`.
 * `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
     Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
 * `ucons`: the vector of upper bounds for the constraints passed to [OptimizationFunction](@ref).
@@ -333,28 +334,30 @@ Inequality constraints are then given by making `lcons[i] != ucons[i]`. For exam
 Note that these vectors must be sized to match the number of constraints, with one set of conditions for each constraint.
 
 """
-struct OptimizationProblem{iip, F, uType, P, B, LC, UC, S, K} <:
+struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
        AbstractOptimizationProblem{iip}
     f::F
     u0::uType
     p::P
-    lb::B
-    ub::B
+    lb::LB
+    ub::UB
+    int::I
     lcons::LC
     ucons::UC
     sense::S
     kwargs::K
     @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0,
                                                   p = NullParameters();
-                                                  lb = nothing, ub = nothing,
+                                                  lb = nothing, ub = nothing, int = nothing,
                                                   lcons = nothing, ucons = nothing,
                                                   sense = nothing, kwargs...) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
         new{iip, typeof(f), typeof(u0), typeof(p),
-            typeof(lb), typeof(lcons), typeof(ucons),
-            typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, lcons, ucons, sense, kwargs)
+            typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
+            typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, int, lcons, ucons, sense,
+                                           kwargs)
     end
 end
 
