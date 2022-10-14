@@ -552,7 +552,7 @@ end
 
 ### Default Iterator Interface
 function done(integrator::DEIntegrator)
-    if !(integrator.sol.retcode in (Default, Success))
+    if !(integrator.sol.retcode in (ReturnCode.Default, ReturnCode.Success))
         return true
     elseif isempty(integrator.opts.tstops)
         postamble!(integrator)
@@ -781,7 +781,7 @@ function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     stop_at_tdt && add_tstop!(integ, next_t)
     while integ.t * integ.tdir < next_t * integ.tdir
         step!(integ)
-        integ.sol.retcode in (Default, Success) || break
+        integ.sol.retcode in (ReturnCode.Default, ReturnCode.Success) || break
     end
 end
 
