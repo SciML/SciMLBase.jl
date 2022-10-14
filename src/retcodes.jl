@@ -1,7 +1,7 @@
 EnumX.@enumx(ReturnCode,Default,Success,Terminated,MaxIters,DtLessThanMin,Unstable,
       InitialFailure,ConvergenceFailure,Failure)
 
-function Base.Symbol(retcode::ReturnCode)
+function Base.Symbol(retcode::ReturnCode.T)
     if retcode == Default
         :Default
     elseif retcode == Success
@@ -23,10 +23,10 @@ function Base.Symbol(retcode::ReturnCode)
     end
 end
 
-Base.:(==)(retcode::ReturnCode, s::Symbol) = Symbol(retcode) == s
-Base.:(!=)(retcode::ReturnCode, s::Symbol) = Symbol(retcode) != s
+Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
+Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 
-function Base.convert(::Type{ReturnCode}, retcode::Symbol)
+function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     if retcode == :Default
         Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT || retcode == :FLOATING_POINT_LIMIT
@@ -50,4 +50,4 @@ function Base.convert(::Type{ReturnCode}, retcode::Symbol)
     end
 end
 
-successful_retcode(retcode::ReturnCode) = retcode == :Success || retcode == :Terminated
+successful_retcode(retcode::ReturnCode.T) = retcode == :Success || retcode == :Terminated
