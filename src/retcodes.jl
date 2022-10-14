@@ -29,7 +29,7 @@ Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
-    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT
+    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
            retcode == :FLOATING_POINT_LIMIT
         ReturnCode.Success
     elseif retcode == :Terminated
