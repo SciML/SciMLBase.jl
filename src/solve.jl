@@ -24,7 +24,7 @@ These common arguments are:
 - `reltol` (relative tolerance  in changes of the objective value)
 - `callback` (a callback function)
 
-If the chosen global optimzer employs a local optimization method a similiar set of common local optimizer arguments exists.
+If the chosen global optimzer employs a local optimization method a similar set of common local optimizer arguments exists.
 The common local optimizer arguments are:
 
 - `local_method` (optimiser used for local optimization in global method)
@@ -36,7 +36,7 @@ The common local optimizer arguments are:
 
 Some optimizer algorithms have special keyword arguments documented in the
 solver portion of the documentation and their respective documentation.
-These arguments can be passed as `kwargs...` to `solve`. Similiarly, the special
+These arguments can be passed as `kwargs...` to `solve`. Similarly, the special
 keyword arguments for the `local_method` of a global optimizer are passed as a
 `NamedTuple` to `local_options`.
 

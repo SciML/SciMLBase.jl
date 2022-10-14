@@ -16,7 +16,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
   corresponds to the solution at time `t[i]`. It is recommended in most cases one does not
   access `sol.u` directly and instead use the array interface described in the Solution 
   Handling page of the DifferentialEquations.jl documentation.
-- `du`: the representation fo the derivatives of the DAE solution.
+- `du`: the representation of the derivatives of the DAE solution.
 - `t`: the time points corresponding to the saved values of the DAE solution.
 - `prob`: the original DAEProblem that was solved.
 - `alg`: the algorithm type used by the solver.

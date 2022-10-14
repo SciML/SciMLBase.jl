@@ -129,7 +129,7 @@ const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
                                         All methods for the model function `f` had too few arguments. For example,
                                         an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
                                         can be thrown if you define an ODE model for example as `f(u,t)`. The parameters
-                                        `p` are not optional in the defintion of `f`! For more information on the required
+                                        `p` are not optional in the definition of `f`! For more information on the required
                                         number of arguments for the function you were defining, consult the documentation
                                         for the `SciMLProblem` or `SciMLFunction` type that was being constructed.
 

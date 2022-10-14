@@ -134,9 +134,9 @@ This is determined automatically, but not inferred.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 The for dynamical and second order DDEs, the history function will return an object with
-the indicies 1 and 2 defined, where `h(p, t_prev)[1]` is the value of ``f_2(v, u, h, p,
+the indices 1 and 2 defined, where `h(p, t_prev)[1]` is the value of ``f_2(v, u, h, p,
 t_{\mathrm{prev}})`` and `h(p, t_prev)[2]` is the value of ``f_1(v, u, h, p, t_{\mathrm{prev}})``
-(this is for consistency with the ordering of the intitial conditions in the constructor).
+(this is for consistency with the ordering of the initial conditions in the constructor).
 The supplied history function must also return such a 2-index object, which can be accomplished
 with a tuple `(v,u)` or vector `[v,u]`.
 

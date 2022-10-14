@@ -187,7 +187,7 @@ multiple events.
    at the right index. Maximum index of `out` should be specified in the `len` property of callback. So this way you can have
    a chain of `len` events, which would cause the `i`th event to trigger when `out[i] = 0`.
 - `affect!`: This is a function `affect!(integrator, event_index)` which lets you modify `integrator` and it tells you about
-   which event occured using `event_idx` i.e. gives you index `i` for which `out[i]` came out to be zero.
+   which event occurred using `event_idx` i.e. gives you index `i` for which `out[i]` came out to be zero.
 - `len`: Number of callbacks chained. This is compulsory to be specified.
 
 Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
@@ -347,7 +347,7 @@ end
 """
     split_callbacks(cs, ds, args...)
 
-Split comma seperated callbacks into sets of continous and discrete callbacks.
+Split comma separated callbacks into sets of continuous and discrete callbacks.
 """
 @inline split_callbacks(cs, ds) = cs, ds
 @inline split_callbacks(cs, ds, c::Nothing, args...) = split_callbacks(cs, ds, args...)

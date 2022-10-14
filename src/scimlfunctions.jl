@@ -23,9 +23,9 @@ runtime performance with a benefit of a greatly decreased compile-time.
 
 It is recommended that `AutoSpecialize` is not used in any benchmarking
 due to the potential effect of function wrapping on runtimes. `AutoSpecialize`'s
-use case is targetted at decreased latency for REPL performance and
+use case is targeted at decreased latency for REPL performance and
 not for cases where where top runtime performance is required (such as in
-optimization loops). Generally, for non-stiff equations the cost will be minimial
+optimization loops). Generally, for non-stiff equations the cost will be minimal
 and potentially not even measurable. For stiff equations, function wrapping
 has the limitation that only chunk sized 1 Dual numbers are allowed, which
 can decrease Jacobian construction performance.
@@ -33,8 +33,8 @@ can decrease Jacobian construction performance.
 ## Limitations of `AutoSpecialize`
 
 The following limitations are not fundamental to the implementation of `AutoSpecialize`,
-but are instead chosen as a comprimise between default precompilation times and
-ease of maintanance. Please open an issue to discuss lifting any potential
+but are instead chosen as a compromise between default precompilation times and
+ease of maintenance. Please open an issue to discuss lifting any potential
 limitations.
 
 * `AutoSpecialize` is only setup to wrap the functions from in-place ODEs. Other
@@ -188,7 +188,7 @@ end
 
 const NONCONFORMING_FUNCTIONS_ERROR_MESSAGE = """
                                               Nonconforming functions detected. If a model function `f` is defined
-                                              as in-place, then all constituant functions like `jac` and `paramjac`
+                                              as in-place, then all constituent functions like `jac` and `paramjac`
                                               must be in-place (and vice versa with out-of-place). Detected that
                                               some overloads did not conform to the same convention as `f`.
                                               """
@@ -303,7 +303,7 @@ The available specialization levels are:
   for the `prob.f` to stay unwrapped for normal usage. This is the default specialization
   level and strikes a balance in compile time vs runtime performance.
 * `SciMLBase.FullSpecialize`: this form fully specializes the `ODEFunction` on the
-  constituant functions that make its fields. As such, each `ODEFunction` in this
+  constituent functions that make its fields. As such, each `ODEFunction` in this
   form is uniquely typed, requiring re-specialization and compilation for each new
   ODE definition. This form has the highest compile-time at the cost of being the
   most optimal in runtime. This form should be preferred for long running calculations
@@ -698,7 +698,7 @@ DDEFunction{iip,specialize}(f;
 
 Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,h,p,t)` or `du = f(u,h,p,t)`. See the section on `iip`
-for more details on in-place vs out-of-place handling. The histroy function
+for more details on in-place vs out-of-place handling. The history function
 `h` acts as an interpolator over time, i.e. `h(t)` with options matching
 the solution interface, i.e. `h(t; save_idxs = 2)`.
 
@@ -815,7 +815,7 @@ DynamicalDDEFunction{iip,specialize}(f1,f2;
 
 Note that only the functions `f_i` themselves are required. These functions should
 be given as `f_i!(du,u,h,p,t)` or `du = f_i(u,h,p,t)`. See the section on `iip`
-for more details on in-place vs out-of-place handling. The histroy function
+for more details on in-place vs out-of-place handling. The history function
 `h` acts as an interpolator over time, i.e. `h(t)` with options matching
 the solution interface, i.e. `h(t; save_idxs = 2)`.
 
@@ -1635,7 +1635,7 @@ SDDEFunction{iip,specialize}(f,g;
 
 Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,h,p,t)` or `du = f(u,h,p,t)`. See the section on `iip`
-for more details on in-place vs out-of-place handling. The histroy function
+for more details on in-place vs out-of-place handling. The history function
 `h` acts as an interpolator over time, i.e. `h(t)` with options matching
 the solution interface, i.e. `h(t; save_idxs = 2)`.
 
@@ -3329,7 +3329,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                       cons_expr, sys)
 end
 
-########## Existance Functions
+########## Existence Functions
 
 # Check that field/property exists (may be nothing)
 __has_jac(f) = isdefined(f, :jac)

@@ -21,7 +21,7 @@ Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
 provide `u₀` as arbitrary matrices / higher dimension tensors as well. ``u_{n+1}`` only depends on the previous
 iteration ``u_{n}`` and ``t_{n+1}``. The default ``t_{n+1}`` of `FunctionMap` is
 ``t_n = t_0 + n*dt`` (with `dt=1` being the default). For continuous-time Markov chains
-this is the time at which the change is occuring.
+this is the time at which the change is occurring.
 
 Note that if the discrete solver is set to have `scale_by_time=true`, then the problem
 is interpreted as the map:
