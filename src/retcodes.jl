@@ -22,6 +22,7 @@ function Base.Symbol(retcode::ReturnCode.T)
         :Failure
     end
 end
+Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
 
 Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
