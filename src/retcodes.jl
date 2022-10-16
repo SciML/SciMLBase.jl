@@ -27,12 +27,15 @@ Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
 Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 
+const symtrue = Symbol("true")
+const symfalse = Symbol("false")
+
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     @show typeof(retcode), retcode
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT || retcode == :true
+           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue
         ReturnCode.Success
     elseif retcode == :Terminated
         ReturnCode.Terminated
@@ -46,7 +49,7 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.InitialFailure
     elseif retcode == :ConvergenceFailure
         ReturnCode.ConvergenceFailure
-    elseif retcode == :Failure || retcode == :false
+    elseif retcode == :Failure || retcode == symfalse
         ReturnCode.Failure
     else
         error("$retcode is not a valid return code")
