@@ -52,4 +52,8 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     end
 end
 
+function Base.convert(::Type{ReturnCode.T}, bool::Bool)
+    bool ? ReturnCode.Success : ReturnCode.Failure
+end
+
 successful_retcode(retcode::ReturnCode.T) = retcode == :Success || retcode == :Terminated
