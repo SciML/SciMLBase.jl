@@ -28,6 +28,7 @@ Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
+    @show typeof(retcode), retcode
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
