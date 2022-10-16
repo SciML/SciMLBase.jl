@@ -31,7 +31,7 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT
+           retcode == :FLOATING_POINT_LIMIT || retcode == :true
         ReturnCode.Success
     elseif retcode == :Terminated
         ReturnCode.Terminated
@@ -45,7 +45,7 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.InitialFailure
     elseif retcode == :ConvergenceFailure
         ReturnCode.ConvergenceFailure
-    elseif retcode == :Failure
+    elseif retcode == :Failure || retcode == :false
         ReturnCode.Failure
     else
         error("$retcode is not a valid return code")
