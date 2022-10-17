@@ -159,7 +159,7 @@ end
 """
 $(SIGNATURES)
 
-Define a steady state problem using an instance of
+Define a nonlinear problem using an instance of
 [`AbstractNonlinearFunction`](@ref AbstractNonlinearFunction).
 """
 function NonlinearProblem(f::AbstractNonlinearFunction, u0, p = NullParameters(); kwargs...)
@@ -173,11 +173,35 @@ end
 """
 $(SIGNATURES)
 
-Define a steady state problem from a standard ODE problem.
+Define a NonlinearProblem problem from SteadyStateProblem
 """
 function NonlinearProblem(prob::AbstractNonlinearProblem)
     NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
 end
+
+"""
+$(SIGNATURES)
+
+Define a nonlinear problem using an instance of
+[`AbstractODEFunction`](@ref AbstractODEFunction). Note that
+this is interpreted in the form of the steady state problem, i.e.
+find the ODE's solution at time `t = \infty`.
+"""
+function NolinearProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwargs...)
+    NolinearProblem{isinplace(f)}(f, u0, p; kwargs...)
+end
+
+"""
+$(SIGNATURES)
+
+Define a nonlinear problem from a standard ODE problem. Note that
+this is interpreted in the form of the steady state problem, i.e.
+find the ODE's solution at time `t = \infty`
+"""
+function NolinearProblem(prob::AbstractODEProblem)
+    NolinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+end
+
 
 @doc doc"""
 
