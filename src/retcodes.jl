@@ -1,27 +1,6 @@
 EnumX.@enumx(ReturnCode, Default, Success, Terminated, MaxIters, DtLessThanMin, Unstable,
              InitialFailure, ConvergenceFailure, Failure)
 
-function Base.Symbol(retcode::ReturnCode.T)
-    if retcode == ReturnCode.Default
-        :Default
-    elseif retcode == ReturnCode.Success
-        :Success
-    elseif retcode == ReturnCode.Terminated
-        :Terminated
-    elseif retcode == ReturnCode.MaxIters
-        :MaxIters
-    elseif retcode == ReturnCode.DtLessThanMin
-        :DtLessThanMin
-    elseif retcode == ReturnCode.Unstable
-        :Unstable
-    elseif retcode == ReturnCode.InitialFailure
-        :InitialFailure
-    elseif retcode == ReturnCode.ConvergenceFailure
-        :ConvergenceFailure
-    elseif retcode == ReturnCode.Failure
-        :Failure
-    end
-end
 Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
 
 Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
