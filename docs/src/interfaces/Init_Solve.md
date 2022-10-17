@@ -10,7 +10,7 @@ The interface for the three functions is as follows:
 
 ```julia
 init(::ProblemType, args...; kwargs...) :: IteratorType
-solve!(::SolverType) :: SolutionType
+solve!(::IteratorType) :: SolutionType
 ```
 
 where `ProblemType`, `IteratorType`, and `SolutionType` are the types defined in
