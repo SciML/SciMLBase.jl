@@ -495,13 +495,13 @@ function check_error(integrator::DEIntegrator)
         if integrator.opts.verbose
             @warn("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.")
         end
-        return :DtNaN
+        return ReturnCode.DtNaN
     end
     if integrator.iter > integrator.opts.maxiters
         if integrator.opts.verbose
             @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://diffeq.sciml.ai/stable/solvers/ode_solve/#Stiff-Problems).")
         end
-        return :MaxIters
+        return ReturnCode.MaxIters
     end
 
     # The last part:
@@ -515,22 +515,22 @@ function check_error(integrator::DEIntegrator)
         if integrator.opts.verbose
             @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t). Aborting. There is either an error in your model specification or the true solution is unstable.")
         end
-        return :DtLessThanMin
+        return ReturnCode.DtLessThanMin
     end
     if integrator.opts.unstable_check(integrator.dt, integrator.u, integrator.p,
                                       integrator.t)
         if integrator.opts.verbose
             @warn("Instability detected. Aborting")
         end
-        return :Unstable
+        return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
         if integrator.opts.verbose
             @warn("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.")
         end
-        return :ConvergenceFailure
+        return ReturnCode.ConvergenceFailure
     end
-    return :Success
+    return ReturnCode.Success
 end
 
 function postamble! end
@@ -543,7 +543,7 @@ Same as `check_error` but also set solution's return code
 """
 function check_error!(integrator::DEIntegrator)
     code = check_error(integrator)
-    if code != :Success
+    if code != ReturnCode.Success
         integrator.sol = solution_new_retcode(integrator.sol, code)
         postamble!(integrator)
     end
@@ -552,7 +552,7 @@ end
 
 ### Default Iterator Interface
 function done(integrator::DEIntegrator)
-    if !(integrator.sol.retcode in (:Default, :Success))
+    if !(integrator.sol.retcode in (ReturnCode.Default, ReturnCode.Success))
         return true
     elseif isempty(integrator.opts.tstops)
         postamble!(integrator)
@@ -781,7 +781,7 @@ function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     stop_at_tdt && add_tstop!(integ, next_t)
     while integ.t * integ.tdir < next_t * integ.tdir
         step!(integ)
-        integ.sol.retcode in (:Default, :Success) || break
+        integ.sol.retcode in (ReturnCode.Default, ReturnCode.Success) || break
     end
 end
 

@@ -22,7 +22,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === :Success`), whether it terminated due to a user-defined
+  successfully (`sol.retcode === ReturnCode.Success`), whether it terminated due to a user-defined
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
@@ -39,7 +39,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE}
     dense::Bool
     tslocation::Int
     destats::DE
-    retcode::Symbol
+    retcode::ReturnCode.T
 end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
                            tslocation, destats, retcode) where {T, N}
@@ -134,7 +134,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         calculate_error = true,
                         k = nothing,
                         interp = LinearInterpolation(t, u),
-                        retcode = :Default, destats = nothing, kwargs...)
+                        retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
 
     if prob.u0 === nothing

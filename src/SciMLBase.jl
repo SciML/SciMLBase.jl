@@ -14,6 +14,7 @@ import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
+import EnumX
 
 function __solve end
 function __init end
@@ -602,6 +603,7 @@ $(TYPEDEF)
 """
 abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
+include("retcodes.jl")
 include("operators/operators.jl")
 include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
@@ -666,6 +668,8 @@ const DEProblem = AbstractDEProblem
 const DEAlgorithm = AbstractDEAlgorithm
 const DESolution = AbstractSciMLSolution
 const SciMLSolution = AbstractSciMLSolution
+
+export ReturnCode
 
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
