@@ -69,6 +69,21 @@ sol = solve(prob, Rodas4())
 @test sol[γ] isa Real
 @test sol[γ] == 2.0
 
+@variables q(t)[1:2] = [1.0, 2.0]
+eqs = [
+    D(q[1]) ~ 2q[1]
+    D(q[2]) ~ 2.0
+]
+@named sys2 = ODESystem(eqs, t, [q...], [])
+sys2_simplified = structural_simplify(sys2)
+prob2 = ODEProblem(sys2, [], (0.0, 5.0))
+sol2 = solve(prob2, Tsit5())
+
+@test sol2[q] isa Vector{Vector{Float64}}
+@test length(sol2[q]) == length(q)
+@test all(length.(sol2[q]) .== size(sol2, 2))
+@test sol2[collect(q)] == sol2[q]
+
 # Check if indexing using variable names from interpolated solution works
 interpolated_sol = sol(0.0:1.0:10.0)
 @test interpolated_sol[α] isa Vector
