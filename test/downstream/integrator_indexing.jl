@@ -56,6 +56,10 @@ step!(integrator, 100.0, true)
 @test integrator[α] isa Real
 @test integrator[γ] isa Real
 @test integrator[γ] == 2.0
+@test integrator[[lorenz1.x, lorenz2.x]] isa Vector{Float64}
+@test length(integrator[[lorenz1.x, lorenz2.x]]) == 2
+@test integrator[[γ, lorenz1.σ]] isa Vector{Float64}
+@test length(integrator[[γ, lorenz1.σ]]) == 2
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [

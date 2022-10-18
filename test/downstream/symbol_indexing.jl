@@ -68,6 +68,11 @@ sol = solve(prob, Rodas4())
 @test length(sol[α, 5:10]) == 6
 @test sol[γ] isa Real
 @test sol[γ] == 2.0
+@test sol[[lorenz1.x, lorenz2.x]] isa Vector{Vector{Float64}}
+@test length(sol[[lorenz1.x, lorenz2.x]]) == 2
+@test all(length.(sol[[lorenz1.x, lorenz2.x]]) .== size(sol, 2))
+@test sol[[γ, lorenz1.σ]] isa Vector{Float64}
+@test length(sol[[γ, lorenz1.σ]]) == 2
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [
