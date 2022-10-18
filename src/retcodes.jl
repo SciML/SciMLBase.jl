@@ -25,12 +25,12 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.Unstable
     elseif retcode == :InitialFailure
         ReturnCode.InitialFailure
-    elseif retcode == :ConvergenceFailure
+    elseif retcode == :ConvergenceFailure || retcode == :ITERATION_LIMIT
         ReturnCode.ConvergenceFailure
     elseif retcode == :Failure || retcode == symfalse
         ReturnCode.Failure
     else
-        error("$retcode is not a valid return code")
+        ReturnCode.Failure
     end
 end
 
