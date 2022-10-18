@@ -62,10 +62,8 @@ step!(integrator, 100.0, true)
 @test length(integrator[[γ, lorenz1.σ]]) == 2
 
 @variables q(t)[1:2] = [1.0, 2.0]
-eqs = [
-    D(q[1]) ~ 2q[1]
-    D(q[2]) ~ 2.0
-]
+eqs = [D(q[1]) ~ 2q[1]
+       D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
 sys2_simplified = structural_simplify(sys2)
 prob2 = ODEProblem(sys2, [], (0.0, 5.0))
