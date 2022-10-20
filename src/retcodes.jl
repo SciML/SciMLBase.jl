@@ -1,4 +1,4 @@
-EnumX.@enumx(ReturnCode, Default, Success, Terminated, MaxIters, DtLessThanMin, Unstable,
+EnumX.@enumx(ReturnCode, Default, Success, Terminated, DtNaN, MaxIters, DtLessThanMin, Unstable,
              InitialFailure, ConvergenceFailure, Failure)
 
 Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
