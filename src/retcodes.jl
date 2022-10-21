@@ -1,5 +1,7 @@
-EnumX.@enumx(ReturnCode, Default, Success, Terminated, DtNaN, MaxIters, DtLessThanMin, Unstable,
-             InitialFailure, ConvergenceFailure, Failure)
+EnumX.@enumx(ReturnCode, Default, Success, Terminated, DtNaN, MaxIters, DtLessThanMin,
+             Unstable,
+             InitialFailure, ConvergenceFailure, Failure, ExactSolutionLeft,
+             ExactSolutionRight, FloatingPointLimit)
 
 Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
 
@@ -38,4 +40,7 @@ function Base.convert(::Type{ReturnCode.T}, bool::Bool)
     bool ? ReturnCode.Success : ReturnCode.Failure
 end
 
-successful_retcode(retcode::ReturnCode.T) = retcode == :Success || retcode == :Terminated
+function successful_retcode(retcode::ReturnCode.T)
+    retcode == :Success || retcode == :Terminated || retcode == :ExactSolutionLeft ||
+        retcode == :ExactSolutionRight || retcode == :FloatingPointLimit
+end
