@@ -8,7 +8,7 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
 ## Fields
 
 - `u`: the representation of the optimization's solution.
-- `prob`: the original NonlinearProblem/SteadyStateProblem that was solved.
+- `cache`: the `OptimizationCache` that was solved.
 - `alg`: the algorithm type used by the solver.
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
@@ -17,16 +17,16 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
-struct OptimizationSolution{T, N, uType, P, A, Tf, O} <: AbstractOptimizationSolution{T, N}
+struct OptimizationSolution{T, N, uType, C, A, Tf, O} <: AbstractOptimizationSolution{T, N}
     u::uType # minimizer
-    prob::P # optimization problem
+    cache::C # optimization cache
     alg::A # algorithm
     minimum::Tf
     retcode::ReturnCode.T
     original::O # original output of the optimizer
 end
 
-function build_solution(prob::AbstractOptimizationProblem,
+function build_optimization_solution(cache,
                         alg, u, minimum;
                         retcode = ReturnCode.Default,
                         original = nothing,
@@ -34,8 +34,8 @@ function build_solution(prob::AbstractOptimizationProblem,
     T = eltype(eltype(u))
     N = ndims(u)
 
-    OptimizationSolution{T, N, typeof(u), typeof(prob), typeof(alg),
-                         typeof(minimum), typeof(original)}(u, prob, alg, minimum, retcode,
+    OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
+                         typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
                                                             original)
 end
 
@@ -63,4 +63,8 @@ function Base.summary(io::IO, A::AbstractOptimizationSolution)
           no_color, " with uType ",
           type_color, eltype(A.u),
           no_color)
+end
+
+function observed(A::AbstractOptimizationSolution, sym)
+    getobserved(A)(sym, A.u, A.cache.p)
 end
