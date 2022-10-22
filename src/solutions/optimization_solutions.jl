@@ -27,10 +27,10 @@ struct OptimizationSolution{T, N, uType, C, A, Tf, O} <: AbstractOptimizationSol
 end
 
 function build_optimization_solution(cache,
-                        alg, u, minimum;
-                        retcode = ReturnCode.Default,
-                        original = nothing,
-                        kwargs...)
+                                     alg, u, minimum;
+                                     retcode = ReturnCode.Default,
+                                     original = nothing,
+                                     kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
