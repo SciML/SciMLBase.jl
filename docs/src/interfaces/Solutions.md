@@ -58,8 +58,12 @@ gives the timeseries for the `i`th component.
 
 ### [Return Codes (RetCodes)](@id retcodes)
 
-The solution types have a `retcode` field which returns a symbol signifying the
-error state of the solution. The retcodes are as follows:
+The solution types have a `retcode` field which returns a `SciMLBase.ReturnCode.T` 
+(from [EnumX.jl](https://github.com/fredrikekre/EnumX.jl), see that package for the
+semantics of handling EnumX types) signifying the error or satisfaction state of 
+the solution. 
+
+The retcodes are as follows:
 
 - `:Default`: The solver did not set retcodes.
 - `:Success`: The integration completed without erroring or the steady state solver
