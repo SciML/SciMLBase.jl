@@ -64,7 +64,3 @@ function Base.summary(io::IO, A::AbstractOptimizationSolution)
           type_color, eltype(A.u),
           no_color)
 end
-
-function observed(A::AbstractOptimizationSolution, sym)
-    getobserved(A)(sym, A.u, A.cache.p)
-end

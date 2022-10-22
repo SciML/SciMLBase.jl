@@ -138,6 +138,10 @@ function observed(A::AbstractNoTimeSolution, sym)
     getobserved(A)(sym, A.u, A.prob.p)
 end
 
+function observed(A::AbstractOptimizationSolution, sym)
+    getobserved(A)(sym, A.u, A.cache.p)
+end
+
 ## AbstractTimeseriesSolution Interface
 
 function Base.summary(io::IO, A::AbstractTimeseriesSolution)
