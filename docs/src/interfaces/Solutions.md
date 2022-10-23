@@ -67,6 +67,12 @@ the solution.
 SciMLBase.ReturnCode
 ```
 
+### Return Code Traits
+
+```@docs
+SciMLBase.successful_retcode
+```
+
 ### Specific Return Codes
 
 ```@docs
@@ -85,7 +91,7 @@ SciMLBase.ReturnCode.ExactSolutionRight
 SciMLBase.ReturnCode.FloatingPointLimit
 ```
 
-## Traits
+## Solution Traits
 
 ## AbstractSciMLSolution API
 
