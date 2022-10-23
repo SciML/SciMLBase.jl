@@ -306,6 +306,13 @@ function getsyms(sol)
         return keys(sol.u[1])
     end
 end
+function getsyms(sol::AbstractOptimizationSolution)
+    if has_syms(sol.cache)
+        return get_syms(sol.cache)
+    else
+        return keys(sol.u[1])
+    end
+end
 
 function getindepsym(sol)
     if has_indepsym(sol.prob.f)
@@ -318,6 +325,13 @@ end
 function getparamsyms(sol)
     if has_paramsyms(sol.prob.f)
         return sol.prob.f.paramsyms
+    else
+        return nothing
+    end
+end
+function getparamsyms(sol::AbstractOptimizationSolution)
+    if has_paramsyms(sol.cache)
+        return get_paramsyms(sol.cache)
     else
         return nothing
     end
@@ -335,6 +349,13 @@ end
 function getobserved(sol)
     if has_syms(sol.prob.f)
         return sol.prob.f.observed
+    else
+        return DEFAULT_OBSERVED
+    end
+end
+function getobserved(sol::AbstractOptimizationSolution)
+    if has_syms(sol.cache)
+        return get_observed(sol.cache)
     else
         return DEFAULT_OBSERVED
     end

@@ -650,6 +650,7 @@ include("integrator_interface.jl")
 include("tabletraits.jl")
 include("remake.jl")
 include("callbacks.jl")
+include("cache_interface.jl")
 
 function discretize end
 function symbolic_discretize end
