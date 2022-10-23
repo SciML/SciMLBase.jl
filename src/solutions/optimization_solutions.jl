@@ -47,10 +47,10 @@ function build_optimization_solution(cache,
                                                             original)
 end
 
-function build_solution(prob::OptimizationProblem, args...; kwargs...)
-    Base.depwarn("`build_solution(prob::OptimizationProblem, args...; kwargs...)` is deprecated" *
+function build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)
+    Base.depwarn("`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated" *
                  "Please use `build_optimization_solution(cache::C, args...; kwargs...)` instead.",
-                 :MyType)
+                 "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
     build_linear_solution(prob, args...; kwargs...)
 end
 
