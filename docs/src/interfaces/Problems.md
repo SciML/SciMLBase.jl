@@ -129,7 +129,7 @@ SciMLBase.AbstractSciMLProblem
 SciMLBase.AbstractDEProblem
 SciMLBase.AbstractLinearProblem
 SciMLBase.AbstractNonlinearProblem
-SciMLBase.AbstractQuadratureProblem
+SciMLBase.AbstractIntegralProblem
 SciMLBase.AbstractOptimizationProblem
 SciMLBase.AbstractNoiseProblem
 SciMLBase.AbstractODEProblem
