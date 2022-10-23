@@ -139,7 +139,7 @@ function observed(A::AbstractNoTimeSolution, sym)
 end
 
 function observed(A::AbstractOptimizationSolution, sym)
-    getobserved(A)(sym, A.u, A.cache.p)
+    getobserved(A)(sym, A.u, get_p(A.cache))
 end
 
 ## AbstractTimeseriesSolution Interface
