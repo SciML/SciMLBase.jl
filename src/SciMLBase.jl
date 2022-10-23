@@ -67,6 +67,11 @@ abstract type AbstractOptimizationProblem{isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
+"""
+abstract type AbstractOptimizationCache end
+
+"""
+$(TYPEDEF)
 
 Base for types which define nonlinear solve problems (f(u)=0).
 """

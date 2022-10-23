@@ -17,7 +17,8 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
-struct OptimizationSolution{T, N, uType, C, A, Tf, O} <: AbstractOptimizationSolution{T, N}
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, O} <:
+       AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
     alg::A # algorithm
@@ -26,32 +27,17 @@ struct OptimizationSolution{T, N, uType, C, A, Tf, O} <: AbstractOptimizationSol
     original::O # original output of the optimizer
 end
 
-function Base.getproperty(sol::OptimizationSolution, sym::Symbol)
-    if sym == :prob
-        Base.depwarn("`sol.prob` is deprecated. Use `sol.cache` instead.", "sol.prob")
-        return getfield(sol, :cache)
-    end
-    return getfield(sol, sym)
-end
-
-function build_optimization_solution(cache,
-                                     alg, u, minimum;
-                                     retcode = ReturnCode.Default,
-                                     original = nothing,
-                                     kwargs...)
+function build_solution(cache::AbstractOptimizationCache,
+                        alg, u, minimum;
+                        retcode = ReturnCode.Default,
+                        original = nothing,
+                        kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
                          typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
                                                             original)
-end
-
-function build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)
-    Base.depwarn("`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated" *
-                 "Please use `build_optimization_solution(cache::C, args...; kwargs...)` instead.",
-                 "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
-    build_linear_solution(prob, args...; kwargs...)
 end
 
 function Base.show(io::IO, A::AbstractOptimizationSolution)
@@ -67,6 +53,9 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
                                                    s::Symbol)
     if s === :minimizer
         return getfield(x, :u)
+    elseif sym == :prob
+        Base.depwarn("`sol.prob` is deprecated. Use `sol.cache` instead.", "sol.prob")
+        return getfield(x, :cache)
     end
     return getfield(x, s)
 end
