@@ -64,7 +64,7 @@ semantics of handling EnumX types) signifying the error or satisfaction state of
 the solution.
 
 ```@docs
-SciMLBase.ReturnCode.T
+SciMLBase.ReturnCode
 ```
 
 ### Specific Return Codes
