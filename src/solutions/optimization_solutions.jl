@@ -26,6 +26,14 @@ struct OptimizationSolution{T, N, uType, C, A, Tf, O} <: AbstractOptimizationSol
     original::O # original output of the optimizer
 end
 
+function Base.getproperty(sol::OptimizationSolution, sym::Symbol)
+    if sym == :prob
+        Base.depwarn("`sol.prob` is deprecated. Use `sol.cache` instead.", "sol.prob")
+        return getfield(sol, :cache)
+    end
+    return getfield(sol, sym)
+end
+
 function build_optimization_solution(cache,
                                      alg, u, minimum;
                                      retcode = ReturnCode.Default,
@@ -37,6 +45,13 @@ function build_optimization_solution(cache,
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
                          typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
                                                             original)
+end
+
+function build_solution(prob::OptimizationProblem, args...; kwargs...)
+    Base.depwarn("`build_solution(prob::OptimizationProblem, args...; kwargs...)` is deprecated" *
+                 "Please use `build_optimization_solution(cache::C, args...; kwargs...)` instead.",
+                 :MyType)
+    build_linear_solution(prob, args...; kwargs...)
 end
 
 function Base.show(io::IO, A::AbstractOptimizationSolution)
