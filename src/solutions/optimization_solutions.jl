@@ -40,6 +40,15 @@ function build_solution(cache::AbstractOptimizationCache,
                                                             original)
 end
 
+get_p(sol::OptimizationSolution) = sol.cache.p
+get_observed(sol::OptimizationSolution) = sol.cache.f.observed
+get_syms(sol::OptimizationSolution) = sol.cache.f.syms
+get_paramsyms(sol::OptimizationSolution)= sol.cache.f.paramsyms
+
+has_observed(sol::OptimizationSolution) = get_observed(sol) !== nothing
+has_syms(sol::OptimizationSolution) = get_syms(sol) !== nothing
+has_paramsyms(sol::OptimizationSolution) = get_paramsyms(sol) !== nothing
+
 function Base.show(io::IO, A::AbstractOptimizationSolution)
     println(io, string("retcode: ", A.retcode))
     print(io, "u: ")

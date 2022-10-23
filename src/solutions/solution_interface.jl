@@ -307,8 +307,8 @@ function getsyms(sol)
     end
 end
 function getsyms(sol::AbstractOptimizationSolution)
-    if has_syms(sol.cache)
-        return get_syms(sol.cache)
+    if has_syms(sol)
+        return get_syms(sol)
     else
         return keys(sol.u[1])
     end
@@ -330,8 +330,8 @@ function getparamsyms(sol)
     end
 end
 function getparamsyms(sol::AbstractOptimizationSolution)
-    if has_paramsyms(sol.cache)
-        return get_paramsyms(sol.cache)
+    if has_paramsyms(sol)
+        return get_paramsyms(sol)
     else
         return nothing
     end
@@ -354,8 +354,8 @@ function getobserved(sol)
     end
 end
 function getobserved(sol::AbstractOptimizationSolution)
-    if has_syms(sol.cache)
-        return get_observed(sol.cache)
+    if has_syms(sol)
+        return get_observed(sol)
     else
         return DEFAULT_OBSERVED
     end
