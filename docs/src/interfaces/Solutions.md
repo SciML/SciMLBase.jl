@@ -56,29 +56,34 @@ gives the timeseries for the `i`th component.
 - `prob`: the problem that was solved
 - `alg`: the algorithm used to solve the problem
 
-### [Return Codes (RetCodes)](@id retcodes)
+## [Return Codes (RetCodes)](@id retcodes)
 
-The solution types have a `retcode` field which returns a `SciMLBase.ReturnCode.T` 
+The solution types have a `retcode` field which returns a `SciMLBase.ReturnCode.T`
 (from [EnumX.jl](https://github.com/fredrikekre/EnumX.jl), see that package for the
-semantics of handling EnumX types) signifying the error or satisfaction state of 
-the solution. 
+semantics of handling EnumX types) signifying the error or satisfaction state of
+the solution.
 
-The retcodes are as follows:
+```@docs
+SciMLBase.ReturnCode.T
+```
 
-- `:Default`: The solver did not set retcodes.
-- `:Success`: The integration completed without erroring or the steady state solver
-  from `SteadyStateDiffEq` found the steady state.
-- `:Terminated`: The integration is terminated with `terminate!(integrator)`.
-  Note that this may occur by using `TerminateSteadyState` from the callback
-  library `DiffEqCallbacks`.
-- `:MaxIters`: The integration exited early because it reached its maximum number
-  of iterations.
-- `:DtLessThanMin`: The timestep method chose a stepsize which is smaller than the
-  allowed minimum timestep, and exited early.
-- `:Unstable`: The solver detected that the solution was unstable and exited early.
-- `:InitialFailure`: The DAE solver could not find consistent initial conditions.
-- `:ConvergenceFailure`: The internal implicit solvers failed to converge.
-- `:Failure`: General uncategorized failures or errors.
+### Specific Return Codes
+
+```@docs
+SciMLBase.ReturnCode.Default
+SciMLBase.ReturnCode.Success
+SciMLBase.ReturnCode.Terminated
+SciMLBase.ReturnCode.DtNaN
+SciMLBase.ReturnCode.MaxIters
+SciMLBase.ReturnCode.DtLessThanMin
+SciMLBase.ReturnCode.Unstable
+SciMLBase.ReturnCode.InitialFailure
+SciMLBase.ReturnCode.ConvergenceFailure
+SciMLBase.ReturnCode.Failure
+SciMLBase.ReturnCode.ExactSolutionLeft
+SciMLBase.ReturnCode.ExactSolutionRight
+SciMLBase.ReturnCode.FloatingPointLimit
+```
 
 ## Traits
 
