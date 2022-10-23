@@ -99,7 +99,7 @@ SciMLBase.AbstractNoiseProcess
 SciMLBase.AbstractEnsembleSolution
 SciMLBase.AbstractLinearSolution
 SciMLBase.AbstractNonlinearSolution
-SciMLBase.AbstractQuadratureSolution
+SciMLBase.AbstractIntegralSolution
 SciMLBase.AbstractSteadyStateSolution
 SciMLBase.AbstractAnalyticalSolution
 SciMLBase.AbstractODESolution
