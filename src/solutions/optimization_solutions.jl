@@ -54,7 +54,7 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
     if s === :minimizer
         return getfield(x, :u)
     elseif sym == :prob
-        Base.depwarn("`sol.prob` is deprecated. Use `sol.cache` instead.", "sol.prob")
+        Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol.cache` instead.", "sol.prob")
         return getfield(x, :cache)
     end
     return getfield(x, s)
