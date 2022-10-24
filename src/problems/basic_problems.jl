@@ -202,7 +202,6 @@ function NonlinearProblem(prob::AbstractODEProblem)
     NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
 end
 
-
 @doc doc"""
 
 Defines an integral problem.
