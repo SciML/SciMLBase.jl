@@ -2147,21 +2147,19 @@ end
 """
 $(SIGNATURES)
 
-Converts a NonlinearFunction into a ODEFunction.
+Converts a NonlinearFunction into an ODEFunction.
 """
 function ODEFunction(f::NonlinearFunction)
     iip = isinplace(f)
+    ODEFunction{iip}(f)
+end
+
+function ODEFunction{iip}(f::NonlinearFunction) where {iip}
     _f = iip ? (du, u, p, t) -> (f.f(du, u, p); nothing) : (u, p, t) -> f.f(u, p)
     if f.analytic !== nothing
         _analytic = (u0, p, t) -> f.analytic(u0, p)
     else
         _analytic = nothing
-    end
-    if f.tgrad !== nothing
-        _tgrad = iip ? (dT, u, p, t) -> (f.tgrad(dT, u, p); nothing) :
-                 (u, p, t) -> f.tgrad(u, p)
-    else
-        _tgrad = nothing
     end
     if f.jac !== nothing
         _jac = iip ? (J, u, p, t) -> (f.jac(J, u, p); nothing) : (u, p, t) -> f.jac(u, p)
@@ -2182,7 +2180,6 @@ function ODEFunction(f::NonlinearFunction)
     ODEFunction{iip, specialization(f)}(_f;
                                         mass_matrix = f.mass_matrix,
                                         analytic = _analytic,
-                                        tgrad = _tgrad,
                                         jac = _jac,
                                         jvp = _jvp,
                                         vjp = _vjp,
@@ -2194,6 +2191,56 @@ function ODEFunction(f::NonlinearFunction)
                                         paramsyms = f.paramsyms,
                                         observed = f.observed,
                                         colorvec = f.colorvec)
+end
+
+"""
+$(SIGNATURES)
+
+Converts an ODEFunction into a NonlinearFunction.
+"""
+function NonlinearFunction(f::ODEFunction)
+    iip = isinplace(f)
+    NonlinearFunction{iip}(f)
+end
+
+function NonlinearFunction{iip}(f::ODEFunction) where {iip}
+    _f = iip ? (du, u, p) -> (f.f(du, u, p, Inf); nothing) : (u, p) -> f.f(u, p, Inf)
+    if f.analytic !== nothing
+        _analytic = (u0, p) -> f.analytic(u0, p, Inf)
+    else
+        _analytic = nothing
+    end
+    if f.jac !== nothing
+        _jac = iip ? (J, u, p) -> (f.jac(J, u, p, Inf); nothing) :
+               (u, p) -> f.jac(u, p, Inf)
+    else
+        _jac = nothing
+    end
+    if f.jvp !== nothing
+        _jvp = iip ? (Jv, u, p) -> (f.jvp(Jv, u, p, Inf); nothing) :
+               (u, p) -> f.jvp(u, p, Inf)
+    else
+        _jvp = nothing
+    end
+    if f.vjp !== nothing
+        _vjp = iip ? (vJ, u, p) -> (f.vjp(vJ, u, p, Inf); nothing) :
+               (u, p) -> f.vjp(u, p, Inf)
+    else
+        _vjp = nothing
+    end
+
+    NonlinearFunction{iip, specialization(f)}(_f;
+                                              analytic = _analytic,
+                                              jac = _jac,
+                                              jvp = _jvp,
+                                              vjp = _vjp,
+                                              jac_prototype = f.jac_prototype,
+                                              sparsity = f.sparsity,
+                                              paramjac = f.paramjac,
+                                              syms = f.syms,
+                                              paramsyms = f.paramsyms,
+                                              observed = f.observed,
+                                              colorvec = f.colorvec)
 end
 
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
