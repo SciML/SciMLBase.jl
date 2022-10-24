@@ -9,8 +9,6 @@ using Test, SciMLBase
 
     @test _f! isa ODEFunction && isinplace(_f!)
     @test _f isa ODEFunction && !isinplace(_f)
-    
-    @test 
 end
 
 @testset "Convert ODEFunction to NonlinearFunction" begin
@@ -33,7 +31,7 @@ end
     u0 = [1.0;0.0;0.0]
     tspan = (0.0,100.0)
     prob = ODEProblem(lorenz!,u0,tspan)
-    
+
     @test _f! isa NonlinearFunction && isinplace(_f!)
     @test _f isa NonlinearFunction && !isinplace(_f)
 end
