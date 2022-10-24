@@ -31,7 +31,5 @@ end
     u0 = [1.0;0.0;0.0]
     tspan = (0.0,100.0)
     prob = ODEProblem(lorenz!,u0,tspan)
-
-    @test _f! isa NonlinearFunction && isinplace(_f!)
-    @test _f isa NonlinearFunction && !isinplace(_f)
+    nlprob = NonlinearProblem(prob)
 end

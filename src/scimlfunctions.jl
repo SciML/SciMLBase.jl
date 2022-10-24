@@ -2180,7 +2180,6 @@ function ODEFunction{iip}(f::NonlinearFunction) where iip
     ODEFunction{iip, specialization(f)}(_f;
                                         mass_matrix = f.mass_matrix,
                                         analytic = _analytic,
-                                        tgrad = _tgrad,
                                         jac = _jac,
                                         jvp = _jvp,
                                         vjp = _vjp,
@@ -2236,7 +2235,6 @@ function NonlinearFunction{iip}(f::ODEFunction) where iip
                                         sparsity = f.sparsity,
                                         paramjac = f.paramjac,
                                         syms = f.syms,
-                                        indepsym = nothing,
                                         paramsyms = f.paramsyms,
                                         observed = f.observed,
                                         colorvec = f.colorvec)

@@ -187,8 +187,8 @@ Define a nonlinear problem using an instance of
 this is interpreted in the form of the steady state problem, i.e.
 find the ODE's solution at time ``t = \\infty``.
 """
-function NolinearProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwargs...)
-    NolinearProblem{isinplace(f)}(f, u0, p; kwargs...)
+function NonlinearProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwargs...)
+    NonlinearProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
 """
@@ -198,8 +198,8 @@ Define a nonlinear problem from a standard ODE problem. Note that
 this is interpreted in the form of the steady state problem, i.e.
 find the ODE's solution at time ``t = \\infty``
 """
-function NolinearProblem(prob::AbstractODEProblem)
-    NolinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+function NonlinearProblem(prob::AbstractODEProblem)
+    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
 end
 
 
