@@ -16,8 +16,8 @@ referred to via `getproperty`, i.e. `SciML.ReturnCode.Success`.
 ## Note About Success Checking
 
 Previous iterations of the interface suggested using `sol.retcode == :Success`, however,
-that is now not advised instad should be replaced with `
-'SciMLBase.successful_retcode(sol)`. The reason is that there are many different
+that is now not advised instead should be replaced with `
+SciMLBase.successful_retcode(sol)`. The reason is that there are many different
 codes that can be interpreted as successful, such as `ReturnCode.Terminated` which means
 successfully used `terminate!(integrator)` to end an integration at a user-specified
 condition. As such, `successful_retcode` is the most general way to query for if the solver
