@@ -67,6 +67,9 @@ abstract type AbstractOptimizationProblem{isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
+
+Base for types which define caches for optimization problems. Must at least hold the optimization 
+function `f <: OptimizationFunction` and the parameters `p`.
 """
 abstract type AbstractOptimizationCache end
 
@@ -650,7 +653,6 @@ include("integrator_interface.jl")
 include("tabletraits.jl")
 include("remake.jl")
 include("callbacks.jl")
-include("cache_interface.jl")
 
 function discretize end
 function symbolic_discretize end

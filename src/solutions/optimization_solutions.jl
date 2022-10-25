@@ -8,7 +8,7 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
 ## Fields
 
 - `u`: the representation of the optimization's solution.
-- `cache`: the `OptimizationCache` that was solved.
+- `cache::AbstractOptimizationCache`: the optimization cache` that was solved.
 - `alg`: the algorithm type used by the solver.
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
@@ -40,10 +40,40 @@ function build_solution(cache::AbstractOptimizationCache,
                                                             original)
 end
 
+"""
+$(TYPEDEF)
+
+Representation the default cache for an optimization problem defined by an `OptimizationProblem`.
+"""
+mutable struct DefaultOptimizationCache{F <: OptimizationFunction, P} <: AbstractOptimizationCache
+    f::F
+    p::P
+end
+
+# for compatibility
+function build_solution(prob::AbstractOptimizationProblem,
+                        alg, u, minimum;
+                        retcode = ReturnCode.Default,
+                        original = nothing,
+                        kwargs...)
+    T = eltype(eltype(u))
+    N = ndims(u)
+
+    Base.depwarn("`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated." *
+                 " Consider implementing an `AbstractOptimizationCache` instead.",
+                 "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
+
+    cache = DefaultOptimizationCache(prob.f, prob.p)
+
+    OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
+                         typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
+                                                            original)
+end
+
 get_p(sol::OptimizationSolution) = sol.cache.p
 get_observed(sol::OptimizationSolution) = sol.cache.f.observed
 get_syms(sol::OptimizationSolution) = sol.cache.f.syms
-get_paramsyms(sol::OptimizationSolution)= sol.cache.f.paramsyms
+get_paramsyms(sol::OptimizationSolution) = sol.cache.f.paramsyms
 
 has_observed(sol::OptimizationSolution) = get_observed(sol) !== nothing
 has_syms(sol::OptimizationSolution) = get_syms(sol) !== nothing
@@ -63,7 +93,8 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
     if s === :minimizer
         return getfield(x, :u)
     elseif s == :prob
-        Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol.cache` instead.", "sol.prob")
+        Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
+                     "sol.prob")
         return getfield(x, :cache)
     end
     return getfield(x, s)
