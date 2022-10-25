@@ -68,6 +68,14 @@ abstract type AbstractOptimizationProblem{isinplace} <: AbstractSciMLProblem end
 """
 $(TYPEDEF)
 
+Base for types which define caches for optimization problems. Must at least hold the optimization 
+function `f <: OptimizationFunction` and the parameters `p`.
+"""
+abstract type AbstractOptimizationCache end
+
+"""
+$(TYPEDEF)
+
 Base for types which define nonlinear solve problems (f(u)=0).
 """
 abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem end

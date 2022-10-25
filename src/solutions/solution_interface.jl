@@ -138,6 +138,10 @@ function observed(A::AbstractNoTimeSolution, sym)
     getobserved(A)(sym, A.u, A.prob.p)
 end
 
+function observed(A::AbstractOptimizationSolution, sym)
+    getobserved(A)(sym, A.u, get_p(A.cache))
+end
+
 ## AbstractTimeseriesSolution Interface
 
 function Base.summary(io::IO, A::AbstractTimeseriesSolution)
@@ -302,6 +306,13 @@ function getsyms(sol)
         return keys(sol.u[1])
     end
 end
+function getsyms(sol::AbstractOptimizationSolution)
+    if has_syms(sol)
+        return get_syms(sol)
+    else
+        return keys(sol.u[1])
+    end
+end
 
 function getindepsym(sol)
     if has_indepsym(sol.prob.f)
@@ -314,6 +325,13 @@ end
 function getparamsyms(sol)
     if has_paramsyms(sol.prob.f)
         return sol.prob.f.paramsyms
+    else
+        return nothing
+    end
+end
+function getparamsyms(sol::AbstractOptimizationSolution)
+    if has_paramsyms(sol)
+        return get_paramsyms(sol)
     else
         return nothing
     end
@@ -331,6 +349,13 @@ end
 function getobserved(sol)
     if has_syms(sol.prob.f)
         return sol.prob.f.observed
+    else
+        return DEFAULT_OBSERVED
+    end
+end
+function getobserved(sol::AbstractOptimizationSolution)
+    if has_syms(sol)
+        return get_observed(sol)
     else
         return DEFAULT_OBSERVED
     end
