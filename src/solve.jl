@@ -79,12 +79,12 @@ function solve(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOpti
     if supports_opt_cache_interface(alg)
         solve!(init(prob, alg, args...; kwargs...))
     else
-        _check_opt_alg(prob, alg)
+        _check_opt_alg(prob, alg; kwargs...)
         __solve(prob, alg, args...; kwargs...)
     end
 end
 
-function _check_opt_alg(prob::OptimizationProblem, alg)
+function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     !allowsbounds(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support box constraints. Either remove the `lb` or `ub` bounds passed to `OptimizationProblem` or use a different algorithm."))
     requiresbounds(alg) && isnothing(prob.lb) &&
@@ -119,7 +119,7 @@ function Base.showerror(io::IO, e::OptimizerMissingError)
 end
 
 function init(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationCache
-    _check_opt_alg(prob::OptimizationProblem, alg)
+    _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     cache = __init(prob, alg, args...; kwargs...)
     return cache
 end
