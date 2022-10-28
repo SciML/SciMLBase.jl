@@ -75,7 +75,16 @@ function callback(p,lossval,x,y,z)
 end
 ```
 """
-function solve(prob::OptimizationProblem, alg, args...; kwargs...)
+function solve(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationSolution
+    if supports_opt_cache_interface(alg)
+        solve!(init(prob, alg, args...; kwargs...))
+    else
+        _check_opt_alg(prob, alg)
+        __solve(prob, alg, args...; kwargs...)
+    end
+end
+
+function _check_opt_alg(prob::OptimizationProblem, alg)
     !allowsbounds(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support box constraints. Either remove the `lb` or `ub` bounds passed to `OptimizationProblem` or use a different algorithm."))
     requiresbounds(alg) && isnothing(prob.lb) &&
@@ -86,7 +95,7 @@ function solve(prob::OptimizationProblem, alg, args...; kwargs...)
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
     !allowscallback(alg) && haskey(kwargs, :callback) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` keyword argument from the `solve` call."))
-    __solve(prob, alg, args...; kwargs...)
+    return
 end
 
 const OPTIMIZER_MISSING_ERROR_MESSAGE = """
@@ -109,6 +118,24 @@ function Base.showerror(io::IO, e::OptimizerMissingError)
     print(e.alg)
 end
 
+function init(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationCache
+    _check_opt_alg(prob::OptimizationProblem, alg)
+    cache = __init(prob, alg, args...; kwargs...)
+    return cache
+end
+
+function solve!(cache::AbstractOptimizationCache)::AbstractOptimizationSolution
+    __solve(cache)
+end
+
+# needs to be defined for each cache
+supports_opt_cache_interface(alg) = false
+function __solve(cache::AbstractOptimizationCache)::AbstractOptimizationSolution end
+function __init(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationCache 
+    throw(OptimizerMissingError(alg))
+end
+
+# if no cache interface is supported at least the following method has to be defined
 function __solve(prob::OptimizationProblem, alg, args...; kwargs...)
     throw(OptimizerMissingError(alg))
 end
