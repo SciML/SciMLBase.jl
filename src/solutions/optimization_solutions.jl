@@ -45,7 +45,8 @@ $(TYPEDEF)
 
 Representation the default cache for an optimization problem defined by an `OptimizationProblem`.
 """
-mutable struct DefaultOptimizationCache{F <: OptimizationFunction, P} <: AbstractOptimizationCache
+mutable struct DefaultOptimizationCache{F <: OptimizationFunction, P} <:
+               AbstractOptimizationCache
     f::F
     p::P
 end
