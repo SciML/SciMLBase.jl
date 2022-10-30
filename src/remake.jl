@@ -53,7 +53,7 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if (p !== missing && eltype(p) <: Pair) || (u0 !== missing && eltype(u0) <: Pair)
-        defs = Dict{Any,Any}()
+        defs = Dict{Any, Any}()
         if hasproperty(prob.f, :sys)
             if hasfield(typeof(prob.f.sys), :ps)
                 defs = mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps))
