@@ -51,14 +51,19 @@ function remake(prob::ODEProblem; f = missing,
     if tspan === missing
         tspan = prob.tspan
     end
-    defs = Dict()
-    if hasproperty(prob.f, :sys)
-        if hasfield(typeof(prob.f.sys), :ps)
-            defs = mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps))
+
+    if (p !== missing && eltype(p) <: Pair) || (u0 !== missing && eltype(u0) <: Pair)
+        defs = Dict{Any, Any}()
+        if hasproperty(prob.f, :sys)
+            if hasfield(typeof(prob.f.sys), :ps)
+                defs = mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps))
+            end
+            if hasfield(typeof(prob.f.sys), :u0)
+                defs = mergedefaults(defs, prob.u0, getfield(prob.f.sys, :u0))
+            end
         end
-        if hasfield(typeof(prob.f.sys), :u0)
-            defs = mergedefaults(defs, prob.u0, getfield(prob.f.sys, :u0))
-        end
+    else
+        defs = nothing
     end
 
     if p === missing
