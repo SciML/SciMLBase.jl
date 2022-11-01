@@ -347,14 +347,14 @@ function getindepsym_defaultt(sol)
 end
 
 function getobserved(sol)
-    if has_syms(sol.prob.f)
+    if has_observed(sol.prob.f)
         return sol.prob.f.observed
     else
         return DEFAULT_OBSERVED
     end
 end
 function getobserved(sol::AbstractOptimizationSolution)
-    if has_syms(sol)
+    if has_observed(sol)
         return get_observed(sol)
     else
         return DEFAULT_OBSERVED

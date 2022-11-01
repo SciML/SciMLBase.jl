@@ -404,7 +404,7 @@ function getparamsyms(integrator::DEIntegrator)
 end
 
 function getobserved(integrator::DEIntegrator)
-    if has_syms(integrator.f)
+    if has_observed(integrator.f)
         return integrator.f.observed
     else
         return DEFAULT_OBSERVED
