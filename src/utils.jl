@@ -479,3 +479,6 @@ function mergedefaults(defaults, varmap, vars)
         defaults
     end
 end
+
+_unwrap_val(::Val{B}) where {B} = B
+_unwrap_val(B) = B
