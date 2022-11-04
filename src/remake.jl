@@ -56,10 +56,10 @@ function remake(prob::ODEProblem; f = missing,
         defs = Dict{Any, Any}()
         if hasproperty(prob.f, :sys)
             if hasfield(typeof(prob.f.sys), :ps)
-                defs = mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps))
+                defs = mergedefaults(defs, prob.p, :parameters; sys=prob.f.sys)
             end
-            if hasfield(typeof(prob.f.sys), :u0)
-                defs = mergedefaults(defs, prob.u0, getfield(prob.f.sys, :u0))
+            if hasfield(typeof(prob.f.sys), :states)
+                defs = mergedefaults(defs, prob.u0, :states; sys=prob.f.sys)
             end
         end
     else
@@ -71,8 +71,9 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(p) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-                p = handle_varmap(p, prob.f.sys, field = :ps, defaults = defs)
-                defs = mergedefaults(defs, p, getfield(prob.f.sys, :ps))
+                p = handle_varmap(p, prob.f.sys, type = :parameters, defaults = defs)
+                defs = mergedefaults(defs, p, :parameters; sys=prob.f.sys)
+                @assert length(p) == length(prob.p)
             else
                 throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
             end
@@ -84,8 +85,9 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(u0) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-                u0 = handle_varmap(u0, prob.f.sys, field = :states,
+                u0 = handle_varmap(u0, prob.f.sys; type = :states,
                                    defaults = defs, tofloat = true)
+                @assert length(u0) == length(prob.u0)
             else
                 throw(ArgumentError("This problem does not support symbolic default maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to the order of states."))
             end

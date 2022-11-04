@@ -468,7 +468,7 @@ To be overloaded in ModelingToolkit
 """
 function handle_varmap end
 
-function mergedefaults(defaults, varmap, vars)
+function mergedefaults(defaults, varmap, vars; kwargs...)
     defs = if varmap isa Dict
         merge(defaults, varmap)
     elseif eltype(varmap) <: Pair
@@ -478,4 +478,5 @@ function mergedefaults(defaults, varmap, vars)
     else
         defaults
     end
+    return defs
 end
