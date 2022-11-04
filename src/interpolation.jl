@@ -473,13 +473,13 @@ end
 Linear Interpolation
 """
 @inline function interpolant(Θ, id::LinearInterpolation, dt, y₀, y₁, idxs, T::Type{Val{0}})
+    Θm1 = (1 - Θ)
     if idxs === nothing
-        out = @. (1 - Θ) * y₀ + Θ * y₁
+        out = @. Θm1 * y₀ + Θ * y₁
     elseif idxs isa Number
         out = Θm1 * y₀[idxs] + Θ * y₁[idxs]
     else
         out = similar(y₀, axes(idxs))
-        Θm1 = (1 - Θ)
         @views @. out = Θm1 * y₀[idxs] + Θ * y₁[idxs]
     end
     out
