@@ -71,7 +71,7 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(p) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-                p = handle_varmap(p, prob.f.sys, type = :parameters, defaults = defs)
+                p = handle_varmap(p, prob.f.sys, var_type = :parameters, defaults = defs)
                 defs = mergedefaults(defs, p, :parameters; sys=prob.f.sys)
                 @assert length(p) == length(prob.p)
             else
@@ -85,7 +85,7 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(u0) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-                u0 = handle_varmap(u0, prob.f.sys; type = :states,
+                u0 = handle_varmap(u0, prob.f.sys; var_type = :states,
                                    defaults = defs, tofloat = true)
                 @assert length(u0) == length(prob.u0)
             else
