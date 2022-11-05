@@ -19,7 +19,7 @@ using ModelingToolkit
     @unpack sys1, b = sys
     prob = ODEProblem(sys, Pair[])
 
-    prob_new = remake(prob, p = Dict(sys1.a => 3.0, b => 4.0), u0 = Dict(sys.x => 1.0))
+    prob_new = remake(prob, p = Dict(sys1.a => 3.0, b => 4.0), u0 = Dict(sys1.x => 1.0))
     @test prob_new.p == [4.0, 3.0, 1.0]
     @test prob_new.u0 == [1.0, 0.0]
 
