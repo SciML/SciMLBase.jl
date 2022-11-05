@@ -56,10 +56,10 @@ function remake(prob::ODEProblem; f = missing,
         defs = Dict{Any, Any}()
         if hasproperty(prob.f, :sys)
             if hasfield(typeof(prob.f.sys), :ps)
-                defs = mergedefaults(defs, prob.p, :parameters; sys=prob.f.sys)
+                defs = mergedefaults(defs, prob.p, :parameters; sys = prob.f.sys)
             end
             if hasfield(typeof(prob.f.sys), :states)
-                defs = mergedefaults(defs, prob.u0, :states; sys=prob.f.sys)
+                defs = mergedefaults(defs, prob.u0, :states; sys = prob.f.sys)
             end
         end
     else
@@ -72,7 +72,7 @@ function remake(prob::ODEProblem; f = missing,
         if eltype(p) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
                 p = handle_varmap(p, prob.f.sys, var_type = :parameters, defaults = defs)
-                defs = mergedefaults(defs, p, :parameters; sys=prob.f.sys)
+                defs = mergedefaults(defs, p, :parameters; sys = prob.f.sys)
                 @assert length(p) == length(prob.p)
             else
                 throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
@@ -127,8 +127,10 @@ function remake(prob::ODEProblem; f = missing,
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
 
-    length(p) == length(prob.p) || throw(ArgumentError("Expected new parameter vector `p` to be of the same length as the old one."))
-    length(u0) == length(prob.u0) || throw(ArgumentError("Expected new initial state vector `u0` to be of the same length as the old one."))
+    length(p) == length(prob.p) ||
+        throw(ArgumentError("Expected new parameter vector `p` to be of the same length as the old one."))
+    length(u0) == length(prob.u0) ||
+        throw(ArgumentError("Expected new initial state vector `u0` to be of the same length as the old one."))
 
     if kwargs === missing
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
