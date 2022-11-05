@@ -61,11 +61,10 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym)
-    if issymbollike(sym) || all(issymbollike, sym)
-        if sym isa AbstractArray
-            return map(s -> A[s], collect(sym))
-        end
+    if issymbollike(sym)
         i = sym_to_index(sym, A)
+    elseif all(issymbollike, sym)
+        return getindex.((A,), sym)
     else
         i = sym
     end
