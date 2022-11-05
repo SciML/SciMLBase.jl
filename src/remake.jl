@@ -127,8 +127,12 @@ function remake(prob::ODEProblem; f = missing,
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
 
-    length(p) == length(prob.p) ||
-        throw(ArgumentError("Expected new parameter vector `p` to be of the same length as the old one."))
+    if prob.p isa NullParameters
+        p isa NullParameters || throw(ArgumentError("Can not change `NullParameters`."))
+    else
+        length(p) == length(prob.p) ||
+            throw(ArgumentError("Expected new parameter vector `p` to be of the same length as the old one."))
+    end
     length(u0) == length(prob.u0) ||
         throw(ArgumentError("Expected new initial state vector `u0` to be of the same length as the old one."))
 
