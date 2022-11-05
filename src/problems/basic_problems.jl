@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a linear system problem.
-Documentation Page: http://linearsolve.sciml.ai/dev/basics/LinearProblem/
+Documentation Page: https://docs.sciml.ai/LinearSolve/stable/basics/LinearProblem/
 
 ## Mathematical Specification of a Linear Problem
 
@@ -19,7 +19,7 @@ Au = b
 For matrix-free versions, the specification of the problem is given by an
 operator `A(u,p,t)` which computes `A*u`, or in-place as `A(du,u,p,t)`. These
 are specified via the `AbstractSciMLOperator` interface. For more details, see
-the [SciMLBase Documentation](https://scimlbase.sciml.ai/dev/).
+the [SciMLBase Documentation](https://docs.sciml.ai/SciMLBase/stable/).
 
 Note that matrix-free versions of LinearProblem definitions are not compatible
 with all solvers. To check a solver for compatibility, use the function xxxxx.
@@ -84,7 +84,7 @@ struct StandardNonlinearProblem end
 @doc doc"""
 
 Defines a nonlinear system problem.
-Documentation Page: https://nonlinearsolve.sciml.ai/dev/basics/NonlinearProblem/
+Documentation Page: https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/
 
 ## Mathematical Specification of a Nonlinear Problem
 
@@ -205,7 +205,7 @@ end
 @doc doc"""
 
 Defines an integral problem.
-Documentation Page: https://github.com/SciML/Integrals.jl
+Documentation Page: https://docs.sciml.ai/Integrals/stable/
 
 ## Mathematical Specification of a Integral Problem
 
@@ -270,7 +270,7 @@ struct QuadratureProblem end
 @doc doc"""
 
 Defines a optimization problem.
-Documentation Page: https://galacticoptim.sciml.ai/dev/API/optimization_problem/
+Documentation Page: https://docs.sciml.ai/Optimization/stable/API/optimization_problem/
 
 ## Mathematical Specification of a Optimization Problem
 

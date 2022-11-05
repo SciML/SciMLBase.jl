@@ -486,7 +486,7 @@ last_step_failed(integrator::DEIntegrator) = false
     check_error(integrator)
 
 Check state of `integrator` and return one of the
-[Return Codes](https://diffeq.sciml.ai/stable/basics/solution/#retcodes)
+[Return Codes](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/#retcodes)
 """
 function check_error(integrator::DEIntegrator)
     # This implementation is intended to be used for ODEIntegrator and
@@ -499,7 +499,7 @@ function check_error(integrator::DEIntegrator)
     end
     if integrator.iter > integrator.opts.maxiters
         if integrator.opts.verbose
-            @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://diffeq.sciml.ai/stable/solvers/ode_solve/#Stiff-Problems).")
+            @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).")
         end
         return ReturnCode.MaxIters
     end

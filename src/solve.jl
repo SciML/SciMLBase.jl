@@ -106,7 +106,7 @@ const OPTIMIZER_MISSING_ERROR_MESSAGE = """
                                         `solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and
                                         `solve(prob,Adam())` requires `using OptimizationOptimisers`.
 
-                                        For more information, see the Optimization.jl documentation: optimization.sciml.ai/dev.
+                                        For more information, see the Optimization.jl documentation: https://docs.sciml.ai/Optimization/stable/.
                                         """
 
 struct OptimizerMissingError <: Exception

@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a random ordinary differential equation (RODE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/rode_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/rode_types/
 
 ## Mathematical Specification of a RODE Problem
 
@@ -25,7 +25,7 @@ to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary 
   Defines the RODE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is 
   determined automatically, but not inferred. `specialize` optionally controls 
-  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
   for more details. The default is `AutoSpecialize.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.

@@ -44,7 +44,7 @@ The SciML common interface covers the following domains:
   - Fractional Differential Equations
 
 The SciML common interface also includes
-[ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl)
+[ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/)
 for defining such systems symbolically, allowing for optimizations like automated
 generation of parallel code, symbolic simplification, and generation of sparsity
 patterns.
@@ -63,7 +63,7 @@ sets of problem types associated with common mathematical algorithms. These are:
 ## Inverse Problems, Parameter Estimation, and Structural Identification
 
 We note that parameter estimation and inverse problems are solved directly on their
-constituent problem types using tools like [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl).
+constituent problem types using tools like [DiffEqFlux.jl](https://docs.sciml.ai/DiffEqFlux/stable/).
 Thus for example, there is no `ODEInverseProblem`, and instead `ODEProblem` is used to
 find the parameters `p` that solve the inverse problem.
 
@@ -95,60 +95,59 @@ all of the problem domains. Underlying high level ideas include:
 
 ## User-Facing Solver Libraries
 
-- [DifferentialEquations.jl](https://diffeq.sciml.ai/stable/)
+- [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/)
     - Multi-package interface of high performance numerical solvers of
       differential equations
-- [ModelingToolkit.jl](https://mtk.sciml.ai/stable/)
+- [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/)
     - The symbolic modeling package which implements the SciML symbolic common
       interface.
-- [LinearSolve.jl](https://github.com/SciML/LinearSolvers.jl)
+- [LinearSolve.jl](https://docs.sciml.ai/LinearSolve/stable/)
     - Multi-package interface for specifying linear solvers (direct, sparse,
       and iterative), along with tools for caching and preconditioners
       for use in large-scale modeling.
-- [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl)
+- [NonlinearSolve.jl](https://docs.sciml.ai/NonlinearSolve/stable/)
     - High performance numerical solving of nonlinear systems.
-- [Quadrature.jl](https://github.com/SciML/Quadrature.jl)
+- [Integrals.jl](https://docs.sciml.ai/Integrals/stable/)
     - Multi-package interface for high performance, batched, and parallelized
       numerical quadrature.
-- [Optimization.jl](https://github.com/SciML/Optimization.jl)
+- [Optimization.jl](https://docs.sciml.ai/Optimization/stable/)
     - Multi-package interface for numerical solving of optimization problems.
-- [NeuralPDE.jl](https://github.com/SciML/NeuralPDE.jl)
+- [NeuralPDE.jl](https://docs.sciml.ai/NeuralPDE/stable/)
     - Physics-Informed Neural Network (PINN) package for transforming partial
       differential equations into optimization problems.
-- [DiffEqOperators.jl](https://github.com/SciML/DiffEqOperators.jl)
+- [DiffEqOperators.jl](https://docs.sciml.ai/DiffEqOperators/stable/)
     - Automated finite difference method (FDM) package for transforming partial
       differential equations into nonlinear problems and ordinary differential
       equations.
-- [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl)
+- [DiffEqFlux.jl](https://docs.sciml.ai/DiffEqFlux/stable/)
     - High level package for scientific machine learning applications, such as
       neural and universal differential equations, solving of inverse problems,
       parameter estimation, nonlinear optimal control, and more.
-- [DataDrivenDiffEq.jl](https://github.com/SciML/DataDrivenDiffEq.jl)
+- [DataDrivenDiffEq.jl](https://docs.sciml.ai/DataDrivenDiffEq/stable/)
     - Multi-package interface for data-driven modeling, Koopman dynamic mode
       decomposition, symbolic regression/sparsification, and automated model
       discovery.
-- [DiffEqUncertainty.jl](https://github.com/SciML/DiffEqUncertainty.jl)
-    - Extension to the dynamical modeling tools for performing uncertainty
-      quantification and calculating expectations.
+- [SciMLExpectations.jl](https://docs.sciml.ai/SciMLExpectations/stable/)
+    - Extension to the dynamical modeling tools for calculating expectations.
 
 ## Interface Implementation Libraries
 
-- [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl)
+- [SciMLBase.jl](https://docs.sciml.ai/SciMLBase/stable/)
     - The core package defining the interface which is consumed by the modeling
       and solver packages.
 - [DiffEqBase.jl](https://github.com/SciML/DiffEqBase.jl)
     - The core package defining the extended interface which is consumed by the
       differential equation solver packages.
-- [DiffEqSensitivity.jl](https://github.com/SciML/DiffEqSensitivity.jl)
+- [SciMLSensitivity.jl](https://docs.sciml.ai/SciMLSensitivity/stable/)
     - A package which pools together the definition of derivative overloads to
       define the common `sensealg` automatic differentiation interface.
-- [DiffEqNoiseProcess.jl](https://github.com/SciML/DiffEqNoiseProcess.jl)
+- [DiffEqNoiseProcess.jl](https://docs.sciml.ai/DiffEqNoiseProcess/stable/)
     - A package which defines the stochastic `AbstractNoiseProcess` interface
       for the SciML ecosystem.
-- [RecursiveArrayTools.jl](https://github.com/SciML/RecursiveArrayTools.jl)
+- [RecursiveArrayTools.jl](https://docs.sciml.ai/RecursiveArrayTools/stable/)
     - A package which defines the underlying `AbstractVectorOfArray` structure
       used as the output for all time series results.
-- [ArrayInterface.jl](https://github.com/JuliaArrays/ArrayInterface.jl)
+- [ArrayInterface.jl](https://docs.sciml.ai/ArrayInterface/stable/)
     - The package which defines the extended `AbstractArray` interface employed
       throughout the SciML ecosystem.
 
@@ -180,9 +179,11 @@ There are too many to name here. Check out the
 - Please refer to the
   [SciML ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://github.com/SciML/ColPrac/blob/master/README.md)
   for guidance on PRs, issues, and other matters relating to contributing to SciML.
+- See the [SciML Style Guide](https://github.com/SciML/SciMLStyle) for common coding practices and other style decisions.
 - There are a few community forums:
     - The #diffeq-bridged and #sciml-bridged channels in the
       [Julia Slack](https://julialang.org/slack/)
-    - [JuliaDiffEq](https://gitter.im/JuliaDiffEq/Lobby) on Gitter
-    - On the Julia Discourse forums (look for the [modelingtoolkit tag](https://discourse.julialang.org/tag/modelingtoolkit)
+    - The #diffeq-bridged and #sciml-bridged channels in the
+      [Julia Zulip](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)
+    - On the [Julia Discourse forums](https://discourse.julialang.org)
     - See also [SciML Community page](https://sciml.ai/community/)
