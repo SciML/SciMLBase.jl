@@ -128,7 +128,7 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if prob.p isa NullParameters
-        p isa NullParameters || throw(ArgumentError("Can not change `NullParameters`."))
+        p isa NullParameters || throw(ArgumentError("Cannot change `SciMLBase.NullParameters`."))
     else
         length(p) == length(prob.p) ||
             throw(ArgumentError("Expected new parameter vector `p` to be of the same length as the old one."))
