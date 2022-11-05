@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines an Defines a steady state ODE problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/steady_state_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/
 
 ## Mathematical Specification of a Steady State Problem
 
@@ -34,7 +34,7 @@ SteadyStateProblem{isinplace,specialize}(f,u0,p=NullParameters();kwargs...)
 
 `isinplace` optionally sets whether the function is inplace or not. This is 
 determined automatically, but not inferred. `specialize` optionally controls 
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize.
   
 

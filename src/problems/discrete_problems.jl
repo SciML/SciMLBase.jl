@@ -4,7 +4,7 @@ const DISCRETE_OUTOFPLACE_DEFAULT = DiscreteFunction{false}((u, p, t) -> u)
 @doc doc"""
 
 Defines a discrete dynamical system problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/discrete_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/
 
 ## Mathematical Specification of a Discrete Problem
 
@@ -43,7 +43,7 @@ u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
 
 `isinplace` optionally sets whether the function is inplace or not. This is 
 determined automatically, but not inferred. `specialize` optionally controls 
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction

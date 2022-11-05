@@ -11,7 +11,7 @@ or of a random ordinary differential equation defined by an RODEProblem.
 For more information on interacting with `DESolution` types, check out the Solution Handling
 page of the DifferentialEquations.jl documentation.
 
-https://diffeq.sciml.ai/stable/basics/solution/
+https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 
 ## Fields
 
@@ -22,7 +22,7 @@ https://diffeq.sciml.ai/stable/basics/solution/
 - `t`: the time points corresponding to the saved values of the ODE solution.
 - `W`: the representation of the saved noise process from the solution. See the Noise Processes
   page of the DifferentialEquations.jl documentation for more details:
-  https://diffeq.sciml.ai/stable/features/noise_process/ . Note that this noise is only saved
+  https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/ . Note that this noise is only saved
   in full if `save_noise=true` in the solver.
 - `prob`: the original SDEProblem/RODEProblem that was solved.
 - `alg`: the algorithm type used by the solver.

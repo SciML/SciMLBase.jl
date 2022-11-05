@@ -31,10 +31,10 @@ have more direct handling over the internal solving process. Because of this
 internal nature, the `IteratorType` has a less unified interface across problem
 types than other portions like `ProblemType` and `SolutionType`. For example,
 for differential equations this is the 
-[Integrator Interface](https://diffeq.sciml.ai/stable/basics/integrator/)
+[Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/)
 designed for mutating solutions in a manner for callback implementation, which
 is distinctly different from the 
-[LinearSolve init interface](http://linearsolve.sciml.ai/dev/tutorials/caching_interface/)
+[LinearSolve init interface](https://docs.sciml.ai/LinearSolve/stable/tutorials/caching_interface)
 which is designed for caching efficiency with reusing factorizations.
 
 ## __solve and High-Level Handling
