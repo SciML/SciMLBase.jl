@@ -127,15 +127,6 @@ function remake(prob::ODEProblem; f = missing,
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
 
-    if prob.p isa NullParameters
-        p isa NullParameters || throw(ArgumentError("Cannot change `SciMLBase.NullParameters`."))
-    else
-        length(p) == length(prob.p) ||
-            throw(ArgumentError("Expected new parameter vector `p` to be of the same length as the old one."))
-    end
-    length(u0) == length(prob.u0) ||
-        throw(ArgumentError("Expected new initial state vector `u0` to be of the same length as the old one."))
-
     if kwargs === missing
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
                                     _kwargs...)
