@@ -1839,6 +1839,7 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           lag_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing,
                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                          observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
                           hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -1930,7 +1931,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
 struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, S2,
-                            HCV,
+                            O, HCV,
                             CJCV,
                             CHCV, LHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
     f::F
@@ -1948,6 +1949,7 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, L
     lag_hess_prototype::LHP
     syms::S
     paramsyms::S2
+    observed::O
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV
     cons_hess_colorvec::CHCV
@@ -3347,6 +3349,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    lag_hess_prototype = nothing,
                                    syms = __has_syms(f) ? f.syms : nothing,
                                    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                   observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
                                                        nothing,
@@ -3362,15 +3365,15 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                          typeof(hess_prototype),
                          typeof(cons_jac_prototype), typeof(cons_hess_prototype),
                          typeof(lag_hess_prototype),
-                         typeof(syms), typeof(paramsyms), typeof(hess_colorvec),
-                         typeof(cons_jac_colorvec),
+                         typeof(syms), typeof(paramsyms), typeof(observed),
+                         typeof(hess_colorvec), typeof(cons_jac_colorvec),
                          typeof(cons_hess_colorvec), typeof(lag_hess_colorvec),
                          typeof(expr), typeof(cons_expr),
                          typeof(sys)}(f, adtype, grad, hess,
                                       hv, cons, cons_j, cons_h, lag_h,
                                       hess_prototype, cons_jac_prototype,
                                       cons_hess_prototype, lag_hess_prototype, syms,
-                                      paramsyms, hess_colorvec,
+                                      paramsyms, observed, hess_colorvec,
                                       cons_jac_colorvec, cons_hess_colorvec,
                                       lag_hess_colorvec, expr,
                                       cons_expr, sys)
