@@ -1839,7 +1839,7 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           lag_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing,
                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
-                          observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
+                          observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED_NO_TIME,
                           hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -3350,7 +3350,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    syms = __has_syms(f) ? f.syms : nothing,
                                    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                                    observed = __has_observed(f) ? f.observed :
-                                              DEFAULT_OBSERVED,
+                                              DEFAULT_OBSERVED_NO_TIME,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
                                                        nothing,
