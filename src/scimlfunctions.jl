@@ -3349,7 +3349,8 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    lag_hess_prototype = nothing,
                                    syms = __has_syms(f) ? f.syms : nothing,
                                    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
-                                   observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
+                                   observed = __has_observed(f) ? f.observed :
+                                              DEFAULT_OBSERVED,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
                                                        nothing,
