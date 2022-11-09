@@ -345,9 +345,9 @@ EnumX.@enumx ReturnCode begin
     MaxTime
 end
 
-function Base.convert(::Type{Symbol}, retcode::ReturnCode.T) 
-  @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
-  Symbol(retcode)
+function Base.convert(::Type{Symbol}, retcode::ReturnCode.T)
+    @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
+    Symbol(retcode)
 end
 
 Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
@@ -358,7 +358,7 @@ const symfalse = Symbol("false")
 
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
-  
+
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
@@ -403,9 +403,9 @@ Returns a boolean for whether a return code should be interepted as a form of su
 function successful_retcode end
 
 function successful_retcode(retcode::ReturnCode.T)
-    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated || 
+    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
         retcode == ReturnCode.ExactSolutionLeft ||
-        retcode == ReturnCode.ExactSolutionRight || 
+        retcode == ReturnCode.ExactSolutionRight ||
         retcode == ReturnCode.FloatingPointLimit
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
