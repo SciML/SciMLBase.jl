@@ -26,7 +26,8 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
-struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE, AC <: Union{Nothing, Vector{Int}}} <:
+struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
+                   AC <: Union{Nothing, Vector{Int}}} <:
        AbstractODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -45,9 +46,10 @@ end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
                            tslocation, destats, alg_choice, retcode) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-                       typeof(k), typeof(prob), typeof(alg), typeof(interp), typeof(destats),
+                       typeof(k), typeof(prob), typeof(alg), typeof(interp),
+                       typeof(destats),
                        typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
-                         dense, tslocation, destats, alg_choice, retcode)
+                                           dense, tslocation, destats, alg_choice, retcode)
 end
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                                     continuity = :left) where {deriv}
