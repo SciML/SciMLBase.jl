@@ -45,7 +45,7 @@ end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
                            tslocation, destats, alg_choice, retcode) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-                       typeof(k), typeof(prob), typeof(alg), typeof(interp), typeof(destats)
+                       typeof(k), typeof(prob), typeof(alg), typeof(interp), typeof(destats),
                        typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
                          dense, tslocation, destats, alg_choice, retcode)
 end
