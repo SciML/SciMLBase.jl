@@ -595,20 +595,21 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
     unwrapped_f(f.fw[1].obj[])
 end
 
-function specialization(f::Union{ODEFunction{iip, specialize},
-                                 SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-                                 SDDEFunction{iip, specialize},
-                                 DAEFunction{iip, specialize},
-                                 DynamicalODEFunction{iip, specialize},
-                                 SplitFunction{iip, specialize},
-                                 DynamicalSDEFunction{iip, specialize},
-                                 SplitSDEFunction{iip, specialize},
-                                 DynamicalDDEFunction{iip, specialize},
-                                 DiscreteFunction{iip, specialize},
-                                 RODEFunction{iip, specialize},
-                                 NonlinearFunction{iip, specialize},
-                                 OptimizationFunction{iip, specialize}}) where {iip,
-                                                                                specialize}
+function specialization(::Union{ODEFunction{iip, specialize},
+                                SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
+                                SDDEFunction{iip, specialize},
+                                DAEFunction{iip, specialize},
+                                DynamicalODEFunction{iip, specialize},
+                                SplitFunction{iip, specialize},
+                                DynamicalSDEFunction{iip, specialize},
+                                SplitSDEFunction{iip, specialize},
+                                DynamicalDDEFunction{iip, specialize},
+                                DiscreteFunction{iip, specialize},
+                                ImplicitDiscreteFunction{iip, specialize},
+                                RODEFunction{iip, specialize},
+                                NonlinearFunction{iip, specialize},
+                                OptimizationFunction{iip, specialize}}) where {iip,
+                                                                               specialize}
     specialize
 end
 
@@ -627,6 +628,7 @@ include("operators/common_defaults.jl")
 
 include("problems/problem_utils.jl")
 include("problems/discrete_problems.jl")
+include("problems/implicit_discrete_problems.jl")
 include("problems/steady_state_problems.jl")
 include("problems/analytical_problems.jl")
 include("problems/basic_problems.jl")
@@ -701,7 +703,7 @@ export LinearProblem, NonlinearProblem, IntervalNonlinearProblem,
 
 export IntegralProblem
 
-export DiscreteProblem
+export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
 export NoiseProblem
 export ODEProblem, ODESolution
@@ -722,9 +724,9 @@ export BVProblem, TwoPointBVProblem
 
 export remake
 
-export ODEFunction, DiscreteFunction, SplitFunction, DAEFunction, DDEFunction,
-       SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction, IncrementingODEFunction,
-       NonlinearFunction, IntervalNonlinearFunction
+export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
+       DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
+       IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction
 
 export OptimizationFunction
 
