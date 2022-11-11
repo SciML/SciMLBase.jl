@@ -466,7 +466,11 @@ end
 """
 To be overloaded in ModelingToolkit
 """
-function handle_varmap end
+function handle_varmap end # old 
+
+function __varmap_to_vars end # a call to `varmap_to_vars` in MTK
+function __parameters end # a call to `parameters(sys)`
+function __states end # a call to `states(sys)`
 
 function mergedefaults(defaults, varmap, vars; kwargs...)
     defs = if varmap isa Dict

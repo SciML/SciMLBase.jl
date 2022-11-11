@@ -56,10 +56,18 @@ function remake(prob::ODEProblem; f = missing,
         defs = Dict{Any, Any}()
         if hasproperty(prob.f, :sys)
             if hasfield(typeof(prob.f.sys), :ps)
-                defs = mergedefaults(defs, prob.p, :parameters; sys = prob.f.sys)
+                defs = if !isemtpy(getfield(prob.f.sys, :systems))
+                    mergedefaults(defs, prob.p, __parameters(prob.f.sys))
+                else
+                    mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps)) # wrong for nested systems
+                end
             end
             if hasfield(typeof(prob.f.sys), :states)
-                defs = mergedefaults(defs, prob.u0, :states; sys = prob.f.sys)
+                defs = if !isemtpy(getfield(prob.f.sys, :systems))
+                    mergedefaults(defs, prob.u0, __states(prob.f.sys))
+                else
+                    mergedefaults(defs, prob.p, getfield(prob.f.sys, :states)) # wrong for nested systems
+                end
             end
         end
     else
@@ -71,8 +79,13 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(p) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-                p = handle_varmap(p, prob.f.sys, var_type = :parameters, defaults = defs)
-                defs = mergedefaults(defs, p, :parameters; sys = prob.f.sys)
+                if !isemtpy(getfield(prob.f.sys, :systems))
+                    p = __varmap_to_vars(p, __parameters(prob.f.sys); defaults = defs)
+                    defs = mergedefaults(defs, p, __parameters(prob.f.sys))
+                else
+                    p = handle_varmap(p, prob.f.sys, field = :ps, defaults = defs) # wrong for nested systems
+                    defs = mergedefaults(defs, p, getfield(prob.f.sys, :ps)) # wrong for nested systems
+                end
                 @assert length(p) == length(prob.p)
             else
                 throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
@@ -85,8 +98,13 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(u0) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-                u0 = handle_varmap(u0, prob.f.sys; var_type = :states,
-                                   defaults = defs, tofloat = true)
+                if !isemtpy(getfield(prob.f.sys, :systems))
+                    u0 = __varmap_to_vars(p, __states(prob.f.sys); defaults = defs,
+                                          tofloat = true)
+                else
+                    u0 = handle_varmap(u0, prob.f.sys, field = :states,
+                                       defaults = defs, tofloat = true) # old, wrong for nested systems
+                end
                 @assert length(u0) == length(prob.u0)
             else
                 throw(ArgumentError("This problem does not support symbolic default maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to the order of states."))
