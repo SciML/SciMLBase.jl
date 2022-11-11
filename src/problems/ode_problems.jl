@@ -6,7 +6,7 @@ struct StandardODEProblem end
 @doc doc"""
 
 Defines an ordinary differential equation (ODE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/ode_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/
 
 ## Mathematical Specification of an ODE Problem
 
@@ -40,7 +40,7 @@ are:
   Defines the ODE with the specified functions. `isinplace` optionally sets whether
   the function is inplace or not. This is determined automatically, but not inferred.
   `specialize` optionally controls the specialization level. See the
-  [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels)
+  [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
   for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -179,7 +179,7 @@ abstract type AbstractDynamicalODEProblem end
 @doc doc"""
 
 Defines an dynamical ordinary differential equation (ODE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/dynamical_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/
 
 Dynamical ordinary differential equations, such as those arising from the definition
 of a Hamiltonian system or a second order ODE, have a special structure that can be
@@ -257,7 +257,7 @@ end
 @doc doc"""
 
 Defines a second order ordinary differential equation (ODE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/dynamical_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/
 
 ## Mathematical Specification of a 2nd Order ODE Problem
 
@@ -353,7 +353,7 @@ abstract type AbstractSplitODEProblem end
 @doc doc"""
 
 Defines a split ordinary differential equation (ODE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/split_ode_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/split_ode_types/
 
 ## Mathematical Specification of a Split ODE Problem
 

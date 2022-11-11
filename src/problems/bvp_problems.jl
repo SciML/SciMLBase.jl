@@ -6,7 +6,7 @@ struct StandardBVProblem end
 @doc doc"""
 
 Defines an BVP problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/bvp_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/
 
 ## Mathematical Specification of a BVP Problem
 

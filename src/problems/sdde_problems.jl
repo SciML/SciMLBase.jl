@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a stochastic delay differential equation (SDDE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/sdde_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/
 
 ## Mathematical Specification of a Stochastic Delay Differential Equation (SDDE) Problem
 
@@ -69,7 +69,7 @@ SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is 
 determined automatically, but not inferred. `specialize` optionally controls 
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels) 
+the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.

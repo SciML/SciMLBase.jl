@@ -91,8 +91,8 @@ on setting up time/parameter dependent operators.
 
 ### Sparsity Handling
 
-The solver libraries internally use packages such as [FiniteDiff.jl](https://github.com/JuliaDiff/FiniteDiff.jl)
-and [SparseDiffTools.jl](https://github.com/JuliaDiff/SparseDiffTools.jl) for
+The solver libraries internally use packages such as [FiniteDiff.jl](https://docs.sciml.ai/FiniteDiff/stable/)
+and [SparseDiffTools.jl](https://docs.sciml.ai/SparseDiffTools/stable/) for
 high performance calculation of sparse Jacobians and Hessians, along with matrix-free
 calculations of Jacobian-Vector products (J*v), vector-Jacobian products (v'*J),
 and Hessian-vector products (H*v). The SciML interface gives users the ability

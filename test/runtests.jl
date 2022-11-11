@@ -38,6 +38,5 @@ end
         @time @safetestset "Unitful interoplations" begin include("downstream/unitful_interpolations.jl") end
         @time @safetestset "Integer idxs" begin include("downstream/integer_idxs.jl") end
         @time @safetestset "Autodiff Remake" begin include("downstream/remake_autodiff.jl") end
-        @time @safetestset "Symbolic Remake" begin include("downstream/remake_symbolic.jl") end
     end
 end

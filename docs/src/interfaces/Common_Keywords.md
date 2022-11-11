@@ -10,7 +10,7 @@ provided to `solve`. `alg_hints` is a `Vector{Symbol}` which describe the
 problem at a high level to the solver. The options are:
 
 This functionality is derived via the benchmarks in
-[SciMLBenchmarks.jl](https://github.com/SciML/SciMLBenchmarks.jl)
+[SciMLBenchmarks.jl](https://docs.sciml.ai/SciMLBenchmarksOutput/stable/)
 
 Currently this is only implemented for the differential equation solvers.
 

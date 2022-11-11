@@ -2,7 +2,7 @@
 
 Defines an implicit ordinary differential equation (ODE) or
 differential-algebraic equation (DAE) problem.
-Documentation Page: https://diffeq.sciml.ai/stable/types/dae_types/
+Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dae_types/
 
 ## Mathematical Specification of an DAE Problem
 

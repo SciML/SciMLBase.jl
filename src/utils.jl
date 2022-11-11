@@ -341,7 +341,7 @@ $(SIGNATURES)
 
 Emit a warning with a link to the solver compatibility chart in the documentation.
 """
-warn_compat() = @warn("https://diffeq.sciml.ai/dev/basics/compatibility_chart/")
+warn_compat() = @warn("https://docs.sciml.ai/DiffEqDocs/stable/basics/compatibility_chart/")
 
 """
     @add_kwonly function_definition
@@ -484,3 +484,6 @@ function mergedefaults(defaults, varmap, vars; kwargs...)
     end
     return defs
 end
+
+_unwrap_val(::Val{B}) where {B} = B
+_unwrap_val(B) = B

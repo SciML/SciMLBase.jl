@@ -8,7 +8,7 @@ Representation of the solution to an ordinary differential equation defined by a
 For more information on interacting with `DESolution` types, check out the Solution Handling
 page of the DifferentialEquations.jl documentation.
 
-https://diffeq.sciml.ai/stable/basics/solution/
+https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 
 ## Fields
 
@@ -26,7 +26,8 @@ https://diffeq.sciml.ai/stable/basics/solution/
   callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
   details, see the return code section of the DifferentialEquations.jl documentation.
 """
-struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE} <:
+struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
+                   AC <: Union{Nothing, Vector{Int}}} <:
        AbstractODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -39,14 +40,16 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE}
     dense::Bool
     tslocation::Int
     destats::DE
+    alg_choice::AC
     retcode::ReturnCode.T
 end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-                           tslocation, destats, retcode) where {T, N}
+                           tslocation, destats, alg_choice, retcode) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-                       typeof(k), typeof(prob), typeof(alg), typeof(interp), typeof(destats)
-                       }(u, u_analytic, errors, t, k, prob, alg, interp, dense, tslocation,
-                         destats, retcode)
+                       typeof(k), typeof(prob), typeof(alg), typeof(interp),
+                       typeof(destats),
+                       typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
+                                           dense, tslocation, destats, alg_choice, retcode)
 end
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                                     continuity = :left) where {deriv}
@@ -133,6 +136,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         dense = false, dense_errors = dense,
                         calculate_error = true,
                         k = nothing,
+                        alg_choice = nothing,
                         interp = LinearInterpolation(t, u),
                         retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
@@ -162,6 +166,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                 dense,
                                 0,
                                 destats,
+                                alg_choice,
                                 retcode)
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
@@ -179,6 +184,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                  dense,
                                  0,
                                  destats,
+                                 alg_choice,
                                  retcode)
     end
 end
@@ -234,6 +240,7 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
                       sol.dense,
                       sol.tslocation,
                       sol.destats,
+                      sol.alg_choice,
                       sol.retcode)
 end
 
@@ -249,6 +256,7 @@ function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
                       sol.dense,
                       sol.tslocation,
                       sol.destats,
+                      sol.alg_choice,
                       retcode)
 end
 
@@ -264,6 +272,7 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
                       sol.dense,
                       tslocation,
                       sol.destats,
+                      sol.alg_choice,
                       sol.retcode)
 end
 
@@ -279,6 +288,7 @@ function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
                       false,
                       sol.tslocation,
                       sol.destats,
+                      sol.alg_choice,
                       sol.retcode)
 end
 
@@ -297,5 +307,5 @@ function sensitivity_solution(sol::ODESolution, u, t)
                       nothing, sol.prob,
                       sol.alg, interp,
                       sol.dense, sol.tslocation,
-                      sol.destats, sol.retcode)
+                      sol.destats, sol.alg_choice, sol.retcode)
 end

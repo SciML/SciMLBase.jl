@@ -251,7 +251,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -315,7 +315,7 @@ The available specialization levels are:
   unsafe with many solvers, and thus is mostly used for development testing.
 
 For more details, see the
-[specialization levels section of the SciMLBase documentation](https://scimlbase.sciml.ai/stable/interfaces/Problems/#Specialization-Levels).
+[specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels).
 
 ## Fields
 
@@ -386,7 +386,7 @@ prob = ODEProblem(ff,ones(2),(0.0,10.0))
 ## Symbolically Generating the Functions
 
 See the `modelingtoolkitize` function from
-[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+[ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) for
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
@@ -462,7 +462,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -511,7 +511,7 @@ The fields of the SplitFunction type directly match the names of the inputs.
 ## Symbolically Generating the Functions
 
 See the `modelingtoolkitize` function from
-[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+[ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) for
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions. See `ModelingToolkit.SplitODEProblem` for
 information on generating the SplitFunction from this symbolic engine.
@@ -591,7 +591,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -708,7 +708,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -825,7 +825,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -1011,7 +1011,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -1126,7 +1126,7 @@ are optional for improving or accelerating the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the SDE function. Can be used
   to determine that the equation is actually a stochastic differential-algebraic equation (SDAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/sdae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/sdae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -1252,7 +1252,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -1568,7 +1568,7 @@ end
 ## Symbolically Generating the Functions
 
 See the `modelingtoolkitize` function from
-[ModelingToolkit.jl](https://github.com/JuliaDiffEq/ModelingToolkit.jl) for
+[ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) for
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
@@ -1645,7 +1645,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://diffeq.sciml.ai/stable/solvers/dae_solve/.
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -1839,6 +1839,7 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           lag_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing,
                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                          observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED_NO_TIME,
                           hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -1910,7 +1911,7 @@ this will automatically fill in all of the extra functions. For example,
 OptimizationFunction(f,AutoZygote())
 ```
 
-will use [Zygote.jl](https://github.com/FluxML/Zygote.jl) to define
+will use [Zygote.jl](https://docs.sciml.ai/Zygote.jl/stable/) to define
 all of the necessary functions. Note that if any functions are defined
 directly, the auto-AD definition does not overwrite the user's choice.
 
@@ -1930,7 +1931,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
 struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, S2,
-                            HCV,
+                            O, HCV,
                             CJCV,
                             CHCV, LHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
     f::F
@@ -1948,6 +1949,7 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, L
     lag_hess_prototype::LHP
     syms::S
     paramsyms::S2
+    observed::O
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV
     cons_hess_colorvec::CHCV
@@ -3347,6 +3349,8 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    lag_hess_prototype = nothing,
                                    syms = __has_syms(f) ? f.syms : nothing,
                                    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                   observed = __has_observed(f) ? f.observed :
+                                              DEFAULT_OBSERVED_NO_TIME,
                                    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
                                                        nothing,
@@ -3362,15 +3366,15 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                          typeof(hess_prototype),
                          typeof(cons_jac_prototype), typeof(cons_hess_prototype),
                          typeof(lag_hess_prototype),
-                         typeof(syms), typeof(paramsyms), typeof(hess_colorvec),
-                         typeof(cons_jac_colorvec),
+                         typeof(syms), typeof(paramsyms), typeof(observed),
+                         typeof(hess_colorvec), typeof(cons_jac_colorvec),
                          typeof(cons_hess_colorvec), typeof(lag_hess_colorvec),
                          typeof(expr), typeof(cons_expr),
                          typeof(sys)}(f, adtype, grad, hess,
                                       hv, cons, cons_j, cons_h, lag_h,
                                       hess_prototype, cons_jac_prototype,
                                       cons_hess_prototype, lag_hess_prototype, syms,
-                                      paramsyms, hess_colorvec,
+                                      paramsyms, observed, hess_colorvec,
                                       cons_jac_colorvec, cons_hess_colorvec,
                                       lag_hess_colorvec, expr,
                                       cons_expr, sys)

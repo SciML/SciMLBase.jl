@@ -3,7 +3,7 @@
 While ODEs ``u' = f(u,p,t)`` can be defined by a user-function `f`, for PDEs the
 function form can be different for every PDE. How many functions, and how many
 inputs? This can always change. The SciML ecosystem solves this problem by
-using [ModelingToolkit.jl](https://mtk.sciml.ai/dev/) to define `PDESystem`,
+using [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) to define `PDESystem`,
 a high-level symbolic description of the PDE to be consumed by other packages.
 
 The vision for the common PDE interface is that a user should only have to specify
@@ -75,13 +75,13 @@ The only functions which act on a PDESystem are the following:
 
 ### NeuralPDE.jl: PhysicsInformedNN
 
-[NeuralPDE.jl](https://github.com/SciML/NeuralPDE.jl) defines the `PhysicsInformedNN`
-discretizer which uses a [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl)
+[NeuralPDE.jl](https://docs.sciml.ai/NeuralPDE/stable/) defines the `PhysicsInformedNN`
+discretizer which uses a [DiffEqFlux.jl](https://docs.sciml.ai/DiffEqFlux/stable/)
 neural network to solve the differential equation.
 
 ### MethodOfLines.jl: MOLFiniteDifference (WIP)
 
-[MethodOfLines.jl](https://github.com/SciML/MethodOfLines.jl) defines the
+[MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/) defines the
 `MOLFiniteDifference` discretizer which performs a finite difference discretization
 using the DiffEqOperators.jl stencils. These stencils make use of NNLib.jl for
 fast operations on semi-linear domains.
