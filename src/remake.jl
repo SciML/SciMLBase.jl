@@ -56,14 +56,14 @@ function remake(prob::ODEProblem; f = missing,
         defs = Dict{Any, Any}()
         if hasproperty(prob.f, :sys)
             if hasfield(typeof(prob.f.sys), :ps)
-                defs = if !isemtpy(getfield(prob.f.sys, :systems))
+                defs = if !isempty(getfield(prob.f.sys, :systems))
                     mergedefaults(defs, prob.p, __parameters(prob.f.sys))
                 else
                     mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps)) # wrong for nested systems
                 end
             end
             if hasfield(typeof(prob.f.sys), :states)
-                defs = if !isemtpy(getfield(prob.f.sys, :systems))
+                defs = if !isempty(getfield(prob.f.sys, :systems))
                     mergedefaults(defs, prob.u0, __states(prob.f.sys))
                 else
                     mergedefaults(defs, prob.p, getfield(prob.f.sys, :states)) # wrong for nested systems
@@ -79,7 +79,7 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(p) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-                if !isemtpy(getfield(prob.f.sys, :systems))
+                if !isempty(getfield(prob.f.sys, :systems))
                     p = __varmap_to_vars(p, __parameters(prob.f.sys); defaults = defs)
                     defs = mergedefaults(defs, p, __parameters(prob.f.sys))
                 else
@@ -98,7 +98,7 @@ function remake(prob::ODEProblem; f = missing,
     else
         if eltype(u0) <: Pair
             if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-                if !isemtpy(getfield(prob.f.sys, :systems))
+                if !isempty(getfield(prob.f.sys, :systems))
                     u0 = __varmap_to_vars(p, __states(prob.f.sys); defaults = defs,
                                           tofloat = true)
                 else
