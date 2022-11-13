@@ -23,7 +23,7 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, 
     cache::C # optimization cache
     alg::A # algorithm
     minimum::Tf
-    retcode::ReturnCode.T
+    retcode::Symbol
     original::O # original output of the optimizer
 end
 
