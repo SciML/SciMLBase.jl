@@ -133,6 +133,9 @@ function remake(prob::ODEProblem; f = missing,
     end
 end
 
+# overloaded in MTK to intercept symbolic remake
+function process_p_u0_symbolic end
+
 function remake(thing::AbstractJumpProblem; kwargs...)
     parameterless_type(thing)(remake(thing.prob; kwargs...))
 end
