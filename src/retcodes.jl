@@ -318,6 +318,66 @@ EnumX.@enumx ReturnCode begin
     * successful_retcode = true
     """
     FloatingPointLimit
+
+    """
+    `ReturnCode.Optimal`
+
+    The optimization problem was successfully solved to an optimal solution.
+
+    ## Properties
+
+    * successful_retcode = true
+    """
+    Optimal
+
+    """
+    `ReturnCode.LocallyOptimal`
+
+    The optimization problem was successfully solved to a local optimal solution. Typical for 
+    non-linear problems.
+
+    ## Properties
+
+    * successful_retcode = true
+    """
+    LocallyOptimal
+
+    """
+    `ReturnCode.Infeasible`
+
+    The optimization problem was proven to be infeasible by the solver.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    Infeasible
+
+    """
+    `ReturnCode.LocallyInfeasible`
+
+    The optimization problem was proven to be locally infeasible by the solver. Typical for 
+    non-linear problems.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    LocallyInfeasible
+
+    """
+    `ReturnCode.MaxTime`
+
+    A failure exit state of the solver. If this return code is given, then the
+    solving process was unsuccessful and exited early because the solver's
+    timer hit `maxtime` either set by default or by the user in the
+    `solve`/`init` command.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    MaxTime
 end
 
 Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
@@ -338,6 +398,8 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.Terminated
     elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
         ReturnCode.MaxIters
+    elseif retcode == :MaxTime
+        ReturnCode.MaxTime
     elseif retcode == :DtLessThanMin
         ReturnCode.DtLessThanMin
     elseif retcode == :Unstable
@@ -348,6 +410,14 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.ConvergenceFailure
     elseif retcode == :Failure || retcode == symfalse
         ReturnCode.Failure
+    elseif retcode == :Optimal
+        ReturnCode.Optimal
+    elseif retcode == :Infeasible
+        ReturnCode.Infeasible
+    elseif retcode == :LocallyOptimal
+        ReturnCode.LocallyOptimal
+    elseif retcode == :LocallyInfeasible
+        ReturnCode.LocallyInfeasible
     else
         ReturnCode.Failure
     end
@@ -367,6 +437,7 @@ function successful_retcode end
 
 function successful_retcode(retcode::ReturnCode.T)
     retcode == :Success || retcode == :Terminated || retcode == :ExactSolutionLeft ||
-        retcode == :ExactSolutionRight || retcode == :FloatingPointLimit
+        retcode == :ExactSolutionRight || retcode == :FloatingPointLimit ||
+        retcode == :Optimal || retcode == :LocallyOptimal
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
