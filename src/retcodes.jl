@@ -318,6 +318,31 @@ EnumX.@enumx ReturnCode begin
     * successful_retcode = true
     """
     FloatingPointLimit
+
+    """
+    `ReturnCode.Infeasible`
+
+    The optimization problem was proven to be infeasible by the solver.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    Infeasible
+
+    """
+    `ReturnCode.MaxTime`
+
+    A failure exit state of the solver. If this return code is given, then the
+    solving process was unsuccessful and exited early because the solver's
+    timer hit `maxtime` either set by default or by the user in the
+    `solve`/`init` command.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    MaxTime
 end
 
 Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
@@ -332,12 +357,15 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue
+           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
+           retcode == :LOCALLY_SOLVED
         ReturnCode.Success
     elseif retcode == :Terminated
         ReturnCode.Terminated
     elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
         ReturnCode.MaxIters
+    elseif retcode == :MaxTime || retcode == :TIME_LIMIT
+        ReturnCode.MaxTime
     elseif retcode == :DtLessThanMin
         ReturnCode.DtLessThanMin
     elseif retcode == :Unstable
@@ -348,6 +376,10 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.ConvergenceFailure
     elseif retcode == :Failure || retcode == symfalse
         ReturnCode.Failure
+    elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
+           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
+           retcode == :INFEASIBLE_OR_UNBOUNDED
+        ReturnCode.Infeasible
     else
         ReturnCode.Failure
     end
