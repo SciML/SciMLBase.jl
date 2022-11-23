@@ -1818,7 +1818,6 @@ $(TYPEDEF)
 """
 abstract type AbstractIntervalNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
-
 @doc doc"""
     IntervalNonlinearFunction{iip, specialize, F, Ta, S, S2, O, SYS} <: AbstractIntervalNonlinearFunction{iip,specialize}
 
@@ -1870,8 +1869,8 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the IntervalNonlinearFunction type directly match the names of the inputs.
 """
 struct IntervalNonlinearFunction{iip, specialize, F, Ta,
-                         S, S2, O, SYS
-                         } <: AbstractIntervalNonlinearFunction{iip}
+                                 S, S2, O, SYS
+                                 } <: AbstractIntervalNonlinearFunction{iip}
     f::F
     analytic::Ta
     syms::S
@@ -3400,36 +3399,39 @@ end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 
 function IntervalNonlinearFunction{iip, specialize}(f;
-                                            analytic = __has_analytic(f) ? f.analytic :
-                                                       nothing,
-                                            syms = __has_syms(f) ? f.syms : nothing,
-                                            paramsyms = __has_paramsyms(f) ? f.paramsyms :
-                                                        nothing,
-                                            observed = __has_observed(f) ? f.observed :
-                                                       DEFAULT_OBSERVED_NO_TIME,
-                                            sys = __has_sys(f) ? f.sys : nothing) where {
-                                                                                         iip,
-                                                                                         specialize
-                                                                                         }
+                                                    analytic = __has_analytic(f) ?
+                                                               f.analytic :
+                                                               nothing,
+                                                    syms = __has_syms(f) ? f.syms : nothing,
+                                                    paramsyms = __has_paramsyms(f) ?
+                                                                f.paramsyms :
+                                                                nothing,
+                                                    observed = __has_observed(f) ?
+                                                               f.observed :
+                                                               DEFAULT_OBSERVED_NO_TIME,
+                                                    sys = __has_sys(f) ? f.sys : nothing) where {
+                                                                                                 iip,
+                                                                                                 specialize
+                                                                                                 }
     if specialize === NoSpecialize
         IntervalNonlinearFunction{iip, specialize,
-                          Any, Any, typeof(syms), typeof(paramsyms), Any,
-                          typeof(_colorvec), Any}(f, mass_matrix,
-                                                  analytic, tgrad, jac,
-                                                  jvp, vjp,
-                                                  jac_prototype,
-                                                  sparsity, Wfact,
-                                                  Wfact_t, paramjac,
-                                                  syms, paramsyms, observed,
-                                                  _colorvec, sys)
+                                  Any, Any, typeof(syms), typeof(paramsyms), Any,
+                                  typeof(_colorvec), Any}(f, mass_matrix,
+                                                          analytic, tgrad, jac,
+                                                          jvp, vjp,
+                                                          jac_prototype,
+                                                          sparsity, Wfact,
+                                                          Wfact_t, paramjac,
+                                                          syms, paramsyms, observed,
+                                                          _colorvec, sys)
     else
         IntervalNonlinearFunction{iip, specialize,
-                          typeof(f), typeof(analytic), typeof(syms),
-                          typeof(paramsyms),
-                          typeof(observed),
-                          typeof(sys)}(f, analytic, syms,
-                                                          paramsyms,
-                                                          observed, sys)
+                                  typeof(f), typeof(analytic), typeof(syms),
+                                  typeof(paramsyms),
+                                  typeof(observed),
+                                  typeof(sys)}(f, analytic, syms,
+                                               paramsyms,
+                                               observed, sys)
     end
 end
 

@@ -138,10 +138,13 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
     p::P
     problem_type::PT
     kwargs::K
-    @add_kwonly function IntervalNonlinearProblem{iip}(f::AbstractIntervalNonlinearFunction{iip}, tspan,
-                                               p = NullParameters(),
-                                               problem_type = StandardNonlinearProblem();
-                                               kwargs...) where {iip}
+    @add_kwonly function IntervalNonlinearProblem{iip}(f::AbstractIntervalNonlinearFunction{
+                                                                                            iip
+                                                                                            },
+                                                       tspan,
+                                                       p = NullParameters(),
+                                                       problem_type = StandardNonlinearProblem();
+                                                       kwargs...) where {iip}
         new{iip, typeof(tspan), typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f, tspan, p, problem_type, kwargs)
     end
@@ -164,7 +167,8 @@ $(SIGNATURES)
 Define a nonlinear problem using an instance of
 [`IntervalNonlinearFunction`](@ref IntervalNonlinearFunction).
 """
-function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan, p = NullParameters(); kwargs...)
+function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan,
+                                  p = NullParameters(); kwargs...)
     IntervalNonlinearProblem{isinplace(f)}(f, tspan, p; kwargs...)
 end
 
