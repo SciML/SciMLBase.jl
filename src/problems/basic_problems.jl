@@ -83,6 +83,97 @@ struct StandardNonlinearProblem end
 
 @doc doc"""
 
+Defines a interval nonlinear system problem.
+Documentation Page: https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/
+
+## Mathematical Specification of a Interval Nonlinear Problem
+
+To define a Nonlinear Problem, you simply need to give the function ``f``
+which defines the nonlinear system:
+
+```math
+f(t,p) = u = 0
+```
+
+along with an interval `tspan` is `t \in [t_0,t_f]` within which the root should be found.
+`f` should be specified as `f(t,p)` (or in-place as `f(u,t,p)`), and `tspan` should be a
+`Tuple{T,T} where T <: Number`.
+
+!!! note
+
+    The output value `u` is not required to be a scalar. When `u` is an `AbstractArray`, the
+    problem is a simultanious interval nonlinear problem where the solvers are made to give
+    the first `t` for which any of the `u` hit zero. Currently none of the solvers support
+    this mode.
+
+## Problem Type
+
+### Constructors
+
+```julia
+IntervalNonlinearProblem(f::NonlinearFunction,tspan,p=NullParameters();kwargs...)
+IntervalNonlinearProblem{isinplace}(f,tspan,p=NullParameters();kwargs...)
+```
+
+`isinplace` optionally sets whether the function is in-place or not. This is
+determined automatically, but not inferred.
+
+Parameters are optional, and if not given, then a `NullParameters()` singleton
+will be used, which will throw nice errors if you try to index non-existent
+parameters. Any extra keyword arguments are passed on to the solvers. For example,
+if you set a `callback` in the problem, then that `callback` will be added in
+every solve call.
+
+### Fields
+
+* `f`: The function in the problem.
+* `tspan`: The interval in which the root is to be found.
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `kwargs`: The keyword arguments passed on to the solvers.
+"""
+struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
+       AbstractIntervalNonlinearProblem{nothing, isinplace}
+    f::F
+    tspan::tType
+    p::P
+    problem_type::PT
+    kwargs::K
+    @add_kwonly function IntervalNonlinearProblem{iip}(f::AbstractIntervalNonlinearFunction{iip}, tspan,
+                                               p = NullParameters(),
+                                               problem_type = StandardNonlinearProblem();
+                                               kwargs...) where {iip}
+        new{iip, typeof(tspan), typeof(p), typeof(f),
+            typeof(kwargs), typeof(problem_type)}(f, tspan, p, problem_type, kwargs)
+    end
+
+    """
+    $(SIGNATURES)
+
+    Define a steady state problem using the given function.
+    `isinplace` optionally sets whether the function is inplace or not.
+    This is determined automatically, but not inferred.
+    """
+    function IntervalNonlinearProblem{iip}(f, tspan, p = NullParameters()) where {iip}
+        IntervalNonlinearProblem{iip}(IntervalNonlinearFunction{iip}(f), tspan, p)
+    end
+end
+
+"""
+$(SIGNATURES)
+
+Define a nonlinear problem using an instance of
+[`IntervalNonlinearFunction`](@ref IntervalNonlinearFunction).
+"""
+function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan, p = NullParameters(); kwargs...)
+    IntervalNonlinearProblem{isinplace(f)}(f, tspan, p; kwargs...)
+end
+
+function IntervalNonlinearProblem(f, tspan, p = NullParameters(); kwargs...)
+    IntervalNonlinearProblem(IntervalNonlinearFunction(f), tspan, p; kwargs...)
+end
+
+@doc doc"""
+
 Defines a nonlinear system problem.
 Documentation Page: https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/
 
@@ -168,6 +259,26 @@ end
 
 function NonlinearProblem(f, u0, p = NullParameters(); kwargs...)
     NonlinearProblem(NonlinearFunction(f), u0, p; kwargs...)
+end
+
+"""
+$(SIGNATURES)
+
+Define a NonlinearProblem problem from SteadyStateProblem
+"""
+function NonlinearProblem(prob::AbstractNonlinearProblem)
+    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+end
+
+"""
+$(SIGNATURES)
+
+Define a nonlinear problem from a standard ODE problem. Note that
+this is interpreted in the form of the steady state problem, i.e.
+find the ODE's solution at time ``t = \\infty``
+"""
+function NonlinearProblem(prob::AbstractODEProblem)
+    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
 end
 
 """
