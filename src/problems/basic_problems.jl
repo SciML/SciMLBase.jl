@@ -277,26 +277,6 @@ end
 """
 $(SIGNATURES)
 
-Define a nonlinear problem from a standard ODE problem. Note that
-this is interpreted in the form of the steady state problem, i.e.
-find the ODE's solution at time ``t = \\infty``
-"""
-function NonlinearProblem(prob::AbstractODEProblem)
-    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
-end
-
-"""
-$(SIGNATURES)
-
-Define a NonlinearProblem problem from SteadyStateProblem
-"""
-function NonlinearProblem(prob::AbstractNonlinearProblem)
-    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
-end
-
-"""
-$(SIGNATURES)
-
 Define a nonlinear problem using an instance of
 [`AbstractODEFunction`](@ref AbstractODEFunction). Note that
 this is interpreted in the form of the steady state problem, i.e.
