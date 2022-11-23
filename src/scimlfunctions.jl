@@ -1767,8 +1767,6 @@ the usage of `f`. These include:
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
 - `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
   size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
   naming to the values, allowing `sol[:a]` in the solution.
@@ -1812,6 +1810,72 @@ struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, 
     paramsyms::S2
     observed::O
     colorvec::TCV
+    sys::SYS
+end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractIntervalNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
+
+@doc doc"""
+    IntervalNonlinearFunction{iip, specialize, F, Ta, S, S2, O, SYS} <: AbstractIntervalNonlinearFunction{iip,specialize}
+
+A representation of an interval nonlinear system of equations `f`, defined by:
+
+```math
+f(t,p) = u = 0
+```
+
+and all of its related functions. For all cases, `p` are the parameters and `t` is the
+interval variable.
+
+## Constructor
+
+```julia
+IntervalNonlinearFunction{iip, specialize}(f;
+                           analytic = __has_analytic(f) ? f.analytic : nothing,
+                           syms = __has_syms(f) ? f.syms : nothing,
+                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                           sys = __has_sys(f) ? f.sys : nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(u,t,p)` or `u = f(t,p)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating
+the usage of `f`. These include:
+
+- `analytic(p)`: used to pass an analytical solution function for the analytical
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
+  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
+  naming to the values, allowing `sol[:a]` in the solution.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## specialize: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the IntervalNonlinearFunction type directly match the names of the inputs.
+"""
+struct IntervalNonlinearFunction{iip, specialize, F, Ta,
+                                 S, S2, O, SYS
+                                 } <: AbstractIntervalNonlinearFunction{iip}
+    f::F
+    analytic::Ta
+    syms::S
+    paramsyms::S2
+    observed::O
     sys::SYS
 end
 
@@ -1963,6 +2027,7 @@ end
 
 (f::ODEFunction)(args...) = f.f(args...)
 (f::NonlinearFunction)(args...) = f.f(args...)
+(f::IntervalNonlinearFunction)(args...) = f.f(args...)
 
 function (f::DynamicalODEFunction)(u, p, t)
     ArrayPartition(f.f1(u.x[1], u.x[2], p, t), f.f2(u.x[1], u.x[2], p, t))
@@ -3333,6 +3398,52 @@ function NonlinearFunction(f; kwargs...)
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 
+function IntervalNonlinearFunction{iip, specialize}(f;
+                                                    analytic = __has_analytic(f) ?
+                                                               f.analytic :
+                                                               nothing,
+                                                    syms = __has_syms(f) ? f.syms : nothing,
+                                                    paramsyms = __has_paramsyms(f) ?
+                                                                f.paramsyms :
+                                                                nothing,
+                                                    observed = __has_observed(f) ?
+                                                               f.observed :
+                                                               DEFAULT_OBSERVED_NO_TIME,
+                                                    sys = __has_sys(f) ? f.sys : nothing) where {
+                                                                                                 iip,
+                                                                                                 specialize
+                                                                                                 }
+    if specialize === NoSpecialize
+        IntervalNonlinearFunction{iip, specialize,
+                                  Any, Any, typeof(syms), typeof(paramsyms), Any,
+                                  typeof(_colorvec), Any}(f, mass_matrix,
+                                                          analytic, tgrad, jac,
+                                                          jvp, vjp,
+                                                          jac_prototype,
+                                                          sparsity, Wfact,
+                                                          Wfact_t, paramjac,
+                                                          syms, paramsyms, observed,
+                                                          _colorvec, sys)
+    else
+        IntervalNonlinearFunction{iip, specialize,
+                                  typeof(f), typeof(analytic), typeof(syms),
+                                  typeof(paramsyms),
+                                  typeof(observed),
+                                  typeof(sys)}(f, analytic, syms,
+                                               paramsyms,
+                                               observed, sys)
+    end
+end
+
+function IntervalNonlinearFunction{iip}(f; kwargs...) where {iip}
+    IntervalNonlinearFunction{iip, FullSpecialize}(f; kwargs...)
+end
+IntervalNonlinearFunction{iip}(f::IntervalNonlinearFunction; kwargs...) where {iip} = f
+function IntervalNonlinearFunction(f; kwargs...)
+    IntervalNonlinearFunction{isinplace(f, 3), FullSpecialize}(f; kwargs...)
+end
+IntervalNonlinearFunction(f::IntervalNonlinearFunction; kwargs...) = f
+
 struct NoAD <: AbstractADType end
 
 (f::OptimizationFunction)(args...) = f.f(args...)
@@ -3485,6 +3596,7 @@ for S in [:ODEFunction
           :RODEFunction
           :SDDEFunction
           :NonlinearFunction
+          :IntervalNonlinearFunction
           :IncrementingODEFunction]
     @eval begin function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
                                                                                   iip

@@ -68,7 +68,7 @@ abstract type AbstractOptimizationProblem{isinplace} <: AbstractSciMLProblem end
 """
 $(TYPEDEF)
 
-Base for types which define caches for optimization problems. Must at least hold the optimization 
+Base for types which define caches for optimization problems. Must at least hold the optimization
 function `f <: OptimizationFunction` and the parameters `p`.
 """
 abstract type AbstractOptimizationCache end
@@ -79,6 +79,9 @@ $(TYPEDEF)
 Base for types which define nonlinear solve problems (f(u)=0).
 """
 abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem end
+abstract type AbstractIntervalNonlinearProblem{uType, isinplace} <:
+              AbstractNonlinearProblem{uType,
+                                       isinplace} end
 const AbstractSteadyStateProblem{uType, isinplace} = AbstractNonlinearProblem{uType,
                                                                               isinplace}
 
@@ -204,6 +207,11 @@ abstract type AbstractLinearAlgorithm <: AbstractSciMLAlgorithm end
 $(TYPEDEF)
 """
 abstract type AbstractNonlinearAlgorithm <: AbstractSciMLAlgorithm end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractIntervalNonlinearAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
@@ -688,7 +696,8 @@ export isinplace
 
 export solve, solve!, init, discretize, symbolic_discretize
 
-export LinearProblem, NonlinearProblem, IntegralProblem, OptimizationProblem
+export LinearProblem, NonlinearProblem, IntervalNonlinearProblem,
+       IntegralProblem, OptimizationProblem
 
 export IntegralProblem
 
@@ -715,7 +724,7 @@ export remake
 
 export ODEFunction, DiscreteFunction, SplitFunction, DAEFunction, DDEFunction,
        SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction, IncrementingODEFunction,
-       NonlinearFunction
+       NonlinearFunction, IntervalNonlinearFunction
 
 export OptimizationFunction
 

@@ -17,8 +17,9 @@ The SciML common interface covers the following domains:
   - Direct methods for dense and sparse
   - Iterative solvers with preconditioning
 - Nonlinear Systems (`NonlinearProblem`)
-  - Systems of nonlinear equations
-  - Scalar bracketing systems
+  - Rootfinding for systems of nonlinear equations
+- Interval Nonlinear Systems
+  - Bracketing rootfinders for nonlinear equations with interval bounds
 - Integrals (quadrature) (`IntegralProblem`)
 - Differential Equations
   - Discrete equations (function maps, discrete stochastic (Gillespie/Markov)
@@ -220,7 +221,7 @@ Pkg.status(;mode = PKGMODE_MANIFEST) # hide
 </details>
 ```
 ```@raw html
-You can also download the 
+You can also download the
 <a href="
 ```
 ```@eval
