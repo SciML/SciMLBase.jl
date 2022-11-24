@@ -13,9 +13,8 @@ or the steady state solution to a differential equation defined by a SteadyState
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   NLsolve.jl, then this is the original return from said solver library.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === ReturnCode.Success`), whether it terminated due to a user-defined
-  callback (`sol.retcode === ReturnCode.Terminated`), or whether it exited due to an error. For more
-  details, see the return code section of the DifferentialEquations.jl documentation.
+  successfully or whether it exited due to an error. For more details, see 
+  [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `left`: if the solver is bracketing method, this is the final left bracket value.
 - `right`: if the solver is bracketing method, this is the final right bracket value.
 """
