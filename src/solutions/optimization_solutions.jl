@@ -13,9 +13,8 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully (`sol.retcode === ReturnCode.Success`), whether it terminated due to a user-defined
-  callback (`sol.retcode === :Terminated`), or whether it exited due to an error. For more
-  details, see the return code section of the DifferentialEquations.jl documentation.
+  successfully or whether it exited due to an error. For more details, see 
+  [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, O} <:
        AbstractOptimizationSolution{T, N}
