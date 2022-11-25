@@ -35,6 +35,10 @@ function build_solution(cache::AbstractOptimizationCache,
     T = eltype(eltype(u))
     N = ndims(u)
 
+
+    #Backwords compatibility, remove ASAP
+    retcode = symbol_to_ReturnCode(retcode)
+
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
                          typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
                                                             original)
@@ -66,6 +70,7 @@ function build_solution(prob::AbstractOptimizationProblem,
 
     cache = DefaultOptimizationCache(prob.f, prob.p)
 
+    #Backwords compatibility, remove ASAP
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
