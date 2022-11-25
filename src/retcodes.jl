@@ -392,6 +392,40 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     end
 end
 
+# Deprecate ASAP, only to make the deprecation easier
+symbol_to_ReturnCode(retcode::ReturnCode.T) = retcode
+function symbol_to_ReturnCode(retcode::Symbol)
+    if retcode == :Default || retcode == :DEFAULT
+        ReturnCode.Default
+    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
+           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
+           retcode == :LOCALLY_SOLVED
+        ReturnCode.Success
+    elseif retcode == :Terminated
+        ReturnCode.Terminated
+    elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
+        ReturnCode.MaxIters
+    elseif retcode == :MaxTime || retcode == :TIME_LIMIT
+        ReturnCode.MaxTime
+    elseif retcode == :DtLessThanMin
+        ReturnCode.DtLessThanMin
+    elseif retcode == :Unstable
+        ReturnCode.Unstable
+    elseif retcode == :InitialFailure
+        ReturnCode.InitialFailure
+    elseif retcode == :ConvergenceFailure || retcode == :ITERATION_LIMIT
+        ReturnCode.ConvergenceFailure
+    elseif retcode == :Failure || retcode == symfalse
+        ReturnCode.Failure
+    elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
+           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
+           retcode == :INFEASIBLE_OR_UNBOUNDED
+        ReturnCode.Infeasible
+    else
+        ReturnCode.Failure
+    end
+end
+
 function Base.convert(::Type{ReturnCode.T}, bool::Bool)
     bool ? ReturnCode.Success : ReturnCode.Failure
 end

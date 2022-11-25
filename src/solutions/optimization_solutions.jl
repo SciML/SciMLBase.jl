@@ -66,6 +66,8 @@ function build_solution(prob::AbstractOptimizationProblem,
 
     cache = DefaultOptimizationCache(prob.f, prob.p)
 
+    retcode = symbol_to_ReturnCode(retcode)
+
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
                          typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
                                                             original)
