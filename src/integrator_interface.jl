@@ -422,6 +422,9 @@ end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
     if issymbollike(sym)
+        if sym isa AbstractArray
+            return A[collect(sym)]
+        end
         i = sym_to_index(sym, A)
     elseif all(issymbollike, sym)
         return getindex.((A,), sym)

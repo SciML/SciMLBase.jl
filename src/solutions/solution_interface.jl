@@ -61,10 +61,18 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym)
+    paramsyms = getparamsyms(A)
     if issymbollike(sym)
+        if sym isa AbstractArray
+            return A[collect(sym)]
+        end
         i = sym_to_index(sym, A)
     elseif all(issymbollike, sym)
-        return getindex.((A,), sym)
+        if all(in(paramsyms), Symbol.(sym))
+            return getindex.((A,), sym)
+        else
+            return [getindex.((A,), sym, i) for i in eachindex(A)]
+        end
     else
         i = sym
     end
@@ -88,7 +96,12 @@ end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym, args...)
     if issymbollike(sym)
+        if sym isa AbstractArray
+            return A[collect(sym), args...]
+        end
         i = sym_to_index(sym, A)
+    elseif all(issymbollike, sym)
+        return reduce(vcat, map(s -> A[s, args...]', sym))
     else
         i = sym
     end
