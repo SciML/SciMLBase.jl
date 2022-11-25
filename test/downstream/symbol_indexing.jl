@@ -70,10 +70,16 @@ sol = solve(prob, Rodas4())
 @test sol[γ] == 2.0
 @test sol[(lorenz1.σ, lorenz1.ρ)] isa Tuple
 
+@test sol[[lorenz1.x, lorenz2.x]] isa Vector{Vector{Float64}}
 @test length(sol[[lorenz1.x, lorenz2.x]]) == length(sol)
 @test all(length.(sol[[lorenz1.x, lorenz2.x]]) .== 2)
-@test sol[[γ, lorenz1.σ]] isa Vector{Vector{Float64}}
-@test length(sol[[γ, lorenz1.σ]]) == length(sol)
+@test sol[(lorenz1.x, lorenz2.x)] isa Vector{Tuple{Float64, Float64}}
+@test length(sol[(lorenz1.x, lorenz2.x)]) == length(sol)
+@test all(length.(sol[(lorenz1.x, lorenz2.x)]) .== 2)
+
+@test sol[[lorenz1.x, lorenz2.x], :] isa Matrix{Float64}
+@test size(sol[[lorenz1.x, lorenz2.x], :]) == (2, length(sol))
+@test size(sol[[lorenz1.x, lorenz2.x], :]) == size(sol[[1, 2], :]) == size(sol[1:2, :])
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
@@ -84,6 +90,7 @@ prob2 = ODEProblem(sys2, [], (0.0, 5.0))
 sol2 = solve(prob2, Tsit5())
 
 @test sol2[q] isa Vector{Vector{Float64}}
+@test sol2[(q...,)] is Vector{NTuple{length(q), Float64}}
 @test length(sol2[q]) == length(sol)
 @test all(length.(sol2[q]) .== 2)
 @test sol2[collect(q)] == sol2[q]
