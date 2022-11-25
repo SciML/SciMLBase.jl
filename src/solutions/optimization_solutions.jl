@@ -35,7 +35,6 @@ function build_solution(cache::AbstractOptimizationCache,
     T = eltype(eltype(u))
     N = ndims(u)
 
-
     #Backwords compatibility, remove ASAP
     retcode = symbol_to_ReturnCode(retcode)
 
