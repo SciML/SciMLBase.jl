@@ -345,7 +345,11 @@ EnumX.@enumx ReturnCode begin
     MaxTime
 end
 
-Base.convert(::Type{Symbol}, retcode::ReturnCode.T) = Symbol(retcode)
+function Base.convert(::Type{Symbol}, retcode::ReturnCode.T)
+    error()
+    @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
+    Symbol(retcode)
+end
 
 Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
@@ -354,6 +358,43 @@ const symtrue = Symbol("true")
 const symfalse = Symbol("false")
 
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
+    error()
+    @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
+
+    if retcode == :Default || retcode == :DEFAULT
+        ReturnCode.Default
+    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
+           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
+           retcode == :LOCALLY_SOLVED
+        ReturnCode.Success
+    elseif retcode == :Terminated
+        ReturnCode.Terminated
+    elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
+        ReturnCode.MaxIters
+    elseif retcode == :MaxTime || retcode == :TIME_LIMIT
+        ReturnCode.MaxTime
+    elseif retcode == :DtLessThanMin
+        ReturnCode.DtLessThanMin
+    elseif retcode == :Unstable
+        ReturnCode.Unstable
+    elseif retcode == :InitialFailure
+        ReturnCode.InitialFailure
+    elseif retcode == :ConvergenceFailure || retcode == :ITERATION_LIMIT
+        ReturnCode.ConvergenceFailure
+    elseif retcode == :Failure || retcode == symfalse
+        ReturnCode.Failure
+    elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
+           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
+           retcode == :INFEASIBLE_OR_UNBOUNDED
+        ReturnCode.Infeasible
+    else
+        ReturnCode.Failure
+    end
+end
+
+# Deprecate ASAP, only to make the deprecation easier
+symbol_to_ReturnCode(retcode::ReturnCode.T) = retcode
+function symbol_to_ReturnCode(retcode::Symbol)
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
@@ -398,7 +439,9 @@ Returns a boolean for whether a return code should be interepted as a form of su
 function successful_retcode end
 
 function successful_retcode(retcode::ReturnCode.T)
-    retcode == :Success || retcode == :Terminated || retcode == :ExactSolutionLeft ||
-        retcode == :ExactSolutionRight || retcode == :FloatingPointLimit
+    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
+        retcode == ReturnCode.ExactSolutionLeft ||
+        retcode == ReturnCode.ExactSolutionRight ||
+        retcode == ReturnCode.FloatingPointLimit
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
