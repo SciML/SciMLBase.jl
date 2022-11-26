@@ -90,7 +90,7 @@ prob2 = ODEProblem(sys2, [], (0.0, 5.0))
 sol2 = solve(prob2, Tsit5())
 
 @test sol2[q] isa Vector{Vector{Float64}}
-@test sol2[(q...,)] is Vector{NTuple{length(q), Float64}}
+@test sol2[(q...,)] isa Vector{NTuple{length(q), Float64}}
 @test length(sol2[q]) == length(sol)
 @test all(length.(sol2[q]) .== 2)
 @test sol2[collect(q)] == sol2[q]
