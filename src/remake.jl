@@ -42,6 +42,13 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
     (prob.f isa ODEFunction) ? !isfunctionwrapper(prob.f.f) : true
 end
 
+"""
+    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing, 
+           p = missing, kwargs = missing, _kwargs...)
+
+Remake the given `ODEProblem`.
+If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
+"""
 function remake(prob::ODEProblem; f = missing,
                 u0 = missing,
                 tspan = missing,
@@ -52,43 +59,23 @@ function remake(prob::ODEProblem; f = missing,
         tspan = prob.tspan
     end
 
-    if (p !== missing && eltype(p) <: Pair) || (u0 !== missing && eltype(u0) <: Pair)
-        defs = Dict{Any, Any}()
-        if hasproperty(prob.f, :sys)
-            if hasfield(typeof(prob.f.sys), :ps)
-                defs = mergedefaults(defs, prob.p, getfield(prob.f.sys, :ps))
-            end
-            if hasfield(typeof(prob.f.sys), :u0)
-                defs = mergedefaults(defs, prob.u0, getfield(prob.f.sys, :u0))
-            end
+    if p === missing && u0 === missing
+        p, u0 = prob.p, prob.u0
+    else # at least one of them has a value
+        if p === missing
+            p = prob.p
         end
-    else
-        defs = nothing
-    end
-
-    if p === missing
-        p = prob.p
-    else
-        if eltype(p) <: Pair
-            if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps)
-                p = handle_varmap(p, prob.f.sys, field = :ps, defaults = defs)
-                defs = mergedefaults(defs, p, getfield(prob.f.sys, :ps))
-            else
-                throw(ArgumentError("This problem does not support symbolic parameter maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            end
+        if u0 === missing
+            u0 = prob.u0
         end
-    end
-
-    if u0 === missing
-        u0 = prob.u0
-    else
-        if eltype(u0) <: Pair
-            if hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states)
-                u0 = handle_varmap(u0, prob.f.sys, field = :states,
-                                   defaults = defs, tofloat = true)
-            else
-                throw(ArgumentError("This problem does not support symbolic default maps with `remake`, i.e. it does not have a symbolic origin. Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to the order of states."))
-            end
+        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
+            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
+                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
+                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
+            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
+                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
+                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
+            p, u0 = process_p_u0_symbolic(prob, p, u0)
         end
     end
 
@@ -134,7 +121,9 @@ function remake(prob::ODEProblem; f = missing,
 end
 
 # overloaded in MTK to intercept symbolic remake
-function process_p_u0_symbolic end
+function process_p_u0_symbolic(prob, p, u0)
+    throw(ArgumentError("Please load `ModelingToolkit.jl` in order to support symbolic remake."))
+end
 
 function remake(thing::AbstractJumpProblem; kwargs...)
     parameterless_type(thing)(remake(thing.prob; kwargs...))
