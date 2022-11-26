@@ -91,7 +91,7 @@ sol2 = solve(prob2, Tsit5())
 
 @test sol2[q] isa Vector{Vector{Float64}}
 @test sol2[(q...,)] isa Vector{NTuple{length(q), Float64}}
-@test length(sol2[q]) == length(sol)
+@test length(sol2[q]) == length(sol2)
 @test all(length.(sol2[q]) .== 2)
 @test sol2[collect(q)] == sol2[q]
 
