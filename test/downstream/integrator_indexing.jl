@@ -54,8 +54,26 @@ step!(integrator, 100.0, true)
 @test integrator[lorenz1.x] isa Real
 @test integrator[t] isa Real
 @test integrator[α] isa Real
-# @test integrator[γ] isa Real
-# @test integrator[γ] == 2.0
+@test integrator[γ] isa Real
+@test integrator[γ] == 2.0
+@test integrator[(lorenz1.σ, lorenz1.ρ)] isa Tuple
+
+@test length(integrator[[lorenz1.x, lorenz2.x]]) == 2
+@test integrator[[γ, lorenz1.σ]] isa Vector{Float64}
+@test length(integrator[[γ, lorenz1.σ]]) == 2
+
+@variables q(t)[1:2] = [1.0, 2.0]
+eqs = [D(q[1]) ~ 2q[1]
+       D(q[2]) ~ 2.0]
+@named sys2 = ODESystem(eqs, t, [q...], [])
+sys2_simplified = structural_simplify(sys2)
+prob2 = ODEProblem(sys2, [], (0.0, 5.0))
+integrator2 = init(prob2, Tsit5())
+
+@test integrator2[q] isa Vector{Float64}
+@test length(integrator2[q]) == length(q)
+@test integrator2[collect(q)] == integrator2[q]
+@test_broken integrator[(q...,)] isa NTuple{length(q), Float64}
 
 @testset "Symbolic set_u!" begin
     @variables u(t)
