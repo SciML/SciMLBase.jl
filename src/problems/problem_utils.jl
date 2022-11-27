@@ -63,6 +63,13 @@ function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNonlinearProblem)
     show(io, mime, A.u0)
 end
 
+function Base.show(io::IO, mime::MIME"text/plain", A::IntervalNonlinearProblem)
+    summary(io, A)
+    println(io)
+    print(io, "Interval: ")
+    show(io, mime, A.tspan)
+end
+
 function Base.summary(io::IO, prob::AbstractOptimizationProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
