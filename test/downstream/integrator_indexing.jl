@@ -73,7 +73,7 @@ integrator2 = init(prob2, Tsit5())
 @test integrator2[q] isa Vector{Float64}
 @test length(integrator2[q]) == length(q)
 @test integrator2[collect(q)] == integrator2[q]
-@test_broken integrator[(q...,)] isa NTuple{length(q), Float64}
+@test integrator2[(q...,)] isa NTuple{length(q), Float64}
 
 @testset "Symbolic set_u!" begin
     @variables u(t)
