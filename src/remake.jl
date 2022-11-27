@@ -237,15 +237,18 @@ function remake(prob::NonlinearProblem;
     end
 
     if kwargs === missing
-        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p, problem_type = problem_type; prob.kwargs..., _kwargs...)
+        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
+                                          problem_type = problem_type; prob.kwargs...,
+                                          _kwargs...)
     else
-        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p, problem_type = problem_type; kwargs...)
+        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
+                                          problem_type = problem_type; kwargs...)
     end
 end
 
 # overloaded in MTK to intercept symbolic remake
 function process_p_u0_symbolic(prob, p, u0)
-    if typeof(prob) <: Union{AbstractDEProblem,OptimizationProblem,NonlinearProblem}
+    if typeof(prob) <: Union{AbstractDEProblem, OptimizationProblem, NonlinearProblem}
         throw(ArgumentError("Please load `ModelingToolkit.jl` in order to support symbolic remake."))
     else
         throw(ArgumentError("Symbolic remake for $(typeof(prob)) is currently not supported, consider opening an issue."))
