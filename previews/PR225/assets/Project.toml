@@ -5,3 +5,5 @@ ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 
 [compat]
 Documenter = "0.27"
+ModelingToolkit = "8.35"
+SciMLBase = "1.74"
