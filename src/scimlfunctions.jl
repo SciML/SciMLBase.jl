@@ -968,12 +968,16 @@ end
 A representation of an discrete dynamical system `f`, defined by:
 
 ```math
-0 = f(u_{n+1}, u_{n}, p, t_{n+1})
+0 = f(u_{n+1}, u_{n}, p, t_{n+1}, integ)
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
 with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
+`integ` constraints the field:
+```julia
+dt: the time step
+```
 
 ## Constructor
 
@@ -2651,12 +2655,12 @@ function unwrapped_f(f::ImplicitDiscreteFunction, newf = unwrapped_f(f.f))
     specialize = specialization(f)
 
     if specialize === NoSpecialize
-        ImplicitDiscreteFunction{isinplace(f, 5), specialize, Any, Any,
+        ImplicitDiscreteFunction{isinplace(f, 6), specialize, Any, Any,
                                  Any, Any, Any, Any, Any}(newf, f.analytic, f.syms,
                                                           f.indepsym,
                                                           f.paramsyms, f.observed, f.sys)
     else
-        ImplicitDiscreteFunction{isinplace(f, 5), specialize, typeof(newf),
+        ImplicitDiscreteFunction{isinplace(f, 6), specialize, typeof(newf),
                                  typeof(f.analytic),
                                  typeof(f.syms), typeof(f.indepsym), typeof(f.paramsyms),
                                  typeof(f.observed), typeof(f.sys)}(newf, f.analytic,

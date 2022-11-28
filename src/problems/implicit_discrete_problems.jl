@@ -1,8 +1,3 @@
-const IMPLICIT_DISCRETE_INPLACE_DEFAULT = ImplicitDiscreteFunction{true}((resid, un, u, p, t) -> resid .= un .-
-                                                                                                          u)
-const IMPLICIT_DISCRETE_OUTOFPLACE_DEFAULT = ImplicitDiscreteFunction{false}((un, u, p, t) -> un .-
-                                                                                              u)
-
 @doc doc"""
 
 Defines a discrete dynamical system problem.
@@ -14,7 +9,7 @@ To define an ImplicitDiscrete Problem, you simply need to give the function ``f`
 condition ``u_0`` which define a function map:
 
 ```math
-0 = f(u_{n+1}, u_{n}, p, t_{n+1})
+0 = f(u_{n+1}, u_{n}, p, t_{n+1}, integ)
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and
@@ -22,9 +17,11 @@ condition ``u_0`` which define a function map:
 geometry of `u`.  Note that we are not limited to numbers or vectors for `u₀`;
 one is allowed to provide `u₀` as arbitrary matrices / higher dimension tensors
 as well. ``u_{n+1}`` only depends on the previous iteration ``u_{n}`` and
-``t_{n+1}``. The default ``t_{n+1}`` is ``t_n = t_0 + n*dt`` (with `dt=1` being
-the default). For continuous-time Markov chains this is the time at which the
-change is occurring.
+``t_{n+1}``. The default ``t_{n+1}`` is chosen adaptively, and when ``dt`` is
+specified, we have ``t_n = t_0 + n*dt``. `integ` constraints the field:
+```julia
+dt: the time step
+```
 
 ## Problem Type
 
@@ -90,20 +87,9 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
                                                       p = NullParameters();
                                                       kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
-        new{typeof(u0), typeof(_tspan), isinplace(f, 5),
+        new{typeof(u0), typeof(_tspan), isinplace(f, 6),
             typeof(p),
             typeof(f), typeof(kwargs)}(f, u0, _tspan, p, kwargs)
-    end
-
-    function ImplicitDiscreteProblem{iip}(::Nothing, ::Nothing, p = NullParameters();
-                                          callback = nothing) where {iip}
-        if iip
-            f = IMPLICIT_DISCRETE_INPLACE_DEFAULT
-        else
-            f = IMPLICIT_DISCRETE_OUTOFPLACE_DEFAULT
-        end
-        new{Nothing, Nothing, iip, typeof(p),
-            typeof(f), typeof(callback)}(f, nothing, nothing, p, callback)
     end
 
     function ImplicitDiscreteProblem{iip}(f, u0, tspan, p = NullParameters();
@@ -119,27 +105,11 @@ Defines a discrete problem with the specified functions.
 """
 function ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan::Tuple,
                                  p = NullParameters(); kwargs...)
-    ImplicitDiscreteProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
+    ImplicitDiscreteProblem{isinplace(f, 6)}(f, u0, tspan, p; kwargs...)
 end
 
 function ImplicitDiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
                                  kwargs...)
-    iip = isinplace(f, 5)
+    iip = isinplace(f, 6)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
-end
-
-"""
-$(SIGNATURES)
-
-Define a discrete problem with the identity map.
-"""
-function ImplicitDiscreteProblem(u0::Union{AbstractArray, Number}, tspan::Tuple,
-                                 p = NullParameters(); kwargs...)
-    iip = typeof(u0) <: AbstractArray
-    if iip
-        f = IMPLICIT_DISCRETE_INPLACE_DEFAULT
-    else
-        f = IMPLICIT_DISCRETE_OUTOFPLACE_DEFAULT
-    end
-    ImplicitDiscreteProblem(f, u0, tspan, p; kwargs...)
 end
