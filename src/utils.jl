@@ -21,11 +21,11 @@ $(SIGNATURES)
 
 Get the number of parameters of a Tuple type, i.e. the number of fields.
 """
-Base.@pure function num_types_in_tuple(sig)
+function num_types_in_tuple(sig)
     length(sig.parameters)
 end
 
-Base.@pure function num_types_in_tuple(sig::UnionAll)
+function num_types_in_tuple(sig::UnionAll)
     length(Base.unwrap_unionall(sig).parameters)
 end
 

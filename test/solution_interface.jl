@@ -28,3 +28,14 @@ end
                                                    nothing) # strs
     @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
 end
+
+@testset "Tricks.jl inplace inference" begin
+    f(u, p, t) = u
+    f!(du, u, p, t) = @. du = u
+    valinplace = (f) -> Val(SciMLBase.isinplace(f, 4))
+    @inferred valinplace(f)
+    @inferred valinplace(f!)
+
+    @inferred ODEProblem(f, ones(3), (0.0,1.0))
+    @inferred ODEProblem(f!, ones(3), (0.0,1.0))
+end
