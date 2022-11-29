@@ -202,6 +202,18 @@ function Base.showerror(io::IO, e::FunctionArgumentsError)
     println(io, methods(e.f))
 end
 
+function check_oopiip(f::F, inplace_param_number::Int) where F
+    iip_dispatch = Tricks.static_hasmethod(f, Tuple{Vararg{Any,inplace_param_number}})
+    oop_dispatch = Tricks.static_hasmethod(f, Tuple{Vararg{Any,inplace_param_number - 1}})
+    iip_dispatch, oop_dispatch
+end
+
+function check_oopiip(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{T, V, W, I},
+                      inplace_param_number::Int) where {T,V,W,I}
+    n = length(T)
+    n == inplace_param_number, n == inplace_param_number - 1
+end
+
 """
     isinplace(f, inplace_param_number[,fname="f"])
     isinplace(f::AbstractSciMLFunction[, inplace_param_number])
@@ -229,8 +241,8 @@ form is disabled and the 2-argument signature is ensured to be matched.
 function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
                    has_two_dispatches = true, isoptimization = false)
     nargs = numargs(f)
-    iip_dispatch = Tricks.static_hasmethod(f, Tuple{Vararg{Any,inplace_param_number}})
-    oop_dispatch = Tricks.static_hasmethod(f, Tuple{Vararg{Any,inplace_param_number - 1}})
+
+    iip_dispatch, oop_dispatch = check_oopiip(f, inplace_param_number)
 
     if length(nargs) == 0
         throw(NoMethodsError(fname))

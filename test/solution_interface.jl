@@ -1,4 +1,5 @@
-using Test, SciMLBase
+using Test, SciMLBase, RuntimeGeneratedFunctions
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 @testset "getindex" begin
     u = rand(1)
@@ -38,4 +39,12 @@ end
 
     @inferred ODEProblem(f, ones(3), (0.0,1.0))
     @inferred ODEProblem(f!, ones(3), (0.0,1.0))
+
+    ex = :(function f(_du,_u,_p,_t)
+        @inbounds _du[1] = _u[1]
+        @inbounds _du[2] = _u[2]
+        nothing
+    end)
+    f1 = @RuntimeGeneratedFunction(ex)
+    @test_broken @inferred valinplace(f1)
 end
