@@ -686,7 +686,9 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         plott = collect(range(integrator.tprev; step = integrator.t, length = plotdensity))
         plot_timeseries = integrator(plott)
         if plot_analytic
-            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0, integrator.sol.prob.p, t) for t in plott]
+            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
+                                                                       integrator.sol.prob.p,
+                                                                       t) for t in plott]
         end
     end # if not denseplot, we'll just get the values right from the integrator.
 

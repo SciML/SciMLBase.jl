@@ -428,9 +428,11 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
         plot_timeseries = sol(plott)
         if plot_analytic
             if typeof(sol.prob.f) <: Tuple
-                plot_analytic_timeseries = [sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p, t) for t in plott]
+                plot_analytic_timeseries = [sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p,
+                                                                   t) for t in plott]
             else
-                plot_analytic_timeseries = [sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t) for t in plott]
+                plot_analytic_timeseries = [sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t)
+                                            for t in plott]
             end
         else
             plot_analytic_timeseries = nothing

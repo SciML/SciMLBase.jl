@@ -6,16 +6,16 @@ using Test, SciMLBase
 end
 
 @testset "plot ODE solution" begin
-    f = ODEFunction((u, p, t) -> -u, analytic=(u0, p, t) -> u0 * exp(-t))
+    f = ODEFunction((u, p, t) -> -u, analytic = (u0, p, t) -> u0 * exp(-t))
     ode = ODEProblem(f, 1.0, (0.0, 1.0))
     sol = SciMLBase.build_solution(ode, :NoAlgorithm, [ode.tspan[begin]], [ode.u0])
-    for t in Iterators.drop(range(ode.tspan..., length=5), 1)
+    for t in Iterators.drop(range(ode.tspan..., length = 5), 1)
         push!(sol.t, t)
         push!(sol.u, ode.u0)
     end
 
     syms = SciMLBase.interpret_vars(nothing, sol, SciMLBase.getsyms(sol))
-    int_vars = SciMLBase.interpret_vars(nothing #= idxs =#, sol, syms)
+    int_vars = SciMLBase.interpret_vars(nothing, sol, syms) # nothing = idxs
     plot_vecs, labels = SciMLBase.diffeq_to_arrays(sol,
                                                    true, # plot_analytic
                                                    true, # denseplot
@@ -25,6 +25,6 @@ end
                                                    nothing, # idxs
                                                    int_vars,
                                                    :identity, # tscale
-                                                   nothing #= strs =#)
+                                                   nothing) # strs
     @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
 end
