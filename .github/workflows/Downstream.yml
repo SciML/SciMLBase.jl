@@ -40,6 +40,8 @@ jobs:
           - {user: SciML, repo: BoundaryValueDiffEq.jl, group: All}
           - {user: SciML, repo: ModelingToolkit.jl, group: All}
           - {user: SciML, repo: StochasticDelayDiffEq.jl, group: All}
+          - {user: SciML, repo: SimpleNonlinearSolve.jl, group: All}
+          - {user: SciML, repo: SimpleDiffEq.jl, group: All}
 
     steps:
       - uses: actions/checkout@v2
