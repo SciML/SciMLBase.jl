@@ -108,7 +108,7 @@ function ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan::Tuple,
     ImplicitDiscreteProblem{isinplace(f, 6)}(f, u0, tspan, p; kwargs...)
 end
 
-function ImplicitDiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
+function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
                                  kwargs...)
     iip = isinplace(f, 6)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
