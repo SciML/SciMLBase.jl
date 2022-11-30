@@ -962,6 +962,74 @@ struct DiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS} <:
     sys::SYS
 end
 
+@doc doc"""
+    ImplicitDiscreteFunction{iip,F,Ta,S,S2,S3,O} <: AbstractDiscreteFunction{iip,specialize}
+
+A representation of an discrete dynamical system `f`, defined by:
+
+```math
+0 = f(u_{n+1}, u_{n}, p, t_{n+1}, integ)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+`integ` contains the fields:
+```julia
+dt: the time step
+```
+
+## Constructor
+
+```julia
+ImplicitDiscreteFunction{iip,specialize}(f;
+                                analytic = __has_analytic(f) ? f.analytic : nothing,
+                                syms = __has_syms(f) ? f.syms : nothing
+                                indepsym = __has_indepsym(f) ? f.indepsym : nothing,
+                                paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(residual, u_next, u, p, t)` or `residual = f(u_next, u, p, t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating
+the usage of `f`. These include:
+
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
+  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
+  naming to the values, allowing `sol[:a]` in the solution.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## specialize: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the ImplicitDiscreteFunction type directly match the names of the inputs.
+"""
+struct ImplicitDiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS} <:
+       AbstractDiscreteFunction{iip}
+    f::F
+    analytic::Ta
+    syms::S
+    indepsym::S2
+    paramsyms::S3
+    observed::O
+    sys::SYS
+end
+
 """
 $(TYPEDEF)
 """
@@ -2045,6 +2113,7 @@ function (f::SplitFunction)(du, u, p, t)
 end
 
 (f::DiscreteFunction)(args...) = f.f(args...)
+(f::ImplicitDiscreteFunction)(args...) = f.f(args...)
 (f::DAEFunction)(args...) = f.f(args...)
 (f::DDEFunction)(args...) = f.f(args...)
 
@@ -2536,6 +2605,68 @@ function unwrapped_f(f::DiscreteFunction, newf = unwrapped_f(f.f))
                          typeof(f.observed), typeof(f.sys)}(newf, f.analytic, f.syms,
                                                             f.indepsym, f.paramsyms,
                                                             f.observed, f.sys)
+    end
+end
+
+function ImplicitDiscreteFunction{iip, specialize}(f;
+                                                   analytic = __has_analytic(f) ?
+                                                              f.analytic :
+                                                              nothing,
+                                                   syms = __has_syms(f) ? f.syms : nothing,
+                                                   indepsym = __has_indepsym(f) ?
+                                                              f.indepsym :
+                                                              nothing,
+                                                   paramsyms = __has_paramsyms(f) ?
+                                                               f.paramsyms :
+                                                               nothing,
+                                                   observed = __has_observed(f) ?
+                                                              f.observed :
+                                                              DEFAULT_OBSERVED,
+                                                   sys = __has_sys(f) ? f.sys : nothing) where {
+                                                                                                iip,
+                                                                                                specialize
+                                                                                                }
+    if specialize === NoSpecialize
+        ImplicitDiscreteFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any}(f,
+                                                                                     analytic,
+                                                                                     syms,
+                                                                                     indepsym,
+                                                                                     parasmsyms,
+                                                                                     observed,
+                                                                                     sys)
+    else
+        ImplicitDiscreteFunction{iip, specialize, typeof(f), typeof(analytic),
+                                 typeof(syms), typeof(indepsym), typeof(paramsyms),
+                                 typeof(observed), typeof(sys)}(f, analytic, syms, indepsym,
+                                                                paramsyms, observed, sys)
+    end
+end
+
+function ImplicitDiscreteFunction{iip}(f; kwargs...) where {iip}
+    ImplicitDiscreteFunction{iip, FullSpecialize}(f; kwargs...)
+end
+ImplicitDiscreteFunction{iip}(f::ImplicitDiscreteFunction; kwargs...) where {iip} = f
+function ImplicitDiscreteFunction(f; kwargs...)
+    ImplicitDiscreteFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
+end
+ImplicitDiscreteFunction(f::ImplicitDiscreteFunction; kwargs...) = f
+
+function unwrapped_f(f::ImplicitDiscreteFunction, newf = unwrapped_f(f.f))
+    specialize = specialization(f)
+
+    if specialize === NoSpecialize
+        ImplicitDiscreteFunction{isinplace(f, 6), specialize, Any, Any,
+                                 Any, Any, Any, Any, Any}(newf, f.analytic, f.syms,
+                                                          f.indepsym,
+                                                          f.paramsyms, f.observed, f.sys)
+    else
+        ImplicitDiscreteFunction{isinplace(f, 6), specialize, typeof(newf),
+                                 typeof(f.analytic),
+                                 typeof(f.syms), typeof(f.indepsym), typeof(f.paramsyms),
+                                 typeof(f.observed), typeof(f.sys)}(newf, f.analytic,
+                                                                    f.syms,
+                                                                    f.indepsym, f.paramsyms,
+                                                                    f.observed, f.sys)
     end
 end
 
