@@ -18,7 +18,7 @@ geometry of `u`.  Note that we are not limited to numbers or vectors for `u₀`;
 one is allowed to provide `u₀` as arbitrary matrices / higher dimension tensors
 as well. ``u_{n+1}`` only depends on the previous iteration ``u_{n}`` and
 ``t_{n+1}``. The default ``t_{n+1}`` is chosen adaptively, and when ``dt`` is
-specified, we have ``t_n = t_0 + n*dt``. `integ` constraints the field:
+specified, we have ``t_n = t_0 + n*dt``. `integ` contains the fields:
 ```julia
 dt: the time step
 ```
