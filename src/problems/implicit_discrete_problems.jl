@@ -81,8 +81,8 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function ImplicitDiscreteProblem{iip}(f::ImplicitDiscreteFunction{
-                                                                                          iip
-                                                                                          },
+                                                                                  iip
+                                                                                  },
                                                       u0, tspan::Tuple,
                                                       p = NullParameters();
                                                       kwargs...) where {iip}
