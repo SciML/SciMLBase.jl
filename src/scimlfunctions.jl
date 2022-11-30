@@ -974,7 +974,7 @@ A representation of an discrete dynamical system `f`, defined by:
 and all of its related functions, such as the Jacobian of `f`, its gradient
 with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
-`integ` constraints the field:
+`integ` contains the fields:
 ```julia
 dt: the time step
 ```
