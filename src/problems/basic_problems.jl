@@ -489,3 +489,5 @@ end
 
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
+
+@enum ObjSense MinSense MaxSense
