@@ -418,9 +418,9 @@ optimization. They should be an `AbstractArray` matching the geometry of `u`,
 where `(lcons[I],ucons[I])` is the constraint (lower and upper bounds)
 for `cons[I]`.
 
-If `f` is a standard Julia function, it is automatically , jac = true, eval_module = @__MODULE__)ed into an
-`OptimizationFunction` with `NoAD()`, i.e., no automatic generation
-of the derivative functions.
+If `f` is a standard Julia function, it is automatically transformed into an 
+OptimizationFunction with `NoAD()`, meaning the derivative functions are not 
+automatically generated.
 
 Any extra keyword arguments are captured to be sent to the optimizers.
 
