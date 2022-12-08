@@ -113,7 +113,6 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = sym
     end
 
-    indepsym = getindepsym(A)
     if i === nothing
         if issymbollike(sym) && __has_sys(A.prob.f) && RecursiveArrayTools.is_indep_sym(A.prob.f.sys, sym) || !__has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
             A.t[args...]
