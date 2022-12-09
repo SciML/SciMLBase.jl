@@ -23,8 +23,8 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully, whether it terminated early due to a user-defined callback, or whether it 
-  exited due to an error. For more details, see 
+  successfully, whether it terminated early due to a user-defined callback, or whether it
+  exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
@@ -63,7 +63,12 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                         destats = nothing,
                         kwargs...)
     T = eltype(eltype(u))
-    N = length((size(prob.u0)..., length(u)))
+
+    if prob.u0 === nothing
+        N = 2
+    else
+        N = length((size(prob.u0)..., length(u)))
+    end
 
     if has_analytic(prob.f)
         u_analytic = Vector{typeof(prob.u0)}()
