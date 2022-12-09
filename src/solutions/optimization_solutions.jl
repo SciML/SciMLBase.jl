@@ -15,8 +15,10 @@ Representation of the solution to an nonlinear optimization defined by an Optimi
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
   successfully or whether it exited due to an error. For more details, see 
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+- `original`: Original output of the optimizer
+- `solve_time`: Solve time from the solver in Seconds
 """
-struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, O} <:
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, O, S} <:
        AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
@@ -24,12 +26,14 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, 
     minimum::Tf
     retcode::ReturnCode.T
     original::O # original output of the optimizer
+    solve_time::S # [s] solve time from the solver
 end
 
 function build_solution(cache::AbstractOptimizationCache,
                         alg, u, minimum;
                         retcode = ReturnCode.Default,
                         original = nothing,
+                        solve_time = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
@@ -39,7 +43,7 @@ function build_solution(cache::AbstractOptimizationCache,
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
                          typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
-                                                            original)
+                                                            original, solve_time)
 end
 
 """
