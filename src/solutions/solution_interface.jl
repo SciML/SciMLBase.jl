@@ -184,6 +184,15 @@ function Base.iterate(sol::AbstractTimeseriesSolution, state = 0)
     return (solution_new_tslocation(sol, state), state)
 end
 
+function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
+    println(io, string("retcode: ", A.retcode))
+    print(io, "t: ")
+    show(io, m, A.t)
+    println(io)
+    print(io, "u: ")
+    show(io, m, A.u)
+end                                                                             
+
 DEFAULT_PLOT_FUNC(x...) = (x...,)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
