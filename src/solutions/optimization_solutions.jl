@@ -42,9 +42,12 @@ function build_solution(cache::AbstractOptimizationCache,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(minimum), typeof(original), typeof(solve_time)}(u, cache, alg, 
-                                                                                minimum, retcode,
-                                                                                original, solve_time)
+                         typeof(minimum), typeof(original), typeof(solve_time)}(u, cache,
+                                                                                alg,
+                                                                                minimum,
+                                                                                retcode,
+                                                                                original,
+                                                                                solve_time)
 end
 
 """
