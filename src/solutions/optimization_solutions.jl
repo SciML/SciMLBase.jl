@@ -43,11 +43,11 @@ function build_solution(cache::AbstractOptimizationCache,
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
                          typeof(objective), typeof(original), typeof(solve_time)}(u, cache,
-                                                                                alg,
-                                                                                objective,
-                                                                                retcode,
-                                                                                original,
-                                                                                solve_time)
+                                                                                  alg,
+                                                                                  objective,
+                                                                                  retcode,
+                                                                                  original,
+                                                                                  solve_time)
 end
 
 """
@@ -80,8 +80,9 @@ function build_solution(prob::AbstractOptimizationProblem,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(objective), typeof(original)}(u, cache, alg, objective, retcode,
-                                                            original)
+                         typeof(objective), typeof(original)}(u, cache, alg, objective,
+                                                              retcode,
+                                                              original)
 end
 
 get_p(sol::OptimizationSolution) = sol.cache.p
