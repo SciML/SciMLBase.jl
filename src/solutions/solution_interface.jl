@@ -71,7 +71,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         end
         i = sym_to_index(sym, A)
     elseif all(issymbollike, sym)
-        if __has_sys(A.prob.f) && all(Base.Fix1(RecursiveArrayTools.is_param_sym, A.prob.f.sys), sym) || !__has_sys(A.prob.f) && all(in(getparamsyms(A)), Symbol.(sym))
+        if __has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) || !__has_sys(A.prob.f) && all(in(getparamsyms(A)), Symbol.(sym))
             return getindex.((A,), sym)
         else
             return [getindex.((A,), sym, i) for i in eachindex(A)]
@@ -82,10 +82,10 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
 
     if i === nothing
         if issymbollike(sym)
-            if __has_sys(A.prob.f) && RecursiveArrayTools.is_indep_sym(A.prob.f.sys, sym) || !__has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
+            if __has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) || !__has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
                 return A.t
-            elseif __has_sys(A.prob.f) && RecursiveArrayTools.is_param_sym(A.prob.f.sys, sym)
-                return A.prob.p[RecursiveArrayTools.param_sym_to_index(A.prob.f.sys, sym)]
+            elseif __has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
+                return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
             elseif !__has_sys(A.prob.f) && Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
@@ -114,7 +114,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 
     if i === nothing
-        if issymbollike(sym) && __has_sys(A.prob.f) && RecursiveArrayTools.is_indep_sym(A.prob.f.sys, sym) || !__has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
+        if issymbollike(sym) && __has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) || !__has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
             observed(A, sym, args...)
@@ -398,7 +398,7 @@ end
 
 function sym_to_index(sym, sol::AbstractSciMLSolution)
     if __has_sys(sol.prob.f)
-        return RecursiveArrayTools.state_sym_to_index(sol.prob.f.sys, sym)
+        return state_sym_to_index(sol.prob.f.sys, sym)
     else
         return sym_to_index(sym, getsyms(sol))
     end
