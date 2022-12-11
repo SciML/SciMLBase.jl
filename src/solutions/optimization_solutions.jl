@@ -98,7 +98,7 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
     print(io, "u: ")
     show(io, A.u)
     println(io)
-    print(io, "Final objective value:     $(A.minimum)\n")
+    print(io, "Final objective value:     $(A.objective)\n")
     return
 end
 
