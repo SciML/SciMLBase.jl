@@ -108,11 +108,11 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
         Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
                      "sol.minimizer")
         return getfield(x, :u)
-    if s === :minimum
+    elseif s === :minimum
         Base.depwarn("`sol.minimum` is deprecated. Use `sol.objective` instead.",
                      "sol.minimum")
         return getfield(x, :objective)
-    elseif s == :prob
+    elseif s === :prob
         Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
                      "sol.prob")
         return getfield(x, :cache)
