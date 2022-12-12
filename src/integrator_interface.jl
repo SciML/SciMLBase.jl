@@ -412,7 +412,7 @@ function getobserved(integrator::DEIntegrator)
 end
 
 function sym_to_index(sym, integrator::DEIntegrator)
-    if has_sys(integrator.f)
+    if has_sys(integrator.f) && is_state_sym(integrator.f.sys, sym)
         return state_sym_to_index(integrator.f.sys, sym)
     else
         return sym_to_index(sym, getsyms(integrator))

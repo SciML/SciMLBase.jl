@@ -405,7 +405,7 @@ function cleansym(sym::Symbol)
 end
 
 function sym_to_index(sym, sol::AbstractSciMLSolution)
-    if has_sys(sol.prob.f)
+    if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
         return state_sym_to_index(sol.prob.f.sys, sym)
     else
         return sym_to_index(sym, getsyms(sol))

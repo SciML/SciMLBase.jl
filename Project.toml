@@ -38,7 +38,7 @@ RecursiveArrayTools = "2.33"
 RuntimeGeneratedFunctions = "0.5"
 StaticArrays = "1"
 StaticArraysCore = "1"
-SymbolicIndexingInterface = "0.1"
+SymbolicIndexingInterface = "0.2"
 Tables = "1"
 julia = "1.6"
 
