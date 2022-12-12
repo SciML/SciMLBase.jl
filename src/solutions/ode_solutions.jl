@@ -84,7 +84,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if __has_sys(sol.prob.f)
+    if has_sys(sol.prob.f)
         DiffEqArray{typeof(A).parameters[1:4]...,typeof(sol.prob.f.sys),typeof(observed),typeof(p)}(A.u, A.t, sol.prob.f.sys, observed, p)
     else
         syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ?
@@ -98,7 +98,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if __has_sys(sol.prob.f)
+    if has_sys(sol.prob.f)
         DiffEqArray{typeof(A).parameters[1:4]...,typeof(sol.prob.f.sys),typeof(observed),typeof(p)}(A.u, A.t, sol.prob.f.sys, observed, p)
     else
         syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ?
@@ -126,7 +126,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if __has_sys(sol.prob.f)
+    if has_sys(sol.prob.f)
         return DiffEqArray(interp_sol[idxs], t, [idxs], independent_variables(sol.prob.f.sys), observed, p)
     else
         return DiffEqArray(interp_sol[idxs], t, [idxs], getindepsym(sol), observed, p)
@@ -139,7 +139,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if __has_sys(sol.prob.f)
+    if has_sys(sol.prob.f)
         return DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, idxs,
                     independent_variables(sol.prob.f.sys), observed, p)
     else
