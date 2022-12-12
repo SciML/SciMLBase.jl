@@ -411,7 +411,13 @@ function getobserved(integrator::DEIntegrator)
     end
 end
 
-sym_to_index(sym, integrator::DEIntegrator) = sym_to_index(sym, getsyms(integrator))
+function sym_to_index(sym, integrator::DEIntegrator)
+    if has_sys(integrator.f)
+        return state_sym_to_index(integrator.f.sys, sym)
+    else
+        return sym_to_index(sym, getsyms(integrator))
+    end
+end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
                                                 I::Union{Int, AbstractArray{Int},
@@ -432,13 +438,17 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
         i = sym
     end
 
-    indepsym = getindepsym(A)
-    paramsyms = getparamsyms(A)
     if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
-            A.t
-        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            A.p[findfirst(isequal(Symbol(sym)), paramsyms)]
+        if issymbollike(sym)
+            if has_sys(A.f) && is_indep_sym(A.f.sys, sym) || !has_sys(A.f) && Symbol(sym) == getindepsym(A)
+                return A.t
+            elseif has_sys(A.f) && is_param_sym(A.f.sys, sym)
+                return A.p[param_sym_to_index(A.f.sys, sym)]
+            elseif !has_sys(A.f) && has_paramsyms(A.f) && Symbol(sym) in getparamsyms(A)
+                return A.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
+            else
+                return observed(A, sym)
+            end
         else
             observed(A, sym)
         end
