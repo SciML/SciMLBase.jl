@@ -18,11 +18,15 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
 end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
-function augment(A::DiffEqArray{T,N,Q,B}, sol::AbstractODESolution) where {T,N,Q,B}
+function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T, N, Q, B}
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     if has_sys(sol.prob.f)
-        DiffEqArray{T,N,Q,B,typeof(sol.prob.f.sys),typeof(observed),typeof(p)}(A.u, A.t, sol.prob.f.sys, observed, p)
+        DiffEqArray{T, N, Q, B, typeof(sol.prob.f.sys), typeof(observed), typeof(p)}(A.u,
+                                                                                     A.t,
+                                                                                     sol.prob.f.sys,
+                                                                                     observed,
+                                                                                     p)
     else
         syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
         DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
@@ -71,7 +75,9 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         end
         i = sym_to_index(sym, A)
     elseif all(issymbollike, sym)
-        if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) || !has_sys(A.prob.f) && has_paramsyms(A.prob.f) && all(in(getparamsyms(A)), Symbol.(sym))
+        if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
+           !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
+           all(in(getparamsyms(A)), Symbol.(sym))
             return getindex.((A,), sym)
         else
             return [getindex.((A,), sym, i) for i in eachindex(A)]
@@ -82,11 +88,13 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
 
     if i === nothing
         if issymbollike(sym)
-            if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) || !has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
+            if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
+               !has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
                 return A.t
             elseif has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
                 return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
-            elseif !has_sys(A.prob.f) && has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
+            elseif !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
+                   Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
                 return observed(A, sym, :)
@@ -114,7 +122,8 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 
     if i === nothing
-        if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) || !has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
+        if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
+           !has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
             observed(A, sym, args...)
