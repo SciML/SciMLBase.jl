@@ -441,11 +441,11 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
     if i === nothing
         if issymbollike(sym)
             if has_sys(A.f) && is_indep_sym(A.f.sys, sym) ||
-               !has_sys(A.f) && Symbol(sym) == getindepsym(A)
+               Symbol(sym) == getindepsym(A)
                 return A.t
             elseif has_sys(A.f) && is_param_sym(A.f.sys, sym)
                 return A.p[param_sym_to_index(A.f.sys, sym)]
-            elseif !has_sys(A.f) && has_paramsyms(A.f) && Symbol(sym) in getparamsyms(A)
+            elseif has_paramsyms(A.f) && Symbol(sym) in getparamsyms(A)
                 return A.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
                 return observed(A, sym)

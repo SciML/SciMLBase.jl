@@ -89,12 +89,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     if i === nothing
         if issymbollike(sym)
             if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
-               !has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
+               Symbol(sym) == getindepsym(A)
                 return A.t
             elseif has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
                 return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
-            elseif !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
-                   Symbol(sym) in getparamsyms(A)
+            elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
                 return observed(A, sym, :)
@@ -123,7 +122,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
 
     if i === nothing
         if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
-           !has_sys(A.prob.f) && Symbol(sym) == getindepsym(A)
+           Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
             observed(A, sym, args...)
