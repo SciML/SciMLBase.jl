@@ -134,15 +134,27 @@ end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
     if issymbollike(sym)
+        if sym isa AbstractArray
+            return A[collect(sym)]
+        end
         i = sym_to_index(sym, A)
+    elseif all(issymbollike, sym)
+        return reduce(vcat, map(s -> A[s]', sym))
     else
         i = sym
     end
 
     if i == nothing
-        observed(A, sym)
-    else
+        paramsyms = getparamsyms(A)
+        if issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
+            get_p(A)[findfirst(x -> isequal(x, Symbol(sym)), paramsyms)]
+        else
+            observed(A, sym)
+        end
+    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
         A[i]
+    else
+        error("Invalid indexing of solution")
     end
 end
 
