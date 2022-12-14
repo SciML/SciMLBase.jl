@@ -217,8 +217,8 @@ sol = solve(prob, Tsit5())
          b => 100.0]
     prob = OptimizationProblem(sys, u0, p, grad = true, hess = true)
     sol = solve(prob, GradientDescent())
-    @test sol[x] ≈ 1
-    @test sol[y] ≈ 1
+    @test sol[x]≈1 atol=1e-3
+    @test sol[y]≈1 atol=1e-3
     @test sol[a] ≈ 1
-    @test sol[b] ≈ 1
+    @test sol[b] ≈ 100
 end
