@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, Test
+using Optimization, OptimizationOptimJL
 
 @parameters t σ ρ β
 @variables x(t) y(t) z(t)
@@ -201,3 +202,23 @@ D = Differential(t)
 prob = ODEProblem(fol, [x => 0.0], (0.0, 10.0), [tau => 3.0])
 sol = solve(prob, Tsit5())
 @test sol[tau] == 3
+
+@testset "OptimizationSolution" begin
+    @variables begin
+        x, [bounds = (-2.0, 2.0)]
+        y, [bounds = (-1.0, 3.0)]
+    end
+    @parameters a=1 b=1
+    loss = (a - x)^2 + b * (y - x^2)^2
+    @named sys = OptimizationSystem(loss, [x, y], [a, b])
+    u0 = [x => 1.0
+          y => 2.0]
+    p = [a => 1.0
+         b => 100.0]
+    prob = OptimizationProblem(sys, u0, p, grad = true, hess = true)
+    sol = solve(prob, GradientDescent())
+    @test sol[x] ≈ 1
+    @test sol[y] ≈ 1
+    @test sol[a] ≈ 1
+    @test sol[b] ≈ 1
+end
