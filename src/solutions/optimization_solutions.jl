@@ -3,33 +3,37 @@ abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N}
 """
 $(TYPEDEF)
 
-Representation of the solution to an nonlinear optimization defined by an OptimizationProblem
+Representation of the solution to an non-linear optimization defined by an OptimizationProblem
 
 ## Fields
 
 - `u`: the representation of the optimization's solution.
 - `cache::AbstractOptimizationCache`: the optimization cache` that was solved.
 - `alg`: the algorithm type used by the solver.
-- `original`: if the solver is wrapped from an alternative solver ecosystem, such as
-  Optim.jl, then this is the original return from said solver library.
+- `objective`: Objective value of the solution
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
   successfully or whether it exited due to an error. For more details, see 
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+- `original`: if the solver is wrapped from an alternative solver ecosystem, such as
+  Optim.jl, then this is the original return from said solver library.
+- `solve_time`: Solve time from the solver in Seconds
 """
-struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, Tf, O} <:
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, S} <:
        AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
     alg::A # algorithm
-    minimum::Tf
+    objective::OV
     retcode::ReturnCode.T
     original::O # original output of the optimizer
+    solve_time::S # [s] solve time from the solver
 end
 
 function build_solution(cache::AbstractOptimizationCache,
-                        alg, u, minimum;
+                        alg, u, objective;
                         retcode = ReturnCode.Default,
                         original = nothing,
+                        solve_time = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
@@ -38,8 +42,12 @@ function build_solution(cache::AbstractOptimizationCache,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
-                                                            original)
+                         typeof(objective), typeof(original), typeof(solve_time)}(u, cache,
+                                                                                  alg,
+                                                                                  objective,
+                                                                                  retcode,
+                                                                                  original,
+                                                                                  solve_time)
 end
 
 """
@@ -55,7 +63,7 @@ end
 
 # for compatibility
 function build_solution(prob::AbstractOptimizationProblem,
-                        alg, u, minimum;
+                        alg, u, objective;
                         retcode = ReturnCode.Default,
                         original = nothing,
                         kwargs...)
@@ -72,8 +80,9 @@ function build_solution(prob::AbstractOptimizationProblem,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(minimum), typeof(original)}(u, cache, alg, minimum, retcode,
-                                                            original)
+                         typeof(objective), typeof(original)}(u, cache, alg, objective,
+                                                              retcode,
+                                                              original)
 end
 
 get_p(sol::OptimizationSolution) = sol.cache.p
@@ -90,15 +99,21 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
     print(io, "u: ")
     show(io, A.u)
     println(io)
-    print(io, "Final objective value:     $(A.minimum)\n")
+    print(io, "Final objective value:     $(A.objective)\n")
     return
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
                                                    s::Symbol)
     if s === :minimizer
+        Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
+                     "sol.minimizer")
         return getfield(x, :u)
-    elseif s == :prob
+    elseif s === :minimum
+        Base.depwarn("`sol.minimum` is deprecated. Use `sol.objective` instead.",
+                     "sol.minimum")
+        return getfield(x, :objective)
+    elseif s === :prob
         Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
                      "sol.prob")
         return getfield(x, :cache)
