@@ -310,27 +310,35 @@ Integral problems are multi-dimensional integrals defined as:
 \int_{lb}^{ub} f(u,p) du
 ```
 
-where ``p`` are parameters. `u` is a `Number` or `AbstractArray`
+where `p` are parameters. `u` is a `Number` or `AbstractVector`
 whose geometry matches the space being integrated.
+This space is bounded by the lowerbound `lb` and upperbound `ub`,
+which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 
 ## Problem Type
 
 ### Constructors
 
-IntegralProblem{iip}(f,lb,ub,p=NullParameters();
+IntegralProblem(f,lb,ub,p=NullParameters();
                   nout=1, batch = 0, kwargs...)
 
-- f: the integrand, `dx=f(x,p)` for out-of-place or `f(dx,x,p)` for in-place.
+- f: the integrand, `y = f(u,p)` for out-of-place or `f(y,u,p)` for in-place.
 - lb: Either a number or vector of lower bounds.
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
-- nout: The output size of the function f. Defaults to 1, i.e., a scalar integral output.
+- nout: The output size of the function f. Defaults to 1, i.e., a scalar valued function.
+  If `nout > 1` f is a vector valued function .
 - batch: The preferred number of points to batch. This allows user-side parallelization
-  of the integrand. If batch != 0, then each x[:,i] is a different point of the integral
-  to calculate, and the output should be nout x batchsize. Note that batch is a suggestion
-  for the number of points, and it is not necessarily true that batch is the same as
-  batchsize in all algorithms.
-- kwargs:: Keyword arguments copied to the solvers.
+  of the integrand. If `batch == 0` no batching is performed.
+  If `batch > 0` both `u` and `y` get an additional dimension added to it.
+  This means that:
+  if `f` is a multi variable function each `u[:,i]` is a different point to evaluate `f` at,
+  if `f` is a single variable function each `u[i]` is a different point to evaluate `f` at,
+  if `f` is a vector valued function each `y[:,i]` is the evaluation of `f` at a different point,
+  if `f` is a scalar valued function `y[i]` is the evaluation of `f` at a different point.
+  Note that batch is a suggestion for the number of points,
+  and it is not necessarily true that batch is the same as batchsize in all algorithms.
+- kwargs: Keyword arguments copied to the solvers.
 
 Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
 compile time whether the integrator function is in-place.
