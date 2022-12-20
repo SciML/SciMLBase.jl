@@ -319,7 +319,7 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 
 ### Constructors
 
-IntegralProblem(f,lb,ub,p=NullParameters();
+IntegralProblem{iip}(f,lb,ub,p=NullParameters();
                   nout=1, batch = 0, kwargs...)
 
 - f: the integrand, `y = f(u,p)` for out-of-place or `f(y,u,p)` for in-place.
