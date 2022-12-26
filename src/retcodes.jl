@@ -345,11 +345,6 @@ EnumX.@enumx ReturnCode begin
     MaxTime
 end
 
-function Base.convert(::Type{Symbol}, retcode::ReturnCode.T)
-    @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
-    Symbol(retcode)
-end
-
 Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 
