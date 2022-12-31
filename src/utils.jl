@@ -4,8 +4,9 @@ $(SIGNATURES)
 Returns the number of arguments of `f` for each method.
 """
 function numargs(f)
-    if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject
-        # Uses the RCall form to grab the parameter length
+    if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
+       typeof(f).name.name == :RFunction
+        # Uses the RCall form to grab the parmaeter length
         return [length(unsafe_load(f.r.p).formals)]
     else
         return [num_types_in_tuple(m.sig) - 1 for m in methods(f)] #-1 since f is the first parameter
