@@ -4,7 +4,8 @@ $(SIGNATURES)
 Returns the number of arguments of `f` for each method.
 """
 function numargs(f)
-    if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject || typeof(f).name.name == :RFunction
+    if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
+       typeof(f).name.name == :RFunction
         # Uses the RCall form to grab the parmaeter length
         return [length(unsafe_load(f.r.p).formals)]
     else
