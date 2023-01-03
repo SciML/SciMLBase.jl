@@ -33,7 +33,7 @@ methods.
 
 ```julia
 LinearProblem(A::AbstractMatrix,b::AbstractVector;u0=nothing,kwargs...)
-LinearProblem{isinplace}(f::AbstractSciMLOperator,u0,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem{isinplace}(f::AbstractSciMLOperator,b,p=NullParameters();u0=nothing,kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not, i.e. whether
