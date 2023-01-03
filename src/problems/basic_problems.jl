@@ -32,7 +32,7 @@ Optionally, an initial guess ``u₀`` can be supplied which is used for iterativ
 methods.
 
 ```julia
-LinearProblem(A::AbstractMatrix,b::AbstractVector;u0=nothing,kwargs...)
+LinearProblem(A,b;u0=nothing,kwargs...)
 LinearProblem{isinplace}(f::AbstractSciMLOperator,b,p=NullParameters();u0=nothing,kwargs...)
 ```
 
