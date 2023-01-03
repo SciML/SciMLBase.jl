@@ -21,7 +21,7 @@ matrices / higher dimension tensors as well.
 Note that for the steady-state to be defined, we must have that `f` is autonomous,
 that is `f` is independent of `t`. But the form which matches the standard ODE
 solver should still be used. The steady state solvers interpret the `f` by
-fixing `t=\infty`.
+fixing ``t=\\infty``.
 
 ## Problem Type
 
@@ -35,7 +35,7 @@ SteadyStateProblem{isinplace,specialize}(f,u0,p=NullParameters();kwargs...)
 `isinplace` optionally sets whether the function is inplace or not. This is 
 determined automatically, but not inferred. `specialize` optionally controls 
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
-for more details. The default is `AutoSpecialize.
+for more details. The default is `AutoSpecialize`.
   
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
