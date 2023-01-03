@@ -95,7 +95,7 @@ which defines the nonlinear system:
 f(t,p) = u = 0
 ```
 
-along with an interval `tspan` is `t \in [t_0,t_f]` within which the root should be found.
+along with an interval `tspan`, ``t \\in [t_0,t_f]``, within which the root should be found.
 `f` should be specified as `f(t,p)` (or in-place as `f(u,t,p)`), and `tspan` should be a
 `Tuple{T,T} where T <: Number`.
 
@@ -220,7 +220,7 @@ page.
 ### Fields
 
 * `f`: The function in the problem.
-* `u0`: The initial guess for the steady state.
+* `u0`: The initial guess for the root.
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
