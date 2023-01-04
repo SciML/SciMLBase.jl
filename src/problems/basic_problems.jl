@@ -83,10 +83,10 @@ struct StandardNonlinearProblem end
 
 @doc doc"""
 
-Defines a interval nonlinear system problem.
+Defines an interval nonlinear system problem.
 Documentation Page: https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/
 
-## Mathematical Specification of a Interval Nonlinear Problem
+## Mathematical Specification of an Interval Nonlinear Problem
 
 To define a Nonlinear Problem, you simply need to give the function ``f``
 which defines the nonlinear system:
@@ -102,8 +102,8 @@ along with an interval `tspan`, ``t \\in [t_0,t_f]``, within which the root shou
 !!! note
 
     The output value `u` is not required to be a scalar. When `u` is an `AbstractArray`, the
-    problem is a simultanious interval nonlinear problem where the solvers are made to give
-    the first `t` for which any of the `u` hit zero. Currently none of the solvers support
+    problem is a simultaneous interval nonlinear problem where the solvers are made to give
+    the first `t` for which any of the `u` hit zero. Currently, none of the solvers support
     this mode.
 
 ## Problem Type
@@ -302,7 +302,7 @@ end
 Defines an integral problem.
 Documentation Page: https://docs.sciml.ai/Integrals/stable/
 
-## Mathematical Specification of a Integral Problem
+## Mathematical Specification of an Integral Problem
 
 Integral problems are multi-dimensional integrals defined as:
 
