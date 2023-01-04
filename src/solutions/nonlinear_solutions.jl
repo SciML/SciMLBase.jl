@@ -1,7 +1,7 @@
 """
 $(TYPEDEF)
 
-Representation of the solution to an nonlinear equation defined by an NonlinearProblem,
+Representation of the solution to a nonlinear equation defined by a NonlinearProblem,
 or the steady state solution to a differential equation defined by a SteadyStateProblem.
 
 ## Fields
