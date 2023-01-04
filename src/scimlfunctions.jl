@@ -1787,7 +1787,7 @@ abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 @doc doc"""
     NonlinearFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,O,TCV} <: AbstractNonlinearFunction{iip,specialize}
 
-A representation of an nonlinear system of equations `f`, defined by:
+A representation of a nonlinear system of equations `f`, defined by:
 
 ```math
 0 = f(u,p)
