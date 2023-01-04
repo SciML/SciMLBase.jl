@@ -1,11 +1,11 @@
 @doc doc"""
 
-Defines an Defines a steady state ODE problem.
+Defines a steady state ODE problem.
 Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/
 
 ## Mathematical Specification of a Steady State Problem
 
-To define an Steady State Problem, you simply need to give the function ``f``
+To define a Steady State Problem, you simply need to give the function ``f``
 which defines the ODE:
 
 ```math
@@ -37,8 +37,8 @@ determined automatically, but not inferred. `specialize` optionally controls
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize`.
   
-Parameters are optional, and if not given then a `NullParameters()` singleton
-will be used which will throw nice errors if you try to index non-existent
+Parameters are optional, and if not given, a `NullParameters()` singleton
+will be used, which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
@@ -49,8 +49,8 @@ Additionally, the constructor from `ODEProblem`s is provided:
 SteadyStateProblem(prob::ODEProblem)
 ```
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
-will be used which will throw nice errors if you try to index non-existent
+Parameters are optional, and if not given, a `NullParameters()` singleton
+will be used, which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
