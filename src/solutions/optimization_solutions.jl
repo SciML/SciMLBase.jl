@@ -3,7 +3,7 @@ abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N}
 """
 $(TYPEDEF)
 
-Representation of the solution to an non-linear optimization defined by an OptimizationProblem
+Representation of the solution to a non-linear optimization defined by an OptimizationProblem
 
 ## Fields
 
