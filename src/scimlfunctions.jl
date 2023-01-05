@@ -1998,9 +1998,9 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
     constraints `lcons` and `ucons` should be passed equal values.
 - `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
 - `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
-   an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
+   an array of Hessians, with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
 - `lag_h(res,x,sigma,mu,p)` or `res=lag_h(x,sigma,mu,p)`: the Hessian of the Lagrangian,
-    where `sigma` is a multiplier of the cost function and `mu` are the lagrange multipliers
+    where `sigma` is a multiplier of the cost function and `mu` are the Lagrange multipliers
     multiplying the constraints. This can be provided instead of `hess` and `cons_h`
     to solvers that directly use the Hessian of the Lagrangian.
 - `paramjac(pJ,u,p)`: returns the parameter Jacobian ``df/dp``.
@@ -2035,9 +2035,9 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 ## Defining Optimization Functions Via AD
 
 While using the keyword arguments gives the user control over defining
-all of the possible functions, the simplest way to handle the generation
+all the possible functions, the simplest way to handle the generation
 of an `OptimizationFunction` is by specifying an AD type. By doing so,
-this will automatically fill in all of the extra functions. For example,
+this will automatically fill in all the extra functions. For example,
 
 ```julia
 OptimizationFunction(f,AutoZygote())
