@@ -54,15 +54,15 @@ Contains a single callback whose `condition` is a continuous function. The callb
   `u` are safe in this function.
 - `affect_neg!=affect!`: This is the function `affect_neg!(integrator)` where one is allowed to
   modify the current state of the integrator. This is called when `condition` is
-  found to be `0` (at a root) and the cross is an downcrossing (from positive to
+  found to be `0` (at a root) and the cross is a downcrossing (from positive to
   negative). For more information on what can
   be done, see the [Integrator Interface](@ref integrator) manual page. Modifications to
   `u` are safe in this function.
 - `rootfind=LeftRootFind`: This is a flag to specify the type of rootfinding to do for finding
   event location. If this is set to `LeftRootfind`, the solution will be backtracked to the point where
   `condition==0` and if the solution isn't exact, the left limit of root is used. If set to
-  `RightRootFind`, the solution would be set to the right limit of the root. Otherwise the systems and
-  the `affect!` will occur at `t+dt`. Note that these enums are not exported and thus one needs to
+  `RightRootFind`, the solution would be set to the right limit of the root. Otherwise, the systems and
+  the `affect!` will occur at `t+dt`. Note that these enums are not exported, and thus one needs to
   reference them as `SciMLBase.LeftRootFind`, `SciMLBase.RightRootFind`, or `SciMLBase.NoRootFind`.
 - `interp_points=10`: The number of interpolated points to check the condition. The
   condition is found by checking whether any interpolation point / endpoint has
@@ -86,9 +86,9 @@ Contains a single callback whose `condition` is a continuous function. The callb
   the state of the callback `c`. It can modify the argument `c` and the return is ignored.
 - `abstol=1e-14` & `reltol=0`: These are used to specify a tolerance from zero for the rootfinder:
   if the starting condition is less than the tolerance from zero, then no root will be detected.
-  This is to stop repeat events happening just after a previously rootfound event.
+  This is to stop repeat events happening immediately after a rootfinding event.
 - `repeat_nudge = 1//100`: This is used to set the next testing point after a
-  previously found zero. Defaults to 1//100, which means after a callback the next
+  previously found zero. Defaults to 1//100, which means after a callback, the next
   sign check will take place at t + dt*1//100 instead of at t to avoid repeats.
 """
 struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <: AbstractContinuousCallback
@@ -177,14 +177,14 @@ VectorContinuousCallback(condition,affect!,len;
                    abstol=10eps(),reltol=0,repeat_nudge=1//100)
 ```
 
-This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not feasible when you have a large number of callbacks,
+This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not feasible when you have many callbacks,
 as it doesn't scale well. For this reason, we have `VectorContinuousCallback` - it allows you to have a single callback for
 multiple events.
 
 # Arguments
 
 - `condition`: This is a function `condition(out, u, t, integrator)` which should save the condition value in the array `out`
-   at the right index. Maximum index of `out` should be specified in the `len` property of callback. So this way you can have
+   at the right index. Maximum index of `out` should be specified in the `len` property of callback. So, this way you can have
    a chain of `len` events, which would cause the `i`th event to trigger when `out[i] = 0`.
 - `affect!`: This is a function `affect!(integrator, event_index)` which lets you modify `integrator` and it tells you about
    which event occurred using `event_idx` i.e. gives you index `i` for which `out[i]` came out to be zero.
