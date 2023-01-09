@@ -115,6 +115,10 @@ function SciMLBase.wrap_sol(sol,
     end
 end
 
+iscomplex(sol::PDETimeSeriesSolution{T, N, U, D, C}) where {T, N, U, D, C} = C <: Val{true} ? true : false
+iscomplex(sol::PDENoTimeSolution{T, N, U, D, C}) where {T, N, U, D, C} = C <: Val{true} ? true : false
+
+
 function Base.show(io::IO, m::MIME"text/plain", A::PDETimeSeriesSolution)
     println(io, string("retcode: ", A.retcode))
     println(io, string("Interpolation: "), typeof(A.interp))
