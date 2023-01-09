@@ -155,8 +155,8 @@ end
     set_proposed_dt(i::DEIntegrator,dt)
     set_proposed_dt(i::DEIntegrator,i2::DEIntegrator)
 
-Sets the proposed `dt` for the next timestep. If second argument isa `DEIntegrator` then it sets the timestepping of
-first argument to match that of second one. Note that due to PI control and step acceleration this is more than matching
+Sets the proposed `dt` for the next timestep. If the second argument isa `DEIntegrator`, then it sets the timestepping of
+the first argument to match that of the second one. Note that due to PI control and step acceleration, this is more than matching
 the factors in most cases.
 """
 function set_proposed_dt!(i::DEIntegrator, dt)
@@ -189,7 +189,7 @@ end
 Sets `bool` which states whether a change to `u` occurred, allowing the solver to handle the discontinuity. By default,
 this is assumed to be true if a callback is used. This will result in the re-calculation of the derivative at
 `t+dt`, which is not necessary if the algorithm is FSAL and `u` does not experience a discontinuous change at the
-end of the interval. Thus if `u` is unmodified in a callback, a single call to the derivative calculation can be
+end of the interval. Thus, if `u` is unmodified in a callback, a single call to the derivative calculation can be
 eliminated by `u_modified!(integrator,false)`.
 """
 function u_modified!(i::DEIntegrator, bool)
