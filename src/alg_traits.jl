@@ -77,7 +77,9 @@ isdiscrete(alg::AbstractDEAlgorithm) = false
 """
 allowsbounds(opt)
 
-Allows box constraints passed with `lb` and `ub` in `OptimizationProblem`.
+Trait declaration for whether an optimizer allows for 
+box constraints passed with `lb` and `ub` in 
+`OptimizationProblem`.
 
 Defaults to false.
 """
@@ -86,25 +88,31 @@ allowsbounds(opt) = false
 """
 requiresbounds(opt)
 
-Requires box constraints passed with `lb` and `ub` in `OptimizationProblem`.
+Trait declaration for whether an optimizer requires 
+box constraints passed with `lb` and `ub` in 
+`OptimizationProblem`.
 
 Defaults to false.
 """
 requiresbounds(opt) = false
 
 """
-allowsconstrains(opt)
+allowsconstraints(opt)
 
-Allows non-linear constraints specified in `cons` in `OptimizationFunction`.
+Trait declaration for whether an optimizer allows 
+non-linear constraints specified in `cons` in 
+`OptimizationFunction`.
 
 Defaults to false.
 """
 allowsconstraints(opt) = false
 
 """
-requiresconstrains(opt)
+requiresconstraints(opt)
 
-Requires non-linear constraints specified in `cons` in `OptimizationFunction`.
+Trait declaration for whether an optimizer 
+requires non-linear constraints specified in 
+`cons` in `OptimizationFunction`.
 
 Defaults to false.
 """
@@ -113,7 +121,9 @@ requiresconstraints(opt) = false
 """
 allowscallback(opt)
 
-Supports passing `callback` to `solve` for optimization.
+Trait declaration for whether an optimizer 
+supports passing a `callback` to `solve` 
+for an `OptimizationProblem`.
 
 Defaults to true.
 """
