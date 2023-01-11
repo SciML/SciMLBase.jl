@@ -156,8 +156,9 @@ Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator{<:Any,<:Un
 
 Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Factorization,AbstractMatrix}}) =
     Matrix(L.F)
-Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:AdjointFact}) = Matrix(L.F')'
-Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:TransposeFact}) =
+Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Adjoint,AdjointFact}}) =
+    adjoint(Matrix(adjoint(L.F)))
+Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Transpose,TransposeFact}}) =
     transpose(Matrix(transpose(L.F)))
 
 Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
