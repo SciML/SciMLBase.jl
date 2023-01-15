@@ -372,10 +372,10 @@ struct QuadratureProblem end
 
 @doc doc"""
 
-Defines a optimization problem.
+Defines an optimization problem.
 Documentation Page: https://docs.sciml.ai/Optimization/stable/API/optimization_problem/
 
-## Mathematical Specification of a Optimization Problem
+## Mathematical Specification of an Optimization Problem
 
 To define an Optimization Problem, you simply need to give the function ``f``
 which defines the cost function to minimize:
