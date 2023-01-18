@@ -588,6 +588,7 @@ include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
+include("debug.jl")
 
 unwrapped_f(f) = f
 unwrapped_f(f::Void) = unwrapped_f(f.f)
