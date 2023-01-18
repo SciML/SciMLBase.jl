@@ -34,10 +34,10 @@ by default. Cases to be aware of include:
 * `log(x)`, `sqrt(x)`, `cbrt(x)`, etc. where `x<0`
 * `x^y` for `x<0` floating point `y` (example: `(-1.0)^(1/2) == im`)
 
-Within the context of SciML, this error can occur within the solver process even if the domain constriant
+Within the context of SciML, this error can occur within the solver process even if the domain constraint
 would not be violated in the solution due to adaptivity. For example, an ODE solver or optimization
 routine may check a step at `new_u` which violates the domain constraint, and if violated reject the
-step and use a smaller `dt`. However, the throwing of this error will have haulted the solving process.
+step and use a smaller `dt`. However, the throwing of this error will have halted the solving process.
 
 Thus the recommended fix is to replace this function with the equivalent ones from NaNMath.jl
 (https://github.com/JuliaMath/NaNMath.jl) which returns a NaN instead of an error. The solver will then
