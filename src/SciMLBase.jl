@@ -608,7 +608,8 @@ function specialization(::Union{ODEFunction{iip, specialize},
                                 ImplicitDiscreteFunction{iip, specialize},
                                 RODEFunction{iip, specialize},
                                 NonlinearFunction{iip, specialize},
-                                OptimizationFunction{iip, specialize}}) where {iip,
+                                OptimizationFunction{iip, specialize},
+                                BVPFunction{iip, specialize}}) where {iip,
                                                                                specialize}
     specialize
 end
@@ -726,7 +727,7 @@ export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
        DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-       IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction
+       IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction
 
 export OptimizationFunction
 

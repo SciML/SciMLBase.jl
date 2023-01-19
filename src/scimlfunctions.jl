@@ -2091,6 +2091,120 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, L
     sys::SYS
 end
 
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractBVPFunction{iip} <:
+              AbstractDiffEqFunction{iip} end
+
+@doc doc"""
+    BVPFunction{iip,F,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractBVPFunction{iip,specialize}
+
+A representation of a BVP function `f`, defined by:
+
+```math
+\frac{du}{dt}=f(u,p,t)
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+```julia
+BVPFunction{iip,specialize}(f;
+                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                           analytic = __has_analytic(f) ? f.analytic : nothing,
+                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+                           jac = __has_jac(f) ? f.jac : nothing,
+                           jvp = __has_jvp(f) ? f.jvp : nothing,
+                           vjp = __has_vjp(f) ? f.vjp : nothing,
+                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                           syms = __has_syms(f) ? f.syms : nothing,
+                           indepsym= __has_indepsym(f) ? f.indepsym : nothing,
+                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                           sys = __has_sys(f) ? f.sys : nothing)
+```
+
+Note that only the function `f` itself is required. This function should
+be given as `f!(out,du,u,p,t)` or `out = f(du,u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
+  to determine that the equation is actually a BVP for differential algebraic equation (DAE)
+  if `M` is singular.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
+  solution of the BVP. Generally only used for testing and development of the solvers.
+- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
+- `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
+  derivative``\frac{df}{du} v``
+- `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
+  derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
+  internally uses `t` as the representation in any plots.
+- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
+  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
+  naming to the values, allowing `sol[:a]` in the solution.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## specialize: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the BVPFunction type directly match the names of the inputs.
+"""
+struct BVPFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
+                   TPJ,
+                   S, S2, S3, O, TCV,
+                   SYS} <:
+                   AbstractBVPFunction{iip}
+    f::F
+    mass_matrix::TMM
+    analytic::Ta
+    tgrad::Tt
+    jac::TJ
+    jvp::JVP
+    vjp::VJP
+    jac_prototype::JP
+    sparsity::SP
+    Wfact::TW
+    Wfact_t::TWt
+    paramjac::TPJ
+    syms::S
+    indepsym::S2
+    paramsyms::S3
+    observed::O
+    colorvec::TCV
+    sys::SYS
+end
+
+
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
@@ -2143,6 +2257,8 @@ function (f::SplitSDEFunction)(du, u, p, t)
 end
 
 (f::RODEFunction)(args...) = f.f(args...)
+
+(f::BVPFunction)(args...) = f.f(args...)
 
 ######### Basic Constructor
 
@@ -3622,6 +3738,118 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                       cons_expr, sys)
 end
 
+function BVPFunction{iip, specialize}(f;
+                                      mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
+                                                    I,
+                                      analytic = __has_analytic(f) ? f.analytic : nothing,
+                                      tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+                                      jac = __has_jac(f) ? f.jac : nothing,
+                                      jvp = __has_jvp(f) ? f.jvp : nothing,
+                                      vjp = __has_vjp(f) ? f.vjp : nothing,
+                                      jac_prototype = __has_jac_prototype(f) ?
+                                                      f.jac_prototype :
+                                                      nothing,
+                                      sparsity = __has_sparsity(f) ? f.sparsity :
+                                                 jac_prototype,
+                                      Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+                                      Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+                                      paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                      syms = __has_syms(f) ? f.syms : nothing,
+                                      indepsym = __has_indepsym(f) ? f.indepsym : nothing,
+                                      paramsyms = __has_paramsyms(f) ? f.paramsyms :
+                                                  nothing,
+                                      observed = __has_observed(f) ? f.observed :
+                                                 DEFAULT_OBSERVED,
+                                      colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                      sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize}
+
+    if mass_matrix === I && typeof(f) <: Tuple
+        mass_matrix = ((I for i in 1:length(f))...,)
+    end
+
+    if (specialize === FunctionWrapperSpecialize) &&
+       !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+        error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
+    end
+
+    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+      if iip
+          jac = update_coefficients! #(J,u,p,t)
+      else
+          jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+      end
+    end
+
+    if jac_prototype !== nothing && colorvec === nothing && ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+    else
+        _colorvec = colorvec
+    end
+
+    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
+    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
+    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
+    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
+    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
+
+    nonconforming = (jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip, paramjaciip) .!= iip
+    if any(nonconforming)
+        nonconforming = findall(nonconforming)
+        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
+        throw(NonconformingFunctionsError(functions))
+    end
+    
+    if specialize === NoSpecialize
+        BVPFunction{iip, specialize, Any, Any, Any, Any,
+                    Any, Any, Any, Any, Any, Any, Any,
+                    Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
+                    Any, typeof(_colorvec), Any}(f, mass_matrix,
+                                                 analytic,
+                                                 tgrad,
+                                                 jac, jvp, vjp,
+                                                 jac_prototype,
+                                                 sparsity, Wfact,
+                                                 Wfact_t,
+                                                 paramjac, syms,
+                                                 indepsym, paramsyms,
+                                                 observed,
+                                                 _colorvec, sys)
+    elseif specialize === false
+        BVPFunction{iip, FunctionWrapperSpecialize,
+                    typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+                    typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
+                    typeof(_colorvec),
+                    typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
+                                 jvp, vjp, jac_prototype, sparsity, Wfact,
+                                 Wfact_t, paramjac, syms, indepsym, paramsyms,
+                                 observed, _colorvec, sys)
+    else
+        BVPFunction{iip, specialize, typeof(f), typeof(mass_matrix), typeof(analytic),
+                    typeof(tgrad),
+                    typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+                    typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
+                    typeof(paramjac), typeof(syms), typeof(indepsym), typeof(paramsyms),
+                    typeof(observed),
+                    typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic,
+                                                    tgrad, jac, jvp, vjp,
+                                                    jac_prototype, sparsity,
+                                                    Wfact, Wfact_t, paramjac,
+                                                    syms, indepsym, paramsyms, observed,
+                                                    _colorvec, sys)
+    end
+end
+
+function BVPFunction{iip}(f; kwargs...) where {iip}
+  BVPFunction{iip, FullSpecialize}(f; kwargs...)
+end
+BVPFunction{iip}(f::BVPFunction; kwargs...) where {iip} = f
+BVPFunction(f; kwargs...) = BVPFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
+BVPFunction(f::BVPFunction; kwargs...) = f
+
 ########## Existence Functions
 
 # Check that field/property exists (may be nothing)
@@ -3728,7 +3956,8 @@ for S in [:ODEFunction
           :SDDEFunction
           :NonlinearFunction
           :IntervalNonlinearFunction
-          :IncrementingODEFunction]
+          :IncrementingODEFunction
+          :BVPFunction]
     @eval begin function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
                                                                                   iip
                                                                                   }

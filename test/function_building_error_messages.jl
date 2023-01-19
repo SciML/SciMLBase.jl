@@ -372,3 +372,91 @@ optf(u) = 1.0
 optf(u, p) = 1.0
 OptimizationFunction(optf)
 OptimizationProblem(optf, 1.0)
+
+# BVPFunction
+
+bfoop(u, p, t) = u
+bfiip(du, u, p, t) = du .= u
+
+bofboth(u, p, t) = u
+bofboth(du, u, p, t) = du .= u
+
+BVPFunction(bofboth)
+BVPFunction{true}(bofboth)
+BVPFunction{false}(bofboth)
+
+jac(u, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, jac = jac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, jac = jac)
+jac(u, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, jac = jac)
+BVPFunction(bfoop, jac = jac)
+jac(du, u, p, t) = [1.0]
+BVPFunction(bfiip, jac = jac)
+BVPFunction(bfoop, jac = jac)
+
+Wfact(u, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, Wfact = Wfact)
+Wfact(u, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, Wfact = Wfact)
+Wfact(u, p, gamma, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, Wfact = Wfact)
+BVPFunction(bfoop, Wfact = Wfact)
+Wfact(du, u, p, gamma, t) = [1.0]
+BVPFunction(bfiip, Wfact = Wfact)
+BVPFunction(bfoop, Wfact = Wfact)
+
+Wfact_t(u, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, Wfact_t = Wfact_t)
+Wfact_t(u, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, Wfact_t = Wfact_t)
+Wfact_t(u, p, gamma, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, Wfact_t = Wfact_t)
+BVPFunction(bfoop, Wfact_t = Wfact_t)
+Wfact_t(du, u, p, gamma, t) = [1.0]
+BVPFunction(bfiip, Wfact_t = Wfact_t)
+BVPFunction(bfoop, Wfact_t = Wfact_t)
+
+tgrad(u, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, tgrad = tgrad)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, tgrad = tgrad)
+tgrad(u, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, tgrad=tgrad)
+BVPFunction(bfoop, tgrad = tgrad)
+tgrad(du, u, p, t) = [1.0]
+BVPFunction(bfiip, tgrad = tgrad)
+BVPFunction(bfoop, tgrad = tgrad)
+
+paramjac(u, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, paramjac = paramjac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, paramjac = paramjac)
+paramjac(u, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, paramjac = paramjac)
+BVPFunction(bfoop, paramjac = paramjac)
+paramjac(du, u, p, t) = [1.0]
+BVPFunction(bfiip, paramjac = paramjac)
+BVPFunction(bfoop, paramjac = paramjac)
+
+jvp(u, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, jvp = jvp)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, jvp = jvp)
+jvp(u, v, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, jvp = jvp)
+BVPFunction(bfoop, jvp = jvp)
+jvp(du, u, v, p, t) = [1.0]
+BVPFunction(bfiip, jvp = jvp)
+BVPFunction(bfoop, jvp = jvp)
+
+vjp(u, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, vjp = vjp)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, vjp = vjp)
+vjp(u, v, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, vjp = vjp)
+BVPFunction(bfoop, vjp = vjp)
+vjp(du, u, v, p, t) = [1.0]
+BVPFunction(bfiip, vjp = vjp)
+BVPFunction(bfoop, vjp = vjp)

@@ -79,7 +79,7 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
     p::P
     problem_type::PT
     kwargs::K
-    @add_kwonly function BVProblem{iip}(f::AbstractODEFunction, bc, u0, tspan,
+    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction, bc, u0, tspan,
                                         p = NullParameters(),
                                         problem_type = StandardBVProblem();
                                         kwargs...) where {iip}
@@ -91,26 +91,26 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        BVProblem(ODEFunction{iip}(f), bc, u0, tspan, p; kwargs...)
+        BVProblem(BVPFunction{iip}(f), bc, u0, tspan, p; kwargs...)
     end
 end
 
-function BVProblem(f::AbstractODEFunction, bc, u0, tspan, args...; kwargs...)
+function BVProblem(f::AbstractBVPFunction, bc, u0, tspan, args...; kwargs...)
     BVProblem{isinplace(f, 4)}(f, bc, u0, tspan, args...; kwargs...)
 end
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem(ODEFunction(f), bc, u0, tspan, p; kwargs...)
+    BVProblem(BVPFunction(f), bc, u0, tspan, p; kwargs...)
 end
 
 # convenience interfaces:
 # Allow any previous timeseries solution
-function BVProblem(f::AbstractODEFunction, bc, sol::T, tspan::Tuple, p = NullParameters();
+function BVProblem(f::AbstractBVPFunction, bc, sol::T, tspan::Tuple, p = NullParameters();
                    kwargs...) where {T <: AbstractTimeseriesSolution}
     BVProblem(f, bc, sol.u, tspan, p)
 end
 # Allow a function of time for the initial guess
-function BVProblem(f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
+function BVProblem(f::AbstractBVPFunction, bc, initialGuess, tspan::AbstractVector,
                    p = NullParameters(); kwargs...)
     u0 = [initialGuess(i) for i in tspan]
     BVProblem(f, bc, u0, (tspan[1], tspan[end]), p)
