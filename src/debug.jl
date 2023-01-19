@@ -1,31 +1,5 @@
-abstract type DebugMode end
-struct NoDebug <: DebugMode end
-struct VerboseDebug <: DebugMode end
-
-DETAILED_INFORMATION = """
-Note that detailed debugging information adds a small amount of overhead to SciML solves
-which can be disabled with the keyword argument `debug = NoDebug()`.
-
-The detailed original error message information from Julia reproduced below:
-"""
-
-DEFAULT_DEBUG_MSG = """
-Error detected inside of the run of the solver. For more detailed information about the error
-with SciML context and recommendations, try adding the keyword argument `debug = VerboseDebug()`
-
-$DETAILED_INFORMATION
-"""
-
-UNKNOWN_MSG = """
-An unclassified error occured during the solver process and SciML's `VerboseDebug` mode cannot give
-any more information. You can help improve the debug mode messages by reporting this error to
-https://github.com/SciML/SciMLBase.jl/issues with a reproducer of the error from which a high
-level description can be added.
-
-$DETAILED_INFORMATION
-"""
-
 DOMAINERROR_COMPLEX_MSG = """
+
 DomainError detected in the user `f` function. This occurs when the domain of a function is violated.
 For example, `log(-1.0)` is undefined because `log` of a real number is defined to only output real
 numbers, but `log` of a negative number is complex valued and therefore Julia throws a DomainError
@@ -47,25 +21,10 @@ definition of `f`.
 
 For more information, check out the following FAQ page:
 https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?
-
-$DETAILED_INFORMATION
 """
 
-struct VerboseDebugFunction{F}
-    f::F
-end
-function (f::VerboseDebugFunction)(args...) 
-    try
-        f.f(args...)
-    catch e
-        if e isa DomainError && occursin("will only return a complex result if called with a complex argument. Try ",e.msg)
-            println(DOMAINERROR_COMPLEX_MSG)
-        else
-            println(UNKNOWN_MSG)
-        end
-        throw(e)
+Base.Experimental.register_error_hint(DomainError) do io, e
+    if e isa DomainError && occursin("will only return a complex result if called with a complex argument. Try ",e.msg)
+        println(DOMAINERROR_COMPLEX_MSG)
     end
 end
-
-debugwrapfun(f,debug::VerboseDebug) = VerboseDebugFunction(f)
-debugwrapfun(f,debug::NoDebug) = f
