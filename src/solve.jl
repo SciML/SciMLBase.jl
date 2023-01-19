@@ -23,7 +23,6 @@ These common arguments are:
 - `abstol` (absolute tolerance in changes of the objective value)
 - `reltol` (relative tolerance  in changes of the objective value)
 - `callback` (a callback function)
-- `debug = VerboseDebug()` (sets the debug mode for improved error messages)
 
 If the chosen global optimizer employs a local optimization method,
 a similar set of common local optimizer arguments exists.
@@ -78,13 +77,13 @@ end
 ```
 """
 function solve(prob::OptimizationProblem, alg, args...;
-               debug = VerboseDebug(), kwargs...)::AbstractOptimizationSolution
+               kwargs...)::AbstractOptimizationSolution
 
     if supports_opt_cache_interface(alg)
-        debugwrapfun(solve!,debug)(debugwrapfun(init,debug)(prob, alg, args...; kwargs...))
+        solve!(init(prob, alg, args...; kwargs...))
     else
         _check_opt_alg(prob, alg; kwargs...)
-        debugwrapfun(__solve,debug)(prob, alg, args...; kwargs...)
+        __solve(prob, alg, args...; kwargs...)
     end
 end
 
@@ -137,7 +136,6 @@ These common arguments are:
 - `abstol` (absolute tolerance in changes of the objective value)
 - `reltol` (relative tolerance  in changes of the objective value)
 - `callback` (a callback function)
-- `debug = VerboseDebug()` (sets the debug mode for improved error messages)
 
 Some optimizer algorithms have special keyword arguments documented in the
 solver portion of the documentation and their respective documentation.
