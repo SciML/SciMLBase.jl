@@ -25,6 +25,6 @@ https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-C
 
 Base.Experimental.register_error_hint(DomainError) do io, e
     if e isa DomainError && occursin("will only return a complex result if called with a complex argument. Try ",e.msg)
-        println(DOMAINERROR_COMPLEX_MSG)
+        println(io, DOMAINERROR_COMPLEX_MSG)
     end
 end
