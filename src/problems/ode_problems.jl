@@ -46,7 +46,7 @@ are:
 For more details on the in-place and specialization controls, see the ODEFunction
 documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -178,12 +178,12 @@ abstract type AbstractDynamicalODEProblem end
 
 @doc doc"""
 
-Defines an dynamical ordinary differential equation (ODE) problem.
+Defines a dynamical ordinary differential equation (ODE) problem.
 Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/
 
 Dynamical ordinary differential equations, such as those arising from the definition
 of a Hamiltonian system or a second order ODE, have a special structure that can be
-utilized in the solution of the differential equation. On this page we describe
+utilized in the solution of the differential equation. On this page, we describe
 how to define second order differential equations for their efficient numerical solution.
 
 ## Mathematical Specification of a Dynamical ODE Problem
@@ -199,7 +199,7 @@ specified as `f1(dv,v,u,p,t)` and `f2(du,v,u,p,t)` (in the inplace form), where 
 is independent of `v` (unless specified by the solver), and `f2` is independent
 of `u` and `t`. This includes discretizations arising from
 `SecondOrderODEProblem`s where the velocity is not used in the acceleration function,
-and Hamiltonians where the potential is (or can be) time-dependent but the kinetic
+and Hamiltonians where the potential is (or can be) time-dependent, but the kinetic
 energy is only dependent on `v`.
 
 Note that some methods assume that the integral of `f2` is a quadratic form. That
@@ -219,7 +219,7 @@ DynamicalODEProblem{isinplace}(f1,f2,v0,u0,tspan,p=NullParameters();kwargs...)
 Defines the ODE with the specified functions. `isinplace` optionally sets whether
 the function is inplace or not. This is determined automatically, but not inferred.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -357,7 +357,7 @@ Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/split_ode_type
 
 ## Mathematical Specification of a Split ODE Problem
 
-To define a `SplitODEProblem`, you simply need to give a two functions
+To define a `SplitODEProblem`, you simply need to give two functions
 ``f_1`` and ``f_2`` along with an initial condition ``u_0`` which
 define an ODE:
 
@@ -389,14 +389,14 @@ The `isinplace` parameter can be omitted and will be determined using the signat
 Note that both `f1` and `f2` should support the in-place style if `isinplace` is `true` or they
 should both support the out-of-place style if `isinplace` is `false`. You cannot mix up the two styles.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 Under the hood, a `SplitODEProblem` is just a regular `ODEProblem` whose `f` is a `SplitFunction`.
-Therefore you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
+Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
 dedicated to split problems, see [Split ODE Solvers](@ref split_ode_solve).
 
 For specifying Jacobians and mass matrices, see the

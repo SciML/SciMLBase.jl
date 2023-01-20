@@ -65,11 +65,11 @@ page.
 ### Specifying Jacobian Types
 
 The `jac` field of an inplace style `SciMLFunction` has the signature `jac(J,u,p,t)`,
-which updates the jacobian `J` in-place. The intended type for `J` can sometimes be
+which updates the Jacobian `J` in-place. The intended type for `J` can sometimes be
 inferred (e.g. when it is just a dense `Matrix`), but not in general. To supply the
 type information, you can provide a `jac_prototype` in the function's constructor.
 
-The following example creates an inplace `ODEFunction` whose jacobian is a `Diagonal`:
+The following example creates an inplace `ODEFunction` whose Jacobian is a `Diagonal`:
 
 ```julia
 using LinearAlgebra

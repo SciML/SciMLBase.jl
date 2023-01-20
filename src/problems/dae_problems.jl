@@ -31,7 +31,7 @@ provide `u₀` as arbitrary matrices / higher dimension tensors as well.
 For more details on the in-place and specialization controls, see the ODEFunction
 documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -48,7 +48,7 @@ page.
 * `u0`: The initial condition.
 * `tspan`: The timespan for the problem.
 * `differential_vars`: A logical array which declares which variables are the
-  differential (non algebraic) vars (i.e. `du'` is in the equations for this
+  differential (non-algebraic) vars (i.e. `du'` is in the equations for this
   variable). Defaults to nothing. Some solvers may require this be set if an
   initial condition needs to be determined.
 * `p`: The parameters for the problem. Defaults to `NullParameters`

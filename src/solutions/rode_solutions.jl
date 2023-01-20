@@ -20,17 +20,16 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   access `sol.u` directly and instead use the array interface described in the Solution
   Handling page of the DifferentialEquations.jl documentation.
 - `t`: the time points corresponding to the saved values of the ODE solution.
-- `W`: the representation of the saved noise process from the solution. See the Noise Processes
-  page of the DifferentialEquations.jl documentation for more details:
-  https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/ . Note that this noise is only saved
-  in full if `save_noise=true` in the solver.
+- `W`: the representation of the saved noise process from the solution. See [the Noise Processes
+  page of the DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/).
+  Note that this noise is only saved in full if `save_noise=true` in the solver.
 - `prob`: the original SDEProblem/RODEProblem that was solved.
 - `alg`: the algorithm type used by the solver.
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully, whether it terminated early due to a user-defined callback, or whether it 
-  exited due to an error. For more details, see 
+  successfully, whether it terminated early due to a user-defined callback, or whether it
+  exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, DE,

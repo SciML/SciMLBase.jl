@@ -150,7 +150,7 @@ new function type `f`, leading to the most compile times with the
 benefit of having the best runtime performance.
 
 `FullSpecialize` should be used in all cases where top runtime performance
-is required, such as in long running simulations and benchmarking.
+is required, such as in long-running simulations and benchmarking.
 
 ## Example
 
@@ -282,12 +282,12 @@ the usage of `f`. These include:
 
 ## iip: In-Place vs Out-Of-Place
 
-`iip` is the the optional boolean for determining whether a given function is written to
+`iip` is the optional boolean for determining whether a given function is written to
 be used in-place or out-of-place. In-place functions are `f!(du,u,p,t)` where the return
-is ignored and the result is expected to be mutated into the value of `du`. Out-of-place
+is ignored, and the result is expected to be mutated into the value of `du`. Out-of-place
 functions are `du=f(u,p,t)`.
 
-Normally this is determined automatically by looking at the method table for `f` and seeing
+Normally, this is determined automatically by looking at the method table for `f` and seeing
 the maximum number of arguments in available dispatches. For this reason, the constructor
 `ODEFunction(f)` generally works (but is type-unstable). However, for type-stability or
 to enforce correctness, this option is passed via `ODEFunction{true}(f)`.
@@ -306,7 +306,7 @@ The available specialization levels are:
   constituent functions that make its fields. As such, each `ODEFunction` in this
   form is uniquely typed, requiring re-specialization and compilation for each new
   ODE definition. This form has the highest compile-time at the cost of being the
-  most optimal in runtime. This form should be preferred for long running calculations
+  most optimal in runtime. This form should be preferred for long-running calculations
   (such as within optimization loops) and for benchmarking.
 * `SciMLBase.NoSpecialize`: this form fully unspecializes the function types in the ODEFunction
   definition by using an `Any` type declaration. As a result, it can result in reduced runtime
@@ -323,7 +323,7 @@ The fields of the ODEFunction type directly match the names of the inputs.
 
 ## More Details on Jacobians
 
-The following example creates an inplace `ODEFunction` whose jacobian is a `Diagonal`:
+The following example creates an inplace `ODEFunction` whose Jacobian is a `Diagonal`:
 
 ```julia
 using LinearAlgebra
@@ -336,7 +336,7 @@ fun = ODEFunction(f; jac=jac, jac_prototype=jp)
 Note that the integrators will always make a deep copy of `fun.jac_prototype`, so
 there's no worry of aliasing.
 
-In general the jacobian prototype can be anything that has `mul!` defined, in
+In general, the Jacobian prototype can be anything that has `mul!` defined, in
 particular sparse matrices or custom lazy types that support `mul!`. A special case
 is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
 do not need to supply `jac` as it is automatically set to `update_coefficients!`.
@@ -350,7 +350,7 @@ on setting up time/parameter dependent operators.
 The most standard case, declaring a function for a Jacobian is done by overloading
 the function `f(du,u,p,t)` with an in-place updating function for the Jacobian:
 `f_jac(J,u,p,t)` where the value type is used for dispatch. For example,
-take the LotkaVolterra model:
+take the Lotka-Volterra model:
 
 ```julia
 function f(du,u,p,t)
@@ -359,7 +359,7 @@ function f(du,u,p,t)
 end
 ```
 
-To declare the Jacobian we simply add the dispatch:
+To declare the Jacobian, we simply add the dispatch:
 
 ```julia
 function f_jac(J,u,p,t)
@@ -427,7 +427,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 Generally, for ODE integrators the `f_1` portion should be considered the
-"stiff portion of the model" with larger time scale separation, while the
+"stiff portion of the model" with larger timescale separation, while the
 `f_2` portion should be considered the "non-stiff portion". This interpretation
 is directly used in integrators like IMEX (implicit-explicit integrators)
 and exponential integrators.
@@ -901,7 +901,7 @@ abstract type AbstractDiscreteFunction{iip} <:
 @doc doc"""
     DiscreteFunction{iip,F,Ta,S,S2,S3,O} <: AbstractDiscreteFunction{iip,specialize}
 
-A representation of an discrete dynamical system `f`, defined by:
+A representation of a discrete dynamical system `f`, defined by:
 
 ```math
 u_{n+1} = f(u,p,t_{n+1})
@@ -1162,7 +1162,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 Generally, for SDE integrators the `f_1` portion should be considered the
-"stiff portion of the model" with larger time scale separation, while the
+"stiff portion of the model" with larger timescale separation, while the
 `f_2` portion should be considered the "non-stiff portion". This interpretation
 is directly used in integrators like IMEX (implicit-explicit integrators)
 and exponential integrators.
