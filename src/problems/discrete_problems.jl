@@ -8,7 +8,7 @@ Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types
 
 ## Mathematical Specification of a Discrete Problem
 
-To define an Discrete Problem, you simply need to give the function ``f`` and the initial
+To define a Discrete Problem, you simply need to give the function ``f`` and the initial
 condition ``u_0`` which define a function map:
 
 ```math
@@ -20,7 +20,7 @@ be an AbstractArray (or number) whose geometry matches the desired geometry of `
 Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
 provide `u₀` as arbitrary matrices / higher dimension tensors as well. ``u_{n+1}`` only depends on the previous
 iteration ``u_{n}`` and ``t_{n+1}``. The default ``t_{n+1}`` of `FunctionMap` is
-``t_n = t_0 + n*dt`` (with `dt=1` being the default). For continuous-time Markov chains
+``t_n = t_0 + n*dt`` (with `dt=1` being the default). For continuous-time Markov chains,
 this is the time at which the change is occurring.
 
 Note that if the discrete solver is set to have `scale_by_time=true`, then the problem
@@ -41,15 +41,15 @@ u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
 - `DiscreteProblem{isinplace,specialize}(u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the identity map.
 
-`isinplace` optionally sets whether the function is inplace or not. This is 
-determined automatically, but not inferred. `specialize` optionally controls 
+`isinplace` optionally sets whether the function is inplace or not. This is
+determined automatically, but not inferred. `specialize` optionally controls
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
 documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in

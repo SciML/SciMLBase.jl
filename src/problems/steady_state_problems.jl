@@ -32,17 +32,17 @@ SteadyStateProblem(f::ODEFunction,u0,p=NullParameters();kwargs...)
 SteadyStateProblem{isinplace,specialize}(f,u0,p=NullParameters();kwargs...)
 ```
 
-`isinplace` optionally sets whether the function is inplace or not. This is 
-determined automatically, but not inferred. `specialize` optionally controls 
+`isinplace` optionally sets whether the function is inplace or not. This is
+determined automatically, but not inferred. `specialize` optionally controls
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize`.
-  
+
 Parameters are optional, and if not given, a `NullParameters()` singleton
 will be used, which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
-  
+
 Additionally, the constructor from `ODEProblem`s is provided:
 
 ```julia

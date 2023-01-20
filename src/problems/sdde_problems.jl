@@ -67,15 +67,15 @@ SDDEProblem(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 ```
 
-`isinplace` optionally sets whether the function is inplace or not. This is 
-determined automatically, but not inferred. `specialize` optionally controls 
+`isinplace` optionally sets whether the function is inplace or not. This is
+determined automatically, but not inferred. `specialize` optionally controls
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
 
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -96,7 +96,7 @@ For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref perfo
   used by the history function `h`. Defaults to `()`.
 * `neutral`: If the DDE is neutral, i.e., if delays appear in derivative terms.
 * `order_discontinuity_t0`: The order of the discontinuity at the initial time
-  point. Defaults to `0` if an initial condition `u0` is provided. Otherwise
+  point. Defaults to `0` if an initial condition `u0` is provided. Otherwise,
   it is forced to be greater or equal than `1`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """

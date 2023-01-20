@@ -38,8 +38,8 @@ with initial condition `u0`.
 - `SDEProblem(f::SDEFunction,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)`
 - `SDEProblem{isinplace,specialize}(f,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)` :
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
-  `isinplace` optionally sets whether the function is inplace or not. This is 
-  determined automatically, but not inferred. `specialize` optionally controls 
+  `isinplace` optionally sets whether the function is inplace or not. This is
+  determined automatically, but not inferred. `specialize` optionally controls
   the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
   for more details. The default is `AutoSpecialize.
 
@@ -62,7 +62,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process)
+  see [the noise process documentation page](@ref noise_process).
 * `noise_rate_prototype`: A prototype type instance for the noise rates, that
   is the output `g`. It can be any type which overloads `A_mul_B!` with itself
   being the middle argument. Commonly, this is a matrix or sparse matrix. If

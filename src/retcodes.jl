@@ -159,7 +159,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Common Reasons for Seeing this Return Code
 
-    * The most common reason for seeing this return code is because the the integration
+    * The most common reason for seeing this return code is because the integration
       is going unstable. As `f(u,p,t) -> infinity`, the time steps required by the solver
       to accurately handle the dynamics decreases. When it gets sufficiently small, `dtmin`,
       an exit is thrown as the solution is likely unstable. `dtmin` is also chosen to be
