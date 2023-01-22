@@ -3213,6 +3213,21 @@ function DDEFunction{iip, specialize}(f;
         _colorvec = colorvec
     end
 
+    jaciip = jac !== nothing ? isinplace(jac, 5, "jac", iip) : iip
+    tgradiip = tgrad !== nothing ? isinplace(tgrad, 5, "tgrad", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 6, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 6, "vjp", iip) : iip
+    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 6, "Wfact", iip) : iip
+    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 6, "Wfact_t", iip) : iip
+    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 5, "paramjac", iip) : iip
+
+    nonconforming = (jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip, paramjaciip) .!= iip
+    if any(nonconforming)
+        nonconforming = findall(nonconforming)
+        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
+        throw(NonconformingFunctionsError(functions))
+    end
+
     if specialize === NoSpecialize
         DDEFunction{iip, specialize, Any, Any, Any, Any,
                     Any, Any, Any, Any, Any, Any, Any,
