@@ -18,11 +18,19 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
 end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
-function augment(A::DiffEqArray, sol::AbstractODESolution)
-    syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
+function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T, N, Q, B}
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
+    if has_sys(sol.prob.f)
+        DiffEqArray{T, N, Q, B, typeof(sol.prob.f.sys), typeof(observed), typeof(p)}(A.u,
+                                                                                     A.t,
+                                                                                     sol.prob.f.sys,
+                                                                                     observed,
+                                                                                     p)
+    else
+        syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
+        DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
+    end
 end
 
 # Symbol Handling
@@ -61,14 +69,15 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym)
-    paramsyms = getparamsyms(A)
     if issymbollike(sym)
         if sym isa AbstractArray
             return A[collect(sym)]
         end
         i = sym_to_index(sym, A)
     elseif all(issymbollike, sym)
-        if all(in(paramsyms), Symbol.(sym))
+        if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
+           !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
+           all(in(getparamsyms(A)), Symbol.(sym))
             return getindex.((A,), sym)
         else
             return [getindex.((A,), sym, i) for i in eachindex(A)]
@@ -77,13 +86,18 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = sym
     end
 
-    indepsym = getindepsym(A)
-    paramsyms = getparamsyms(A)
     if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
-            A.t
-        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), paramsyms)]
+        if issymbollike(sym)
+            if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
+               Symbol(sym) == getindepsym(A)
+                return A.t
+            elseif has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
+                return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
+            elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
+                return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
+            else
+                return observed(A, sym, :)
+            end
         else
             observed(A, sym, :)
         end
@@ -106,9 +120,9 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = sym
     end
 
-    indepsym = getindepsym(A)
     if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+        if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
+           Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
             observed(A, sym, args...)
@@ -411,7 +425,13 @@ function cleansym(sym::Symbol)
     return str
 end
 
-sym_to_index(sym, sol::AbstractSciMLSolution) = sym_to_index(sym, getsyms(sol))
+function sym_to_index(sym, sol::AbstractSciMLSolution)
+    if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
+        return state_sym_to_index(sol.prob.f.sys, sym)
+    else
+        return sym_to_index(sym, getsyms(sol))
+    end
+end
 sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
 const issymbollike = RecursiveArrayTools.issymbollike
 

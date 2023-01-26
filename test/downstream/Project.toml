@@ -11,7 +11,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 BoundaryValueDiffEq = "2.10"
-ModelingToolkit = "8.35"
+ModelingToolkit = "8.37"
 Optimization = "3"
 OptimizationOptimJL = "0.1"
 OrdinaryDiffEq = "6.33"

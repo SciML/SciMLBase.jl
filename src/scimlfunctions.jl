@@ -3669,6 +3669,7 @@ has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
 has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
+has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
 has_syms(f::AbstractSciMLFunction) = __has_syms(f) && f.syms !== nothing
 has_indepsym(f::AbstractSciMLFunction) = __has_indepsym(f) && f.indepsym !== nothing
 has_paramsyms(f::AbstractSciMLFunction) = __has_paramsyms(f) && f.paramsyms !== nothing
