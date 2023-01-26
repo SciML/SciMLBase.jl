@@ -127,8 +127,10 @@ function Base.copy(L::DiffEqArrayOperator)
     DiffEqArrayOperator(copy(L.A); update_func = L.update_func)
 end
 
-const AdjointFact = isdefined(LinearAlgebra, :AdjointFactorization) ? LinearAlgebra.AdjointFactorization : Adjoint
-const TransposeFact = isdefined(LinearAlgebra, :TransposeFactorization) ? LinearAlgebra.TransposeFactorization : Transpose
+const AdjointFact = isdefined(LinearAlgebra, :AdjointFactorization) ?
+                    LinearAlgebra.AdjointFactorization : Adjoint
+const TransposeFact = isdefined(LinearAlgebra, :TransposeFactorization) ?
+                      LinearAlgebra.TransposeFactorization : Transpose
 
 """
     FactorizedDiffEqArrayOperator(F)
@@ -147,19 +149,35 @@ struct FactorizedDiffEqArrayOperator{T <: Number,
     F::FType
 end
 
-Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Factorization,AbstractMatrix}}) =
+function Base.convert(::Type{AbstractMatrix},
+                      L::FactorizedDiffEqArrayOperator{<:Any,
+                                                       <:Union{Factorization, AbstractMatrix
+                                                               }})
     convert(AbstractMatrix, L.F)
-Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Adjoint,AdjointFact}}) =
+end
+function Base.convert(::Type{AbstractMatrix},
+                      L::FactorizedDiffEqArrayOperator{<:Any, <:Union{Adjoint, AdjointFact}
+                                                       })
     adjoint(convert(AbstractMatrix, adjoint(L.F)))
-Base.convert(::Type{AbstractMatrix}, L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Transpose,TransposeFact}}) =
+end
+function Base.convert(::Type{AbstractMatrix},
+                      L::FactorizedDiffEqArrayOperator{<:Any,
+                                                       <:Union{Transpose, TransposeFact}})
     transpose(convert(AbstractMatrix, transpose(L.F)))
+end
 
-Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Factorization,AbstractMatrix}}) =
+function Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,
+                                                      <:Union{Factorization, AbstractMatrix
+                                                              }})
     Matrix(L.F)
-Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Adjoint,AdjointFact}}) =
+end
+function Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any, <:Union{Adjoint, AdjointFact}})
     adjoint(Matrix(adjoint(L.F)))
-Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,<:Union{Transpose,TransposeFact}}) =
+end
+function Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,
+                                                      <:Union{Transpose, TransposeFact}})
     transpose(Matrix(transpose(L.F)))
+end
 
 Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
 Base.size(L::FactorizedDiffEqArrayOperator, args...) = size(L.F, args...)

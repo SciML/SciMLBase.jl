@@ -352,7 +352,8 @@ ddeWfact_t(u, h, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
 ddeWfact_t(u, h, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
+                                                               Wfact_t = ddeWfact_t)
 DDEFunction(ddefoop, Wfact_t = Wfact_t)
 ddeWfact_t(du, u, h, p, gamma, t) = [1.0]
 DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
@@ -372,7 +373,8 @@ ddeparamjac(u, h, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, paramjac = ddeparamjac)
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, paramjac = ddeparamjac)
 ddeparamjac(u, h, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, paramjac = ddeparamjac)
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
+                                                               paramjac = ddeparamjac)
 DDEFunction(ddefoop, paramjac = paramjac)
 ddeparamjac(du, u, h, p, t) = [1.0]
 DDEFunction(ddefiip, paramjac = ddeparamjac)
