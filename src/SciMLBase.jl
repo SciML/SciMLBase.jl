@@ -679,6 +679,8 @@ include("tabletraits.jl")
 include("remake.jl")
 include("callbacks.jl")
 
+include("deprecated.jl")
+
 function discretize end
 function symbolic_discretize end
 
