@@ -149,6 +149,8 @@ struct FactorizedDiffEqArrayOperator{T <: Number,
     F::FType
 end
 
+getops(F::FactorizedDiffEqArrayOperator) = ()
+
 function Base.convert(::Type{AbstractMatrix},
                       L::FactorizedDiffEqArrayOperator{<:Any,
                                                        <:Union{Factorization, AbstractMatrix
