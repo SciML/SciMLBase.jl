@@ -1,7 +1,4 @@
 # The `update_coefficients!` interface
-DEFAULT_UPDATE_FUNC(A, u, p, t) = A # no-op used by the basic operators
-# isconstant(::AbstractDiffEqLinearOperator) = true # already defined in DiffEqBase
-update_coefficients!(L::AbstractDiffEqLinearOperator, u, p, t) = L
 
 # Routines that use the AbstractMatrix representation
 function Base.convert(::Type{AbstractArray}, L::AbstractDiffEqLinearOperator)
