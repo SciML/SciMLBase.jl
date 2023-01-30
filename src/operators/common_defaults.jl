@@ -33,6 +33,14 @@ for op in (
     @eval function Base.$op(x::AbstractVecOrMat, L::AbstractDiffEqLinearOperator)
         $op(x, convert(AbstractMatrix, L))
     end
+
+    @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractArray)
+        $op(convert(AbstractMatrix, L), x)
+    end
+    @eval function Base.$op(x::AbstractArray, L::AbstractDiffEqLinearOperator)
+        $op(x, convert(AbstractMatrix, L))
+    end
+
     @eval Base.$op(L::DiffEqArrayOperator, x::Number) = $op(convert(AbstractMatrix, L), x)
     @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix, L))
 end
@@ -46,6 +54,7 @@ end
 #    mul!(Y, convert(AbstractMatrix, L), B, α, β)
 #end
 
+#=
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
     @eval function LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator)
         $pred(convert(AbstractArray, L))
@@ -56,6 +65,7 @@ for op in (:sum, :prod)
         $op(convert(AbstractArray, L); kwargs...)
     end
 end
+=#
 
 # TODO - rm eventually
 function LinearAlgebra.factorize(L::AbstractDiffEqLinearOperator)
