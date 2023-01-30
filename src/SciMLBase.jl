@@ -24,16 +24,16 @@ using Reexport
 @reexport using SciMLOperators
 
 using SciMLOperators:
-                     AbstractSciMLOperator,
-                     IdentityOperator, NullOperator,
-                     ScaledOperator, AddedOperator, ComposedOperator,
-                     InvertedOperator, InvertibleOperator
+                      AbstractSciMLOperator,
+                      IdentityOperator, NullOperator,
+                      ScaledOperator, AddedOperator, ComposedOperator,
+                      InvertedOperator, InvertibleOperator
 
 import SciMLOperators:
-                      DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
-                      getops, isconstant, iscached, islinear, issquare,
-                      has_adjoint, has_expmv, has_expmv!, has_exp,
-                      has_mul, has_mul!, has_ldiv, has_ldiv!
+                       DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
+                       getops, isconstant, iscached, islinear, issquare,
+                       has_adjoint, has_expmv, has_expmv!, has_exp,
+                       has_mul, has_mul!, has_ldiv, has_ldiv!
 
 function __solve end
 function __init end
