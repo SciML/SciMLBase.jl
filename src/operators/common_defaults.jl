@@ -4,29 +4,39 @@
 function Base.convert(::Type{AbstractArray}, L::AbstractDiffEqLinearOperator)
     convert(AbstractMatrix, L)
 end
+
 function Base.size(L::AbstractDiffEqLinearOperator, args...)
     size(convert(AbstractMatrix, L), args...)
 end
+
 function LinearAlgebra.opnorm(L::AbstractDiffEqLinearOperator, p::Real = 2)
     opnorm(convert(AbstractMatrix, L), p)
 end
+
 Base.@propagate_inbounds function Base.getindex(L::AbstractDiffEqLinearOperator,
                                                 I::Vararg{Any, N}) where {N}
     convert(AbstractMatrix, L)[I...]
 end
+
 function Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where {N}
     convert(AbstractMatrix, L)[I...]
 end
-for op in (:*, :/, :\)
-    @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractArray)
+
+for op in (
+           :*,
+           :/,
+           :\,
+          )
+    @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractVecOrMat)
         $op(convert(AbstractMatrix, L), x)
     end
-    @eval function Base.$op(x::AbstractArray, L::AbstractDiffEqLinearOperator)
+    @eval function Base.$op(x::AbstractVecOrMat, L::AbstractDiffEqLinearOperator)
         $op(x, convert(AbstractMatrix, L))
     end
     @eval Base.$op(L::DiffEqArrayOperator, x::Number) = $op(convert(AbstractMatrix, L), x)
     @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix, L))
 end
+
 #function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
 #                            B::AbstractArray)
 #    mul!(Y, convert(AbstractMatrix, L), B)
@@ -35,6 +45,7 @@ end
 #                            B::AbstractArray, α::Number, β::Number)
 #    mul!(Y, convert(AbstractMatrix, L), B, α, β)
 #end
+
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
     @eval function LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator)
         $pred(convert(AbstractArray, L))
@@ -45,6 +56,8 @@ for op in (:sum, :prod)
         $op(convert(AbstractArray, L); kwargs...)
     end
 end
+
+# TODO - rm eventually
 function LinearAlgebra.factorize(L::AbstractDiffEqLinearOperator)
     FactorizedDiffEqArrayOperator(factorize(convert(AbstractMatrix, L)))
 end
@@ -61,3 +74,4 @@ end
 # Routines that use the full matrix representation
 #Base.Matrix(L::AbstractDiffEqLinearOperator) = Matrix(convert(AbstractMatrix, L))
 #LinearAlgebra.exp(L::AbstractDiffEqLinearOperator) = exp(Matrix(L))
+
