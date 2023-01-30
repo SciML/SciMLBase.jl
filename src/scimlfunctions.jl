@@ -3718,7 +3718,6 @@ has_colorvec(f::JacobianWrapper) = has_colorvec(f.f)
 
 ######### Additional traits
 
-islinear(f) = false # fallback
 islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)
