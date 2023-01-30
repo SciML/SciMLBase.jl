@@ -27,14 +27,14 @@ for op in (:*, :/, :\)
     @eval Base.$op(L::DiffEqArrayOperator, x::Number) = $op(convert(AbstractMatrix, L), x)
     @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix, L))
 end
-function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
-                            B::AbstractArray)
-    mul!(Y, convert(AbstractMatrix, L), B)
-end
-function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
-                            B::AbstractArray, α::Number, β::Number)
-    mul!(Y, convert(AbstractMatrix, L), B, α, β)
-end
+#function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
+#                            B::AbstractArray)
+#    mul!(Y, convert(AbstractMatrix, L), B)
+#end
+#function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
+#                            B::AbstractArray, α::Number, β::Number)
+#    mul!(Y, convert(AbstractMatrix, L), B, α, β)
+#end
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
     @eval function LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator)
         $pred(convert(AbstractArray, L))
@@ -59,5 +59,5 @@ for fact in (:lu, :lu!, :qr, :qr!, :cholesky, :cholesky!, :ldlt, :ldlt!,
 end
 
 # Routines that use the full matrix representation
-Base.Matrix(L::AbstractDiffEqLinearOperator) = Matrix(convert(AbstractMatrix, L))
-LinearAlgebra.exp(L::AbstractDiffEqLinearOperator) = exp(Matrix(L))
+#Base.Matrix(L::AbstractDiffEqLinearOperator) = Matrix(convert(AbstractMatrix, L))
+#LinearAlgebra.exp(L::AbstractDiffEqLinearOperator) = exp(Matrix(L))
