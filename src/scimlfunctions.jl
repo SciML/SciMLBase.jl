@@ -56,7 +56,7 @@ limitations.
   is defined on `u0` to dual numbers.
 * `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
   default.
-* `AutoSpecialize` does not wrap cases where `f isa AbstractDiffEqOperator`
+* `AutoSpecialize` does not wrap cases where `f isa AbstractSciMLOperator`
 * By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
   `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are pspecialized
   by the solver libraries. Other forms can be pspecialize specialized with
@@ -338,7 +338,7 @@ there's no worry of aliasing.
 
 In general, the Jacobian prototype can be anything that has `mul!` defined, in
 particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
+is when the `jac_prototype` is a `AbstractSciMLOperator`, in which case you
 do not need to supply `jac` as it is automatically set to `update_coefficients!`.
 Refer to the AbstractSciMLOperators documentation for more information
 on setting up time/parameter dependent operators.
