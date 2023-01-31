@@ -47,6 +47,7 @@ end
 #                            B::AbstractArray)
 #    mul!(Y, convert(AbstractMatrix, L), B)
 #end
+#
 #function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
 #                            B::AbstractArray, α::Number, β::Number)
 #    mul!(Y, convert(AbstractMatrix, L), B, α, β)
