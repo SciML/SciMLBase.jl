@@ -22,11 +22,9 @@ function Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where
     convert(AbstractMatrix, L)[I...]
 end
 
-for op in (
-           :*,
+for op in (:*,
            :/,
-           :\,
-          )
+           :\)
     @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractVecOrMat)
         $op(convert(AbstractMatrix, L), x)
     end
@@ -84,4 +82,3 @@ end
 # Routines that use the full matrix representation
 #Base.Matrix(L::AbstractDiffEqLinearOperator) = Matrix(convert(AbstractMatrix, L))
 #LinearAlgebra.exp(L::AbstractDiffEqLinearOperator) = exp(Matrix(L))
-
