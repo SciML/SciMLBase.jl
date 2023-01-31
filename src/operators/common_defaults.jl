@@ -52,7 +52,6 @@ end
 #    mul!(Y, convert(AbstractMatrix, L), B, α, β)
 #end
 
-#=
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
     @eval function LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator)
         $pred(convert(AbstractArray, L))
@@ -63,7 +62,6 @@ for op in (:sum, :prod)
         $op(convert(AbstractArray, L); kwargs...)
     end
 end
-=#
 
 # TODO - rm eventually
 function LinearAlgebra.factorize(L::AbstractDiffEqLinearOperator)
