@@ -636,9 +636,9 @@ version = "1.2.0"
 
 [[deps.OffsetArrays]]
 deps = ["Adapt"]
-git-tree-sha1 = "f71d8950b724e9ff6110fc948dff5a329f901d64"
+git-tree-sha1 = "82d7c9e310fe55aa54996e6f7f94674e2a38fcb4"
 uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.12.8"
+version = "1.12.9"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -827,9 +827,9 @@ uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
 
 [[deps.SimpleNonlinearSolve]]
 deps = ["ArrayInterfaceCore", "DiffEqBase", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "Reexport", "SciMLBase", "SnoopPrecompile", "StaticArraysCore"]
-git-tree-sha1 = "8a3219de74d2ec30c03d239bd2e0ae7d69978103"
+git-tree-sha1 = "9b941eeecd4f051f5656383fbebe7f7d0a89fc0d"
 uuid = "727e6d20-b764-4bd8-a329-72de5adea6c7"
-version = "0.1.8"
+version = "0.1.9"
 
 [[deps.SimpleTraits]]
 deps = ["InteractiveUtils", "MacroTools"]
