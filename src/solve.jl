@@ -54,7 +54,7 @@ step. Its signature is:
 callback = (x,other_args) -> false
 ```
 
-where `other_args` is are the extra return arguments of the optimization `f`.
+where `other_args` are the extra return arguments of the optimization `f`.
 This allows for saving values from the optimization and using them for
 plotting and display without recalculating. The callback should return a
 Boolean value, and the default should be `false`, such that the optimization
