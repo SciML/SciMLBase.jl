@@ -53,7 +53,7 @@ update_coefficients!(α::DiffEqScalar, u, p, t) = (α.val = α.update_func(α.va
 isconstant(α::DiffEqScalar) = α.update_func == DEFAULT_UPDATE_FUNC
 
 for op in (:*, :/, :\)
-    for T in (:AbstractVecOrMat, :AbstractArray, :Number)
+    for T in (:AbstractArray, :Number)
         @eval Base.$op(α::DiffEqScalar, x::$T) = $op(α.val, x)
         @eval Base.$op(x::$T, α::DiffEqScalar) = $op(x, α.val)
     end
@@ -148,8 +148,6 @@ struct FactorizedDiffEqArrayOperator{T <: Number,
                                      } <: AbstractDiffEqLinearOperator{T}
     F::FType
 end
-
-getops(F::FactorizedDiffEqArrayOperator) = ()
 
 function Base.convert(::Type{AbstractMatrix},
                       L::FactorizedDiffEqArrayOperator{<:Any,

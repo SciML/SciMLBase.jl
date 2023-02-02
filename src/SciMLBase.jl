@@ -637,6 +637,7 @@ $(TYPEDEF)
 abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
 include("retcodes.jl")
+include("operators/operators.jl")
 include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
 include("operators/common_defaults.jl")
