@@ -21,8 +21,7 @@ import RuntimeGeneratedFunctions
 import EnumX
 
 using Reexport
-@reexport using SciMLOperators
-
+using SciMLOperators
 using SciMLOperators:
                       AbstractSciMLOperator,
                       IdentityOperator, NullOperator,
@@ -34,6 +33,21 @@ import SciMLOperators:
                        getops, isconstant, iscached, islinear, issquare,
                        has_adjoint, has_expmv, has_expmv!, has_exp,
                        has_mul, has_mul!, has_ldiv, has_ldiv!
+
+#@reexport using SciMLOperators
+
+export ScalarOperator, MatrixOperator, DiagonalOperator, AffineOperator,
+       AddVector, FunctionOperator, TensorProductOperator
+
+export update_coefficients!, update_coefficients,
+       isconstant, iscached, cache_operator,
+
+       #issquare, # wait for https://github.com/SciML/LinearSolve.jl/issues/268
+       islinear,
+
+       has_adjoint, has_expmv, has_expmv!, has_exp,
+       has_mul, has_mul!, has_ldiv, has_ldiv!
+
 
 function __solve end
 function __init end
