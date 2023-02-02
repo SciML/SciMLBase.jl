@@ -21,6 +21,10 @@
 # Extra standard assumptions
 isconstant(::AbstractDiffEqLinearOperator) = true
 islinear(o::AbstractDiffEqLinearOperator) = isconstant(o)
+### VP
+islinear(L) = false
+isconstant(L) = false
+###
 
 #isconstant(::AbstractMatrix) = true
 #islinear(::AbstractMatrix) = true

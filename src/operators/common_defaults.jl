@@ -34,22 +34,24 @@ for op in (:*, :/, :\)
     @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix, L))
 end
 
-# VP
+### VP
 function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
                             B::AbstractVecOrMat)
     mul!(Y, convert(AbstractMatrix, L), B)
 end
+###
 
 function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
                             B::AbstractArray)
     mul!(Y, convert(AbstractMatrix, L), B)
 end
 
-# VP
+### VP
 function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
                             B::AbstractVecOrMat, α::Number, β::Number)
     mul!(Y, convert(AbstractMatrix, L), B, α, β)
 end
+###
 
 function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
                             B::AbstractArray, α::Number, β::Number)
