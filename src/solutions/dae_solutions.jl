@@ -42,14 +42,6 @@ struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
     destats::DE
     retcode::ReturnCode.T
 end
-function (sol::DAESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
-                            continuity = :left) where {deriv}
-    sol.interp(t, idxs, deriv, sol.prob.p, continuity)
-end
-function (sol::DAESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
-                            continuity = :left) where {deriv}
-    sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
-end
 
 function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                         timeseries_errors = length(u) > 2,
