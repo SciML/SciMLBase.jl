@@ -34,20 +34,19 @@ import SciMLOperators:
                        has_adjoint, has_expmv, has_expmv!, has_exp,
                        has_mul, has_mul!, has_ldiv, has_ldiv!
 
+### wait for https://github.com/SciML/LinearSolve.jl/issues/268
+
 #@reexport using SciMLOperators
 
+###
 export ScalarOperator, MatrixOperator, DiagonalOperator, AffineOperator,
        AddVector, FunctionOperator, TensorProductOperator
-
 export update_coefficients!, update_coefficients,
        isconstant, iscached, cache_operator,
-
-       #issquare, # wait for https://github.com/SciML/LinearSolve.jl/issues/268
-       islinear,
-
+       islinear, #issquare,
        has_adjoint, has_expmv, has_expmv!, has_exp,
        has_mul, has_mul!, has_ldiv, has_ldiv!
-
+###
 
 function __solve end
 function __init end
