@@ -10,7 +10,7 @@ promote_tspan(tspan::Nothing) = (nothing, nothing)
 promote_tspan(tspan::Function) = tspan
 function promote_tspan(tspan::AbstractArray)
     length(tspan) == 2 ? promote_tspan((first(tspan), last(tspan))) :
-    throw(error("The length of tspan must be two (and preferably, tspan should be a tuple, i.e. (0.0,1.0)). If you are trying to include other values for saving reasons, note see the [common solver arguments page](https://docs.juliadiffeq.org/latest/basics/common_solver_opts/) for information on the saving command saveat."))
+    throw(error("The length of tspan must be two (and preferably, tspan should be a tuple, i.e. (0.0,1.0)). If you are trying to include other values for saving reasons, see the [common solver arguments page](https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts/) for information on the saving command saveat."))
 end
 
 ### Displays
