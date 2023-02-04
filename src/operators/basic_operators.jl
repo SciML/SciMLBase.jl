@@ -54,7 +54,7 @@ isconstant(α::DiffEqScalar) = α.update_func == DEFAULT_UPDATE_FUNC
 
 for op in (:*, :/, :\)
     for T in (
-              ### VP
+              ### added in https://github.com/SciML/SciMLBase.jl/pull/377
               :AbstractVecOrMat,
               ###
               :AbstractArray,

@@ -1,9 +1,3 @@
-# The `update_coefficients!` interface
-
-#DEFAULT_UPDATE_FUNC(A, u, p, t) = A # no-op used by the basic operators
-
-# isconstant(::AbstractDiffEqLinearOperator) = true # already defined in DiffEqBase
-
 update_coefficients!(L::AbstractDiffEqLinearOperator, u, p, t) = L
 
 # Routines that use the AbstractMatrix representation
@@ -24,7 +18,7 @@ function Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where
     convert(AbstractMatrix, L)[I...]
 end
 for op in (:*, :/, :\)
-    ### VP
+    ### added in https://github.com/SciML/SciMLBase.jl/pull/377
     @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractVecOrMat)
         $op(convert(AbstractMatrix, L), x)
     end
@@ -42,7 +36,7 @@ for op in (:*, :/, :\)
     @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix, L))
 end
 
-### VP
+### added in https://github.com/SciML/SciMLBase.jl/pull/377
 function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
                             B::AbstractVecOrMat)
     mul!(Y, convert(AbstractMatrix, L), B)
@@ -54,7 +48,7 @@ function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
     mul!(Y, convert(AbstractMatrix, L), B)
 end
 
-### VP
+### added in https://github.com/SciML/SciMLBase.jl/pull/377
 function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
                             B::AbstractVecOrMat, α::Number, β::Number)
     mul!(Y, convert(AbstractMatrix, L), B, α, β)
