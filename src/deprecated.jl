@@ -17,7 +17,7 @@ const SciMLSolution = AbstractSciMLSolution
 # Deprecated operator interface
 #=
 const AbstractDiffEqOperator = AbstractSciMLOperator
-const AbstractDiffEqLinearOperator = AbstractSciMLLinearOperator
+const AbstractDiffEqLinearOperator = AbstractSciMLOperator
 const AbstractDiffEqCompositeOperator = AbstractSciMLOperator
 
 const DiffEqScaledOperator = ScaledOperator
@@ -47,7 +47,7 @@ end
 const DiffEqScalar = SciMLOperators.ScalarOperator
 function DiffEqScalar(args...; kwargs...)
     @warn "SciMLBase.DiffEqScalar is deprecated.
-    Use SciMLOperators.ScaledOperator instead"
+    Use SciMLOperators.ScalarOperator instead"
 
     ScalarOperator(args...; kwargs...)
 end
