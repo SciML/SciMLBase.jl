@@ -43,7 +43,7 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
 end
 
 """
-    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing, 
+    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
            p = missing, kwargs = missing, _kwargs...)
 
 Remake the given `ODEProblem`.
@@ -263,4 +263,11 @@ function remake(thing::AbstractEnsembleProblem; kwargs...)
     T = parameterless_type(thing)
     en_kwargs = [k for k in kwargs if first(k) ∈ fieldnames(T)]
     T(remake(thing.prob; setdiff(kwargs, en_kwargs)...); en_kwargs...)
+end
+
+function remake!(thing::T, args...; kwargs...) where T
+    newthing = remake(thing, args...; kwargs...)
+    for field in fieldnames(T)
+        @set! thing.field = newthing.field
+    end
 end
