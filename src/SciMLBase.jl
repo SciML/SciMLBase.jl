@@ -648,7 +648,7 @@ include("problems/sdde_problems.jl")
 include("problems/pde_problems.jl")
 include("problems/problem_utils.jl")
 include("problems/problem_traits.jl")
-include("problems/problem_interfacee.jl")
+include("problems/problem_interface.jl")
 
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
