@@ -53,7 +53,13 @@ update_coefficients!(α::DiffEqScalar, u, p, t) = (α.val = α.update_func(α.va
 isconstant(α::DiffEqScalar) = α.update_func == DEFAULT_UPDATE_FUNC
 
 for op in (:*, :/, :\)
-    for T in (:AbstractArray, :Number)
+    for T in (
+              ### added in https://github.com/SciML/SciMLBase.jl/pull/377
+              :AbstractVecOrMat,
+              ###
+              :AbstractArray,
+              :Number,
+             )
         @eval Base.$op(α::DiffEqScalar, x::$T) = $op(α.val, x)
         @eval Base.$op(x::$T, α::DiffEqScalar) = $op(x, α.val)
     end
