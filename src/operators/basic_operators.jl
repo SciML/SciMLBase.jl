@@ -58,8 +58,7 @@ for op in (:*, :/, :\)
               :AbstractVecOrMat,
               ###
               :AbstractArray,
-              :Number,
-             )
+              :Number)
         @eval Base.$op(α::DiffEqScalar, x::$T) = $op(α.val, x)
         @eval Base.$op(x::$T, α::DiffEqScalar) = $op(x, α.val)
     end
