@@ -4,6 +4,9 @@ update_coefficients!(L::AbstractDiffEqLinearOperator, u, p, t) = L
 function Base.convert(::Type{AbstractArray}, L::AbstractDiffEqLinearOperator)
     convert(AbstractMatrix, L)
 end
+function Base.size(L::AbstractDiffEqLinearOperator, i::Integer)
+    size(convert(AbstractMatrix, L), i)
+end
 function Base.size(L::AbstractDiffEqLinearOperator, args...)
     size(convert(AbstractMatrix, L), args...)
 end
