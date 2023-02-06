@@ -264,10 +264,3 @@ function remake(thing::AbstractEnsembleProblem; kwargs...)
     en_kwargs = [k for k in kwargs if first(k) ∈ fieldnames(T)]
     T(remake(thing.prob; setdiff(kwargs, en_kwargs)...); en_kwargs...)
 end
-
-function remake!(thing::T, args...; kwargs...) where {T}
-    newthing = remake(thing, args...; kwargs...)
-    for field in fieldnames(T)
-        @set! thing.field = newthing.field
-    end
-end

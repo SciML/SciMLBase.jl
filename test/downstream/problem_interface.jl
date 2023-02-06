@@ -32,8 +32,8 @@ prob = ODEProblem(sys, u0, tspan, p, jac = true)
 @test prob[y] == 0.0
 @test prob[z] == 0.0
 
-prob[y] = 1.0
-@test prob[y] == 1.0
+prob[x] = 1.0
+@test prob[x] == 1.0
 
 prob[σ] = 1.0
 @test prob[σ] == 1.0
