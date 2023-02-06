@@ -11,6 +11,7 @@ using LinearAlgebra
 using Statistics
 using Distributed
 using Markdown
+using Setfield
 import Preferences
 
 import Logging, ArrayInterfaceCore
@@ -459,6 +460,11 @@ abstract type AbstractNonlinearSolution{T, N} <: AbstractNoTimeSolution{T, N} en
 $(TYPEDEF)
 """
 abstract type AbstractIntegralSolution{T, N} <: AbstractNoTimeSolution{T, N} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)

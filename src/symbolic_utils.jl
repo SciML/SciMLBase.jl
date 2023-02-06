@@ -102,7 +102,7 @@ function sym_to_index(sym, prob::AbstractSciMLProblem)
     end
 end
 
-function sym_to_index(sym, sol)
+function sym_to_index(sym, sol::AbstractSciMLSolution)
     if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
         return state_sym_to_index(sol.prob.f.sys, sym)
     else
