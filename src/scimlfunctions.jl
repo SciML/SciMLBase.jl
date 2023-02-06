@@ -56,7 +56,7 @@ limitations.
   is defined on `u0` to dual numbers.
 * `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
   default.
-* `AutoSpecialize` does not wrap cases where `f isa AbstractDiffEqOperator`
+* `AutoSpecialize` does not wrap cases where `f isa AbstractSciMLOperator`
 * By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
   `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are pspecialized
   by the solver libraries. Other forms can be pspecialize specialized with
@@ -338,7 +338,7 @@ there's no worry of aliasing.
 
 In general, the Jacobian prototype can be anything that has `mul!` defined, in
 particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractDiffEqLinearOperator`, in which case you
+is when the `jac_prototype` is a `AbstractSciMLOperator`, in which case you
 do not need to supply `jac` as it is automatically set to `update_coefficients!`.
 Refer to the AbstractSciMLOperators documentation for more information
 on setting up time/parameter dependent operators.
@@ -2181,7 +2181,7 @@ function ODEFunction{iip, specialize}(f;
         error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
 
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2385,7 +2385,7 @@ end
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
-    if !(typeof(f1) <: AbstractDiffEqOperator || typeof(f1.f) <: AbstractDiffEqOperator) &&
+    if !(typeof(f1) <: AbstractSciMLOperator || typeof(f1.f) <: AbstractSciMLOperator) &&
        isinplace(f1) != isinplace(f2)
         throw(NonconformingFunctionsError(["f2"]))
     end
@@ -2467,7 +2467,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
                                                jvp, vjp, jac_prototype, sparsity, Wfact,
                                                Wfact_t, paramjac, syms, indepsym, paramsyms,
                                                observed, colorvec, sys) where {iip}
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : ODEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : ODEFunction(f1)
     f2 = ODEFunction(f2)
 
     if isinplace(f1) != isinplace(f2)
@@ -2697,7 +2697,7 @@ function SDEFunction{iip, specialize}(f, g;
                                       sys = __has_sys(f) ? f.sys : nothing) where {iip,
                                                                                    specialize
                                                                                    }
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -2827,7 +2827,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
                                       jvp, vjp,
                                       jac_prototype, Wfact, Wfact_t, paramjac, observed,
                                       syms, indepsym, paramsyms, colorvec, sys)
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     SplitFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
                   typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
@@ -2913,7 +2913,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
                                           jac_prototype, Wfact, Wfact_t, paramjac,
                                           syms, indepsym, paramsyms, observed, colorvec,
                                           sys)
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : SDEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     DynamicalSDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
                          typeof(mass_matrix),
@@ -3022,7 +3022,7 @@ function RODEFunction{iip, specialize}(f;
                                                        f.analytic_full : false) where {iip,
                                                                                        specialize
                                                                                        }
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -3116,7 +3116,7 @@ function DAEFunction{iip, specialize}(f;
                                       sys = __has_sys(f) ? f.sys : nothing) where {iip,
                                                                                    specialize
                                                                                    }
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -3198,7 +3198,7 @@ function DDEFunction{iip, specialize}(f;
                                       sys = __has_sys(f) ? f.sys : nothing) where {iip,
                                                                                    specialize
                                                                                    }
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -3273,7 +3273,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
                                                paramjac,
                                                syms, indepsym, paramsyms, observed,
                                                colorvec) where {iip}
-    f1 = typeof(f1) <: AbstractDiffEqOperator ? f1 : DDEFunction(f1)
+    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : DDEFunction(f1)
     f2 = DDEFunction(f2)
     DynamicalDDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
                          typeof(mass_matrix),
@@ -3386,7 +3386,7 @@ function SDDEFunction{iip, specialize}(f, g;
                                        sys = __has_sys(f) ? f.sys : nothing) where {iip,
                                                                                     specialize
                                                                                     }
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -3479,7 +3479,7 @@ function NonlinearFunction{iip, specialize}(f;
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -3718,7 +3718,6 @@ has_colorvec(f::JacobianWrapper) = has_colorvec(f.f)
 
 ######### Additional traits
 
-islinear(f) = false # fallback
 islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)

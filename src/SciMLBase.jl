@@ -20,6 +20,22 @@ import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
 
+using Reexport
+using SciMLOperators
+using SciMLOperators:
+                      AbstractSciMLOperator,
+                      IdentityOperator, NullOperator,
+                      ScaledOperator, AddedOperator, ComposedOperator,
+                      InvertedOperator, InvertibleOperator
+
+import SciMLOperators:
+                       DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
+                       getops, isconstant, iscached, islinear, issquare,
+                       has_adjoint, has_expmv, has_expmv!, has_exp,
+                       has_mul, has_mul!, has_ldiv, has_ldiv!
+
+@reexport using SciMLOperators
+
 function __solve end
 function __init end
 
@@ -499,11 +515,7 @@ $(TYPEDEF)
 abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Misc
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractSciMLOperator{T} end
-
+# TODO - deprecate AbstractDiffEqOperator family
 """
 $(TYPEDEF)
 """
@@ -671,6 +683,8 @@ include("tabletraits.jl")
 include("remake.jl")
 include("callbacks.jl")
 
+include("deprecated.jl")
+
 function discretize end
 function symbolic_discretize end
 
@@ -678,21 +692,6 @@ isfunctionwrapper(x) = false
 function wrapfun_oop end
 function wrapfun_iip end
 function unwrap_fw end
-
-# Deprecated Quadrature things
-const AbstractQuadratureProblem = AbstractIntegralProblem
-const AbstractQuadratureAlgorithm = AbstractIntegralAlgorithm
-const AbstractQuadratureSolution = AbstractIntegralSolution
-
-# Deprecated High Level things
-# All downstream uses need to be removed before removing
-
-const DEAlgorithm = AbstractDEAlgorithm
-const SciMLAlgorithm = AbstractSciMLAlgorithm
-const DEProblem = AbstractDEProblem
-const DEAlgorithm = AbstractDEAlgorithm
-const DESolution = AbstractSciMLSolution
-const SciMLSolution = AbstractSciMLSolution
 
 export ReturnCode
 
@@ -758,9 +757,6 @@ export step!, deleteat!, addat!, get_tmp_cache,
        u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
        set_u!, check_error, change_t_via_interpolation!, addsteps!,
        isdiscrete, reeval_internals_due_to_modification!
-
-export update_coefficients!, update_coefficients,
-       has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
