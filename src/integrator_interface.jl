@@ -445,8 +445,10 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
                 return A.t
             elseif has_sys(A.f) && is_param_sym(A.f.sys, sym)
                 return A.p[param_sym_to_index(A.f.sys, sym)]
-            elseif has_sys(A.f) && Symbol(sym) in Set(Symbol(A.f.sys.name,:₊,x) for x in getparamsyms(A))
-                return A.p[findfirst(x -> isequal(Symbol(A.f.sys.name,:₊,x), Symbol(sym)), getparamsyms(A))]
+            elseif has_sys(A.f) &&
+                   Symbol(sym) in Set(Symbol(A.f.sys.name, :₊, x) for x in getparamsyms(A))
+                return A.p[findfirst(x -> isequal(Symbol(A.f.sys.name, :₊, x), Symbol(sym)),
+                                     getparamsyms(A))]
             elseif has_paramsyms(A.f) && Symbol(sym) in getparamsyms(A)
                 return A.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else

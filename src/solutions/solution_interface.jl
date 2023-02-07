@@ -93,8 +93,10 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
                 return A.t
             elseif has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
                 return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
-            elseif has_sys(A.prob.f) && Symbol(sym) in Set(Symbol(A.prob.f.sys.name,:₊,x) for x in getparamsyms(A))
-                return A.prob.p[findfirst(x -> isequal(Symbol(A.prob.f.sys.name,:₊,x), Symbol(sym)), getparamsyms(A))]
+            elseif has_sys(A.prob.f) && Symbol(sym) in Set(Symbol(A.prob.f.sys.name, :₊, x)
+                                      for x in getparamsyms(A))
+                return A.prob.p[findfirst(x -> isequal(Symbol(A.prob.f.sys.name, :₊, x),
+                                                       Symbol(sym)), getparamsyms(A))]
             elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
