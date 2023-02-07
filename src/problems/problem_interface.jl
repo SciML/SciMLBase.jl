@@ -7,7 +7,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
 
     if issymbollike(sym)
         if has_sys(prob.f) && is_indep_sym(prob.f.sys, sym) ||
-            Symbol(sym) == getindepsym(prob)
+           Symbol(sym) == getindepsym(prob)
             return getindepsym(prob)
         elseif has_sys(prob.f) && is_param_sym(prob.f.sys, sym)
             return prob.p[param_sym_to_index(prob.f.sys, sym)]
@@ -27,10 +27,10 @@ function Base.setindex!(prob::AbstractSciMLProblem, val, sym)
     if has_sys(prob.f)
         if issymbollike(sym)
             params = getparamsyms(prob)
-            states = Symbol.(setdiff(getsyms(prob), params))
+            s = Symbol.(states(prob.f.sys))
             params = Symbol.(params)
 
-            i = findfirst(isequal(Symbol(sym)), states)
+            i = findfirst(isequal(Symbol(sym)), s)
             if !isnothing(i)
                 prob.u0[i] = val
                 return prob
