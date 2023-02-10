@@ -107,6 +107,7 @@ function Base.convert(::Type{AbstractMatrix}, L::DiffEqScaledOperator)
     L.coeff * convert(AbstractMatrix, L.op)
 end
 
+Base.size(L::DiffEqScaledOperator, i::Integer) = size(L.op, i)
 Base.size(L::DiffEqScaledOperator, args...) = size(L.op, args...)
 LinearAlgebra.opnorm(L::DiffEqScaledOperator, p::Real = 2) = abs(L.coeff) * opnorm(L.op, p)
 Base.getindex(L::DiffEqScaledOperator, i::Int) = L.coeff * L.op[i]
