@@ -30,3 +30,29 @@ Base.Experimental.register_error_hint(DomainError) do io, e
         println(io, DOMAINERROR_COMPLEX_MSG)
     end
 end
+
+FUNCTIONWRAPPERSWRAPPERS_MSG = """
+No appropriate function wrapper found. This means that the auto-despecialization code used for the reduction
+of compile times has failed. This is most likely due to an issue internal to the function `prob.f` that is
+found upon evaluation of the model. To work around this issue, use `SciMLBase.FullSpecialize`, like:
+
+```julia
+ODEProblem{iip,SciMLBase.FullSpecialize}(f,u0,tspan,p)
+```
+
+where `iip` is either true or false depending on the in-placeness of the definition of `f` (i.e. for ODEs
+if `f` has 3 arguments `(u,p,t)` then it's false, otherwise `f(du,u,p,t)` is true).
+
+For more information on the control of specailization options, please see the documentation at:
+
+https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choices
+
+If one wants way more detail than necessary on why the function wrappers exist and what they are doing, see:
+
+https://sciml.ai/news/2022/09/21/compile_time/
+"""
+
+Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
+                                                                                               e
+    println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
+end
