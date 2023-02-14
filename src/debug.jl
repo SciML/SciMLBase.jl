@@ -52,6 +52,7 @@ If one wants way more detail than necessary on why the function wrappers exist a
 https://sciml.ai/news/2022/09/21/compile_time/
 """
 
-Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io, e
+Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
+                                                                                               e
     println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
 end
