@@ -120,7 +120,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = sym
     end
 
-    if i === nothing
+    if isnothing(i)
         if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
            Symbol(sym) == getindepsym(A)
             A.t[args...]
@@ -134,16 +134,28 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 end
 
-function observed(A::AbstractTimeseriesSolution, sym, i::Int)
-    getobserved(A)(sym, A[i], A.prob.p, A.t[i])
+function get_dep_idxs(A::AbstractTimeseriesSolution)
+    if has_sys(A.prob.f) && has_observed(A.prob.f) && !isnothing(A.sym_map)
+        idxs = map(x -> A.sym_map[x], get_deps_of_observed(A)[sym][i])
+    else
+        idxs = CartesianIndices(first(A.u))
+    end
+    idxs
 end
 
-function observed(A::AbstractTimeseriesSolution, sym, i::AbstractArray{Int})
-    getobserved(A).((sym,), A.u[i], (A.prob.p,), A.t[i])
+function observed(A::AbstractTimeseriesSolution, sym, i::Int)
+    idxs = get_dep_idxs(A)
+    getobserved(A)(sym, A[i][idxs], A.prob.p, A.t[i])
+end
+
+function observed(A::AbstractTimeseriesSolution, sym, is::AbstractArray{Int})
+    idxs = get_dep_idxs(A)
+    getobserved(A).((sym,), map(j -> A.u[j][idxs], is), (A.prob.p,), A.t[is])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
-    getobserved(A).((sym,), A.u, (A.prob.p,), A.t)
+    idxs = get_dep_idxs(A)
+    getobserved(A).((sym,), map(j -> A.u[j][idxs], eachindex(A.t)), (A.prob.p,), A.t)
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
@@ -158,7 +170,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
         i = sym
     end
 
-    if i == nothing
+    if isnothing(i)
         paramsyms = getparamsyms(A)
         if issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
             get_p(A)[findfirst(x -> isequal(x, Symbol(sym)), paramsyms)]

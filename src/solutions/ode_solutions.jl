@@ -22,12 +22,12 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully, whether it terminated early due to a user-defined callback, or whether it 
-  exited due to an error. For more details, see 
+  successfully, whether it terminated early due to a user-defined callback, or whether it
+  exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
-                   AC <: Union{Nothing, Vector{Int}}} <:
+                   AC <: Union{Nothing, Vector{Int}}, MType} <:
        AbstractODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -39,17 +39,21 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
     interp::IType
     dense::Bool
     tslocation::Int
+    sym_map::MType
     destats::DE
     alg_choice::AC
     retcode::ReturnCode.T
 end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-                           tslocation, destats, alg_choice, retcode) where {T, N}
+                           tslocation, destats, alg_choice, retcode,
+                           sym_map = nothing) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
                        typeof(k), typeof(prob), typeof(alg), typeof(interp),
                        typeof(destats),
-                       typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
-                                           dense, tslocation, destats, alg_choice, retcode)
+                       typeof(alg_choice),
+                       typeof(sym_map)}(u, u_analytic, errors, t, k, prob, alg, interp,
+                                        dense, tslocation, sym_map, destats, alg_choice,
+                                        retcode)
 end
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                                     continuity = :left) where {deriv}
@@ -160,6 +164,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         k = nothing,
                         alg_choice = nothing,
                         interp = LinearInterpolation(t, u),
+                        sym_map = nothing,
                         retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
 
@@ -189,7 +194,8 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                 0,
                                 destats,
                                 alg_choice,
-                                retcode)
+                                retcode,
+                                sym_map)
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
                                        dense_errors = dense_errors)
@@ -207,7 +213,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                  0,
                                  destats,
                                  alg_choice,
-                                 retcode)
+                                 retcode, sym_map)
     end
 end
 

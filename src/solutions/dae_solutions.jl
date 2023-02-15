@@ -27,7 +27,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
+struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE, MType} <:
        AbstractDAESolution{T, N, uType}
     u::uType
     du::duType
@@ -39,6 +39,7 @@ struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE} <:
     interp::ID
     dense::Bool
     tslocation::Int
+    sym_map::MType
     destats::DE
     retcode::ReturnCode.T
 end
@@ -53,6 +54,7 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                                  HermiteInterpolation(t, u, du),
                         retcode = ReturnCode.Default,
                         destats = nothing,
+                        sym_map = nothing,
                         kwargs...)
     T = eltype(eltype(u))
 
@@ -67,18 +69,10 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         errors = Dict{Symbol, real(eltype(prob.u0))}()
 
         sol = DAESolution{T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
-                          typeof(t),
-                          typeof(prob), typeof(alg), typeof(interp), typeof(destats)}(u, du,
-                                                                                      u_analytic,
-                                                                                      errors,
-                                                                                      t,
-                                                                                      prob,
-                                                                                      alg,
-                                                                                      interp,
-                                                                                      dense,
-                                                                                      0,
-                                                                                      destats,
-                                                                                      retcode)
+                          typeof(t), typeof(prob), typeof(alg), typeof(interp),
+                          typeof(destats), typeof(sym_map)}(u, du, u_analytic, errors, t,
+                                                            prob, alg, interp, dense, 0,
+                                                            sym_map, destats, retcode)
 
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
@@ -86,15 +80,17 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         end
         sol
     else
-        DAESolution{T, N, typeof(u), typeof(du), Nothing, Nothing, typeof(t),
-                    typeof(prob), typeof(alg), typeof(interp), typeof(destats)}(u, du,
-                                                                                nothing,
-                                                                                nothing, t,
-                                                                                prob, alg,
-                                                                                interp,
-                                                                                dense, 0,
-                                                                                destats,
-                                                                                retcode)
+        DAESolution{T, N, typeof(u), typeof(du), Nothing, Nothing, typeof(t), typeof(prob),
+                    typeof(alg), typeof(interp), typeof(destats), typeof(sym_map)}(u, du,
+                                                                                   nothing,
+                                                                                   nothing,
+                                                                                   t, prob,
+                                                                                   alg,
+                                                                                   interp,
+                                                                                   dense, 0,
+                                                                                   sym_map,
+                                                                                   destats,
+                                                                                   retcode)
     end
 end
 
