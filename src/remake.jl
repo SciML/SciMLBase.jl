@@ -43,7 +43,7 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
 end
 
 """
-    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing, 
+    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
            p = missing, kwargs = missing, _kwargs...)
 
 Remake the given `ODEProblem`.

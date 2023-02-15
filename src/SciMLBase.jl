@@ -493,6 +493,11 @@ abstract type AbstractIntegralSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 """
 $(TYPEDEF)
 """
+abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N} end
+
+"""
+$(TYPEDEF)
+"""
 const AbstractSteadyStateSolution{T, N} = AbstractNonlinearSolution{T, N}
 
 """
@@ -672,6 +677,7 @@ include("operators/operators.jl")
 include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
 include("operators/common_defaults.jl")
+include("symbolic_utils.jl")
 
 include("problems/discrete_problems.jl")
 include("problems/implicit_discrete_problems.jl")
@@ -689,6 +695,7 @@ include("problems/sdde_problems.jl")
 include("problems/pde_problems.jl")
 include("problems/problem_utils.jl")
 include("problems/problem_traits.jl")
+include("problems/problem_interface.jl")
 
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")

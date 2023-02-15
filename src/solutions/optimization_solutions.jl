@@ -1,5 +1,3 @@
-abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N} end
-
 """
 $(TYPEDEF)
 
@@ -12,7 +10,7 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 - `alg`: the algorithm type used by the solver.
 - `objective`: Objective value of the solution
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully or whether it exited due to an error. For more details, see 
+  successfully or whether it exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
