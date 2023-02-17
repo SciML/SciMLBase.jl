@@ -426,7 +426,8 @@ function cleansym(sym::Symbol)
 end
 
 function sym_to_index(sym, sol::AbstractSciMLSolution)
-    if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
+    issymbolic = has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
+    if issymbolic && (length(states(sol.prob.f.sys)) == length(sol.prob.f.syms))
         return state_sym_to_index(sol.prob.f.sys, sym)
     else
         return sym_to_index(sym, getsyms(sol))
