@@ -73,7 +73,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if sym isa AbstractArray
             return A[collect(sym)]
         end
-        i = sym_to_index(sym, A)
+        if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
+            i = get(A.sym_map, sym, nothing)
+        else
+            i = sym_to_index(sym, A)
+        end
     elseif all(issymbollike, sym)
         if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
            !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
@@ -113,7 +117,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if sym isa AbstractArray
             return A[collect(sym), args...]
         end
-        i = sym_to_index(sym, A)
+        if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
+            i = get(A.sym_map, sym, nothing)
+        else
+            i = sym_to_index(sym, A)
+        end
     elseif all(issymbollike, sym)
         return reduce(vcat, map(s -> A[s, args...]', sym))
     else
@@ -136,7 +144,7 @@ end
 
 function get_dep_idxs(A::AbstractTimeseriesSolution)
     if has_sys(A.prob.f) && has_observed(A.prob.f) && !isnothing(A.sym_map)
-        idxs = map(x -> A.sym_map[x], get_deps_of_observed(A)[sym][i])
+        idxs = map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
     else
         idxs = CartesianIndices(first(A.u))
     end
@@ -185,7 +193,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
 end
 
 function observed(A::AbstractNoTimeSolution, sym)
-    getobserved(A)(sym, A.u, A.prob.p)
+    observed(A, sym, :)
 end
 
 function observed(A::AbstractOptimizationSolution, sym)

@@ -54,7 +54,9 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                                  HermiteInterpolation(t, u, du),
                         retcode = ReturnCode.Default,
                         destats = nothing,
-                        sym_map = nothing,
+                        sym_map = has_sys(prob.f) ?
+                                  Dict(states(prob.f.sys) .=>
+                                           1:length(prob.f.sys |> states)) : nothing,
                         kwargs...)
     T = eltype(eltype(u))
 
@@ -135,70 +137,78 @@ end
 function build_solution(sol::AbstractDAESolution{T, N}, u_analytic, errors) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(u_analytic), typeof(errors),
                 typeof(sol.t),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
-                                                                                            sol.du,
-                                                                                            u_analytic,
-                                                                                            errors,
-                                                                                            sol.t,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            sol.dense,
-                                                                                            sol.tslocation,
-                                                                                            sol.destats,
-                                                                                            sol.retcode)
+                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats),
+                typeof(sol.sym_map)}(sol.u,
+                                     sol.du,
+                                     u_analytic,
+                                     errors,
+                                     sol.t,
+                                     sol.prob,
+                                     sol.alg,
+                                     sol.interp,
+                                     sol.dense,
+                                     sol.tslocation,
+                                     sol.sym_map,
+                                     sol.destats,
+                                     sol.retcode)
 end
 
 function solution_new_retcode(sol::AbstractDAESolution{T, N}, retcode) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
                 typeof(sol.errors), typeof(sol.t),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
-                                                                                            sol.du,
-                                                                                            sol.u_analytic,
-                                                                                            sol.errors,
-                                                                                            sol.t,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            sol.dense,
-                                                                                            sol.tslocation,
-                                                                                            sol.destats,
-                                                                                            retcode)
+                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats),
+                typeof(sol.sym_map)}(sol.u,
+                                     sol.du,
+                                     sol.u_analytic,
+                                     sol.errors,
+                                     sol.t,
+                                     sol.prob,
+                                     sol.alg,
+                                     sol.interp,
+                                     sol.dense,
+                                     sol.tslocation,
+                                     sol.sym_map,
+                                     sol.destats,
+                                     retcode)
 end
 
 function solution_new_tslocation(sol::AbstractDAESolution{T, N}, tslocation) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
                 typeof(sol.errors), typeof(sol.t),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u,
-                                                                                            sol.du,
-                                                                                            sol.u_analytic,
-                                                                                            sol.errors,
-                                                                                            sol.t,
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            sol.dense,
-                                                                                            tslocation,
-                                                                                            sol.destats,
-                                                                                            sol.retcode)
+                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats),
+                typeof(sol.sym_map)}(sol.u,
+                                     sol.du,
+                                     sol.u_analytic,
+                                     sol.errors,
+                                     sol.t,
+                                     sol.prob,
+                                     sol.alg,
+                                     sol.interp,
+                                     sol.dense,
+                                     tslocation,
+                                     sol.sym_map,
+                                     sol.destats,
+                                     sol.retcode)
 end
 
 function solution_slice(sol::AbstractDAESolution{T, N}, I) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
                 typeof(sol.errors), typeof(sol.t),
-                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats)}(sol.u[I],
-                                                                                            sol.du[I],
-                                                                                            sol.u_analytic ===
-                                                                                            nothing ?
-                                                                                            nothing :
-                                                                                            sol.u_analytic[I],
-                                                                                            sol.errors,
-                                                                                            sol.t[I],
-                                                                                            sol.prob,
-                                                                                            sol.alg,
-                                                                                            sol.interp,
-                                                                                            false,
-                                                                                            sol.tslocation,
-                                                                                            sol.destats,
-                                                                                            sol.retcode)
+                typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.destats),
+                typeof(sol.sym_map)}(sol.u[I],
+                                     sol.du[I],
+                                     sol.u_analytic ===
+                                     nothing ?
+                                     nothing :
+                                     sol.u_analytic[I],
+                                     sol.errors,
+                                     sol.t[I],
+                                     sol.prob,
+                                     sol.alg,
+                                     sol.interp,
+                                     false,
+                                     sol.tslocation,
+                                     sol.sym_map,
+                                     sol.destats,
+                                     sol.retcode)
 end
