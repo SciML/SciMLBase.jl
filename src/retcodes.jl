@@ -345,7 +345,6 @@ EnumX.@enumx ReturnCode begin
     MaxTime
 end
 
-Base.:(==)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) == s
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
 
 const symtrue = Symbol("true")
