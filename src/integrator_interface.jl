@@ -798,7 +798,7 @@ function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     end
 end
 
-has_destats(i::DEIntegrator) = false
+has_stats(i::DEIntegrator) = false
 
 """
     is_integrator_adaptive(i::DEIntegrator)
