@@ -52,7 +52,7 @@ limitations.
 * `AutoSpecialize` does not handle cases with units. If unitful values are detected,
   wrapping is automatically disabled.
 * `AutoSpecialize` only wraps cases for which `promote_rule` is defined between `u0`
-  and dual numbers, `u0` and `t`, and for which `ArrayInterfaceCore.promote_eltype`
+  and dual numbers, `u0` and `t`, and for which `ArrayInterface.promote_eltype`
   is defined on `u0` to dual numbers.
 * `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
   default.
@@ -2190,8 +2190,8 @@ function ODEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -2706,8 +2706,8 @@ function SDEFunction{iip, specialize}(f, g;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3031,8 +3031,8 @@ function RODEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3125,8 +3125,8 @@ function DAEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3207,8 +3207,8 @@ function DDEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3395,8 +3395,8 @@ function SDDEFunction{iip, specialize}(f, g;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3488,8 +3488,8 @@ function NonlinearFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end

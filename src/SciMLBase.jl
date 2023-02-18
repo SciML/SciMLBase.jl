@@ -13,7 +13,7 @@ using Distributed
 using Markdown
 import Preferences
 
-import Logging, ArrayInterfaceCore
+import Logging, ArrayInterface
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers

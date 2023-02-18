@@ -127,7 +127,7 @@ end
 Base.copyto!(L::DiffEqArrayOperator, rhs) = (copyto!(L.A, rhs); L)
 Base.Broadcast.broadcastable(L::DiffEqArrayOperator) = L
 Base.ndims(::Type{<:DiffEqArrayOperator{T, AType}}) where {T, AType} = ndims(AType)
-ArrayInterfaceCore.issingular(L::DiffEqArrayOperator) = ArrayInterfaceCore.issingular(L.A)
+ArrayInterface.issingular(L::DiffEqArrayOperator) = ArrayInterface.issingular(L.A)
 function Base.copy(L::DiffEqArrayOperator)
     DiffEqArrayOperator(copy(L.A); update_func = L.update_func)
 end
