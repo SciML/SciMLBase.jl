@@ -376,7 +376,7 @@ Many splits are at least partially linear. That is the equation:
 \frac{du}{dt} =  Au + f_2(u,p,t)
 ```
 
-For how to define a linear function `A`, see the documentation for the [AbstractSciMLOperator](@ref).
+For how to define a linear function `A`, see the documentation for the [AbstractSciMLOperator](https://docs.sciml.ai/SciMLOperators/stable/interface/).
 
 ### Constructors
 
