@@ -143,8 +143,12 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
 end
 
 function get_dep_idxs(A::AbstractTimeseriesSolution)
-    if has_sys(A.prob.f) && has_observed(A.prob.f) && !isnothing(A.sym_map)
-        idxs = map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
+    if has_sys(A.prob.f) && has_observed(A.prob.f)
+        if !isnothing(A.sym_map)
+            idxs = map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
+        else
+            idxs = map(x -> sym_to_index(x, A), get_deps_of_observed(A.prob.f.sys))
+        end
     else
         idxs = CartesianIndices(first(A.u))
     end

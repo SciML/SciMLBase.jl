@@ -40,9 +40,7 @@ function build_solution(prob::AbstractNonlinearProblem,
                         original = nothing,
                         left = nothing,
                         right = nothing,
-                        sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing,
+                        sym_map = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)

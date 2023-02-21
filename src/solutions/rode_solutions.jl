@@ -67,9 +67,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
                         interp = LinearInterpolation(t, u),
                         retcode = ReturnCode.Default,
                         alg_choice = nothing,
-                        sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing,
+                        sym_map = nothing,
                         seed = UInt64(0), destats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))

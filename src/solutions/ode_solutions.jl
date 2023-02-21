@@ -47,9 +47,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
 end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
                            tslocation, destats, alg_choice, retcode,
-                           sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing) where {T, N}
+                           sym_map = nothing) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
                        typeof(k), typeof(prob), typeof(alg), typeof(interp),
                        typeof(destats),
@@ -167,9 +165,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         k = nothing,
                         alg_choice = nothing,
                         interp = LinearInterpolation(t, u),
-                        sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing,
+                        sym_map = nothing,
                         retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
 

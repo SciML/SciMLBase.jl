@@ -54,9 +54,7 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                                  HermiteInterpolation(t, u, du),
                         retcode = ReturnCode.Default,
                         destats = nothing,
-                        sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing,
+                        sym_map = nothing,
                         kwargs...)
     T = eltype(eltype(u))
 

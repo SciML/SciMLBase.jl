@@ -35,9 +35,7 @@ function build_solution(cache::AbstractOptimizationCache,
                         retcode = ReturnCode.Default,
                         original = nothing,
                         solve_time = nothing,
-                        sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing,
+                        sym_map = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
@@ -71,9 +69,7 @@ function build_solution(prob::AbstractOptimizationProblem,
                         alg, u, objective;
                         retcode = ReturnCode.Default,
                         original = nothing,
-                        sym_map = has_sys(prob.f) ?
-                                  Dict(states(prob.f.sys) .=>
-                                           1:length(prob.f.sys |> states)) : nothing,
+                        sym_map = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
