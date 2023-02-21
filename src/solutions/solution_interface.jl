@@ -142,17 +142,37 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 end
 
-function get_dep_idxs(A::AbstractTimeseriesSolution)
-    if has_sys(A.prob.f) && has_observed(A.prob.f)
+function _get_dep_idxs(A::AbstractTimeseriesSolution)
+    idxs = if has_sys(A.prob.f) && has_observed(A.prob.f)
+        is_ODAE = hasfield(typeof(A.prob.f.sys), :unknown_states) &&
+                  !isnothing(getfield(A.prob.f.sys, :unknown_states))
         if !isnothing(A.sym_map)
-            idxs = map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
+            map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
+        elseif is_ODAE
+            sts = getfield(A.prob.f.sys, :unknown_states)
+            map(x -> sym_to_index(x, A),
+                get_deps_of_observed(sts, SymbolicIndexingInterface.observed(A.prob.f.sys)))
         else
-            idxs = map(x -> sym_to_index(x, A), get_deps_of_observed(A.prob.f.sys))
+            map(x -> sym_to_index(x, A), get_deps_of_observed(A.prob.f.sys))
         end
     else
-        idxs = CartesianIndices(first(A.u))
+        CartesianIndices(first(A.u))
     end
     idxs
+end
+
+function get_dep_idxs(A::AbstractTimeseriesSolution)
+    if hasfield(typeof(A), :dep_idxs)
+        if isnothing(A.dep_idxs[])
+            A.dep_idxs[]
+        else
+            idxs = _get_dep_idxs(A)
+            A.dep_idxs[] = idxs
+            idxs
+        end
+    else
+        _get_dep_idxs(A)
+    end
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Int)

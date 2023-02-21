@@ -19,7 +19,7 @@ or the steady state solution to a differential equation defined by a SteadyState
 - `right`: if the solver is bracketing method, this is the final right bracket value.
 - `sym_map`: Map of symbols to their index in the solution
 """
-struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, MType} <:
+struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, MType, DI} <:
        AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
@@ -30,6 +30,7 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, MType} <:
     left::uType2
     right::uType2
     sym_map::MType
+    dep_idxs::DI
 end
 
 const SteadyStateSolution = NonlinearSolution
@@ -41,18 +42,20 @@ function build_solution(prob::AbstractNonlinearProblem,
                         left = nothing,
                         right = nothing,
                         sym_map = nothing,
+                        dep_idxs = Ref{Vector{Int}}(Int[]),
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
     NonlinearSolution{T, N, typeof(u), typeof(resid),
                       typeof(prob), typeof(alg), typeof(original), typeof(left),
-                      typeof(sym_map)}(u, resid,
-                                       prob, alg,
-                                       retcode,
-                                       original, left,
-                                       right,
-                                       sym_map)
+                      typeof(sym_map), typeof(dep_idxs)}(u, resid,
+                                                         prob, alg,
+                                                         retcode,
+                                                         original, left,
+                                                         right,
+                                                         sym_map,
+                                                         dep_idxs)
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
@@ -61,13 +64,15 @@ function sensitivity_solution(sol::AbstractNonlinearSolution, u)
 
     NonlinearSolution{T, N, typeof(u), typeof(sol.resid),
                       typeof(sol.prob), typeof(sol.alg),
-                      typeof(sol.original), typeof(sol.left), typeof(sol.sym_map)}(u,
-                                                                                   sol.resid,
-                                                                                   sol.prob,
-                                                                                   sol.alg,
-                                                                                   sol.retcode,
-                                                                                   sol.original,
-                                                                                   sol.left,
-                                                                                   sol.right,
-                                                                                   sol.sym_map)
+                      typeof(sol.original), typeof(sol.left), typeof(sol.sym_map),
+                      typeof(dep_idxs)}(u,
+                                        sol.resid,
+                                        sol.prob,
+                                        sol.alg,
+                                        sol.retcode,
+                                        sol.original,
+                                        sol.left,
+                                        sol.right,
+                                        sol.sym_map,
+                                        sol.dep_idxs)
 end
