@@ -20,8 +20,7 @@ one could perform a domain transformation on the variables so that such an issue
 definition of `f`.
 
 For more information, check out the following FAQ page:
-https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?
-"""
+https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?"""
 
 FUNCTIONWRAPPERSWRAPPERS_MSG = """
 No appropriate function wrapper found. This means that the auto-despecialization code used for the reduction
@@ -41,13 +40,13 @@ https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choic
 
 If one wants way more detail than necessary on why the function wrappers exist and what they are doing, see:
 
-https://sciml.ai/news/2022/09/21/compile_time/
-"""
+https://sciml.ai/news/2022/09/21/compile_time/"""
 
 VERBOSE_MSG = """
+
+
 Some of the types have been truncated in the stacktrace for improved reading. To emit complete information
-in the stack trace, evaluate `SciMLBase.VERBOSE_PRINT[] = true` and re-run the code.
-"""
+in the stack trace, evaluate `SciMLBase.VERBOSE_PRINT[] = true` and re-run the code."""
 
 function __init__()
     Base.Experimental.register_error_hint(DomainError) do io, e
