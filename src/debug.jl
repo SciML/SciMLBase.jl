@@ -23,14 +23,6 @@ For more information, check out the following FAQ page:
 https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?
 """
 
-Base.Experimental.register_error_hint(DomainError) do io, e
-    if e isa DomainError &&
-       occursin("will only return a complex result if called with a complex argument. Try ",
-                e.msg)
-        println(io, DOMAINERROR_COMPLEX_MSG)
-    end
-end
-
 FUNCTIONWRAPPERSWRAPPERS_MSG = """
 No appropriate function wrapper found. This means that the auto-despecialization code used for the reduction
 of compile times has failed. This is most likely due to an issue internal to the function `prob.f` that is
@@ -52,7 +44,34 @@ If one wants way more detail than necessary on why the function wrappers exist a
 https://sciml.ai/news/2022/09/21/compile_time/
 """
 
-Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
-                                                                                               e
-    println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
+VERBOSE_MSG = """
+Some of the types have been truncated in the stacktrace for improved reading. To emit complete information
+in the stack trace, evaluate `SciMLBase.VERBOSE_PRINT[] = true` and re-run the code.
+"""
+
+for type in InteractiveUtils.subtypes(Exception)
+    @show type
+    Base.Experimental.register_error_hint(type) do io, e
+        println(io, VERBOSE_MSG)
+    end
+end
+
+function __init__()
+    Base.Experimental.register_error_hint(DomainError) do io, e
+        if e isa DomainError &&
+           occursin("will only return a complex result if called with a complex argument. Try ",
+                    e.msg)
+            println(io, DOMAINERROR_COMPLEX_MSG)
+        end
+    end
+
+    Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io, e
+        println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
+    end
+
+    for type in InteractiveUtils.subtypes(Exception)
+        Base.Experimental.register_error_hint(type) do io, e
+            print(io, VERBOSE_MSG)
+        end
+    end
 end
