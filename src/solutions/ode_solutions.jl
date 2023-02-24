@@ -52,10 +52,14 @@ function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense
                                            dense, tslocation, destats, alg_choice, retcode)
 end
 
-function Base.show(io::IO, t::Type{ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE, AC}}) where 
-                         {T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE, AC}
+function Base.show(io::IO,
+                   t::Type{
+                           ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A,
+                                       IType, DE, AC}}) where
+    {T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE, AC}
     if VERBOSE_PRINT[]
-        print(io, "ODESolution{$T, $N, $uType, $uType2, $DType, $tType, $rateType, $P, $A, $IType, $DE, $AC}")
+        print(io,
+              "ODESolution{$T, $N, $uType, $uType2, $DType, $tType, $rateType, $P, $A, $IType, $DE, $AC}")
     else
         print(io, "ODESolution{$T, $N, …}")
     end

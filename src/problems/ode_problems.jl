@@ -155,7 +155,12 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 end
 
-function Base.show(io::IO, t::Type{ODEProblem{uType, tType, isinplace, P, F, K, PT}}) where {uType, tType, isinplace, P, F, K, PT}
+function Base.show(io::IO,
+                   t::Type{ODEProblem{uType, tType, isinplace, P, F, K, PT}}) where {uType,
+                                                                                     tType,
+                                                                                     isinplace,
+                                                                                     P, F,
+                                                                                     K, PT}
     if VERBOSE_PRINT[]
         print(io, "ODEProblem{$uType, $tType, $isinplace, $P, $F, $K, $PT}")
     else

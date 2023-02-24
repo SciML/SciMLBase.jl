@@ -57,7 +57,8 @@ function __init__()
         end
     end
 
-    Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io, e
+    Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
+                                                                                                   e
         println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
     end
 
@@ -72,4 +73,4 @@ function __init__()
             end
         end
     end
- end
+end

@@ -153,12 +153,24 @@ function ContinuousCallback(condition, affect!;
                        dtrelax, abstol, reltol, repeat_nudge)
 end
 
-function Base.show(io::IO, t::Type{ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {F1, F2, F3, F4, F5, T, T2, T3, I, R} 
-  if VERBOSE_PRINT[]
-      print(io, "ContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
-  else
-      print(io, "ContinuousCallback{…}")
-  end
+function Base.show(io::IO,
+                   t::Type{ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {
+                                                                                            F1,
+                                                                                            F2,
+                                                                                            F3,
+                                                                                            F4,
+                                                                                            F5,
+                                                                                            T,
+                                                                                            T2,
+                                                                                            T3,
+                                                                                            I,
+                                                                                            R
+                                                                                            }
+    if VERBOSE_PRINT[]
+        print(io, "ContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
+    else
+        print(io, "ContinuousCallback{…}")
+    end
 end
 
 """
@@ -265,12 +277,24 @@ function VectorContinuousCallback(condition, affect!, len;
                              dtrelax, abstol, reltol, repeat_nudge)
 end
 
-function Base.show(io::IO, t::Type{VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {F1, F2, F3, F4, F5, T, T2, T3, I, R} 
-  if VERBOSE_PRINT[]
-      print(io, "VectorContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
-  else
-      print(io, "VectorContinuousCallback{…}")
-  end
+function Base.show(io::IO,
+                   t::Type{VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {
+                                                                                                  F1,
+                                                                                                  F2,
+                                                                                                  F3,
+                                                                                                  F4,
+                                                                                                  F5,
+                                                                                                  T,
+                                                                                                  T2,
+                                                                                                  T3,
+                                                                                                  I,
+                                                                                                  R
+                                                                                                  }
+    if VERBOSE_PRINT[]
+        print(io, "VectorContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
+    else
+        print(io, "VectorContinuousCallback{…}")
+    end
 end
 
 """
@@ -322,12 +346,12 @@ function DiscreteCallback(condition, affect!;
     DiscreteCallback(condition, affect!, initialize, finalize, save_positions)
 end
 
-function Base.show(io::IO, t::Type{DiscreteCallback{F1, F2, F3, F4}}) where {F1, F2, F3, F4} 
-  if VERBOSE_PRINT[]
-      print(io, "DiscreteCallback{$F1, $F2, $F3, $F4}")
-  else 
-      print(io, "DiscreteCallback{…}")
-  end
+function Base.show(io::IO, t::Type{DiscreteCallback{F1, F2, F3, F4}}) where {F1, F2, F3, F4}
+    if VERBOSE_PRINT[]
+        print(io, "DiscreteCallback{$F1, $F2, $F3, $F4}")
+    else
+        print(io, "DiscreteCallback{…}")
+    end
 end
 
 """

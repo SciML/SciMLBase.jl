@@ -413,11 +413,18 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     sys::SYS
 end
 
-function Base.show(io::IO, t::Type{ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
-                                      S2, S3, O, TCV, SYS}}) where {iip, specialize, F, TMM, Ta, Tt, TJ, JVP, 
-                                      VJP, JP, SP, TW, TWt, TPJ, S, S2, S3, O, TCV, SYS}
+function Base.show(io::IO,
+                   t::Type{
+                           ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
+                                       SP, TW, TWt, TPJ, S,
+                                       S2, S3, O, TCV, SYS}}) where {iip, specialize, F,
+                                                                     TMM, Ta, Tt, TJ, JVP,
+                                                                     VJP, JP, SP, TW, TWt,
+                                                                     TPJ, S, S2, S3, O, TCV,
+                                                                     SYS}
     if VERBOSE_PRINT[]
-        print(io, "ODEFunction{$iip, $specialize, $F, $TMM, $Ta, $Tt, $TJ, $JVP, $VJP, $JP, $SP, $TW, $TWt, $TPJ, $S, $S2, $S3, $O, $TCV, $SYS}")
+        print(io,
+              "ODEFunction{$iip, $specialize, $F, $TMM, $Ta, $Tt, $TJ, $JVP, $VJP, $JP, $SP, $TW, $TWt, $TPJ, $S, $S2, $S3, $O, $TCV, $SYS}")
     else
         print(io, "ODEFunction{$iip,$specialize,…}")
     end
