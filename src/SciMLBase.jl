@@ -19,6 +19,7 @@ import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
+import TruncatedStacktraces
 
 using Reexport
 using SciMLOperators
@@ -38,10 +39,6 @@ import SciMLOperators:
 
 function __solve end
 function __init end
-
-using InteractiveUtils
-
-const VERBOSE_PRINT = Ref(false)
 
 """
 $(TYPEDEF)

@@ -57,7 +57,7 @@ function Base.show(io::IO,
                            ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A,
                                        IType, DE, AC}}) where
     {T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE, AC}
-    if VERBOSE_PRINT[]
+    if TruncatedStacktraces.VERBOSE[]
         print(io,
               "ODESolution{$T, $N, $uType, $uType2, $DType, $tType, $rateType, $P, $A, $IType, $DE, $AC}")
     else

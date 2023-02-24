@@ -166,7 +166,7 @@ function Base.show(io::IO,
                                                                                             I,
                                                                                             R
                                                                                             }
-    if VERBOSE_PRINT[]
+    if TruncatedStacktraces.VERBOSE[]
         print(io, "ContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
     else
         print(io, "ContinuousCallback{…}")
@@ -290,7 +290,7 @@ function Base.show(io::IO,
                                                                                                   I,
                                                                                                   R
                                                                                                   }
-    if VERBOSE_PRINT[]
+    if TruncatedStacktraces.VERBOSE[]
         print(io, "VectorContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
     else
         print(io, "VectorContinuousCallback{…}")
@@ -347,7 +347,7 @@ function DiscreteCallback(condition, affect!;
 end
 
 function Base.show(io::IO, t::Type{DiscreteCallback{F1, F2, F3, F4}}) where {F1, F2, F3, F4}
-    if VERBOSE_PRINT[]
+    if TruncatedStacktraces.VERBOSE[]
         print(io, "DiscreteCallback{$F1, $F2, $F3, $F4}")
     else
         print(io, "DiscreteCallback{…}")

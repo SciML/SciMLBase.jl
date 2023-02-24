@@ -161,7 +161,7 @@ function Base.show(io::IO,
                                                                                      isinplace,
                                                                                      P, F,
                                                                                      K, PT}
-    if VERBOSE_PRINT[]
+    if TruncatedStacktraces.VERBOSE[]
         print(io, "ODEProblem{$uType, $tType, $isinplace, $P, $F, $K, $PT}")
     else
         print(io, "ODEProblem{$isinplace,$uType,$tType,…}")

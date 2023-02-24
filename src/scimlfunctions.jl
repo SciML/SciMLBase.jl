@@ -422,7 +422,7 @@ function Base.show(io::IO,
                                                                      VJP, JP, SP, TW, TWt,
                                                                      TPJ, S, S2, S3, O, TCV,
                                                                      SYS}
-    if VERBOSE_PRINT[]
+    if TruncatedStacktraces.VERBOSE[]
         print(io,
               "ODEFunction{$iip, $specialize, $F, $TMM, $Ta, $Tt, $TJ, $JVP, $VJP, $JP, $SP, $TW, $TWt, $TPJ, $S, $S2, $S3, $O, $TCV, $SYS}")
     else
