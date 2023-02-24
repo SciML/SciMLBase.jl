@@ -49,13 +49,6 @@ Some of the types have been truncated in the stacktrace for improved reading. To
 in the stack trace, evaluate `SciMLBase.VERBOSE_PRINT[] = true` and re-run the code.
 """
 
-for type in InteractiveUtils.subtypes(Exception)
-    @show type
-    Base.Experimental.register_error_hint(type) do io, e
-        println(io, VERBOSE_MSG)
-    end
-end
-
 function __init__()
     Base.Experimental.register_error_hint(DomainError) do io, e
         if e isa DomainError &&
@@ -70,8 +63,14 @@ function __init__()
     end
 
     for type in InteractiveUtils.subtypes(Exception)
-        Base.Experimental.register_error_hint(type) do io, e
-            print(io, VERBOSE_MSG)
+        if type == MethodError
+            Base.Experimental.register_error_hint(type) do io, e, args, kwargs
+                println(io, VERBOSE_MSG)
+            end
+        else
+            Base.Experimental.register_error_hint(type) do io, e
+                println(io, VERBOSE_MSG)
+            end
         end
     end
-end
+ end
