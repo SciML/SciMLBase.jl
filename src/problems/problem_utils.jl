@@ -163,10 +163,10 @@ function Base.showerror(io::IO, e::NullParameterIndexError)
 end
 
 function Base.getindex(::NullParameters, i...)
-    NullParameterIndexError()
+    throw(NullParameterIndexError())
 end
 function Base.iterate(::NullParameters)
-    NullParameterIndexError()
+    throw(NullParameterIndexError())
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractPDEProblem)
