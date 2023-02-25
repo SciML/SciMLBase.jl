@@ -142,11 +142,31 @@ end
 Base.show(io::IO, mime::MIME"text/plain", A::AbstractEnsembleProblem) = summary(io, A)
 
 struct NullParameters end
+
+const NO_PARAMETERS_INDEX_ERROR_MESSAGE = """
+                                        An indexing operation was performed on a NullParameters object. This means no parameters were passed
+                                        into the AbstractSciMLProblem (e.x.: ODEProblem) but the parameters object `p` was used in an indexing
+                                        expression (e.x. `p[i]`, or `x .+ p`). Two common reasons for this issue are:
+
+                                        1. Forgetting to pass parameters into the problem constructor. For example, `ODEProblem(f,u0,tspan)` should
+                                        be `ODEProblem(f,u0,tspan,p)` in order to use parameters.
+
+                                        2. Using the wrong function signature. For example, with `ODEProblem`s the function signature is always
+                                        `f(du,u,p,t)` for the in-place form or `f(u,p,t)` for the out-of-place form. Note that the `p` argument
+                                        will always be in the function signature reguardless of if the problem is defined with parameters!
+                                    """
+
+struct NullParameterIndexError <: Exception end
+
+function Base.showerror(io::IO, e::NullParameterIndexError)
+    println(io, NO_PARAMETERS_INDEX_ERROR_MESSAGE)
+end
+
 function Base.getindex(::NullParameters, i...)
-    error("Parameters were indexed but the parameters are `nothing`. You likely forgot to pass in parameters to the DEProblem!")
+    NullParameterIndexError()
 end
 function Base.iterate(::NullParameters)
-    error("Parameters were indexed but the parameters are `nothing`. You likely forgot to pass in parameters to the DEProblem!")
+    NullParameterIndexError()
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractPDEProblem)
