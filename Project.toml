@@ -45,6 +45,7 @@ StaticArrays = "1"
 StaticArraysCore = "1"
 SymbolicIndexingInterface = "0.2"
 Tables = "1"
+TruncatedStacktraces = "1"
 julia = "1.6"
 
 [extras]
