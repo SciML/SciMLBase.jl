@@ -250,6 +250,26 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     end
 end
 
+function Base.show(io::IO,
+                   t::DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT}) where {
+                                                                                                 uType,
+                                                                                                 tType,
+                                                                                                 lType,
+                                                                                                 lType2,
+                                                                                                 isinplace,
+                                                                                                 P,
+                                                                                                 F,
+                                                                                                 H,
+                                                                                                 K,
+                                                                                                 PT
+                                                                                                 }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "DDEProblem{$uType,$tType,$lType,$lType2,$isinplace,$P,$F,$H,$K,$PT}")
+    else
+        print(io, "DDEProblem{$isinplace,$uType,$tType,…}")
+    end
+end
+
 DDEProblem(f, args...; kwargs...) = DDEProblem(DDEFunction(f), args...; kwargs...)
 
 function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)

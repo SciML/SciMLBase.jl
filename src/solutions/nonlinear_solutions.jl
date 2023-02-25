@@ -29,6 +29,18 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2} <: AbstractNonlinearSo
     right::uType2
 end
 
+function Base.show(io::IO,
+                   t::NonlinearSolution{T, N, uType, R, P, A, O, uType2}) where {T, N,
+                                                                                 uType, R,
+                                                                                 P, A, O,
+                                                                                 uType2}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "NonlinearSolution{$T,$N,$uType,$R,$P,$A,$O,$uType2}")
+    else
+        print(io, "NonlinearSolution{$T,$N,…}")
+    end
+end
+
 const SteadyStateSolution = NonlinearSolution
 
 function build_solution(prob::AbstractNonlinearProblem,

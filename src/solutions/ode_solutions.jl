@@ -51,6 +51,7 @@ function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense
                        typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
                                            dense, tslocation, destats, alg_choice, retcode)
 end
+
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                                     continuity = :left) where {deriv}
     sol(t, deriv, idxs, continuity)

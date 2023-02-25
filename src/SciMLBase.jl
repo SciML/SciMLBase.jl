@@ -19,6 +19,7 @@ import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
+import TruncatedStacktraces
 
 using Reexport
 using SciMLOperators
