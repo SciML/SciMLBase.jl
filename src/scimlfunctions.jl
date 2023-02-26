@@ -2395,7 +2395,7 @@ function Base.show(io::IO,
         print(io,
               "OptimizationFunction{$iip,$AD,$F,$G,$H,$HV,$C,$CJ,$CH,$LH,$HP,$CJP,$CHP,$LHP,$S,$S2,$O,$HCV,$CJCV,$CHCV,$LHCV,$EX,$CEX,$SYS}")
     else
-        print(io, "OptimizationFunction{$iip,$specialize,…}")
+        print(io, "OptimizationFunction{$iip,$AD,…}")
     end
 end
 
