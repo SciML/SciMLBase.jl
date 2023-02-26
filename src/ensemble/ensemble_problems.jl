@@ -10,6 +10,14 @@ struct EnsembleProblem{T, T2, T3, T4, T5} <: AbstractEnsembleProblem
     safetycopy::Bool
 end
 
+function Base.show(io::IO, t::Type{EnsembleProblem{T, T2, T3, T4, T5}}) where {T, T2, T3, T4, T5}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "EnsembleProblem{$T,$T2,$T3,$T4,$T5}")
+    else
+        print(io, "EnsembleProblem{$T,…}")
+    end
+end
+
 DEFAULT_PROB_FUNC(prob, i, repeat) = prob
 DEFAULT_OUTPUT_FUNC(sol, i) = (sol, false)
 DEFAULT_REDUCTION(u, data, I) = append!(u, data), false

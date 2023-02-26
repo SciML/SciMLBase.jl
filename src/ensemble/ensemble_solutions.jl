@@ -30,6 +30,15 @@ struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     elapsedTime::Float64
     converged::Bool
 end
+
+function Base.show(io::IO, t::Type{EnsembleSolution{T, N, S}}) where {T, N, S}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "EnsembleSolution{$T,$N,$S}")
+    else
+        print(io, "EnsembleProblem{$T,$N,…}")
+    end
+end
+
 function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged) where {N}
     EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(sim, elapsedTime, converged)
 end
