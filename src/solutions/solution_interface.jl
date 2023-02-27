@@ -73,6 +73,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if sym isa AbstractArray
             return A[collect(sym)]
         end
+
         if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
             i = get(A.sym_map, sym, nothing)
         else
@@ -234,7 +235,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
 end
 
 function observed(A::AbstractNoTimeSolution, sym)
-    observed(A, sym, :)
+    getobserved(A)(sym, A.u, A.prob.p)
 end
 
 function observed(A::AbstractOptimizationSolution, sym)
