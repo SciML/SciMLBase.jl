@@ -113,10 +113,12 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if kwargs === missing
-        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
+        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type;
+                                    dense_output = prob.dense_output, prob.kwargs...,
                                     _kwargs...)
     else
-        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; kwargs...)
+        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type;
+                                    dense_output = prob.dense_output, kwargs...)
     end
 end
 

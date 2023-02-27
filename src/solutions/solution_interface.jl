@@ -143,50 +143,63 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
 end
 
 function _get_dep_idxs(A::AbstractTimeseriesSolution)
-    idxs = if has_sys(A.prob.f) && has_observed(A.prob.f)
-        is_ODAE = hasfield(typeof(A.prob.f.sys), :unknown_states) &&
-                  !isnothing(getfield(A.prob.f.sys, :unknown_states))
+    SII = SymbolicIndexingInterface
+    if has_sys(A.prob.f) && has_observed(A.prob.f)
         if !isnothing(A.sym_map)
-            map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
-        elseif is_ODAE
-            sts = getfield(A.prob.f.sys, :unknown_states)
-            map(x -> sym_to_index(x, A),
-                get_deps_of_observed(sts, SymbolicIndexingInterface.observed(A.prob.f.sys)))
-        else
-            map(x -> sym_to_index(x, A), get_deps_of_observed(A.prob.f.sys))
+            is_ODAE = hasfield(typeof(A.prob.f.sys), :unknown_states) &&
+                      !isnothing(getfield(A.prob.f.sys, :unknown_states))
+            if is_ODAE
+                sts = getfield(A.prob.f.sys, :unknown_states)
+                return map(x -> sym_to_index(x, A),
+                           get_deps_of_observed(sts,
+                                                SII.observed(A.prob.f.sys)))
+            end
+            return map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
         end
-    else
-        CartesianIndices(first(A.u))
     end
-    idxs
+    return [nothing]
 end
+
+idxs_initialized(idxs) = isempty(idxs) || !isnothing(first(idxs))
 
 function get_dep_idxs(A::AbstractTimeseriesSolution)
     if hasfield(typeof(A), :dep_idxs)
-        if isnothing(A.dep_idxs[])
-            A.dep_idxs[]
+        if idxs_initialized(A.dep_idxs[])
+            return A.dep_idxs[]
         else
             idxs = _get_dep_idxs(A)
             A.dep_idxs[] = idxs
-            idxs
+            return A.dep_idxs[]
         end
     else
-        _get_dep_idxs(A)
+        return [nothing]
     end
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Int)
-    idxs = get_dep_idxs(A)
+    dense = is_dense_output(A.prob)
+    idxs = dense ? [nothing] : get_dep_idxs(A)
+    if dense || !idxs_initialized(idxs)
+        return getobserved(A)(sym, A.u[i], A.prob.p, A.t[i])
+    end
     getobserved(A)(sym, A[i][idxs], A.prob.p, A.t[i])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, is::AbstractArray{Int})
-    idxs = get_dep_idxs(A)
+    dense = is_dense_output(A.prob)
+    idxs = dense ? [nothing] : get_dep_idxs(A)
+    if dense || !idxs_initialized(idxs)
+        return getobserved(A)(sym, A.u[i], A.prob.p, A.t[i])
+    end
     getobserved(A).((sym,), map(j -> A.u[j][idxs], is), (A.prob.p,), A.t[is])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
-    idxs = get_dep_idxs(A)
+    dense = is_dense_output(A.prob)
+    idxs = dense ? [nothing] : get_dep_idxs(A)
+    if dense || !idxs_initialized(idxs)
+        return getobserved(A).((sym,), A.u, (A.prob.p,), A.t)
+    end
     getobserved(A).((sym,), map(j -> A.u[j][idxs], eachindex(A.t)), (A.prob.p,), A.t)
 end
 
@@ -195,7 +208,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
         if sym isa AbstractArray
             return A[collect(sym)]
         end
-        i = sym_to_index(sym, A)
+        if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
+            i = get(A.sym_map, sym, nothing)
+        else
+            i = sym_to_index(sym, A)
+        end
     elseif all(issymbollike, sym)
         return reduce(vcat, map(s -> A[s]', sym))
     else
@@ -389,95 +406,6 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     label --> reshape(labels, 1, length(labels))
     (plot_vecs...,)
 end
-
-function getsyms(sol)
-    if has_syms(sol.prob.f)
-        return sol.prob.f.syms
-    else
-        return keys(sol.u[1])
-    end
-end
-function getsyms(sol::AbstractOptimizationSolution)
-    if has_syms(sol)
-        return get_syms(sol)
-    else
-        return keys(sol.u[1])
-    end
-end
-
-function getindepsym(sol)
-    if has_indepsym(sol.prob.f)
-        return sol.prob.f.indepsym
-    else
-        return nothing
-    end
-end
-
-function getparamsyms(sol)
-    if has_paramsyms(sol.prob.f)
-        return sol.prob.f.paramsyms
-    else
-        return nothing
-    end
-end
-function getparamsyms(sol::AbstractOptimizationSolution)
-    if has_paramsyms(sol)
-        return get_paramsyms(sol)
-    else
-        return nothing
-    end
-end
-
-# Only for compatibility!
-function getindepsym_defaultt(sol)
-    if has_indepsym(sol.prob.f)
-        return sol.prob.f.indepsym
-    else
-        return :t
-    end
-end
-
-function getobserved(sol)
-    if has_observed(sol.prob.f)
-        return sol.prob.f.observed
-    else
-        return DEFAULT_OBSERVED
-    end
-end
-function getobserved(sol::AbstractOptimizationSolution)
-    if has_observed(sol)
-        return get_observed(sol)
-    else
-        return DEFAULT_OBSERVED
-    end
-end
-
-cleansyms(syms::Nothing) = nothing
-cleansyms(syms::Tuple) = collect(cleansym(sym) for sym in syms)
-cleansyms(syms::Vector{Symbol}) = cleansym.(syms)
-cleansyms(syms::LinearIndices) = nothing
-cleansyms(syms::CartesianIndices) = nothing
-cleansyms(syms::Base.OneTo) = nothing
-
-function cleansym(sym::Symbol)
-    str = String(sym)
-    # MTK generated names
-    rules = ("₊" => ".", "⦗" => "(", "⦘" => ")")
-    for r in rules
-        str = replace(str, r)
-    end
-    return str
-end
-
-function sym_to_index(sym, sol::AbstractSciMLSolution)
-    if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
-        return state_sym_to_index(sol.prob.f.sys, sym)
-    else
-        return sym_to_index(sym, getsyms(sol))
-    end
-end
-sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
-const issymbollike = RecursiveArrayTools.issymbollike
 
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axis_safety,
                           vars, int_vars, tscale, strs)

@@ -42,7 +42,7 @@ function build_solution(prob::AbstractNonlinearProblem,
                         left = nothing,
                         right = nothing,
                         sym_map = nothing,
-                        dep_idxs = Ref{Vector{Int}}(Int[]),
+                        dep_idxs = Ref{Vector{Union{Int, Nothing}}}(Union{Int, Nothing}[nothing]),
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
