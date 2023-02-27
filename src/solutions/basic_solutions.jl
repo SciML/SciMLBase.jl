@@ -37,6 +37,15 @@ function build_linear_solution(alg, u, resid, cache;
                                                                                iters, cache)
 end
 
+function Base.show(io::IO,
+                   t::LinearSolution{T, N, uType, R, A, C}) where {T, N, uType, R, A, C}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "LinearSolution{$T,$N,$uType,$R,$A,$C}")
+    else
+        print(io, "LinearSolution{$T,$N,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 
@@ -59,6 +68,16 @@ struct IntegralSolution{T, N, uType, R, P, A, C} <: AbstractIntegralSolution{T, 
     alg::A
     retcode::ReturnCode.T
     chi::C
+end
+
+function Base.show(io::IO,
+                   t::IntegralSolution{T, N, uType, R, P, A, C}) where {T, N, uType, R, P,
+                                                                        A, C}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "IntegralSolution{$T,$N,$uType,$R,$P,$A,$C}")
+    else
+        print(io, "IntegralSolution{$T,$N,…}")
+    end
 end
 
 struct QuadratureSolution end

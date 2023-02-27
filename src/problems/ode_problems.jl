@@ -158,6 +158,19 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 end
 
+function Base.show(io::IO,
+                   t::Type{ODEProblem{uType, tType, isinplace, P, F, K, PT}}) where {uType,
+                                                                                     tType,
+                                                                                     isinplace,
+                                                                                     P, F,
+                                                                                     K, PT}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "ODEProblem{$uType, $tType, $isinplace, $P, $F, $K, $PT}")
+    else
+        print(io, "ODEProblem{$isinplace,$uType,$tType,…}")
+    end
+end
+
 """
     ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
 
@@ -379,7 +392,7 @@ Many splits are at least partially linear. That is the equation:
 \frac{du}{dt} =  Au + f_2(u,p,t)
 ```
 
-For how to define a linear function `A`, see the documentation for the [AbstractSciMLOperator](@ref).
+For how to define a linear function `A`, see the documentation for the [AbstractSciMLOperator](https://docs.sciml.ai/SciMLOperators/stable/interface/).
 
 ### Constructors
 

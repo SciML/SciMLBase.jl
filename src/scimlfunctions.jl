@@ -52,7 +52,7 @@ limitations.
 * `AutoSpecialize` does not handle cases with units. If unitful values are detected,
   wrapping is automatically disabled.
 * `AutoSpecialize` only wraps cases for which `promote_rule` is defined between `u0`
-  and dual numbers, `u0` and `t`, and for which `ArrayInterfaceCore.promote_eltype`
+  and dual numbers, `u0` and `t`, and for which `ArrayInterface.promote_eltype`
   is defined on `u0` to dual numbers.
 * `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
   default.
@@ -413,6 +413,23 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
+                                       SP, TW, TWt, TPJ, S,
+                                       S2, S3, O, TCV, SYS}}) where {iip, specialize, F,
+                                                                     TMM, Ta, Tt, TJ, JVP,
+                                                                     VJP, JP, SP, TW, TWt,
+                                                                     TPJ, S, S2, S3, O, TCV,
+                                                                     SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "ODEFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "ODEFunction{$iip,$specialize,…}")
+    end
+end
+
 @doc doc"""
     SplitFunction{iip,F1,F2,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,specialize}
 
@@ -541,6 +558,26 @@ struct SplitFunction{iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, 
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           SplitFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP,
+                                         JP,
+                                         SP, TW, TWt, TPJ, S,
+                                         S2, S3, O, TCV, SYS}}) where {iip, specialize, F1,
+                                                                       F2,
+                                                                       TMM, Ta, Tt, TJ, JVP,
+                                                                       VJP, JP, SP, TW, TWt,
+                                                                       TPJ, S, S2, S3, O,
+                                                                       TCV,
+                                                                       SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "SplitFunction{$iip,$specialize,$F1,$F2,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "SplitFunction{$iip,$specialize,…}")
+    end
+end
+
 @doc doc"""
     DynamicalODEFunction{iip,F1,F2,TMM,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractODEFunction{iip,specialize}
 
@@ -658,6 +695,29 @@ struct DynamicalODEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, 
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           DynamicalODEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ,
+                                                JVP, VJP, JP,
+                                                SP, TW, TWt, TPJ, S,
+                                                S2, S3, O, TCV, SYS}}) where {iip,
+                                                                              specialize,
+                                                                              F1, F2,
+                                                                              TMM, Ta, Tt,
+                                                                              TJ, JVP,
+                                                                              VJP, JP, SP,
+                                                                              TW, TWt,
+                                                                              TPJ, S, S2,
+                                                                              S3, O, TCV,
+                                                                              SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "DynamicalODEFunction{$iip,$specialize,$F1,$F2,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "DynamicalODEFunction{$iip,$specialize,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -771,6 +831,23 @@ struct DDEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     observed::O
     colorvec::TCV
     sys::SYS
+end
+
+function Base.show(io::IO,
+                   t::Type{
+                           DDEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
+                                       SP, TW, TWt, TPJ, S,
+                                       S2, S3, O, TCV, SYS}}) where {iip, specialize, F,
+                                                                     TMM, Ta, Tt, TJ, JVP,
+                                                                     VJP, JP, SP, TW, TWt,
+                                                                     TPJ, S, S2, S3, O, TCV,
+                                                                     SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "DDEFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "DDEFunction{$iip,$specialize,…}")
+    end
 end
 
 @doc doc"""
@@ -892,6 +969,29 @@ struct DynamicalDDEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, 
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           DynamicalDDEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ,
+                                                JVP, VJP, JP,
+                                                SP, TW, TWt, TPJ, S,
+                                                S2, S3, O, TCV, SYS}}) where {iip,
+                                                                              specialize,
+                                                                              F1, F2,
+                                                                              TMM, Ta, Tt,
+                                                                              TJ, JVP,
+                                                                              VJP, JP, SP,
+                                                                              TW, TWt,
+                                                                              TPJ, S, S2,
+                                                                              S3, O, TCV,
+                                                                              SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "DynamicalDDEFunction{$iip,$specialize,$F1,$F2,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "DynamicalDDEFunction{$iip,$specialize,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -962,6 +1062,27 @@ struct DiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS} <:
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           DiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS}}) where {
+                                                                                                iip,
+                                                                                                specialize,
+                                                                                                F,
+                                                                                                Ta,
+                                                                                                S,
+                                                                                                S2,
+                                                                                                S3,
+                                                                                                O,
+                                                                                                SYS
+                                                                                                }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "DiscreteFunction{$iip,$specialize,$F,$Ta,$S,$S2,$S3,$O,$SYS}")
+    else
+        print(io, "DiscreteFunction{$iip,$specialize,…}")
+    end
+end
+
 @doc doc"""
     ImplicitDiscreteFunction{iip,F,Ta,S,S2,S3,O} <: AbstractDiscreteFunction{iip,specialize}
 
@@ -1028,6 +1149,19 @@ struct ImplicitDiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS} <:
     paramsyms::S3
     observed::O
     sys::SYS
+end
+
+function Base.show(io::IO,
+                   t::Type{
+                           ImplicitDiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O,
+                                                    SYS}}) where {iip, specialize, F, Ta, S,
+                                                                  S2, S3, O, SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "ImplicitDiscreteFunction{$iip,$specialize,$F,$Ta,$S,$S2,$S3,$O,$SYS}")
+    else
+        print(io, "ImplicitDiscreteFunction{$iip,$specialize,…}")
+    end
 end
 
 """
@@ -1146,6 +1280,25 @@ struct SDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
     observed::O
     colorvec::TCV
     sys::SYS
+end
+
+function Base.show(io::IO,
+                   t::Type{
+                           SDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP,
+                                       SP, TW, TWt, TPJ,
+                                       GG, S, S2, S3, O,
+                                       TCV, SYS
+                                       }}) where {iip, specialize, F, G, TMM, Ta, Tt, TJ,
+                                                  JVP, VJP, JP, SP, TW, TWt, TPJ,
+                                                  GG, S, S2, S3, O,
+                                                  TCV, SYS
+                                                  }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "SDEFunction{$iip,$specialize,$F,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "SDEFunction{$iip,$specialize,…}")
+    end
 end
 
 @doc doc"""
@@ -1269,6 +1422,26 @@ struct SplitSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           SplitSDEFunction{iip, specialize, F1, F2, G, TMM, Ta, Tt, TJ,
+                                            JVP, VJP, JP, SP, TW, TWt, TPJ,
+                                            GG, S, S2, S3, O,
+                                            TCV, SYS
+                                            }}) where {iip, specialize, F1, F2, G, TMM, Ta,
+                                                       Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
+                                                       TPJ,
+                                                       GG, S, S2, S3, O,
+                                                       TCV, SYS
+                                                       }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "SplitSDEFunction{$iip,$specialize,$F1,$F2,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "SplitSDEFunction{$iip,$specialize,…}")
+    end
+end
+
 @doc doc"""
     DynamicalSDEFunction{iip,F1,F2,G,TMM,C,Ta,Tt,TJ,JVP,VJP,JP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV} <: AbstractSDEFunction{iip,specialize}
 
@@ -1390,6 +1563,26 @@ struct DynamicalSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP,
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           DynamicalSDEFunction{iip, specialize, F1, F2, G, TMM, Ta, Tt, TJ,
+                                                JVP, VJP, JP, SP, TW, TWt, TPJ,
+                                                GG, S, S2, S3, O,
+                                                TCV, SYS
+                                                }}) where {iip, specialize, F1, F2, G, TMM,
+                                                           Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+                                                           TWt, TPJ,
+                                                           GG, S, S2, S3, O,
+                                                           TCV, SYS
+                                                           }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "DynamicalSDEFunction{$iip,$specialize,$F1,$F2,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "DynamicalSDEFunction{$iip,$specialize,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -1509,6 +1702,23 @@ struct RODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, T
     colorvec::TCV
     sys::SYS
     analytic_full::Bool
+end
+
+function Base.show(io::IO,
+                   t::Type{
+                           RODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
+                                        SP, TW, TWt, TPJ, S,
+                                        S2, S3, O, TCV, SYS
+                                        }}) where {iip, specialize, F, TMM, Ta, Tt, TJ, JVP,
+                                                   VJP, JP, SP, TW, TWt, TPJ, S,
+                                                   S2, S3, O, TCV, SYS
+                                                   }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "RODEFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "RODEFunction{$iip,$specialize,…}")
+    end
 end
 
 """
@@ -1663,6 +1873,23 @@ struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TP
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
+                                       TWt, TPJ, S, S2,
+                                       S3, O, TCV,
+                                       SYS}}) where {iip, specialize, F, Ta, Tt, TJ, JVP,
+                                                     VJP, JP, SP, TW, TWt, TPJ, S, S2,
+                                                     S3, O, TCV,
+                                                     SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "DAEFunction{$iip,$specialize,$F,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "DAEFunction{$iip,$specialize,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -1779,6 +2006,24 @@ struct SDDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           SDDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP,
+                                        JP, SP, TW, TWt, TPJ,
+                                        GG, S, S2, S3, O,
+                                        TCV, SYS}}) where {iip, specialize, F, G, TMM, Ta,
+                                                           Tt, TJ, JVP, VJP, JP, SP, TW,
+                                                           TWt, TPJ,
+                                                           GG, S, S2, S3, O,
+                                                           TCV, SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "SDDEFunction{$iip,$specialize,$F,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+    else
+        print(io, "SDDEFunction{$iip,$specialize,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -1881,6 +2126,27 @@ struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, 
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP,
+                                             JP, SP, TW, TWt,
+                                             TPJ,
+                                             S, S2, O, TCV,
+                                             SYS
+                                             }}) where {iip, specialize, F, TMM, Ta, Tt, TJ,
+                                                        JVP, VJP, JP, SP, TW, TWt,
+                                                        TPJ,
+                                                        S, S2, O, TCV,
+                                                        SYS
+                                                        }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "NonlinearFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$O,$TCV,$SYS}")
+    else
+        print(io, "NonlinearFunction{$iip,$specialize,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -1945,6 +2211,21 @@ struct IntervalNonlinearFunction{iip, specialize, F, Ta,
     paramsyms::S2
     observed::O
     sys::SYS
+end
+
+function Base.show(io::IO,
+                   t::Type{
+                           IntervalNonlinearFunction{iip, specialize, F, Ta,
+                                                     S, S2, O, SYS
+                                                     }}) where {iip, specialize, F, Ta,
+                                                                S, S2, O, SYS
+                                                                }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "IntervalNonlinearFunction{$iip,$specialize,$F,$Ta,$S,$S2,$O,$SYS}")
+    else
+        print(io, "IntervalNonlinearFunction{$iip,$specialize,…}")
+    end
 end
 
 """
@@ -2091,6 +2372,33 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, L
     sys::SYS
 end
 
+function Base.show(io::IO,
+                   t::Type{
+                           OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP,
+                                                CJP, CHP, LHP, S, S2,
+                                                O, HCV,
+                                                CJCV,
+                                                CHCV, LHCV, EX, CEX, SYS}}) where {iip, AD,
+                                                                                   F, G, H,
+                                                                                   HV, C,
+                                                                                   CJ, CH,
+                                                                                   LH, HP,
+                                                                                   CJP, CHP,
+                                                                                   LHP, S,
+                                                                                   S2,
+                                                                                   O, HCV,
+                                                                                   CJCV,
+                                                                                   CHCV,
+                                                                                   LHCV, EX,
+                                                                                   CEX, SYS}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io,
+              "OptimizationFunction{$iip,$AD,$F,$G,$H,$HV,$C,$CJ,$CH,$LH,$HP,$CJP,$CHP,$LHP,$S,$S2,$O,$HCV,$CJCV,$CHCV,$LHCV,$EX,$CEX,$SYS}")
+    else
+        print(io, "OptimizationFunction{$iip,$AD,…}")
+    end
+end
+
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
@@ -2190,8 +2498,8 @@ function ODEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -2706,8 +3014,8 @@ function SDEFunction{iip, specialize}(f, g;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3031,8 +3339,8 @@ function RODEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3125,8 +3433,8 @@ function DAEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3207,8 +3515,8 @@ function DDEFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3395,8 +3703,8 @@ function SDDEFunction{iip, specialize}(f, g;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
@@ -3488,8 +3796,8 @@ function NonlinearFunction{iip, specialize}(f;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end

@@ -99,6 +99,17 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     end
 end
 
+function Base.show(io::IO,
+                   t::SteadyStateProblem{uType, isinplace, P, F, K}) where {uType,
+                                                                            isinplace, P, F,
+                                                                            K}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "SteadyStateProblem{$uType,$isinplace,$P,$F,$K}")
+    else
+        print(io, "SteadyStateProblem{$isinplace,$uType,…}")
+    end
+end
+
 """
 $(SIGNATURES)
 

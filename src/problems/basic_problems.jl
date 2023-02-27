@@ -76,6 +76,17 @@ function LinearProblem(A, b, args...; kwargs...)
     end
 end
 
+function Base.show(io::IO,
+                   t::LinearProblem{uType, isinplace, F, bType, P, K}) where {uType,
+                                                                              isinplace, F,
+                                                                              bType, P, K}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "LinearProblem{$uType,$isinplace,$F,$bType,$P,$K}")
+    else
+        print(io, "LinearProblem{$uType,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 """
@@ -158,6 +169,19 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
     """
     function IntervalNonlinearProblem{iip}(f, tspan, p = NullParameters()) where {iip}
         IntervalNonlinearProblem{iip}(IntervalNonlinearFunction{iip}(f), tspan, p)
+    end
+end
+
+function Base.show(io::IO,
+                   t::IntervalNonlinearProblem{isinplace, tType, P, F, K, PT}) where {
+                                                                                      isinplace,
+                                                                                      tType,
+                                                                                      P, F,
+                                                                                      K, PT}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "IntervalNonlinearProblem{$isinplace,$tType,$P,$F,$K,$PT}")
+    else
+        print(io, "IntervalNonlinearProblem{$isinplace,$tType,…}")
     end
 end
 
@@ -248,6 +272,17 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     """
     function NonlinearProblem{iip}(f, u0, p = NullParameters()) where {iip}
         NonlinearProblem{iip}(NonlinearFunction{iip}(f), u0, p)
+    end
+end
+
+function Base.show(io::IO,
+                   t::NonlinearProblem{uType, isinplace, P, F, K, PT}) where {uType,
+                                                                              isinplace, P,
+                                                                              F, K, PT}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "NonlinearProblem{$uType,$isinplace,$P,$F,$K,$PT}")
+    else
+        print(io, "NonlinearProblem{$isinplace,$uType,…}")
     end
 end
 
@@ -360,6 +395,16 @@ struct IntegralProblem{isinplace, P, F, L, U, K} <: AbstractIntegralProblem{isin
                                               batch = 0, kwargs...) where {iip}
         new{iip, typeof(p), typeof(f), typeof(lb),
             typeof(ub), typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
+    end
+end
+
+function Base.show(io::IO,
+                   t::IntegralProblem{isinplace, P, F, L, U, K}) where {isinplace, P, F, L,
+                                                                        U, K}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "IntegralProblem{$uType,$isinplace,$P,$F,$K,$PT}")
+    else
+        print(io, "IntegralProblem{$isinplace,$uType,…}")
     end
 end
 
@@ -484,6 +529,27 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
             typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
             typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, int, lcons, ucons, sense,
                                            kwargs)
+    end
+end
+
+function Base.show(io::IO,
+                   t::OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K}) where {
+                                                                                             iip,
+                                                                                             F,
+                                                                                             uType,
+                                                                                             P,
+                                                                                             LB,
+                                                                                             UB,
+                                                                                             I,
+                                                                                             LC,
+                                                                                             UC,
+                                                                                             S,
+                                                                                             K
+                                                                                             }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "OptimizationProblem{$iip,$F,$uType,$P,$LB,$UB,$I,$LC,$UC,$S,$K}")
+    else
+        print(io, "OptimizationProblem{$iip,$uType,…}")
     end
 end
 

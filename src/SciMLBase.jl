@@ -13,12 +13,13 @@ using Distributed
 using Markdown
 import Preferences
 
-import Logging, ArrayInterfaceCore
+import Logging, ArrayInterface
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
+import TruncatedStacktraces
 
 using Reexport
 using SciMLOperators
@@ -719,6 +720,25 @@ include("remake.jl")
 include("callbacks.jl")
 
 include("deprecated.jl")
+
+import SnoopPrecompile
+
+SnoopPrecompile.@precompile_all_calls begin
+    function lorenz(du, u, p, t)
+        du[1] = 10.0(u[2] - u[1])
+        du[2] = u[1] * (28.0 - u[3]) - u[2]
+        du[3] = u[1] * u[2] - (8 / 3) * u[3]
+    end
+
+    function lorenz_oop(u, p, t)
+        [10.0(u[2] - u[1]), u[1] * (28.0 - u[3]) - u[2], u[1] * u[2] - (8 / 3) * u[3]]
+    end
+
+    ODEProblem(lorenz, [1.0; 0.0; 0.0], (0.0, 1.0))
+    ODEProblem(lorenz, [1.0; 0.0; 0.0], (0.0, 1.0), Float64[])
+    ODEProblem(lorenz_oop, [1.0; 0.0; 0.0], (0.0, 1.0))
+    ODEProblem(lorenz_oop, [1.0; 0.0; 0.0], (0.0, 1.0), Float64[])
+end
 
 function discretize end
 function symbolic_discretize end
