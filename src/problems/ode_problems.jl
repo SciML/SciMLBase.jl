@@ -155,6 +155,19 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 end
 
+function Base.show(io::IO,
+                   t::Type{ODEProblem{uType, tType, isinplace, P, F, K, PT}}) where {uType,
+                                                                                     tType,
+                                                                                     isinplace,
+                                                                                     P, F,
+                                                                                     K, PT}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "ODEProblem{$uType, $tType, $isinplace, $P, $F, $K, $PT}")
+    else
+        print(io, "ODEProblem{$isinplace,$uType,$tType,…}")
+    end
+end
+
 """
     ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
 

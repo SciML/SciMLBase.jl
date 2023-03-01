@@ -51,6 +51,27 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Sy
     return getfield(x, s)
 end
 
+function Base.show(io::IO,
+                   t::DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, DE}) where {
+                                                                                                   T,
+                                                                                                   N,
+                                                                                                   uType,
+                                                                                                   duType,
+                                                                                                   uType2,
+                                                                                                   DType,
+                                                                                                   tType,
+                                                                                                   P,
+                                                                                                   A,
+                                                                                                   ID,
+                                                                                                   DE
+                                                                                                   }
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "DAESolution{$T,$N,$uType,$duType,$uType2,$DType,$tType,$P,$A,$ID,$DE}")
+    else
+        print(io, "DAESolution{$T,$N,…}")
+    end
+end
+
 function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
                         timeseries_errors = length(u) > 2,
                         dense = false,

@@ -48,6 +48,17 @@ function build_solution(cache::AbstractOptimizationCache,
                                         solve_time, stats)
 end
 
+function Base.show(io::IO,
+                   t::OptimizationSolution{T, N, uType, C, A, OV, O, S}) where {T, N, uType,
+                                                                                C, A, OV, O,
+                                                                                S}
+    if TruncatedStacktraces.VERBOSE[]
+        print(io, "OptimizationSolution{$T,$N,$uType,$C,$A,$OV,$O,$S}")
+    else
+        print(io, "OptimizationSolution{$T,$N,…}")
+    end
+end
+
 """
 $(TYPEDEF)
 

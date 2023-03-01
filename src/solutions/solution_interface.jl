@@ -346,33 +346,6 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     (plot_vecs...,)
 end
 
-cleansyms(syms::Nothing) = nothing
-cleansyms(syms::Tuple) = collect(cleansym(sym) for sym in syms)
-cleansyms(syms::Vector{Symbol}) = cleansym.(syms)
-cleansyms(syms::LinearIndices) = nothing
-cleansyms(syms::CartesianIndices) = nothing
-cleansyms(syms::Base.OneTo) = nothing
-
-function cleansym(sym::Symbol)
-    str = String(sym)
-    # MTK generated names
-    rules = ("₊" => ".", "⦗" => "(", "⦘" => ")")
-    for r in rules
-        str = replace(str, r)
-    end
-    return str
-end
-
-function sym_to_index(sym, sol::AbstractSciMLSolution)
-    if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
-        return state_sym_to_index(sol.prob.f.sys, sym)
-    else
-        return sym_to_index(sym, getsyms(sol))
-    end
-end
-sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
-const issymbollike = RecursiveArrayTools.issymbollike
-
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axis_safety,
                           vars, int_vars, tscale, strs)
     if tspan === nothing
