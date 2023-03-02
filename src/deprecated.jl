@@ -15,4 +15,4 @@ const DESolution = AbstractSciMLSolution
 const SciMLSolution = AbstractSciMLSolution
 
 # Deprecated `destats`
-@deprecate has_destats(x) has_stats(x)
+@deprecate has_destats(x) has_stats(x) false
