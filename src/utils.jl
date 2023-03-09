@@ -488,3 +488,12 @@ end
 
 _unwrap_val(::Val{B}) where {B} = B
 _unwrap_val(B) = B
+
+function default_sym_map(prob)
+    if has_sys(prob.f)
+        sts = safe_unwrap.(unknown_states(prob.f.sys))
+        return Dict(sts .=> eachindex(sts))
+    else
+        return nothing
+    end
+end

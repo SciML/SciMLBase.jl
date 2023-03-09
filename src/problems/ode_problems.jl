@@ -108,18 +108,15 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     kwargs::K
     """An internal argument for storing traits about the solving process."""
     problem_type::PT
-    """Whether the output has all saved states."""
-    dense_output::Bool
     @add_kwonly function ODEProblem{iip}(f::AbstractODEFunction{iip},
                                          u0, tspan, p = NullParameters(),
                                          problem_type = StandardODEProblem();
-                                         dense_output = true,
                                          kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),
-            typeof(problem_type)}(f, u0, _tspan, p, kwargs, problem_type, dense_output)
+            typeof(problem_type)}(f, u0, _tspan, p, kwargs, problem_type)
     end
 
     """
@@ -487,6 +484,3 @@ function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
                                      p = NullParameters(); kwargs...) where {iip}
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
-
-is_dense_output(prob::ODEProblem) = prob.dense_output
-is_dense_output(prob) = true

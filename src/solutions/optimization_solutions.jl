@@ -80,7 +80,7 @@ function build_solution(prob::AbstractOptimizationProblem,
                         alg, u, objective;
                         retcode = ReturnCode.Default,
                         original = nothing,
-                        sym_map = nothing,
+                        sym_map = default_sym_map(prob),
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)

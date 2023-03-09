@@ -73,12 +73,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if sym isa AbstractArray
             return A[collect(sym)]
         end
-
-        if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
-            i = get(A.sym_map, sym, nothing)
-        else
-            i = sym_to_index(sym, A)
-        end
+        i = state_sym_to_index(A, sym)
     elseif all(issymbollike, sym)
         if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
            !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
@@ -87,6 +82,8 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         else
             return [getindex.((A,), sym, i) for i in eachindex(A)]
         end
+    elseif is_symbolic_expr(sym)
+        return convert_to_getindex(A, sym)
     else
         i = sym
     end
@@ -104,6 +101,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
                 return observed(A, sym, :)
             end
         else
+            @show sym
             observed(A, sym, :)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
@@ -118,13 +116,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if sym isa AbstractArray
             return A[collect(sym), args...]
         end
-        if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
-            i = get(A.sym_map, sym, nothing)
-        else
-            i = sym_to_index(sym, A)
-        end
+        i = state_sym_to_index(A, sym)
     elseif all(issymbollike, sym)
         return reduce(vcat, map(s -> A[s, args...]', sym))
+    elseif is_symbolic_expr(sym)
+        return convert_to_getindex(A, sym, args...)
     else
         i = sym
     end
@@ -134,6 +130,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
            Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
+            @show sym
             observed(A, sym, args...)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
@@ -143,19 +140,20 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
     end
 end
 
-function _get_dep_idxs(A::AbstractTimeseriesSolution)
+function _get_dep_idxs(A::AbstractSciMLSolution)
     SII = SymbolicIndexingInterface
     if has_sys(A.prob.f) && has_observed(A.prob.f)
         if !isnothing(A.sym_map)
             is_ODAE = hasfield(typeof(A.prob.f.sys), :unknown_states) &&
                       !isnothing(getfield(A.prob.f.sys, :unknown_states))
             if is_ODAE
-                sts = getfield(A.prob.f.sys, :unknown_states)
-                return map(x -> sym_to_index(x, A),
+                sts = unknown_states(A.prob.f.sys)
+                return map(x -> state_sym_to_index(A, x),
                            get_deps_of_observed(sts,
                                                 SII.observed(A.prob.f.sys)))
             end
-            return map(x -> A.sym_map[x], get_deps_of_observed(A.prob.f.sys))
+            @show "not ODAE"
+            return map(x -> A.sym_map[safe_unwrap(x)], get_deps_of_observed(A.prob.f.sys))
         end
     end
     return [nothing]
@@ -163,11 +161,12 @@ end
 
 idxs_initialized(idxs) = isempty(idxs) || !isnothing(first(idxs))
 
-function get_dep_idxs(A::AbstractTimeseriesSolution)
+function get_dep_idxs(A::AbstractSciMLSolution)
     if hasfield(typeof(A), :dep_idxs)
         if idxs_initialized(A.dep_idxs[])
             return A.dep_idxs[]
         else
+            @show "recomputing dep_idxs"
             idxs = _get_dep_idxs(A)
             A.dep_idxs[] = idxs
             return A.dep_idxs[]
@@ -178,27 +177,25 @@ function get_dep_idxs(A::AbstractTimeseriesSolution)
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Int)
-    dense = is_dense_output(A.prob)
-    idxs = dense ? [nothing] : get_dep_idxs(A)
-    if dense || !idxs_initialized(idxs)
+    idxs = get_dep_idxs(A)
+    if !idxs_initialized(idxs)
         return getobserved(A)(sym, A.u[i], A.prob.p, A.t[i])
     end
     getobserved(A)(sym, A[i][idxs], A.prob.p, A.t[i])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, is::AbstractArray{Int})
-    dense = is_dense_output(A.prob)
-    idxs = dense ? [nothing] : get_dep_idxs(A)
-    if dense || !idxs_initialized(idxs)
+    idxs = get_dep_idxs(A)
+    if !idxs_initialized(idxs)
         return getobserved(A)(sym, A.u[i], A.prob.p, A.t[i])
     end
     getobserved(A).((sym,), map(j -> A.u[j][idxs], is), (A.prob.p,), A.t[is])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
-    dense = is_dense_output(A.prob)
-    idxs = dense ? [nothing] : get_dep_idxs(A)
-    if dense || !idxs_initialized(idxs)
+    idxs = get_dep_idxs(A)
+    @show idxs
+    if !idxs_initialized(idxs)
         return getobserved(A).((sym,), A.u, (A.prob.p,), A.t)
     end
     getobserved(A).((sym,), map(j -> A.u[j][idxs], eachindex(A.t)), (A.prob.p,), A.t)
@@ -209,11 +206,8 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
         if sym isa AbstractArray
             return A[collect(sym)]
         end
-        if hasfield(typeof(A), :sym_map) && !isnothing(A.sym_map)
-            i = get(A.sym_map, sym, nothing)
-        else
-            i = sym_to_index(sym, A)
-        end
+        i = state_sym_to_index(A, sym)
+
     elseif all(issymbollike, sym)
         return reduce(vcat, map(s -> A[s]', sym))
     else
@@ -235,7 +229,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
 end
 
 function observed(A::AbstractNoTimeSolution, sym)
-    getobserved(A)(sym, A.u, A.prob.p)
+    idxs = get_dep_idxs(A)
+    if !idxs_initialized(idxs)
+        return getobserved(A)(sym, A.u[i], A.prob.p, A.t[i])
+    end
+    getobserved(A)(sym, A.u[idxs], A.prob.p)
 end
 
 function observed(A::AbstractOptimizationSolution, sym)

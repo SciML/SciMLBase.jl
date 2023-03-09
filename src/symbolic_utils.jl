@@ -50,6 +50,14 @@ function getparamsyms(sol::AbstractOptimizationSolution)
     end
 end
 
+function SymbolicIndexingInterface.state_sym_to_index(A::S, sym) where {S <: AbstractSciMLSolution}
+    if hasfield(S, :sym_map) && !isnothing(A.sym_map)
+        return get(A.sym_map, sym, nothing)
+    else
+        return sym_to_index(sym, A)
+    end
+end
+
 # Only for compatibility!
 function getindepsym_defaultt(sol)
     if has_indepsym(sol.prob.f)
