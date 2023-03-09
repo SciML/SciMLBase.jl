@@ -21,13 +21,14 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 - `alg`: the algorithm type used by the solver.
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
+  - `sym_map`: Map of symbols to their index in the solution
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully, whether it terminated early due to a user-defined callback, or whether it 
-  exited due to an error. For more details, see 
+  successfully, whether it terminated early due to a user-defined callback, or whether it
+  exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
-                   AC <: Union{Nothing, Vector{Int}}} <:
+                   AC <: Union{Nothing, Vector{Int}}, MType, DI} <:
        AbstractODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -39,17 +40,31 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
     interp::IType
     dense::Bool
     tslocation::Int
+    sym_map::MType
     destats::DE
     alg_choice::AC
+    dep_idxs::DI
     retcode::ReturnCode.T
 end
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-                           tslocation, destats, alg_choice, retcode) where {T, N}
+                           tslocation, destats, alg_choice, retcode,
+                           sym_map = nothing,
+                           dep_idxs = nothing) where {T, N}
+    if isnothing(dep_idxs)
+        dep_idxs = Ref{Vector{Union{Int, Nothing}}}(Union{Int, Nothing}[nothing])
+    end
+    if isnothing(sym_map)
+        sym_map = default_sym_map(prob)
+    end
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
                        typeof(k), typeof(prob), typeof(alg), typeof(interp),
                        typeof(destats),
-                       typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
-                                           dense, tslocation, destats, alg_choice, retcode)
+                       typeof(alg_choice),
+                       typeof(sym_map), typeof(dep_idxs)}(u, u_analytic, errors, t, k, prob,
+                                                          alg, interp,
+                                                          dense, tslocation, sym_map,
+                                                          destats, alg_choice, dep_idxs,
+                                                          retcode)
 end
 
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
@@ -161,6 +176,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         k = nothing,
                         alg_choice = nothing,
                         interp = LinearInterpolation(t, u),
+                        sym_map = default_sym_map(prob), dep_idxs = nothing,
                         retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
 
@@ -190,7 +206,9 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                 0,
                                 destats,
                                 alg_choice,
-                                retcode)
+                                retcode,
+                                sym_map,
+                                dep_idxs)
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
                                        dense_errors = dense_errors)
@@ -208,7 +226,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                  0,
                                  destats,
                                  alg_choice,
-                                 retcode)
+                                 retcode, sym_map, dep_idxs)
     end
 end
 
@@ -264,7 +282,9 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
                       sol.tslocation,
                       sol.destats,
                       sol.alg_choice,
-                      sol.retcode)
+                      sol.retcode,
+                      sol.sym_map,
+                      sol.dep_idxs)
 end
 
 function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
@@ -280,7 +300,9 @@ function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
                       sol.tslocation,
                       sol.destats,
                       sol.alg_choice,
-                      retcode)
+                      retcode,
+                      sol.sym_map,
+                      sol.dep_idxs)
 end
 
 function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N}
@@ -296,7 +318,9 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
                       tslocation,
                       sol.destats,
                       sol.alg_choice,
-                      sol.retcode)
+                      sol.retcode,
+                      sol.sym_map,
+                      sol.dep_idxs)
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
@@ -312,7 +336,9 @@ function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
                       sol.tslocation,
                       sol.destats,
                       sol.alg_choice,
-                      sol.retcode)
+                      sol.retcode,
+                      sol.sym_map,
+                      sol.dep_idxs)
 end
 
 function sensitivity_solution(sol::ODESolution, u, t)
@@ -330,5 +356,5 @@ function sensitivity_solution(sol::ODESolution, u, t)
                       nothing, sol.prob,
                       sol.alg, interp,
                       sol.dense, sol.tslocation,
-                      sol.destats, sol.alg_choice, sol.retcode)
+                      sol.destats, sol.alg_choice, sol.retcode, sol.sym_map, sol.dep_idxs)
 end

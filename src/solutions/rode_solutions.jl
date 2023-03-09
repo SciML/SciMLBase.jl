@@ -27,13 +27,14 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 - `alg`: the algorithm type used by the solver.
 - `destats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
+- `sym_map`: Map of symbols to their index in the solution
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
   successfully, whether it terminated early due to a user-defined callback, or whether it
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, DE,
-                    AC <: Union{Nothing, Vector{Int}}} <:
+                    AC <: Union{Nothing, Vector{Int}}, MType} <:
        AbstractRODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -45,6 +46,7 @@ struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, DE
     interp::IType
     dense::Bool
     tslocation::Int
+    sym_map::MType
     destats::DE
     alg_choice::AC
     retcode::ReturnCode.T
@@ -78,6 +80,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
                         interp = LinearInterpolation(t, u),
                         retcode = ReturnCode.Default,
                         alg_choice = nothing,
+                        sym_map = default_sym_map(prob),
                         seed = UInt64(0), destats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))
@@ -94,19 +97,20 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         sol = RODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
                            typeof(W),
                            typeof(prob), typeof(alg), typeof(interp), typeof(destats),
-                           typeof(alg_choice)}(u,
-                                               u_analytic,
-                                               errors,
-                                               t, W,
-                                               prob,
-                                               alg,
-                                               interp,
-                                               dense,
-                                               0,
-                                               destats,
-                                               alg_choice,
-                                               retcode,
-                                               seed)
+                           typeof(alg_choice), typeof(sym_map)}(u,
+                                                                u_analytic,
+                                                                errors,
+                                                                t, W,
+                                                                prob,
+                                                                alg,
+                                                                interp,
+                                                                dense,
+                                                                0,
+                                                                sym_map,
+                                                                destats,
+                                                                alg_choice,
+                                                                retcode,
+                                                                seed)
 
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
@@ -117,10 +121,18 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
     else
         return RODESolution{T, N, typeof(u), Nothing, Nothing, typeof(t),
                             typeof(W), typeof(prob), typeof(alg), typeof(interp),
-                            typeof(destats), typeof(alg_choice)}(u, nothing, nothing, t, W,
-                                                                 prob, alg, interp,
-                                                                 dense, 0, destats,
-                                                                 alg_choice, retcode, seed)
+                            typeof(destats), typeof(alg_choice), typeof(sym_map)}(u,
+                                                                                  nothing,
+                                                                                  nothing,
+                                                                                  t, W,
+                                                                                  prob, alg,
+                                                                                  interp,
+                                                                                  dense, 0,
+                                                                                  sym_map,
+                                                                                  destats,
+                                                                                  alg_choice,
+                                                                                  retcode,
+                                                                                  seed)
     end
 end
 
@@ -174,53 +186,87 @@ end
 function build_solution(sol::AbstractRODESolution{T, N}, u_analytic, errors) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(u_analytic), typeof(errors), typeof(sol.t),
                  typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.destats), typeof(sol.alg_choice)}(sol.u, u_analytic, errors,
-                                                              sol.t, sol.W, sol.prob,
-                                                              sol.alg, sol.interp,
-                                                              sol.dense, sol.tslocation,
-                                                              sol.destats, sol.alg_choice,
-                                                              sol.retcode, sol.seed)
+                 typeof(sol.destats), typeof(sol.alg_choice), typeof(sol.sym_map)}(sol.u,
+                                                                                   u_analytic,
+                                                                                   errors,
+                                                                                   sol.t,
+                                                                                   sol.W,
+                                                                                   sol.prob,
+                                                                                   sol.alg,
+                                                                                   sol.interp,
+                                                                                   sol.dense,
+                                                                                   sol.tslocation,
+                                                                                   sol.sym_map,
+                                                                                   sol.destats,
+                                                                                   sol.alg_choice,
+                                                                                   sol.retcode,
+                                                                                   sol.seed)
 end
 
 function solution_new_retcode(sol::AbstractRODESolution{T, N}, retcode) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
                  typeof(sol.t),
                  typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.destats), typeof(sol.alg_choice)}(sol.u, sol.u_analytic,
-                                                              sol.errors, sol.t, sol.W,
-                                                              sol.prob, sol.alg, sol.interp,
-                                                              sol.dense, sol.tslocation,
-                                                              sol.destats, sol.alg_choice,
-                                                              retcode,
-                                                              sol.seed)
+                 typeof(sol.destats), typeof(sol.alg_choice), typeof(sol.sym_map)}(sol.u,
+                                                                                   sol.u_analytic,
+                                                                                   sol.errors,
+                                                                                   sol.t,
+                                                                                   sol.W,
+                                                                                   sol.prob,
+                                                                                   sol.alg,
+                                                                                   sol.interp,
+                                                                                   sol.dense,
+                                                                                   sol.tslocation,
+                                                                                   sol.sym_map,
+                                                                                   sol.destats,
+                                                                                   sol.alg_choice,
+                                                                                   retcode,
+                                                                                   sol.seed)
 end
 
 function solution_new_tslocation(sol::AbstractRODESolution{T, N}, tslocation) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
                  typeof(sol.t),
                  typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.destats), typeof(sol.alg_choice)}(sol.u, sol.u_analytic,
-                                                              sol.errors, sol.t, sol.W,
-                                                              sol.prob, sol.alg, sol.interp,
-                                                              sol.dense, tslocation,
-                                                              sol.destats, sol.alg_choice,
-                                                              sol.retcode,
-                                                              sol.seed)
+                 typeof(sol.destats), typeof(sol.alg_choice), typeof(sol.sym_map)}(sol.u,
+                                                                                   sol.u_analytic,
+                                                                                   sol.errors,
+                                                                                   sol.t,
+                                                                                   sol.W,
+                                                                                   sol.prob,
+                                                                                   sol.alg,
+                                                                                   sol.interp,
+                                                                                   sol.dense,
+                                                                                   tslocation,
+                                                                                   sol.sym_map,
+                                                                                   sol.destats,
+                                                                                   sol.alg_choice,
+                                                                                   sol.retcode,
+                                                                                   sol.seed)
 end
 
 function solution_slice(sol::AbstractRODESolution{T, N}, I) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
                  typeof(sol.t),
                  typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.destats), typeof(sol.alg_choice)}(sol.u[I],
-                                                              sol.u_analytic === nothing ?
-                                                              nothing : sol.u_analytic,
-                                                              sol.errors, sol.t[I],
-                                                              sol.W, sol.prob,
-                                                              sol.alg, sol.interp,
-                                                              false, sol.tslocation,
-                                                              sol.destats, sol.alg_choice,
-                                                              sol.retcode, sol.seed)
+                 typeof(sol.destats), typeof(sol.alg_choice), typeof(sol.sym_map)}(sol.u[I],
+                                                                                   sol.u_analytic ===
+                                                                                   nothing ?
+                                                                                   nothing :
+                                                                                   sol.u_analytic,
+                                                                                   sol.errors,
+                                                                                   sol.t[I],
+                                                                                   sol.W,
+                                                                                   sol.prob,
+                                                                                   sol.alg,
+                                                                                   sol.interp,
+                                                                                   false,
+                                                                                   sol.tslocation,
+                                                                                   sol.sym_map,
+                                                                                   sol.destats,
+                                                                                   sol.alg_choice,
+                                                                                   sol.retcode,
+                                                                                   sol.seed)
 end
 
 function sensitivity_solution(sol::AbstractRODESolution, u, t)
@@ -237,18 +283,20 @@ function sensitivity_solution(sol::AbstractRODESolution, u, t)
     RODESolution{T, N, typeof(u), typeof(sol.u_analytic),
                  typeof(sol.errors), typeof(t),
                  typeof(nothing), typeof(sol.prob), typeof(sol.alg),
-                 typeof(sol.interp), typeof(sol.destats), typeof(sol.alg_choice)}(u,
-                                                                                  sol.u_analytic,
-                                                                                  sol.errors,
-                                                                                  t,
-                                                                                  nothing,
-                                                                                  sol.prob,
-                                                                                  sol.alg,
-                                                                                  sol.interp,
-                                                                                  sol.dense,
-                                                                                  sol.tslocation,
-                                                                                  sol.destats,
-                                                                                  sol.alg_choice,
-                                                                                  sol.retcode,
-                                                                                  sol.seed)
+                 typeof(sol.interp), typeof(sol.destats), typeof(sol.alg_choice),
+                 typeof(sol.sym_map)}(u,
+                                      sol.u_analytic,
+                                      sol.errors,
+                                      t,
+                                      nothing,
+                                      sol.prob,
+                                      sol.alg,
+                                      sol.interp,
+                                      sol.dense,
+                                      sol.tslocation,
+                                      sol.sym_map,
+                                      sol.destats,
+                                      sol.alg_choice,
+                                      sol.retcode,
+                                      sol.seed)
 end

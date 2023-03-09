@@ -15,8 +15,10 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
 - `solve_time`: Solve time from the solver in Seconds
+- `sym_map`: Map of symbols to their index in the solution
 """
-struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, S} <:
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, S, MType
+                            } <:
        AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
@@ -25,6 +27,7 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
     retcode::ReturnCode.T
     original::O # original output of the optimizer
     solve_time::S # [s] solve time from the solver
+    sym_map::MType
 end
 
 function build_solution(cache::AbstractOptimizationCache,
@@ -32,6 +35,7 @@ function build_solution(cache::AbstractOptimizationCache,
                         retcode = ReturnCode.Default,
                         original = nothing,
                         solve_time = nothing,
+                        sym_map = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
@@ -40,12 +44,13 @@ function build_solution(cache::AbstractOptimizationCache,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(objective), typeof(original), typeof(solve_time)}(u, cache,
-                                                                                  alg,
-                                                                                  objective,
-                                                                                  retcode,
-                                                                                  original,
-                                                                                  solve_time)
+                         typeof(objective), typeof(original), typeof(solve_time),
+                         typeof(sym_map)}(u, cache,
+                                          alg,
+                                          objective,
+                                          retcode,
+                                          original,
+                                          solve_time, sym_map)
 end
 
 function Base.show(io::IO,
@@ -75,6 +80,7 @@ function build_solution(prob::AbstractOptimizationProblem,
                         alg, u, objective;
                         retcode = ReturnCode.Default,
                         original = nothing,
+                        sym_map = default_sym_map(prob),
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
@@ -89,9 +95,12 @@ function build_solution(prob::AbstractOptimizationProblem,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(objective), typeof(original)}(u, cache, alg, objective,
-                                                              retcode,
-                                                              original)
+                         typeof(objective), typeof(original), typeof(sym_map)}(u, cache,
+                                                                               alg,
+                                                                               objective,
+                                                                               retcode,
+                                                                               original,
+                                                                               sym_map)
 end
 
 get_p(sol::OptimizationSolution) = sol.cache.p
