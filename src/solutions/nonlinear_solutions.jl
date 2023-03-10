@@ -17,8 +17,10 @@ or the steady state solution to a differential equation defined by a SteadyState
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `left`: if the solver is bracketing method, this is the final left bracket value.
 - `right`: if the solver is bracketing method, this is the final right bracket value.
+- `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct NonlinearSolution{T, N, uType, R, P, A, O, uType2} <: AbstractNonlinearSolution{T, N}
+struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
+       AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
     prob::P
@@ -27,6 +29,7 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2} <: AbstractNonlinearSo
     original::O
     left::uType2
     right::uType2
+    stats::S
 end
 
 function Base.show(io::IO,
@@ -49,27 +52,23 @@ function build_solution(prob::AbstractNonlinearProblem,
                         original = nothing,
                         left = nothing,
                         right = nothing,
+                        stats = nothing,
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
-    NonlinearSolution{T, N, typeof(u), typeof(resid),
-                      typeof(prob), typeof(alg), typeof(original), typeof(left)}(u, resid,
-                                                                                 prob, alg,
-                                                                                 retcode,
-                                                                                 original,
-                                                                                 left,
-                                                                                 right)
+    NonlinearSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
+                      typeof(original), typeof(left), typeof(stats)}(u, resid, prob, alg,
+                                                                     retcode, original,
+                                                                     left, right, stats)
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     T = eltype(eltype(u))
     N = ndims(u)
 
-    NonlinearSolution{T, N, typeof(u), typeof(sol.resid),
-                      typeof(sol.prob), typeof(sol.alg),
-                      typeof(sol.original), typeof(sol.left)}(u, sol.resid, sol.prob,
-                                                              sol.alg, sol.retcode,
-                                                              sol.original, sol.left,
-                                                              sol.right)
+    NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
+                      typeof(sol.alg), typeof(sol.original), typeof(sol.left),
+                      typeof(sol.stats)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
+                                         sol.original, sol.left, sol.right, sol.stats)
 end

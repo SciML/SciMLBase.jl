@@ -19,14 +19,14 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 - `t`: the time points corresponding to the saved values of the ODE solution.
 - `prob`: the original ODEProblem that was solved.
 - `alg`: the algorithm type used by the solver.
-- `destats`: statistics of the solver, such as the number of function evaluations required,
+- `stats`: statistics of the solver, such as the number of function evaluations required,
   number of Jacobians computed, and more.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
   successfully, whether it terminated early due to a user-defined callback, or whether it 
   exited due to an error. For more details, see 
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
+struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
                    AC <: Union{Nothing, Vector{Int}}} <:
        AbstractODESolution{T, N, uType}
     u::uType
@@ -39,17 +39,26 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, DE,
     interp::IType
     dense::Bool
     tslocation::Int
-    destats::DE
+    stats::S
     alg_choice::AC
     retcode::ReturnCode.T
 end
+
+Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
+    if s === :destats
+        Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
+        return getfield(x, :stats)
+    end
+    return getfield(x, s)
+end
+
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-                           tslocation, destats, alg_choice, retcode) where {T, N}
+                           tslocation, stats, alg_choice, retcode) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
                        typeof(k), typeof(prob), typeof(alg), typeof(interp),
-                       typeof(destats),
+                       typeof(stats),
                        typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
-                                           dense, tslocation, destats, alg_choice, retcode)
+                                           dense, tslocation, stats, alg_choice, retcode)
 end
 
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
@@ -161,7 +170,8 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         k = nothing,
                         alg_choice = nothing,
                         interp = LinearInterpolation(t, u),
-                        retcode = ReturnCode.Default, destats = nothing, kwargs...)
+                        retcode = ReturnCode.Default, destats = missing, stats = nothing,
+                        kwargs...)
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
@@ -176,6 +186,16 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
         f = prob.f
     end
 
+    if !ismissing(destats)
+        msg = "`destats` kwarg has been deprecated in favor of `stats`"
+        if stats !== nothing
+            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
+        else
+            stats = destats
+        end
+        Base.depwarn(msg, :build_solution)
+    end
+
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
@@ -188,7 +208,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                 interp,
                                 dense,
                                 0,
-                                destats,
+                                stats,
                                 alg_choice,
                                 retcode)
         if calculate_error
@@ -206,7 +226,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                                  interp,
                                  dense,
                                  0,
-                                 destats,
+                                 stats,
                                  alg_choice,
                                  retcode)
     end
@@ -262,7 +282,7 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
                       sol.interp,
                       sol.dense,
                       sol.tslocation,
-                      sol.destats,
+                      sol.stats,
                       sol.alg_choice,
                       sol.retcode)
 end
@@ -278,7 +298,7 @@ function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
                       sol.interp,
                       sol.dense,
                       sol.tslocation,
-                      sol.destats,
+                      sol.stats,
                       sol.alg_choice,
                       retcode)
 end
@@ -294,7 +314,7 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
                       sol.interp,
                       sol.dense,
                       tslocation,
-                      sol.destats,
+                      sol.stats,
                       sol.alg_choice,
                       sol.retcode)
 end
@@ -310,7 +330,7 @@ function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
                       sol.interp,
                       false,
                       sol.tslocation,
-                      sol.destats,
+                      sol.stats,
                       sol.alg_choice,
                       sol.retcode)
 end
@@ -330,5 +350,5 @@ function sensitivity_solution(sol::ODESolution, u, t)
                       nothing, sol.prob,
                       sol.alg, interp,
                       sol.dense, sol.tslocation,
-                      sol.destats, sol.alg_choice, sol.retcode)
+                      sol.stats, sol.alg_choice, sol.retcode)
 end

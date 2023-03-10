@@ -17,24 +17,25 @@ Representation of the solution to an linear system Ax=b defined by a LinearProbl
   is given to allow continuation of solver usage, for example, solving `Ax=b` with the same
   `A` and a new `b` without refactorizing `A`. See the caching interface tutorial for details
   on how to use the `cache` effectively: http://docs.sciml.ai/LinearSolve/stable/tutorials/caching_interface/
+- `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct LinearSolution{T, N, uType, R, A, C} <: AbstractLinearSolution{T, N}
+struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}
     u::uType
     resid::R
     alg::A
     retcode::ReturnCode.T
     iters::Int
     cache::C
+    stats::S
 end
 
 function build_linear_solution(alg, u, resid, cache;
                                retcode = ReturnCode.Default,
-                               iters = 0)
+                               iters = 0, stats = nothing)
     T = eltype(eltype(u))
     N = length((size(u)...,))
-    LinearSolution{T, N, typeof(u), typeof(resid), typeof(alg), typeof(cache)}(u, resid,
-                                                                               alg, retcode,
-                                                                               iters, cache)
+    LinearSolution{T, N, typeof(u), typeof(resid), typeof(alg), typeof(cache),
+                   typeof(stats)}(u, resid, alg, retcode, iters, cache, stats)
 end
 
 function Base.show(io::IO,
@@ -60,14 +61,16 @@ Representation of the solution to an quadrature integral_lb^ub f(x) dx defined b
    successfully or whether it exited due to an error. For more details, see 
    [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `chi`: the variance estimate of the estimator from Monte Carlo quadrature methods.
+- `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct IntegralSolution{T, N, uType, R, P, A, C} <: AbstractIntegralSolution{T, N}
+struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{T, N}
     u::uType
     resid::R
     prob::P
     alg::A
     retcode::ReturnCode.T
     chi::C
+    stats::S
 end
 
 function Base.show(io::IO,
@@ -85,13 +88,12 @@ struct QuadratureSolution end
 
 function build_solution(prob::AbstractIntegralProblem,
                         alg, u, resid; chi = nothing,
-                        retcode = ReturnCode.Default, kwargs...)
+                        retcode = ReturnCode.Default, stats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(u)...,))
 
-    IntegralSolution{T, N, typeof(u), typeof(resid),
-                     typeof(prob), typeof(alg), typeof(chi)}(u, resid, prob, alg, retcode,
-                                                             chi)
+    IntegralSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg), typeof(chi),
+                     typeof(stats)}(u, resid, prob, alg, retcode, chi, stats)
 end
 
 function wrap_sol(sol)
