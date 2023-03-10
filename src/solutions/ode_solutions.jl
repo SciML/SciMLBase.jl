@@ -176,10 +176,12 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                         k = nothing,
                         alg_choice = nothing,
                         interp = LinearInterpolation(t, u),
-                        sym_map = default_sym_map(prob), dep_idxs = nothing,
+                        sym_map = nothing, dep_idxs = nothing,
                         retcode = ReturnCode.Default, destats = nothing, kwargs...)
     T = eltype(eltype(u))
-
+    if isnothing(sym_map)
+        sym_map = default_sym_map(prob)
+    end
     if prob.u0 === nothing
         N = 2
     else

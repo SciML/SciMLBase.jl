@@ -69,6 +69,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym)
+    sym = safe_unwrap(sym)
     if issymbollike(sym)
         if sym isa AbstractArray
             return A[collect(sym)]
@@ -82,13 +83,15 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         else
             return [getindex.((A,), sym, i) for i in eachindex(A)]
         end
-    elseif is_symbolic_expr(sym)
-        return convert_to_getindex(A, sym)
     else
         i = sym
     end
 
-    if i === nothing
+    if is_symbolic_expr(sym)
+        return convert_to_getindex(A, sym)
+    end
+
+    if isnothing(i)
         if issymbollike(sym)
             if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
                Symbol(sym) == getindepsym(A)
@@ -101,7 +104,6 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
                 return observed(A, sym, :)
             end
         else
-            @show sym
             observed(A, sym, :)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
@@ -112,6 +114,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym, args...)
+    sym = safe_unwrap(sym)
     if issymbollike(sym)
         if sym isa AbstractArray
             return A[collect(sym), args...]
@@ -119,10 +122,12 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = state_sym_to_index(A, sym)
     elseif all(issymbollike, sym)
         return reduce(vcat, map(s -> A[s, args...]', sym))
-    elseif is_symbolic_expr(sym)
-        return convert_to_getindex(A, sym, args...)
     else
         i = sym
+    end
+
+    if is_symbolic_expr(sym)
+        return convert_to_getindex(A, sym, args...)
     end
 
     if isnothing(i)
@@ -130,7 +135,6 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
            Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
-            @show sym
             observed(A, sym, args...)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
@@ -144,16 +148,9 @@ function _get_dep_idxs(A::AbstractSciMLSolution)
     SII = SymbolicIndexingInterface
     if has_sys(A.prob.f) && has_observed(A.prob.f)
         if !isnothing(A.sym_map)
-            is_ODAE = hasfield(typeof(A.prob.f.sys), :unknown_states) &&
-                      !isnothing(getfield(A.prob.f.sys, :unknown_states))
-            if is_ODAE
-                sts = unknown_states(A.prob.f.sys)
-                return map(x -> state_sym_to_index(A, x),
-                           get_deps_of_observed(sts,
-                                                SII.observed(A.prob.f.sys)))
-            end
-            @show "not ODAE"
-            return map(x -> A.sym_map[safe_unwrap(x)], get_deps_of_observed(A.prob.f.sys))
+            sys = A.prob.f.sys
+            return map(x -> A.sym_map[safe_unwrap(x)],
+                       get_deps_of_observed(unknown_states(sys), SII.observed(sys)))
         end
     end
     return [nothing]
@@ -166,7 +163,6 @@ function get_dep_idxs(A::AbstractSciMLSolution)
         if idxs_initialized(A.dep_idxs[])
             return A.dep_idxs[]
         else
-            @show "recomputing dep_idxs"
             idxs = _get_dep_idxs(A)
             A.dep_idxs[] = idxs
             return A.dep_idxs[]
@@ -194,7 +190,6 @@ end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
     idxs = get_dep_idxs(A)
-    @show idxs
     if !idxs_initialized(idxs)
         return getobserved(A).((sym,), A.u, (A.prob.p,), A.t)
     end
@@ -202,6 +197,7 @@ function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
+    sym = safe_unwrap(sym)
     if issymbollike(sym)
         if sym isa AbstractArray
             return A[collect(sym)]
