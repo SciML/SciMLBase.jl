@@ -35,7 +35,7 @@ end
         @time @safetestset "Timing first batch when solving Ensembles" begin include("downstream/ensemble_first_batch.jl") end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin include("downstream/symbol_indexing.jl") end
         @time @safetestset "Symbol and integer based indexing of integrators" begin include("downstream/integrator_indexing.jl") end
-        @time @safetestset "Unitful interoplations" begin include("downstream/unitful_interpolations.jl") end
+        @time @safetestset "Unitful interpolations" begin include("downstream/unitful_interpolations.jl") end
         @time @safetestset "Integer idxs" begin include("downstream/integer_idxs.jl") end
         @time @safetestset "Autodiff Remake" begin include("downstream/remake_autodiff.jl") end
         @time @safetestset "Problem Indexing" begin include("downstream/problem_interface.jl") end

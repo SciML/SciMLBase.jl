@@ -55,7 +55,7 @@ section at the end of this page for some example usage.
 * `save_everystep`: Saves the result at every step.
   Default is true if `isempty(saveat)`.
 * `save_on`: Denotes whether intermediate solutions are saved. This overrides the
-  settings of `dense`, `saveat` and `save_everystep` and is used by some applicatioins
+  settings of `dense`, `saveat` and `save_everystep` and is used by some applications
   to manually turn off saving temporarily. Everyday use of the solvers should leave
   this unchanged. Defaults to `true`.
 * `save_start`: Denotes whether the initial condition should be included in

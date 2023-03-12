@@ -26,7 +26,7 @@ ODEProblem{iip}(f,u0,tspan,p)
 
 which is a boolean for whether the function is in the inplace form (mutating to
 change the first value). This is automatically determined using the methods table
-but note that for full type-inferrability of the `AbstractSciMLProblem` this iip-ness should
+but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
 Additionally, the functions are fully specialized to reduce the runtimes. If one
@@ -91,7 +91,7 @@ callback or tolerance. Thus, for flexibility the extra keyword arguments to the
 `AbstractSciMLProblem` types include a non-public API definition of `problem_type` which holds
 a trait type corresponding to the way the `AbstractSciMLProblem` was constructed. For example,
 if a `SecondOrderODEProblem` constructor is used, the returned problem is simply a
-`ODEProblem` for interopability with any `ODEProblem` algorithm. However, in this case
+`ODEProblem` for interoperability with any `ODEProblem` algorithm. However, in this case
 the `problem_type` will be populated with the `SecondOrderODEProblem` type, indicating
 the original definition and extra structure.
 

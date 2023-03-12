@@ -100,13 +100,13 @@ EnumX.@enumx ReturnCode begin
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the `dt` of the
-    intgration was determined to be `NaN` and thus the solver could not continue.
+    integration was determined to be `NaN` and thus the solver could not continue.
 
     ## Common Reasons for Seeing this Return Code
 
     * The most common reason for seeing this return code is because the automatic `dt`
       selection algorithm is used but the starting derivative has a `NaN` or `Inf`
-      derivative term. Double check that the `f(u0,p,t0)` term is well-defind without
+      derivative term. Double check that the `f(u0,p,t0)` term is well-defined without
       `NaN` or `Inf` values.
     * Another common reason for this return code is because of a user set `dt` which is
       calculated to be a `NaN`. If `solve(prob,alg,dt=x)`, double check that `x` is not
@@ -132,7 +132,7 @@ EnumX.@enumx ReturnCode begin
     have an exit criteria other than `iters == maxiters`. In this case, the solvers will
     iterate until `maxiters` and exit with a `Success` return code, as that is a successful
     run of the solver and not considered to be an error state. Solves with early termination
-    critera, such as `Optim.BFGS` exiting when the gradient is sufficiently close to zero,
+    criteria, such as `Optim.BFGS` exiting when the gradient is sufficiently close to zero,
     will give `ReturnCode.MaxIters` on exits which require the maximum iteration.
 
     ## Common Reasons for Seeing this Return Code
@@ -155,7 +155,7 @@ EnumX.@enumx ReturnCode begin
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the `dt` of the
-    intgration was made to be less than `dtmin`, i.e. `dt < dtmin`.
+    integration was made to be less than `dtmin`, i.e. `dt < dtmin`.
 
     ## Common Reasons for Seeing this Return Code
 
@@ -170,7 +170,7 @@ EnumX.@enumx ReturnCode begin
       one is solving the ODE `f(u,p,t) = -u - 1`, one may think "but I want a solution with
       `u > 0` and thus I will set `isoutofdomain(u,p,t) = u < 0`. However, the true solution
       of this ODE is not positive, and thus what will occur is that the solver will try to
-      decerase `dt` until it can give an accurate solution that is positive. As this is
+      decrease `dt` until it can give an accurate solution that is positive. As this is
       impossible, it will continue to shrink the `dt` until `dt < dtmin` and then exit with
       this return code.
 
@@ -426,7 +426,7 @@ end
 `successful_retcode(retcode::ReturnCode.T)::Bool`
 `successful_retcode(sol::AbstractSciMLSolution)::Bool`
 
-Returns a boolean for whether a return code should be interepted as a form of success.
+Returns a boolean for whether a return code should be interpreted as a form of success.
 """
 function successful_retcode end
 
