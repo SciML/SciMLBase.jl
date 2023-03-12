@@ -47,7 +47,7 @@ ODEFunction{iip}(f)
 
 which is a boolean for whether the function is in the inplace form (mutating to
 change the first value). This is automatically determined using the methods table
-but note that for full type-inferrability of the `AbstractSciMLProblem` this iip-ness should
+but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
 ### Specialization Choices
