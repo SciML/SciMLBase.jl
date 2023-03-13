@@ -382,10 +382,10 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace, P, F, L, U, K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinplace}
     f::F
-    lb::L
-    ub::U
+    lb::B
+    ub::B
     nout::Int
     p::P
     batch::Int
@@ -393,14 +393,14 @@ struct IntegralProblem{isinplace, P, F, L, U, K} <: AbstractIntegralProblem{isin
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
                                               nout = 1,
                                               batch = 0, kwargs...) where {iip}
-        new{iip, typeof(p), typeof(f), typeof(lb),
-            typeof(ub), typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
+        @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
+        new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f, lb, ub, nout, p,
+                                                                   batch, kwargs)
     end
 end
 
 function Base.show(io::IO,
-                   t::IntegralProblem{isinplace, P, F, L, U, K}) where {isinplace, P, F, L,
-                                                                        U, K}
+                   t::IntegralProblem{isinplace, P, F, B, K}) where {isinplace, P, F, B, K}
     if TruncatedStacktraces.VERBOSE[]
         print(io, "IntegralProblem{$uType,$isinplace,$P,$F,$K,$PT}")
     else
