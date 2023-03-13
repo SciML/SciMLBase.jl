@@ -53,11 +53,15 @@ function build_solution(prob::AbstractNonlinearProblem,
                         original = nothing,
                         left = nothing,
                         right = nothing,
-                        sym_map = default_sym_map(prob),
+                        sym_map = nothing,
                         dep_idxs = Ref{Vector{Union{Int, Nothing}}}(Union{Int, Nothing}[nothing]),
                         kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
+
+    if isnothing(sym_map)
+        sym_map = default_sym_map(prob)
+    end
 
     NonlinearSolution{T, N, typeof(u), typeof(resid),
                       typeof(prob), typeof(alg), typeof(original), typeof(left),

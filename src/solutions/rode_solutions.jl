@@ -80,7 +80,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
                         interp = LinearInterpolation(t, u),
                         retcode = ReturnCode.Default,
                         alg_choice = nothing,
-                        sym_map = default_sym_map(prob),
+                        sym_map = nothing,
                         seed = UInt64(0), destats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))
@@ -89,6 +89,10 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         f = prob.f[1]
     else
         f = prob.f
+    end
+
+    if isnothing(sym_map)
+        sym_map = default_sym_map(prob)
     end
 
     if has_analytic(f)
