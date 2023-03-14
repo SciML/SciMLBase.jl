@@ -51,13 +51,14 @@ The callback function `callback` is a function which is called after every optim
 step. Its signature is:
 
 ```julia
-callback = (x,other_args) -> false
+callback = (params, loss_val, other_args) -> false
 ```
 
-where `other_args` are the extra return arguments of the optimization `f`.
-This allows for saving values from the optimization and using them for
-plotting and display without recalculating. The callback should return a
-Boolean value, and the default should be `false`, such that the optimization
+where `params` and `loss_val` are the current parameters and loss/objective value 
+in the optimization loop and `other_args` are the extra return arguments of 
+the optimization `f`. This allows for saving values from the optimization and 
+using them for plotting and display without recalculating. The callback should 
+return a Boolean value, and the default should be `false`, such that the optimization
 gets stopped if it returns `true`.
 
 ### Callback Example
