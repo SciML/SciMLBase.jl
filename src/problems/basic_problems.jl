@@ -529,10 +529,10 @@ end
 
 function Base.show(io::IO,
                    t::OptimizationProblem{iip, F, uType}) where {
-                                                                                             iip,
-                                                                                             F,
-                                                                                             uType,
-                                                                                             }
+                                                                iip,
+                                                                F,
+                                                                uType,
+                                                                }
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
