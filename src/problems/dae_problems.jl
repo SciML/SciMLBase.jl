@@ -104,9 +104,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:DAEProblem{uType, duType, tType, isinplace}}) where {uType,
-                                                                          duType,
-                                                                          tType,
-                                                                          isinplace}
+                                                                                  duType,
+                                                                                  tType,
+                                                                                  isinplace}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else

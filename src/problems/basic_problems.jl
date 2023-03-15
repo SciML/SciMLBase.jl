@@ -172,8 +172,8 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:IntervalNonlinearProblem{isinplace, tType}}) where {
-                                                                         isinplace,
-                                                                         tType}
+                                                                                 isinplace,
+                                                                                 tType}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else
@@ -273,7 +273,7 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:NonlinearProblem{uType, isinplace}}) where {uType,
-                                                                 isinplace}
+                                                                         isinplace}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else
@@ -529,10 +529,10 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:OptimizationProblem{iip, F, uType}}) where {
-                                                                iip,
-                                                                F,
-                                                                uType,
-                                                                }
+                                                                         iip,
+                                                                         F,
+                                                                         uType
+                                                                         }
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else

@@ -35,7 +35,7 @@ end
 function Base.show(io::IO,
                    t::Type{<:NonlinearSolution{T, N}}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-      invoke(show, Tuple{IO, Type}, io, t)
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "NonlinearSolution{$T,$N,…}")
     end

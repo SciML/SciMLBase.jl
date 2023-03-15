@@ -252,12 +252,12 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:DDEProblem{uType, tType, lType, lType2, isinplace}}) where {
-                                                                                 uType,
-                                                                                 tType,
-                                                                                 lType,
-                                                                                 lType2,
-                                                                                 isinplace
-                                                                                }
+                                                                                         uType,
+                                                                                         tType,
+                                                                                         lType,
+                                                                                         lType2,
+                                                                                         isinplace
+                                                                                         }
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else

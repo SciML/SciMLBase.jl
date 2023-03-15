@@ -100,10 +100,10 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:ImplicitDiscreteProblem{uType, tType, isinplace}}) where {
-                                                                               uType,
-                                                                               tType,
-                                                                               isinplace,
-                                                                              }
+                                                                                       uType,
+                                                                                       tType,
+                                                                                       isinplace
+                                                                                       }
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else

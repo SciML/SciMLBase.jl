@@ -53,9 +53,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:DAESolution{T, N}}) where {
-                                                T,
-                                                N
-                                                }
+                                                        T,
+                                                        N
+                                                        }
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else

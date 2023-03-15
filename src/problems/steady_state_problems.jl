@@ -101,7 +101,7 @@ end
 
 function Base.show(io::IO,
                    t::Type{<:SteadyStateProblem{uType, isinplace}}) where {uType,
-                                                                   isinplace}
+                                                                           isinplace}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else

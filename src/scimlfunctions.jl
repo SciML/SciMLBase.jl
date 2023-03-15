@@ -934,7 +934,7 @@ end
 function Base.show(io::IO,
                    t::Type{
                            <:DynamicalDDEFunction{iip, specialize}}) where {iip,
-                                                                              specialize}
+                                                                            specialize}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else
@@ -1094,7 +1094,8 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           <:ImplicitDiscreteFunction{iip, specialize}}) where {iip, specialize}
+                           <:ImplicitDiscreteFunction{iip, specialize}}) where {iip,
+                                                                                specialize}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else
@@ -1354,7 +1355,7 @@ end
 function Base.show(io::IO,
                    t::Type{
                            <:SplitSDEFunction{iip, specialize
-                                            }}) where {iip, specialize}
+                                              }}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else
@@ -2018,7 +2019,7 @@ function Base.show(io::IO,
                    t::Type{
                            <:NonlinearFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-       invoke(show, Tuple{IO, Type}, io, t)
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "NonlinearFunction{$iip,$specialize,…}")
     end
@@ -2092,7 +2093,8 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           <:IntervalNonlinearFunction{iip, specialize}}) where {iip, specialize}
+                           <:IntervalNonlinearFunction{iip, specialize}}) where {iip,
+                                                                                 specialize}
     if TruncatedStacktraces.VERBOSE[]
         invoke(show, Tuple{IO, Type}, io, t)
     else
