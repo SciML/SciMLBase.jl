@@ -52,12 +52,12 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Sy
 end
 
 function Base.show(io::IO,
-                   t::DAESolution{T, N}) where {
+                   t::Type{<:DAESolution{T, N}}) where {
                                                 T,
                                                 N
                                                 }
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DAESolution{$T,$N,…}")
     end

@@ -251,7 +251,7 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
 end
 
 function Base.show(io::IO,
-                   t::DDEProblem{uType, tType, lType, lType2, isinplace}) where {
+                   t::Type{<:DDEProblem{uType, tType, lType, lType2, isinplace}}) where {
                                                                                  uType,
                                                                                  tType,
                                                                                  lType,
@@ -259,7 +259,7 @@ function Base.show(io::IO,
                                                                                  isinplace
                                                                                 }
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DDEProblem{$isinplace,$uType,$tType,…}")
     end

@@ -100,10 +100,10 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
 end
 
 function Base.show(io::IO,
-                   t::SteadyStateProblem{uType, isinplace}) where {uType,
+                   t::Type{<:SteadyStateProblem{uType, isinplace}}) where {uType,
                                                                    isinplace}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "SteadyStateProblem{$isinplace,$uType,…}")
     end

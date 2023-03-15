@@ -39,9 +39,9 @@ function build_linear_solution(alg, u, resid, cache;
 end
 
 function Base.show(io::IO,
-                   t::LinearSolution{T, N}) where {T, N}
+                   t::Type{<:LinearSolution{T, N}}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "LinearSolution{$T,$N,…}")
     end
@@ -74,9 +74,9 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
 end
 
 function Base.show(io::IO,
-                   t::IntegralSolution{T, N}) where {T, N}
+                   t::Type{<:IntegralSolution{T, N}}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "IntegralSolution{$T,$N,…}")
     end

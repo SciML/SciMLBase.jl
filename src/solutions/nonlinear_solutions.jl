@@ -33,9 +33,9 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
 end
 
 function Base.show(io::IO,
-                   t::NonlinearSolution{T, N}) where {T, N}
+                   t::Type{<:NonlinearSolution{T, N}}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-      invoke(show, Tuple{IO, Type}, io, typeof(t))
+      invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "NonlinearSolution{$T,$N,…}")
     end

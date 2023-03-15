@@ -171,11 +171,11 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
 end
 
 function Base.show(io::IO,
-                   t::IntervalNonlinearProblem{isinplace, tType}) where {
+                   t::Type{<:IntervalNonlinearProblem{isinplace, tType}}) where {
                                                                          isinplace,
                                                                          tType}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "IntervalNonlinearProblem{$isinplace,$tType,…}")
     end
@@ -272,10 +272,10 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
 end
 
 function Base.show(io::IO,
-                   t::NonlinearProblem{uType, isinplace}) where {uType,
+                   t::Type{<:NonlinearProblem{uType, isinplace}}) where {uType,
                                                                  isinplace}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "NonlinearProblem{$isinplace,$uType,…}")
     end
@@ -395,9 +395,9 @@ struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinpla
 end
 
 function Base.show(io::IO,
-                   t::IntegralProblem{isinplace}) where {isinplace}
+                   t::Type{<:IntegralProblem{isinplace}}) where {isinplace}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "IntegralProblem{$isinplace,…}")
     end
@@ -528,13 +528,13 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
 end
 
 function Base.show(io::IO,
-                   t::OptimizationProblem{iip, F, uType}) where {
+                   t::Type{<:OptimizationProblem{iip, F, uType}}) where {
                                                                 iip,
                                                                 F,
                                                                 uType,
                                                                 }
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "OptimizationProblem{$iip,$uType,…}")
     end

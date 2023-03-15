@@ -116,11 +116,11 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
 end
 
 function Base.show(io::IO,
-                   t::SDEProblem{uType, tType, isinplace}) where {uType,
+                   t::Type{<:SDEProblem{uType, tType, isinplace}}) where {uType,
                                                                   tType,
                                                                   isinplace}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "SDEProblem{$isinplace,$uType,$tType,…}")
     end

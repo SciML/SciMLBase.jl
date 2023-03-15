@@ -51,9 +51,9 @@ struct PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType, ivTy
 end
 
 function Base.show(io::IO,
-                   t::PDETimeSeriesSolution{T, N}) where {T, N}
+                   t::Type{<:PDETimeSeriesSolution{T, N}}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-      invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "PDETimeSeriesSolution{$T,$N,…}")
     end
@@ -104,9 +104,9 @@ struct PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P, A,
 end
 
 function Base.show(io::IO,
-                   t::PDENoTimeSolution{T, N}) where {T, N}
+                   t::Type{<:PDENoTimeSolution{T, N}}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        invoke(show, Tuple{IO, Type}, io, typeof(t))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "PDENoTimeSolution{$T,$N,…}")
     end
