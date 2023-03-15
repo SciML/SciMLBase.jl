@@ -60,12 +60,9 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::S
 end
 
 function Base.show(io::IO,
-                   t::RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType,
-                                   DE, AC}) where {T, N, uType, uType2, DType, tType,
-                                                   randType, P, A, IType, DE, AC}
+                   t::RODESolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "RODESolution{$T,$N,$uType,$uType2,$DType,$tType,$randType,$P,$A,$IType,$DE,$AC}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "RODESolution{$T,$N,…}")
     end

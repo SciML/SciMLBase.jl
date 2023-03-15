@@ -82,14 +82,12 @@ mutable struct RODEProblem{uType, tType, isinplace, P, NP, F, K, ND} <:
 end
 
 function Base.show(io::IO,
-                   t::RODEProblem{uType, tType, isinplace, P, NP, F, K, ND}) where {uType,
-                                                                                    tType,
-                                                                                    isinplace,
-                                                                                    P, NP,
-                                                                                    F, K, ND
-                                                                                    }
+                   t::RODEProblem{uType, tType, isinplace}) where {uType,
+                                                                   tType,
+                                                                   isinplace
+                                                                  }
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "RODEProblem{$uType,$tType,$isinplace,$P,$NP,$F,$K,$ND}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "RODEProblem{$isinplace,$uType,$tType,…}")
     end

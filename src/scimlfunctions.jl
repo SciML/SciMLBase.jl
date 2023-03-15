@@ -414,17 +414,9 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
 end
 
 function Base.show(io::IO,
-                   t::Type{
-                           ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
-                                       SP, TW, TWt, TPJ, S,
-                                       S2, S3, O, TCV, SYS}}) where {iip, specialize, F,
-                                                                     TMM, Ta, Tt, TJ, JVP,
-                                                                     VJP, JP, SP, TW, TWt,
-                                                                     TPJ, S, S2, S3, O, TCV,
-                                                                     SYS}
+                   t::Type{<:ODEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "ODEFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "ODEFunction{$iip,$specialize,…}")
     end
@@ -560,19 +552,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           SplitFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP,
-                                         JP,
-                                         SP, TW, TWt, TPJ, S,
-                                         S2, S3, O, TCV, SYS}}) where {iip, specialize, F1,
-                                                                       F2,
-                                                                       TMM, Ta, Tt, TJ, JVP,
-                                                                       VJP, JP, SP, TW, TWt,
-                                                                       TPJ, S, S2, S3, O,
-                                                                       TCV,
-                                                                       SYS}
+                           <:SplitFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "SplitFunction{$iip,$specialize,$F1,$F2,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "SplitFunction{$iip,$specialize,…}")
     end
@@ -697,22 +679,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           DynamicalODEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ,
-                                                JVP, VJP, JP,
-                                                SP, TW, TWt, TPJ, S,
-                                                S2, S3, O, TCV, SYS}}) where {iip,
-                                                                              specialize,
-                                                                              F1, F2,
-                                                                              TMM, Ta, Tt,
-                                                                              TJ, JVP,
-                                                                              VJP, JP, SP,
-                                                                              TW, TWt,
-                                                                              TPJ, S, S2,
-                                                                              S3, O, TCV,
-                                                                              SYS}
+                           <:DynamicalODEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "DynamicalODEFunction{$iip,$specialize,$F1,$F2,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DynamicalODEFunction{$iip,$specialize,…}")
     end
@@ -835,16 +804,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           DDEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
-                                       SP, TW, TWt, TPJ, S,
-                                       S2, S3, O, TCV, SYS}}) where {iip, specialize, F,
-                                                                     TMM, Ta, Tt, TJ, JVP,
-                                                                     VJP, JP, SP, TW, TWt,
-                                                                     TPJ, S, S2, S3, O, TCV,
-                                                                     SYS}
+                           <:DDEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "DDEFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DDEFunction{$iip,$specialize,…}")
     end
@@ -971,22 +933,10 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           DynamicalDDEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ,
-                                                JVP, VJP, JP,
-                                                SP, TW, TWt, TPJ, S,
-                                                S2, S3, O, TCV, SYS}}) where {iip,
-                                                                              specialize,
-                                                                              F1, F2,
-                                                                              TMM, Ta, Tt,
-                                                                              TJ, JVP,
-                                                                              VJP, JP, SP,
-                                                                              TW, TWt,
-                                                                              TPJ, S, S2,
-                                                                              S3, O, TCV,
-                                                                              SYS}
+                           <:DynamicalDDEFunction{iip, specialize}}) where {iip,
+                                                                              specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "DynamicalDDEFunction{$iip,$specialize,$F1,$F2,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DynamicalDDEFunction{$iip,$specialize,…}")
     end
@@ -1064,20 +1014,11 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           DiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O, SYS}}) where {
-                                                                                                iip,
-                                                                                                specialize,
-                                                                                                F,
-                                                                                                Ta,
-                                                                                                S,
-                                                                                                S2,
-                                                                                                S3,
-                                                                                                O,
-                                                                                                SYS
-                                                                                                }
+                           <:DiscreteFunction{iip, specialize}}) where {
+                                                                        iip,
+                                                                        specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "DiscreteFunction{$iip,$specialize,$F,$Ta,$S,$S2,$S3,$O,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DiscreteFunction{$iip,$specialize,…}")
     end
@@ -1153,12 +1094,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           ImplicitDiscreteFunction{iip, specialize, F, Ta, S, S2, S3, O,
-                                                    SYS}}) where {iip, specialize, F, Ta, S,
-                                                                  S2, S3, O, SYS}
+                           <:ImplicitDiscreteFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "ImplicitDiscreteFunction{$iip,$specialize,$F,$Ta,$S,$S2,$S3,$O,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "ImplicitDiscreteFunction{$iip,$specialize,…}")
     end
@@ -1284,18 +1222,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           SDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP,
-                                       SP, TW, TWt, TPJ,
-                                       GG, S, S2, S3, O,
-                                       TCV, SYS
-                                       }}) where {iip, specialize, F, G, TMM, Ta, Tt, TJ,
-                                                  JVP, VJP, JP, SP, TW, TWt, TPJ,
-                                                  GG, S, S2, S3, O,
-                                                  TCV, SYS
-                                                  }
+                           <:SDEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "SDEFunction{$iip,$specialize,$F,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "SDEFunction{$iip,$specialize,…}")
     end
@@ -1424,19 +1353,10 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           SplitSDEFunction{iip, specialize, F1, F2, G, TMM, Ta, Tt, TJ,
-                                            JVP, VJP, JP, SP, TW, TWt, TPJ,
-                                            GG, S, S2, S3, O,
-                                            TCV, SYS
-                                            }}) where {iip, specialize, F1, F2, G, TMM, Ta,
-                                                       Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
-                                                       TPJ,
-                                                       GG, S, S2, S3, O,
-                                                       TCV, SYS
-                                                       }
+                           <:SplitSDEFunction{iip, specialize
+                                            }}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "SplitSDEFunction{$iip,$specialize,$F1,$F2,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "SplitSDEFunction{$iip,$specialize,…}")
     end
@@ -1565,19 +1485,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           DynamicalSDEFunction{iip, specialize, F1, F2, G, TMM, Ta, Tt, TJ,
-                                                JVP, VJP, JP, SP, TW, TWt, TPJ,
-                                                GG, S, S2, S3, O,
-                                                TCV, SYS
-                                                }}) where {iip, specialize, F1, F2, G, TMM,
-                                                           Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
-                                                           TWt, TPJ,
-                                                           GG, S, S2, S3, O,
-                                                           TCV, SYS
-                                                           }
+                           <:DynamicalSDEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "DynamicalSDEFunction{$iip,$specialize,$F1,$F2,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DynamicalSDEFunction{$iip,$specialize,…}")
     end
@@ -1706,16 +1616,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           RODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP,
-                                        SP, TW, TWt, TPJ, S,
-                                        S2, S3, O, TCV, SYS
-                                        }}) where {iip, specialize, F, TMM, Ta, Tt, TJ, JVP,
-                                                   VJP, JP, SP, TW, TWt, TPJ, S,
-                                                   S2, S3, O, TCV, SYS
-                                                   }
+                           <:RODEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "RODEFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "RODEFunction{$iip,$specialize,…}")
     end
@@ -1875,16 +1778,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
-                                       TWt, TPJ, S, S2,
-                                       S3, O, TCV,
-                                       SYS}}) where {iip, specialize, F, Ta, Tt, TJ, JVP,
-                                                     VJP, JP, SP, TW, TWt, TPJ, S, S2,
-                                                     S3, O, TCV,
-                                                     SYS}
+                           <:DAEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "DAEFunction{$iip,$specialize,$F,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DAEFunction{$iip,$specialize,…}")
     end
@@ -2008,17 +1904,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           SDDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP,
-                                        JP, SP, TW, TWt, TPJ,
-                                        GG, S, S2, S3, O,
-                                        TCV, SYS}}) where {iip, specialize, F, G, TMM, Ta,
-                                                           Tt, TJ, JVP, VJP, JP, SP, TW,
-                                                           TWt, TPJ,
-                                                           GG, S, S2, S3, O,
-                                                           TCV, SYS}
+                           <:SDDEFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "SDDEFunction{$iip,$specialize,$F,$G,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$GG,$S,$S2,$S3,$O,$TCV,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "SDDEFunction{$iip,$specialize,…}")
     end
@@ -2128,20 +2016,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP,
-                                             JP, SP, TW, TWt,
-                                             TPJ,
-                                             S, S2, O, TCV,
-                                             SYS
-                                             }}) where {iip, specialize, F, TMM, Ta, Tt, TJ,
-                                                        JVP, VJP, JP, SP, TW, TWt,
-                                                        TPJ,
-                                                        S, S2, O, TCV,
-                                                        SYS
-                                                        }
+                           <:NonlinearFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "NonlinearFunction{$iip,$specialize,$F,$TMM,$Ta,$Tt,$TJ,$JVP,$VJP,$JP,$SP,$TW,$TWt,$TPJ,$S,$S2,$O,$TCV,$SYS}")
+       invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "NonlinearFunction{$iip,$specialize,…}")
     end
@@ -2215,14 +2092,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           IntervalNonlinearFunction{iip, specialize, F, Ta,
-                                                     S, S2, O, SYS
-                                                     }}) where {iip, specialize, F, Ta,
-                                                                S, S2, O, SYS
-                                                                }
+                           <:IntervalNonlinearFunction{iip, specialize}}) where {iip, specialize}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "IntervalNonlinearFunction{$iip,$specialize,$F,$Ta,$S,$S2,$O,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "IntervalNonlinearFunction{$iip,$specialize,…}")
     end
@@ -2374,26 +2246,9 @@ end
 
 function Base.show(io::IO,
                    t::Type{
-                           OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP,
-                                                CJP, CHP, LHP, S, S2,
-                                                O, HCV,
-                                                CJCV,
-                                                CHCV, LHCV, EX, CEX, SYS}}) where {iip, AD,
-                                                                                   F, G, H,
-                                                                                   HV, C,
-                                                                                   CJ, CH,
-                                                                                   LH, HP,
-                                                                                   CJP, CHP,
-                                                                                   LHP, S,
-                                                                                   S2,
-                                                                                   O, HCV,
-                                                                                   CJCV,
-                                                                                   CHCV,
-                                                                                   LHCV, EX,
-                                                                                   CEX, SYS}
+                           <:OptimizationFunction{iip, AD}}) where {iip, AD}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "OptimizationFunction{$iip,$AD,$F,$G,$H,$HV,$C,$CJ,$CH,$LH,$HP,$CJP,$CHP,$LHP,$S,$S2,$O,$HCV,$CJCV,$CHCV,$LHCV,$EX,$CEX,$SYS}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "OptimizationFunction{$iip,$AD,…}")
     end

@@ -251,20 +251,15 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
 end
 
 function Base.show(io::IO,
-                   t::DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT}) where {
-                                                                                                 uType,
-                                                                                                 tType,
-                                                                                                 lType,
-                                                                                                 lType2,
-                                                                                                 isinplace,
-                                                                                                 P,
-                                                                                                 F,
-                                                                                                 H,
-                                                                                                 K,
-                                                                                                 PT
-                                                                                                 }
+                   t::DDEProblem{uType, tType, lType, lType2, isinplace}) where {
+                                                                                 uType,
+                                                                                 tType,
+                                                                                 lType,
+                                                                                 lType2,
+                                                                                 isinplace
+                                                                                }
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "DDEProblem{$uType,$tType,$lType,$lType2,$isinplace,$P,$F,$H,$K,$PT}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "DDEProblem{$isinplace,$uType,$tType,…}")
     end

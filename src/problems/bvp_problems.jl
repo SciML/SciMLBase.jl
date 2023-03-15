@@ -96,13 +96,11 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
 end
 
 function Base.show(io::IO,
-                   t::BVProblem{uType, tType, isinplace, P, F, bF, PT, K}) where {uType,
-                                                                                  tType,
-                                                                                  isinplace,
-                                                                                  P, F, bF,
-                                                                                  PT, K}
+                   t::BVProblem{uType, tType, isinplace}) where {uType,
+                                                                 tType,
+                                                                 isinplace}
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "BVProblem{$uType,$tType,$isinplace,$P,$F,$bF,$PT,$K}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "BVProblem{$isinplace,$uType,$tType,…}")
     end

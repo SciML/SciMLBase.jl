@@ -99,15 +99,13 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
 end
 
 function Base.show(io::IO,
-                   t::ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K}) where {
-                                                                                        uType,
-                                                                                        tType,
-                                                                                        isinplace,
-                                                                                        P,
-                                                                                        F, K
-                                                                                        }
+                   t::ImplicitDiscreteProblem{uType, tType, isinplace}) where {
+                                                                               uType,
+                                                                               tType,
+                                                                               isinplace,
+                                                                              }
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "ImplicitDiscreteProblem{$uType,$tType,$isinplace,$P,$F,$K}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "ImplicitDiscreteProblem{$isinplace,$uType,$tType,…}")
     end

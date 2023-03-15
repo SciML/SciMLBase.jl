@@ -17,15 +17,13 @@ struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
 end
 
 function Base.show(io::IO,
-                   t::Type{AnalyticalProblem{uType, tType, isinplace, P, F, K}}) where {
+                   t::Type{<:AnalyticalProblem{uType, tType, isinplace}}) where {
                                                                                         uType,
                                                                                         tType,
                                                                                         isinplace,
-                                                                                        P,
-                                                                                        F, K
                                                                                         }
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "AnalyticalProblem{$uType,$tType,$isinplace,$P,$F,$K}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "AnalyticalProblem{$isinplace,$uType,$tType,…}")
     end

@@ -103,14 +103,12 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
 end
 
 function Base.show(io::IO,
-                   t::DAEProblem{uType, duType, tType, isinplace, P, F, K, D}) where {uType,
-                                                                                      duType,
-                                                                                      tType,
-                                                                                      isinplace,
-                                                                                      P, F,
-                                                                                      K, D}
+                   t::DAEProblem{uType, duType, tType, isinplace}) where {uType,
+                                                                          duType,
+                                                                          tType,
+                                                                          isinplace}
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "DAEProblem{$uType,$duType,$tType,$isinplace,$P,$F,$K,$D}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "DAEProblem{$isinplace,$uType,$tType,…}")
     end

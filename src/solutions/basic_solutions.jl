@@ -11,7 +11,7 @@ Representation of the solution to an linear system Ax=b defined by a LinearProbl
 - `iters`: the number of iterations used to solve the equation, if the method is an iterative
   method.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully or whether it exited due to an error. For more details, see 
+  successfully or whether it exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `cache`: the `LinearCache` object containing the solver's internal cached variables. This
   is given to allow continuation of solver usage, for example, solving `Ax=b` with the same
@@ -39,9 +39,9 @@ function build_linear_solution(alg, u, resid, cache;
 end
 
 function Base.show(io::IO,
-                   t::LinearSolution{T, N, uType, R, A, C}) where {T, N, uType, R, A, C}
+                   t::LinearSolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "LinearSolution{$T,$N,$uType,$R,$A,$C}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "LinearSolution{$T,$N,…}")
     end
@@ -58,7 +58,7 @@ Representation of the solution to an quadrature integral_lb^ub f(x) dx defined b
 - `resid`: the residual of the solver.
 - `alg`: the algorithm type used by the solver.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-   successfully or whether it exited due to an error. For more details, see 
+   successfully or whether it exited due to an error. For more details, see
    [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `chi`: the variance estimate of the estimator from Monte Carlo quadrature methods.
 - `stats`: statistics of the solver, such as the number of function evaluations required.
@@ -74,10 +74,9 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
 end
 
 function Base.show(io::IO,
-                   t::IntegralSolution{T, N, uType, R, P, A, C}) where {T, N, uType, R, P,
-                                                                        A, C}
+                   t::IntegralSolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "IntegralSolution{$T,$N,$uType,$R,$P,$A,$C}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "IntegralSolution{$T,$N,…}")
     end

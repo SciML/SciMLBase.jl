@@ -49,11 +49,9 @@ function build_solution(cache::AbstractOptimizationCache,
 end
 
 function Base.show(io::IO,
-                   t::OptimizationSolution{T, N, uType, C, A, OV, O, S}) where {T, N, uType,
-                                                                                C, A, OV, O,
-                                                                                S}
+                   t::OptimizationSolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "OptimizationSolution{$T,$N,$uType,$C,$A,$OV,$O,$S}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "OptimizationSolution{$T,$N,…}")
     end

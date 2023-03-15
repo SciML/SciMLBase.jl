@@ -154,20 +154,9 @@ function ContinuousCallback(condition, affect!;
 end
 
 function Base.show(io::IO,
-                   t::Type{ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {
-                                                                                            F1,
-                                                                                            F2,
-                                                                                            F3,
-                                                                                            F4,
-                                                                                            F5,
-                                                                                            T,
-                                                                                            T2,
-                                                                                            T3,
-                                                                                            I,
-                                                                                            R
-                                                                                            }
+                   t::Type{<:ContinuousCallback})
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "ContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "ContinuousCallback{…}")
     end
@@ -277,21 +266,9 @@ function VectorContinuousCallback(condition, affect!, len;
                              dtrelax, abstol, reltol, repeat_nudge)
 end
 
-function Base.show(io::IO,
-                   t::Type{VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {
-                                                                                                  F1,
-                                                                                                  F2,
-                                                                                                  F3,
-                                                                                                  F4,
-                                                                                                  F5,
-                                                                                                  T,
-                                                                                                  T2,
-                                                                                                  T3,
-                                                                                                  I,
-                                                                                                  R
-                                                                                                  }
+function Base.show(io::IO, t::Type{<:VectorContinuousCallback})
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "VectorContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "VectorContinuousCallback{…}")
     end
@@ -346,9 +323,9 @@ function DiscreteCallback(condition, affect!;
     DiscreteCallback(condition, affect!, initialize, finalize, save_positions)
 end
 
-function Base.show(io::IO, t::Type{DiscreteCallback{F1, F2, F3, F4}}) where {F1, F2, F3, F4}
+function Base.show(io::IO, t::Type{<:DiscreteCallback})
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "DiscreteCallback{$F1, $F2, $F3, $F4}")
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "DiscreteCallback{…}")
     end

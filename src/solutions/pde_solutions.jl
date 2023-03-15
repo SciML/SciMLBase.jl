@@ -51,19 +51,9 @@ struct PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType, ivTy
 end
 
 function Base.show(io::IO,
-                   t::PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType,
-                                            ivType, dvType, P, A, IType}) where {T, N,
-                                                                                 uType,
-                                                                                 Disc, Sol,
-                                                                                 DType,
-                                                                                 tType,
-                                                                                 domType,
-                                                                                 ivType,
-                                                                                 dvType, P,
-                                                                                 A, IType}
+                   t::PDETimeSeriesSolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "PDETimeSeriesSolution{$T,$N,$uType,$Disc,$Sol,$DType,$tType,$domType,$ivType,$dvType,$P,$A,$IType}")
+      invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "PDETimeSeriesSolution{$T,$N,…}")
     end
@@ -114,12 +104,9 @@ struct PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P, A,
 end
 
 function Base.show(io::IO,
-                   t::PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P,
-                                        A, IType}) where {T, N, uType, Disc, Sol, domType,
-                                                          ivType, dvType, P, A, IType}
+                   t::PDENoTimeSolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "PDENoTimeSolution{$T,$N,$uType,$Disc,$Sol,$domType,$ivType,$dvType,$P,$A,$IType}")
+        invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "PDENoTimeSolution{$T,$N,…}")
     end

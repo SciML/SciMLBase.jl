@@ -156,13 +156,11 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
 end
 
 function Base.show(io::IO,
-                   t::Type{ODEProblem{uType, tType, isinplace, P, F, K, PT}}) where {uType,
-                                                                                     tType,
-                                                                                     isinplace,
-                                                                                     P, F,
-                                                                                     K, PT}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "ODEProblem{$uType, $tType, $isinplace, $P, $F, $K, $PT}")
+                   t::Type{<:ODEProblem{uType, tType, isinplace}}) where {uType,
+                                                                          tType,
+                                                                          isinplace}
+    if TruncatedStacktraces.VERBOSE[] || !(@isdefined(isinplace) && @isdefined(uType) && @isdefined(tType))
+        invoke(show, Tuple{IO, Type}, io, t)
     else
         print(io, "ODEProblem{$isinplace,$uType,$tType,…}")
     end

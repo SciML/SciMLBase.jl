@@ -13,7 +13,7 @@ or the steady state solution to a differential equation defined by a SteadyState
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   NLsolve.jl, then this is the original return from said solver library.
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully or whether it exited due to an error. For more details, see 
+  successfully or whether it exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `left`: if the solver is bracketing method, this is the final left bracket value.
 - `right`: if the solver is bracketing method, this is the final right bracket value.
@@ -33,12 +33,9 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
 end
 
 function Base.show(io::IO,
-                   t::NonlinearSolution{T, N, uType, R, P, A, O, uType2}) where {T, N,
-                                                                                 uType, R,
-                                                                                 P, A, O,
-                                                                                 uType2}
+                   t::NonlinearSolution{T, N}) where {T, N}
     if TruncatedStacktraces.VERBOSE[]
-        print(io, "NonlinearSolution{$T,$N,$uType,$R,$P,$A,$O,$uType2}")
+      invoke(show, Tuple{IO, Type}, io, typeof(t))
     else
         print(io, "NonlinearSolution{$T,$N,…}")
     end
