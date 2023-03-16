@@ -153,25 +153,7 @@ function ContinuousCallback(condition, affect!;
                        dtrelax, abstol, reltol, repeat_nudge)
 end
 
-function Base.show(io::IO,
-                   t::Type{ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {
-                                                                                            F1,
-                                                                                            F2,
-                                                                                            F3,
-                                                                                            F4,
-                                                                                            F5,
-                                                                                            T,
-                                                                                            T2,
-                                                                                            T3,
-                                                                                            I,
-                                                                                            R
-                                                                                            }
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "ContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
-    else
-        print(io, "ContinuousCallback{…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace ContinuousCallback
 
 """
 ```julia
@@ -277,25 +259,7 @@ function VectorContinuousCallback(condition, affect!, len;
                              dtrelax, abstol, reltol, repeat_nudge)
 end
 
-function Base.show(io::IO,
-                   t::Type{VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R}}) where {
-                                                                                                  F1,
-                                                                                                  F2,
-                                                                                                  F3,
-                                                                                                  F4,
-                                                                                                  F5,
-                                                                                                  T,
-                                                                                                  T2,
-                                                                                                  T3,
-                                                                                                  I,
-                                                                                                  R
-                                                                                                  }
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "VectorContinuousCallback{$F1, $F2, $F3, $F4, $F5, $T, $T2, $T3, $I, $R}")
-    else
-        print(io, "VectorContinuousCallback{…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace VectorContinuousCallback
 
 """
 ```julia
