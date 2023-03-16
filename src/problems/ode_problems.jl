@@ -154,19 +154,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         ODEProblem{iip}(ff, u0, tspan, p; kwargs...)
     end
 end
-
-function Base.show(io::IO,
-                   t::Type{ODEProblem{uType, tType, isinplace, P, F, K, PT}}) where {uType,
-                                                                                     tType,
-                                                                                     isinplace,
-                                                                                     P, F,
-                                                                                     K, PT}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "ODEProblem{$uType, $tType, $isinplace, $P, $F, $K, $PT}")
-    else
-        print(io, "ODEProblem{$isinplace,$uType,$tType,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace ODEProblem 3 1 2
 
 """
     ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
