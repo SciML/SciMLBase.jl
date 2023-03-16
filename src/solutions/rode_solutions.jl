@@ -59,17 +59,7 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::S
     return getfield(x, s)
 end
 
-function Base.show(io::IO,
-                   t::RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType,
-                                   DE, AC}) where {T, N, uType, uType2, DType, tType,
-                                                   randType, P, A, IType, DE, AC}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "RODESolution{$T,$N,$uType,$uType2,$DType,$tType,$randType,$P,$A,$IType,$DE,$AC}")
-    else
-        print(io, "RODESolution{$T,$N,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace RODESolution 1 2
 
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
                              continuity = :left) where {deriv}
