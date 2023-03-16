@@ -16,20 +16,7 @@ struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
     end
 end
 
-function Base.show(io::IO,
-                   t::Type{AnalyticalProblem{uType, tType, isinplace, P, F, K}}) where {
-                                                                                        uType,
-                                                                                        tType,
-                                                                                        isinplace,
-                                                                                        P,
-                                                                                        F, K
-                                                                                        }
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "AnalyticalProblem{$uType,$tType,$isinplace,$P,$F,$K}")
-    else
-        print(io, "AnalyticalProblem{$isinplace,$uType,$tType,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace AnalyticalProblem 3 1 2
 
 function AnalyticalProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
