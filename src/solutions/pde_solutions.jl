@@ -50,24 +50,7 @@ struct PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType, ivTy
     stats::S
 end
 
-function Base.show(io::IO,
-                   t::PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType,
-                                            ivType, dvType, P, A, IType}) where {T, N,
-                                                                                 uType,
-                                                                                 Disc, Sol,
-                                                                                 DType,
-                                                                                 tType,
-                                                                                 domType,
-                                                                                 ivType,
-                                                                                 dvType, P,
-                                                                                 A, IType}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "PDETimeSeriesSolution{$T,$N,$uType,$Disc,$Sol,$DType,$tType,$domType,$ivType,$dvType,$P,$A,$IType}")
-    else
-        print(io, "PDETimeSeriesSolution{$T,$N,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace PDETimeSeriesSolution 1 2
 
 """
 Dispatch for the following function should be implemented in each discretizer package, for their relevant metadata type `D`.

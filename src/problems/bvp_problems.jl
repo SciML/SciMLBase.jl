@@ -95,18 +95,7 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
     end
 end
 
-function Base.show(io::IO,
-                   t::BVProblem{uType, tType, isinplace, P, F, bF, PT, K}) where {uType,
-                                                                                  tType,
-                                                                                  isinplace,
-                                                                                  P, F, bF,
-                                                                                  PT, K}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "BVProblem{$uType,$tType,$isinplace,$P,$F,$bF,$PT,$K}")
-    else
-        print(io, "BVProblem{$isinplace,$uType,$tType,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
 function BVProblem(f::AbstractODEFunction, bc, u0, tspan, args...; kwargs...)
     BVProblem{isinplace(f, 4)}(f, bc, u0, tspan, args...; kwargs...)

@@ -32,17 +32,7 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
     stats::S
 end
 
-function Base.show(io::IO,
-                   t::NonlinearSolution{T, N, uType, R, P, A, O, uType2}) where {T, N,
-                                                                                 uType, R,
-                                                                                 P, A, O,
-                                                                                 uType2}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "NonlinearSolution{$T,$N,$uType,$R,$P,$A,$O,$uType2}")
-    else
-        print(io, "NonlinearSolution{$T,$N,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace NonlinearSolution 1 2
 
 const SteadyStateSolution = NonlinearSolution
 

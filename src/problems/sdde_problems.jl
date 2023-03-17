@@ -148,18 +148,7 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     end
 end
 
-function Base.show(io::IO,
-                   t::SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K,
-                                  ND}) where {uType, tType, lType, lType2, isinplace, P, NP,
-                                              F, G, H, K,
-                                              ND}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "SDDEProblem{$uType,$tType,$lType,$lType2,$isinplace,$P,$NP,$F,$G,$H,$K,$ND}")
-    else
-        print(io, "SDDEProblem{$isinplace,$uType,$tType,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace SDDEProblem 5 1 2
 
 function SDDEProblem(f, g, args...; kwargs...)
     SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)

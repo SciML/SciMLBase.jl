@@ -8,13 +8,7 @@ struct NoiseProblem{N <: AbstractNoiseProcess, T, K} <: AbstractNoiseProblem
     kwargs::K
 end
 
-function Base.show(io::IO, t::NoiseProblem{N, T, K}) where {N, T, K}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "NoiseProblem{$N,$T,$K}")
-    else
-        print(io, "NoiseProblem{$N,…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace NoiseProblem 1
 
 @add_kwonly function NoiseProblem(noise, tspan; seed = UInt64(0), kwargs...)
     _tspan = promote_tspan(tspan)
