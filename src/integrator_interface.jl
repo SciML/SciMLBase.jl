@@ -502,6 +502,9 @@ Check state of `integrator` and return one of the
 [Return Codes](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/#retcodes)
 """
 function check_error(integrator::DEIntegrator)
+    if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
+        return integrator.sol.retcode
+    end
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
     if isnan(integrator.dt)
