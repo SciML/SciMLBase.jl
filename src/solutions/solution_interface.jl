@@ -96,8 +96,12 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
             elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
-                if (sym isa Symbol) && has_sys(A.prob.f) && hasproperty(A.prob.f.sys, sym)
-                    return observed(A, getproperty(A.prob.f.sys, sym), :)
+                if (sym isa Symbol) && has_sys(A.prob.f)
+                    if hasproperty(A.prob.f.sys, sym)
+                        return observed(A, getproperty(A.prob.f.sys, sym), :)
+                    else
+                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
+                    end
                 else
                     return observed(A, sym, :)
                 end
