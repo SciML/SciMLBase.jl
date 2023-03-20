@@ -96,7 +96,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
             elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
-                return observed(A, sym, :)
+                if (sym isa Symbol) && has_sys(A.prob.f) && hasproperty(A.prob.f.sys, sym)
+                    return observed(A, getproperty(A.prob.f.sys, sym), :)
+                else
+                    return observed(A, sym, :)
+                end
             end
         else
             observed(A, sym, :)
