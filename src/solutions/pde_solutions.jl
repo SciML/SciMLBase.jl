@@ -95,18 +95,8 @@ struct PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P, A,
     retcode::ReturnCode.T
     stats::S
 end
-
-function Base.show(io::IO,
-                   t::PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P,
-                                        A, IType}) where {T, N, uType, Disc, Sol, domType,
-                                                          ivType, dvType, P, A, IType}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io,
-              "PDENoTimeSolution{$T,$N,$uType,$Disc,$Sol,$domType,$ivType,$dvType,$P,$A,$IType}")
-    else
-        print(io, "PDENoTimeSolution{$T,$N,…}")
-    end
-end
+  
+TruncatedStacktraces.@truncate_stacktrace PDENoTimeSolution 1 2
 
 const PDESolution{T, N, S, D} = Union{PDETimeSeriesSolution{T, N, S, D},
                                       PDENoTimeSolution{T, N, S, D}}
