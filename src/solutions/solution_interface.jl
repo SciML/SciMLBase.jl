@@ -249,12 +249,16 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
                      :f; force = true)
         (idxs !== nothing) &&
-            error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
+            error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")            
         idxs = vars
     end
 
     syms = getsyms(sol)
-    int_vars = interpret_vars(idxs, sol, syms)
+    if idxs isa Symbol
+        int_vars = interpret_vars([idxs], sol, syms)
+    else
+        int_vars = interpret_vars(idxs, sol, syms)
+    end
     strs = cleansyms(syms)
 
     tscale = get(plotattributes, :xscale, :identity)
@@ -456,9 +460,18 @@ function interpret_vars(vars, sol, syms)
                     var_int = tmp
                 end
             elseif issymbollike(var)
-                found = sym_to_index(var, syms)
-                var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
-                          something(found, var)
+                found = sym_to_index(var, syms)                
+                if (var isa Symbol) && has_sys(sol.prob.f)
+                    if hasproperty(sol.prob.f.sys, var)
+                        var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
+                            something(found, getproperty(sol.prob.f.sys, var))
+                    else
+                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
+                    end
+                else
+                    var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
+                            something(found, var)
+                end
             else
                 var_int = var
             end
