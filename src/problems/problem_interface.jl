@@ -85,7 +85,6 @@ function Base.setindex!(prob::AbstractSciMLProblem, val, sym)
             error("Invalid indexing of problem: $sym is not a symbol")
         end
     else
-        println("HERE 2")
         error("Invalid indexing of problem: Problem does not support indexing without a system")
     end
 end
