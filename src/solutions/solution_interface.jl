@@ -158,6 +158,12 @@ end
 
 idxs_initialized(idxs) = isempty(idxs) || !isnothing(first(idxs))
 
+# When you add symbolic save_idxs to a problem, give its solution type a dep_idxs
+# field that is a Ref{Union{Vector{Nothing}, Vector{Int}}}. Then, when you call get_dep_idxs, it will
+# check if the dep_idxs field is initialized. If it is, it will return the value. If it is not,
+# it will call _get_dep_idxs to get the value, set the field, and return the value.
+# You will also need to remove `dense_output = true` from the `build_explicit_observed_function`
+# call in ModelingToolkit in its source system.
 function get_dep_idxs(A::AbstractSciMLSolution)
     if hasfield(typeof(A), :dep_idxs)
         if idxs_initialized(A.dep_idxs[])
