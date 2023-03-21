@@ -468,6 +468,57 @@ function observed(A::DEIntegrator, sym)
     getobserved(A)(sym, A.u, A.p, A.t)
 end
 
+function Base.setindex!(A::DEIntegrator, val, sym)
+    if has_sys(A.f)
+        if issymbollike(sym)
+            params = getparamsyms(A)
+            s = Symbol.(states(A.f.sys))
+            params = Symbol.(params)
+
+            i = findfirst(isequal(Symbol(sym)), s)
+            if !isnothing(i)
+                A.u[i] = val
+                return A
+            elseif sym isa Symbol  # Hanldes input like :X.
+                s_f = Symbol.(getfield.(states(A.f.sys),:f))
+                if count(isequal(Symbol(sym)), s_f) == 1
+                    i = findfirst(isequal(sym), s_f)
+                    A.u[i] = val
+                    return A
+                elseif count(isequal(Symbol(sym)), s_f) > 1
+                    error("The input symbol $(sym) occurs several times among integrator states. Please avoid use Symbol form (:$(sym)).")
+                end              
+            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
+                s_names = Symbol.(A.f.sys.name,:₊,s)
+                if count(isequal(Symbol(sym)), s_names) == 1
+                    i = findfirst(isequal(Symbol(sym)), s_names)
+                    A.u[i] = val
+                    return A
+                end
+            end
+
+            i = findfirst(isequal(Symbol(sym)), params)
+            if !isnothing(i)
+                A.p[i] = val
+                return A
+            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
+                p_names = Symbol.(A.f.sys.name,:₊,params)
+                if count(isequal(Symbol(sym)), p_names) == 1
+                    i = findfirst(isequal(Symbol(sym)), p_names)
+                    A.p[i] = val
+                    return A
+                end
+            end
+            error("Invalid indexing of integrator: $sym is not a state or parameter, it may be an observed variable.")
+        else
+            error("Invalid indexing of integrator: $sym is not a symbol")
+        end
+    else
+        error("Invalid indexing of integrator: Integrator does not support indexing without a system")
+    end
+end
+
+
 ### Integrator traits
 
 has_reinit(i::DEIntegrator) = false
