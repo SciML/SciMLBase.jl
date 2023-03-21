@@ -23,7 +23,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
             elseif count(isequal(Symbol(sym)), p_names) == 1
                 return prob.p[findfirst(isequal(Symbol(sym)), p_names)]
             end
-        elseif (sym isa Symbol) && has_sys(prob.f)   # Handles input like :X (where X is s state). 
+        elseif (sym isa Symbol) && has_sys(prob.f)   # Handles input like :X (where X is a state). 
             s_f = Symbol.(getfield.(states(prob.f.sys),:f))
             s_count = count(isequal(sym), s_f)
             if s_count==1
