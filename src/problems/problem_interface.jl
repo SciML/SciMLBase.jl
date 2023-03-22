@@ -39,7 +39,10 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
     end
 end
 
-function Base.setindex!(prob::AbstractSciMLProblem, val, sym)
+function Base.setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
+    ___internal_setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
+end
+function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
     if has_sys(prob.f)
         if issymbollike(sym)
             params = getparamsyms(prob)
