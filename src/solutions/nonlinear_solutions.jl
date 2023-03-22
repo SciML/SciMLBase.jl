@@ -36,6 +36,8 @@ TruncatedStacktraces.@truncate_stacktrace NonlinearSolution 1 2
 
 const SteadyStateSolution = NonlinearSolution
 
+get_p(p::AbstractNonlinearSolution) = p.prob.p
+
 function build_solution(prob::AbstractNonlinearProblem,
                         alg, u, resid; calculate_error = true,
                         retcode = ReturnCode.Default,
