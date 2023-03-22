@@ -310,13 +310,7 @@ function DiscreteCallback(condition, affect!;
     DiscreteCallback(condition, affect!, initialize, finalize, save_positions)
 end
 
-function Base.show(io::IO, t::Type{DiscreteCallback{F1, F2, F3, F4}}) where {F1, F2, F3, F4}
-    if TruncatedStacktraces.VERBOSE[]
-        print(io, "DiscreteCallback{$F1, $F2, $F3, $F4}")
-    else
-        print(io, "DiscreteCallback{…}")
-    end
-end
+TruncatedStacktraces.@truncate_stacktrace DiscreteCallback
 
 """
 $(TYPEDEF)
