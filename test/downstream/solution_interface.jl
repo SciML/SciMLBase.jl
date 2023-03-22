@@ -6,14 +6,14 @@ using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Te
 @variables s1(t) s2(t)
 D = Differential(t)
 
-eqs = [D(s1) ~ a*s1/(1+s1+s2) - b*s1,
-    D(s2) ~ + c*s2/(1+s1+s2) - d*s2]
+eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
+    D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
 @named population_model = ODESystem(eqs)
 
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]
-p = [a => 2.0, b =>1.0, c=>1., d=>1.0]
+p = [a => 2.0, b => 1.0, c => 1.0, d => 1.0]
 tspan = (0.0, 1000000.0)
 oprob = ODEProblem(population_model, u0, tspan, p)
 sol = solve(oprob, Rodas4())
@@ -23,8 +23,8 @@ sol = solve(oprob, Rodas4())
 @test sol[s1][end] ≈ 1.0
 
 # Tests on SDEProblem
-noiseeqs = [0.1*s1,
-            0.1*s2]
+noiseeqs = [0.1 * s1,
+    0.1 * s2]
 @named noisy_population_model = SDESystem(population_model, noiseeqs)
 sprob = SDEProblem(noisy_population_model, u0, (0.0, 100.0), p)
 sol = solve(sprob, ImplicitEM())
@@ -73,5 +73,5 @@ prob = ODEProblem(sys_simplified, u0, tspan, p)
 sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
-@test in(sol[lorenz1.x],[getindex.(sol.u,1) for i in 1:length(states(sol.prob.f.sys))])
+@test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(states(sol.prob.f.sys))])
 @test_throws ErrorException sol[:x]
