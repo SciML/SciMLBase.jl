@@ -96,7 +96,15 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
             elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
                 return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             else
-                return observed(A, sym, :)
+                if (sym isa Symbol) && has_sys(A.prob.f)
+                    if hasproperty(A.prob.f.sys, sym)
+                        return observed(A, getproperty(A.prob.f.sys, sym), :)
+                    else
+                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
+                    end
+                else
+                    return observed(A, sym, :)
+                end
             end
         else
             observed(A, sym, :)
@@ -246,7 +254,11 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     end
 
     syms = getsyms(sol)
-    int_vars = interpret_vars(idxs, sol, syms)
+    if idxs isa Symbol
+        int_vars = interpret_vars([idxs], sol, syms)
+    else
+        int_vars = interpret_vars(idxs, sol, syms)
+    end
     strs = cleansyms(syms)
 
     tscale = get(plotattributes, :xscale, :identity)
@@ -449,8 +461,17 @@ function interpret_vars(vars, sol, syms)
                 end
             elseif issymbollike(var)
                 found = sym_to_index(var, syms)
-                var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
-                          something(found, var)
+                if (var isa Symbol) && has_sys(sol.prob.f)
+                    if hasproperty(sol.prob.f.sys, var)
+                        var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
+                                  something(found, getproperty(sol.prob.f.sys, var))
+                    else
+                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
+                    end
+                else
+                    var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
+                              something(found, var)
+                end
             else
                 var_int = var
             end

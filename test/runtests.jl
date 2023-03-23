@@ -39,5 +39,6 @@ end
         @time @safetestset "Integer idxs" begin include("downstream/integer_idxs.jl") end
         @time @safetestset "Autodiff Remake" begin include("downstream/remake_autodiff.jl") end
         @time @safetestset "Problem Indexing" begin include("downstream/problem_interface.jl") end
+        @time @safetestset "Solution Indexing" begin include("downstream/solution_interface.jl") end
     end
 end

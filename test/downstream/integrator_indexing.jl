@@ -1,4 +1,84 @@
-using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, Test
+using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
+
+### Tests on non-layered model (everything should work). ###
+
+@parameters t a b c d
+@variables s1(t) s2(t)
+D = Differential(t)
+
+eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
+    D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
+
+@named population_model = ODESystem(eqs)
+
+# Tests on ODEProblem.
+u0 = [s1 => 2.0, s2 => 1.0]
+p = [a => 2.0, b => 1.0, c => 1.0, d => 1.0]
+tspan = (0.0, 1000000.0)
+oprob = ODEProblem(population_model, u0, tspan, p)
+integrator = init(oprob, Rodas4())
+
+@test integrator[a] == integrator[population_model.a] == integrator[:a] == 2.0
+@test integrator[b] == integrator[population_model.b] == integrator[:b] == 1.0
+@test integrator[c] == integrator[population_model.c] == integrator[:c] == 1.0
+@test integrator[d] == integrator[population_model.d] == integrator[:d] == 1.0
+
+@test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 2.0
+@test integrator[s2] == integrator[population_model.s2] == integrator[:s2] == 1.0
+
+step!(integrator, 100.0, true)
+
+@test integrator[a] == integrator[population_model.a] == integrator[:a] == 2.0
+@test integrator[b] == integrator[population_model.b] == integrator[:b] == 1.0
+@test integrator[c] == integrator[population_model.c] == integrator[:c] == 1.0
+@test integrator[d] == integrator[population_model.d] == integrator[:d] == 1.0
+
+@test integrator[s1] == integrator[population_model.s1] == integrator[:s1] != 2.0
+@test integrator[s2] == integrator[population_model.s2] == integrator[:s2] != 1.0
+
+integrator[a] = 10.0
+@test integrator[a] == integrator[population_model.a] == integrator[:a] == 10.0
+integrator[population_model.b] = 20.0
+@test integrator[b] == integrator[population_model.b] == integrator[:b] == 20.0
+integrator[c] = 30.0
+@test integrator[c] == integrator[population_model.c] == integrator[:c] == 30.0
+
+integrator[s1] = 10.0
+@test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 10.0
+integrator[population_model.s2] = 10.0
+@test integrator[s2] == integrator[population_model.s2] == integrator[:s2] == 10.0
+integrator[:s1] = 1.0
+@test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 1.0
+
+# Tests on SDEProblem
+noiseeqs = [0.1 * s1,
+    0.1 * s2]
+@named noisy_population_model = SDESystem(population_model, noiseeqs)
+sprob = SDEProblem(noisy_population_model, u0, (0.0, 100.0), p)
+integrator = init(sprob, ImplicitEM())
+
+step!(integrator, 100.0, true)
+
+@test integrator[a] == integrator[noisy_population_model.a] == integrator[:a] == 2.0
+@test integrator[b] == integrator[noisy_population_model.b] == integrator[:b] == 1.0
+@test integrator[c] == integrator[noisy_population_model.c] == integrator[:c] == 1.0
+@test integrator[d] == integrator[noisy_population_model.d] == integrator[:d] == 1.0
+@test integrator[s1] == integrator[noisy_population_model.s1] == integrator[:s1] != 2.0
+@test integrator[s2] == integrator[noisy_population_model.s2] == integrator[:s2] != 1.0
+
+integrator[a] = 10.0
+@test integrator[a] == integrator[noisy_population_model.a] == integrator[:a] == 10.0
+integrator[noisy_population_model.b] = 20.0
+@test integrator[b] == integrator[noisy_population_model.b] == integrator[:b] == 20.0
+integrator[c] = 30.0
+@test integrator[c] == integrator[noisy_population_model.c] == integrator[:c] == 30.0
+
+integrator[s1] = 10.0
+@test integrator[s1] == integrator[noisy_population_model.s1] == integrator[:s1] == 10.0
+integrator[noisy_population_model.s2] = 10.0
+@test integrator[s2] == integrator[noisy_population_model.s2] == integrator[:s2] == 10.0
+integrator[:s1] = 1.0
+@test integrator[s1] == integrator[noisy_population_model.s1] == integrator[:s1] == 1.0
 
 @parameters t σ ρ β
 @variables x(t) y(t) z(t)
@@ -93,6 +173,33 @@ integrator2 = init(prob2, Tsit5())
 
     @test integrator1.u ≈ integrator2.u
 end
+
+# Tests various interface methods:
+@test_throws Any integrator[σ]
+@test in(integrator[lorenz1.σ], integrator.p)
+@test in(integrator[lorenz2.σ], integrator.p)
+@test_throws Any sol[:σ]
+
+@test_throws Any integrator[x]
+@test in(integrator[lorenz1.x], integrator.u)
+@test in(integrator[lorenz2.x], integrator.u)
+@test_throws Any sol[:x]
+
+@test_throws Any integrator[σ]=2.0
+integrator[lorenz1.σ] = 2.0
+@test integrator[lorenz1.σ] == 2.0
+@test integrator[lorenz2.σ] != 2.0
+integrator[lorenz2.σ] = 2.0
+@test integrator[lorenz2.σ] == 2.0
+@test_throws Any sol[:σ]
+
+@test_throws Any integrator[x]=2.0
+integrator[lorenz1.x] = 2.0
+@test integrator[lorenz1.x] == 2.0
+@test integrator[lorenz2.x] != 2.0
+integrator[lorenz2.x] = 2.0
+@test integrator[lorenz2.x] == 2.0
+@test_throws Any sol[:x]
 
 # Check if indexing using variable names from interpolated integrator works
 # It doesn't because this returns a Vector{Vector{T}} and not a DiffEqArray
