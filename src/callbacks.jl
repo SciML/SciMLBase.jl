@@ -1,7 +1,7 @@
 # Necessary to have initialize set u_modified to false if all don't do anything
 # otherwise unnecessary save
-INITIALIZE_DEFAULT(cb, u, t, integrator) = u_modified!(integrator, false)
-FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
+INITIALIZE_DEFAULT(cb, affect!, u, t, integrator) = u_modified!(integrator, false)
+FINALIZE_DEFAULT(cb, affect!, u, t, integrator) = nothing
 
 @enum RootfindOpt::Int8 begin
     NoRootFind = 0
