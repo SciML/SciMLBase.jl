@@ -748,6 +748,12 @@ function wrapfun_oop end
 function wrapfun_iip end
 function unwrap_fw end
 
+@static if !isdefined(Base, :get_extension)
+    function __init__()
+        @require ChainRulesCore="d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4" begin include("../ext/SciMLBaseChainRulesCore.jl") end
+    end
+end
+
 export ReturnCode
 
 export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
