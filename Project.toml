@@ -60,4 +60,4 @@ StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Pkg", "SafeTestsets", "Test", "StaticArrays"]
+test = ["Pkg", "SafeTestsets", "Test", "StaticArrays", "StochasticDiffEq"]

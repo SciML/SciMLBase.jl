@@ -44,6 +44,8 @@ function EnsembleSolution(sim::T, elapsedTime,
                      typeof(sim)}(sim, elapsedTime, converged)
 end
 
+Base.reverse(sim::EnsembleSolution) = EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged)\
+
 """
 $(TYPEDEF)
 """
