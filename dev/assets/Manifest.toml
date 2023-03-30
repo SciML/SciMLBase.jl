@@ -585,9 +585,9 @@ uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.5+0"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "d78db6df34313deaca15c5c0b9ff562c704fe1ab"
+git-tree-sha1 = "d321bf2de576bf25ec4d3e4360faca399afca282"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.5.0"
+version = "1.6.0"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
@@ -686,9 +686,9 @@ version = "1.3.3"
 
 [[deps.RecursiveArrayTools]]
 deps = ["Adapt", "ArrayInterface", "DocStringExtensions", "GPUArraysCore", "IteratorInterfaceExtensions", "LinearAlgebra", "RecipesBase", "Requires", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables"]
-git-tree-sha1 = "6131b752a3d1c4748424ea9e6d8df789cf4f6f9d"
+git-tree-sha1 = "7d235287e69e06e019711c8f86e52e758a394fce"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "2.38.1"
+version = "2.38.2"
 
 [[deps.Reexport]]
 git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
