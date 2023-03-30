@@ -178,3 +178,5 @@ function Base.summary(io::IO, prob::AbstractPDEProblem)
           type_color, nameof(typeof(prob)),
           no_color)
 end
+
+Base.copy(p::SciMLBase.NullParameters) = p
