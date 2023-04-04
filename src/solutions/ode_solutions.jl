@@ -27,7 +27,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
-                   AC <: Union{Nothing, Vector{Int}}} <:
+                   AC <: Union{Nothing, Vector{Int}}, SSS} <:
        AbstractODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -42,6 +42,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
     stats::S
     alg_choice::AC
     retcode::ReturnCode.T
+    subsolutions::Union{SSS, Nothing}
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
@@ -53,12 +54,16 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Sy
 end
 
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-                           tslocation, stats, alg_choice, retcode) where {T, N}
+                           tslocation, stats, alg_choice, retcode,
+                           subsolutions = nothing) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
                        typeof(k), typeof(prob), typeof(alg), typeof(interp),
                        typeof(stats),
-                       typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
-                                           dense, tslocation, stats, alg_choice, retcode)
+                       typeof(alg_choice), typeof(subsolutions)}(u, u_analytic, errors, t,
+                                                                 k, prob, alg, interp,
+                                                                 dense, tslocation, stats,
+                                                                 alg_choice, retcode,
+                                                                 subsolutions)
 end
 
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
