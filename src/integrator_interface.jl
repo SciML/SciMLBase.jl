@@ -483,7 +483,7 @@ function Base.setindex!(A::DEIntegrator, val, sym)
                 A.u[i] = val
                 return A
             elseif sym isa Symbol  # Hanldes input like :X.
-                s_f = Symbol.(getfield.(states(A.f.sys), :f))
+                s_f = Symbol.(getproperty.(states(A.f.sys), :f))
                 if count(isequal(Symbol(sym)), s_f) == 1
                     i = findfirst(isequal(sym), s_f)
                     A.u[i] = val
