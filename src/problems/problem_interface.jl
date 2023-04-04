@@ -24,7 +24,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
                 return prob.p[findfirst(isequal(Symbol(sym)), p_names)]
             end
         elseif (sym isa Symbol) && has_sys(prob.f)   # Handles input like :X (where X is a state). 
-            s_f = Symbol.(getfield.(states(prob.f.sys), :f))
+            s_f = Symbol.(getproperty.(states(prob.f.sys), :f))
             s_count = count(isequal(sym), s_f)
             if s_count == 1
                 return prob.u0[findfirst(isequal(sym), s_f)]
@@ -54,7 +54,7 @@ function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
                 prob.u0[i] = val
                 return prob
             elseif sym isa Symbol  # Hanldes input like :X.
-                s_f = Symbol.(getfield.(states(prob.f.sys), :f))
+                s_f = Symbol.(getproperty.(states(prob.f.sys), :f))
                 if count(isequal(Symbol(sym)), s_f) == 1
                     i = findfirst(isequal(sym), s_f)
                     prob.u0[i] = val
