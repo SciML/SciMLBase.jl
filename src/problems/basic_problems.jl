@@ -547,25 +547,25 @@ Documentation Page: https://docs.sciml.ai/Optimization/stable/API/optimization_p
 
 ## Mathematical Specification of an Optimization Problem
 
-To define an Optimization Problem, you simply need to give the function ``f``
-which defines the cost function to minimize:
+To define an optimization problem, you need the objective function ``f``
+which is minimized over the domain of ``u``, the collection of optimization variables:
 
 ```math
 min_u f(u,p)
 ```
 
-``u₀`` is an initial guess of the minimum. `f` should be specified as `f(u,p)`
-and `u₀` should be an AbstractArray (or number) whose geometry matches the
-desired geometry of `u`. Note that we are not limited to numbers or vectors
+Say ``u₀`` is an initial guess for the minimizer. `f` should be specified as `f(u,p)`
+and `u₀` should be an `AbstractArray` whose geometry matches the
+desired geometry of `u`. Note that we are not limited to vectors
 for `u₀`; one is allowed to provide `u₀` as arbitrary matrices /
-higher-dimension tensors as well.
+higher-dimension tensors as well if the optimization solver supports it.
 
 ## Problem Type
 
 ### Constructors
 
 ```julia
-OptimizationProblem{iip}(f, u0, p = SciMLBase.NullParameters(),;
+OptimizationProblem{iip}(f, x, p = SciMLBase.NullParameters(),;
                         lb = nothing,
                         ub = nothing,
                         lcons = nothing,
@@ -574,27 +574,27 @@ OptimizationProblem{iip}(f, u0, p = SciMLBase.NullParameters(),;
                         kwargs...)
 ```
 
-`isinplace` optionally sets whether the function is in-place or not. This is
-determined automatically, but not inferred. Note that for OptimizationProblem,
-in-place only refers to the Jacobian and Hessian functions, and thus by default
-if the `OptimizationFunction` is not defined directly then `iip = true` is
-done by default.
+`isinplace` optionally sets whether the function is in-place or not.
+This is determined automatically, but not inferred. Note that for OptimizationProblem,
+in-place refers to the objective's derivative functions, the constraint function
+and its derivatives. `OptimizationProblem` currently only supports in-place.
 
-Parameters are optional, and if not given, then a `NullParameters()` singleton
+Parameters `p` are optional, and if not given, then a `NullParameters()` singleton
 will be used, which will throw nice errors if you try to index non-existent
-parameters. Any extra keyword arguments are passed on to the solvers. For example,
-if you set a `callback` in the problem, then that `callback` will be added in
-every solve call.
+parameters.
 
 `lb` and `ub` are the upper and lower bounds for box constraints on the
-optimization. They should be an `AbstractArray` matching the geometry of `u`,
-where `(lb[I],ub[I])` is the box constraint (lower and upper bounds)
-for `u[I]`.
+optimization variables. They should be an `AbstractArray` matching the geometry of `u`,
+where `(lb[i],ub[i])` is the box constraint (lower and upper bounds) for `u[i]`.
 
-`lcons` and `ucons` are the upper and lower bounds for equality constraints on the
-optimization. They should be an `AbstractArray` matching the geometry of `u`,
-where `(lcons[I],ucons[I])` is the constraint (lower and upper bounds)
-for `cons[I]`.
+`lcons` and `ucons` are the upper and lower bounds incase of inequality constraints on the
+optimization and if they are set to be equal then it represents an equality constraint.
+They should be an `AbstractArray` matching the geometry of `u`, where `(lcons[i],ucons[i])`
+are the lower and upper bounds for `cons[i]`.
+
+The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](@ref)
+to specify the objective function and its derivatives either by passing 
+predefined functions for them or automatically generated using the [`ADType`](@ref). 
 
 If `f` is a standard Julia function, it is automatically transformed into an
 `OptimizationFunction` with `NoAD()`, meaning the derivative functions are not
@@ -605,21 +605,21 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 ### Fields
 
 * `f`: the function in the problem.
-* `u0`: the initial guess for the optima.
-* `p`: the parameters for the problem. Defaults to `NullParameters`.
-* `lb`: the lower bounds for the optimization of `u`.
-* `ub`: the upper bounds for the optimization of `u`.
-* `int`: integrality indicator for `u`.
-* `lcons`: the vector of lower bounds for the constraints passed to [`OptimizationFunction`](@ref).
+* `u0`: the initial guess for the optimization variables.
+* `p`: the constant parameters used for defining the problem. Defaults to `NullParameters`.
+* `lb`: the lower bounds for the optimization variables `u`.
+* `ub`: the upper bounds for the optimization variables `u`.
+* `int`: integrality indicator for `u`. If `int[i] == 1`, then `u[i]` is an integer variable.
+    Defaults to `nothing`, implying no integrality constraints.
+* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
     Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
 * `ucons`: the vector of upper bounds for the constraints passed to [`OptimizationFunction`](@ref).
     Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
 * `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
-* `kwargs`: the keyword arguments passed on to the solvers.
 
 ## Inequality and Equality Constraints
 
-Both inequality and equality constraints are defined by the `f.cons` function in the `OptimizationFunction`
+Both inequality and equality constraints are defined by the `f.cons` function in the [`OptimizationFunction`](@ref)
 description of the problem structure. This `f.cons` is given as a function `f.cons(u,p)` which computes
 the value of the constraints at `u`. For example, take `f.cons(u,p) = u[1] - u[2]`.
 With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
