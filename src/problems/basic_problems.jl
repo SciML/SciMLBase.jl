@@ -565,7 +565,7 @@ higher-dimension tensors as well if the optimization solver supports it.
 ### Constructors
 
 ```julia
-OptimizationProblem{iip}(f, x, p = SciMLBase.NullParameters(),;
+OptimizationProblem{iip}(f, u0, p = SciMLBase.NullParameters(),;
                         lb = nothing,
                         ub = nothing,
                         lcons = nothing,

@@ -2106,7 +2106,8 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
 struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2, O,
-                            EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
+                            EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
+       AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
@@ -2124,6 +2125,12 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2
     expr::EX
     cons_expr::CEX
     sys::SYS
+    lag_h::LH
+    lag_hess_prototype::LHP
+    hess_colorvec::HCV
+    cons_jac_colorvec::CJCV
+    cons_hess_colorvec::CHCV
+    lag_hess_colorvec::LHCV
 end
 
 TruncatedStacktraces.@truncate_stacktrace OptimizationFunction 1 2
@@ -3918,7 +3925,14 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                    observed = __has_observed(f) ? f.observed :
                                               DEFAULT_OBSERVED_NO_TIME,
                                    expr = nothing, cons_expr = nothing,
-                                   sys = __has_sys(f) ? f.sys : nothing) where {iip}
+                                   sys = __has_sys(f) ? f.sys : nothing,
+                                   lag_h = nothing, lag_hess_prototype = nothing,
+                                   hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                   cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
+                                                       nothing,
+                                   cons_hess_colorvec = __has_colorvec(f) ? f.colorvec :
+                                                        nothing,
+                                   lag_hess_colorvec = nothing) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
                          typeof(hv),
@@ -3926,12 +3940,17 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                          typeof(hess_prototype),
                          typeof(cons_jac_prototype), typeof(cons_hess_prototype),
                          typeof(syms), typeof(paramsyms), typeof(observed),
-                         typeof(expr), typeof(cons_expr), typeof(sys)
+                         typeof(expr), typeof(cons_expr), typeof(sys), typeof(lag_h),
+                         typeof(lag_hess_prototype), typeof(hess_colorvec),
+                         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
+                         typeof(lag_hess_colorvec)
                          }(f, adtype, grad, hess,
                            hv, cons, cons_j, cons_h,
                            hess_prototype, cons_jac_prototype,
                            cons_hess_prototype, syms,
-                           paramsyms, observed, expr, cons_expr, sys)
+                           paramsyms, observed, expr, cons_expr, sys,
+                           lag_h, lag_hess_prototype, hess_colorvec, cons_jac_colorvec,
+                           cons_hess_colorvec, lag_hess_colorvec)
 end
 
 function BVPFunction{iip, specialize, twopoint}(f, bc;
