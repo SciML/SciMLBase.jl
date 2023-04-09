@@ -145,7 +145,7 @@ See also [`solve(prob::OptimizationProblem, alg, args...; kwargs...)`](@ref)
 """
 function init(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationCache
     _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
-    cache = __init(prob, alg, args...; kwargs...)
+    cache = __init(prob, alg, args...; prob.kwargs..., kwargs...)
     return cache
 end
 
