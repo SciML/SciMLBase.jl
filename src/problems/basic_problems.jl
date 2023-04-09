@@ -554,7 +554,7 @@ which is minimized over the domain of ``u``, the collection of optimization vari
 min_u f(u,p)
 ```
 
-Say ``u₀`` is an initial guess for the minimizer. `f` should be specified as `f(u,p)`
+``u₀`` is an initial guess for the minimizer. `f` should be specified as `f(u,p)`
 and `u₀` should be an `AbstractArray` whose geometry matches the
 desired geometry of `u`. Note that we are not limited to vectors
 for `u₀`; one is allowed to provide `u₀` as arbitrary matrices /
