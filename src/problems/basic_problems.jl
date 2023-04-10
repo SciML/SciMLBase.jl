@@ -558,7 +558,7 @@ min_u f(u,p)
 and `u₀` should be an `AbstractArray` whose geometry matches the
 desired geometry of `u`. Note that we are not limited to vectors
 for `u₀`; one is allowed to provide `u₀` as arbitrary matrices /
-higher-dimension tensors as well if the optimization solver supports it.
+higher-dimension tensors as well.
 
 ## Problem Type
 
@@ -609,7 +609,7 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `p`: the constant parameters used for defining the problem. Defaults to `NullParameters`.
 * `lb`: the lower bounds for the optimization variables `u`.
 * `ub`: the upper bounds for the optimization variables `u`.
-* `int`: integrality indicator for `u`. If `int[i] == 1`, then `u[i]` is an integer variable.
+* `int`: integrality indicator for `u`. If `int[i] == true`, then `u[i]` is an integer variable.
     Defaults to `nothing`, implying no integrality constraints.
 * `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
     Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)

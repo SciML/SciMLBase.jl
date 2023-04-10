@@ -2060,9 +2060,6 @@ function described in [Callback Functions](@ref).
   This is defined as an array of matrices, where `hess[i]` is the Hessian w.r.t. the `i`th output.
   For example, if the Hessian is sparse, then `hess` is a `Vector{SparseMatrixCSC}`.
   The default is `nothing`, which means a dense constraint Hessian.
-
-When [Symbolic Problem Building with ModelingToolkit](@ref) interface is used the following arguments are also relevant:
-
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
@@ -2095,7 +2092,7 @@ own dispatches below in the [Automatic Differentiation Construction Choice Recom
 ## iip: In-Place vs Out-Of-Place
 
 For more details on this argument, see the ODEFunction documentation.
-Note that currently `OptimizationFunction` only supports in-place.
+Note that currently Optimization.jl only supports in-place.
 
 ## specialize: Controlling Compilation and Specialization
 
