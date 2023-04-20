@@ -587,7 +587,7 @@ function check_error(integrator::DEIntegrator)
          true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
         if integrator.opts.verbose
             if isdefined(integrator, :EEst)
-                EEst = ", and EEst = $(integrator.EEst)"
+                EEst = ", and step error estimate = $(integrator.EEst)"
             else
                 EEst = ""
             end
