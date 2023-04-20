@@ -586,7 +586,12 @@ function check_error(integrator::DEIntegrator)
          integrator.t + integrator.dt < integrator.tdir * first(integrator.opts.tstops) :
          true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
         if integrator.opts.verbose
-            @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t). Aborting. There is either an error in your model specification or the true solution is unstable.")
+            if isdefined(integrator, :EEst)
+                EEst = ", and EEst = $(integrator.EEst)"
+            else
+                EEst = ""
+            end
+            @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
         end
         return ReturnCode.DtLessThanMin
     end
