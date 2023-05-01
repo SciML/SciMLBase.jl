@@ -48,6 +48,15 @@ function Base.reverse(sim::EnsembleSolution)
     EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged)
 end
 
+Base.@propagate_inbounds function Base.getindex(A::SciMLBase.AbstractEnsembleSolution, sym)
+    map(sol -> getindex(sol, sym), A.u)
+end
+
+Base.@propagate_inbounds function Base.getindex(A::SciMLBase.AbstractEnsembleSolution{T, N},
+                                                i::Int) where {T, N}
+    A.u[i]
+end
+
 """
 $(TYPEDEF)
 """
