@@ -2019,7 +2019,13 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           cons_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing,
                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
-                          observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED_NO_TIME)
+                          observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED_NO_TIME,
+                          lag_h = nothing,
+                          hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                          cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                          cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                          lag_hess_colorvec = nothing,
+                          sys = __has_sys(f) ? f.sys : nothing)
 ```
 
 ## Positional Arguments
@@ -2060,6 +2066,23 @@ function described in [Callback Functions](@ref).
   This is defined as an array of matrices, where `hess[i]` is the Hessian w.r.t. the `i`th output.
   For example, if the Hessian is sparse, then `hess` is a `Vector{SparseMatrixCSC}`.
   The default is `nothing`, which means a dense constraint Hessian.
+- `lag_h(res,x,sigma,mu,p)` or `res=lag_h(x,sigma,mu,p)`: the Hessian of the Lagrangian,
+  where `sigma` is a multiplier of the cost function and `mu` are the Lagrange multipliers
+  multiplying the constraints. This can be provided instead of `hess` and `cons_h`
+  to solvers that directly use the Hessian of the Lagrangian.
+- `hess_colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `hess_prototype`. This specializes the Hessian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+- `cons_jac_colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `cons_jac_prototype`.
+- `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for
+  the sparsity pattern of the `cons_hess_prototype`.
+
+When [Symbolic Problem Building with ModelingToolkit](@ref) interface is used the following arguments are also relevant:
+
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
   values, allowing `sol[:x]` in the solution and automatically naming values in plots.
