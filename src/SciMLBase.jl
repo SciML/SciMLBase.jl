@@ -20,6 +20,7 @@ import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
 import TruncatedStacktraces
+import ADTypes: AbstractADType
 
 using Reexport
 using SciMLOperators
@@ -600,13 +601,6 @@ abstract type AbstractHistoryFunction end
 $(TYPEDEF)
 """
 abstract type AbstractReactionNetwork <: Function end
-
-"""
-$(TYPEDEF)
-
-Base type for AD choices.
-"""
-abstract type AbstractADType end
 
 """
 $(TYPEDEF)
