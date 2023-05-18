@@ -39,6 +39,7 @@ jobs:
           - {user: SciML, repo: Integrals.jl, group: All}
           - {user: SciML, repo: BoundaryValueDiffEq.jl, group: All}
           - {user: SciML, repo: ModelingToolkit.jl, group: All}
+          - {user: SciML, repo: ModelingToolkitStandardLibrary.jl, group: All}
           - {user: SciML, repo: StochasticDelayDiffEq.jl, group: All}
           - {user: SciML, repo: SimpleNonlinearSolve.jl, group: All}
           - {user: SciML, repo: SimpleDiffEq.jl, group: All}
