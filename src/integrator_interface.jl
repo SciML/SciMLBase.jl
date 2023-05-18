@@ -284,7 +284,7 @@ algorithm to use.
 function initialize_dae!(integrator::DEIntegrator)
     error("initialize_dae!: method has not been implemented for the integrator")
 end
-function initialize_dae!(integrator::DEIntegrator, initializealg::NoInit)
+function initialize_dae!(integrator::DEIntegrator, initializealg)
 end
 
 """
