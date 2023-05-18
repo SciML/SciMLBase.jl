@@ -30,6 +30,7 @@ Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 TruncatedStacktraces = "781d530d-4396-4725-bb49-402e4bee1e77"
 
 [compat]
+ADTypes = "0.1.3"
 ArrayInterface = "6, 7"
 CommonSolve = "0.2"
 ConstructionBase = "1"
