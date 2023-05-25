@@ -6,13 +6,12 @@ Statistics from the nonlinear equation solver about the solution process.
 - nf: Number of function evaluations.
 - nsolve: The number of linear solves `W\b` required for the integration.
 - njacs: Number of Jacobians calculated during the integration.
-- nnonliniter: Total number of iterations for the nonlinear solvers.
+- nsteps: Total number of iterations for the nonlinear solvers.
 """
 mutable struct NLStats
     nf::Int
     nsolve::Int
     njacs::Int
-    nnonliniter::Int
     nsteps::Int
 end
 
