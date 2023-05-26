@@ -42,7 +42,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
     stats::S
     alg_choice::AC
     retcode::ReturnCode.T
-    subsolutions::Union{SSS, Nothing}
+    subsolutions::SSS
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
