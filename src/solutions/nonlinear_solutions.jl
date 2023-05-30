@@ -4,14 +4,16 @@ $(TYPEDEF)
 Statistics from the nonlinear equation solver about the solution process.
 ## Fields
 - nf: Number of function evaluations.
-- nsolve: The number of linear solves `W\b` required for the integration.
-- njacs: Number of Jacobians calculated during the integration.
-- nsteps: Total number of iterations for the nonlinear solvers.
+- njacs: Number of Jacobians created during the solve.
+- nfactors: Number of factorzations of the jacobian required for the solve.
+- nsolve: Number of linear solves `W\b` required for the solve.
+- nsteps: Total number of iterations for the nonlinear solver.
 """
 mutable struct NLStats
     nf::Int
-    nsolve::Int
     njacs::Int
+    nfactors::Int
+    nsolve::Int
     nsteps::Int
 end
 
