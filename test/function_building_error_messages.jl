@@ -309,6 +309,7 @@ DAEFunction(dfoop, vjp = dvjp)
 dvjp(res, du, u, v, p, gamma, t) = [1.0]
 DAEFunction(dfiip, vjp = dvjp)
 DAEFunction(dfoop, vjp = dvjp)
+DAEFunction{true, SciMLBase.NoSpecialize}(dfiip, observed = 1)
 
 # DDEFunction
 
