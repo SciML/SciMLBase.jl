@@ -3775,9 +3775,11 @@ for S in [:ODEFunction
           :NonlinearFunction
           :IntervalNonlinearFunction
           :IncrementingODEFunction]
-    @eval begin function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
-                                                                                  iip
-                                                                                  }
-        (args...) -> $S{iip, FullSpecialize, map(typeof, args)...}(args...)
-    end end
+    @eval begin
+        function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
+                                                                          iip
+                                                                          }
+            (args...) -> $S{iip, FullSpecialize, map(typeof, args)...}(args...)
+        end
+    end
 end
