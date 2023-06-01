@@ -454,11 +454,6 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
                 return A.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
             elseif (sym isa Symbol) && has_sys(A.f) && hasproperty(A.f.sys, sym)   # Handles input like :X (where X is a state). 
                 return observed(A, getproperty(A.f.sys, sym))
-            elseif has_sys(A.f) && (count('₊', String(Symbol(sym))) == 1) &&
-                   (count(isequal(Symbol(sym)),
-                          Symbol.(A.f.sys.name, :₊, getparamsyms(A))) == 1)   # Handles input like sys.X (where X is a parameter).  
-                return A.p[findfirst(isequal(Symbol(sym)),
-                                     Symbol.(A.f.sys.name, :₊, getparamsyms(A)))]
             else
                 return observed(A, sym)
             end
