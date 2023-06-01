@@ -3180,8 +3180,8 @@ function DAEFunction{iip, specialize}(f;
                     Any, typeof(_colorvec), Any}(f, analytic, tgrad, jac, jvp,
                                                  vjp, jac_prototype, sparsity,
                                                  Wfact, Wfact_t,
-                                                 paramjac, observed, syms,
-                                                 indepsym, paramsyms, _colorvec, sys)
+                                                 paramjac, syms,
+                                                 indepsym, paramsyms, observed, _colorvec, sys)
     else
         DAEFunction{iip, specialize, typeof(f), typeof(analytic), typeof(tgrad),
                     typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
@@ -3194,7 +3194,28 @@ function DAEFunction{iip, specialize}(f;
                                  _colorvec, sys)
     end
 end
-
+struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S, S2,
+                   S3, O, TCV,
+                   SYS} <:
+       AbstractDAEFunction{iip}
+    f::F
+    analytic::Ta
+    tgrad::Tt
+    jac::TJ
+    jvp::JVP
+    vjp::VJP
+    jac_prototype::JP
+    sparsity::SP
+    Wfact::TW
+    Wfact_t::TWt
+    paramjac::TPJ
+    syms::S
+    indepsym::S2
+    paramsyms::S3
+    observed::O
+    colorvec::TCV
+    sys::SYS
+end
 function DAEFunction{iip}(f; kwargs...) where {iip}
     DAEFunction{iip, FullSpecialize}(f; kwargs...)
 end
