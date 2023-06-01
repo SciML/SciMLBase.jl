@@ -3179,7 +3179,7 @@ function DAEFunction{iip, specialize}(f;
                     typeof(indepsym), typeof(paramsyms),
                     Any, typeof(_colorvec), Any}(f, analytic, tgrad, jac, jvp,
                                                  vjp, jac_prototype, sparsity,
-                                                 Wfact, Wfact_t,paramjac, syms,
+                                                 Wfact, Wfact_t, paramjac, syms,
                                                  indepsym, paramsyms, observed,
                                                  _colorvec, sys)
     else
