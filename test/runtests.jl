@@ -27,6 +27,7 @@ end
         @time @safetestset "DiffEqOperator tests" begin include("diffeqoperator.jl") end
         @time @safetestset "Solution interface" begin include("solution_interface.jl") end
         @time @safetestset "DE function conversion" begin include("convert_tests.jl") end
+        @time @safetestset "Parameter Type Info Messages" begin include("problem_paramtype_info_messages.jl") end
     end
 
     if !is_APPVEYOR && GROUP == "Downstream"

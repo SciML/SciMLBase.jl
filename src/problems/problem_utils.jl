@@ -180,3 +180,19 @@ function Base.summary(io::IO, prob::AbstractPDEProblem)
 end
 
 Base.copy(p::SciMLBase.NullParameters) = p
+
+should_warn_paramtype(p::AbstractArray) = isabstracttype(eltype(p))
+should_warn_paramtype(p) = false # don't warn for tuples or dicts
+
+const PARAMTYPE_INFO_MESSAGE = "Using arrays to store parameters of different types can hurt performance. Consider using tuples instead."
+
+"""
+    info_paramtype(p)
+
+Inspect the type of `p` and emit a warning if it could hurt performance when used to hold problem parameters.
+"""
+function info_paramtype(p)
+    if should_warn_paramtype(p)
+        @info(PARAMTYPE_INFO_MESSAGE)
+    end
+end
