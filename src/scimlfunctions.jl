@@ -2215,7 +2215,7 @@ function ODEFunction{iip, specialize}(f;
         if iip
             jac = update_coefficients! #(J,u,p,t)
         else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+            jac = (u, p, t) -> update_coefficients(deepcopy(jac_prototype), u, p, t)
         end
     end
 
