@@ -673,6 +673,7 @@ include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
 include("operators/common_defaults.jl")
 include("symbolic_utils.jl")
+include("performance_warnings.jl")
 
 include("problems/discrete_problems.jl")
 include("problems/implicit_discrete_problems.jl")
