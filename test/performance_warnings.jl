@@ -6,6 +6,7 @@ using SciMLBase: should_warn_paramtype, warn_paramtype, WARN_PARAMTYPE_MESSAGE
 @test should_warn_paramtype([1,"2"]) == true
 @test should_warn_paramtype([1,2.0]) == false
 @test should_warn_paramtype(SciMLBase.NullParameters()) == false
+@test should_warn_paramtype(nothing) == false
 @test should_warn_paramtype(()) == false
 @test should_warn_paramtype((1,"2")) == false
 @test should_warn_paramtype(Dict(:a => 1, :b => "2")) == true
@@ -13,7 +14,10 @@ using SciMLBase: should_warn_paramtype, warn_paramtype, WARN_PARAMTYPE_MESSAGE
 @test should_warn_paramtype(([1,2.0],[3,"4"])) == true
 
 @test_logs (:info, WARN_PARAMTYPE_MESSAGE) warn_paramtype([1,"2"])
-# Any way to test that some log does not get emmitted?
+@test_logs warn_paramtype((1,"2"))
+@test_logs warn_paramtype([1,2])
+@test_logs warn_paramtype([1,"2"], false)
+@test_logs warn_paramtype((1,"2"), false)
 
 
 f(x,p,t) = x
