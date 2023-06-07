@@ -58,8 +58,8 @@ limitations.
   default.
 * `AutoSpecialize` does not wrap cases where `f isa AbstractSciMLOperator`
 * By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-  `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are pspecialized
-  by the solver libraries. Other forms can be pspecialize specialized with
+  `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are specialized
+  by the solver libraries. Other forms can be specialized with
   `AutoSpecialize`, but must be done in the precompilation of downstream libraries.
 * `AutoSpecialize`d functions are manually unwrapped in adjoint methods in
   SciMLSensitivity.jl in order to allow compiler support for automatic differentiation.
