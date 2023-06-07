@@ -17,6 +17,7 @@ end
 
 @time begin
     if GROUP == "Core" || GROUP == "All"
+        @time @safetestset "Aqua" begin include("aqua.jl") end
         @time @safetestset "Display" begin include("display.jl") end
         @time @safetestset "Existence functions" begin include("existence_functions.jl") end
         @time @safetestset "Function Building Error Messages" begin include("function_building_error_messages.jl") end

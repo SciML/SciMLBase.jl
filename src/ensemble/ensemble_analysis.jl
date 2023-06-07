@@ -360,7 +360,7 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
     end
 end
 
-export get_timestep, get_timepoint, apply_timestep, apply_timepoint,
+export get_timestep, get_timepoint,
        componentwise_vectors_timestep, componentwise_vectors_timepoint
 
 export componentwise_mean, componentwise_meanvar
