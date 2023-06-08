@@ -61,6 +61,7 @@ struct LinearProblem{uType, isinplace, F, bType, P, K} <:
     kwargs::K
     @add_kwonly function LinearProblem{iip}(A, b, p = NullParameters(); u0 = nothing,
                                             kwargs...) where {iip}
+        warn_paramtype(p)
         new{typeof(u0), iip, typeof(A), typeof(b), typeof(p), typeof(kwargs)}(A, b, u0, p,
                                                                               kwargs)
     end
@@ -147,6 +148,7 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
                                                        p = NullParameters(),
                                                        problem_type = StandardNonlinearProblem();
                                                        kwargs...) where {iip}
+        warn_paramtype(p)
         new{iip, typeof(tspan), typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f, tspan, p, problem_type, kwargs)
     end
@@ -238,6 +240,7 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
                                                p = NullParameters(),
                                                problem_type = StandardNonlinearProblem();
                                                kwargs...) where {iip}
+        warn_paramtype(p)
         new{typeof(u0), iip, typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f, u0, p, problem_type, kwargs)
     end
@@ -363,6 +366,7 @@ struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinpla
                                               nout = 1,
                                               batch = 0, kwargs...) where {iip}
         @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
+        warn_paramtype(p)
         new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f, lb, ub, nout, p,
                                                                    batch, kwargs)
     end
@@ -433,8 +437,8 @@ optimization. They should be an `AbstractArray` matching the geometry of `u`,
 where `(lcons[I],ucons[I])` is the constraint (lower and upper bounds)
 for `cons[I]`.
 
-If `f` is a standard Julia function, it is automatically transformed into an 
-`OptimizationFunction` with `NoAD()`, meaning the derivative functions are not 
+If `f` is a standard Julia function, it is automatically transformed into an
+`OptimizationFunction` with `NoAD()`, meaning the derivative functions are not
 automatically generated.
 
 Any extra keyword arguments are captured to be sent to the optimizers.
@@ -487,6 +491,7 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
+        warn_paramtype(p)
         new{iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
             typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, int, lcons, ucons, sense,
