@@ -24,8 +24,8 @@ $(TYPEDEF)
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function __solve(prob::AbstractEnsembleProblem,
-                 alg::Union{AbstractDEAlgorithm, Nothing};
-                 kwargs...)
+    alg::Union{AbstractDEAlgorithm, Nothing};
+    kwargs...)
     if alg isa EnsembleAlgorithm
         # Assume DifferentialEquations.jl is being used, so default alg
         ensemblealg = alg
@@ -43,10 +43,10 @@ tighten_container_eltype(u::Vector{Any}) = map(identity, u)
 tighten_container_eltype(u) = u
 
 function __solve(prob::AbstractEnsembleProblem,
-                 alg::Union{AbstractDEAlgorithm, Nothing},
-                 ensemblealg::BasicEnsembleAlgorithm;
-                 trajectories, batch_size = trajectories,
-                 pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...)
+    alg::Union{AbstractDEAlgorithm, Nothing},
+    ensemblealg::BasicEnsembleAlgorithm;
+    trajectories, batch_size = trajectories,
+    pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...)
     num_batches = trajectories ÷ batch_size
     num_batches < 1 &&
         error("trajectories ÷ batch_size cannot be less than 1, got $num_batches")
@@ -54,7 +54,7 @@ function __solve(prob::AbstractEnsembleProblem,
 
     if num_batches == 1 && prob.reduction === DEFAULT_REDUCTION
         elapsed_time = @elapsed u = solve_batch(prob, alg, ensemblealg, 1:trajectories,
-                                                pmap_batch_size; kwargs...)
+            pmap_batch_size; kwargs...)
         _u = tighten_container_eltype(u)
         return EnsembleSolution(_u, elapsed_time, true)
     end
@@ -114,7 +114,7 @@ function batch_func(i, prob, alg; kwargs...)
 end
 
 function solve_batch(prob, alg, ensemblealg::EnsembleDistributed, II, pmap_batch_size;
-                     kwargs...)
+    kwargs...)
     wp = CachingPool(workers())
 
     # Fix the return type of pmap
@@ -134,7 +134,7 @@ end
 
 function responsible_map(f, II...)
     batch_data = Vector{Core.Compiler.return_type(f, Tuple{typeof.(getindex.(II, 1))...})}(undef,
-                                                                                           length(II[1]))
+        length(II[1]))
     for i in 1:length(II[1])
         batch_data[i] = f(getindex.(II, i)...)
     end
@@ -149,7 +149,7 @@ function SciMLBase.solve_batch(prob, alg, ::EnsembleSerial, II, pmap_batch_size;
 end
 
 function solve_batch(prob, alg, ensemblealg::EnsembleThreads, II, pmap_batch_size;
-                     kwargs...)
+    kwargs...)
     nthreads = min(Threads.nthreads(), length(II))
     if length(II) == 1 || nthreads == 1
         return solve_batch(prob, alg, EnsembleSerial(), II, pmap_batch_size; kwargs...)
@@ -169,7 +169,8 @@ end
 
 function tmap(f, args...)
     batch_data = Vector{Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...})
-                        }(undef, length(args[1]))
+    }(undef,
+        length(args[1]))
     Threads.@threads for i in 1:length(args[1])
         batch_data[i] = f(getindex.(args, i)...)
     end

@@ -81,19 +81,23 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function ImplicitDiscreteProblem{iip}(f::ImplicitDiscreteFunction{
-                                                                                  iip
-                                                                                  },
-                                                      u0, tspan::Tuple,
-                                                      p = NullParameters();
-                                                      kwargs...) where {iip}
+            iip,
+        },
+        u0, tspan::Tuple,
+        p = NullParameters();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
         new{typeof(u0), typeof(_tspan), isinplace(f, 6),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f, u0, _tspan, p, kwargs)
+            typeof(f), typeof(kwargs)}(f,
+            u0,
+            _tspan,
+            p,
+            kwargs)
     end
 
     function ImplicitDiscreteProblem{iip}(f, u0, tspan, p = NullParameters();
-                                          kwargs...) where {iip}
+        kwargs...) where {iip}
         ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
@@ -106,12 +110,12 @@ TruncatedStacktraces.@truncate_stacktrace ImplicitDiscreteProblem 3 1 2
 Defines a discrete problem with the specified functions.
 """
 function ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan::Tuple,
-                                 p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     ImplicitDiscreteProblem{isinplace(f, 6)}(f, u0, tspan, p; kwargs...)
 end
 
 function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
-                                 kwargs...)
+    kwargs...)
     iip = isinplace(f, 6)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end

@@ -88,23 +88,31 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function DiscreteProblem{iip}(f::AbstractDiscreteFunction{iip},
-                                              u0, tspan::Tuple, p = NullParameters();
-                                              kwargs...) where {iip}
+        u0, tspan::Tuple, p = NullParameters();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
         new{typeof(u0), typeof(_tspan), isinplace(f, 4),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f, u0, _tspan, p, kwargs)
+            typeof(f), typeof(kwargs)}(f,
+            u0,
+            _tspan,
+            p,
+            kwargs)
     end
 
     function DiscreteProblem{iip}(u0::Nothing, tspan::Nothing, p = NullParameters();
-                                  callback = nothing) where {iip}
+        callback = nothing) where {iip}
         if iip
             f = DISCRETE_INPLACE_DEFAULT
         else
             f = DISCRETE_OUTOFPLACE_DEFAULT
         end
         new{Nothing, Nothing, iip, typeof(p),
-            typeof(f), typeof(callback)}(f, nothing, nothing, p, callback)
+            typeof(f), typeof(callback)}(f,
+            nothing,
+            nothing,
+            p,
+            callback)
     end
 
     function DiscreteProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
@@ -120,12 +128,12 @@ TruncatedStacktraces.@truncate_stacktrace DiscreteProblem 3 1 2
 Defines a discrete problem with the specified functions.
 """
 function DiscreteProblem(f::AbstractDiscreteFunction, u0, tspan::Tuple,
-                         p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function DiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
-                         kwargs...)
+    kwargs...)
     iip = isinplace(f, 4)
     DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
@@ -136,7 +144,7 @@ $(SIGNATURES)
 Define a discrete problem with the identity map.
 """
 function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan::Tuple,
-                         p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     iip = typeof(u0) <: AbstractArray
     if iip
         f = DISCRETE_INPLACE_DEFAULT

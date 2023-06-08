@@ -58,20 +58,20 @@ const SteadyStateSolution = NonlinearSolution
 get_p(p::AbstractNonlinearSolution) = p.prob.p
 
 function build_solution(prob::AbstractNonlinearProblem,
-                        alg, u, resid; calculate_error = true,
-                        retcode = ReturnCode.Default,
-                        original = nothing,
-                        left = nothing,
-                        right = nothing,
-                        stats = nothing,
-                        kwargs...)
+    alg, u, resid; calculate_error = true,
+    retcode = ReturnCode.Default,
+    original = nothing,
+    left = nothing,
+    right = nothing,
+    stats = nothing,
+    kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
     NonlinearSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
-                      typeof(original), typeof(left), typeof(stats)}(u, resid, prob, alg,
-                                                                     retcode, original,
-                                                                     left, right, stats)
+        typeof(original), typeof(left), typeof(stats)}(u, resid, prob, alg,
+        retcode, original,
+        left, right, stats)
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
@@ -79,7 +79,7 @@ function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     N = ndims(u)
 
     NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
-                      typeof(sol.alg), typeof(sol.original), typeof(sol.left),
-                      typeof(sol.stats)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
-                                         sol.original, sol.left, sol.right, sol.stats)
+        typeof(sol.alg), typeof(sol.original), typeof(sol.left),
+        typeof(sol.stats)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
+        sol.original, sol.left, sol.right, sol.stats)
 end

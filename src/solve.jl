@@ -78,7 +78,7 @@ end
 ```
 """
 function solve(prob::OptimizationProblem, alg, args...;
-               kwargs...)::AbstractOptimizationSolution
+    kwargs...)::AbstractOptimizationSolution
     if supports_opt_cache_interface(alg)
         solve!(init(prob, alg, args...; kwargs...))
     else
@@ -166,7 +166,7 @@ end
 supports_opt_cache_interface(alg) = false
 function __solve(cache::AbstractOptimizationCache)::AbstractOptimizationSolution end
 function __init(prob::OptimizationProblem, alg, args...;
-                kwargs...)::AbstractOptimizationCache
+    kwargs...)::AbstractOptimizationCache
     throw(OptimizerMissingError(alg))
 end
 

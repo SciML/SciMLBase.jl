@@ -23,10 +23,10 @@ function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T,
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     if has_sys(sol.prob.f)
         DiffEqArray{T, N, Q, B, typeof(sol.prob.f.sys), typeof(observed), typeof(p)}(A.u,
-                                                                                     A.t,
-                                                                                     sol.prob.f.sys,
-                                                                                     observed,
-                                                                                     p)
+            A.t,
+            sol.prob.f.sys,
+            observed,
+            p)
     else
         syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
         DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
@@ -38,30 +38,30 @@ end
 # For handling ambiguities
 for T in [Int, Colon]
     @eval Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                          I::$T)
+        I::$T)
         A.u[I]
     end
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                I::Union{Int, AbstractArray{Int},
-                                                         CartesianIndex, Colon, BitArray,
-                                                         AbstractArray{Bool}}...)
+    I::Union{Int, AbstractArray{Int},
+        CartesianIndex, Colon, BitArray,
+        AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-                                                ::Colon)
+    ::Colon)
     [A.u[j][i] for j in 1:length(A)]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon,
-                                                i::Int)
+    i::Int)
     A.u[i]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-                                                II::AbstractArray{Int})
+    II::AbstractArray{Int})
     [A.u[j][i] for j in II]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                ii::CartesianIndex)
+    ii::CartesianIndex)
     ti = Tuple(ii)
     i = last(ti)
     jj = CartesianIndex(Base.front(ti))
@@ -193,11 +193,11 @@ end
 function Base.summary(io::IO, A::AbstractTimeseriesSolution)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(A)),
-          no_color, " with uType ",
-          type_color, eltype(A.u),
-          no_color, " and tType ",
-          type_color, eltype(A.t), no_color)
+        type_color, nameof(typeof(A)),
+        no_color, " with uType ",
+        type_color, eltype(A.u),
+        no_color, " and tType ",
+        type_color, eltype(A.t), no_color)
 end
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
@@ -231,23 +231,23 @@ DEFAULT_PLOT_FUNC(x...) = (x...,)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
 @recipe function f(sol::AbstractTimeseriesSolution;
-                   plot_analytic = false,
-                   denseplot = (sol.dense ||
-                                typeof(sol.prob) <: AbstractDiscreteProblem) &&
-                               !(typeof(sol) <: AbstractRODESolution) &&
-                               !(hasfield(typeof(sol), :interp) &&
-                                 typeof(sol.interp) <: SensitivityInterpolation),
-                   plotdensity = min(Int(1e5),
-                                     sol.tslocation == 0 ?
-                                     (typeof(sol.prob) <: AbstractDiscreteProblem ?
-                                      max(1000, 100 * length(sol)) :
-                                      max(1000, 10 * length(sol))) :
-                                     1000 * sol.tslocation),
-                   tspan = nothing, axis_safety = 0.1,
-                   vars = nothing, idxs = nothing)
+    plot_analytic = false,
+    denseplot = (sol.dense ||
+                 typeof(sol.prob) <: AbstractDiscreteProblem) &&
+                !(typeof(sol) <: AbstractRODESolution) &&
+                !(hasfield(typeof(sol), :interp) &&
+                  typeof(sol.interp) <: SensitivityInterpolation),
+    plotdensity = min(Int(1e5),
+        sol.tslocation == 0 ?
+        (typeof(sol.prob) <: AbstractDiscreteProblem ?
+         max(1000, 100 * length(sol)) :
+         max(1000, 10 * length(sol))) :
+        1000 * sol.tslocation),
+    tspan = nothing, axis_safety = 0.1,
+    vars = nothing, idxs = nothing)
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
-                     :f; force = true)
+            :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
         idxs = vars
@@ -263,8 +263,8 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
     tscale = get(plotattributes, :xscale, :identity)
     plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
-                                         plotdensity, tspan, axis_safety,
-                                         idxs, int_vars, tscale, strs)
+        plotdensity, tspan, axis_safety,
+        idxs, int_vars, tscale, strs)
 
     tdir = sign(sol.t[end] - sol.t[1])
     xflip --> tdir < 0
@@ -349,7 +349,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
                     maxs = max(mins, maximum(sol[iv[4], :]))
                 end
                 zlims --> ((1 - sign(mins) * axis_safety) * mins,
-                 (1 + sign(maxs) * axis_safety) * maxs)
+                    (1 + sign(maxs) * axis_safety) * maxs)
             end
         end
     end
@@ -359,7 +359,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 end
 
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axis_safety,
-                          vars, int_vars, tscale, strs)
+    vars, int_vars, tscale, strs)
     if tspan === nothing
         if sol.tslocation == 0
             end_idx = length(sol)
@@ -393,7 +393,7 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
         if plot_analytic
             if typeof(sol.prob.f) <: Tuple
                 plot_analytic_timeseries = [sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p,
-                                                                   t) for t in plott]
+                    t) for t in plott]
             else
                 plot_analytic_timeseries = [sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t)
                                             for t in plott]
@@ -433,8 +433,8 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
     end
     # Should check that all have the same dims!
     plot_vecs, labels = solplot_vecs_and_labels(dims, int_vars, plot_timeseries, plott, sol,
-                                                plot_analytic, plot_analytic_timeseries,
-                                                strs)
+        plot_analytic, plot_analytic_timeseries,
+        strs)
 end
 
 function interpret_vars(vars, sol, syms)
@@ -448,8 +448,8 @@ function interpret_vars(vars, sol, syms)
                     if issymbollike(x)
                         found = sym_to_index(x, syms)
                         push!(tmp,
-                              found == nothing && getindepsym_defaultt(sol) == x ? 0 :
-                              something(found, x))
+                            found == nothing && getindepsym_defaultt(sol) == x ? 0 :
+                            something(found, x))
                     else
                         push!(tmp, x)
                     end
@@ -520,7 +520,7 @@ function interpret_vars(vars, sol, syms)
             if typeof(vars[end]) <: AbstractArray
                 # If both axes are lists we zip (will fail if different lengths)
                 vars = collect(zip([DEFAULT_PLOT_FUNC for i in eachindex(vars[end - 1])],
-                                   vars[end - 1], vars[end]))
+                    vars[end - 1], vars[end]))
             else
                 # Just the x axis is a list
                 vars = [(DEFAULT_PLOT_FUNC, x, vars[end]) for x in vars[end - 1]]
@@ -648,7 +648,7 @@ function u_n(timeseries::AbstractArray, sym, sol, plott, plot_timeseries)
 end
 
 function solplot_vecs_and_labels(dims, vars, plot_timeseries, plott, sol, plot_analytic,
-                                 plot_analytic_timeseries, strs)
+    plot_analytic_timeseries, strs)
     plot_vecs = []
     labels = String[]
     for x in vars
@@ -677,8 +677,8 @@ function solplot_vecs_and_labels(dims, vars, plot_timeseries, plott, sol, plot_a
             tmp = []
             for j in 2:dims
                 push!(tmp,
-                      u_n(plot_analytic_timeseries, x[j], sol, plott,
-                          plot_analytic_timeseries))
+                    u_n(plot_analytic_timeseries, x[j], sol, plott,
+                        plot_analytic_timeseries))
             end
             f = x[1]
             tmp = f.(tmp...)

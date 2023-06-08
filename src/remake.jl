@@ -50,11 +50,11 @@ Remake the given `ODEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::ODEProblem; f = missing,
-                u0 = missing,
-                tspan = missing,
-                p = missing,
-                kwargs = missing,
-                _kwargs...)
+    u0 = missing,
+    tspan = missing,
+    p = missing,
+    kwargs = missing,
+    _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
@@ -86,12 +86,12 @@ function remake(prob::ODEProblem; f = missing,
             ptspan = promote_tspan(tspan)
             if iip
                 _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(unwrapped_f(prob.f.f),
-                                                                             (u0, u0, p,
-                                                                              ptspan[1])))
+                    (u0, u0, p,
+                        ptspan[1])))
             else
                 _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(unwrapped_f(prob.f.f),
-                                                                             (u0, p,
-                                                                              ptspan[1])))
+                    (u0, p,
+                        ptspan[1])))
             end
         else
             _f = prob.f
@@ -102,11 +102,11 @@ function remake(prob::ODEProblem; f = missing,
         ptspan = promote_tspan(tspan)
         if iip
             _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                                                                         (u0, u0, p,
-                                                                          ptspan[1])))
+                (u0, u0, p,
+                    ptspan[1])))
         else
             _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                                                                         (u0, p, ptspan[1])))
+                (u0, p, ptspan[1])))
         end
     else
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
@@ -114,7 +114,7 @@ function remake(prob::ODEProblem; f = missing,
 
     if kwargs === missing
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
-                                    _kwargs...)
+            _kwargs...)
     else
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; kwargs...)
     end
@@ -129,17 +129,17 @@ Remake the given `OptimizationProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::OptimizationProblem;
-                f = missing,
-                u0 = missing,
-                p = missing,
-                lb = missing,
-                ub = missing,
-                int = missing,
-                lcons = missing,
-                ucons = missing,
-                sense = missing,
-                kwargs = missing,
-                _kwargs...)
+    f = missing,
+    u0 = missing,
+    p = missing,
+    lb = missing,
+    ub = missing,
+    int = missing,
+    lcons = missing,
+    ucons = missing,
+    sense = missing,
+    kwargs = missing,
+    _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
     else # at least one of them has a value
@@ -184,14 +184,14 @@ function remake(prob::OptimizationProblem;
 
     if kwargs === missing
         OptimizationProblem{isinplace(prob)}(f = f, u0 = u0, p = p, lb = lb,
-                                             ub = ub, int = int,
-                                             lcons = lcons, ucons = ucons,
-                                             sense = sense; prob.kwargs..., _kwargs...)
+            ub = ub, int = int,
+            lcons = lcons, ucons = ucons,
+            sense = sense; prob.kwargs..., _kwargs...)
     else
         OptimizationProblem{isinplace(prob)}(f = f, u0 = u0, p = p, lb = lb,
-                                             ub = ub, int = int,
-                                             lcons = lcons, ucons = ucons,
-                                             sense = sense; kwargs...)
+            ub = ub, int = int,
+            lcons = lcons, ucons = ucons,
+            sense = sense; kwargs...)
     end
 end
 
@@ -203,12 +203,12 @@ Remake the given `NonlinearProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::NonlinearProblem;
-                f = missing,
-                u0 = missing,
-                p = missing,
-                problem_type = missing,
-                kwargs = missing,
-                _kwargs...)
+    f = missing,
+    u0 = missing,
+    p = missing,
+    problem_type = missing,
+    kwargs = missing,
+    _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
     else # at least one of them has a value
@@ -238,11 +238,11 @@ function remake(prob::NonlinearProblem;
 
     if kwargs === missing
         NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
-                                          problem_type = problem_type; prob.kwargs...,
-                                          _kwargs...)
+            problem_type = problem_type; prob.kwargs...,
+            _kwargs...)
     else
         NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
-                                          problem_type = problem_type; kwargs...)
+            problem_type = problem_type; kwargs...)
     end
 end
 

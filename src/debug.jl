@@ -60,7 +60,7 @@ function __init__()
     Base.Experimental.register_error_hint(DomainError) do io, e
         if e isa DomainError &&
            occursin("will only return a complex result if called with a complex argument. Try ",
-                    e.msg)
+            e.msg)
             println(io, DOMAINERROR_COMPLEX_MSG)
         end
     end
@@ -72,7 +72,7 @@ function __init__()
     end
 
     Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
-                                                                                                   e
+    e
         println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
     end
 end
