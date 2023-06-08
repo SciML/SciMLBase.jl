@@ -1,3 +1,5 @@
+import CommonSolve
+
 """
     step!(integ::DEIntegrator [, dt [, stop_at_tdt]])
 Perform one (successful) step on the integrator.
@@ -7,7 +9,7 @@ there is a temporal difference `≥ dt` in `integ.t`.  When `true` is
 passed to the optional third argument, the integrator advances exactly
 `dt`.
 """
-function step!(d::DEIntegrator)
+function CommonSolve.step!(d::DEIntegrator)
     error("Integrator stepping is not implemented")
 end
 
