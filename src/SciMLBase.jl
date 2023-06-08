@@ -15,7 +15,7 @@ import Preferences
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
-import CommonSolve: solve, init, solve!
+import CommonSolve: solve, init, step!, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
