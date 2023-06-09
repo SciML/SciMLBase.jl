@@ -1,19 +1,5 @@
 
-const PERFORMANCE_WARNINGS = Preferences.@load_preference("PERFORMANCE_WARNINGS", true)
-
-"""
-    set_performance_warnings!(b::Bool)
-
-Enable/disable performance warnings globally.
-"""
-function set_performance_warnings!(b::Bool)
-    Preferences.@set_preferences!("PERFORMANCE_WARNINGS" => b)
-    if b
-        @info("Performance Warnings enabled. Restart Julia for this change to take effect.")
-    else
-        @info("Performance Warnings disabled. Restart Julia for this change to take effect.")
-    end
-end
+const PERFORMANCE_WARNINGS = Preferences.@load_preference("PerformanceWarnings", true)
 
 should_warn_paramtype(p::AbstractArray) = !isconcretetype(eltype(p))
 should_warn_paramtype(::Dict{K,V}) where {K,V} = !isconcretetype(V)
@@ -34,8 +20,12 @@ Inspect the type of `p` and emit a warning if it could hurt
 performance when used to hold problem parameters.
 
 The warning can be turned off by setting `warn_performance` to `false`.
-To turn it off globally, call `set_performance_warnings!(false)`.
-This will take effect after restarting Julia.
+To turn it off globally within the active project you can execute the following code, or put it in your `startup.jl`.
+
+```julia
+using Preferences, UUIDs
+set_preferences!(UUID("1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"), "PerformanceWarnings" => false)
+```
 """
 function warn_paramtype(p, warn_performance = PERFORMANCE_WARNINGS)
     if warn_performance && should_warn_paramtype(p)
