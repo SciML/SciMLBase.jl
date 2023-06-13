@@ -29,6 +29,6 @@ set_preferences!(UUID("1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"), "PerformanceWarni
 """
 function warn_paramtype(p, warn_performance = PERFORMANCE_WARNINGS)
     if warn_performance && should_warn_paramtype(p)
-        @info(WARN_PARAMTYPE_MESSAGE)
+        @warn(WARN_PARAMTYPE_MESSAGE)
     end
 end
