@@ -33,7 +33,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, S,
-                    AC <: Union{Nothing, Vector{Int}}} <:
+    AC <: Union{Nothing, Vector{Int}}} <:
        AbstractRODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
@@ -62,21 +62,21 @@ end
 TruncatedStacktraces.@truncate_stacktrace RODESolution 1 2
 
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
-                             continuity = :left) where {deriv}
+    continuity = :left) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::RODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
-                             continuity = :left) where {deriv}
+    continuity = :left) where {deriv}
     sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 
 function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
-                        alg, t, u; W = nothing, timeseries_errors = length(u) > 2,
-                        dense = false, dense_errors = dense, calculate_error = true,
-                        interp = LinearInterpolation(t, u),
-                        retcode = ReturnCode.Default,
-                        alg_choice = nothing,
-                        seed = UInt64(0), destats = missing, stats = nothing, kwargs...)
+    alg, t, u; W = nothing, timeseries_errors = length(u) > 2,
+    dense = false, dense_errors = dense, calculate_error = true,
+    interp = LinearInterpolation(t, u),
+    retcode = ReturnCode.Default,
+    alg_choice = nothing,
+    seed = UInt64(0), destats = missing, stats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))
 
@@ -100,40 +100,40 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
         sol = RODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-                           typeof(W),
-                           typeof(prob), typeof(alg), typeof(interp), typeof(stats),
-                           typeof(alg_choice)}(u,
-                                               u_analytic,
-                                               errors,
-                                               t, W,
-                                               prob,
-                                               alg,
-                                               interp,
-                                               dense,
-                                               0,
-                                               stats,
-                                               alg_choice,
-                                               retcode,
-                                               seed)
+            typeof(W),
+            typeof(prob), typeof(alg), typeof(interp), typeof(stats),
+            typeof(alg_choice)}(u,
+            u_analytic,
+            errors,
+            t, W,
+            prob,
+            alg,
+            interp,
+            dense,
+            0,
+            stats,
+            alg_choice,
+            retcode,
+            seed)
 
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
-                                       dense_errors = dense_errors)
+                dense_errors = dense_errors)
         end
 
         return sol
     else
         return RODESolution{T, N, typeof(u), Nothing, Nothing, typeof(t),
-                            typeof(W), typeof(prob), typeof(alg), typeof(interp),
-                            typeof(stats), typeof(alg_choice)}(u, nothing, nothing, t, W,
-                                                               prob, alg, interp,
-                                                               dense, 0, stats,
-                                                               alg_choice, retcode, seed)
+            typeof(W), typeof(prob), typeof(alg), typeof(interp),
+            typeof(stats), typeof(alg_choice)}(u, nothing, nothing, t, W,
+            prob, alg, interp,
+            dense, 0, stats,
+            alg_choice, retcode, seed)
     end
 end
 
 function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = true,
-                                    timeseries_errors = true, dense_errors = true)
+    timeseries_errors = true, dense_errors = true)
     if typeof(sol.prob.f) <: Tuple
         f = sol.prob.f[1]
     else
@@ -147,12 +147,12 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
         elseif sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
             for i in 1:length(sol)
                 push!(sol.u_analytic,
-                      f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i]))))
+                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i]))))
             end
         else
             for i in 1:length(sol)
                 push!(sol.u_analytic,
-                      f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[i]))
+                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[i]))
             end
         end
     end
@@ -161,9 +161,9 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
         sol.errors[:final] = norm(recursive_mean(abs.(sol.u[end] - sol.u_analytic[end])))
         if timeseries_errors
             sol.errors[:l∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                                                       sol.u - sol.u_analytic)))
+                sol.u - sol.u_analytic)))
             sol.errors[:l2] = norm(sqrt(recursive_mean(vecvecapply((x) -> float.(x) .^ 2,
-                                                                   sol.u - sol.u_analytic))))
+                sol.u - sol.u_analytic))))
         end
         if dense_errors
             densetimes = collect(range(sol.t[1], stop = sol.t[end], length = 100))
@@ -171,62 +171,62 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
             interp_analytic = [f.analytic(sol.u[1], sol.prob.p, t, sol.W(t)[1])
                                for t in densetimes]
             sol.errors[:L∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                                                       interp_u - interp_analytic)))
+                interp_u - interp_analytic)))
             sol.errors[:L2] = norm(sqrt(recursive_mean(vecvecapply((x) -> float.(x) .^ 2,
-                                                                   interp_u -
-                                                                   interp_analytic))))
+                interp_u -
+                interp_analytic))))
         end
     end
 end
 
 function build_solution(sol::AbstractRODESolution{T, N}, u_analytic, errors) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(u_analytic), typeof(errors), typeof(sol.t),
-                 typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.stats), typeof(sol.alg_choice)}(sol.u, u_analytic, errors,
-                                                            sol.t, sol.W, sol.prob,
-                                                            sol.alg, sol.interp,
-                                                            sol.dense, sol.tslocation,
-                                                            sol.stats, sol.alg_choice,
-                                                            sol.retcode, sol.seed)
+        typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
+        typeof(sol.stats), typeof(sol.alg_choice)}(sol.u, u_analytic, errors,
+        sol.t, sol.W, sol.prob,
+        sol.alg, sol.interp,
+        sol.dense, sol.tslocation,
+        sol.stats, sol.alg_choice,
+        sol.retcode, sol.seed)
 end
 
 function solution_new_retcode(sol::AbstractRODESolution{T, N}, retcode) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
-                 typeof(sol.t),
-                 typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.stats), typeof(sol.alg_choice)}(sol.u, sol.u_analytic,
-                                                            sol.errors, sol.t, sol.W,
-                                                            sol.prob, sol.alg, sol.interp,
-                                                            sol.dense, sol.tslocation,
-                                                            sol.stats, sol.alg_choice,
-                                                            retcode, sol.seed)
+        typeof(sol.t),
+        typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
+        typeof(sol.stats), typeof(sol.alg_choice)}(sol.u, sol.u_analytic,
+        sol.errors, sol.t, sol.W,
+        sol.prob, sol.alg, sol.interp,
+        sol.dense, sol.tslocation,
+        sol.stats, sol.alg_choice,
+        retcode, sol.seed)
 end
 
 function solution_new_tslocation(sol::AbstractRODESolution{T, N}, tslocation) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
-                 typeof(sol.t),
-                 typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.stats), typeof(sol.alg_choice)}(sol.u, sol.u_analytic,
-                                                            sol.errors, sol.t, sol.W,
-                                                            sol.prob, sol.alg, sol.interp,
-                                                            sol.dense, tslocation,
-                                                            sol.stats, sol.alg_choice,
-                                                            sol.retcode, sol.seed)
+        typeof(sol.t),
+        typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
+        typeof(sol.stats), typeof(sol.alg_choice)}(sol.u, sol.u_analytic,
+        sol.errors, sol.t, sol.W,
+        sol.prob, sol.alg, sol.interp,
+        sol.dense, tslocation,
+        sol.stats, sol.alg_choice,
+        sol.retcode, sol.seed)
 end
 
 function solution_slice(sol::AbstractRODESolution{T, N}, I) where {T, N}
     RODESolution{T, N, typeof(sol.u), typeof(sol.u_analytic), typeof(sol.errors),
-                 typeof(sol.t),
-                 typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-                 typeof(sol.stats), typeof(sol.alg_choice)}(sol.u[I],
-                                                            sol.u_analytic === nothing ?
-                                                            nothing : sol.u_analytic,
-                                                            sol.errors, sol.t[I],
-                                                            sol.W, sol.prob,
-                                                            sol.alg, sol.interp,
-                                                            false, sol.tslocation,
-                                                            sol.stats, sol.alg_choice,
-                                                            sol.retcode, sol.seed)
+        typeof(sol.t),
+        typeof(sol.W), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
+        typeof(sol.stats), typeof(sol.alg_choice)}(sol.u[I],
+        sol.u_analytic === nothing ?
+        nothing : sol.u_analytic,
+        sol.errors, sol.t[I],
+        sol.W, sol.prob,
+        sol.alg, sol.interp,
+        false, sol.tslocation,
+        sol.stats, sol.alg_choice,
+        sol.retcode, sol.seed)
 end
 
 function sensitivity_solution(sol::AbstractRODESolution, u, t)
@@ -241,20 +241,20 @@ function sensitivity_solution(sol::AbstractRODESolution, u, t)
     end
 
     RODESolution{T, N, typeof(u), typeof(sol.u_analytic),
-                 typeof(sol.errors), typeof(t),
-                 typeof(nothing), typeof(sol.prob), typeof(sol.alg),
-                 typeof(sol.interp), typeof(sol.stats), typeof(sol.alg_choice)}(u,
-                                                                                sol.u_analytic,
-                                                                                sol.errors,
-                                                                                t,
-                                                                                nothing,
-                                                                                sol.prob,
-                                                                                sol.alg,
-                                                                                sol.interp,
-                                                                                sol.dense,
-                                                                                sol.tslocation,
-                                                                                sol.stats,
-                                                                                sol.alg_choice,
-                                                                                sol.retcode,
-                                                                                sol.seed)
+        typeof(sol.errors), typeof(t),
+        typeof(nothing), typeof(sol.prob), typeof(sol.alg),
+        typeof(sol.interp), typeof(sol.stats), typeof(sol.alg_choice)}(u,
+        sol.u_analytic,
+        sol.errors,
+        t,
+        nothing,
+        sol.prob,
+        sol.alg,
+        sol.interp,
+        sol.dense,
+        sol.tslocation,
+        sol.stats,
+        sol.alg_choice,
+        sol.retcode,
+        sol.seed)
 end

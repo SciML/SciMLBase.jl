@@ -425,9 +425,9 @@ function sym_to_index(sym, integrator::DEIntegrator)
 end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
-                                                I::Union{Int, AbstractArray{Int},
-                                                         CartesianIndex, Colon, BitArray,
-                                                         AbstractArray{Bool}}...)
+    I::Union{Int, AbstractArray{Int},
+        CartesianIndex, Colon, BitArray,
+        AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 
@@ -456,9 +456,9 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
                 return observed(A, getproperty(A.f.sys, sym))
             elseif has_sys(A.f) && (count('₊', String(Symbol(sym))) == 1) &&
                    (count(isequal(Symbol(sym)),
-                          Symbol.(A.f.sys.name, :₊, getparamsyms(A))) == 1)   # Handles input like sys.X (where X is a parameter).  
+                       Symbol.(A.f.sys.name, :₊, getparamsyms(A))) == 1)   # Handles input like sys.X (where X is a parameter).  
                 return A.p[findfirst(isequal(Symbol(sym)),
-                                     Symbol.(A.f.sys.name, :₊, getparamsyms(A)))]
+                    Symbol.(A.f.sys.name, :₊, getparamsyms(A)))]
             else
                 return observed(A, sym)
             end
@@ -535,12 +535,12 @@ has_reinit(i::DEIntegrator) = false
 function Base.summary(io::IO, I::DEIntegrator)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(I)),
-          no_color, " with uType ",
-          type_color, typeof(I.u),
-          no_color, " and tType ",
-          type_color, typeof(I.t),
-          no_color)
+        type_color, nameof(typeof(I)),
+        no_color, " with uType ",
+        type_color, typeof(I.u),
+        no_color, " and tType ",
+        type_color, typeof(I.t),
+        no_color)
 end
 function Base.show(io::IO, A::DEIntegrator)
     println(io, string("t: ", A.t))
@@ -601,7 +601,7 @@ function check_error(integrator::DEIntegrator)
         return ReturnCode.DtLessThanMin
     end
     if integrator.opts.unstable_check(integrator.dt, integrator.u, integrator.p,
-                                      integrator.t)
+        integrator.t)
         if integrator.opts.verbose
             @warn("Instability detected. Aborting")
         end
@@ -674,9 +674,11 @@ function Base.iterate(tup::IntegratorTuples, state = 0)
     return (tup.integrator.u, tup.integrator.t), state
 end
 
-function Base.eltype(::Type{IntegratorTuples{I}}) where {U, T,
-                                                         I <:
-                                                         DEIntegrator{<:Any, <:Any, U, T}}
+function Base.eltype(::Type{
+    IntegratorTuples{I},
+}) where {U, T,
+    I <:
+    DEIntegrator{<:Any, <:Any, U, T}}
     Tuple{U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorTuples}) = Base.SizeUnknown()
@@ -696,13 +698,15 @@ function Base.iterate(tup::IntegratorIntervals, state = 0)
     step!(tup.integrator) # Iter updated in the step! header
     # Next is callbacks -> iterator  -> top
     return (tup.integrator.uprev, tup.integrator.tprev, tup.integrator.u, tup.integrator.t),
-           state
+    state
 end
 
-function Base.eltype(::Type{IntegratorIntervals{I}}) where {U, T,
-                                                            I <:
-                                                            DEIntegrator{<:Any, <:Any, U, T
-                                                                         }}
+function Base.eltype(::Type{
+    IntegratorIntervals{I},
+}) where {U, T,
+    I <:
+    DEIntegrator{<:Any, <:Any, U, T
+    }}
     Tuple{U, T, U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorIntervals}) = Base.SizeUnknown()
@@ -745,14 +749,14 @@ end
 Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
 @recipe function f(integrator::DEIntegrator;
-                   denseplot = (integrator.opts.calck ||
-                                typeof(integrator) <: AbstractSDEIntegrator) &&
-                               integrator.iter > 0,
-                   plotdensity = 10,
-                   plot_analytic = false, vars = nothing, idxs = nothing)
+    denseplot = (integrator.opts.calck ||
+                 typeof(integrator) <: AbstractSDEIntegrator) &&
+                integrator.iter > 0,
+    plotdensity = 10,
+    plot_analytic = false, vars = nothing, idxs = nothing)
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
-                     :f; force = true)
+            :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
         idxs = vars
@@ -768,8 +772,8 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         plot_timeseries = integrator(plott)
         if plot_analytic
             plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
-                                                                       integrator.sol.prob.p,
-                                                                       t) for t in plott]
+                integrator.sol.prob.p,
+                t) for t in plott]
         end
     end # if not denseplot, we'll just get the values right from the integrator.
 
@@ -789,7 +793,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         for j in 2:dims
             if denseplot
                 push!(plot_vecs[j - 1],
-                      u_n(plot_timeseries, x[j], integrator.sol, plott, plot_timeseries))
+                    u_n(plot_timeseries, x[j], integrator.sol, plott, plot_timeseries))
             else # just get values
                 if x[j] == 0
                     push!(plot_vecs[j - 1], integrator.t)
@@ -808,18 +812,18 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
             for j in 1:dims
                 if denseplot
                     push!(plot_vecs[j],
-                          u_n(plot_timeseries, x[j], sol, plott, plot_timeseries))
+                        u_n(plot_timeseries, x[j], sol, plott, plot_timeseries))
                 else # Just get values
                     if x[j] == 0
                         push!(plot_vecs[j], integrator.t)
                     elseif x[j] == 1 && !(typeof(integrator.u) <: AbstractArray)
                         push!(plot_vecs[j],
-                              integrator.sol.prob.f(Val{:analytic}, integrator.t,
-                                                    integrator.sol[1]))
+                            integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                integrator.sol[1]))
                     else
                         push!(plot_vecs[j],
-                              integrator.sol.prob.f(Val{:analytic}, integrator.t,
-                                                    integrator.sol[1])[x[j]])
+                            integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                integrator.sol[1])[x[j]])
                     end
                 end
             end

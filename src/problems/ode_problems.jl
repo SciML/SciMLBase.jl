@@ -109,15 +109,20 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     """An internal argument for storing traits about the solving process."""
     problem_type::PT
     @add_kwonly function ODEProblem{iip}(f::AbstractODEFunction{iip},
-                                         u0, tspan, p = NullParameters(),
-                                         problem_type = StandardODEProblem();
-                                         kwargs...) where {iip}
+        u0, tspan, p = NullParameters(),
+        problem_type = StandardODEProblem();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),
-            typeof(problem_type)}(f, u0, _tspan, p, kwargs, problem_type)
+            typeof(problem_type)}(f,
+            u0,
+            _tspan,
+            p,
+            kwargs,
+            problem_type)
     end
 
     """
@@ -134,22 +139,22 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
-                                                    kwargs...) where {iip, recompile}
+        kwargs...) where {iip, recompile}
         ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
     end
 
     function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
-                                                        kwargs...) where {iip}
+        kwargs...) where {iip}
         ptspan = promote_tspan(tspan)
         if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
             if iip
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                                                                             (u0, u0, p,
-                                                                              ptspan[1])))
+                    (u0, u0, p,
+                        ptspan[1])))
             else
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                                                                             (u0, p,
-                                                                              ptspan[1])))
+                    (u0, p,
+                        ptspan[1])))
             end
         end
         ODEProblem{iip}(ff, u0, tspan, p; kwargs...)
@@ -243,7 +248,7 @@ struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
 Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
 """
 function DynamicalODEProblem(f::DynamicalODEFunction, du0, u0, tspan, p = NullParameters();
-                             kwargs...)
+    kwargs...)
     ODEProblem(f, ArrayPartition(du0, u0), tspan, p; kwargs...)
 end
 function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwargs...)
@@ -251,9 +256,9 @@ function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwarg
 end
 
 function DynamicalODEProblem{iip}(f1, f2, du0, u0, tspan, p = NullParameters();
-                                  kwargs...) where {iip}
+    kwargs...) where {iip}
     ODEProblem(DynamicalODEFunction{iip}(f1, f2), ArrayPartition(du0, u0), tspan, p,
-               DynamicalODEProblem{iip}(); kwargs...)
+        DynamicalODEProblem{iip}(); kwargs...)
 end
 
 @doc doc"""
@@ -309,7 +314,7 @@ function SecondOrderODEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs..
 end
 
 function SecondOrderODEProblem{iip}(f, du0, u0, tspan, p = NullParameters();
-                                    kwargs...) where {iip}
+    kwargs...) where {iip}
     if iip
         f2 = function (du, v, u, p, t)
             du .= v
@@ -321,10 +326,10 @@ function SecondOrderODEProblem{iip}(f, du0, u0, tspan, p = NullParameters();
     end
     _u0 = ArrayPartition((du0, u0))
     ODEProblem(DynamicalODEFunction{iip}(f, f2), _u0, tspan, p,
-               SecondOrderODEProblem{iip}(); kwargs...)
+        SecondOrderODEProblem{iip}(); kwargs...)
 end
 function SecondOrderODEProblem(f::DynamicalODEFunction, du0, u0, tspan,
-                               p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     iip = isinplace(f.f1, 5)
     _u0 = ArrayPartition((du0, u0))
     if f.f2.f === nothing
@@ -338,12 +343,12 @@ function SecondOrderODEProblem(f::DynamicalODEFunction, du0, u0, tspan,
             end
         end
         return ODEProblem(DynamicalODEFunction{iip}(f.f1, f2; mass_matrix = f.mass_matrix,
-                                                    analytic = f.analytic), _u0, tspan, p,
-                          SecondOrderODEProblem{iip}(); kwargs...)
+                analytic = f.analytic), _u0, tspan, p,
+            SecondOrderODEProblem{iip}(); kwargs...)
     else
         return ODEProblem(DynamicalODEFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-                                                    analytic = f.analytic), _u0, tspan, p,
-                          SecondOrderODEProblem{iip}(); kwargs...)
+                analytic = f.analytic), _u0, tspan, p,
+            SecondOrderODEProblem{iip}(); kwargs...)
     end
 end
 
@@ -421,7 +426,7 @@ function SplitODEProblem(f1, f2, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 function SplitODEProblem{iip}(f1, f2, u0, tspan, p = NullParameters();
-                              kwargs...) where {iip}
+    kwargs...) where {iip}
     f = SplitFunction{iip}(f1, f2)
     SplitODEProblem(f, u0, tspan, p; kwargs...)
 end
@@ -435,11 +440,11 @@ function SplitODEProblem(f::SplitFunction, u0, tspan, p = NullParameters(); kwar
     SplitODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 function SplitODEProblem{iip}(f::SplitFunction, u0, tspan, p = NullParameters();
-                              kwargs...) where {iip}
+    kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
         f = SplitFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-                               _func_cache = cache, analytic = f.analytic)
+            _func_cache = cache, analytic = f.analytic)
     end
     ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
@@ -459,17 +464,17 @@ function IncrementingODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 function IncrementingODEProblem{iip}(f, u0, tspan, p = NullParameters();
-                                     kwargs...) where {iip}
+    kwargs...) where {iip}
     f = IncrementingODEFunction{iip}(f)
     IncrementingODEProblem(f, u0, tspan, p; kwargs...)
 end
 
 function IncrementingODEProblem(f::IncrementingODEFunction, u0, tspan, p = NullParameters();
-                                kwargs...)
+    kwargs...)
     IncrementingODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
-                                     p = NullParameters(); kwargs...) where {iip}
+    p = NullParameters(); kwargs...) where {iip}
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end

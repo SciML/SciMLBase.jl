@@ -77,9 +77,9 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     kwargs::K
     differential_vars::D
     @add_kwonly function DAEProblem{iip}(f::AbstractDAEFunction{iip},
-                                         du0, u0, tspan, p = NullParameters();
-                                         differential_vars = nothing,
-                                         kwargs...) where {iip}
+        du0, u0, tspan, p = NullParameters();
+        differential_vars = nothing,
+        kwargs...) where {iip}
         if !isnothing(u0)
             # Defend against external solvers like Sundials breaking on non-uniform input dimensions.
             size(du0) == size(u0) ||
@@ -95,7 +95,7 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
             isinplace(f), typeof(p),
             typeof(f), typeof(kwargs),
             typeof(differential_vars)}(f, du0, u0, _tspan, p,
-                                       kwargs, differential_vars)
+            kwargs, differential_vars)
     end
 
     function DAEProblem{iip}(f, du0, u0, tspan, p = NullParameters(); kwargs...) where {iip}

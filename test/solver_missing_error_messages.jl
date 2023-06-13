@@ -6,7 +6,7 @@ struct OptAlg end
 
 SciMLBase.allowscallback(::OptAlg) = false
 @test_throws SciMLBase.IncompatibleOptimizerError solve(prob, OptAlg(),
-                                                        callback = (args...) -> false)
+    callback = (args...) -> false)
 
 SciMLBase.requiresbounds(::OptAlg) = true
 @test_throws SciMLBase.IncompatibleOptimizerError solve(prob, OptAlg())

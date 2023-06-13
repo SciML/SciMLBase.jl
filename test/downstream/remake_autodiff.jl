@@ -19,7 +19,7 @@ sol = solve(prob, Tsit5(), reltol = 1e-6, abstol = 1e-6)
 function sum_of_solution(u0, p)
     _prob = remake(prob, u0 = u0, p = p)
     sum(solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
-              sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())))
+        sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())))
 end
 
 u0 = [1.0 1.0]

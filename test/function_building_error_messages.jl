@@ -170,7 +170,7 @@ sWfact_t(u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop, giip, Wfact_t = sWfact_t)
 sWfact_t(u, p, gamma, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip, giip,
-                                                               Wfact_t = sWfact_t)
+    Wfact_t = sWfact_t)
 SDEFunction(foop, goop, Wfact_t = sWfact_t)
 sWfact_t(du, u, p, gamma, t) = [1.0]
 SDEFunction(fiip, giip, Wfact_t = sWfact_t)
@@ -191,7 +191,7 @@ sparamjac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop, goop, paramjac = sparamjac)
 sparamjac(u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip, giip,
-                                                               paramjac = sparamjac)
+    paramjac = sparamjac)
 SDEFunction(foop, goop, paramjac = sparamjac)
 sparamjac(du, u, p, t) = [1.0]
 SDEFunction(fiip, giip, paramjac = sparamjac)
@@ -242,7 +242,7 @@ end
 @test_nowarn RODEFunction(frode, analytic = rode_analytic)
 @test_nowarn RODEFunction(frode, analytic = rode_analytic!, analytic_full = true)
 @test_throws MethodError RODEFunction(frode, analytic = rode_analytic!,
-                                      analytic_full = nothing)
+    analytic_full = nothing)
 
 # DAEFunction
 
@@ -354,7 +354,7 @@ ddeWfact_t(u, h, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
 ddeWfact_t(u, h, p, gamma, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
-                                                               Wfact_t = ddeWfact_t)
+    Wfact_t = ddeWfact_t)
 DDEFunction(ddefoop, Wfact_t = Wfact_t)
 ddeWfact_t(du, u, h, p, gamma, t) = [1.0]
 DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
@@ -375,7 +375,7 @@ ddeparamjac(u, h, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, paramjac = ddeparamjac)
 ddeparamjac(u, h, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
-                                                               paramjac = ddeparamjac)
+    paramjac = ddeparamjac)
 DDEFunction(ddefoop, paramjac = paramjac)
 ddeparamjac(du, u, h, p, t) = [1.0]
 DDEFunction(ddefiip, paramjac = ddeparamjac)

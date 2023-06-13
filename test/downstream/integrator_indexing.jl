@@ -144,7 +144,7 @@ step!(integrator, 100.0, true)
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
-       D(q[2]) ~ 2.0]
+    D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
 sys2_simplified = structural_simplify(sys2)
 prob2 = ODEProblem(sys2, [], (0.0, 5.0))
@@ -293,7 +293,7 @@ sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
 eqs = [collect(D.(x) .~ x)
-       D(y) ~ norm(x) * y - x[1]]
+    D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 @test_broken local integrator = init(prob, Tsit5())

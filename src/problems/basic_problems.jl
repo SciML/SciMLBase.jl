@@ -60,10 +60,10 @@ struct LinearProblem{uType, isinplace, F, bType, P, K} <:
     p::P
     kwargs::K
     @add_kwonly function LinearProblem{iip}(A, b, p = NullParameters(); u0 = nothing,
-                                            kwargs...) where {iip}
+        kwargs...) where {iip}
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(A), typeof(b), typeof(p), typeof(kwargs)}(A, b, u0, p,
-                                                                              kwargs)
+            kwargs)
     end
 end
 
@@ -142,15 +142,19 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
     problem_type::PT
     kwargs::K
     @add_kwonly function IntervalNonlinearProblem{iip}(f::AbstractIntervalNonlinearFunction{
-                                                                                            iip
-                                                                                            },
-                                                       tspan,
-                                                       p = NullParameters(),
-                                                       problem_type = StandardNonlinearProblem();
-                                                       kwargs...) where {iip}
+            iip,
+        },
+        tspan,
+        p = NullParameters(),
+        problem_type = StandardNonlinearProblem();
+        kwargs...) where {iip}
         warn_paramtype(p)
         new{iip, typeof(tspan), typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f, tspan, p, problem_type, kwargs)
+            typeof(kwargs), typeof(problem_type)}(f,
+            tspan,
+            p,
+            problem_type,
+            kwargs)
     end
 
     """
@@ -173,7 +177,7 @@ Define a nonlinear problem using an instance of
 [`IntervalNonlinearFunction`](@ref IntervalNonlinearFunction).
 """
 function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan,
-                                  p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     IntervalNonlinearProblem{isinplace(f)}(f, tspan, p; kwargs...)
 end
 
@@ -237,12 +241,16 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     problem_type::PT
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
-                                               p = NullParameters(),
-                                               problem_type = StandardNonlinearProblem();
-                                               kwargs...) where {iip}
+        p = NullParameters(),
+        problem_type = StandardNonlinearProblem();
+        kwargs...) where {iip}
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f, u0, p, problem_type, kwargs)
+            typeof(kwargs), typeof(problem_type)}(f,
+            u0,
+            p,
+            problem_type,
+            kwargs)
     end
 
     """
@@ -363,12 +371,12 @@ struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinpla
     batch::Int
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
-                                              nout = 1,
-                                              batch = 0, kwargs...) where {iip}
+        nout = 1,
+        batch = 0, kwargs...) where {iip}
         @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
         warn_paramtype(p)
         new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f, lb, ub, nout, p,
-                                                                   batch, kwargs)
+            batch, kwargs)
     end
 end
 
@@ -484,10 +492,10 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     sense::S
     kwargs::K
     @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0,
-                                                  p = NullParameters();
-                                                  lb = nothing, ub = nothing, int = nothing,
-                                                  lcons = nothing, ucons = nothing,
-                                                  sense = nothing, kwargs...) where {iip}
+        p = NullParameters();
+        lb = nothing, ub = nothing, int = nothing,
+        lcons = nothing, ucons = nothing,
+        sense = nothing, kwargs...) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
@@ -495,7 +503,7 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
         new{iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
             typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, int, lcons, ucons, sense,
-                                           kwargs)
+            kwargs)
     end
 end
 

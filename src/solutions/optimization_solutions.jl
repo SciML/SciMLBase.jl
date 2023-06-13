@@ -30,12 +30,12 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
 end
 
 function build_solution(cache::AbstractOptimizationCache,
-                        alg, u, objective;
-                        retcode = ReturnCode.Default,
-                        original = nothing,
-                        solve_time = nothing,
-                        stats = nothing,
-                        kwargs...)
+    alg, u, objective;
+    retcode = ReturnCode.Default,
+    original = nothing,
+    solve_time = nothing,
+    stats = nothing,
+    kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
@@ -43,9 +43,9 @@ function build_solution(cache::AbstractOptimizationCache,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(objective), typeof(original), typeof(solve_time),
-                         typeof(stats)}(u, cache, alg, objective, retcode, original,
-                                        solve_time, stats)
+        typeof(objective), typeof(original), typeof(solve_time),
+        typeof(stats)}(u, cache, alg, objective, retcode, original,
+        solve_time, stats)
 end
 
 TruncatedStacktraces.@truncate_stacktrace OptimizationSolution 1 2
@@ -63,16 +63,16 @@ end
 
 # for compatibility
 function build_solution(prob::AbstractOptimizationProblem,
-                        alg, u, objective;
-                        retcode = ReturnCode.Default,
-                        original = nothing,
-                        kwargs...)
+    alg, u, objective;
+    retcode = ReturnCode.Default,
+    original = nothing,
+    kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
     Base.depwarn("`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated." *
                  " Consider implementing an `AbstractOptimizationCache` instead.",
-                 "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
+        "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
 
     cache = DefaultOptimizationCache(prob.f, prob.p)
 
@@ -80,9 +80,9 @@ function build_solution(prob::AbstractOptimizationProblem,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-                         typeof(objective), typeof(original)}(u, cache, alg, objective,
-                                                              retcode,
-                                                              original)
+        typeof(objective), typeof(original)}(u, cache, alg, objective,
+        retcode,
+        original)
 end
 
 get_p(sol::OptimizationSolution) = sol.cache.p
@@ -104,18 +104,18 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
-                                                   s::Symbol)
+    s::Symbol)
     if s === :minimizer
         Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
-                     "sol.minimizer")
+            "sol.minimizer")
         return getfield(x, :u)
     elseif s === :minimum
         Base.depwarn("`sol.minimum` is deprecated. Use `sol.objective` instead.",
-                     "sol.minimum")
+            "sol.minimum")
         return getfield(x, :objective)
     elseif s === :prob
         Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
-                     "sol.prob")
+            "sol.prob")
         return getfield(x, :cache)
     end
     return getfield(x, s)
@@ -124,8 +124,8 @@ end
 function Base.summary(io::IO, A::AbstractOptimizationSolution)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(A)),
-          no_color, " with uType ",
-          type_color, eltype(A.u),
-          no_color)
+        type_color, nameof(typeof(A)),
+        no_color, " with uType ",
+        type_color, eltype(A.u),
+        no_color)
 end

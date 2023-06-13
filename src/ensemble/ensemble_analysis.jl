@@ -122,7 +122,7 @@ function timepoint_weighted_meancov(sim, W, t1, t2)
 end
 
 function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
-                                   t = sim[1].t; quantiles = [0.05, 0.95]) where {T, N}
+    t = sim[1].t; quantiles = [0.05, 0.95]) where {T, N}
     if typeof(sim[1]) <: SciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
@@ -137,8 +137,8 @@ function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N}
 
     trajectories = length(sim)
     EnsembleSummary{T, N, typeof(t), typeof(m), typeof(v), typeof(med), typeof(qlow),
-                    typeof(qhigh)}(t, m, v, med, qlow, qhigh, trajectories, sim.elapsedTime,
-                                   sim.converged)
+        typeof(qhigh)}(t, m, v, med, qlow, qhigh, trajectories, sim.elapsedTime,
+        sim.converged)
 end
 
 function timeseries_point_mean(sim, ts)
@@ -167,21 +167,21 @@ function timeseries_point_meancov(sim, ts)
 end
 function timeseries_point_meancov(sim, ts1, ts2)
     reshape([timepoint_meancov(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-            length(ts2))
+        length(ts2))
 end
 function timeseries_point_meancor(sim, ts)
     timeseries_point_meancor(sim, ts[1:(end - 1)], ts[2:end])
 end
 function timeseries_point_meancor(sim, ts1, ts2)
     reshape([timepoint_meancor(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-            length(ts2))
+        length(ts2))
 end
 function timeseries_point_weighted_meancov(sim, W, ts)
     timeseries_point_weighted_meancov(sim, W, ts[1:(end - 1)], ts[2:end])
 end
 function timeseries_point_weighted_meancov(sim, W, ts1, ts2)
     reshape([timepoint_meancov(sim, W, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-            length(ts2))
+        length(ts2))
 end
 
 function componentwise_mean(A)
@@ -360,24 +360,25 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
     end
 end
 
-export get_timestep, get_timepoint, apply_timestep, apply_timepoint,
-       componentwise_vectors_timestep, componentwise_vectors_timepoint
+export get_timestep,
+    get_timepoint,
+    componentwise_vectors_timestep, componentwise_vectors_timepoint
 
 export componentwise_mean, componentwise_meanvar
 
 export timestep_mean, timestep_median, timestep_quantile, timestep_meanvar,
-       timestep_meancov, timestep_meancor, timestep_weighted_meancov
+    timestep_meancov, timestep_meancor, timestep_weighted_meancov
 
 export timeseries_steps_mean, timeseries_steps_median, timeseries_steps_quantile,
-       timeseries_steps_meanvar, timeseries_steps_meancov,
-       timeseries_steps_meancor, timeseries_steps_weighted_meancov
+    timeseries_steps_meanvar, timeseries_steps_meancov,
+    timeseries_steps_meancor, timeseries_steps_weighted_meancov
 
 export timepoint_mean, timepoint_median, timepoint_quantile,
-       timepoint_meanvar, timepoint_meancov,
-       timepoint_meancor, timepoint_weighted_meancov
+    timepoint_meanvar, timepoint_meancov,
+    timepoint_meancor, timepoint_weighted_meancov
 
 export timeseries_point_mean, timeseries_point_median, timeseries_point_quantile,
-       timeseries_point_meanvar, timeseries_point_meancov,
-       timeseries_point_meancor, timeseries_point_weighted_meancov
+    timeseries_point_meanvar, timeseries_point_meancov,
+    timeseries_point_meancor, timeseries_point_weighted_meancov
 
 end

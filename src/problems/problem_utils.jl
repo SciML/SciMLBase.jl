@@ -18,26 +18,26 @@ end
 function Base.summary(io::IO, prob::AbstractDEProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(prob)),
-          no_color, " with uType ",
-          type_color, typeof(prob.u0),
-          no_color, " and tType ",
-          type_color,
-          typeof(prob.tspan) <: Function ?
-          "Unknown" : (prob.tspan === nothing ?
-           "Nothing" : typeof(prob.tspan[1])),
-          no_color, ". In-place: ",
-          type_color, isinplace(prob),
-          no_color)
+        type_color, nameof(typeof(prob)),
+        no_color, " with uType ",
+        type_color, typeof(prob.u0),
+        no_color, " and tType ",
+        type_color,
+        typeof(prob.tspan) <: Function ?
+        "Unknown" : (prob.tspan === nothing ?
+         "Nothing" : typeof(prob.tspan[1])),
+        no_color, ". In-place: ",
+        type_color, isinplace(prob),
+        no_color)
 end
 
 function Base.summary(io::IO, prob::AbstractLinearProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(prob)),
-          no_color, ". In-place: ",
-          type_color, isinplace(prob),
-          no_color)
+        type_color, nameof(typeof(prob)),
+        no_color, ". In-place: ",
+        type_color, isinplace(prob),
+        no_color)
 end
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractLinearProblem)
     summary(io, A)
@@ -49,12 +49,12 @@ end
 function Base.summary(io::IO, prob::AbstractNonlinearProblem{uType, iip}) where {uType, iip}
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(prob)),
-          no_color, " with uType ",
-          type_color, uType,
-          no_color, ". In-place: ",
-          type_color, isinplace(prob),
-          no_color)
+        type_color, nameof(typeof(prob)),
+        no_color, " with uType ",
+        type_color, uType,
+        no_color, ". In-place: ",
+        type_color, isinplace(prob),
+        no_color)
 end
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNonlinearProblem)
     summary(io, A)
@@ -73,10 +73,10 @@ end
 function Base.summary(io::IO, prob::AbstractOptimizationProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(prob)),
-          no_color, ". In-place: ",
-          type_color, isinplace(prob),
-          no_color)
+        type_color, nameof(typeof(prob)),
+        no_color, ". In-place: ",
+        type_color, isinplace(prob),
+        no_color)
 end
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractOptimizationProblem)
     summary(io, A)
@@ -88,10 +88,10 @@ end
 function Base.summary(io::IO, prob::AbstractIntegralProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(prob)),
-          no_color, ". In-place: ",
-          type_color, isinplace(prob),
-          no_color)
+        type_color, nameof(typeof(prob)),
+        no_color, ". In-place: ",
+        type_color, isinplace(prob),
+        no_color)
 end
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractIntegralProblem)
     summary(io, A)
@@ -100,8 +100,8 @@ end
 
 function Base.summary(io::IO, prob::AbstractNoiseProblem)
     print(io,
-          nameof(typeof(prob)), " with WType ", typeof(prob.noise.curW), " and tType ",
-          typeof(prob.tspan[1]), ". In-place: ", isinplace(prob))
+        nameof(typeof(prob)), " with WType ", typeof(prob.noise.curW), " and tType ",
+        typeof(prob.tspan[1]), ". In-place: ", isinplace(prob))
 end
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractDEProblem)
     summary(io, A)
@@ -135,9 +135,9 @@ end
 function Base.summary(io::IO, prob::AbstractEnsembleProblem)
     type_color, no_color = get_colorizers(io)
     print(io,
-          nameof(typeof(prob)),
-          " with problem ",
-          nameof(typeof(prob.prob)))
+        nameof(typeof(prob)),
+        " with problem ",
+        nameof(typeof(prob.prob)))
 end
 Base.show(io::IO, mime::MIME"text/plain", A::AbstractEnsembleProblem) = summary(io, A)
 
@@ -175,8 +175,8 @@ function Base.show(io::IO, mime::MIME"text/plain", A::AbstractPDEProblem)
 end
 function Base.summary(io::IO, prob::AbstractPDEProblem)
     print(io,
-          type_color, nameof(typeof(prob)),
-          no_color)
+        type_color, nameof(typeof(prob)),
+        no_color)
 end
 
 Base.copy(p::SciMLBase.NullParameters) = p

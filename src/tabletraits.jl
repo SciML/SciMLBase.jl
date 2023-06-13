@@ -11,7 +11,7 @@ end
 
 function AbstractTimeseriesSolutionRows(names, types, t, u)
     AbstractTimeseriesSolutionRows(names, types,
-                                   Dict(nm => i for (i, nm) in enumerate(names)), t, u)
+        Dict(nm => i for (i, nm) in enumerate(names)), t, u)
 end
 
 Base.length(x::AbstractTimeseriesSolutionRows) = length(x.u)
