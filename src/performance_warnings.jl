@@ -9,7 +9,7 @@ should_warn_paramtype(p::NamedTuple) = any(should_warn_paramtype, p)
 should_warn_paramtype(p) = false
 
 const WARN_PARAMTYPE_MESSAGE = """
-Using arrays or dicts to store parameters of different types can hurt performance. \
+Using arrays or dicts to store parameters of different types can hurt performance.
 Consider using tuples instead.
 """
 
