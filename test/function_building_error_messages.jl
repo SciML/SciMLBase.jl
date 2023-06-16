@@ -463,3 +463,13 @@ optf(u) = 1.0
 optf(u, p) = 1.0
 OptimizationFunction(optf)
 OptimizationProblem(optf, 1.0)
+
+# Varargs
+var1(u...) = 1.0
+var2(u::Vararg{Any, N}) where N = 1.0
+var3(u::Vararg{Int, N}) where N = 1.0
+var4(u::Vararg{Vector{T}, N}) where {T, N} = 1.0
+OptimizationFunction(var1)
+OptimizationFunction(var2)
+OptimizationFunction(var3)
+OptimizationFunction(var4)
