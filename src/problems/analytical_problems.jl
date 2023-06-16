@@ -11,6 +11,7 @@ struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
     @add_kwonly function AnalyticalProblem{iip}(f, u0, tspan, p = NullParameters();
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), iip, typeof(p),
             typeof(f), typeof(kwargs)}(f,
             u0,

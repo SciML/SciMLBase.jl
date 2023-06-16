@@ -127,6 +127,7 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
         order_discontinuity_t0 = 0 // 1,
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
             typeof(p), typeof(noise), typeof(f), typeof(g), typeof(h), typeof(kwargs),

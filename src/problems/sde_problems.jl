@@ -100,7 +100,7 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
         noise = nothing, seed = UInt64(0),
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
-
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(noise), typeof(f), typeof(f.g),

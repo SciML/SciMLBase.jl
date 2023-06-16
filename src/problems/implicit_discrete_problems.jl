@@ -87,6 +87,7 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
         p = NullParameters();
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), isinplace(f, 6),
             typeof(p),
             typeof(f), typeof(kwargs)}(f,

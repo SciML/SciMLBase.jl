@@ -91,6 +91,7 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
         u0, tspan::Tuple, p = NullParameters();
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), isinplace(f, 4),
             typeof(p),
             typeof(f), typeof(kwargs)}(f,

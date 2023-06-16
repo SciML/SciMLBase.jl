@@ -90,6 +90,7 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
             end
         end
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(du0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(f), typeof(kwargs),

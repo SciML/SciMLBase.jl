@@ -50,6 +50,9 @@ end
         @time @safetestset "DE function conversion" begin
             include("convert_tests.jl")
         end
+        @time @safetestset "Performance warnings" begin
+            include("performance_warnings.jl")
+        end
     end
 
     if !is_APPVEYOR && GROUP == "Downstream"

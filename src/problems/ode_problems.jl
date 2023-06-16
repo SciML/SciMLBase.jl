@@ -113,6 +113,7 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         problem_type = StandardODEProblem();
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),

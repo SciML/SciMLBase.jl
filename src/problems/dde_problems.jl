@@ -225,6 +225,7 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
         problem_type = StandardDDEProblem(),
         kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
             typeof(p), typeof(f), typeof(h), typeof(kwargs), typeof(problem_type)}(f, u0, h,
