@@ -205,6 +205,19 @@ struct FunctionArgumentsError <: Exception
     f::Any
 end
 
+function sig_has_vararg(sig)
+    isvarargtype(x) = x isa typeof(Vararg)
+    # unwrap unionalls
+    while sig isa UnionAll
+        sig = sig.body
+    end
+    if sig <: Tuple
+        return any(isvarargtype, sig.parameters)
+    else
+        error("SciMLBase is messing around with types that it doesn't understand. Please file an issue")
+    end
+end
+
 function Base.showerror(io::IO, e::FunctionArgumentsError)
     println(io, ARGUMENTS_ERROR_MESSAGE)
     print(io, "Offending function: ")
@@ -255,8 +268,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
             # Find if there's a `f(args...)` dispatch
             # If so, no error
             for i in 1:length(nargs)
-                if nargs[i] < inplace_param_number &&
-                   any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
+                if nargs[i] < inplace_param_number && sig_has_vararg(methods(f).ms[1].sig)
                     # If varargs, assume iip
                     return iip_preferred
                 end
@@ -274,8 +286,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
         # Find if there's a `f(args...)` dispatch
         # If so, no error
         for i in 1:length(nargs)
-            if nargs[i] < inplace_param_number &&
-               any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
+            if nargs[i] < inplace_param_number && sig_has_vararg(methods(f).ms[1].sig)
                 # If varargs, assume iip
                 return iip_preferred
             end
