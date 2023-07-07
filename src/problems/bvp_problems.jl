@@ -40,7 +40,8 @@ TwoPointBVProblem{isinplace}(f,bc!,u0,tspan,p=NullParameters();kwargs...)
 BVProblem{isinplace}(f,bc!,u0,tspan,p=NullParameters();kwargs...)
 ```
 
-or if we have an initial guess function for the given BVP, we can pass the initial guess to the problem constructors:
+or if we have an initial guess function `initialGuess(t)` for the given BVP,
+we can pass the initial guess to the problem constructors:
 
 ```julia
 TwoPointBVProblem{isinplace}(f,bc!,initialGuess,tspan,p=NullParameters();kwargs...)
