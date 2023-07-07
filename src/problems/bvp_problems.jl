@@ -40,6 +40,13 @@ TwoPointBVProblem{isinplace}(f,bc!,u0,tspan,p=NullParameters();kwargs...)
 BVProblem{isinplace}(f,bc!,u0,tspan,p=NullParameters();kwargs...)
 ```
 
+or if we have an initial guess function for the given BVP, we can pass the initial guess to the problem constructors:
+
+```julia
+TwoPointBVProblem{isinplace}(f,bc!,initialGuess,tspan,p=NullParameters();kwargs...)
+BVProblem{isinplace}(f,bc!,initialGuess,tspan,p=NullParameters();kwargs...)
+```
+
 For any BVP problem type, `bc!` is the inplace function:
 
 ```julia
@@ -140,4 +147,23 @@ end
 function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
     kwargs...) where {iip}
     BVProblem{iip}(f, TwoPointBVPFunction(bc), u0, tspan, p; kwargs...)
+end
+
+# Allow previous timeseries solution
+function TwoPointBVProblem(f::AbstractODEFunction,
+    bc,
+    sol::T,
+    tspan::Tuple,
+    p = NullParameters()) where {T <: AbstractTimeseriesSolution}
+    TwoPointBVProblem(f, bc, sol.u, tspan, p)
+end
+# Allow initial guess function for the initial guess
+function TwoPointBVProblem(f::AbstractODEFunction,
+    bc,
+    initialGuess,
+    tspan::AbstractVector,
+    p = NullParameters();
+    kwargs...)
+    u0 = [initialGuess(i) for i in tspan]
+    TwoPointBVProblem(f, bc, u0, (tspan[1], tspan[end]), p)
 end
