@@ -42,7 +42,7 @@ end
 tighten_container_eltype(u::Vector{Any}) = map(identity, u)
 tighten_container_eltype(u) = u
 
-function __solve(prob::EnsembleProblem{<:AbstractVector},
+function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}},
     alg::Union{AbstractDEAlgorithm, Nothing},
     ensemblealg::BasicEnsembleAlgorithm; kwargs...)
     solve(prob, alg, ensemblealg; trajectories=length(prob.prob), kwargs...)
