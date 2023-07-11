@@ -5,4 +5,4 @@ prob1 = ODEProblem((u, p, t) -> 1.0u, 0.45, (0.0, 0.9))
 output_func(sol, i) = (last(sol), false)
 # test that when passing a vector of problems, trajectories and the prob_func are chosen appropriately
 ensemble_prob = EnsembleProblem([prob1, prob2], output_func = output_func, reduction = reduction)
-sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), batch_size = 2)
+sim = solve(ensemble_prob, Tsit5(), EnsembleThreads())
