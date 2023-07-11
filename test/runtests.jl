@@ -63,6 +63,9 @@ end
         @time @safetestset "Timing first batch when solving Ensembles" begin
             include("downstream/ensemble_first_batch.jl")
         end
+        @time @safetestset "solving Ensembles with multiple problems" begin
+            include("downstream/ensemble_multi_prob.jl")
+        end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/symbol_indexing.jl")
         end
