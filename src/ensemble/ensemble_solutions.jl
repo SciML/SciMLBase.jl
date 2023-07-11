@@ -197,3 +197,22 @@ end
         end
     end
 end
+
+
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s)
+    return [xi[s] for xi in x]
+end
+# ambiguity
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s::Int...)
+    return @invoke getindex(x::RecursiveArrayTools.AbstractVectorOfArray, s...)
+end
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, ::Colon, i::Int, args...)
+    return [xi[i, args...] for xi in x]
+end
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, ::Colon, i::Int, args...)
+    return [xi[i, args...] for xi in x]
+end
+
+function (sol::AbstractEnsembleSolution)(args...; kwargs...)
+    [s(args...; kwargs...) for s in sol]
+end
