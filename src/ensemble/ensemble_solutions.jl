@@ -204,10 +204,8 @@ Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s)
 end
 # ambiguity
 Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s::Int...)
-    return @invoke getindex(x::RecursiveArrayTools.AbstractVectorOfArray, s...)
-end
-Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, ::Colon, i::Int, args...)
-    return [xi[i, args...] for xi in x]
+    # TODO: @invoke
+    return invoke(getindex, Tuple{RecursiveArrayTools.AbstractVectorOfArray, typeof.(s)...}, x, s...)
 end
 Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, ::Colon, i::Int, args...)
     return [xi[i, args...] for xi in x]

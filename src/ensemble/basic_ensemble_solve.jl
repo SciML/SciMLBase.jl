@@ -45,7 +45,9 @@ tighten_container_eltype(u) = u
 function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}},
     alg::Union{AbstractDEAlgorithm, Nothing},
     ensemblealg::BasicEnsembleAlgorithm; kwargs...)
-    @invoke __solve(prob::AbstractEnsembleProblem, alg, ensemblealg; trajectories=length(prob.prob), kwargs...)
+    # TODO: @invoke
+    invoke(__solve, Tuple{AbstractEnsembleProblem, typeof(alg), typeof(ensemblealg)},
+        prob, alg, ensemblealg; trajectories=length(prob.prob), kwargs...)
 end
 
 function __solve(prob::AbstractEnsembleProblem,
