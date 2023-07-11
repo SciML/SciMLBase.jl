@@ -8,4 +8,8 @@ reduction(u, batch, I) = (append!(u, mean(batch)), false)
 # make sure first batch is timed (test using 1 batch but reduction)
 ensemble_prob = EnsembleProblem(prob, prob_func = prob_func, output_func = output_func,
     reduction = reduction)
-sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), batch_size = 2)
+sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 1000,
+    batch_size = 1000)
+
+@test sim.elapsedTime > 1000 * @elapsed for i in 2:1
+end
