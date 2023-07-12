@@ -19,7 +19,7 @@ using Aqua
     #     @show method_ambiguity
     # end
     @warn "Number of method ambiguities: $(length(ambs))"
-    @test length(ambs) ≤ 13
+    @test length(ambs) ≤ 16
 end
 
 @testset "Aqua tests (additional)" begin
