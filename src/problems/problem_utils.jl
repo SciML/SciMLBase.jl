@@ -39,8 +39,8 @@ function Base.summary(io::IO, prob::AbstractLinearProblem)
         type_color, isinplace(prob),
         no_color)
 end
-Base.show(io::IO, mime::MIME"text/plain", A::AbstractSciMLProblem) = show(io, A)
-function Base.show(io::IO, A::AbstractLinearProblem)
+Base.show(io::IO, A::AbstractSciMLProblem) = show(io, MIME"text/plain", A)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractLinearProblem)
     summary(io, A)
     println(io)
     print(io, "b: ")
@@ -57,14 +57,14 @@ function Base.summary(io::IO, prob::AbstractNonlinearProblem{uType, iip}) where 
         type_color, isinplace(prob),
         no_color)
 end
-function Base.show(io::IO, A::AbstractNonlinearProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNonlinearProblem)
     summary(io, A)
     println(io)
     print(io, "u0: ")
     show(io, mime, A.u0)
 end
 
-function Base.show(io::IO, A::IntervalNonlinearProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::IntervalNonlinearProblem)
     summary(io, A)
     println(io)
     print(io, "Interval: ")
@@ -79,7 +79,7 @@ function Base.summary(io::IO, prob::AbstractOptimizationProblem)
         type_color, isinplace(prob),
         no_color)
 end
-function Base.show(io::IO, A::AbstractOptimizationProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractOptimizationProblem)
     summary(io, A)
     println(io)
     print(io, "u0: ")
@@ -94,7 +94,7 @@ function Base.summary(io::IO, prob::AbstractIntegralProblem)
         type_color, isinplace(prob),
         no_color)
 end
-function Base.show(io::IO, A::AbstractIntegralProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractIntegralProblem)
     summary(io, A)
     println(io)
 end
@@ -104,7 +104,7 @@ function Base.summary(io::IO, prob::AbstractNoiseProblem)
         nameof(typeof(prob)), " with WType ", typeof(prob.noise.curW), " and tType ",
         typeof(prob.tspan[1]), ". In-place: ", isinplace(prob))
 end
-function Base.show(io::IO, A::AbstractDEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractDEProblem)
     summary(io, A)
     println(io)
     print(io, "timespan: ")
@@ -113,14 +113,14 @@ function Base.show(io::IO, A::AbstractDEProblem)
     print(io, "u0: ")
     show(io, mime, A.u0)
 end
-function Base.show(io::IO, A::AbstractNoiseProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNoiseProblem)
     summary(io, A)
     println(io)
     print(io, "timespan: ")
     show(io, mime, A.tspan)
     println(io)
 end
-function Base.show(io::IO, A::AbstractDAEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractDAEProblem)
     summary(io, A)
     println(io)
     print(io, "timespan: ")
@@ -170,7 +170,7 @@ function Base.iterate(::NullParameters)
     throw(NullParameterIndexError())
 end
 
-function Base.show(io::IO, A::AbstractPDEProblem)
+function Base.show(io::IO, mime::MIME"text/plain", A::AbstractPDEProblem)
     summary(io, A.prob)
     println(io)
 end

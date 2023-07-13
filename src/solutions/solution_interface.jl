@@ -200,8 +200,9 @@ function Base.summary(io::IO, A::AbstractTimeseriesSolution)
         type_color, eltype(A.t), no_color)
 end
 
-Base.show(io::IO, mime::MIME"text/plain", A::AbstractSciMLSolution) = show(io, A)
-function Base.show(io::IO, A::AbstractTimeseriesSolution)
+
+Base.show(io::IO, A::AbstractSciMLProblem) = show(io, MIME"text/plain", A)
+function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
     println(io, string("retcode: ", A.retcode))
     println(io, string("Interpolation: "), interp_summary(A.interp))
     print(io, "t: ")
@@ -219,7 +220,7 @@ function Base.iterate(sol::AbstractTimeseriesSolution, state = 0)
     return (solution_new_tslocation(sol, state), state)
 end
 
-function Base.show(io::IO, A::AbstractPDESolution)
+function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     println(io, string("retcode: ", A.retcode))
     print(io, "t: ")
     show(io, m, A.t)
