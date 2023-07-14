@@ -35,3 +35,22 @@ function EnsembleProblem(; prob,
     safetycopy = prob_func !== DEFAULT_PROB_FUNC)
     EnsembleProblem(prob, prob_func, output_func, reduction, u_init, safetycopy)
 end
+
+struct WeightedEnsembleProblem{T, T2, T3, T4, T5, T6} <: AbstractEnsembleProblem
+  ensembleprob::EnsembleProblem{T, T2, T3, T4, T5}
+  weights::T6
+end
+Base.propertynames(e::WeightedEnsembleProblem) = (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
+function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
+  f === :weights && return getfield(e, :weights)
+  f === :ensembleprob && return getfield(e, :ensembleprob)
+  return getproperty(getfield(e, :ensembleprob), f)
+end
+function WeightedEnsembleProblem(args...; weights, kwargs...)
+  # TODO: allow skipping checks?
+  @assert sum(weights) ≈ 1
+  ep = EnsembleProblem(args...; kwargs...)
+  @assert length(ep.prob) == length(weights)
+  WeightedEnsembleProblem(ep, weights)
+end
+
