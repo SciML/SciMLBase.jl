@@ -46,12 +46,12 @@ function EnsembleSolution(sim::T, elapsedTime,
         converged)
 end
 
-struct WeightedEnsembleSolution{T1<:AbstractEnsembleSolution, T2<:Number} <:
+struct WeightedEnsembleSolution{T1<:AbstractEnsembleSolution, T2<:Number}
     ensol::T1
-    weights::Vector{T2})
+    weights::Vector{T2}
     function WeightedEnsembleSolution(ensol, weights)
         @assert length(weights) == length(ensol)
-        new(ensol, weights)
+        new{typeof(ensol), eltype(weights)}(ensol, weights)
     end
 end
 
