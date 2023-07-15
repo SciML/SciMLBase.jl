@@ -36,9 +36,9 @@ function EnsembleProblem(; prob,
     EnsembleProblem(prob, prob_func, output_func, reduction, u_init, safetycopy)
 end
 
-struct WeightedEnsembleProblem{T, T2, T3, T4, T5, T6} <: AbstractEnsembleProblem
-  ensembleprob::EnsembleProblem{T, T2, T3, T4, T5}
-  weights::T6
+struct WeightedEnsembleProblem{T1<:AbstractEnsembleProblem, T2<:AbstractVector} <: AbstractEnsembleProblem
+  ensembleprob::T1
+  weights::T2
 end
 Base.propertynames(e::WeightedEnsembleProblem) = (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
 function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
