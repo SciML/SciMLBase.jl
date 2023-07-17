@@ -46,6 +46,15 @@ function EnsembleSolution(sim::T, elapsedTime,
         converged)
 end
 
+struct WeightedEnsembleSolution{T1<:AbstractEnsembleSolution, T2<:Number}
+    ensol::T1
+    weights::Vector{T2}
+    function WeightedEnsembleSolution(ensol, weights)
+        @assert length(weights) == length(ensol)
+        new{typeof(ensol), eltype(weights)}(ensol, weights)
+    end
+end
+
 function Base.reverse(sim::EnsembleSolution)
     EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged)
 end
@@ -212,4 +221,8 @@ end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)
     [s(args...; kwargs...) for s in sol]
+end
+
+Base.@propagate_inbounds function Base.getindex(sol::WeightedEnsembleSolution, S)
+    return [sum(stack(sol.weights .* sol.ensol[:, S]), dims = 2)]
 end
