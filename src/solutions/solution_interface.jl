@@ -78,9 +78,9 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
            !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
            all(in(getparamsyms(A)), Symbol.(sym))
-            return getindex.((A,), sym)
+            return VectorOfArray(getindex.((A,), sym))
         else
-            return [getindex.((A,), sym, i) for i in eachindex(A)]
+            return VectorOfArray([getindex.((A,), sym, i) for i in eachindex(A)])
         end
     else
         i = sym
@@ -110,7 +110,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
             observed(A, sym, :)
         end
     elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i, :]
+        VectorOfArray(A[i, :])
     else
         error("Invalid indexing of solution")
     end
