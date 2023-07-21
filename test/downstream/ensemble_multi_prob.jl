@@ -22,6 +22,6 @@ for i in 1:3
     @test sol[y, :][i] == sol[i][y]
 end
 # Ensemble is a recursive array
-@test Matrix(sol(0.0, idxs=[x])) == sol[1:1, 1, :] == Matrix(first(eachrow(sol[x, :]))')
+@test only.(sol(0.0, idxs=[x])) == sol[1, 1, :] == first.(sol[x, :])
 # TODO: fix the interpolation
-@test vec(sol(1.0, idxs=[x])) ≈ last.(sol[x, :].u)
+@test only.(sol(1.0, idxs=[x])) ≈ last.(sol[x, :])
