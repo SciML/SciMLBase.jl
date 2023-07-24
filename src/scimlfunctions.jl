@@ -390,7 +390,7 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, S,
+struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ, S,
     S2, S3, O, TCV,
     SYS} <: AbstractODEFunction{iip}
     f::F
@@ -404,6 +404,7 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     sparsity::SP
     Wfact::TW
     Wfact_t::TWt
+    W_prototype::WP
     paramjac::TPJ
     syms::S
     indepsym::S2
@@ -2191,6 +2192,7 @@ function ODEFunction{iip, specialize}(f;
                jac_prototype,
     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+    W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
     syms = __has_syms(f) ? f.syms : nothing,
     indepsym = __has_indepsym(f) ? f.indepsym : nothing,
@@ -2246,7 +2248,7 @@ function ODEFunction{iip, specialize}(f;
         ODEFunction{iip, specialize,
             Any, Any, Any, Any,
             Any, Any, Any, typeof(jac_prototype),
-            typeof(sparsity), Any, Any, Any,
+            typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             typeof(syms), typeof(indepsym), typeof(paramsyms), Any,
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
@@ -2257,23 +2259,23 @@ function ODEFunction{iip, specialize}(f;
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype), typeof(paramjac),
             typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, paramjac, syms, indepsym, paramsyms,
+            Wfact_t, W_prototype, paramjac, syms, indepsym, paramsyms,
             observed, _colorvec, sys)
     else
         ODEFunction{iip, specialize,
             typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
+            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype), typeof(paramjac),
             typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, paramjac, syms, indepsym, paramsyms,
+            Wfact_t, W_prototype, paramjac, syms, indepsym, paramsyms,
             observed, _colorvec, sys)
     end
 end
@@ -2293,19 +2295,19 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.syms), Any, Any, Any, typeof(f.colorvec),
             typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-            f.Wfact_t, f.paramjac, f.syms, f.indepsym, f.paramsyms,
+            f.Wfact_t, f.W_prototype, f.paramjac, f.syms, f.indepsym, f.paramsyms,
             f.observed, f.colorvec, f.sys)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
             typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
-            typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
+            typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
             typeof(f.paramjac),
             typeof(f.syms), typeof(f.indepsym), typeof(f.paramsyms),
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-            f.Wfact_t, f.paramjac, f.syms, f.indepsym, f.paramsyms,
+            f.Wfact_t, f.W_prototype, f.paramjac, f.syms, f.indepsym, f.paramsyms,
             f.observed, f.colorvec, f.sys)
     end
 end
@@ -3677,6 +3679,7 @@ __has_vjp(f) = isdefined(f, :vjp)
 __has_tgrad(f) = isdefined(f, :tgrad)
 __has_Wfact(f) = isdefined(f, :Wfact)
 __has_Wfact_t(f) = isdefined(f, :Wfact_t)
+__has_W_prototype(f) = isdefined(f, :W_prototype)
 __has_paramjac(f) = isdefined(f, :paramjac)
 __has_jac_prototype(f) = isdefined(f, :jac_prototype)
 __has_sparsity(f) = isdefined(f, :sparsity)
