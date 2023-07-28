@@ -16,7 +16,11 @@ DEFAULT_REDUCTION(u, data, I) = append!(u, data), false
 DEFAULT_VECTOR_PROB_FUNC(prob, i, repeat) = prob[i]
 function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...)
     # TODO: @invoke
-    invoke(EnsembleProblem, Tuple{Any}, prob; prob_func=DEFAULT_VECTOR_PROB_FUNC, kwargs...)
+    invoke(EnsembleProblem,
+        Tuple{Any},
+        prob;
+        prob_func = DEFAULT_VECTOR_PROB_FUNC,
+        kwargs...)
 end
 function EnsembleProblem(prob;
     output_func = DEFAULT_OUTPUT_FUNC,
@@ -36,21 +40,23 @@ function EnsembleProblem(; prob,
     EnsembleProblem(prob, prob_func, output_func, reduction, u_init, safetycopy)
 end
 
-struct WeightedEnsembleProblem{T1<:AbstractEnsembleProblem, T2<:AbstractVector} <: AbstractEnsembleProblem
-  ensembleprob::T1
-  weights::T2
+struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
+       AbstractEnsembleProblem
+    ensembleprob::T1
+    weights::T2
 end
-Base.propertynames(e::WeightedEnsembleProblem) = (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
+function Base.propertynames(e::WeightedEnsembleProblem)
+    (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
+end
 function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
-  f === :weights && return getfield(e, :weights)
-  f === :ensembleprob && return getfield(e, :ensembleprob)
-  return getproperty(getfield(e, :ensembleprob), f)
+    f === :weights && return getfield(e, :weights)
+    f === :ensembleprob && return getfield(e, :ensembleprob)
+    return getproperty(getfield(e, :ensembleprob), f)
 end
 function WeightedEnsembleProblem(args...; weights, kwargs...)
-  # TODO: allow skipping checks?
-  @assert sum(weights) ≈ 1
-  ep = EnsembleProblem(args...; kwargs...)
-  @assert length(ep.prob) == length(weights)
-  WeightedEnsembleProblem(ep, weights)
+    # TODO: allow skipping checks?
+    @assert sum(weights) ≈ 1
+    ep = EnsembleProblem(args...; kwargs...)
+    @assert length(ep.prob) == length(weights)
+    WeightedEnsembleProblem(ep, weights)
 end
-
