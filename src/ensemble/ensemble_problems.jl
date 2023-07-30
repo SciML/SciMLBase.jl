@@ -16,11 +16,7 @@ DEFAULT_REDUCTION(u, data, I) = append!(u, data), false
 DEFAULT_VECTOR_PROB_FUNC(prob, i, repeat) = prob[i]
 function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...)
     # TODO: @invoke
-    invoke(EnsembleProblem,
-        Tuple{Any},
-        prob;
-        prob_func = DEFAULT_VECTOR_PROB_FUNC,
-        kwargs...)
+    invoke(EnsembleProblem, Tuple{Any}, prob; prob_func = DEFAULT_VECTOR_PROB_FUNC, kwargs...)
 end
 function EnsembleProblem(prob;
     output_func = DEFAULT_OUTPUT_FUNC,

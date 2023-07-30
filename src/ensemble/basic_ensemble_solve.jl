@@ -47,7 +47,7 @@ function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}}
     ensemblealg::BasicEnsembleAlgorithm; kwargs...)
     # TODO: @invoke
     invoke(__solve, Tuple{AbstractEnsembleProblem, typeof(alg), typeof(ensemblealg)},
-        prob, alg, ensemblealg; trajectories = length(prob.prob), kwargs...)
+        prob, alg, ensemblealg; trajectories=length(prob.prob), kwargs...)
 end
 
 function __solve(prob::AbstractEnsembleProblem,
