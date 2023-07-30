@@ -53,4 +53,3 @@ function WeightedEnsembleProblem(args...; weights, kwargs...)
   @assert length(ep.prob) == length(weights)
   WeightedEnsembleProblem(ep, weights)
 end
-
