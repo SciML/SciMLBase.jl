@@ -4,7 +4,7 @@ function simplependulum!(du, u, p, t)
     du[1] = dθ
     du[2] = -9.81 * sin(θ)
 end
-function bc1!(residual, u, p, t)
+function bc!(residual, u, p, t)
     residual[1] = u[1][1] + pi / 2
     residual[2] = u[end][1] - pi / 2
 end
