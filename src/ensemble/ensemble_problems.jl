@@ -36,7 +36,7 @@ function EnsembleProblem(; prob,
     EnsembleProblem(prob, prob_func, output_func, reduction, u_init, safetycopy)
 end
 
-struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <: AbstractEnsembleProblem
+struct WeightedEnsembleProblem{T1<:AbstractEnsembleProblem, T2<:AbstractVector} <: AbstractEnsembleProblem
   ensembleprob::T1
   weights::T2
 end
