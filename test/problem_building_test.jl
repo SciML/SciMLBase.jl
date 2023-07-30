@@ -1,3 +1,5 @@
+using Test, SciMLBase
+
 function simplependulum!(du, u, p, t)
     θ = u[1]
     dθ = u[2]
