@@ -437,3 +437,11 @@ function successful_retcode(retcode::ReturnCode.T)
         retcode == ReturnCode.FloatingPointLimit
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
+
+function successful_retcoe(sol::OptimizationSolution)
+    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
+        retcode == ReturnCode.ExactSolutionLeft ||
+        retcode == ReturnCode.ExactSolutionRight ||
+        retcode == ReturnCode.FloatingPointLimit || 
+        retcode == ReturnCode.MaxIters
+end
