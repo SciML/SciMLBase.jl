@@ -439,5 +439,5 @@ end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
 
 function successful_retcode(sol::OptimizationSolution)
-    successful_retcode(sol.retcode) || retcode == ReturnCode.MaxIters
+    successful_retcode(sol.retcode) || sol.retcode == ReturnCode.MaxIters
 end
