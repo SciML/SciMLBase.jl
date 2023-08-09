@@ -439,9 +439,5 @@ end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
 
 function successful_retcode(sol::OptimizationSolution)
-    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
-        retcode == ReturnCode.ExactSolutionLeft ||
-        retcode == ReturnCode.ExactSolutionRight ||
-        retcode == ReturnCode.FloatingPointLimit || 
-        retcode == ReturnCode.MaxIters
+    retcode == successful_retcode(sol.retcode) || retcode == ReturnCode.MaxIters
 end
