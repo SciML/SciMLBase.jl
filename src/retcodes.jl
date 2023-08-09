@@ -438,7 +438,7 @@ function successful_retcode(retcode::ReturnCode.T)
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
 
-function successful_retcoe(sol::OptimizationSolution)
+function successful_retcode(sol::OptimizationSolution)
     retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
         retcode == ReturnCode.ExactSolutionLeft ||
         retcode == ReturnCode.ExactSolutionRight ||
