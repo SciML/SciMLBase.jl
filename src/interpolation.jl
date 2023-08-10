@@ -83,6 +83,8 @@ end
     u = id.u
     typeof(id) <: HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
+    t[end] == t[1] && tval != t[end] &&
+        error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     idx = sortperm(tvals, rev = tdir < 0)
     i = 2 # Start the search thinking it's between t[1] and t[2]
     tdir * tvals[idx[end]] > tdir * t[end] &&
@@ -143,6 +145,8 @@ times t (sorted), with values u and derivatives ks
     u = id.u
     typeof(id) <: HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
+    t[end] == t[1] && tval != t[end] &&
+        error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     idx = sortperm(tvals, rev = tdir < 0)
     i = 2 # Start the search thinking it's between t[1] and t[2]
     tdir * tvals[idx[end]] > tdir * t[end] &&
@@ -204,6 +208,8 @@ times t (sorted), with values u and derivatives ks
     u = id.u
     typeof(id) <: HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
+    t[end] == t[1] && tval != t[end] &&
+        error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval > tdir * t[end] &&
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval < tdir * t[1] &&
@@ -252,6 +258,8 @@ times t (sorted), with values u and derivatives ks
     u = id.u
     typeof(id) <: HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
+    t[end] == t[1] && tval != t[end] &&
+        error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval > tdir * t[end] &&
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval < tdir * t[1] &&
