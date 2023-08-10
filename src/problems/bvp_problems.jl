@@ -133,9 +133,13 @@ $(TYPEDEF)
 struct TwoPointBVPFunction{bF}
     bc::bF
 end
-TwoPointBVPFunction(; bc = error("No argument bc")) = TwoPointBVPFunction(bc)
-(f::TwoPointBVPFunction)(residual, ua, ub, p) = f.bc(residual, ua, ub, p)
-(f::TwoPointBVPFunction)(residual, u, p) = f.bc(residual, u[1], u[end], p)
+TwoPointBVPFunction(; bc = error("No argument `bc`")) = TwoPointBVPFunction(bc)
+function (f::TwoPointBVPFunction)(residuala, residualb, ua, ub, p)
+    return f.bc(residuala, residualb, ua, ub, p)
+end
+function (f::TwoPointBVPFunction)(residual::Tuple, u, p)
+    return f(residual[1], residual[2], u[1], u[end], p)
+end
 
 """
 $(TYPEDEF)
