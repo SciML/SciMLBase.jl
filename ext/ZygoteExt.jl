@@ -6,8 +6,8 @@ using SciMLBase: ODESolution, issymbollike, sym_to_index, remake, getobserved
 
 @adjoint function getindex(VA::ODESolution, i::Int, j::Int)
     function ODESolution_getindex_pullback(Δ)
-        du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k = 1:length(VA.u[1])] :
-              zero(VA.u[1]) for m = 1:length(VA.u)]
+        du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
+              zero(VA.u[1]) for m in 1:length(VA.u)]
         dp = zero(VA.prob.p)
         dprob = remake(VA.prob, p = dp)
         du, dprob
@@ -50,13 +50,13 @@ end
         du, dprob = if i === nothing
             getter = getobserved(VA)
             grz = pullback(getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
-            du = [k == j ? grz[2] : zero(VA.u[1]) for k = 1:length(VA.u)]
+            du = [k == j ? grz[2] : zero(VA.u[1]) for k in 1:length(VA.u)]
             dp = grz[3] # pullback for p
             dprob = remake(VA.prob, p = dp)
             du, dprob
         else
-            du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k = 1:length(VA.u[1])] :
-                  zero(VA.u[1]) for m = 1:length(VA.u)]
+            du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
+                  zero(VA.u[1]) for m in 1:length(VA.u)]
             dp = zero(VA.prob.p)
             dprob = remake(VA.prob, p = dp)
             du, dprob
