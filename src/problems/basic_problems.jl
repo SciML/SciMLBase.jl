@@ -33,7 +33,7 @@ methods.
 
 ```julia
 LinearProblem{isinplace}(A,x,p=NullParameters();u0=nothing,kwargs...)
-LinearProblem(f::AbstractDiffEqOperator,u0,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem(f::AbstractSciMLOperator,u0,p=NullParameters();u0=nothing,kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not, i.e. whether
@@ -60,9 +60,10 @@ struct LinearProblem{uType, isinplace, F, bType, P, K} <:
     p::P
     kwargs::K
     @add_kwonly function LinearProblem{iip}(A, b, p = NullParameters(); u0 = nothing,
-                                            kwargs...) where {iip}
+        kwargs...) where {iip}
+        warn_paramtype(p)
         new{typeof(u0), iip, typeof(A), typeof(b), typeof(p), typeof(kwargs)}(A, b, u0, p,
-                                                                              kwargs)
+            kwargs)
     end
 end
 
@@ -75,6 +76,8 @@ function LinearProblem(A, b, args...; kwargs...)
         LinearProblem{isinplace(A, 4)}(A, b, args...; kwargs...)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace LinearProblem 1
 
 """
 $(TYPEDEF)
@@ -139,14 +142,19 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
     problem_type::PT
     kwargs::K
     @add_kwonly function IntervalNonlinearProblem{iip}(f::AbstractIntervalNonlinearFunction{
-                                                                                            iip
-                                                                                            },
-                                                       tspan,
-                                                       p = NullParameters(),
-                                                       problem_type = StandardNonlinearProblem();
-                                                       kwargs...) where {iip}
+            iip,
+        },
+        tspan,
+        p = NullParameters(),
+        problem_type = StandardNonlinearProblem();
+        kwargs...) where {iip}
+        warn_paramtype(p)
         new{iip, typeof(tspan), typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f, tspan, p, problem_type, kwargs)
+            typeof(kwargs), typeof(problem_type)}(f,
+            tspan,
+            p,
+            problem_type,
+            kwargs)
     end
 
     """
@@ -160,6 +168,7 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
         IntervalNonlinearProblem{iip}(IntervalNonlinearFunction{iip}(f), tspan, p)
     end
 end
+TruncatedStacktraces.@truncate_stacktrace IntervalNonlinearProblem 1 2
 
 """
 $(SIGNATURES)
@@ -168,7 +177,7 @@ Define a nonlinear problem using an instance of
 [`IntervalNonlinearFunction`](@ref IntervalNonlinearFunction).
 """
 function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan,
-                                  p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     IntervalNonlinearProblem{isinplace(f)}(f, tspan, p; kwargs...)
 end
 
@@ -232,11 +241,16 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     problem_type::PT
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
-                                               p = NullParameters(),
-                                               problem_type = StandardNonlinearProblem();
-                                               kwargs...) where {iip}
+        p = NullParameters(),
+        problem_type = StandardNonlinearProblem();
+        kwargs...) where {iip}
+        warn_paramtype(p)
         new{typeof(u0), iip, typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f, u0, p, problem_type, kwargs)
+            typeof(kwargs), typeof(problem_type)}(f,
+            u0,
+            p,
+            problem_type,
+            kwargs)
     end
 
     """
@@ -251,6 +265,7 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     end
 end
 
+TruncatedStacktraces.@truncate_stacktrace NonlinearProblem 2 1
 """
 $(SIGNATURES)
 
@@ -347,21 +362,25 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace, P, F, L, U, K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinplace}
     f::F
-    lb::L
-    ub::U
+    lb::B
+    ub::B
     nout::Int
     p::P
     batch::Int
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
-                                              nout = 1,
-                                              batch = 0, kwargs...) where {iip}
-        new{iip, typeof(p), typeof(f), typeof(lb),
-            typeof(ub), typeof(kwargs)}(f, lb, ub, nout, p, batch, kwargs)
+        nout = 1,
+        batch = 0, kwargs...) where {iip}
+        @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
+        warn_paramtype(p)
+        new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f, lb, ub, nout, p,
+            batch, kwargs)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
 function IntegralProblem(f, lb, ub, args...; kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
@@ -426,8 +445,8 @@ optimization. They should be an `AbstractArray` matching the geometry of `u`,
 where `(lcons[I],ucons[I])` is the constraint (lower and upper bounds)
 for `cons[I]`.
 
-If `f` is a standard Julia function, it is automatically transformed into an 
-`OptimizationFunction` with `NoAD()`, meaning the derivative functions are not 
+If `f` is a standard Julia function, it is automatically transformed into an
+`OptimizationFunction` with `NoAD()`, meaning the derivative functions are not
 automatically generated.
 
 Any extra keyword arguments are captured to be sent to the optimizers.
@@ -473,19 +492,22 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     sense::S
     kwargs::K
     @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0,
-                                                  p = NullParameters();
-                                                  lb = nothing, ub = nothing, int = nothing,
-                                                  lcons = nothing, ucons = nothing,
-                                                  sense = nothing, kwargs...) where {iip}
+        p = NullParameters();
+        lb = nothing, ub = nothing, int = nothing,
+        lcons = nothing, ucons = nothing,
+        sense = nothing, kwargs...) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
+        warn_paramtype(p)
         new{iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
             typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, int, lcons, ucons, sense,
-                                           kwargs)
+            kwargs)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace OptimizationProblem 1 3
 
 function OptimizationProblem(f::OptimizationFunction, args...; kwargs...)
     OptimizationProblem{isinplace(f)}(f, args...; kwargs...)

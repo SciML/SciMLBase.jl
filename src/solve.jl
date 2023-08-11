@@ -51,13 +51,14 @@ The callback function `callback` is a function which is called after every optim
 step. Its signature is:
 
 ```julia
-callback = (x,other_args) -> false
+callback = (params, loss_val, other_args) -> false
 ```
 
-where `other_args` is are the extra return arguments of the optimization `f`.
-This allows for saving values from the optimization and using them for
-plotting and display without recalculating. The callback should return a
-Boolean value, and the default should be `false`, such that the optimization
+where `params` and `loss_val` are the current parameters and loss/objective value 
+in the optimization loop and `other_args` are the extra return arguments of 
+the optimization `f`. This allows for saving values from the optimization and 
+using them for plotting and display without recalculating. The callback should 
+return a Boolean value, and the default should be `false`, such that the optimization
 gets stopped if it returns `true`.
 
 ### Callback Example
@@ -77,7 +78,7 @@ end
 ```
 """
 function solve(prob::OptimizationProblem, alg, args...;
-               kwargs...)::AbstractOptimizationSolution
+    kwargs...)::AbstractOptimizationSolution
     if supports_opt_cache_interface(alg)
         solve!(init(prob, alg, args...; kwargs...))
     else
@@ -144,7 +145,7 @@ See also [`solve(prob::OptimizationProblem, alg, args...; kwargs...)`](@ref)
 """
 function init(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationCache
     _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
-    cache = __init(prob, alg, args...; kwargs...)
+    cache = __init(prob, alg, args...; prob.kwargs..., kwargs...)
     return cache
 end
 
@@ -165,7 +166,7 @@ end
 supports_opt_cache_interface(alg) = false
 function __solve(cache::AbstractOptimizationCache)::AbstractOptimizationSolution end
 function __init(prob::OptimizationProblem, alg, args...;
-                kwargs...)::AbstractOptimizationCache
+    kwargs...)::AbstractOptimizationCache
     throw(OptimizerMissingError(alg))
 end
 

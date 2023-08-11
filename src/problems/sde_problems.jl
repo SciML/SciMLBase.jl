@@ -38,8 +38,8 @@ with initial condition `u0`.
 - `SDEProblem(f::SDEFunction,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)`
 - `SDEProblem{isinplace,specialize}(f,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)` :
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
-  `isinplace` optionally sets whether the function is inplace or not. This is 
-  determined automatically, but not inferred. `specialize` optionally controls 
+  `isinplace` optionally sets whether the function is inplace or not. This is
+  determined automatically, but not inferred. `specialize` optionally controls
   the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
   for more details. The default is `AutoSpecialize.
 
@@ -62,7 +62,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process)
+  see [the noise process documentation page](@ref noise_process).
 * `noise_rate_prototype`: A prototype type instance for the noise rates, that
   is the output `g`. It can be any type which overloads `A_mul_B!` with itself
   being the middle argument. Commonly, this is a matrix or sparse matrix. If
@@ -95,25 +95,27 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     noise_rate_prototype::ND
     seed::UInt64
     @add_kwonly function SDEProblem{iip}(f::AbstractSDEFunction{iip}, g, u0,
-                                         tspan, p = NullParameters();
-                                         noise_rate_prototype = nothing,
-                                         noise = nothing, seed = UInt64(0),
-                                         kwargs...) where {iip}
+        tspan, p = NullParameters();
+        noise_rate_prototype = nothing,
+        noise = nothing, seed = UInt64(0),
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
-
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(noise), typeof(f), typeof(f.g),
             typeof(kwargs),
             typeof(noise_rate_prototype)}(f, f.g, u0, _tspan, p,
-                                          noise, kwargs,
-                                          noise_rate_prototype, seed)
+            noise, kwargs,
+            noise_rate_prototype, seed)
     end
 
     function SDEProblem{iip}(f, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         SDEProblem(SDEFunction{iip}(f, g), g, u0, tspan, p; kwargs...)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace SDEProblem 3 1 2
 
 #=
 function SDEProblem(f::AbstractSDEFunction,u0,tspan,p=NullParameters();kwargs...)
@@ -148,15 +150,15 @@ function SplitSDEProblem(f::SplitSDEFunction, g, u0, tspan, p = NullParameters()
 end
 
 function SplitSDEProblem{iip}(f1, f2, g, u0, tspan, p = NullParameters();
-                              kwargs...) where {iip}
+    kwargs...) where {iip}
     SplitSDEProblem(SplitSDEFunction(f1, f2, g), g, u0, tspan, p; kwargs...)
 end
 function SplitSDEProblem{iip}(f::SplitSDEFunction, g, u0, tspan, p = NullParameters();
-                              func_cache = nothing, kwargs...) where {iip}
+    func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
         _f = SplitSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-                                   _func_cache = cache, analytic = f.analytic)
+            _func_cache = cache, analytic = f.analytic)
     else
         _f = f
     end
@@ -178,21 +180,21 @@ function DynamicalSDEProblem(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwa
 end
 
 function DynamicalSDEProblem(f::DynamicalSDEFunction, g, v0, u0, tspan,
-                             p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     DynamicalSDEProblem{isinplace(f)}(f, g, v0, u0, tspan, p; kwargs...)
 end
 
 function DynamicalSDEProblem{iip}(f1, f2, g, v0, u0, tspan, p = NullParameters();
-                                  kwargs...) where {iip}
+    kwargs...) where {iip}
     DynamicalSDEProblem(DynamicalSDEFunction(f1, f2, g), g, v0, u0, tspan, p; kwargs...)
 end
 function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, g, v0, u0, tspan,
-                                  p = NullParameters();
-                                  func_cache = nothing, kwargs...) where {iip}
+    p = NullParameters();
+    func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
         _f = DynamicalSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-                                       _func_cache = cache, analytic = f.analytic)
+            _func_cache = cache, analytic = f.analytic)
     else
         _f = f
     end

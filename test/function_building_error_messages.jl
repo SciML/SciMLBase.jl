@@ -170,7 +170,7 @@ sWfact_t(u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop, giip, Wfact_t = sWfact_t)
 sWfact_t(u, p, gamma, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip, giip,
-                                                               Wfact_t = sWfact_t)
+    Wfact_t = sWfact_t)
 SDEFunction(foop, goop, Wfact_t = sWfact_t)
 sWfact_t(du, u, p, gamma, t) = [1.0]
 SDEFunction(fiip, giip, Wfact_t = sWfact_t)
@@ -191,7 +191,7 @@ sparamjac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop, goop, paramjac = sparamjac)
 sparamjac(u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip, giip,
-                                                               paramjac = sparamjac)
+    paramjac = sparamjac)
 SDEFunction(foop, goop, paramjac = sparamjac)
 sparamjac(du, u, p, t) = [1.0]
 SDEFunction(fiip, giip, paramjac = sparamjac)
@@ -242,7 +242,7 @@ end
 @test_nowarn RODEFunction(frode, analytic = rode_analytic)
 @test_nowarn RODEFunction(frode, analytic = rode_analytic!, analytic_full = true)
 @test_throws MethodError RODEFunction(frode, analytic = rode_analytic!,
-                                      analytic_full = nothing)
+    analytic_full = nothing)
 
 # DAEFunction
 
@@ -309,6 +309,97 @@ DAEFunction(dfoop, vjp = dvjp)
 dvjp(res, du, u, v, p, gamma, t) = [1.0]
 DAEFunction(dfiip, vjp = dvjp)
 DAEFunction(dfoop, vjp = dvjp)
+DAEFunction{true, SciMLBase.NoSpecialize}(dfiip, observed = 1)
+
+# DDEFunction
+
+ddefoop(u, h, p, t) = u
+ddefiip(du, u, h, p, t) = du .= u
+
+ddeofboth(u, h, p, t) = u
+ddeofboth(du, u, h, p, t) = du .= u
+
+DDEFunction(ddeofboth)
+DDEFunction{true}(ddeofboth)
+DDEFunction{false}(ddeofboth)
+
+ddejac(u, h, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, jac = ddejac)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, jac = ddejac)
+ddejac(u, h, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, jac = ddejac)
+DDEFunction(ddefoop, jac = ddejac)
+ddejac(du, u, h, p, t) = [1.0]
+DDEFunction(ddefiip, jac = ddejac)
+DDEFunction(ddefoop, jac = ddejac)
+
+ddeWfact(u, h, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, Wfact = ddeWfact)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact = ddeWfact)
+ddeWfact(u, h, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, Wfact = ddeWfact)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact = ddeWfact)
+ddeWfact(u, h, p, gamma, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, Wfact = ddeWfact)
+DDEFunction(ddefoop, Wfact = ddeWfact)
+ddeWfact(du, u, h, p, gamma, t) = [1.0]
+DDEFunction(ddefiip, Wfact = ddeWfact)
+DDEFunction(ddefoop, Wfact = ddeWfact)
+
+ddeWfact_t(u, h, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
+ddeWfact_t(u, h, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
+ddeWfact_t(u, h, p, gamma, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
+    Wfact_t = ddeWfact_t)
+DDEFunction(ddefoop, Wfact_t = Wfact_t)
+ddeWfact_t(du, u, h, p, gamma, t) = [1.0]
+DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
+DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
+
+ddetgrad(u, h, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, tgrad = ddetgrad)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, tgrad = ddetgrad)
+ddetgrad(u, h, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, tgrad = ddetgrad)
+DDEFunction(ddefoop, tgrad = ddetgrad)
+ddetgrad(du, u, h, p, t) = [1.0]
+DDEFunction(ddefiip, tgrad = ddetgrad)
+DDEFunction(ddefoop, tgrad = ddetgrad)
+
+ddeparamjac(u, h, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, paramjac = ddeparamjac)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, paramjac = ddeparamjac)
+ddeparamjac(u, h, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
+    paramjac = ddeparamjac)
+DDEFunction(ddefoop, paramjac = paramjac)
+ddeparamjac(du, u, h, p, t) = [1.0]
+DDEFunction(ddefiip, paramjac = ddeparamjac)
+DDEFunction(ddefoop, paramjac = ddeparamjac)
+
+ddejvp(u, h, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, jvp = ddejvp)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, jvp = ddejvp)
+ddejvp(u, v, h, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, jvp = ddejvp)
+DDEFunction(ddefoop, jvp = ddejvp)
+ddejvp(du, u, v, h, p, t) = [1.0]
+DDEFunction(ddefiip, jvp = ddejvp)
+DDEFunction(ddefoop, jvp = ddejvp)
+
+ddevjp(u, h, p, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, vjp = ddevjp)
+@test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, vjp = ddevjp)
+ddevjp(u, v, h, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip, vjp = ddevjp)
+DDEFunction(ddefoop, vjp = ddevjp)
+ddevjp(du, u, v, h, p, t) = [1.0]
+DDEFunction(ddefiip, vjp = ddevjp)
+DDEFunction(ddefoop, vjp = ddevjp)
 
 # NonlinearFunction
 

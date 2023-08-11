@@ -40,6 +40,14 @@ TwoPointBVProblem{isinplace}(f,bc!,u0,tspan,p=NullParameters();kwargs...)
 BVProblem{isinplace}(f,bc!,u0,tspan,p=NullParameters();kwargs...)
 ```
 
+or if we have an initial guess function `initialGuess(t)` for the given BVP,
+we can pass the initial guess to the problem constructors:
+
+```julia
+TwoPointBVProblem{isinplace}(f,bc!,initialGuess,tspan,p=NullParameters();kwargs...)
+BVProblem{isinplace}(f,bc!,initialGuess,tspan,p=NullParameters();kwargs...)
+```
+
 For any BVP problem type, `bc!` is the inplace function:
 
 ```julia
@@ -53,7 +61,7 @@ time points, and for shooting type methods `u=sol` the ODE solution.
 Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -65,7 +73,7 @@ every solve call.
 * `bc`: The boundary condition function.
 * `u0`: The initial condition. Either the initial condition for the ODE as an
   initial value problem, or a `Vector` of values for ``u(t_i)`` for collocation
-  methods
+  methods.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `kwargs`: The keyword arguments passed onto the solves.
@@ -79,15 +87,17 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
     p::P
     problem_type::PT
     kwargs::K
-    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction, bc, u0, tspan,
-                                        p = NullParameters(),
-                                        problem_type = StandardBVProblem();
-                                        kwargs...) where {iip}
+
+    @add_kwonly function BVProblem{iip}(f::AbstractODEFunction, bc, u0, tspan,
+        p = NullParameters(),
+        problem_type = StandardBVProblem();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
-        new{typeof(u0), typeof(tspan), iip, typeof(p),
+        warn_paramtype(p)
+        new{typeof(u0), typeof(_tspan), iip, typeof(p),
             typeof(f), typeof(bc),
             typeof(problem_type), typeof(kwargs)}(f, bc, u0, _tspan, p,
-                                                  problem_type, kwargs)
+            problem_type, kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
@@ -95,7 +105,10 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
     end
 end
 
+TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
+
 function BVProblem(f::AbstractBVPFunction, bc, u0, tspan, args...; kwargs...)
+
     BVProblem{isinplace(f, 4)}(f, bc, u0, tspan, args...; kwargs...)
 end
 
@@ -105,6 +118,7 @@ end
 
 # convenience interfaces:
 # Allow any previous timeseries solution
+
 function BVProblem(f::AbstractBVPFunction, bc, sol::T, tspan::Tuple, p = NullParameters();
                    kwargs...) where {T <: AbstractTimeseriesSolution}
     BVProblem(f, bc, sol.u, tspan, p)
@@ -135,6 +149,25 @@ function TwoPointBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     TwoPointBVProblem{iip}(f, bc, u0, tspan, p; kwargs...)
 end
 function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
-                                kwargs...) where {iip}
+    kwargs...) where {iip}
     BVProblem{iip}(f, TwoPointBVPFunction(bc), u0, tspan, p; kwargs...)
+end
+
+# Allow previous timeseries solution
+function TwoPointBVProblem(f::AbstractODEFunction,
+    bc,
+    sol::T,
+    tspan::Tuple,
+    p = NullParameters()) where {T <: AbstractTimeseriesSolution}
+    TwoPointBVProblem(f, bc, sol.u, tspan, p)
+end
+# Allow initial guess function for the initial guess
+function TwoPointBVProblem(f::AbstractODEFunction,
+    bc,
+    initialGuess,
+    tspan::AbstractVector,
+    p = NullParameters();
+    kwargs...)
+    u0 = [initialGuess(i) for i in tspan]
+    TwoPointBVProblem(f, bc, u0, (tspan[1], tspan[end]), p)
 end

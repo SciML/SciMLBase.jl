@@ -84,7 +84,7 @@ sol = solve(prob, Rodas4())
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
-       D(q[2]) ~ 2.0]
+    D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
 sys2_simplified = structural_simplify(sys2)
 prob2 = ODEProblem(sys2, [], (0.0, 5.0))
@@ -186,7 +186,7 @@ sts = @variables x[1:3](t)=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
 eqs = [collect(D.(x) .~ x)
-       D(y) ~ norm(x) * y - x[1]]
+    D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 @test_broken sol = solve(prob, Tsit5())
@@ -212,9 +212,9 @@ sol = solve(prob, Tsit5())
     loss = (a - x)^2 + b * (y - x^2)^2
     @named sys = OptimizationSystem(loss, [x, y], [a, b])
     u0 = [x => 1.0
-          y => 2.0]
+        y => 2.0]
     p = [a => 1.0
-         b => 100.0]
+        b => 100.0]
     prob = OptimizationProblem(sys, u0, p, grad = true, hess = true)
     sol = solve(prob, GradientDescent())
     @test sol[x]≈1 atol=1e-3

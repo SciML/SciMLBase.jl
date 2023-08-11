@@ -1,3 +1,22 @@
+
+"""
+$(TYPEDEF)
+Statistics from the nonlinear equation solver about the solution process.
+## Fields
+- nf: Number of function evaluations.
+- njacs: Number of Jacobians created during the solve.
+- nfactors: Number of factorzations of the jacobian required for the solve.
+- nsolve: Number of linear solves `W\b` required for the solve.
+- nsteps: Total number of iterations for the nonlinear solver.
+"""
+mutable struct NLStats
+    nf::Int
+    njacs::Int
+    nfactors::Int
+    nsolve::Int
+    nsteps::Int
+end
+
 """
 $(TYPEDEF)
 
@@ -17,8 +36,10 @@ or the steady state solution to a differential equation defined by a SteadyState
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `left`: if the solver is bracketing method, this is the final left bracket value.
 - `right`: if the solver is bracketing method, this is the final right bracket value.
+- `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct NonlinearSolution{T, N, uType, R, P, A, O, uType2} <: AbstractNonlinearSolution{T, N}
+struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
+       AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
     prob::P
@@ -27,37 +48,38 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2} <: AbstractNonlinearSo
     original::O
     left::uType2
     right::uType2
+    stats::S
 end
+
+TruncatedStacktraces.@truncate_stacktrace NonlinearSolution 1 2
 
 const SteadyStateSolution = NonlinearSolution
 
+get_p(p::AbstractNonlinearSolution) = p.prob.p
+
 function build_solution(prob::AbstractNonlinearProblem,
-                        alg, u, resid; calculate_error = true,
-                        retcode = ReturnCode.Default,
-                        original = nothing,
-                        left = nothing,
-                        right = nothing,
-                        kwargs...)
+    alg, u, resid; calculate_error = true,
+    retcode = ReturnCode.Default,
+    original = nothing,
+    left = nothing,
+    right = nothing,
+    stats = nothing,
+    kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
-    NonlinearSolution{T, N, typeof(u), typeof(resid),
-                      typeof(prob), typeof(alg), typeof(original), typeof(left)}(u, resid,
-                                                                                 prob, alg,
-                                                                                 retcode,
-                                                                                 original,
-                                                                                 left,
-                                                                                 right)
+    NonlinearSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
+        typeof(original), typeof(left), typeof(stats)}(u, resid, prob, alg,
+        retcode, original,
+        left, right, stats)
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     T = eltype(eltype(u))
     N = ndims(u)
 
-    NonlinearSolution{T, N, typeof(u), typeof(sol.resid),
-                      typeof(sol.prob), typeof(sol.alg),
-                      typeof(sol.original), typeof(sol.left)}(u, sol.resid, sol.prob,
-                                                              sol.alg, sol.retcode,
-                                                              sol.original, sol.left,
-                                                              sol.right)
+    NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
+        typeof(sol.alg), typeof(sol.original), typeof(sol.left),
+        typeof(sol.stats)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
+        sol.original, sol.left, sol.right, sol.stats)
 end

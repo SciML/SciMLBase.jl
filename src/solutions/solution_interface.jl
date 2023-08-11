@@ -18,11 +18,19 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
 end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
-function augment(A::DiffEqArray, sol::AbstractODESolution)
-    syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
+function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T, N, Q, B}
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
+    if has_sys(sol.prob.f)
+        DiffEqArray{T, N, Q, B, typeof(sol.prob.f.sys), typeof(observed), typeof(p)}(A.u,
+            A.t,
+            sol.prob.f.sys,
+            observed,
+            p)
+    else
+        syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
+        DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
+    end
 end
 
 # Symbol Handling
@@ -30,30 +38,30 @@ end
 # For handling ambiguities
 for T in [Int, Colon]
     @eval Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                          I::$T)
+        I::$T)
         A.u[I]
     end
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                I::Union{Int, AbstractArray{Int},
-                                                         CartesianIndex, Colon, BitArray,
-                                                         AbstractArray{Bool}}...)
+    I::Union{Int, AbstractArray{Int},
+        CartesianIndex, Colon, BitArray,
+        AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-                                                ::Colon)
+    ::Colon)
     [A.u[j][i] for j in 1:length(A)]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon,
-                                                i::Int)
+    i::Int)
     A.u[i]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-                                                II::AbstractArray{Int})
+    II::AbstractArray{Int})
     [A.u[j][i] for j in II]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-                                                ii::CartesianIndex)
+    ii::CartesianIndex)
     ti = Tuple(ii)
     i = last(ti)
     jj = CartesianIndex(Base.front(ti))
@@ -61,14 +69,15 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym)
-    paramsyms = getparamsyms(A)
     if issymbollike(sym)
         if sym isa AbstractArray
             return A[collect(sym)]
         end
         i = sym_to_index(sym, A)
     elseif all(issymbollike, sym)
-        if all(in(paramsyms), Symbol.(sym))
+        if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
+           !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
+           all(in(getparamsyms(A)), Symbol.(sym))
             return getindex.((A,), sym)
         else
             return [getindex.((A,), sym, i) for i in eachindex(A)]
@@ -77,13 +86,26 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = sym
     end
 
-    indepsym = getindepsym(A)
-    paramsyms = getparamsyms(A)
     if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
-            A.t
-        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), paramsyms)]
+        if issymbollike(sym)
+            if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
+               Symbol(sym) == getindepsym(A)
+                return A.t
+            elseif has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
+                return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
+            elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
+                return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
+            else
+                if (sym isa Symbol) && has_sys(A.prob.f)
+                    if hasproperty(A.prob.f.sys, sym)
+                        return observed(A, getproperty(A.prob.f.sys, sym), :)
+                    else
+                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
+                    end
+                else
+                    return observed(A, sym, :)
+                end
+            end
         else
             observed(A, sym, :)
         end
@@ -106,9 +128,9 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, s
         i = sym
     end
 
-    indepsym = getindepsym(A)
     if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
+        if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
+           Symbol(sym) == getindepsym(A)
             A.t[args...]
         else
             observed(A, sym, args...)
@@ -171,11 +193,11 @@ end
 function Base.summary(io::IO, A::AbstractTimeseriesSolution)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(A)),
-          no_color, " with uType ",
-          type_color, eltype(A.u),
-          no_color, " and tType ",
-          type_color, eltype(A.t), no_color)
+        type_color, nameof(typeof(A)),
+        no_color, " with uType ",
+        type_color, eltype(A.u),
+        no_color, " and tType ",
+        type_color, eltype(A.t), no_color)
 end
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
@@ -209,36 +231,40 @@ DEFAULT_PLOT_FUNC(x...) = (x...,)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
 @recipe function f(sol::AbstractTimeseriesSolution;
-                   plot_analytic = false,
-                   denseplot = (sol.dense ||
-                                typeof(sol.prob) <: AbstractDiscreteProblem) &&
-                               !(typeof(sol) <: AbstractRODESolution) &&
-                               !(hasfield(typeof(sol), :interp) &&
-                                 typeof(sol.interp) <: SensitivityInterpolation),
-                   plotdensity = min(Int(1e5),
-                                     sol.tslocation == 0 ?
-                                     (typeof(sol.prob) <: AbstractDiscreteProblem ?
-                                      max(1000, 100 * length(sol)) :
-                                      max(1000, 10 * length(sol))) :
-                                     1000 * sol.tslocation),
-                   tspan = nothing, axis_safety = 0.1,
-                   vars = nothing, idxs = nothing)
+    plot_analytic = false,
+    denseplot = (sol.dense ||
+                 typeof(sol.prob) <: AbstractDiscreteProblem) &&
+                !(typeof(sol) <: AbstractRODESolution) &&
+                !(hasfield(typeof(sol), :interp) &&
+                  typeof(sol.interp) <: SensitivityInterpolation),
+    plotdensity = min(Int(1e5),
+        sol.tslocation == 0 ?
+        (typeof(sol.prob) <: AbstractDiscreteProblem ?
+         max(1000, 100 * length(sol)) :
+         max(1000, 10 * length(sol))) :
+        1000 * sol.tslocation),
+    tspan = nothing, axis_safety = 0.1,
+    vars = nothing, idxs = nothing)
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
-                     :f; force = true)
+            :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
         idxs = vars
     end
 
     syms = getsyms(sol)
-    int_vars = interpret_vars(idxs, sol, syms)
+    if idxs isa Symbol
+        int_vars = interpret_vars([idxs], sol, syms)
+    else
+        int_vars = interpret_vars(idxs, sol, syms)
+    end
     strs = cleansyms(syms)
 
     tscale = get(plotattributes, :xscale, :identity)
     plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
-                                         plotdensity, tspan, axis_safety,
-                                         idxs, int_vars, tscale, strs)
+        plotdensity, tspan, axis_safety,
+        idxs, int_vars, tscale, strs)
 
     tdir = sign(sol.t[end] - sol.t[1])
     xflip --> tdir < 0
@@ -323,7 +349,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
                     maxs = max(mins, maximum(sol[iv[4], :]))
                 end
                 zlims --> ((1 - sign(mins) * axis_safety) * mins,
-                 (1 + sign(maxs) * axis_safety) * maxs)
+                    (1 + sign(maxs) * axis_safety) * maxs)
             end
         end
     end
@@ -332,91 +358,8 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     (plot_vecs...,)
 end
 
-function getsyms(sol)
-    if has_syms(sol.prob.f)
-        return sol.prob.f.syms
-    else
-        return keys(sol.u[1])
-    end
-end
-function getsyms(sol::AbstractOptimizationSolution)
-    if has_syms(sol)
-        return get_syms(sol)
-    else
-        return keys(sol.u[1])
-    end
-end
-
-function getindepsym(sol)
-    if has_indepsym(sol.prob.f)
-        return sol.prob.f.indepsym
-    else
-        return nothing
-    end
-end
-
-function getparamsyms(sol)
-    if has_paramsyms(sol.prob.f)
-        return sol.prob.f.paramsyms
-    else
-        return nothing
-    end
-end
-function getparamsyms(sol::AbstractOptimizationSolution)
-    if has_paramsyms(sol)
-        return get_paramsyms(sol)
-    else
-        return nothing
-    end
-end
-
-# Only for compatibility!
-function getindepsym_defaultt(sol)
-    if has_indepsym(sol.prob.f)
-        return sol.prob.f.indepsym
-    else
-        return :t
-    end
-end
-
-function getobserved(sol)
-    if has_observed(sol.prob.f)
-        return sol.prob.f.observed
-    else
-        return DEFAULT_OBSERVED
-    end
-end
-function getobserved(sol::AbstractOptimizationSolution)
-    if has_observed(sol)
-        return get_observed(sol)
-    else
-        return DEFAULT_OBSERVED
-    end
-end
-
-cleansyms(syms::Nothing) = nothing
-cleansyms(syms::Tuple) = collect(cleansym(sym) for sym in syms)
-cleansyms(syms::Vector{Symbol}) = cleansym.(syms)
-cleansyms(syms::LinearIndices) = nothing
-cleansyms(syms::CartesianIndices) = nothing
-cleansyms(syms::Base.OneTo) = nothing
-
-function cleansym(sym::Symbol)
-    str = String(sym)
-    # MTK generated names
-    rules = ("₊" => ".", "⦗" => "(", "⦘" => ")")
-    for r in rules
-        str = replace(str, r)
-    end
-    return str
-end
-
-sym_to_index(sym, sol::AbstractSciMLSolution) = sym_to_index(sym, getsyms(sol))
-sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
-const issymbollike = RecursiveArrayTools.issymbollike
-
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axis_safety,
-                          vars, int_vars, tscale, strs)
+    vars, int_vars, tscale, strs)
     if tspan === nothing
         if sol.tslocation == 0
             end_idx = length(sol)
@@ -450,7 +393,7 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
         if plot_analytic
             if typeof(sol.prob.f) <: Tuple
                 plot_analytic_timeseries = [sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p,
-                                                                   t) for t in plott]
+                    t) for t in plott]
             else
                 plot_analytic_timeseries = [sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t)
                                             for t in plott]
@@ -490,8 +433,8 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
     end
     # Should check that all have the same dims!
     plot_vecs, labels = solplot_vecs_and_labels(dims, int_vars, plot_timeseries, plott, sol,
-                                                plot_analytic, plot_analytic_timeseries,
-                                                strs)
+        plot_analytic, plot_analytic_timeseries,
+        strs)
 end
 
 function interpret_vars(vars, sol, syms)
@@ -505,8 +448,8 @@ function interpret_vars(vars, sol, syms)
                     if issymbollike(x)
                         found = sym_to_index(x, syms)
                         push!(tmp,
-                              found == nothing && getindepsym_defaultt(sol) == x ? 0 :
-                              something(found, x))
+                            found == nothing && getindepsym_defaultt(sol) == x ? 0 :
+                            something(found, x))
                     else
                         push!(tmp, x)
                     end
@@ -518,8 +461,17 @@ function interpret_vars(vars, sol, syms)
                 end
             elseif issymbollike(var)
                 found = sym_to_index(var, syms)
-                var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
-                          something(found, var)
+                if (var isa Symbol) && has_sys(sol.prob.f)
+                    if hasproperty(sol.prob.f.sys, var)
+                        var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
+                                  something(found, getproperty(sol.prob.f.sys, var))
+                    else
+                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
+                    end
+                else
+                    var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
+                              something(found, var)
+                end
             else
                 var_int = var
             end
@@ -568,7 +520,7 @@ function interpret_vars(vars, sol, syms)
             if typeof(vars[end]) <: AbstractArray
                 # If both axes are lists we zip (will fail if different lengths)
                 vars = collect(zip([DEFAULT_PLOT_FUNC for i in eachindex(vars[end - 1])],
-                                   vars[end - 1], vars[end]))
+                    vars[end - 1], vars[end]))
             else
                 # Just the x axis is a list
                 vars = [(DEFAULT_PLOT_FUNC, x, vars[end]) for x in vars[end - 1]]
@@ -696,7 +648,7 @@ function u_n(timeseries::AbstractArray, sym, sol, plott, plot_timeseries)
 end
 
 function solplot_vecs_and_labels(dims, vars, plot_timeseries, plott, sol, plot_analytic,
-                                 plot_analytic_timeseries, strs)
+    plot_analytic_timeseries, strs)
     plot_vecs = []
     labels = String[]
     for x in vars
@@ -720,13 +672,14 @@ function solplot_vecs_and_labels(dims, vars, plot_timeseries, plott, sol, plot_a
     end
 
     if plot_analytic
+        @assert sol.u_analytic !== Nothing
         analytic_plot_vecs = []
         for x in vars
             tmp = []
             for j in 2:dims
                 push!(tmp,
-                      u_n(plot_analytic_timeseries, x[j], sol, plott,
-                          plot_analytic_timeseries))
+                    u_n(plot_analytic_timeseries, x[j], sol, plott,
+                        plot_analytic_timeseries))
             end
             f = x[1]
             tmp = f.(tmp...)

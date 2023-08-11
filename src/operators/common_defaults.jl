@@ -1,11 +1,11 @@
-# The `update_coefficients!` interface
-DEFAULT_UPDATE_FUNC(A, u, p, t) = A # no-op used by the basic operators
-# isconstant(::AbstractDiffEqLinearOperator) = true # already defined in DiffEqBase
 update_coefficients!(L::AbstractDiffEqLinearOperator, u, p, t) = L
 
 # Routines that use the AbstractMatrix representation
 function Base.convert(::Type{AbstractArray}, L::AbstractDiffEqLinearOperator)
     convert(AbstractMatrix, L)
+end
+function Base.size(L::AbstractDiffEqLinearOperator, i::Integer)
+    size(convert(AbstractMatrix, L), i)
 end
 function Base.size(L::AbstractDiffEqLinearOperator, args...)
     size(convert(AbstractMatrix, L), args...)
@@ -14,13 +14,21 @@ function LinearAlgebra.opnorm(L::AbstractDiffEqLinearOperator, p::Real = 2)
     opnorm(convert(AbstractMatrix, L), p)
 end
 Base.@propagate_inbounds function Base.getindex(L::AbstractDiffEqLinearOperator,
-                                                I::Vararg{Any, N}) where {N}
+    I::Vararg{Any, N}) where {N}
     convert(AbstractMatrix, L)[I...]
 end
 function Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where {N}
     convert(AbstractMatrix, L)[I...]
 end
 for op in (:*, :/, :\)
+    ### added in https://github.com/SciML/SciMLBase.jl/pull/377
+    @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractVecOrMat)
+        $op(convert(AbstractMatrix, L), x)
+    end
+    @eval function Base.$op(x::AbstractVecOrMat, L::AbstractDiffEqLinearOperator)
+        $op(x, convert(AbstractMatrix, L))
+    end
+    ###
     @eval function Base.$op(L::AbstractDiffEqLinearOperator, x::AbstractArray)
         $op(convert(AbstractMatrix, L), x)
     end
@@ -30,14 +38,31 @@ for op in (:*, :/, :\)
     @eval Base.$op(L::DiffEqArrayOperator, x::Number) = $op(convert(AbstractMatrix, L), x)
     @eval Base.$op(x::Number, L::DiffEqArrayOperator) = $op(x, convert(AbstractMatrix, L))
 end
-function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
-                            B::AbstractArray)
+
+### added in https://github.com/SciML/SciMLBase.jl/pull/377
+function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
+    B::AbstractVecOrMat)
     mul!(Y, convert(AbstractMatrix, L), B)
 end
+###
+
 function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
-                            B::AbstractArray, α::Number, β::Number)
+    B::AbstractArray)
+    mul!(Y, convert(AbstractMatrix, L), B)
+end
+
+### added in https://github.com/SciML/SciMLBase.jl/pull/377
+function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
+    B::AbstractVecOrMat, α::Number, β::Number)
     mul!(Y, convert(AbstractMatrix, L), B, α, β)
 end
+###
+
+function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
+    B::AbstractArray, α::Number, β::Number)
+    mul!(Y, convert(AbstractMatrix, L), B, α, β)
+end
+
 for pred in (:isreal, :issymmetric, :ishermitian, :isposdef)
     @eval function LinearAlgebra.$pred(L::AbstractDiffEqLinearOperator)
         $pred(convert(AbstractArray, L))
@@ -52,7 +77,7 @@ function LinearAlgebra.factorize(L::AbstractDiffEqLinearOperator)
     FactorizedDiffEqArrayOperator(factorize(convert(AbstractMatrix, L)))
 end
 for fact in (:lu, :lu!, :qr, :qr!, :cholesky, :cholesky!, :ldlt, :ldlt!,
-             :bunchkaufman, :bunchkaufman!, :lq, :lq!, :svd, :svd!)
+    :bunchkaufman, :bunchkaufman!, :lq, :lq!, :svd, :svd!)
     @eval function LinearAlgebra.$fact(L::AbstractDiffEqLinearOperator, args...)
         FactorizedDiffEqArrayOperator($fact(convert(AbstractMatrix, L), args...))
     end

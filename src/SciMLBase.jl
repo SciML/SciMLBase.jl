@@ -1,7 +1,11 @@
 module SciMLBase
-
+if isdefined(Base, :Experimental) &&
+   isdefined(Base.Experimental, Symbol("@max_methods"))
+    @eval Base.Experimental.@max_methods 1
+end
 using ConstructionBase
 using RecipesBase, RecursiveArrayTools, Tables
+using SymbolicIndexingInterface
 using DocStringExtensions
 using LinearAlgebra
 using Statistics
@@ -9,12 +13,30 @@ using Distributed
 using Markdown
 import Preferences
 
-import Logging, ArrayInterfaceCore
+import Logging, ArrayInterface
 import IteratorInterfaceExtensions
-import CommonSolve: solve, init, solve!
+import CommonSolve: solve, init, step!, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
+import TruncatedStacktraces
+import ADTypes: AbstractADType
+
+using Reexport
+using SciMLOperators
+using SciMLOperators:
+    AbstractSciMLOperator,
+    IdentityOperator, NullOperator,
+    ScaledOperator, AddedOperator, ComposedOperator,
+    InvertedOperator, InvertibleOperator
+
+import SciMLOperators:
+    DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
+    getops, isconstant, iscached, islinear, issquare,
+    has_adjoint, has_expmv, has_expmv!, has_exp,
+    has_mul, has_mul!, has_ldiv, has_ldiv!
+
+@reexport using SciMLOperators
 
 function __solve end
 function __init end
@@ -81,9 +103,9 @@ Base for types which define nonlinear solve problems (f(u)=0).
 abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem end
 abstract type AbstractIntervalNonlinearProblem{uType, isinplace} <:
               AbstractNonlinearProblem{uType,
-                                       isinplace} end
+    isinplace} end
 const AbstractSteadyStateProblem{uType, isinplace} = AbstractNonlinearProblem{uType,
-                                                                              isinplace}
+    isinplace}
 
 """
 $(TYPEDEF)
@@ -281,6 +303,36 @@ abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: AbstractSciMLAlgorith
 """
 $(TYPEDEF)
 """
+abstract type AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} <:
+              AbstractSensitivityAlgorithm{CS, AD, FDT} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractForwardSensitivityAlgorithm{CS, AD, FDT} <:
+              AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractAdjointSensitivityAlgorithm{CS, AD, FDT} <:
+              AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractSecondOrderSensitivityAlgorithm{CS, AD, FDT} <:
+              AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractShadowingSensitivityAlgorithm{CS, AD, FDT} <:
+              AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
+
+"""
+$(TYPEDEF)
+"""
 abstract type DAEInitializationAlgorithm <: AbstractSciMLAlgorithm end
 
 """
@@ -421,9 +473,9 @@ Union of all base solution types.
 Uses a Union so that solution types can be `<: AbstractArray`
 """
 const AbstractSciMLSolution = Union{AbstractTimeseriesSolution,
-                                    AbstractNoTimeSolution,
-                                    AbstractEnsembleSolution,
-                                    AbstractNoiseProcess}
+    AbstractNoTimeSolution,
+    AbstractEnsembleSolution,
+    AbstractNoiseProcess}
 
 """
 $(TYPEDEF)
@@ -439,6 +491,11 @@ abstract type AbstractNonlinearSolution{T, N} <: AbstractNoTimeSolution{T, N} en
 $(TYPEDEF)
 """
 abstract type AbstractIntegralSolution{T, N} <: AbstractNoTimeSolution{T, N} end
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
@@ -487,7 +544,7 @@ abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
 $(TYPEDEF)
 """
 const AbstractPDESolution{T, N, S, D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D},
-                                              AbstractPDENoTimeSolution{T, N, S, D}}
+    AbstractPDENoTimeSolution{T, N, S, D}}
 
 """
 $(TYPEDEF)
@@ -495,11 +552,7 @@ $(TYPEDEF)
 abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Misc
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractSciMLOperator{T} end
-
+# TODO - deprecate AbstractDiffEqOperator family
 """
 $(TYPEDEF)
 """
@@ -552,13 +605,6 @@ abstract type AbstractReactionNetwork <: Function end
 """
 $(TYPEDEF)
 
-Base type for AD choices.
-"""
-abstract type AbstractADType end
-
-"""
-$(TYPEDEF)
-
 Internal. Used for signifying which AD context a derivative calculation is in.
 """
 abstract type ADOriginator end
@@ -588,6 +634,7 @@ include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
+include("debug.jl")
 
 unwrapped_f(f) = f
 unwrapped_f(f::Void) = unwrapped_f(f.f)
@@ -596,22 +643,21 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
 end
 
 function specialization(::Union{ODEFunction{iip, specialize},
-                                SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-                                SDDEFunction{iip, specialize},
-                                DAEFunction{iip, specialize},
-                                DynamicalODEFunction{iip, specialize},
-                                SplitFunction{iip, specialize},
-                                DynamicalSDEFunction{iip, specialize},
-                                SplitSDEFunction{iip, specialize},
-                                DynamicalDDEFunction{iip, specialize},
-                                DiscreteFunction{iip, specialize},
-                                ImplicitDiscreteFunction{iip, specialize},
-                                RODEFunction{iip, specialize},
-                                NonlinearFunction{iip, specialize},
-                                OptimizationFunction{iip, specialize},
-                                BVPFunction{iip, specialize}}) where {iip,
-                                                                               specialize}
-    specialize
+    SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
+    SDDEFunction{iip, specialize},
+    DAEFunction{iip, specialize},
+    DynamicalODEFunction{iip, specialize},
+    SplitFunction{iip, specialize},
+    DynamicalSDEFunction{iip, specialize},
+    SplitSDEFunction{iip, specialize},
+    DynamicalDDEFunction{iip, specialize},
+    DiscreteFunction{iip, specialize},
+    ImplicitDiscreteFunction{iip, specialize},
+    RODEFunction{iip, specialize},
+    NonlinearFunction{iip, specialize},
+    OptimizationFunction{iip, specialize},
+    BVPFunction{iip, specialize}}) where {iip,
+    specialize}
 end
 
 specialization(f::AbstractSciMLFunction) = FullSpecialize
@@ -626,6 +672,8 @@ include("operators/operators.jl")
 include("operators/basic_operators.jl")
 include("operators/diffeq_operator.jl")
 include("operators/common_defaults.jl")
+include("symbolic_utils.jl")
+include("performance_warnings.jl")
 
 include("problems/discrete_problems.jl")
 include("problems/implicit_discrete_problems.jl")
@@ -643,6 +691,7 @@ include("problems/sdde_problems.jl")
 include("problems/pde_problems.jl")
 include("problems/problem_utils.jl")
 include("problems/problem_traits.jl")
+include("problems/problem_interface.jl")
 
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
@@ -665,6 +714,27 @@ include("tabletraits.jl")
 include("remake.jl")
 include("callbacks.jl")
 
+include("deprecated.jl")
+
+import PrecompileTools
+
+PrecompileTools.@compile_workload begin
+    function lorenz(du, u, p, t)
+        du[1] = 10.0(u[2] - u[1])
+        du[2] = u[1] * (28.0 - u[3]) - u[2]
+        du[3] = u[1] * u[2] - (8 / 3) * u[3]
+    end
+
+    function lorenz_oop(u, p, t)
+        [10.0(u[2] - u[1]), u[1] * (28.0 - u[3]) - u[2], u[1] * u[2] - (8 / 3) * u[3]]
+    end
+
+    ODEProblem(lorenz, [1.0; 0.0; 0.0], (0.0, 1.0))
+    ODEProblem(lorenz, [1.0; 0.0; 0.0], (0.0, 1.0), Float64[])
+    ODEProblem(lorenz_oop, [1.0; 0.0; 0.0], (0.0, 1.0))
+    ODEProblem(lorenz_oop, [1.0; 0.0; 0.0], (0.0, 1.0), Float64[])
+end
+
 function discretize end
 function symbolic_discretize end
 
@@ -672,21 +742,6 @@ isfunctionwrapper(x) = false
 function wrapfun_oop end
 function wrapfun_iip end
 function unwrap_fw end
-
-# Deprecated Quadrature things
-const AbstractQuadratureProblem = AbstractIntegralProblem
-const AbstractQuadratureAlgorithm = AbstractIntegralAlgorithm
-const AbstractQuadratureSolution = AbstractIntegralSolution
-
-# Deprecated High Level things
-# All downstream uses need to be removed before removing
-
-const DEAlgorithm = AbstractDEAlgorithm
-const SciMLAlgorithm = AbstractSciMLAlgorithm
-const DEProblem = AbstractDEProblem
-const DEAlgorithm = AbstractDEAlgorithm
-const DESolution = AbstractSciMLSolution
-const SciMLSolution = AbstractSciMLSolution
 
 export ReturnCode
 
@@ -699,8 +754,9 @@ export isinplace
 
 export solve, solve!, init, discretize, symbolic_discretize
 
-export LinearProblem, NonlinearProblem, IntervalNonlinearProblem,
-       IntegralProblem, OptimizationProblem
+export LinearProblem,
+    NonlinearProblem, IntervalNonlinearProblem,
+    IntegralProblem, OptimizationProblem
 
 export IntegralProblem
 
@@ -708,15 +764,16 @@ export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
 export NoiseProblem
 export ODEProblem, ODESolution
-export DynamicalODEFunction, DynamicalODEProblem,
-       SecondOrderODEProblem, SplitFunction, SplitODEProblem
+export DynamicalODEFunction,
+    DynamicalODEProblem,
+    SecondOrderODEProblem, SplitFunction, SplitODEProblem
 export SplitSDEProblem
 export DynamicalSDEFunction, DynamicalSDEProblem
 export RODEProblem, RODESolution, SDEProblem
 export DAEProblem, DAESolution
 export DDEProblem
 export DynamicalDDEFunction, DynamicalDDEProblem,
-       SecondOrderDDEProblem
+    SecondOrderDDEProblem
 export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
@@ -726,8 +783,8 @@ export BVProblem, TwoPointBVProblem
 export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
-       DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-       IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction
+    DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
+    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction
 
 export OptimizationFunction
 
@@ -742,19 +799,16 @@ export AffineDiffEqOperator, DiffEqScaledOperator
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
 export step!, deleteat!, addat!, get_tmp_cache,
-       full_cache, user_cache, u_cache, du_cache,
-       rand_cache, ratenoise_cache,
-       resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
-       terminate!,
-       add_tstop!, has_tstop, first_tstop, pop_tstop!,
-       add_saveat!, set_abstol!,
-       set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
-       u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
-       set_u!, check_error, change_t_via_interpolation!, addsteps!,
-       isdiscrete, reeval_internals_due_to_modification!
-
-export update_coefficients!, update_coefficients,
-       has_adjoint, has_expmv!, has_expmv, has_exp, has_mul, has_mul!, has_ldiv, has_ldiv!
+    full_cache, user_cache, u_cache, du_cache,
+    rand_cache, ratenoise_cache,
+    resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
+    terminate!,
+    add_tstop!, has_tstop, first_tstop, pop_tstop!,
+    add_saveat!, set_abstol!,
+    set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
+    u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
+    set_u!, check_error, change_t_via_interpolation!, addsteps!,
+    isdiscrete, reeval_internals_due_to_modification!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 

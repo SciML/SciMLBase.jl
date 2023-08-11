@@ -8,7 +8,7 @@ Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types
 
 ## Mathematical Specification of a Discrete Problem
 
-To define an Discrete Problem, you simply need to give the function ``f`` and the initial
+To define a Discrete Problem, you simply need to give the function ``f`` and the initial
 condition ``u_0`` which define a function map:
 
 ```math
@@ -20,7 +20,7 @@ be an AbstractArray (or number) whose geometry matches the desired geometry of `
 Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
 provide `u₀` as arbitrary matrices / higher dimension tensors as well. ``u_{n+1}`` only depends on the previous
 iteration ``u_{n}`` and ``t_{n+1}``. The default ``t_{n+1}`` of `FunctionMap` is
-``t_n = t_0 + n*dt`` (with `dt=1` being the default). For continuous-time Markov chains
+``t_n = t_0 + n*dt`` (with `dt=1` being the default). For continuous-time Markov chains,
 this is the time at which the change is occurring.
 
 Note that if the discrete solver is set to have `scale_by_time=true`, then the problem
@@ -41,15 +41,15 @@ u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
 - `DiscreteProblem{isinplace,specialize}(u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the identity map.
 
-`isinplace` optionally sets whether the function is inplace or not. This is 
-determined automatically, but not inferred. `specialize` optionally controls 
+`isinplace` optionally sets whether the function is inplace or not. This is
+determined automatically, but not inferred. `specialize` optionally controls
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
 documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -88,23 +88,32 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function DiscreteProblem{iip}(f::AbstractDiscreteFunction{iip},
-                                              u0, tspan::Tuple, p = NullParameters();
-                                              kwargs...) where {iip}
+        u0, tspan::Tuple, p = NullParameters();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), isinplace(f, 4),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f, u0, _tspan, p, kwargs)
+            typeof(f), typeof(kwargs)}(f,
+            u0,
+            _tspan,
+            p,
+            kwargs)
     end
 
     function DiscreteProblem{iip}(u0::Nothing, tspan::Nothing, p = NullParameters();
-                                  callback = nothing) where {iip}
+        callback = nothing) where {iip}
         if iip
             f = DISCRETE_INPLACE_DEFAULT
         else
             f = DISCRETE_OUTOFPLACE_DEFAULT
         end
         new{Nothing, Nothing, iip, typeof(p),
-            typeof(f), typeof(callback)}(f, nothing, nothing, p, callback)
+            typeof(f), typeof(callback)}(f,
+            nothing,
+            nothing,
+            p,
+            callback)
     end
 
     function DiscreteProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
@@ -112,18 +121,20 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     end
 end
 
+TruncatedStacktraces.@truncate_stacktrace DiscreteProblem 3 1 2
+
 """
     DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
 
 Defines a discrete problem with the specified functions.
 """
 function DiscreteProblem(f::AbstractDiscreteFunction, u0, tspan::Tuple,
-                         p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function DiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
-                         kwargs...)
+    kwargs...)
     iip = isinplace(f, 4)
     DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
@@ -134,7 +145,7 @@ $(SIGNATURES)
 Define a discrete problem with the identity map.
 """
 function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan::Tuple,
-                         p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     iip = typeof(u0) <: AbstractArray
     if iip
         f = DISCRETE_INPLACE_DEFAULT

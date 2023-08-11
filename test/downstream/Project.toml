@@ -10,8 +10,8 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-BoundaryValueDiffEq = "2.10"
-ModelingToolkit = "8.35"
+BoundaryValueDiffEq = "2.10, 3"
+ModelingToolkit = "8.37"
 Optimization = "3"
 OptimizationOptimJL = "0.1"
 OrdinaryDiffEq = "6.33"

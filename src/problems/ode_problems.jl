@@ -46,7 +46,7 @@ are:
 For more details on the in-place and specialization controls, see the ODEFunction
 documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -109,14 +109,20 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     """An internal argument for storing traits about the solving process."""
     problem_type::PT
     @add_kwonly function ODEProblem{iip}(f::AbstractODEFunction{iip},
-                                         u0, tspan, p = NullParameters(),
-                                         problem_type = StandardODEProblem();
-                                         kwargs...) where {iip}
+        u0, tspan, p = NullParameters(),
+        problem_type = StandardODEProblem();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),
-            typeof(problem_type)}(f, u0, _tspan, p, kwargs, problem_type)
+            typeof(problem_type)}(f,
+            u0,
+            _tspan,
+            p,
+            kwargs,
+            problem_type)
     end
 
     """
@@ -127,33 +133,34 @@ struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        ptspan = promote_tspan(tspan)
+        _tspan = promote_tspan(tspan)
         _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-        ODEProblem(_f, u0, tspan, p; kwargs...)
+        ODEProblem(_f, u0, _tspan, p; kwargs...)
     end
 
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
-                                                    kwargs...) where {iip, recompile}
+        kwargs...) where {iip, recompile}
         ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
     end
 
     function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
-                                                        kwargs...) where {iip}
-        ptspan = promote_tspan(tspan)
+        kwargs...) where {iip}
+        _tspan = promote_tspan(tspan)
         if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
             if iip
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                                                                             (u0, u0, p,
-                                                                              ptspan[1])))
+                    (u0, u0, p,
+                        _tspan[1])))
             else
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                                                                             (u0, p,
-                                                                              ptspan[1])))
+                    (u0, p,
+                        _tspan[1])))
             end
         end
-        ODEProblem{iip}(ff, u0, tspan, p; kwargs...)
+        ODEProblem{iip}(ff, u0, _tspan, p; kwargs...)
     end
 end
+TruncatedStacktraces.@truncate_stacktrace ODEProblem 3 1 2
 
 """
     ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
@@ -166,9 +173,9 @@ end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
-    ptspan = promote_tspan(tspan)
+    _tspan = promote_tspan(tspan)
     _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-    ODEProblem(_f, u0, tspan, p; kwargs...)
+    ODEProblem(_f, u0, _tspan, p; kwargs...)
 end
 
 """
@@ -178,12 +185,12 @@ abstract type AbstractDynamicalODEProblem end
 
 @doc doc"""
 
-Defines an dynamical ordinary differential equation (ODE) problem.
+Defines a dynamical ordinary differential equation (ODE) problem.
 Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/
 
 Dynamical ordinary differential equations, such as those arising from the definition
 of a Hamiltonian system or a second order ODE, have a special structure that can be
-utilized in the solution of the differential equation. On this page we describe
+utilized in the solution of the differential equation. On this page, we describe
 how to define second order differential equations for their efficient numerical solution.
 
 ## Mathematical Specification of a Dynamical ODE Problem
@@ -199,7 +206,7 @@ specified as `f1(dv,v,u,p,t)` and `f2(du,v,u,p,t)` (in the inplace form), where 
 is independent of `v` (unless specified by the solver), and `f2` is independent
 of `u` and `t`. This includes discretizations arising from
 `SecondOrderODEProblem`s where the velocity is not used in the acceleration function,
-and Hamiltonians where the potential is (or can be) time-dependent but the kinetic
+and Hamiltonians where the potential is (or can be) time-dependent, but the kinetic
 energy is only dependent on `v`.
 
 Note that some methods assume that the integral of `f2` is a quadratic form. That
@@ -219,7 +226,7 @@ DynamicalODEProblem{isinplace}(f1,f2,v0,u0,tspan,p=NullParameters();kwargs...)
 Defines the ODE with the specified functions. `isinplace` optionally sets whether
 the function is inplace or not. This is determined automatically, but not inferred.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -241,7 +248,7 @@ struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
 Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
 """
 function DynamicalODEProblem(f::DynamicalODEFunction, du0, u0, tspan, p = NullParameters();
-                             kwargs...)
+    kwargs...)
     ODEProblem(f, ArrayPartition(du0, u0), tspan, p; kwargs...)
 end
 function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwargs...)
@@ -249,9 +256,9 @@ function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwarg
 end
 
 function DynamicalODEProblem{iip}(f1, f2, du0, u0, tspan, p = NullParameters();
-                                  kwargs...) where {iip}
+    kwargs...) where {iip}
     ODEProblem(DynamicalODEFunction{iip}(f1, f2), ArrayPartition(du0, u0), tspan, p,
-               DynamicalODEProblem{iip}(); kwargs...)
+        DynamicalODEProblem{iip}(); kwargs...)
 end
 
 @doc doc"""
@@ -307,7 +314,7 @@ function SecondOrderODEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs..
 end
 
 function SecondOrderODEProblem{iip}(f, du0, u0, tspan, p = NullParameters();
-                                    kwargs...) where {iip}
+    kwargs...) where {iip}
     if iip
         f2 = function (du, v, u, p, t)
             du .= v
@@ -319,10 +326,10 @@ function SecondOrderODEProblem{iip}(f, du0, u0, tspan, p = NullParameters();
     end
     _u0 = ArrayPartition((du0, u0))
     ODEProblem(DynamicalODEFunction{iip}(f, f2), _u0, tspan, p,
-               SecondOrderODEProblem{iip}(); kwargs...)
+        SecondOrderODEProblem{iip}(); kwargs...)
 end
 function SecondOrderODEProblem(f::DynamicalODEFunction, du0, u0, tspan,
-                               p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     iip = isinplace(f.f1, 5)
     _u0 = ArrayPartition((du0, u0))
     if f.f2.f === nothing
@@ -336,12 +343,12 @@ function SecondOrderODEProblem(f::DynamicalODEFunction, du0, u0, tspan,
             end
         end
         return ODEProblem(DynamicalODEFunction{iip}(f.f1, f2; mass_matrix = f.mass_matrix,
-                                                    analytic = f.analytic), _u0, tspan, p,
-                          SecondOrderODEProblem{iip}(); kwargs...)
+                analytic = f.analytic), _u0, tspan, p,
+            SecondOrderODEProblem{iip}(); kwargs...)
     else
         return ODEProblem(DynamicalODEFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-                                                    analytic = f.analytic), _u0, tspan, p,
-                          SecondOrderODEProblem{iip}(); kwargs...)
+                analytic = f.analytic), _u0, tspan, p,
+            SecondOrderODEProblem{iip}(); kwargs...)
     end
 end
 
@@ -357,7 +364,7 @@ Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/split_ode_type
 
 ## Mathematical Specification of a Split ODE Problem
 
-To define a `SplitODEProblem`, you simply need to give a two functions
+To define a `SplitODEProblem`, you simply need to give two functions
 ``f_1`` and ``f_2`` along with an initial condition ``u_0`` which
 define an ODE:
 
@@ -376,7 +383,7 @@ Many splits are at least partially linear. That is the equation:
 \frac{du}{dt} =  Au + f_2(u,p,t)
 ```
 
-For how to define a linear function `A`, see the documentation for the [DiffEqOperators](@ref).
+For how to define a linear function `A`, see the documentation for the [AbstractSciMLOperator](https://docs.sciml.ai/SciMLOperators/stable/interface/).
 
 ### Constructors
 
@@ -389,14 +396,14 @@ The `isinplace` parameter can be omitted and will be determined using the signat
 Note that both `f1` and `f2` should support the in-place style if `isinplace` is `true` or they
 should both support the out-of-place style if `isinplace` is `false`. You cannot mix up the two styles.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 Under the hood, a `SplitODEProblem` is just a regular `ODEProblem` whose `f` is a `SplitFunction`.
-Therefore you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
+Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
 dedicated to split problems, see [Split ODE Solvers](@ref split_ode_solve).
 
 For specifying Jacobians and mass matrices, see the
@@ -419,7 +426,7 @@ function SplitODEProblem(f1, f2, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 function SplitODEProblem{iip}(f1, f2, u0, tspan, p = NullParameters();
-                              kwargs...) where {iip}
+    kwargs...) where {iip}
     f = SplitFunction{iip}(f1, f2)
     SplitODEProblem(f, u0, tspan, p; kwargs...)
 end
@@ -433,11 +440,11 @@ function SplitODEProblem(f::SplitFunction, u0, tspan, p = NullParameters(); kwar
     SplitODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 function SplitODEProblem{iip}(f::SplitFunction, u0, tspan, p = NullParameters();
-                              kwargs...) where {iip}
+    kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
         f = SplitFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-                               _func_cache = cache, analytic = f.analytic)
+            _func_cache = cache, analytic = f.analytic)
     end
     ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
@@ -457,17 +464,17 @@ function IncrementingODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 function IncrementingODEProblem{iip}(f, u0, tspan, p = NullParameters();
-                                     kwargs...) where {iip}
+    kwargs...) where {iip}
     f = IncrementingODEFunction{iip}(f)
     IncrementingODEProblem(f, u0, tspan, p; kwargs...)
 end
 
 function IncrementingODEProblem(f::IncrementingODEFunction, u0, tspan, p = NullParameters();
-                                kwargs...)
+    kwargs...)
     IncrementingODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
-                                     p = NullParameters(); kwargs...) where {iip}
+    p = NullParameters(); kwargs...) where {iip}
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end

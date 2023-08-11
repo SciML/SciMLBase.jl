@@ -106,52 +106,54 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <: AbstractContin
     reltol::T2
     repeat_nudge::T3
     function ContinuousCallback(condition::F1, affect!::F2, affect_neg!::F3,
-                                initialize::F4, finalize::F5, idxs::I, rootfind,
-                                interp_points, save_positions, dtrelax::R, abstol::T,
-                                reltol::T2,
-                                repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2, T3, I, R
-                                                         }
+        initialize::F4, finalize::F5, idxs::I, rootfind,
+        interp_points, save_positions, dtrelax::R, abstol::T,
+        reltol::T2,
+        repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2, T3, I, R
+    }
         new{F1, F2, F3, F4, F5, T, T2, T3, I, R}(condition,
-                                                 affect!, affect_neg!,
-                                                 initialize, finalize, idxs, rootfind,
-                                                 interp_points,
-                                                 BitArray(collect(save_positions)),
-                                                 dtrelax, abstol, reltol, repeat_nudge)
+            affect!, affect_neg!,
+            initialize, finalize, idxs, rootfind,
+            interp_points,
+            BitArray(collect(save_positions)),
+            dtrelax, abstol, reltol, repeat_nudge)
     end
 end
 
 function ContinuousCallback(condition, affect!, affect_neg!;
-                            initialize = INITIALIZE_DEFAULT,
-                            finalize = FINALIZE_DEFAULT,
-                            idxs = nothing,
-                            rootfind = LeftRootFind,
-                            save_positions = (true, true),
-                            interp_points = 10,
-                            dtrelax = 1,
-                            abstol = 10eps(), reltol = 0,
-                            repeat_nudge = 1 // 100)
+    initialize = INITIALIZE_DEFAULT,
+    finalize = FINALIZE_DEFAULT,
+    idxs = nothing,
+    rootfind = LeftRootFind,
+    save_positions = (true, true),
+    interp_points = 10,
+    dtrelax = 1,
+    abstol = 10eps(), reltol = 0,
+    repeat_nudge = 1 // 100)
     ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize,
-                       idxs,
-                       rootfind, interp_points,
-                       save_positions,
-                       dtrelax, abstol, reltol, repeat_nudge)
+        idxs,
+        rootfind, interp_points,
+        save_positions,
+        dtrelax, abstol, reltol, repeat_nudge)
 end
 
 function ContinuousCallback(condition, affect!;
-                            initialize = INITIALIZE_DEFAULT,
-                            finalize = FINALIZE_DEFAULT,
-                            idxs = nothing,
-                            rootfind = LeftRootFind,
-                            save_positions = (true, true),
-                            affect_neg! = affect!,
-                            interp_points = 10,
-                            dtrelax = 1,
-                            abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    initialize = INITIALIZE_DEFAULT,
+    finalize = FINALIZE_DEFAULT,
+    idxs = nothing,
+    rootfind = LeftRootFind,
+    save_positions = (true, true),
+    affect_neg! = affect!,
+    interp_points = 10,
+    dtrelax = 1,
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
     ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize, idxs,
-                       rootfind, interp_points,
-                       collect(save_positions),
-                       dtrelax, abstol, reltol, repeat_nudge)
+        rootfind, interp_points,
+        collect(save_positions),
+        dtrelax, abstol, reltol, repeat_nudge)
 end
+
+TruncatedStacktraces.@truncate_stacktrace ContinuousCallback
 
 """
 ```julia
@@ -209,53 +211,55 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <:
     reltol::T2
     repeat_nudge::T3
     function VectorContinuousCallback(condition::F1, affect!::F2, affect_neg!::F3, len::Int,
-                                      initialize::F4, finalize::F5, idxs::I, rootfind,
-                                      interp_points, save_positions, dtrelax::R,
-                                      abstol::T, reltol::T2,
-                                      repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2,
-                                                               T3, I, R}
+        initialize::F4, finalize::F5, idxs::I, rootfind,
+        interp_points, save_positions, dtrelax::R,
+        abstol::T, reltol::T2,
+        repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2,
+        T3, I, R}
         new{F1, F2, F3, F4, F5, T, T2, T3, I, R}(condition,
-                                                 affect!, affect_neg!, len,
-                                                 initialize, finalize, idxs, rootfind,
-                                                 interp_points,
-                                                 BitArray(collect(save_positions)),
-                                                 dtrelax, abstol, reltol, repeat_nudge)
+            affect!, affect_neg!, len,
+            initialize, finalize, idxs, rootfind,
+            interp_points,
+            BitArray(collect(save_positions)),
+            dtrelax, abstol, reltol, repeat_nudge)
     end
 end
 
 function VectorContinuousCallback(condition, affect!, affect_neg!, len;
-                                  initialize = INITIALIZE_DEFAULT,
-                                  finalize = FINALIZE_DEFAULT,
-                                  idxs = nothing,
-                                  rootfind = LeftRootFind,
-                                  save_positions = (true, true),
-                                  interp_points = 10,
-                                  dtrelax = 1,
-                                  abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    initialize = INITIALIZE_DEFAULT,
+    finalize = FINALIZE_DEFAULT,
+    idxs = nothing,
+    rootfind = LeftRootFind,
+    save_positions = (true, true),
+    interp_points = 10,
+    dtrelax = 1,
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
     VectorContinuousCallback(condition, affect!, affect_neg!, len,
-                             initialize, finalize,
-                             idxs,
-                             rootfind, interp_points,
-                             save_positions, dtrelax,
-                             abstol, reltol, repeat_nudge)
+        initialize, finalize,
+        idxs,
+        rootfind, interp_points,
+        save_positions, dtrelax,
+        abstol, reltol, repeat_nudge)
 end
 
 function VectorContinuousCallback(condition, affect!, len;
-                                  initialize = INITIALIZE_DEFAULT,
-                                  finalize = FINALIZE_DEFAULT,
-                                  idxs = nothing,
-                                  rootfind = LeftRootFind,
-                                  save_positions = (true, true),
-                                  affect_neg! = affect!,
-                                  interp_points = 10,
-                                  dtrelax = 1,
-                                  abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    initialize = INITIALIZE_DEFAULT,
+    finalize = FINALIZE_DEFAULT,
+    idxs = nothing,
+    rootfind = LeftRootFind,
+    save_positions = (true, true),
+    affect_neg! = affect!,
+    interp_points = 10,
+    dtrelax = 1,
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
     VectorContinuousCallback(condition, affect!, affect_neg!, len, initialize, finalize,
-                             idxs,
-                             rootfind, interp_points,
-                             collect(save_positions),
-                             dtrelax, abstol, reltol, repeat_nudge)
+        idxs,
+        rootfind, interp_points,
+        collect(save_positions),
+        dtrelax, abstol, reltol, repeat_nudge)
 end
+
+TruncatedStacktraces.@truncate_stacktrace VectorContinuousCallback
 
 """
 ```julia
@@ -293,18 +297,20 @@ struct DiscreteCallback{F1, F2, F3, F4} <: AbstractDiscreteCallback
     finalize::F4
     save_positions::BitArray{1}
     function DiscreteCallback(condition::F1, affect!::F2,
-                              initialize::F3, finalize::F4,
-                              save_positions) where {F1, F2, F3, F4}
+        initialize::F3, finalize::F4,
+        save_positions) where {F1, F2, F3, F4}
         new{F1, F2, F3, F4}(condition,
-                            affect!, initialize, finalize,
-                            BitArray(collect(save_positions)))
+            affect!, initialize, finalize,
+            BitArray(collect(save_positions)))
     end
 end
 function DiscreteCallback(condition, affect!;
-                          initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
-                          save_positions = (true, true))
+    initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
+    save_positions = (true, true))
     DiscreteCallback(condition, affect!, initialize, finalize, save_positions)
 end
+
+TruncatedStacktraces.@truncate_stacktrace DiscreteCallback
 
 """
 $(TYPEDEF)
@@ -359,5 +365,5 @@ end
 end
 @inline function split_callbacks(cs, ds, d::CallbackSet, args...)
     split_callbacks((cs..., d.continuous_callbacks...), (ds..., d.discrete_callbacks...),
-                    args...)
+        args...)
 end

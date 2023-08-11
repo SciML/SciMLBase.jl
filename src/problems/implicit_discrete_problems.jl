@@ -42,7 +42,7 @@ for more details. The default is `AutoSpecialize`.
 For more details on the in-place and specialization controls, see the ODEFunction
 documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -81,22 +81,29 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function ImplicitDiscreteProblem{iip}(f::ImplicitDiscreteFunction{
-                                                                                  iip
-                                                                                  },
-                                                      u0, tspan::Tuple,
-                                                      p = NullParameters();
-                                                      kwargs...) where {iip}
+            iip,
+        },
+        u0, tspan::Tuple,
+        p = NullParameters();
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), isinplace(f, 6),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f, u0, _tspan, p, kwargs)
+            typeof(f), typeof(kwargs)}(f,
+            u0,
+            _tspan,
+            p,
+            kwargs)
     end
 
     function ImplicitDiscreteProblem{iip}(f, u0, tspan, p = NullParameters();
-                                          kwargs...) where {iip}
+        kwargs...) where {iip}
         ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace ImplicitDiscreteProblem 3 1 2
 
 """
     ImplicitDiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
@@ -104,12 +111,12 @@ end
 Defines a discrete problem with the specified functions.
 """
 function ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan::Tuple,
-                                 p = NullParameters(); kwargs...)
+    p = NullParameters(); kwargs...)
     ImplicitDiscreteProblem{isinplace(f, 6)}(f, u0, tspan, p; kwargs...)
 end
 
 function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
-                                 kwargs...)
+    kwargs...)
     iip = isinplace(f, 6)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end

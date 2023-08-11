@@ -23,14 +23,14 @@ to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary 
 - `RODEProblem(f::RODEFunction,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing)`
 - `RODEProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing,mass_matrix=I)` :
   Defines the RODE with the specified functions. The default noise is `WHITE_NOISE`.
-  `isinplace` optionally sets whether the function is inplace or not. This is 
-  determined automatically, but not inferred. `specialize` optionally controls 
+  `isinplace` optionally sets whether the function is inplace or not. This is
+  determined automatically, but not inferred. `specialize` optionally controls
   the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
   for more details. The default is `AutoSpecialize.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -65,21 +65,24 @@ mutable struct RODEProblem{uType, tType, isinplace, P, NP, F, K, ND} <:
     rand_prototype::ND
     seed::UInt64
     @add_kwonly function RODEProblem{iip}(f::RODEFunction{iip}, u0, tspan,
-                                          p = NullParameters();
-                                          rand_prototype = nothing,
-                                          noise = nothing, seed = UInt64(0),
-                                          kwargs...) where {iip}
+        p = NullParameters();
+        rand_prototype = nothing,
+        noise = nothing, seed = UInt64(0),
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(noise), typeof(f), typeof(kwargs),
             typeof(rand_prototype)}(f, u0, _tspan, p, noise, kwargs,
-                                    rand_prototype, seed)
+            rand_prototype, seed)
     end
     function RODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         RODEProblem(RODEFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace RODEProblem 3 1 2
 
 function RODEProblem(f::RODEFunction, u0, tspan, p = NullParameters(); kwargs...)
     RODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)

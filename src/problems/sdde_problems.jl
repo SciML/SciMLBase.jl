@@ -67,15 +67,15 @@ SDDEProblem(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 ```
 
-`isinplace` optionally sets whether the function is inplace or not. This is 
-determined automatically, but not inferred. `specialize` optionally controls 
+`isinplace` optionally sets whether the function is inplace or not. This is
+determined automatically, but not inferred. `specialize` optionally controls
 the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
 for more details. The default is `AutoSpecialize.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
 
 
-Parameters are optional, and if not given then a `NullParameters()` singleton
+Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
 parameters. Any extra keyword arguments are passed on to the solvers. For example,
 if you set a `callback` in the problem, then that `callback` will be added in
@@ -96,7 +96,7 @@ For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref perfo
   used by the history function `h`. Defaults to `()`.
 * `neutral`: If the DDE is neutral, i.e., if delays appear in derivative terms.
 * `order_discontinuity_t0`: The order of the discontinuity at the initial time
-  point. Defaults to `0` if an initial condition `u0` is provided. Otherwise
+  point. Defaults to `0` if an initial condition `u0` is provided. Otherwise,
   it is forced to be greater or equal than `1`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """
@@ -118,35 +118,38 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     order_discontinuity_t0::Rational{Int}
 
     @add_kwonly function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
-                                          p = NullParameters();
-                                          noise_rate_prototype = nothing, noise = nothing,
-                                          seed = UInt64(0),
-                                          constant_lags = (), dependent_lags = (),
-                                          neutral = f.mass_matrix !== I &&
-                                                    det(f.mass_matrix) != 1,
-                                          order_discontinuity_t0 = 0 // 1,
-                                          kwargs...) where {iip}
+        p = NullParameters();
+        noise_rate_prototype = nothing, noise = nothing,
+        seed = UInt64(0),
+        constant_lags = (), dependent_lags = (),
+        neutral = f.mass_matrix !== I &&
+                  det(f.mass_matrix) != 1,
+        order_discontinuity_t0 = 0 // 1,
+        kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
+        warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
             typeof(p), typeof(noise), typeof(f), typeof(g), typeof(h), typeof(kwargs),
             typeof(noise_rate_prototype)}(f, g, u0, h, _tspan, p, noise, constant_lags,
-                                          dependent_lags, kwargs, noise_rate_prototype,
-                                          seed, neutral, order_discontinuity_t0)
+            dependent_lags, kwargs, noise_rate_prototype,
+            seed, neutral, order_discontinuity_t0)
     end
 
     function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
-                              p = NullParameters();
-                              order_discontinuity_t0 = 1 // 1, kwargs...) where {iip}
+        p = NullParameters();
+        order_discontinuity_t0 = 1 // 1, kwargs...) where {iip}
         SDDEProblem{iip}(f, g, h(p, first(tspan)), h, tspan, p;
-                         order_discontinuity_t0 = max(1 // 1, order_discontinuity_t0),
-                         kwargs...)
+            order_discontinuity_t0 = max(1 // 1, order_discontinuity_t0),
+            kwargs...)
     end
 
     function SDDEProblem{iip}(f, g, args...; kwargs...) where {iip}
         SDDEProblem{iip}(SDDEFunction{iip}(f, g), g, args...; kwargs...)
     end
 end
+
+TruncatedStacktraces.@truncate_stacktrace SDDEProblem 5 1 2
 
 function SDDEProblem(f, g, args...; kwargs...)
     SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)

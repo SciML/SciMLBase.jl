@@ -6,19 +6,24 @@ Returns the number of arguments of `f` for each method.
 function numargs(f)
     if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
        typeof(f).name.name == :RFunction
-        # Uses the RCall form to grab the parmaeter length
+        # Uses the RCall form to grab the parameter length
         return [length(unsafe_load(f.r.p).formals)]
     else
         return [num_types_in_tuple(m.sig) - 1 for m in methods(f)] #-1 since f is the first parameter
     end
 end
 
-function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{T, V, W, I}) where {
-                                                                                           T,
-                                                                                           V,
-                                                                                           W,
-                                                                                           I
-                                                                                           }
+function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
+    T,
+    V,
+    W,
+    I,
+}) where {
+    T,
+    V,
+    W,
+    I,
+}
     (length(T),)
 end
 
@@ -233,7 +238,7 @@ form is disabled and the 2-argument signature is ensured to be matched.
 * [`numargs`](@ref numargs)
 """
 function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
-                   has_two_dispatches = true, isoptimization = false)
+    has_two_dispatches = true, isoptimization = false)
     nargs = numargs(f)
     iip_dispatch = any(x -> x == inplace_param_number, nargs)
     oop_dispatch = any(x -> x == inplace_param_number - 1, nargs)
@@ -292,7 +297,7 @@ end
 
 isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
 function isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number,
-                   fname = nothing) where {iip}
+    fname = nothing) where {iip}
     iip
 end
 
@@ -378,7 +383,7 @@ function add_kwonly(::Type{<:Val}, ex)
 end
 
 function add_kwonly(::Union{Type{Val{:function}},
-                            Type{Val{:(=)}}}, ex::Expr)
+        Type{Val{:(=)}}}, ex::Expr)
     body = ex.args[2:end]  # function body
     default_call = ex.args[1]  # e.g., :(f(a, b=2; c=3))
     kwonly_call = add_kwonly(default_call)
@@ -435,8 +440,8 @@ function add_kwonly(::Type{Val{:call}}, default_call::Expr)
     end
 
     kwonly_kwargs = Expr(:parameters,
-                         [Expr(:kw, pa, :(error($("No argument $pa"))))
-                          for pa in required]..., optional..., default_kwargs...)
+        [Expr(:kw, pa, :(error($("No argument $pa"))))
+         for pa in required]..., optional..., default_kwargs...)
     kwonly_call = Expr(:call, funcname, kwonly_kwargs)
     # e.g., :(f(; a=error(...), b=error(...), c=1, d=2))
 

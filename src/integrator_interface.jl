@@ -284,6 +284,11 @@ algorithm to use.
 function initialize_dae!(integrator::DEIntegrator)
     error("initialize_dae!: method has not been implemented for the integrator")
 end
+function initialize_dae!(integrator::DEIntegrator, initializealg)
+    if !(initializealg isa NoInit)
+        error("initialize_dae!: $(typeof(initializealg)) method has not been implemented for the integrator")
+    end
+end
 
 """
     auto_dt_reset!(integrator::DEIntegrator)
@@ -411,12 +416,18 @@ function getobserved(integrator::DEIntegrator)
     end
 end
 
-sym_to_index(sym, integrator::DEIntegrator) = sym_to_index(sym, getsyms(integrator))
+function sym_to_index(sym, integrator::DEIntegrator)
+    if has_sys(integrator.f) && is_state_sym(integrator.f.sys, sym)
+        return state_sym_to_index(integrator.f.sys, sym)
+    else
+        return sym_to_index(sym, getsyms(integrator))
+    end
+end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
-                                                I::Union{Int, AbstractArray{Int},
-                                                         CartesianIndex, Colon, BitArray,
-                                                         AbstractArray{Bool}}...)
+    I::Union{Int, AbstractArray{Int},
+        CartesianIndex, Colon, BitArray,
+        AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 
@@ -432,13 +443,25 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
         i = sym
     end
 
-    indepsym = getindepsym(A)
-    paramsyms = getparamsyms(A)
     if i === nothing
-        if issymbollike(sym) && indepsym !== nothing && Symbol(sym) == indepsym
-            A.t
-        elseif issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            A.p[findfirst(isequal(Symbol(sym)), paramsyms)]
+        if issymbollike(sym)
+            if has_sys(A.f) && is_indep_sym(A.f.sys, sym) ||
+               Symbol(sym) == getindepsym(A)
+                return A.t
+            elseif has_sys(A.f) && is_param_sym(A.f.sys, sym)
+                return A.p[param_sym_to_index(A.f.sys, sym)]
+            elseif has_paramsyms(A.f) && Symbol(sym) in getparamsyms(A)
+                return A.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
+            elseif (sym isa Symbol) && has_sys(A.f) && hasproperty(A.f.sys, sym)   # Handles input like :X (where X is a state). 
+                return observed(A, getproperty(A.f.sys, sym))
+            elseif has_sys(A.f) && (count('₊', String(Symbol(sym))) == 1) &&
+                   (count(isequal(Symbol(sym)),
+                       Symbol.(A.f.sys.name, :₊, getparamsyms(A))) == 1)   # Handles input like sys.X (where X is a parameter).  
+                return A.p[findfirst(isequal(Symbol(sym)),
+                    Symbol.(A.f.sys.name, :₊, getparamsyms(A)))]
+            else
+                return observed(A, sym)
+            end
         else
             observed(A, sym)
         end
@@ -453,6 +476,56 @@ function observed(A::DEIntegrator, sym)
     getobserved(A)(sym, A.u, A.p, A.t)
 end
 
+function Base.setindex!(A::DEIntegrator, val, sym)
+    if has_sys(A.f)
+        if issymbollike(sym)
+            params = getparamsyms(A)
+            s = Symbol.(states(A.f.sys))
+            params = Symbol.(params)
+
+            i = findfirst(isequal(Symbol(sym)), s)
+            if !isnothing(i)
+                A.u[i] = val
+                return A
+            elseif sym isa Symbol  # Hanldes input like :X.
+                s_f = Symbol.(getproperty.(states(A.f.sys), :f))
+                if count(isequal(Symbol(sym)), s_f) == 1
+                    i = findfirst(isequal(sym), s_f)
+                    A.u[i] = val
+                    return A
+                elseif count(isequal(Symbol(sym)), s_f) > 1
+                    error("The input symbol $(sym) occurs several times among integrator states. Please avoid use Symbol form (:$(sym)).")
+                end
+            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
+                s_names = Symbol.(A.f.sys.name, :₊, s)
+                if count(isequal(Symbol(sym)), s_names) == 1
+                    i = findfirst(isequal(Symbol(sym)), s_names)
+                    A.u[i] = val
+                    return A
+                end
+            end
+
+            i = findfirst(isequal(Symbol(sym)), params)
+            if !isnothing(i)
+                A.p[i] = val
+                return A
+            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
+                p_names = Symbol.(A.f.sys.name, :₊, params)
+                if count(isequal(Symbol(sym)), p_names) == 1
+                    i = findfirst(isequal(Symbol(sym)), p_names)
+                    A.p[i] = val
+                    return A
+                end
+            end
+            error("Invalid indexing of integrator: $sym is not a state or parameter, it may be an observed variable.")
+        else
+            error("Invalid indexing of integrator: $sym is not a symbol")
+        end
+    else
+        error("Invalid indexing of integrator: Integrator does not support indexing without a system")
+    end
+end
+
 ### Integrator traits
 
 has_reinit(i::DEIntegrator) = false
@@ -462,12 +535,12 @@ has_reinit(i::DEIntegrator) = false
 function Base.summary(io::IO, I::DEIntegrator)
     type_color, no_color = get_colorizers(io)
     print(io,
-          type_color, nameof(typeof(I)),
-          no_color, " with uType ",
-          type_color, typeof(I.u),
-          no_color, " and tType ",
-          type_color, typeof(I.t),
-          no_color)
+        type_color, nameof(typeof(I)),
+        no_color, " with uType ",
+        type_color, typeof(I.u),
+        no_color, " and tType ",
+        type_color, typeof(I.t),
+        no_color)
 end
 function Base.show(io::IO, A::DEIntegrator)
     println(io, string("t: ", A.t))
@@ -491,6 +564,9 @@ Check state of `integrator` and return one of the
 [Return Codes](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/#retcodes)
 """
 function check_error(integrator::DEIntegrator)
+    if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
+        return integrator.sol.retcode
+    end
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
     if isnan(integrator.dt)
@@ -515,12 +591,17 @@ function check_error(integrator::DEIntegrator)
          integrator.t + integrator.dt < integrator.tdir * first(integrator.opts.tstops) :
          true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
         if integrator.opts.verbose
-            @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t). Aborting. There is either an error in your model specification or the true solution is unstable.")
+            if isdefined(integrator, :EEst)
+                EEst = ", and step error estimate = $(integrator.EEst)"
+            else
+                EEst = ""
+            end
+            @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
         end
         return ReturnCode.DtLessThanMin
     end
     if integrator.opts.unstable_check(integrator.dt, integrator.u, integrator.p,
-                                      integrator.t)
+        integrator.t)
         if integrator.opts.verbose
             @warn("Instability detected. Aborting")
         end
@@ -593,9 +674,11 @@ function Base.iterate(tup::IntegratorTuples, state = 0)
     return (tup.integrator.u, tup.integrator.t), state
 end
 
-function Base.eltype(::Type{IntegratorTuples{I}}) where {U, T,
-                                                         I <:
-                                                         DEIntegrator{<:Any, <:Any, U, T}}
+function Base.eltype(::Type{
+    IntegratorTuples{I},
+}) where {U, T,
+    I <:
+    DEIntegrator{<:Any, <:Any, U, T}}
     Tuple{U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorTuples}) = Base.SizeUnknown()
@@ -615,13 +698,15 @@ function Base.iterate(tup::IntegratorIntervals, state = 0)
     step!(tup.integrator) # Iter updated in the step! header
     # Next is callbacks -> iterator  -> top
     return (tup.integrator.uprev, tup.integrator.tprev, tup.integrator.u, tup.integrator.t),
-           state
+    state
 end
 
-function Base.eltype(::Type{IntegratorIntervals{I}}) where {U, T,
-                                                            I <:
-                                                            DEIntegrator{<:Any, <:Any, U, T
-                                                                         }}
+function Base.eltype(::Type{
+    IntegratorIntervals{I},
+}) where {U, T,
+    I <:
+    DEIntegrator{<:Any, <:Any, U, T
+    }}
     Tuple{U, T, U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorIntervals}) = Base.SizeUnknown()
@@ -664,14 +749,14 @@ end
 Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
 @recipe function f(integrator::DEIntegrator;
-                   denseplot = (integrator.opts.calck ||
-                                typeof(integrator) <: AbstractSDEIntegrator) &&
-                               integrator.iter > 0,
-                   plotdensity = 10,
-                   plot_analytic = false, vars = nothing, idxs = nothing)
+    denseplot = (integrator.opts.calck ||
+                 typeof(integrator) <: AbstractSDEIntegrator) &&
+                integrator.iter > 0,
+    plotdensity = 10,
+    plot_analytic = false, vars = nothing, idxs = nothing)
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
-                     :f; force = true)
+            :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
         idxs = vars
@@ -687,8 +772,8 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         plot_timeseries = integrator(plott)
         if plot_analytic
             plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
-                                                                       integrator.sol.prob.p,
-                                                                       t) for t in plott]
+                integrator.sol.prob.p,
+                t) for t in plott]
         end
     end # if not denseplot, we'll just get the values right from the integrator.
 
@@ -708,7 +793,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         for j in 2:dims
             if denseplot
                 push!(plot_vecs[j - 1],
-                      u_n(plot_timeseries, x[j], integrator.sol, plott, plot_timeseries))
+                    u_n(plot_timeseries, x[j], integrator.sol, plott, plot_timeseries))
             else # just get values
                 if x[j] == 0
                     push!(plot_vecs[j - 1], integrator.t)
@@ -727,18 +812,18 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
             for j in 1:dims
                 if denseplot
                     push!(plot_vecs[j],
-                          u_n(plot_timeseries, x[j], sol, plott, plot_timeseries))
+                        u_n(plot_timeseries, x[j], sol, plott, plot_timeseries))
                 else # Just get values
                     if x[j] == 0
                         push!(plot_vecs[j], integrator.t)
                     elseif x[j] == 1 && !(typeof(integrator.u) <: AbstractArray)
                         push!(plot_vecs[j],
-                              integrator.sol.prob.f(Val{:analytic}, integrator.t,
-                                                    integrator.sol[1]))
+                            integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                integrator.sol[1]))
                     else
                         push!(plot_vecs[j],
-                              integrator.sol.prob.f(Val{:analytic}, integrator.t,
-                                                    integrator.sol[1])[x[j]])
+                            integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                integrator.sol[1])[x[j]])
                     end
                 end
             end
@@ -787,7 +872,7 @@ function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     end
 end
 
-has_destats(i::DEIntegrator) = false
+has_stats(i::DEIntegrator) = false
 
 """
     is_integrator_adaptive(i::DEIntegrator)
