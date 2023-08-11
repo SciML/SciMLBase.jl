@@ -61,7 +61,7 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = issymbollike(sym) ? sym_to_index(sym, VA) : sym
         if i === nothing
-            throw("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated.")
+            throw(error("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
             Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
                   for (x, j) in zip(VA.u, 1:length(VA))]
