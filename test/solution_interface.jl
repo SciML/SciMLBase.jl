@@ -34,7 +34,7 @@ end
     ode = ODEProblem(f, 1.0, (0.0, 1.0))
     sol = SciMLBase.build_solution(ode, :NoAlgorithm, [ode.tspan[begin]], [ode.u0])
     @test sol(0.0) == 1.0
-    @test sol([0.0,0.0]) == [1.0, 1.0]
+    @test sol([0.0, 0.0]) == [1.0, 1.0]
     # test that indexing out of bounds doesn't segfault
     @test_throws ErrorException sol(1)
     @test_throws ErrorException sol(-0.5)
