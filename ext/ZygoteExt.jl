@@ -4,6 +4,9 @@ using Zygote: pullback
 using ZygoteRules: @adjoint
 using SciMLBase: ODESolution, issymbollike, sym_to_index, remake, getobserved
 
+# This method resolves the ambiguity with the pullback defined in
+# RecursiveArrayToolsZygoteExt
+# https://github.com/SciML/RecursiveArrayTools.jl/blob/d06ecb856f43bc5e37cbaf50e5f63c578bf3f1bd/ext/RecursiveArrayToolsZygoteExt.jl#L67
 @adjoint function getindex(VA::ODESolution, i::Int, j::Int)
     function ODESolution_getindex_pullback(Δ)
         du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
