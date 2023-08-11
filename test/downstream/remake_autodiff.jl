@@ -28,20 +28,24 @@ end
 
 du01, dp1 = Zygote.gradient(sum_of_solution, u0, p)
 
-function symbolic_indexing(u0, p)
-    _prob = remake(prob, u0 = u0, p = p)
-    soln = solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
-        sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP()))
-    sum(soln[x])
+# These tests depend on a ZygoteRule in a package extension
+# package exentsions do not exist before 1.9, so they cannot work.
+if __VERSION__ >= v"1.9"
+    function symbolic_indexing(u0, p)
+        _prob = remake(prob, u0 = u0, p = p)
+        soln = solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
+            sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP()))
+        sum(soln[x])
+    end
+
+    du01, dp1 = Zygote.gradient(symbolic_indexing, u0, p)
+
+    function symbolic_indexing_observed(u0, p)
+        _prob = remake(prob, u0 = u0, p = p)
+        soln = solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
+            sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP()))
+        sum(soln[o, i] for i = 1:length(soln))
+    end
+
+    du01, dp1 = Zygote.gradient(symbolic_indexing_observed, u0, p)
 end
-
-du01, dp1 = Zygote.gradient(symbolic_indexing, u0, p)
-
-function symbolic_indexing_observed(u0, p)
-    _prob = remake(prob, u0 = u0, p = p)
-    soln = solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
-        sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP()))
-    sum(soln[o, i] for i in 1:length(soln))
-end
-
-du01, dp1 = Zygote.gradient(symbolic_indexing_observed, u0, p)
