@@ -30,7 +30,7 @@ du01, dp1 = Zygote.gradient(sum_of_solution, u0, p)
 
 # These tests depend on a ZygoteRule in a package extension
 # package exentsions do not exist before 1.9, so they cannot work.
-if __VERSION__ >= v"1.9"
+if VERSION >= v"1.9"
     function symbolic_indexing(u0, p)
         _prob = remake(prob, u0 = u0, p = p)
         soln = solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
