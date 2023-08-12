@@ -21,6 +21,8 @@ import RuntimeGeneratedFunctions
 import EnumX
 import TruncatedStacktraces
 import ADTypes: AbstractADType
+import ChainRulesCore
+import ZygoteRules: @adjoint
 
 using Reexport
 using SciMLOperators
@@ -701,6 +703,7 @@ include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
 include("solutions/pde_solutions.jl")
 include("solutions/solution_interface.jl")
+include("solutions/zygote.jl")
 
 include("ensemble/ensemble_solutions.jl")
 include("ensemble/ensemble_problems.jl")
