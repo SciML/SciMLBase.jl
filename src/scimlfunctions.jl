@@ -1083,7 +1083,7 @@ SDEFunction{iip,specialize}(f,g;
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
 
-Note that only the function `f` itself is required. This function should
+Note that both the function `f` and `g` are required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
@@ -2126,11 +2126,11 @@ TruncatedStacktraces.@truncate_stacktrace OptimizationFunction 1 2
 """
 $(TYPEDEF)
 """
-abstract type AbstractBVPFunction{iip, iip} <:
+abstract type AbstractBVPFunction{iip} <:
               AbstractDiffEqFunction{iip} end
 
 @doc doc"""
-    BVPFunction{iip_f,iip_bc,F,BF,TMM,Ta,Tt,TJ,BCTJ,JVP,VJP,JP,BCJP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV,BCTCV} <: AbstractBVPFunction{iip_f,iip_bc,specialize}
+    BVPFunction{iip,F,BF,TMM,Ta,Tt,TJ,BCTJ,JVP,VJP,JP,BCJP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV,BCTCV} <: AbstractBVPFunction{iip,specialize}
 
 A representation of a BVP function `f`, defined by:
 
@@ -2149,7 +2149,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-BVPFunction{iip_f,iip_bc,specialize}(f, bc;
+BVPFunction{iip,specialize}(f, bc;
                            mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2232,12 +2232,12 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the BVPFunction type directly match the names of the inputs.
 """
-struct BVPFunction{iip_f, iip_bc, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
+struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
     BCJP, SP, TW, TWt,
     TPJ,
     S, S2, S3, O, TCV, BCTCV,
     SYS} <:
-       AbstractBVPFunction{iip_f, iip_bc}
+       AbstractBVPFunction{iip}
     f::F
     bc::BF
     mass_matrix::TMM
@@ -3814,7 +3814,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         cons_expr, sys)
 end
 
-function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
+function BVPFunction{iip, specialize}(f, bc;
     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                   I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
@@ -3842,7 +3842,7 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
                DEFAULT_OBSERVED,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
-    sys = __has_sys(f) ? f.sys : nothing) where {iip_f, iip_bc, specialize}
+    sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize}
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
@@ -3882,14 +3882,15 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
         _bccolorvec = bccolorvec
     end
 
-    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip_f) : iip_f
-    bcjaciip = bcjac !== nothing ? isinplace(bcjac, 4, "bcjac", iip_bc) : iip_bc
-    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip_f) : iip_f
-    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip_f) : iip_f
-    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip_f) : iip_f
-    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip_f) : iip_f
-    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip_f) : iip_f
-    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip_f) : iip_f
+    bciip = isinplace(bc, 4, "bc", iip)
+    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
+    bcjaciip = bcjac !== nothing ? isinplace(bcjac, 4, "bcjac", bciip) : bciip
+    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
+    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
+    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
+    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
 
     nonconforming = (jaciip,
         tgradiip,
@@ -3897,8 +3898,8 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
         vjpiip,
         Wfactiip,
         Wfact_tiip,
-        paramjaciip) .!= iip_f
-    bc_nonconforming = bcjaciip .!= iip_bc
+        paramjaciip) .!= iip
+    bc_nonconforming = bcjaciip .!= bciip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
         functions = ["jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
@@ -3912,7 +3913,7 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
     end
 
     if specialize === NoSpecialize
-        BVPFunction{iip_f, iip_bc, specialize, Any, Any, Any, Any, Any,
+        BVPFunction{iip, specialize, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
             Any, typeof(_colorvec), typeof(_bccolorvec), Any}(f, bc, mass_matrix,
@@ -3928,7 +3929,7 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
             observed,
             _colorvec, _bccolorvec, sys)
     elseif specialize === false
-        BVPFunction{iip_f, iip_bc, FunctionWrapperSpecialize,
+        BVPFunction{iip, FunctionWrapperSpecialize,
             typeof(f), typeof(bc), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
@@ -3939,7 +3940,7 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
             Wfact_t, paramjac, syms, indepsym, paramsyms,
             observed, _colorvec, _bccolorvec, sys)
     else
-        BVPFunction{iip_f, iip_bc, specialize, typeof(f), typeof(bc), typeof(mass_matrix),
+        BVPFunction{iip, specialize, typeof(f), typeof(bc), typeof(mass_matrix),
             typeof(analytic),
             typeof(tgrad),
             typeof(jac), typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
@@ -3956,14 +3957,14 @@ function BVPFunction{iip_f, iip_bc, specialize}(f, bc;
     end
 end
 
-function BVPFunction{iip_f, iip_bc}(f, bc; kwargs...) where {iip_f, iip_bc}
-    BVPFunction{iip_f, iip_bc, FullSpecialize}(f, bc; kwargs...)
+function BVPFunction{iip}(f, bc; kwargs...) where {iip}
+    BVPFunction{iip, FullSpecialize}(f, bc; kwargs...)
 end
-BVPFunction{iip_f, iip_bc}(f::BVPFunction, bc; kwargs...) where {iip_f, iip_bc} = f
+BVPFunction{iip}(f::BVPFunction, bc; kwargs...) where {iip} = f
 function BVPFunction(f, bc; kwargs...)
-    BVPFunction{isinplace(f, 4), isinplace(bc, 4), FullSpecialize}(f, bc; kwargs...)
+    BVPFunction{isinplace(f, 4), FullSpecialize}(f, bc; kwargs...)
 end
-#BVPFunction(f::BVPFunction; kwargs...) = f
+BVPFunction(f::BVPFunction; kwargs...) = f
 
 ########## Existence Functions
 

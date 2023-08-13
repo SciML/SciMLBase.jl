@@ -78,17 +78,17 @@ every solve call.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `kwargs`: The keyword arguments passed onto the solves.
 """
-struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
+struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
        AbstractBVProblem{uType, tType, isinplace}
     f::F
-    bc::bF
+    bc::BF
     u0::uType
     tspan::tType
     p::P
     problem_type::PT
     kwargs::K
 
-    @add_kwonly function BVProblem{iip}(f::AbstractODEFunction, bc, u0, tspan,
+    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip}, bc, u0, tspan,
         p = NullParameters(),
         problem_type = StandardBVProblem();
         kwargs...) where {iip}
@@ -96,12 +96,12 @@ struct BVProblem{uType, tType, isinplace, P, F, bF, PT, K} <:
         warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), iip, typeof(p),
             typeof(f), typeof(bc),
-            typeof(problem_type), typeof(kwargs)}(f, bc, u0, _tspan, p,
+            typeof(problem_type), typeof(kwargs)}(f, f.bc, u0, _tspan, p,
             problem_type, kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        BVProblem(BVPFunction{iip}(f), bc, u0, tspan, p; kwargs...)
+        BVProblem(BVPFunction{iip}(f, bc), bc, u0, tspan, p; kwargs...)
     end
 end
 
@@ -112,7 +112,7 @@ function BVProblem(f::AbstractBVPFunction, bc, u0, tspan, args...; kwargs...)
 end
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem(BVPFunction(f), bc, u0, tspan, p; kwargs...)
+    BVProblem(BVPFunction(f, bc), bc, u0, tspan, p; kwargs...)
 end
 
 # convenience interfaces:
