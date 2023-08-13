@@ -469,93 +469,127 @@ OptimizationProblem(optf, 1.0)
 bfoop(u, p, t) = u
 bfiip(du, u, p, t) = du .= u
 
-bofboth(u, p, t) = u
-bofboth(du, u, p, t) = du .= u
+bfboth(u, p, t) = u
+bfboth(du, u, p, t) = du .= u
 
-bc(res, u, p, t) = res .= u
+bcoop(u, p, t) = u
+bciip(res, u, p, t) = res .= u
 
-BVPFunction(bofboth, bc)
-BVPFunction{true, true}(bofboth, bc)
-BVPFunction{false, true}(bofboth, bc)
+bcfboth(u, p, t) = u
+bcfboth(du, u, p, t) = du .= u
+
+BVPFunction(bfboth, bcfboth)
+BVPFunction{true, true}(bfboth, bcfboth)
+BVPFunction{false, true}(bfboth, bcfboth)
+BVPFunction{true, false}(bfboth, bcfboth)
+BVPFunction{false, false}(bfboth, bcfboth)
 
 jac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, jac = jac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, jac = jac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, bcjac = jac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, bcjac = jac)
+bcjac(u, t) = [1.0]
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip,
+    bciip,
+    jac = jac,
+    bcjac = bcjac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop,
+    bciip,
+    jac = jac,
+    bcjac = bcjac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip,
+    bcoop,
+    jac = jac,
+    bcjac = bcjac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop,
+    bcoop,
+    jac = jac,
+    bcjac = bcjac)
 jac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, jac = jac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, bcjac = jac)
-BVPFunction(bfoop, bc, jac = jac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bc, bcjac = jac)
+bcjac(u, p, t) = [1.0]
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+    bcoop,
+    jac = jac,
+    bcjac = bcjac)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+    bciip,
+    jac = jac,
+    bcjac = bcjac)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+    bciip,
+    jac = jac,
+    bcjac = bcjac)
+BVPFunction(bfoop, bcoop, jac = jac)
 jac(du, u, p, t) = [1.0]
-BVPFunction(bfiip, bc, jac = jac)
-BVPFunction(bfoop, bc, jac = jac)
+bcjac(du, u, p, t) = [1.0]
+BVPFunction(bfiip, bciip, jac = jac, bcjac = bcjac)
+BVPFunction(bfoop, bciip, jac = jac, bcjac = bcjac)
+BVPFunction(bfiip, bcoop, jac = jac, bcjac = bcjac)
+BVPFunction(bfoop, bcoop, jac = jac, bcjac = bcjac)
 
 Wfact(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, Wfact = Wfact)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, Wfact = Wfact)
 Wfact(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, Wfact = Wfact)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, Wfact = Wfact)
 Wfact(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, Wfact = Wfact)
-BVPFunction(bfoop, bc, Wfact = Wfact)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, Wfact = Wfact)
+BVPFunction(bfoop, bciip, Wfact = Wfact)
 Wfact(du, u, p, gamma, t) = [1.0]
-BVPFunction(bfiip, bc, Wfact = Wfact)
-BVPFunction(bfoop, bc, Wfact = Wfact)
+BVPFunction(bfiip, bciip, Wfact = Wfact)
+BVPFunction(bfoop, bciip, Wfact = Wfact)
 
 Wfact_t(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, Wfact_t = Wfact_t)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, Wfact_t = Wfact_t)
 Wfact_t(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, Wfact_t = Wfact_t)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, Wfact_t = Wfact_t)
 Wfact_t(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, Wfact_t = Wfact_t)
-BVPFunction(bfoop, bc, Wfact_t = Wfact_t)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+    bciip,
+    Wfact_t = Wfact_t)
+BVPFunction(bfoop, bciip, Wfact_t = Wfact_t)
 Wfact_t(du, u, p, gamma, t) = [1.0]
-BVPFunction(bfiip, bc, Wfact_t = Wfact_t)
-BVPFunction(bfoop, bc, Wfact_t = Wfact_t)
+BVPFunction(bfiip, bciip, Wfact_t = Wfact_t)
+BVPFunction(bfoop, bciip, Wfact_t = Wfact_t)
 
 tgrad(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, tgrad = tgrad)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, tgrad = tgrad)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, tgrad = tgrad)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, tgrad = tgrad)
 tgrad(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, tgrad = tgrad)
-BVPFunction(bfoop, bc, tgrad = tgrad)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, tgrad = tgrad)
+BVPFunction(bfoop, bciip, tgrad = tgrad)
 tgrad(du, u, p, t) = [1.0]
-BVPFunction(bfiip, bc, tgrad = tgrad)
-BVPFunction(bfoop, bc, tgrad = tgrad)
+BVPFunction(bfiip, bciip, tgrad = tgrad)
+BVPFunction(bfoop, bciip, tgrad = tgrad)
 
 paramjac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, paramjac = paramjac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, paramjac = paramjac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, paramjac = paramjac)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, paramjac = paramjac)
 paramjac(u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
-    bc,
+    bciip,
     paramjac = paramjac)
-BVPFunction(bfoop, bc, paramjac = paramjac)
+BVPFunction(bfoop, bciip, paramjac = paramjac)
 paramjac(du, u, p, t) = [1.0]
-BVPFunction(bfiip, bc, paramjac = paramjac)
-BVPFunction(bfoop, bc, paramjac = paramjac)
+BVPFunction(bfiip, bciip, paramjac = paramjac)
+BVPFunction(bfoop, bciip, paramjac = paramjac)
 
 jvp(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, jvp = jvp)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, jvp = jvp)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, jvp = jvp)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, jvp = jvp)
 jvp(u, v, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, jvp = jvp)
-BVPFunction(bfoop, bc, jvp = jvp)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, jvp = jvp)
+BVPFunction(bfoop, bciip, jvp = jvp)
 jvp(du, u, v, p, t) = [1.0]
-BVPFunction(bfiip, bc, jvp = jvp)
-BVPFunction(bfoop, bc, jvp = jvp)
+BVPFunction(bfiip, bciip, jvp = jvp)
+BVPFunction(bfoop, bciip, jvp = jvp)
 
 vjp(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bc, vjp = vjp)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bc, vjp = vjp)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, vjp = vjp)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, vjp = vjp)
 vjp(u, v, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bc, vjp = vjp)
-BVPFunction(bfoop, bc, vjp = vjp)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, vjp = vjp)
+BVPFunction(bfoop, bciip, vjp = vjp)
 vjp(du, u, v, p, t) = [1.0]
-BVPFunction(bfiip, bc, vjp = vjp)
-BVPFunction(bfoop, bc, vjp = vjp)
+BVPFunction(bfiip, bciip, vjp = vjp)
+BVPFunction(bfoop, bciip, vjp = vjp)
