@@ -115,6 +115,10 @@ function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     BVProblem(BVPFunction(f, bc), bc, u0, tspan, p; kwargs...)
 end
 
+function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
+    BVProblem(f, f.bc, u0, tspan, p; kwargs...)
+end
+
 # convenience interfaces:
 # Allow any previous timeseries solution
 
