@@ -124,11 +124,15 @@ end
 =#
 
 function SDEProblem(f::AbstractSDEFunction, g, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem{isinplace(f)}(f, g, u0, tspan, p; kwargs...)
+    SDEProblem{isinplace(f, 4)}(f, g, u0, tspan, p; kwargs...)
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
     SDEProblem(SDEFunction(f, g), g, u0, tspan, p; kwargs...)
+end
+
+function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
+    SDEProblem(f, f.g, u0, tspan, p; kwargs...)
 end
 
 """
