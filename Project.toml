@@ -38,8 +38,9 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 ZygoteExt = "Zygote"
 
 [compat]
-ADTypes = "0.1.3"
+ADTypes = "0.1.3, 0.2"
 ArrayInterface = "6, 7"
+ChainRulesCore = "1.16"
 CommonSolve = "0.2.4"
 ConstructionBase = "1"
 DocStringExtensions = "0.8, 0.9"
@@ -58,9 +59,8 @@ StaticArraysCore = "1"
 SymbolicIndexingInterface = "0.2"
 Tables = "1"
 TruncatedStacktraces = "1"
-julia = "1.6"
-ChainRulesCore = "1.16"
 ZygoteRules = "0.2"
+julia = "1.6"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
