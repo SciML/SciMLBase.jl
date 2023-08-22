@@ -2253,7 +2253,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, paramjac, syms, indepsym, paramsyms,
+            Wfact_t, W_prototype, paramjac, syms, indepsym, paramsyms,
             observed, _colorvec, sys)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
