@@ -44,7 +44,7 @@ if VERSION >= v"1.9"
         _prob = remake(prob, u0 = u0, p = p)
         soln = solve(_prob, Tsit5(), reltol = 1e-6, abstol = 1e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP()))
-        sum(soln[o, i] for i = 1:length(soln))
+        sum(soln[o, i] for i in 1:length(soln))
     end
 
     du01, dp1 = Zygote.gradient(symbolic_indexing_observed, u0, p)
