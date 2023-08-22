@@ -46,7 +46,7 @@ function EnsembleSolution(sim::T, elapsedTime,
         converged)
 end
 
-struct WeightedEnsembleSolution{T1<:AbstractEnsembleSolution, T2<:Number}
+struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
     ensol::T1
     weights::Vector{T2}
     function WeightedEnsembleSolution(ensol, weights)
@@ -207,13 +207,18 @@ end
     end
 end
 
-
 Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s, ::Colon)
     return [xi[s] for xi in x]
 end
 
-Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, ::Colon, args::Colon...)
-    return invoke(getindex, Tuple{RecursiveArrayTools.AbstractVectorOfArray, Colon, typeof.(args)...}, x, :, args...)
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution,
+    ::Colon,
+    args::Colon...)
+    return invoke(getindex,
+        Tuple{RecursiveArrayTools.AbstractVectorOfArray, Colon, typeof.(args)...},
+        x,
+        :,
+        args...)
 end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)

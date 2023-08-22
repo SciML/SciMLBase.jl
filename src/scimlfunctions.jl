@@ -390,7 +390,8 @@ See the `modelingtoolkitize` function from
 automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
-struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ, S,
+struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
+    S,
     S2, S3, O, TCV,
     SYS} <: AbstractODEFunction{iip}
     f::F
@@ -2253,13 +2254,14 @@ function ODEFunction{iip, specialize}(f;
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, paramjac, syms, indepsym, paramsyms,
+            Wfact_t, W_prototype, paramjac, syms, indepsym, paramsyms,
             observed, _colorvec, sys)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype), typeof(paramjac),
+            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
+            typeof(paramjac),
             typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
@@ -2270,7 +2272,8 @@ function ODEFunction{iip, specialize}(f;
         ODEFunction{iip, specialize,
             typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype), typeof(paramjac),
+            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
+            typeof(paramjac),
             typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
             typeof(_colorvec),
             typeof(sys)}(f, mass_matrix, analytic, tgrad, jac,
