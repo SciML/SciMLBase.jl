@@ -115,20 +115,6 @@ function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwar
     BVProblem{isinplace(f)}(f.f, f.bc, u0, tspan, p; kwargs...)
 end
 
-# convenience interfaces:
-# Allow any previous timeseries solution
-
-function BVProblem(f::AbstractBVPFunction, bc, sol::T, tspan::Tuple, p = NullParameters();
-    kwargs...) where {T <: AbstractTimeseriesSolution}
-    BVProblem(f, bc, sol.u, tspan, p)
-end
-# Allow a function of time for the initial guess
-function BVProblem(f::AbstractBVPFunction, bc, initialGuess, tspan::AbstractVector,
-    p = NullParameters(); kwargs...)
-    u0 = [initialGuess(i) for i in tspan]
-    BVProblem(f, bc, u0, (tspan[1], tspan[end]), p)
-end
-
 """
 $(TYPEDEF)
 """
