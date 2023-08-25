@@ -95,8 +95,8 @@ struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         new{typeof(u0), typeof(_tspan), iip, typeof(p),
-            typeof(f), typeof(bc),
-            typeof(problem_type), typeof(kwargs)}(f, f.bc, u0, _tspan, p,
+            typeof(f.f), typeof(bc),
+            typeof(problem_type), typeof(kwargs)}(f.f, bc, u0, _tspan, p,
             problem_type, kwargs)
     end
 
@@ -107,16 +107,12 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
-function BVProblem(f::AbstractBVPFunction, bc, u0, tspan, args...; kwargs...)
-    BVProblem{isinplace(f, 4)}(f, bc, u0, tspan, args...; kwargs...)
-end
-
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem(BVPFunction(f, bc), bc, u0, tspan, p; kwargs...)
+    BVProblem(BVPFunction(f, bc), u0, tspan, p; kwargs...)
 end
 
 function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem(f, f.bc, u0, tspan, p; kwargs...)
+    BVProblem{isinplace(f)}(f.f, f.bc, u0, tspan, p; kwargs...)
 end
 
 # convenience interfaces:
