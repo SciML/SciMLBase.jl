@@ -5,15 +5,17 @@
   gtag('config', 'UA-90474609-3', {'page_path': location.pathname + location.search + location.hash});
 </script><script data-outdated-warner src="assets/warner.js"></script><link rel="canonical" href="https://docs.sciml.ai/SciMLBase/stable/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script><link href="assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href><img src="assets/logo.png" alt="SciMLBase.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href>SciMLBase.jl</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#Domains-of-SciML"><span>Domains of SciML</span></a></li><li><a class="tocitem" href="#Extended-SciML-Domain"><span>Extended SciML Domain</span></a></li><li><a class="tocitem" href="#Inverse-Problems,-Parameter-Estimation,-and-Structural-Identification"><span>Inverse Problems, Parameter Estimation, and Structural Identification</span></a></li><li><a class="tocitem" href="#Common-Interface-High-Level"><span>Common Interface High Level</span></a></li><li><a class="tocitem" href="#User-Facing-Solver-Libraries"><span>User-Facing Solver Libraries</span></a></li><li><a class="tocitem" href="#Interface-Implementation-Libraries"><span>Interface Implementation Libraries</span></a></li><li><a class="tocitem" href="#Using-Facing-Modeling-Libraries"><span>Using-Facing Modeling Libraries</span></a></li><li><a class="tocitem" href="#Flowchart-Example-for-PDE-Constrained-Optimal-Control"><span>Flowchart Example for PDE-Constrained Optimal Control</span></a></li><li><a class="tocitem" href="#External-Binding-Libraries"><span>External Binding Libraries</span></a></li><li><a class="tocitem" href="#Solver-Libraries"><span>Solver Libraries</span></a></li><li><a class="tocitem" href="#Contributing"><span>Contributing</span></a></li><li><a class="tocitem" href="#Reproducibility"><span>Reproducibility</span></a></li></ul></li><li><span class="tocitem">Interfaces</span><ul><li><a class="tocitem" href="interfaces/Problems/">SciMLProblems</a></li><li><a class="tocitem" href="interfaces/SciMLFunctions/">SciMLFunctions (Jacobians, Sparsity, Etc.)</a></li><li><a class="tocitem" href="interfaces/Algorithms/">SciMLAlgorithms</a></li><li><a class="tocitem" href="interfaces/Solutions/">SciMLSolutions</a></li><li><a class="tocitem" href="interfaces/Init_Solve/">The SciML init and solve Functions</a></li><li><a class="tocitem" href="interfaces/Common_Keywords/">Common Keyword Arguments</a></li><li><a class="tocitem" href="interfaces/Differentiation/">Automatic Differentiation and Sensitivity Algorithms (Adjoints)</a></li><li><a class="tocitem" href="interfaces/PDE/">The PDE Definition Interface</a></li></ul></li><li><span class="tocitem">Fundamentals</span><ul><li><a class="tocitem" href="fundamentals/FAQ/">Frequently Asked Questions</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SciML/SciMLBase.jl/blob/master/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="The-SciML-Common-Interface-for-Julia-Equation-Solvers"><a class="docs-heading-anchor" href="#The-SciML-Common-Interface-for-Julia-Equation-Solvers">The SciML Common Interface for Julia Equation Solvers</a><a id="The-SciML-Common-Interface-for-Julia-Equation-Solvers-1"></a><a class="docs-heading-anchor-permalink" href="#The-SciML-Common-Interface-for-Julia-Equation-Solvers" title="Permalink"></a></h1><p>The SciML common interface ties together the numerical solvers of the Julia package ecosystem into a single unified interface. It is designed for maximal efficiency and parallelism, while incorporating essential features for large-scale scientific machine learning such as differentiability, composability, and sparsity.</p><p>This documentation is made to pool together the docs of the various SciML libraries to paint the overarching picture, establish development norms, and document the shared/common functionality.</p><h2 id="Domains-of-SciML"><a class="docs-heading-anchor" href="#Domains-of-SciML">Domains of SciML</a><a id="Domains-of-SciML-1"></a><a class="docs-heading-anchor-permalink" href="#Domains-of-SciML" title="Permalink"></a></h2><p>The SciML common interface covers the following domains:</p><ul><li>Linear systems (<code>LinearProblem</code>)<ul><li>Direct methods for dense and sparse</li><li>Iterative solvers with preconditioning</li></ul></li><li>Nonlinear Systems (<code>NonlinearProblem</code>)<ul><li>Rootfinding for systems of nonlinear equations</li></ul></li><li>Interval Nonlinear Systems<ul><li>Bracketing rootfinders for nonlinear equations with interval bounds</li></ul></li><li>Integrals (quadrature) (<code>IntegralProblem</code>)</li><li>Differential Equations<ul><li>Discrete equations (function maps, discrete stochastic (Gillespie/Markov) simulations) (<code>DiscreteProblem</code>)</li><li>Ordinary differential equations (ODEs) (<code>ODEProblem</code>)</li><li>Split and Partitioned ODEs (Symplectic integrators, IMEX Methods) (<code>SplitODEProblem</code>)</li><li>Stochastic ordinary differential equations (SODEs or SDEs) (<code>SDEProblem</code>)</li><li>Stochastic differential-algebraic equations (SDAEs) (<code>SDEProblem</code> with mass matrices)</li><li>Random differential equations (RODEs or RDEs) (<code>RODEProblem</code>)</li><li>Differential algebraic equations (DAEs) (<code>DAEProblem</code> and <code>ODEProblem</code> with mass matrices)</li><li>Delay differential equations (DDEs) (<code>DDEProblem</code>)</li><li>Neutral, retarded, and algebraic delay differential equations (NDDEs, RDDEs, and DDAEs)</li><li>Stochastic delay differential equations (SDDEs) (<code>SDDEProblem</code>)</li><li>Experimental support for stochastic neutral, retarded, and algebraic delay differential equations (SNDDEs, SRDDEs, and SDDAEs)</li><li>Mixed discrete and continuous equations (Hybrid Equations, Jump Diffusions) (<code>AbstractDEProblem</code>s with callbacks)</li></ul></li><li>Optimization (<code>OptimizationProblem</code>)<ul><li>Nonlinear (constrained) optimization</li></ul></li><li>(Stochastic/Delay/Differential-Algebraic) Partial Differential Equations (<code>PDESystem</code>)<ul><li>Finite difference and finite volume methods</li><li>Interfaces to finite element methods</li><li>Physics-Informed Neural Networks (PINNs)</li><li>Integro-Differential Equations</li><li>Fractional Differential Equations</li></ul></li></ul><p>The SciML common interface also includes <a href="https://docs.sciml.ai/ModelingToolkit/stable/">ModelingToolkit.jl</a> for defining such systems symbolically, allowing for optimizations like automated generation of parallel code, symbolic simplification, and generation of sparsity patterns.</p><h2 id="Extended-SciML-Domain"><a class="docs-heading-anchor" href="#Extended-SciML-Domain">Extended SciML Domain</a><a id="Extended-SciML-Domain-1"></a><a class="docs-heading-anchor-permalink" href="#Extended-SciML-Domain" title="Permalink"></a></h2><p>In addition to the purely numerical representations of mathematical objects, there are also sets of problem types associated with common mathematical algorithms. These are:</p><ul><li>Data-driven modeling<ul><li>Discrete-time data-driven dynamical systems (<code>DiscreteDataDrivenProblem</code>)</li><li>Continuous-time data-driven dynamical systems (<code>ContinuousDataDrivenProblem</code>)</li><li>Symbolic regression (<code>DirectDataDrivenProblem</code>)</li></ul></li><li>Uncertainty quantification and expected values (<code>ExpectationProblem</code>)</li></ul><h2 id="Inverse-Problems,-Parameter-Estimation,-and-Structural-Identification"><a class="docs-heading-anchor" href="#Inverse-Problems,-Parameter-Estimation,-and-Structural-Identification">Inverse Problems, Parameter Estimation, and Structural Identification</a><a id="Inverse-Problems,-Parameter-Estimation,-and-Structural-Identification-1"></a><a class="docs-heading-anchor-permalink" href="#Inverse-Problems,-Parameter-Estimation,-and-Structural-Identification" title="Permalink"></a></h2><p>We note that parameter estimation and inverse problems are solved directly on their constituent problem types using tools like <a href="https://docs.sciml.ai/DiffEqFlux/stable/">DiffEqFlux.jl</a>. Thus for example, there is no <code>ODEInverseProblem</code>, and instead <code>ODEProblem</code> is used to find the parameters <code>p</code> that solve the inverse problem.</p><h2 id="Common-Interface-High-Level"><a class="docs-heading-anchor" href="#Common-Interface-High-Level">Common Interface High Level</a><a id="Common-Interface-High-Level-1"></a><a class="docs-heading-anchor-permalink" href="#Common-Interface-High-Level" title="Permalink"></a></h2><p>The SciML interface is common as the usage of arguments is standardized across all of the problem domains. Underlying high level ideas include:</p><ul><li>All domains use the same interface of defining a <code>AbstractSciMLProblem</code> which is then solved via <code>solve(prob,alg;kwargs)</code>, where <code>alg</code> is a <code>AbstractSciMLAlgorithm</code>. The keyword argument namings are standardized across the organization.</li><li><code>AbstractSciMLProblem</code>s are generally defined by a <code>SciMLFunction</code> which can define extra details about a model function, such as its analytical Jacobian, its sparsity patterns and so on.</li><li>There is an organization-wide method for defining linear and nonlinear solvers used within other solvers, giving maximum control of performance to the user.</li><li>Types used within the packages are defined by the input types. For example, packages attempt to internally use the type of the initial condition as the type for the state within differential equation solvers.</li><li><code>solve</code> calls should be thread-safe and parallel-safe.</li><li><code>init(prob,alg;kwargs)</code> returns an iterator which allows for directly iterating over the solution process</li><li>High performance is key. Any performance that is not at the top level is considered a bug and should be reported as such.</li><li>All functions have an in-place and out-of-place form, where the in-place form is made to utilize mutation for high performance on large-scale problems and the out-of-place form is for compatibility with tooling like static arrays and some reverse-mode automatic differentiation systems.</li></ul><h2 id="User-Facing-Solver-Libraries"><a class="docs-heading-anchor" href="#User-Facing-Solver-Libraries">User-Facing Solver Libraries</a><a id="User-Facing-Solver-Libraries-1"></a><a class="docs-heading-anchor-permalink" href="#User-Facing-Solver-Libraries" title="Permalink"></a></h2><ul><li><a href="https://docs.sciml.ai/DiffEqDocs/stable/">DifferentialEquations.jl</a><ul><li>Multi-package interface of high performance numerical solvers of differential equations</li></ul></li><li><a href="https://docs.sciml.ai/ModelingToolkit/stable/">ModelingToolkit.jl</a><ul><li>The symbolic modeling package which implements the SciML symbolic common interface.</li></ul></li><li><a href="https://docs.sciml.ai/LinearSolve/stable/">LinearSolve.jl</a><ul><li>Multi-package interface for specifying linear solvers (direct, sparse, and iterative), along with tools for caching and preconditioners for use in large-scale modeling.</li></ul></li><li><a href="https://docs.sciml.ai/NonlinearSolve/stable/">NonlinearSolve.jl</a><ul><li>High performance numerical solving of nonlinear systems.</li></ul></li><li><a href="https://docs.sciml.ai/Integrals/stable/">Integrals.jl</a><ul><li>Multi-package interface for high performance, batched, and parallelized numerical quadrature.</li></ul></li><li><a href="https://docs.sciml.ai/Optimization/stable/">Optimization.jl</a><ul><li>Multi-package interface for numerical solving of optimization problems.</li></ul></li><li><a href="https://docs.sciml.ai/NeuralPDE/stable/">NeuralPDE.jl</a><ul><li>Physics-Informed Neural Network (PINN) package for transforming partial differential equations into optimization problems.</li></ul></li><li><a href="https://docs.sciml.ai/DiffEqOperators/stable/">DiffEqOperators.jl</a><ul><li>Automated finite difference method (FDM) package for transforming partial differential equations into nonlinear problems and ordinary differential equations.</li></ul></li><li><a href="https://docs.sciml.ai/DiffEqFlux/stable/">DiffEqFlux.jl</a><ul><li>High level package for scientific machine learning applications, such as neural and universal differential equations, solving of inverse problems, parameter estimation, nonlinear optimal control, and more.</li></ul></li><li><a href="https://docs.sciml.ai/DataDrivenDiffEq/stable/">DataDrivenDiffEq.jl</a><ul><li>Multi-package interface for data-driven modeling, Koopman dynamic mode decomposition, symbolic regression/sparsification, and automated model discovery.</li></ul></li><li><a href="https://docs.sciml.ai/SciMLExpectations/stable/">SciMLExpectations.jl</a><ul><li>Extension to the dynamical modeling tools for calculating expectations.</li></ul></li></ul><h2 id="Interface-Implementation-Libraries"><a class="docs-heading-anchor" href="#Interface-Implementation-Libraries">Interface Implementation Libraries</a><a id="Interface-Implementation-Libraries-1"></a><a class="docs-heading-anchor-permalink" href="#Interface-Implementation-Libraries" title="Permalink"></a></h2><ul><li><a href="https://docs.sciml.ai/SciMLBase/stable/">SciMLBase.jl</a><ul><li>The core package defining the interface which is consumed by the modeling and solver packages.</li></ul></li><li><a href="https://github.com/SciML/DiffEqBase.jl">DiffEqBase.jl</a><ul><li>The core package defining the extended interface which is consumed by the differential equation solver packages.</li></ul></li><li><a href="https://docs.sciml.ai/SciMLSensitivity/stable/">SciMLSensitivity.jl</a><ul><li>A package which pools together the definition of derivative overloads to define the common <code>sensealg</code> automatic differentiation interface.</li></ul></li><li><a href="https://docs.sciml.ai/DiffEqNoiseProcess/stable/">DiffEqNoiseProcess.jl</a><ul><li>A package which defines the stochastic <code>AbstractNoiseProcess</code> interface for the SciML ecosystem.</li></ul></li><li><a href="https://docs.sciml.ai/RecursiveArrayTools/stable/">RecursiveArrayTools.jl</a><ul><li>A package which defines the underlying <code>AbstractVectorOfArray</code> structure used as the output for all time series results.</li></ul></li><li><a href="https://docs.sciml.ai/ArrayInterface/stable/">ArrayInterface.jl</a><ul><li>The package which defines the extended <code>AbstractArray</code> interface employed throughout the SciML ecosystem.</li></ul></li></ul><h2 id="Using-Facing-Modeling-Libraries"><a class="docs-heading-anchor" href="#Using-Facing-Modeling-Libraries">Using-Facing Modeling Libraries</a><a id="Using-Facing-Modeling-Libraries-1"></a><a class="docs-heading-anchor-permalink" href="#Using-Facing-Modeling-Libraries" title="Permalink"></a></h2><p>There are too many to name here and this will be populated when there is time!</p><h2 id="Flowchart-Example-for-PDE-Constrained-Optimal-Control"><a class="docs-heading-anchor" href="#Flowchart-Example-for-PDE-Constrained-Optimal-Control">Flowchart Example for PDE-Constrained Optimal Control</a><a id="Flowchart-Example-for-PDE-Constrained-Optimal-Control-1"></a><a class="docs-heading-anchor-permalink" href="#Flowchart-Example-for-PDE-Constrained-Optimal-Control" title="Permalink"></a></h2><p>The following example showcases how the pieces of the common interface connect to solve a problem that mixes inference, symbolics, and numerics.</p><p><img src="https://user-images.githubusercontent.com/1814174/126318252-1e4152df-e6e2-42a3-8669-f8608f81a095.png" alt/></p><h2 id="External-Binding-Libraries"><a class="docs-heading-anchor" href="#External-Binding-Libraries">External Binding Libraries</a><a id="External-Binding-Libraries-1"></a><a class="docs-heading-anchor-permalink" href="#External-Binding-Libraries" title="Permalink"></a></h2><ul><li><a href="https://github.com/SciML/diffeqr">diffeqr</a><ul><li>Solving differential equations in R using DifferentialEquations.jl with ModelingToolkit for JIT compilation and GPU-acceleration</li></ul></li><li><a href="https://github.com/SciML/diffeqpy">diffeqpy</a><ul><li>Solving differential equations in Python using DifferentialEquations.jl</li></ul></li></ul><h2 id="Solver-Libraries"><a class="docs-heading-anchor" href="#Solver-Libraries">Solver Libraries</a><a id="Solver-Libraries-1"></a><a class="docs-heading-anchor-permalink" href="#Solver-Libraries" title="Permalink"></a></h2><p>There are too many to name here. Check out the <a href="https://github.com/SciML">SciML Organization Github Page</a> for details.</p><h2 id="Contributing"><a class="docs-heading-anchor" href="#Contributing">Contributing</a><a id="Contributing-1"></a><a class="docs-heading-anchor-permalink" href="#Contributing" title="Permalink"></a></h2><ul><li>Please refer to the <a href="https://github.com/SciML/ColPrac/blob/master/README.md">SciML ColPrac: Contributor&#39;s Guide on Collaborative Practices for Community Packages</a> for guidance on PRs, issues, and other matters relating to contributing to SciML.</li><li>See the <a href="https://github.com/SciML/SciMLStyle">SciML Style Guide</a> for common coding practices and other style decisions.</li><li>There are a few community forums:<ul><li>The #diffeq-bridged and #sciml-bridged channels in the <a href="https://julialang.org/slack/">Julia Slack</a></li><li>The #diffeq-bridged and #sciml-bridged channels in the <a href="https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged">Julia Zulip</a></li><li>On the <a href="https://discourse.julialang.org">Julia Discourse forums</a></li><li>See also <a href="https://sciml.ai/community/">SciML Community page</a></li></ul></li></ul><h2 id="Reproducibility"><a class="docs-heading-anchor" href="#Reproducibility">Reproducibility</a><a id="Reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#Reproducibility" title="Permalink"></a></h2><details><summary>The documentation of this SciML package was built using these direct dependencies,</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/SciMLBase.jl/SciMLBase.jl/docs/Project.toml`
   [e30172f5] Documenter v0.27.25
-  [961ee093] ModelingToolkit v8.64.0
-  [0bca4576] SciMLBase v1.94.0 `~/work/SciMLBase.jl/SciMLBase.jl`</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.9.2
-Commit e4ee485e909 (2023-07-05 09:39 UTC)
+  [961ee093] ModelingToolkit v8.65.0
+  [0bca4576] SciMLBase v1.95.0 `~/work/SciMLBase.jl/SciMLBase.jl`</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.9.3
+Commit bed2cd540a1 (2023-08-24 14:43 UTC)
+Build Info:
+  Official https://julialang.org/ release
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+  CPU: 2 × Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-14.0.6 (ORCJIT, icelake-server)
+  LLVM: libLLVM-14.0.6 (ORCJIT, skylake-avx512)
   Threads: 1 on 2 virtual cores</code></pre></details><details><summary>A more complete overview of all dependencies and their versions is also provided.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/SciMLBase.jl/SciMLBase.jl/docs/Manifest.toml`
   [47edcb42] ADTypes v0.2.1
   [a4c015fc] ANSIColoredPrinters v0.0.1
@@ -22,6 +24,7 @@ Platform Info:
   [79e6a3ab] Adapt v3.6.2
   [ec485272] ArnoldiMethod v0.2.0
   [4fba245c] ArrayInterface v7.4.11
+  [30b0a656] ArrayInterfaceCore v0.1.29
   [e2ed5e7c] Bijections v0.1.4
   [62783981] BitTwiddlingConvenienceFunctions v0.1.5
   [2a0fbf3d] CPUSummary v0.2.3
@@ -41,8 +44,8 @@ Platform Info:
   [9a962f9c] DataAPI v1.15.0
   [864edb3b] DataStructures v0.18.15
   [e2d170a0] DataValueInterfaces v1.0.0
-  [2b5f629d] DiffEqBase v6.128.1
-  [459566f4] DiffEqCallbacks v2.27.0
+  [2b5f629d] DiffEqBase v6.128.2
+  [459566f4] DiffEqCallbacks v2.29.0
   [163ba53b] DiffResults v1.1.0
   [b552c78f] DiffRules v1.15.1
   [b4f34e82] Distances v0.10.9
@@ -53,19 +56,24 @@ Platform Info:
   [fa6b7ba4] DualNumbers v0.6.8
   [7c1d4256] DynamicPolynomials v0.5.2
   [4e289a0a] EnumX v1.0.4
+  [d4d017d3] ExponentialUtilities v1.24.0
   [e2ba6199] ExprTools v0.1.10
   [7034ab61] FastBroadcast v0.2.6
-  [1a297f60] FillArrays v1.6.0
+  [9aa1b823] FastClosures v0.3.2
+⌅ [29a986be] FastLapackInterface v1.2.9
+  [1a297f60] FillArrays v1.6.1
   [6a86dc24] FiniteDiff v2.21.1
   [59287772] Formatting v0.4.2
   [f6369f11] ForwardDiff v0.10.36
   [069b7b12] FunctionWrappers v1.1.3
   [77dc65aa] FunctionWrappersWrappers v0.1.3
   [46192b85] GPUArraysCore v0.1.5
+  [c145ed77] GenericSchur v0.5.3
   [c27321d9] Glob v1.3.1
   [86223c79] Graphs v1.8.0
   [0b43b601] Groebner v0.4.2
   [d5909c97] GroupsCore v0.4.0
+  [3e5b6fbb] HostCPUFeatures v0.1.16
   [34004b35] HypergeometricFunctions v0.3.23
   [b5f81e59] IOCapture v0.2.3
   [615f187c] IfElse v0.1.1
@@ -73,11 +81,15 @@ Platform Info:
   [18e54dd8] IntegerMathUtils v0.1.2
   [8197267c] IntervalSets v0.7.7
   [92d709cd] IrrationalConstants v0.2.2
+  [42fd0dbc] IterativeSolvers v0.9.2
   [82899510] IteratorInterfaceExtensions v1.0.0
   [692b3bcd] JLLWrappers v1.5.0
   [682c06a0] JSON v0.21.4
   [98e50ef6] JuliaFormatter v1.0.35
   [ccbc3e58] JumpProcesses v9.7.2
+  [ef3ab10e] KLU v0.4.0
+  [ba0b0d4f] Krylov v0.9.3
+  [0b1a1467] KrylovKit v0.6.0
   [b964fa9f] LaTeXStrings v1.3.0
   [2ee39098] LabelledArrays v1.14.0
   [984bce1d] LambertW v0.4.6
@@ -85,19 +97,24 @@ Platform Info:
   [10f19ff3] LayoutPointers v0.1.14
   [50d2b5c4] Lazy v0.15.1
   [d3d80556] LineSearches v7.2.0
+⌅ [7ed4a6bd] LinearSolve v1.34.1
   [2ab3a3ac] LogExpFunctions v0.3.26
+  [bdcacae8] LoopVectorization v0.12.165
   [d8e11817] MLStyle v0.4.17
   [1914dd2f] MacroTools v0.5.11
   [d125e4d3] ManualMemory v0.1.8
   [e1d29d7a] Missings v1.1.0
-  [961ee093] ModelingToolkit v8.64.0
+  [961ee093] ModelingToolkit v8.65.0
   [46d2c3a1] MuladdMacro v0.2.4
   [102ac46a] MultivariatePolynomials v0.5.1
   [d8a4904e] MutableArithmetics v1.3.1
   [d41bc354] NLSolversBase v7.8.3
   [2774e3e8] NLsolve v4.5.1
   [77ba4419] NaNMath v1.0.2
+⌃ [8913a72c] NonlinearSolve v1.6.0
+  [6fe1bfb0] OffsetArrays v1.12.10
   [bac558e1] OrderedCollections v1.6.2
+⌃ [1dea7af3] OrdinaryDiffEq v6.50.0
   [90014a1f] PDMats v0.11.17
   [65ce6f38] PackageExtensionCompat v1.0.1
   [d96e819e] Parameters v0.12.3
@@ -106,7 +123,7 @@ Platform Info:
   [f517fe37] Polyester v0.7.5
   [1d0040c9] PolyesterWeave v0.2.1
   [d236fae5] PreallocationTools v0.4.12
-  [aea7be01] PrecompileTools v1.1.2
+  [aea7be01] PrecompileTools v1.2.0
   [21216c6a] Preferences v1.4.0
   [27ebfcd6] Primes v0.5.4
   [1fd47b50] QuadGK v2.8.2
@@ -114,19 +131,25 @@ Platform Info:
   [e6cf234a] RandomNumbers v1.5.3
   [3cdcf5f2] RecipesBase v1.3.4
   [731186ca] RecursiveArrayTools v2.38.7
+  [f2c3362d] RecursiveFactorization v0.2.20
   [189a3867] Reexport v1.2.2
   [ae029012] Requires v1.3.0
   [79098fc4] Rmath v0.7.1
   [7e49a35a] RuntimeGeneratedFunctions v0.5.12
   [fdea26ae] SIMD v3.4.5
   [94e857df] SIMDTypes v0.1.0
-  [0bca4576] SciMLBase v1.94.0 `~/work/SciMLBase.jl/SciMLBase.jl`
+  [476501e8] SLEEFPirates v0.6.39
+  [0bca4576] SciMLBase v1.95.0 `~/work/SciMLBase.jl/SciMLBase.jl`
+  [e9a6253c] SciMLNLSolve v0.1.8
   [c0aeaf25] SciMLOperators v0.3.6
   [efcf1570] Setfield v1.1.1
   [727e6d20] SimpleNonlinearSolve v0.1.19
   [699a6c99] SimpleTraits v0.9.4
+  [ce78b400] SimpleUnPack v1.1.0
   [66db9d55] SnoopPrecompile v1.0.3
   [a2af1166] SortingAlgorithms v1.1.1
+⌅ [47a9eef4] SparseDiffTools v1.31.0
+  [e56a9233] Sparspak v0.3.9
   [276daf66] SpecialFunctions v2.3.1
   [aedffcd0] Static v0.8.8
   [0d7ed370] StaticArrayInterface v1.4.0
@@ -145,12 +168,15 @@ Platform Info:
   [a759f4b9] TimerOutputs v0.5.23
   [0796e94c] Tokenize v0.5.25
   [a2a6695c] TreeViews v0.3.0
+  [d5829a12] TriangularSolve v0.1.19
   [410a4b4d] Tricks v0.1.7
   [781d530d] TruncatedStacktraces v1.4.0
   [5c2747f8] URIs v1.5.0
   [3a884ed6] UnPack v1.0.2
-  [1986cc42] Unitful v1.16.3
+  [1986cc42] Unitful v1.17.0
   [a7c27f48] Unityper v0.1.5
+  [3d5dd08c] VectorizationBase v0.21.64
+  [19fa3120] VertexSafeGraphs v0.2.0
   [700de1a5] ZygoteRules v0.2.3
   [efe28fd5] OpenSpecFun_jll v0.5.5+0
   [f50d1b31] Rmath_jll v0.4.0+0
@@ -198,6 +224,7 @@ Platform Info:
   [83775a58] Zlib_jll v1.2.13+0
   [8e850b90] libblastrampoline_jll v5.8.0+0
   [8e850ede] nghttp2_jll v1.48.0+0
-  [3f19e933] p7zip_jll v17.4.0+0</code></pre></details>You can also download the
-<a href="https://github.com/SciML/SciMLBase.jl/tree/gh-pages/v1.94.0/assets/Manifest.toml">manifest</a> file and the
-<a href="https://github.com/SciML/SciMLBase.jl/tree/gh-pages/v1.94.0/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="interfaces/Problems/">SciMLProblems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 22 August 2023 20:34">Tuesday 22 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  [3f19e933] p7zip_jll v17.4.0+0
+Info Packages marked with ⌃ and ⌅ have new versions available, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the
+<a href="https://github.com/SciML/SciMLBase.jl/tree/gh-pages/v1.95.0/assets/Manifest.toml">manifest</a> file and the
+<a href="https://github.com/SciML/SciMLBase.jl/tree/gh-pages/v1.95.0/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="interfaces/Problems/">SciMLProblems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 28 August 2023 11:50">Monday 28 August 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
