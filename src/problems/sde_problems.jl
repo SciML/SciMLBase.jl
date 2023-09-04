@@ -103,9 +103,9 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
         warn_paramtype(p)
         new{typeof(u0), typeof(_tspan),
             isinplace(f), typeof(p),
-            typeof(noise), typeof(f.f), typeof(g),
+            typeof(noise), typeof(f), typeof(f.g),
             typeof(kwargs),
-            typeof(noise_rate_prototype)}(f.f, g, u0, _tspan, p,
+            typeof(noise_rate_prototype)}(f, f.g, u0, _tspan, p,
             noise, kwargs,
             noise_rate_prototype, seed)
     end
@@ -123,12 +123,12 @@ function SDEProblem(f::AbstractSDEFunction,u0,tspan,p=NullParameters();kwargs...
 end
 =#
 
-function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem(SDEFunction(f, g), u0, tspan, p; kwargs...)
+function SDEProblem(f::AbstractSDEFunction, g, u0, tspan, p = NullParameters(); kwargs...)
+    SDEProblem{isinplace(f)}(f, g, u0, tspan, p; kwargs...)
 end
 
-function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem{isinplace(f)}(f.f, f.g, u0, tspan, p; kwargs...)
+function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
+    SDEProblem(SDEFunction(f, g), g, u0, tspan, p; kwargs...)
 end
 
 """
