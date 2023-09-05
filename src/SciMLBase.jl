@@ -21,6 +21,8 @@ import RuntimeGeneratedFunctions
 import EnumX
 import TruncatedStacktraces
 import ADTypes: AbstractADType
+import ChainRulesCore
+import ZygoteRules: @adjoint
 
 using Reexport
 using SciMLOperators
@@ -655,7 +657,8 @@ function specialization(::Union{ODEFunction{iip, specialize},
     ImplicitDiscreteFunction{iip, specialize},
     RODEFunction{iip, specialize},
     NonlinearFunction{iip, specialize},
-    OptimizationFunction{iip, specialize}}) where {iip,
+    OptimizationFunction{iip, specialize},
+    BVPFunction{iip, specialize}}) where {iip,
     specialize}
     specialize
 end
@@ -701,6 +704,7 @@ include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
 include("solutions/pde_solutions.jl")
 include("solutions/solution_interface.jl")
+include("solutions/zygote.jl")
 
 include("ensemble/ensemble_solutions.jl")
 include("ensemble/ensemble_problems.jl")
@@ -784,7 +788,7 @@ export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
     DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction
+    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction
 
 export OptimizationFunction
 
