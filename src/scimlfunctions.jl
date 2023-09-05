@@ -2233,7 +2233,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the BVPFunction type directly match the names of the inputs.
 """
 struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
-    BCJP, SP, TW, TWt, TPJ, S, S2, S3, O, TCV, BCTCV, SYS} <: AbstractBVPFunction{iip}
+    BCJP, BCRP, SP, TW, TWt, TPJ, S, S2, S3, O, TCV, BCTCV, SYS} <: AbstractBVPFunction{iip}
     f::F
     bc::BF
     mass_matrix::TMM
@@ -2245,6 +2245,7 @@ struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
     vjp::VJP
     jac_prototype::JP
     bcjac_prototype::BCJP
+    bcresid_prototype::BCRP
     sparsity::SP
     Wfact::TW
     Wfact_t::TWt
@@ -3820,7 +3821,8 @@ function BVPFunction{iip, specialize}(f, bc;
     vjp = __has_vjp(f) ? f.vjp : nothing,
     jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
     bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
-    sparsity = __has_sparsity(f) ? f.sparsity :            jac_prototype,
+    bcresid_prototype = nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
@@ -3831,6 +3833,7 @@ function BVPFunction{iip, specialize}(f, bc;
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize}
+    # TODO: Add checks for bcresid_prototype for TwoPointBVPFunction
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
@@ -3898,14 +3901,14 @@ function BVPFunction{iip, specialize}(f, bc;
 
     if specialize === NoSpecialize
         BVPFunction{iip, specialize, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
             Any, typeof(_colorvec), typeof(_bccolorvec), Any}(f, bc, mass_matrix,
             analytic,
             tgrad,
             jac, bcjac, jvp, vjp,
             jac_prototype,
-            bcjac_prototype,
+            bcjac_prototype, bcresid_prototype,
             sparsity, Wfact,
             Wfact_t,
             paramjac, syms,
@@ -3916,11 +3919,12 @@ function BVPFunction{iip, specialize}(f, bc;
         BVPFunction{iip, FunctionWrapperSpecialize,
             typeof(f), typeof(bc), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+            typeof(bcjac_prototype), typeof(bcresid_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
             typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec),
             typeof(sys)}(f, bc, mass_matrix, analytic, tgrad, jac, bcjac,
-            jvp, vjp, jac_prototype, bcjac_prototype, sparsity, Wfact,
+            jvp, vjp, jac_prototype, bcjac_prototype, bcresid_prototype, sparsity, Wfact,
             Wfact_t, paramjac, syms, indepsym, paramsyms,
             observed, _colorvec, _bccolorvec, sys)
     else
@@ -3928,13 +3932,13 @@ function BVPFunction{iip, specialize}(f, bc;
             typeof(analytic),
             typeof(tgrad),
             typeof(jac), typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(bcjac_prototype),
+            typeof(bcjac_prototype), typeof(bcresid_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
             typeof(paramjac), typeof(syms), typeof(indepsym), typeof(paramsyms),
             typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys)}(f, bc, mass_matrix, analytic,
             tgrad, jac, bcjac, jvp, vjp,
-            jac_prototype, bcjac_prototype, sparsity,
+            jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
             Wfact, Wfact_t, paramjac,
             syms, indepsym, paramsyms, observed,
             _colorvec, _bccolorvec, sys)

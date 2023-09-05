@@ -89,15 +89,12 @@ struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip}, bc, u0, tspan,
-        p = NullParameters(),
-        problem_type = StandardBVProblem();
-        kwargs...) where {iip}
+        p = NullParameters(), problem_type = StandardBVProblem(); kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(u0), typeof(_tspan), iip, typeof(p),
-            typeof(f.f), typeof(bc),
-            typeof(problem_type), typeof(kwargs)}(f.f, bc, u0, _tspan, p,
-            problem_type, kwargs)
+        return new{typeof(u0), typeof(_tspan), iip, typeof(p), typeof(f), typeof(bc),
+            typeof(problem_type), typeof(kwargs)}(f, bc, u0, _tspan, p, problem_type,
+            kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
@@ -108,11 +105,12 @@ end
 TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem(BVPFunction(f, bc), u0, tspan, p; kwargs...)
+    iip = isinplace(f, 4)
+    return BVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
 end
 
 function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
-    BVProblem{isinplace(f)}(f.f, f.bc, u0, tspan, p; kwargs...)
+    return BVProblem{isinplace(f)}(f, f.bc, u0, tspan, p; kwargs...)
 end
 
 """
@@ -132,31 +130,25 @@ end
 """
 $(TYPEDEF)
 """
-struct TwoPointBVProblem{iip} end
+struct TwoPointBVProblem end
+
 function TwoPointBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 4)
-    TwoPointBVProblem{iip}(f, bc, u0, tspan, p; kwargs...)
+    return TwoPointBVProblem(BVPFunction(f, bc), u0, tspan, p; kwargs...)
 end
-function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
-    kwargs...) where {iip}
-    BVProblem{iip}(f, TwoPointBVPFunction(bc), u0, tspan, p; kwargs...)
+function TwoPointBVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters();
+    kwargs...)
+    iip = isinplace(f)
+    return BVProblem{iip}(f, f.bc, u0, tspan, p, TwoPointBVProblem(); kwargs...)
 end
 
 # Allow previous timeseries solution
-function TwoPointBVProblem(f::AbstractODEFunction,
-    bc,
-    sol::T,
-    tspan::Tuple,
+function TwoPointBVProblem(f::AbstractODEFunction, bc, sol::T, tspan::Tuple,
     p = NullParameters()) where {T <: AbstractTimeseriesSolution}
     TwoPointBVProblem(f, bc, sol.u, tspan, p)
 end
 # Allow initial guess function for the initial guess
-function TwoPointBVProblem(f::AbstractODEFunction,
-    bc,
-    initialGuess,
-    tspan::AbstractVector,
-    p = NullParameters();
-    kwargs...)
+function TwoPointBVProblem(f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
+    p = NullParameters(); kwargs...)
     u0 = [initialGuess(i) for i in tspan]
     TwoPointBVProblem(f, bc, u0, (tspan[1], tspan[end]), p)
 end
