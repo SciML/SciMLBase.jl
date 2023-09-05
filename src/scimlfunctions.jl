@@ -2233,11 +2233,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the BVPFunction type directly match the names of the inputs.
 """
 struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
-    BCJP, SP, TW, TWt,
-    TPJ,
-    S, S2, S3, O, TCV, BCTCV,
-    SYS} <:
-       AbstractBVPFunction{iip}
+    BCJP, SP, TW, TWt, TPJ, S, S2, S3, O, TCV, BCTCV, SYS} <: AbstractBVPFunction{iip}
     f::F
     bc::BF
     mass_matrix::TMM
@@ -3815,31 +3811,23 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 end
 
 function BVPFunction{iip, specialize}(f, bc;
-    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
-                  I,
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad = __has_tgrad(f) ? f.tgrad : nothing,
     jac = __has_jac(f) ? f.jac : nothing,
     bcjac = __has_jac(bc) ? bc.jac : nothing,
     jvp = __has_jvp(f) ? f.jvp : nothing,
     vjp = __has_vjp(f) ? f.vjp : nothing,
-    jac_prototype = __has_jac_prototype(f) ?
-                    f.jac_prototype :
-                    nothing,
-    bcjac_prototype = __has_jac_prototype(bc) ?
-                      bc.jac_prototype :
-                      nothing,
-    sparsity = __has_sparsity(f) ? f.sparsity :
-               jac_prototype,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity :            jac_prototype,
     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
     syms = __has_syms(f) ? f.syms : nothing,
     indepsym = __has_indepsym(f) ? f.indepsym : nothing,
-    paramsyms = __has_paramsyms(f) ? f.paramsyms :
-                nothing,
-    observed = __has_observed(f) ? f.observed :
-               DEFAULT_OBSERVED,
+    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+    observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize}
@@ -3892,17 +3880,13 @@ function BVPFunction{iip, specialize}(f, bc;
     Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
     paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
 
-    nonconforming = (jaciip,
-        tgradiip,
-        jvpiip,
-        vjpiip,
-        Wfactiip,
-        Wfact_tiip,
+    nonconforming = (bciip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
         paramjaciip) .!= iip
     bc_nonconforming = bcjaciip .!= bciip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
-        functions = ["jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
+        functions = ["bc", "jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t",
+            "paramjac"][nonconforming]
         throw(NonconformingFunctionsError(functions))
     end
 
