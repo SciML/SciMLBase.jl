@@ -660,6 +660,7 @@ function specialization(::Union{ODEFunction{iip, specialize},
     OptimizationFunction{iip, specialize},
     BVPFunction{iip, specialize}}) where {iip,
     specialize}
+    specialize
 end
 
 specialization(f::AbstractSciMLFunction) = FullSpecialize
