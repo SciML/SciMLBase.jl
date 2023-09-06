@@ -2236,8 +2236,7 @@ struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
     BCJP, SP, TW, TWt,
     TPJ,
     S, S2, S3, O, TCV, BCTCV,
-    SYS} <:
-       AbstractBVPFunction{iip}
+    SYS} <: AbstractBVPFunction{iip}
     f::F
     bc::BF
     mass_matrix::TMM
@@ -2261,6 +2260,8 @@ struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
     bccolorvec::BCTCV
     sys::SYS
 end
+
+TruncatedStacktraces.@truncate_stacktrace BVPFunction 1 2
 
 ######### Backwards Compatibility Overloads
 
@@ -3928,17 +3929,6 @@ function BVPFunction{iip, specialize}(f, bc;
             indepsym, paramsyms,
             observed,
             _colorvec, _bccolorvec, sys)
-    elseif specialize === false
-        BVPFunction{iip, FunctionWrapperSpecialize,
-            typeof(f), typeof(bc), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
-            typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(paramjac),
-            typeof(syms), typeof(indepsym), typeof(paramsyms), typeof(observed),
-            typeof(_colorvec), typeof(_bccolorvec),
-            typeof(sys)}(f, bc, mass_matrix, analytic, tgrad, jac, bcjac,
-            jvp, vjp, jac_prototype, bcjac_prototype, sparsity, Wfact,
-            Wfact_t, paramjac, syms, indepsym, paramsyms,
-            observed, _colorvec, _bccolorvec, sys)
     else
         BVPFunction{iip, specialize, typeof(f), typeof(bc), typeof(mass_matrix),
             typeof(analytic),
