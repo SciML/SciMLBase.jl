@@ -1884,10 +1884,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the NonlinearFunction type directly match the names of the inputs.
 """
 struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
-    TPJ,
-    S, S2, O, TCV,
-    SYS,
-} <: AbstractNonlinearFunction{iip}
+    TPJ, S, S2, O, TCV, SYS, RP} <: AbstractNonlinearFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -1905,6 +1902,7 @@ struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, 
     observed::O
     colorvec::TCV
     sys::SYS
+    resid_prototype::RP
 end
 
 TruncatedStacktraces.@truncate_stacktrace NonlinearFunction 1 2
@@ -3648,7 +3646,8 @@ function NonlinearFunction{iip, specialize}(f;
                DEFAULT_OBSERVED_NO_TIME,
     colorvec = __has_colorvec(f) ? f.colorvec :
                nothing,
-    sys = __has_sys(f) ? f.sys : nothing) where {
+    sys = __has_sys(f) ? f.sys : nothing,
+    resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing) where {
     iip,
     specialize,
 }
@@ -3687,14 +3686,14 @@ function NonlinearFunction{iip, specialize}(f;
             Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any,
             Any, Any, typeof(syms), typeof(paramsyms), Any,
-            typeof(_colorvec), Any}(f, mass_matrix,
+            typeof(_colorvec), Any, Any}(f, mass_matrix,
             analytic, tgrad, jac,
             jvp, vjp,
             jac_prototype,
             sparsity, Wfact,
             Wfact_t, paramjac,
             syms, paramsyms, observed,
-            _colorvec, sys)
+            _colorvec, sys, resid_prototype)
     else
         NonlinearFunction{iip, specialize,
             typeof(f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -3703,13 +3702,13 @@ function NonlinearFunction{iip, specialize}(f;
             typeof(Wfact_t), typeof(paramjac), typeof(syms),
             typeof(paramsyms),
             typeof(observed),
-            typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad,
-            jac,
+            typeof(_colorvec), typeof(sys), typeof(resid_prototype)}(f, mass_matrix,
+            analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity,
             Wfact,
             Wfact_t, paramjac, syms,
             paramsyms,
-            observed, _colorvec, sys)
+            observed, _colorvec, sys, resid_prototype)
     end
 end
 
@@ -3978,6 +3977,7 @@ __has_analytic(f) = isdefined(f, :analytic)
 __has_colorvec(f) = isdefined(f, :colorvec)
 __has_sys(f) = isdefined(f, :sys)
 __has_analytic_full(f) = isdefined(f, :analytic_full)
+__has_resid_prototype(f) = isdefined(f, :resid_prototype)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
