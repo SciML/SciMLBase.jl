@@ -421,7 +421,7 @@ struct IntegralDataProblem{Y<:AbstractArray, X<:AbstractVector, DIMVAL, K} <: Ab
     y::Y
     dim::DIMVAL
     kwargs::K
-    @add_kwonly function IntegralProblem(x, y;
+    @add_kwonly function IntegralDataProblem(x, y;
         dim = 1,
         kwargs...) 
         @assert length(x) > 1
