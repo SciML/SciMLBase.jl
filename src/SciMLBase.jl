@@ -762,7 +762,7 @@ export LinearProblem,
     NonlinearProblem, IntervalNonlinearProblem,
     IntegralProblem, OptimizationProblem
 
-export IntegralProblem
+export IntegralDataProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution

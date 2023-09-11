@@ -386,6 +386,59 @@ function IntegralProblem(f, lb, ub, args...; kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
 
+@doc doc"""
+
+Defines a sampled integral problem.
+Documentation Page: https://docs.sciml.ai/Integrals/stable/
+
+## Mathematical Specification of a Sampled Integral Problem
+
+Integral problems define integrals over a set of data `y`
+with corresponding sampling points `x`. 
+
+`y` is an `AbstractArray` and `x` is a `AbstractVector`,
+whose elements define the space being integrated along the dimension of `y` that is integrated.
+This dimension is given by `dim`.
+
+## Problem Type
+
+### Constructors
+
+IntegralProblem(y,x;
+                  dim=1, kwargs...)
+
+- `y`: The integrand
+- `x`: The sampled integration domain
+- `dim`: The dimension of `y`being integrated
+- kwargs: Keyword arguments copied to the solvers.
+
+### Fields
+
+The fields match the names of the constructor arguments.
+"""
+struct IntegralDataProblem{Y<:AbstractArray, X<:AbstractVector, DIMVAL} <: AbstractIntegralProblem{false}
+    x::X
+    y::Y
+    dim::DIMVAL
+    kwargs::K
+    @add_kwonly function IntegralProblem(x, y;
+        dim = 1,
+        kwargs...) 
+        @assert length(x) > 1
+        @assert isfinite(first(x)) "Infinite limits are not supported"
+        @assert isfinite(last(x)) "Infinite limits are not supported"
+        @assert size(y, dim) == length(x) "Integrand and grid must be of equal length along the integrated dimension"
+        @assert axes(y, dim) == axes(x,1) "Grid and integrand array must use the same indexing along integrated dimension" 
+        new{typeof(x), typeof(y), Val{dim}, typeof(kwargs)}(x, y, Val(dim), kwargs)
+    end
+end
+
+TruncatedStacktraces.@truncate_stacktrace IntegralDataProblem 1 4
+
+function IntegralProblem(x::AbstractArray, y::AbstractVector; dim=1, kwargs...)
+    IntegralDataProblem(x, y; dim=dim)
+end
+
 struct QuadratureProblem end
 @deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
 
