@@ -416,7 +416,7 @@ IntegralProblem(y,x;
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralDataProblem{Y<:AbstractArray, X<:AbstractVector, DIMVAL} <: AbstractIntegralProblem{false}
+struct IntegralDataProblem{Y<:AbstractArray, X<:AbstractVector, DIMVAL, K} <: AbstractIntegralProblem{false}
     x::X
     y::Y
     dim::DIMVAL
