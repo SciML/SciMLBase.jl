@@ -127,7 +127,7 @@ TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
-    return BVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+    return BVProblem{iip}(BVPFunction{iip}(f, bc), bc, u0, tspan, p; kwargs...)
 end
 
 function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)

@@ -1884,10 +1884,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the NonlinearFunction type directly match the names of the inputs.
 """
 struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
-    TPJ,
-    S, S2, O, TCV,
-    SYS,
-} <: AbstractNonlinearFunction{iip}
+    TPJ, S, S2, O, TCV, SYS} <: AbstractNonlinearFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -3646,10 +3643,7 @@ function NonlinearFunction{iip, specialize}(f;
                DEFAULT_OBSERVED_NO_TIME,
     colorvec = __has_colorvec(f) ? f.colorvec :
                nothing,
-    sys = __has_sys(f) ? f.sys : nothing) where {
-    iip,
-    specialize,
-}
+    sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize}
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
@@ -3701,8 +3695,8 @@ function NonlinearFunction{iip, specialize}(f;
             typeof(Wfact_t), typeof(paramjac), typeof(syms),
             typeof(paramsyms),
             typeof(observed),
-            typeof(_colorvec), typeof(sys)}(f, mass_matrix, analytic, tgrad,
-            jac,
+            typeof(_colorvec), typeof(sys)}(f, mass_matrix,
+            analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity,
             Wfact,
             Wfact_t, paramjac, syms,
@@ -3898,6 +3892,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         if bcresid_prototype === nothing || length(bcresid_prototype) != 2
             error("bcresid_prototype must be a tuple / indexable collection of length 2 for a TwoPointBVPFunction")
         end
+        bcresid_prototype = ArrayPartition(bcresid_prototype[1], bcresid_prototype[2])
     end
 
     if any(bc_nonconforming)
