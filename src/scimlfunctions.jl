@@ -3892,11 +3892,13 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         throw(NonconformingFunctionsError(functions))
     end
 
-    if iip && twopoint
-        if bcresid_prototype === nothing || length(bcresid_prototype) != 2
-            error("bcresid_prototype must be a tuple / indexable collection of length 2 for a TwoPointBVPFunction")
+    if twopoint
+        if iip && (bcresid_prototype === nothing || length(bcresid_prototype) != 2)
+            error("bcresid_prototype must be a tuple / indexable collection of length 2 for a inplace TwoPointBVPFunction")
         end
-        bcresid_prototype = ArrayPartition(bcresid_prototype[1], bcresid_prototype[2])
+        if bcresid_prototype !== nothing && length(bcresid_prototype) == 2
+            bcresid_prototype = ArrayPartition(bcresid_prototype[1], bcresid_prototype[2])
+        end
     end
 
     if any(bc_nonconforming)
