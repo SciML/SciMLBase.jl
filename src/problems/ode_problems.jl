@@ -94,7 +94,7 @@ prob = ODEProblemLibrary.prob_ode_linear
 sol = solve(prob)
 ```
 """
-struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
+mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
        AbstractODEProblem{uType, tType, isinplace}
     """The ODE is `du = f(u,p,t)` for out-of-place and f(du,u,p,t) for in-place."""
     f::F
