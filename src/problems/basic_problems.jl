@@ -334,10 +334,16 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 
 ### Constructors
 
+```
 IntegralProblem{iip}(f,lb,ub,p=NullParameters();
                   nout=1, batch = 0, kwargs...)
 
-- f: the integrand, `y = f(u,p)` for out-of-place or `f(y,u,p)` for in-place.
+IntegralProblem{iip}(f, x::AbstractVector{<:Number}, p = NullParameters();
+                  nout = 1,
+                  batch = 0, kwargs...)
+```
+
+- f: the integrand, callable function `y = f(u,p)` for out-of-place or `f(y,u,p)` for in-place, or `AbstractArray` for sampled problems.
 - lb: Either a number or vector of lower bounds.
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
@@ -353,6 +359,8 @@ IntegralProblem{iip}(f,lb,ub,p=NullParameters();
   if `f` is a scalar valued function `y[i]` is the evaluation of `f` at a different point.
   Note that batch is a suggestion for the number of points,
   and it is not necessarily true that batch is the same as batchsize in all algorithms.
+- x: Vector of gridpoints on which to evaluate the integrand for integrators that support this. Defaults to `nothing`
+- dim: For integrals over sampled data (when `f isa AbstractArray`), this specifies the dimension along which is integrated.
 - kwargs: Keyword arguments copied to the solvers.
 
 Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
@@ -362,21 +370,33 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, B, K, X, D} <: AbstractIntegralProblem{isinplace}
     f::F
     lb::B
     ub::B
     nout::Int
     p::P
     batch::Int
+    x::X
+    dim::D
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
         nout = 1,
-        batch = 0, kwargs...) where {iip}
+        batch = 0, x=nothing, dim=Val(1), kwargs...) where {iip}
         @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
         warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f, lb, ub, nout, p,
-            batch, kwargs)
+        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim) typeof(kwargs)}(f, lb, ub, nout, p,
+            batch, x, dim, kwargs)
+    end
+    @add_kwonly function IntegralProblem{iip}(f, x::AbstractVector{<:Number}, p = NullParameters();
+        dim=Val(1),
+        nout = 1,
+        batch = 0, kwargs...) where {iip}
+        lb = x[begin]
+        ub = x[end]
+        warn_paramtype(p)
+        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim), typeof(kwargs)}(f, lb, ub, nout, p,
+            batch, x, dim, kwargs)
     end
 end
 
@@ -385,58 +405,11 @@ TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 function IntegralProblem(f, lb, ub, args...; kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
-
-@doc doc"""
-
-Defines a sampled integral problem.
-Documentation Page: https://docs.sciml.ai/Integrals/stable/
-
-## Mathematical Specification of a Sampled Integral Problem
-
-Integral problems define integrals over a set of data `y`
-with corresponding sampling points `x`. 
-
-`y` is an `AbstractArray` and `x` is a `AbstractVector`,
-whose elements define the space being integrated along the dimension of `y` that is integrated.
-This dimension is given by `dim`.
-
-## Problem Type
-
-### Constructors
-
-IntegralProblem(y,x;
-                  dim=1, kwargs...)
-
-- `y`: The integrand
-- `x`: The sampled integration domain
-- `dim`: The dimension of `y`being integrated
-- kwargs: Keyword arguments copied to the solvers.
-
-### Fields
-
-The fields match the names of the constructor arguments.
-"""
-struct IntegralDataProblem{Y<:AbstractArray, X<:AbstractVector, DIMVAL, K} <: AbstractIntegralProblem{false}
-    x::X
-    y::Y
-    dim::DIMVAL
-    kwargs::K
-    @add_kwonly function IntegralDataProblem(x, y;
-        dim = 1,
-        kwargs...) 
-        @assert length(x) > 1
-        @assert isfinite(first(x)) "Infinite limits are not supported"
-        @assert isfinite(last(x)) "Infinite limits are not supported"
-        @assert size(y, dim) == length(x) "Integrand and grid must be of equal length along the integrated dimension"
-        @assert axes(y, dim) == axes(x,1) "Grid and integrand array must use the same indexing along integrated dimension" 
-        new{typeof(x), typeof(y), Val{dim}, typeof(kwargs)}(x, y, Val(dim), kwargs)
-    end
+function IntegralProblem(f, x::AbstractVector{<:Number}, args...; kwargs...)
+    IntegralProblem{isinplace(f, 3)}(f, x, args...; kwargs...)
 end
-
-TruncatedStacktraces.@truncate_stacktrace IntegralDataProblem 1 4
-
-function IntegralProblem(x::AbstractArray, y::AbstractVector; dim=1, kwargs...)
-    IntegralDataProblem(x, y; dim=dim)
+function IntegralProblem(y::AbstractArray, x::AbstractVector{<:Number}, args...; dim::Int=1, kwargs...)
+    IntegralProblem{false}(y, x, args...; dim=Val(dim), kwargs...)
 end
 
 struct QuadratureProblem end
