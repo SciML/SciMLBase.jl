@@ -43,6 +43,11 @@ jobs:
           - {user: SciML, repo: StochasticDelayDiffEq.jl, group: All}
           - {user: SciML, repo: SimpleNonlinearSolve.jl, group: All}
           - {user: SciML, repo: SimpleDiffEq.jl, group: All}
+          - {user: SciML, repo: SciMLSensitivity.jl, group: Core1}
+          - {user: SciML, repo: SciMLSensitivity.jl, group: Core2}
+          - {user: SciML, repo: SciMLSensitivity.jl, group: Core3}
+          - {user: SciML, repo: SciMLSensitivity.jl, group: Core4}
+          - {user: SciML, repo: SciMLSensitivity.jl, group: Core5}
 
     steps:
       - uses: actions/checkout@v4
