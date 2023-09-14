@@ -370,7 +370,7 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace, P, F, B, K, X, D} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, B, X, D, K} <: AbstractIntegralProblem{isinplace}
     f::F
     lb::B
     ub::B
@@ -382,18 +382,8 @@ struct IntegralProblem{isinplace, P, F, B, K, X, D} <: AbstractIntegralProblem{i
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
         nout = 1,
-        batch = 0, x=nothing, dim=Val(1), kwargs...) where {iip}
+        batch = 0, x=nothing, dim=nothing, kwargs...) where {iip}
         @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
-        warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim), typeof(kwargs)}(f, lb, ub, nout, p,
-            batch, x, dim, kwargs)
-    end
-    @add_kwonly function IntegralProblem{iip}(f, x::AbstractVector{<:Number}, p = NullParameters();
-        dim=Val(1),
-        nout = 1,
-        batch = 0, kwargs...) where {iip}
-        lb = x[begin]
-        ub = x[end]
         warn_paramtype(p)
         new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim), typeof(kwargs)}(f, lb, ub, nout, p,
             batch, x, dim, kwargs)
@@ -406,10 +396,10 @@ function IntegralProblem(f, lb, ub, args...; kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
 function IntegralProblem(f, x::AbstractVector{<:Number}, args...; kwargs...)
-    IntegralProblem{isinplace(f, 3)}(f, x, args...; kwargs...)
+    IntegralProblem(f, x[begin], x[end], args...; x=x, kwargs...)
 end
 function IntegralProblem(y::AbstractArray, x::AbstractVector{<:Number}, args...; dim::Int=1, kwargs...)
-    IntegralProblem{false}(y, x, args...; dim=Val(dim), kwargs...)
+    IntegralProblem{false}(y, x[begin], x[end], args...; dim=Val(dim), kwargs...)
 end
 
 struct QuadratureProblem end
