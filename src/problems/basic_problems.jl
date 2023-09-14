@@ -385,7 +385,7 @@ struct IntegralProblem{isinplace, P, F, B, K, X, D} <: AbstractIntegralProblem{i
         batch = 0, x=nothing, dim=Val(1), kwargs...) where {iip}
         @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
         warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim) typeof(kwargs)}(f, lb, ub, nout, p,
+        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim), typeof(kwargs)}(f, lb, ub, nout, p,
             batch, x, dim, kwargs)
     end
     @add_kwonly function IntegralProblem{iip}(f, x::AbstractVector{<:Number}, p = NullParameters();
