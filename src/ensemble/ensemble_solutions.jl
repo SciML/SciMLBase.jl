@@ -150,7 +150,7 @@ end
             zlims --> (-Inf, Inf)
             marker_z --> zcolors[i]
             if idxs !== nothing
-                idxs ---> idxs
+                idxs --> idxs
             end
             sim[i]
         end
