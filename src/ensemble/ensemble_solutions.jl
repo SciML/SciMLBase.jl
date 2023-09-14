@@ -199,7 +199,7 @@ end
             linewidth --> 3
             fillalpha --> 0.2
             if idxs !== nothing
-                idxs ---> idxs
+                idxs --> idxs
             end
             if error_style == :ribbon
                 ribbon --> (ci_low[i], ci_high[i])
