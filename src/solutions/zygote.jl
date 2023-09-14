@@ -1,6 +1,6 @@
 @adjoint function getindex(VA::ODESolution, i::Int)
     function ODESolution_getindex_pullback(Δ)
-        Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
+        Δ′ = [(i == j ? Δ : FillArrays.Fill(zero(eltype(x)), size(x)))
               for (x, j) in zip(VA.u, 1:length(VA))]
         (Δ′, nothing)
     end
