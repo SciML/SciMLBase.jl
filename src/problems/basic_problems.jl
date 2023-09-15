@@ -382,27 +382,36 @@ struct IntegralProblem{isinplace, P, F, B, X, D, K} <: AbstractIntegralProblem{i
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
         nout = 1,
-        batch = 0, x=nothing, dim=nothing, kwargs...) where {iip}
+        batch = 0, x = nothing, dim = nothing, kwargs...) where {iip}
         @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
         warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim), typeof(kwargs)}(f, lb, ub, nout, p,
+        new{iip, typeof(p), typeof(f), typeof(lb), typeof(x), typeof(dim), typeof(kwargs)}(f,
+            lb, ub, nout, p,
             batch, x, dim, kwargs)
     end
 end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
-function IntegralProblem(f, lb::AbstractVector{<:Number}, ub::AbstractVector{<:Number}, args...; kwargs...)
+function IntegralProblem(f,
+    lb::AbstractVector{<:Number},
+    ub::AbstractVector{<:Number},
+    args...;
+    kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
 function IntegralProblem(f, lb::Number, ub::Number, args...; kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
 function IntegralProblem(f, x::AbstractVector{<:Number}, args...; kwargs...)
-    IntegralProblem(f, x[begin], x[end], args...; x=x, kwargs...)
+    IntegralProblem(f, x[begin], x[end], args...; x = x, kwargs...)
 end
-function IntegralProblem(y::AbstractArray, x::AbstractVector{<:Number}, args...; dim::Int=1, kwargs...)
-    IntegralProblem{false}(y, x[begin], x[end], args...; dim=Val(dim), kwargs...)
+function IntegralProblem(y::AbstractArray,
+    x::AbstractVector{<:Number},
+    args...;
+    dim::Int = 1,
+    kwargs...)
+    IntegralProblem{false}(y, x[begin], x[end], args...; dim = Val(dim), kwargs...)
 end
 
 struct QuadratureProblem end
