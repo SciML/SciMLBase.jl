@@ -393,17 +393,24 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
-function IntegralProblem(f,
+function IntegralProblem(f::Function,
     lb::AbstractVector{<:Number},
     ub::AbstractVector{<:Number},
     args...;
     kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
-function IntegralProblem(f, lb::Number, ub::Number, args...; kwargs...)
+function IntegralProblem(f::Function,
+    lb::Number,
+    ub::Number,
+    args...;
+    kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
-function IntegralProblem(f, x::AbstractVector{<:Number}, args...; kwargs...)
+function IntegralProblem(f::Function,
+    x::AbstractVector{<:Number},
+    args...;
+    kwargs...)
     IntegralProblem(f, x[begin], x[end], args...; x = x, kwargs...)
 end
 function IntegralProblem(y::AbstractArray,
@@ -411,7 +418,7 @@ function IntegralProblem(y::AbstractArray,
     args...;
     dim::Int = 1,
     kwargs...)
-    IntegralProblem{false}(y, x[begin], x[end], args...; dim = Val(dim), kwargs...)
+    IntegralProblem{false}(y, x[begin], x[end], p = nothing; dim = Val(dim), kwargs...)
 end
 
 struct QuadratureProblem end
