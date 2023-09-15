@@ -392,7 +392,10 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
-function IntegralProblem(f, lb, ub, args...; kwargs...)
+function IntegralProblem(f, lb::AbstractVector{<:Number}, ub::AbstractVector{<:Number}, args...; kwargs...)
+    IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
+end
+function IntegralProblem(f, lb::Number, ub::Number, args...; kwargs...)
     IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
 end
 function IntegralProblem(f, x::AbstractVector{<:Number}, args...; kwargs...)
