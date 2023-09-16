@@ -462,8 +462,8 @@ IntegralProblem(intf, [0.0], [1.0], p)
 
 x = [1.0, 2.0]
 y = rand(2, 2)
-DataIntegralProblem(y, x)
-DataIntegralProblem(y, x; dim=2)
+SampledIntegralProblem(y, x)
+SampledIntegralProblem(y, x; dim=2)
 
 # Optimization
 

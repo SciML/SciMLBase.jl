@@ -400,7 +400,7 @@ Documentation Page: https://docs.sciml.ai/Integrals/stable/
 
 ## Mathematical Specification of a data Integral Problem
 
-Data integral problems are defined as:
+Sampled integral problems are defined as:
 
 ```math
 \sum_i w_i y_i
@@ -413,7 +413,7 @@ assigned by a quadrature rule, which depend on sampling points `x`.
 ### Constructors
 
 ```
-DataIntegralProblem(x::AbstractVector, y::AbstractArray; dim=1, kwargs...)
+SampledIntegralProblem(x::AbstractVector, y::AbstractArray; dim=1, kwargs...)
 ```
 - y: The sampled integrand, must be a subtype of `AbstractArray`. 
   It is assumed that the values of `y` along dimension `dim` 
@@ -426,12 +426,12 @@ DataIntegralProblem(x::AbstractVector, y::AbstractArray; dim=1, kwargs...)
 
 The fields match the names of the constructor arguments.
 """
-struct DataIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
+struct SampledIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
     y::Y
     x::X
     dim::D
     kwargs::K
-    @add_kwonly function DataIntegralProblem(y::AbstractArray, x::AbstractVector;
+    @add_kwonly function SampledIntegralProblem(y::AbstractArray, x::AbstractVector;
         dim = 1,
         kwargs...)
         @assert dim <= ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
@@ -441,7 +441,7 @@ struct DataIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace DataIntegralProblem 1 4
+TruncatedStacktraces.@truncate_stacktrace SampledIntegralProblem 1 4
 
 @doc doc"""
 
