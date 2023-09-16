@@ -760,7 +760,7 @@ export solve, solve!, init, discretize, symbolic_discretize
 
 export LinearProblem,
     NonlinearProblem, IntervalNonlinearProblem,
-    IntegralProblem, OptimizationProblem
+    IntegralProblem, DataIntegralProblem, OptimizationProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
