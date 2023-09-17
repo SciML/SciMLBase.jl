@@ -413,13 +413,13 @@ assigned by a quadrature rule, which depend on sampling points `x`.
 ### Constructors
 
 ```
-SampledIntegralProblem(x::AbstractVector, y::AbstractArray; dim=1, kwargs...)
+SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs...)
 ```
 - y: The sampled integrand, must be a subtype of `AbstractArray`. 
   It is assumed that the values of `y` along dimension `dim` 
   correspond to the integrand evaluated at sampling points `x`
 - x: Sampling points, must be a subtype of `AbstractVector`.   
-- dim: Dimension along which to integrate.
+- dim: Dimension along which to integrate. Defaults to the last dimension of `y`.
 - kwargs: Keyword arguments copied to the solvers.
 
 ### Fields
@@ -432,7 +432,7 @@ struct SampledIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
     dim::D
     kwargs::K
     @add_kwonly function SampledIntegralProblem(y::AbstractArray, x::AbstractVector;
-        dim = 1,
+        dim = ndims(y),
         kwargs...)
         @assert dim <= ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
         @assert length(x)==size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
