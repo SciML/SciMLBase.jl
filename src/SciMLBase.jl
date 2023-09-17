@@ -714,6 +714,7 @@ include("ensemble/ensemble_analysis.jl")
 
 include("solve.jl")
 include("interpolation.jl")
+include("integrand_interface.jl")
 include("integrator_interface.jl")
 include("tabletraits.jl")
 include("remake.jl")
