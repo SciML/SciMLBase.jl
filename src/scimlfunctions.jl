@@ -224,27 +224,6 @@ function Base.showerror(io::IO, e::IntegrandMismatchFunctionError)
     printstyled(io, e.integrand_passed; bold = true, color = :red)
 end
 
-const BATCH_INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE = """
-                                              Nonconforming functions detected. If an integrand function `f` is defined
-                                              as out-of-place (`f(u,p)`), then no integrand_prototype can be passed into the
-                                              function constructor. Likewise if `f` is defined as in-place (`f(out,u,p)`), then 
-                                              an integrand_prototype is required. Either change the use of the function
-                                              constructor or define the appropriate dispatch for `f`.
-                                              """
-
-struct BatchedIntegrandMismatchFunctionError <: Exception
-    iip::Bool
-    integrand_passed::Bool
-end
-
-function Base.showerror(io::IO, e::BatchedIntegrandMismatchFunctionError)
-    println(io, BATCH_INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE)
-    print(io, "Mismatch: IIP=")
-    printstyled(io, e.iip; bold = true, color = :red)
-    print(io, ", Integrand passed=")
-    printstyled(io, e.integrand_passed; bold = true, color = :red)
-end
-
 """
 $(TYPEDEF)
 """
@@ -4142,17 +4121,11 @@ function BatchIntegralFunction{iip}(f, output_prototype, integrand_prototype; kw
     return BatchIntegralFunction{iip, FullSpecialize}(f, output_prototype, integrand_prototype; kwargs...)
 end
 function BatchIntegralFunction(f, output_prototype; kwargs...) 
-    calcuated_iip = isinplace(f, 4, "batchintegral", iip)
-    if !calcuated_iip
-        throw(BatchedIntegrandMismatchFunctionError(calculated_iip, false))
-    end
+    calcuated_iip = isinplace(f, 3, "batchintegral", iip)
     BatchIntegralFunction{false}(f, output_prototype, nothing; kwargs...)
 end
 function BatchIntegralFunction(f, output_prototype, integrand_prototype; kwargs...) 
-    calcuated_iip = isinplace(f, 4, "batchintegral", iip)
-    if !calcuated_iip
-        throw(BatchIntegrandMismatchFunctionError(calculated_iip, true))
-    end
+    calcuated_iip = isinplace(f, 3, "batchintegral", iip)
     BatchIntegralFunction{true}(f, output_prototype, integrand_prototype; kwargs...)
 end
 
