@@ -4098,8 +4098,8 @@ function IntegralFunction{iip}(f, integrand_prototype) where {iip}
     return IntegralFunction{iip, FullSpecialize}(f, integrand_prototype)
 end
 function IntegralFunction(f)
-    calcuated_iip = isinplace(f, 3, "integral", true)
-    if !calcuated_iip
+    calculated_iip = isinplace(f, 3, "integral", true)
+    if calculated_iip
         throw(IntegrandMismatchFunctionError(calculated_iip, false))
     end
     IntegralFunction{false}(f, nothing)
