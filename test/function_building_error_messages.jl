@@ -610,6 +610,9 @@ iiip(y, u, p) = y .= u * p
 IntegralFunction(ioop)
 IntegralFunction(iiip, Float64[])
 
+@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(ioop, Float64[])
+@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(iiip)
+
 # BatchIntegralFunction
 
 boop(y, u, p) = y .= p .* u
