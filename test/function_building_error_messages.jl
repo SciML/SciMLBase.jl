@@ -601,3 +601,20 @@ BVPFunction(bfoop, bciip, vjp = bvjp)
 bvjp(du, u, v, p, t) = [1.0]
 BVPFunction(bfiip, bciip, vjp = bvjp)
 BVPFunction(bfoop, bciip, vjp = bvjp)
+
+# IntegralFunction
+
+ioop(u, p) = p * u
+iiip(y, u, p) = y .= u * p
+
+IntegralFunction(ioop)
+IntegralFunction(iiip, Float64[])
+
+# BatchIntegralFunction
+
+boop(y, u, p) = y .= p .* u
+biip(y, u, p) = y .= p .* u # this example is not realistic
+
+BatchIntegralFunction(boop, Float64[])
+BatchIntegralFunction(boop, Float64[], max_batch = 20)
+BatchIntegralFunction(biip, Float64[], Float64[]) # the 2nd argument should be an ElasticArray

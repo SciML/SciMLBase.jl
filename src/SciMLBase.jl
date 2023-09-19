@@ -589,6 +589,14 @@ abstract type AbstractDiffEqFunction{iip} <:
 """
 $(TYPEDEF)
 
+Base for types defining integrand functions.
+"""
+abstract type AbstractIntegralFunction{iip} <:
+              AbstractSciMLFunction{iip} end
+
+"""
+$(TYPEDEF)
+
 Base for types defining optimization functions.
 """
 abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip} end
@@ -659,7 +667,9 @@ function specialization(::Union{ODEFunction{iip, specialize},
     RODEFunction{iip, specialize},
     NonlinearFunction{iip, specialize},
     OptimizationFunction{iip, specialize},
-    BVPFunction{iip, specialize}}) where {iip,
+    BVPFunction{iip, specialize},
+    IntegralFunction{iip, specialize},
+    BatchIntegralFunction{iip, specialize}}) where {iip,
     specialize}
     specialize
 end
@@ -714,7 +724,6 @@ include("ensemble/ensemble_analysis.jl")
 
 include("solve.jl")
 include("interpolation.jl")
-include("integrand_interface.jl")
 include("integrator_interface.jl")
 include("tabletraits.jl")
 include("remake.jl")
@@ -788,7 +797,8 @@ export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
     DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction
+    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
+    IntegralFunction, BatchIntegralFunction
 
 export OptimizationFunction
 

@@ -2261,6 +2261,184 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace BVPFunction 1 2
 
+@doc doc"""
+    IntegralFunction{iip,specialize,F,T,J,TJ,TPJ,Ta,S,JP,SP,TCV,O} <: AbstractIntegralFunction{iip}
+
+A representation of an integrand `f` defined by:
+
+```math
+f(u, p)
+```
+
+and its related functions, such as its Jacobian and gradient with respect to parameters. For
+an in-place form of `f` see the `iip` section below for details on in-place or out-of-place
+handling.
+
+```julia
+IntegralFunction{iip,specialize}(f, [I];
+                                jac = __has_jac(f) ? f.jac : nothing,
+                                paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                analytic = __has_analytic(f) ? f.analytic : nothing,
+                                syms = __has_syms(f) ? f.syms : nothing,
+                                jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+                                sparsity = __has_sparsity(f) ? f.sparsity : nothing,
+                                colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                observed = __has_observed(f) ? f.observed : nothing)
+```
+
+Note that only `f` is required, and in the case of inplace integrands a mutable container
+`I` to store the result of the integral.
+
+The remaining functions are optional and mainly used for accelerating the usage of `f`:
+- `jac`: unused
+- `paramjac`: unused
+- `analytic`: unused
+- `syms`: unused
+- `jac_prototype`: unused
+- `sparsity`: unused
+- `colorvec`: unused
+- `observed`: unused
+
+Since most arguments are unused, the following constructor provides the essential behavior:
+
+```julia
+IntegralFunction(f, [I]; kws..)
+```
+
+If `I` is present, `f` is interpreted as in-place, and otherwise `f` is assumed to be
+out-of-place.
+
+## iip: In-Place vs Out-Of-Place
+
+Out-of-place functions must be of the form ``f(u, p)`` and in-place functions of the form
+``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+arrays), in-place functions must provide a container `I` that is of the right type for the
+final result of the integral, and the result is written to this container in-place. When
+in-place forms are used, in-place array operations may be used by algorithms to reduce
+allocations. If `I` is not provided, `f` is assumed to be out-of-place and quadrature is
+performed assuming immutable return types.
+
+## specialize
+
+This field is currently unused
+
+## Fields
+
+The fields of the IntegralFunction type directly match the names of the inputs.
+"""
+struct IntegralFunction{iip, specialize, F, T, TJ, TPJ, Ta, S, JP, SP, TCV, O} <:
+       AbstractIntegralFunction{iip}
+    f::F
+    I::T
+    jac::TJ
+    paramjac::TPJ
+    analytic::Ta
+    syms::S
+    jac_prototype::JP
+    sparsity::SP
+    colorvec::TCV
+    observed::O
+end
+
+TruncatedStacktraces.@truncate_stacktrace IntegralFunction 1 2
+
+@doc doc"""
+BatchIntegralFunction{iip,specialize,F,T,Y,J,TJ,TPJ,Ta,S,JP,SP,TCV,O} <: AbstractIntegralFunction{iip}
+
+A representation of an integrand `f` that can be evaluated at multiple points simultaneously
+using threads, the gpu, or distributed memory defined by:
+
+```math
+f(y, u, p)
+```
+
+and its related functions, such as its Jacobian and gradient with respect to parameters. For
+an in-place form of `f` see the `iip` section below for details on in-place or out-of-place
+handling.
+
+``u`` is a vector whose elements correspond to distinct evaluation points to `f`, whose
+output must be returned in the corresponding entries of ``y``. In general, the integration
+algorithm is allowed to vary the number of evaluation points between subsequent calls to `f`
+
+```julia
+BatchIntegralFunction{iip,specialize}(f, y, [I];
+                                    max_batch = typemax(Int),
+                                    jac = __has_jac(f) ? f.jac : nothing,
+                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                    analytic = __has_analytic(f) ? f.analytic : nothing,
+                                    syms = __has_syms(f) ? f.syms : nothing,
+                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+                                    sparsity = __has_sparsity(f) ? f.sparsity : nothing,
+                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                    observed = __has_observed(f) ? f.observed : nothing)
+```
+
+Note that `f` is required and a `resize`-able buffer `y` to store the output, or range of
+`f`, and in the case of inplace integrands a mutable container `I` to store the result of
+the integral. These buffers can be reused across multiple compatible integrals to reduce
+allocations.
+
+The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
+same time so that memory usage is controlled.
+
+The remaining functions are optional and mainly used for accelerating the usage of `f`:
+- `jac`: unused
+- `paramjac`: unused
+- `analytic`: unused
+- `syms`: unused
+- `jac_prototype`: unused
+- `sparsity`: unused
+- `colorvec`: unused
+- `observed`: unused
+
+Since most arguments are unused, the following constructor provides the essential behavior:
+
+```julia
+BatchIntegralFunction(f, y, [I]; max_batch=typemax(Int), kws..)
+```
+
+If `I` is present, `f` is interpreted as in-place, and otherwise `f` is assumed to be
+out-of-place.
+
+## iip: In-Place vs Out-Of-Place
+
+Out-of-place and in-place functions are both of the form ``f(y, u, p)``, but differ in the
+element type of ``y``. Since `f` is allowed to return any type (e.g. real or complex numbers
+or arrays), in-place functions must provide a container `I` that is of the right type for
+the final result of the integral, and the result is written to this container in-place. When
+`f` is in-place, the output buffer ``y`` is assumed to have a mutable element type, and the
+last dimension of ``y`` should correspond to the batch index. For example, ``y`` would have
+to be an `ElasticArray` or a `VectorOfSimilarArrays` of an `ElasticArray`. When in-place
+forms are used, in-place array operations may be used by algorithms to reduce allocations.
+If `I` is not provided, `f` is assumed to be out-of-place and quadrature is performed
+assuming ``y`` is an `AbstractVector` with an immutable element type.
+
+## specialize
+
+This field is currently unused
+
+## Fields
+
+The fields of the BatchIntegralFunction type directly match the names of the inputs.
+"""
+struct BatchIntegralFunction{iip, specialize, F, Y, T, TJ, TPJ, Ta, S, JP, SP, TCV, O} <:
+       AbstractIntegralFunction{iip}
+    f::F
+    y::Y
+    I::T
+    max_batch::Int
+    jac::TJ
+    paramjac::TPJ
+    analytic::Ta
+    syms::S
+    jac_prototype::JP
+    sparsity::SP
+    colorvec::TCV
+    observed::O
+end
+
+TruncatedStacktraces.@truncate_stacktrace BatchIntegralFunction 1 2
+
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
@@ -3955,6 +4133,80 @@ function BVPFunction(f, bc; kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
+function IntegralFunction{iip, specialize}(f, I;
+    jac = __has_jac(f) ? f.jac : nothing,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    syms = __has_syms(f) ? f.syms : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    observed = __has_observed(f) ? f.observed : nothing) where {iip, specialize}
+    IntegralFunction{
+        iip,
+        specialize,
+        typeof(f),
+        typeof(I),
+        typeof(jac),
+        typeof(paramjac),
+        typeof(analytic),
+        typeof(syms),
+        typeof(jac_prototype),
+        typeof(sparsity),
+        typeof(colorvec),
+        typeof(observed),
+    }(f,
+        I,
+        jac,
+        paramjac,
+        analytic,
+        syms,
+        jac_prototype,
+        sparsity,
+        colorvec,
+        observed)
+end
+
+function IntegralFunction{iip}(f, I; kws...) where {iip}
+    return IntegralFunction{iip, FullSpecialize}(f, I; kws...)
+end
+IntegralFunction(f; kws...) = IntegralFunction{false}(f, nothing; kws...)
+IntegralFunction(f, I; kws...) = IntegralFunction{true}(f, I; kws...)
+
+function BatchIntegralFunction{iip, specialize}(f, y, I;
+    max_batch::Integer = typemax(Int),
+    jac = __has_jac(f) ? f.jac : nothing,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    syms = __has_syms(f) ? f.syms : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    observed = __has_observed(f) ? f.observed : nothing) where {iip, specialize}
+    BatchIntegralFunction{
+        iip,
+        specialize,
+        typeof(f),
+        typeof(y),
+        typeof(I),
+        typeof(jac),
+        typeof(paramjac),
+        typeof(analytic),
+        typeof(syms),
+        typeof(jac_prototype),
+        typeof(sparsity),
+        typeof(colorvec),
+        typeof(observed),
+    }(f, y, I, max_batch, jac, paramjac, analytic, syms, jac_prototype, sparsity, colorvec,
+        observed)
+end
+
+function BatchIntegralFunction{iip}(f, y, I; kws...) where {iip}
+    return BatchIntegralFunction{iip, FullSpecialize}(f, y, I; kws...)
+end
+BatchIntegralFunction(f, y; kws...) = BatchIntegralFunction{false}(f, y, nothing; kws...)
+BatchIntegralFunction(f, y, I; kws...) = BatchIntegralFunction{true}(f, y, I; kws...)
+
 ########## Existence Functions
 
 # Check that field/property exists (may be nothing)
@@ -4064,7 +4316,9 @@ for S in [:ODEFunction
     :NonlinearFunction
     :IntervalNonlinearFunction
     :IncrementingODEFunction
-    :BVPFunction]
+    :BVPFunction
+    :IntegralFunction
+    :BatchIntegralFunction]
     @eval begin
         function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
             iip,
