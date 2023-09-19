@@ -606,18 +606,28 @@ BVPFunction(bfoop, bciip, vjp = bvjp)
 
 ioop(u, p) = p * u
 iiip(y, u, p) = y .= u * p
+i1(u) = u
+itoo(y, u, p, a) = y .= u * p
 
 IntegralFunction(ioop)
 IntegralFunction(iiip, Float64[])
 
 @test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(ioop, Float64[])
-@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(iiip)
+@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(i1)
+@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(i1)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo, Float64[])
 
 # BatchIntegralFunction
 
 boop(y, u, p) = y .= p .* u
 biip(y, u, p) = y .= p .* u # this example is not realistic
+bi1(y, u) = y .= p .* u
+bitoo(y, u, p, a) = y .= p .* u
 
 BatchIntegralFunction(boop, Float64[])
 BatchIntegralFunction(boop, Float64[], max_batch = 20)
 BatchIntegralFunction(biip, Float64[], Float64[]) # the 2nd argument should be an ElasticArray
+@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(bi1)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(bitoo)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(bitoo, Float64[])
