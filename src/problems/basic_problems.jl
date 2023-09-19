@@ -437,7 +437,7 @@ struct SampledIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
         @assert dim <= ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
         @assert length(x)==size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
         @assert axes(x, 1)==axes(y, dim) "The integrand `y` must obey the same indexing as the sampling points `x` along the integrated dimension."
-        new{typeof(y), typeof(x), typeof(dim)}, typeof(kwargs)}(y, x, dim, kwargs)
+        new{typeof(y), typeof(x), typeof(dim), typeof(kwargs)}(y, x, dim, kwargs)
     end
 end
 
