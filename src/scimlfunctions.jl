@@ -4090,21 +4090,21 @@ end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
 function IntegralFunction{iip, specialize}(f, integrand_prototype) where {iip, specialize}
-    IntegralFunction{iip,specialize,typeof(f),typeof(I)}(f,integrand_prototype)
+    IntegralFunction{iip,specialize,typeof(f),typeof(integrand_prototype)}(f,integrand_prototype)
 end
 
 function IntegralFunction{iip}(f, integrand_prototype) where {iip}
     return IntegralFunction{iip, FullSpecialize}(f, integrand_prototype)
 end
 function IntegralFunction(f) 
-    calcuated_iip = isinplace(f, 3, "integral", iip)
+    calcuated_iip = isinplace(f, 3, "integral", true)
     if !calcuated_iip
         throw(IntegrandMismatchFunctionError(calculated_iip, false))
     end
     IntegralFunction{false}(f, nothing)
 end
 function IntegralFunction(f, integrand_prototype)
-    calcuated_iip = isinplace(f, 3, "integral", iip)
+    calcuated_iip = isinplace(f, 3, "integral", true)
     if !calcuated_iip
         throw(IntegrandMismatchFunctionError(calculated_iip, true))
     end
@@ -4121,11 +4121,11 @@ function BatchIntegralFunction{iip}(f, output_prototype, integrand_prototype; kw
     return BatchIntegralFunction{iip, FullSpecialize}(f, output_prototype, integrand_prototype; kwargs...)
 end
 function BatchIntegralFunction(f, output_prototype; kwargs...) 
-    calcuated_iip = isinplace(f, 3, "batchintegral", iip)
+    calcuated_iip = isinplace(f, 3, "batchintegral", true; has_two_dispatches = false)
     BatchIntegralFunction{false}(f, output_prototype, nothing; kwargs...)
 end
 function BatchIntegralFunction(f, output_prototype, integrand_prototype; kwargs...) 
-    calcuated_iip = isinplace(f, 3, "batchintegral", iip)
+    calcuated_iip = isinplace(f, 3, "batchintegral", true; has_two_dispatches = false)
     BatchIntegralFunction{true}(f, output_prototype, integrand_prototype; kwargs...)
 end
 
