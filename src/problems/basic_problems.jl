@@ -389,24 +389,23 @@ function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
     if nout !== nothing || batch !== nothing
        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
     end
-    
-    iip = isinplace(f, 3)
-    g = if iip
-        nout = nout === nothing ? 1 : nout
-        output_prototype = Vector{Float64}(undef, nout)
-        if batch == 0
+
+    max_batch = batch === nothing ? 0 : batch
+    g = if isinplace(f, 3)
+        output_prototype = Vector{Float64}(undef, nout === nothing ? 1 : nout)
+        if max_batch == 0
             IntegralFunction(f, output_prototype)
         else
-            BatchIntegralFunction(f, output_prototype, max_batch=batch)
+            BatchIntegralFunction(f, output_prototype, max_batch=max_batch)
         end
     else
-        if batch == 0
+        if max_batch == 0
             IntegralFunction(f)
         else
-            BatchIntegralFunction(f, max_batch=batch)
+            BatchIntegralFunction(f, max_batch=max_batch)
         end
     end
-    IntegralProblem{iip}(g, args...; kwargs...)
+    IntegralProblem(g, args...; kwargs...)
 end
 
 struct QuadratureProblem end
