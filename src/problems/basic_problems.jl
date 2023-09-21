@@ -335,27 +335,18 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 ### Constructors
 
 ```
+IntegralProblem(f,domain,p=NullParameters();
+                  nout=1, batch = 0, kwargs...)
 IntegralProblem(f,lb,ub,p=NullParameters();
                   nout=1, batch = 0, kwargs...)
 ```
 
 - f: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
-  `IntegralFunction` or `BatchIntegralFunction` for inplace and batching alternatives.
+  `IntegralFunction` or `BatchIntegralFunction` for inplace and batching optimizations.
+- domain: an object representing an integration domain, i.e. the tuple `(lb, ub)`.
 - lb: Either a number or vector of lower bounds.
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
-- nout: The output size of the function f. Defaults to 1, i.e., a scalar valued function.
-  If `nout > 1` f is a vector valued function .
-- batch: The preferred number of points to batch. This allows user-side parallelization
-  of the integrand. If `batch == 0` no batching is performed.
-  If `batch > 0` both `u` and `y` get an additional dimension added to it.
-  This means that:
-  if `f` is a multi variable function each `u[:,i]` is a different point to evaluate `f` at,
-  if `f` is a single variable function each `u[i]` is a different point to evaluate `f` at,
-  if `f` is a vector valued function each `y[:,i]` is the evaluation of `f` at a different point,
-  if `f` is a scalar valued function `y[i]` is the evaluation of `f` at a different point.
-  Note that batch is a suggestion for the number of points,
-  and it is not necessarily true that batch is the same as batchsize in all algorithms.
 - kwargs: Keyword arguments copied to the solvers.
 
 Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
@@ -365,33 +356,30 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinplace}
     f::F
-    lb::B
-    ub::B
-    nout::Int
+    domain::T
     p::P
-    batch::Int
     kwargs::K
-    @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, lb, ub, p = NullParameters();
-        nout = 1,
-        batch = 0, kwargs...) where {iip}
-        @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
+    @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain, p = NullParameters();
+        kwargs...) where {iip}
         warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f,
-            lb, ub, nout, p,
-            batch, kwargs)
+        new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(f,
+            domain, p, kwargs)
     end
 end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
-function IntegralProblem(f::AbstractIntegralFunction, lb, ub, p = NullParameters(); kwargs...)
-    IntegralProblem{isinplace(f)}(f, lb, ub, p; kwargs...)
+function IntegralProblem(f::AbstractIntegralFunction, domain, p = NullParameters(); kwargs...)
+    IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-function IntegralProblem(f, lb, ub, p = NullParameters(); kwargs...)
-    IntegralProblem(IntegralFunction(f), lb, ub, p; kwargs...)
+function IntegralProblem(f::AbstractIntegralFunction, lb::B, ub::B, p = NullParameters(); kwargs...) where {B}
+    IntegralProblem(f, (lb, ub), p; kwargs...)
+end
+function IntegralProblem(f, args...; kwargs...)
+    IntegralProblem(IntegralFunction(f), args...; kwargs...)
 end
 
 struct QuadratureProblem end
