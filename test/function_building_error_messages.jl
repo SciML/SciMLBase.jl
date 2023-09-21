@@ -613,7 +613,7 @@ IntegralFunction(ioop)
 IntegralFunction(iiip, Float64[])
 
 @test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(ioop, Float64[])
-@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(i1)
+@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(iiip)
 @test_throws SciMLBase.TooFewArgumentsError IntegralFunction(i1)
 @test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo)
 @test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo, Float64[])
