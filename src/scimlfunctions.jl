@@ -4103,7 +4103,7 @@ end
 function IntegralFunction(f, integral_prototype)
     calcuated_iip = isinplace(f, 3, "integral", true)
     if !calcuated_iip
-        throw(IntegrandMismatchFunctionError(calculated_iip, true))
+        throw(IntegrandMismatchFunctionError(calcuated_iip, true))
     end
     IntegralFunction{true}(f, integral_prototype)
 end
