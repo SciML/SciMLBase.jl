@@ -629,5 +629,7 @@ BatchIntegralFunction(boop, Float64[])
 BatchIntegralFunction(boop, Float64[], max_batch = 20)
 BatchIntegralFunction(biip, Float64[], Float64[]) # the 2nd argument should be an ElasticArray
 @test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1, Float64[])
-@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[], Float64[])
+@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo,
+    Float64[],
+    Float64[])
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[])

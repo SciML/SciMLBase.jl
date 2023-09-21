@@ -359,7 +359,8 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
     domain::T
     p::P
     kwargs::K
-    @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain, p = NullParameters();
+    @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain,
+        p = NullParameters();
         kwargs...) where {iip}
         warn_paramtype(p)
         new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(f,
@@ -369,11 +370,18 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
-function IntegralProblem(f::AbstractIntegralFunction, domain, p = NullParameters(); kwargs...)
+function IntegralProblem(f::AbstractIntegralFunction,
+    domain,
+    p = NullParameters();
+    kwargs...)
     IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-function IntegralProblem(f::AbstractIntegralFunction, lb::B, ub::B, p = NullParameters(); kwargs...) where {B}
+function IntegralProblem(f::AbstractIntegralFunction,
+    lb::B,
+    ub::B,
+    p = NullParameters();
+    kwargs...) where {B}
     IntegralProblem(f, (lb, ub), p; kwargs...)
 end
 function IntegralProblem(f, args...; kwargs...)
