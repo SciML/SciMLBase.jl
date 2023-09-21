@@ -440,20 +440,20 @@ and exponential integrators.
 
 ```julia
 SplitFunction{iip,specialize}(f1,f2;
-                             mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                             analytic = __has_analytic(f) ? f.analytic : nothing,
-                             tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                             jac = __has_jac(f) ? f.jac : nothing,
-                             jvp = __has_jvp(f) ? f.jvp : nothing,
-                             vjp = __has_vjp(f) ? f.vjp : nothing,
-                             jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                             sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                             paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                             syms = __has_syms(f) ? f.syms : nothing,
-                             indepsym= __has_indepsym(f) ? f.indepsym : nothing,
-                             paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
-                             colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                             sys = __has_sys(f) ? f.sys : nothing)
+                             mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
+                             analytic = __has_analytic(f1) ? f1.analytic : nothing,
+                             tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
+                             jac = __has_jac(f1) ? f1.jac : nothing,
+                             jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                             vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                             jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
+                             sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
+                             paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
+                             syms = __has_syms(f1) ? f1.syms : nothing,
+                             indepsym= __has_indepsym(f1) ? f1.indepsym : nothing,
+                             paramsyms = __has_paramsyms(f1) ? f1.paramsyms : nothing,
+                             colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
+                             sys = __has_sys(f1) ? f1.sys : nothing)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -461,7 +461,7 @@ be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
 All of the remaining functions are optional for improving or accelerating
-the usage of `f`. These include:
+the usage of the `SplitFunction`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
