@@ -313,6 +313,85 @@ function NonlinearProblem(prob::AbstractODEProblem)
 end
 
 @doc doc"""
+Defines a nonlinear least squares problem.
+
+## Mathematical Specification of a Nonlinear Least Squares Problem
+
+To define a Nonlinear Problem, you simply need to give the function ``f`` which defines the
+nonlinear system:
+
+```math
+\underset{x}{\min} \| f(x, p) \|
+```
+
+and an initial guess ``u_0`` for the minimization problem. ``f`` should be specified as
+``f(u, p)`` (or in-place as ``f(du, u, p)``), and ``u_0``` should be an AbstractArray (or
+number) whose geometry matches the desired geometry of ``u``. Note that we are not limited
+to numbers or vectors for ``u_0``; one is allowed to provide ``u_0`` as arbitrary
+matrices / higher-dimension tensors as well.
+
+## Problem Type
+
+### Constructors
+
+```julia
+NonlinearLeastSquaresProblem(f::NonlinearFunction, u0, p=NullParameters(); kwargs...)
+NonlinearLeastSquaresProblem{isinplace}(f, u0, p=NullParameters(); kwargs...)
+```
+
+`isinplace` optionally sets whether the function is in-place or not. This is
+determined automatically, but not inferred.
+
+Parameters are optional, and if not given, then a `NullParameters()` singleton
+will be used, which will throw nice errors if you try to index non-existent
+parameters.
+
+For specifying Jacobians and mass matrices, see the
+[NonlinearFunctions](@ref nonlinearfunctions) page.
+
+### Fields
+
+* `f`: The function in the problem.
+* `u0`: The initial guess for the solution.
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `kwargs`: The keyword arguments passed on to the solvers.
+"""
+struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K} <:
+       AbstractNonlinearProblem{uType, isinplace}
+    f::F
+    u0::uType
+    p::P
+    kwargs::K
+
+    @add_kwonly function NonlinearLeastSquaresProblem{iip}(f::AbstractNonlinearFunction{
+            iip}, u0, p = NullParameters(); kwargs...) where {iip}
+        warn_paramtype(p)
+        return new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs)}(f, u0, p, kwargs)
+    end
+
+    function NonlinearLeastSquaresProblem{iip}(f, u0, p = NullParameters()) where {iip}
+        return NonlinearLeastSquaresProblem{iip}(NonlinearFunction{iip}(f), u0, p)
+    end
+end
+
+TruncatedStacktraces.@truncate_stacktrace NonlinearLeastSquaresProblem 2 1
+
+"""
+$(SIGNATURES)
+
+Define a nonlinear least squares problem using an instance of
+[`AbstractNonlinearFunction`](@ref AbstractNonlinearFunction).
+"""
+function NonlinearLeastSquaresProblem(f::AbstractNonlinearFunction, u0,
+    p = NullParameters(); kwargs...)
+    return NonlinearLeastSquaresProblem{isinplace(f)}(f, u0, p; kwargs...)
+end
+
+function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
+    return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
+end
+
+@doc doc"""
 
 Defines an integral problem.
 Documentation Page: https://docs.sciml.ai/Integrals/stable/

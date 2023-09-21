@@ -369,6 +369,38 @@ function remake(prob::NonlinearProblem;
     end
 end
 
+
+"""
+    remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
+        kwargs = missing, _kwargs...)
+
+Remake the given `NonlinearLeastSquaresProblem`.
+"""
+function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
+    kwargs = missing, _kwargs...)
+    if p === missing && u0 === missing
+        p, u0 = prob.p, prob.u0
+    else # at least one of them has a value
+        if p === missing
+            p = prob.p
+        end
+        if u0 === missing
+            u0 = prob.u0
+        end
+    end
+
+    if f === missing
+        f = prob.f
+    end
+
+    if kwargs === missing
+        return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, prob.kwargs...,
+            _kwargs...)
+    else
+        return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, kwargs...)
+    end
+end
+
 # overloaded in MTK to intercept symbolic remake
 function process_p_u0_symbolic(prob, p, u0)
     if typeof(prob) <: Union{AbstractDEProblem, OptimizationProblem, NonlinearProblem}
