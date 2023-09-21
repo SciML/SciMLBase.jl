@@ -614,7 +614,6 @@ bvjp(u, v, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
 bvjp(du, u, v, p, t) = [1.0]
 BVPFunction(bfiip, bciip, vjp = bvjp)
-BVPFunction(bfoop, bciip, vjp = bvjp)
   
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
 
