@@ -385,10 +385,14 @@ function IntegralProblem(f::AbstractIntegralFunction,
     IntegralProblem(f, (lb, ub), p; kwargs...)
 end
 
-# deprecation methods, which assume integrands return Float64 values (same as C libraries)
-function IntegralProblem{iip}(f, args...; nout = 1, batch = 0, kwargs...) where {iip}
-    @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s"
+function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
+    if nout !== nothing || batch !== nothing
+       @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
+    end
+    
+    iip = isinplace(f, 3)
     g = if iip
+        nout = nout === nothing ? 1 : nout
         output_prototype = Vector{Float64}(undef, nout)
         if batch == 0
             IntegralFunction(f, output_prototype)
@@ -402,10 +406,7 @@ function IntegralProblem{iip}(f, args...; nout = 1, batch = 0, kwargs...) where 
             BatchIntegralFunction(f, max_batch=batch)
         end
     end
-    IntegralProblem(g, args...; kwargs...)
-end
-function IntegralProblem(f, args...; kwargs...)
-    IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
+    IntegralProblem{iip}(g, args...; kwargs...)
 end
 
 struct QuadratureProblem end
