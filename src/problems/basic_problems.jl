@@ -335,10 +335,8 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 ### Constructors
 
 ```
-IntegralProblem(f,domain,p=NullParameters();
-                  nout=1, batch = 0, kwargs...)
-IntegralProblem(f,lb,ub,p=NullParameters();
-                  nout=1, batch = 0, kwargs...)
+IntegralProblem(f,domain,p=NullParameters(); kwargs...)
+IntegralProblem(f,lb,ub,p=NullParameters(); kwargs...)
 ```
 
 - f: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
