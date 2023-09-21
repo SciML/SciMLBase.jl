@@ -614,4 +614,39 @@ bvjp(u, v, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
 bvjp(du, u, v, p, t) = [1.0]
 BVPFunction(bfiip, bciip, vjp = bvjp)
+  
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
+
+# IntegralFunction
+
+ioop(u, p) = p * u
+iiip(y, u, p) = y .= u * p
+i1(u) = u
+itoo(y, u, p, a) = y .= u * p
+
+IntegralFunction(ioop)
+IntegralFunction(iiip, Float64[])
+
+@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(ioop, Float64[])
+@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(iiip)
+@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(i1)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo, Float64[])
+
+# BatchIntegralFunction
+
+boop(u, p) = p .* u
+biip(y, u, p) = y .= p .* u
+bi1(u) = u
+bitoo(y, u, p, a) = y .= p .* u
+
+BatchIntegralFunction(boop)
+BatchIntegralFunction(boop, max_batch = 20)
+BatchIntegralFunction(biip, Float64[])
+BatchIntegralFunction(biip, Float64[], max_batch = 20)
+
+@test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(boop, Float64[])
+@test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(biip)
+@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1)
+@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo)
+@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[])

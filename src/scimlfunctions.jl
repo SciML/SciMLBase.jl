@@ -203,6 +203,27 @@ function Base.showerror(io::IO, e::NonconformingFunctionsError)
     printstyled(io, e.nonconforming; bold = true, color = :red)
 end
 
+const INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE = """
+                                              Nonconforming functions detected. If an integrand function `f` is defined
+                                              as out-of-place (`f(u,p)`), then no integrand_prototype can be passed into the
+                                              function constructor. Likewise if `f` is defined as in-place (`f(out,u,p)`), then
+                                              an integrand_prototype is required. Either change the use of the function
+                                              constructor or define the appropriate dispatch for `f`.
+                                              """
+
+struct IntegrandMismatchFunctionError <: Exception
+    iip::Bool
+    integrand_passed::Bool
+end
+
+function Base.showerror(io::IO, e::IntegrandMismatchFunctionError)
+    println(io, INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE)
+    print(io, "Mismatch: IIP=")
+    printstyled(io, e.iip; bold = true, color = :red)
+    print(io, ", Integrand passed=")
+    printstyled(io, e.integrand_passed; bold = true, color = :red)
+end
+
 """
 $(TYPEDEF)
 """
@@ -2259,11 +2280,122 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace BVPFunction 1 2
 
+@doc doc"""
+    IntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+
+A representation of an integrand `f` defined by:
+
+```math
+f(u, p)
+```
+
+For an in-place form of `f` see the `iip` section below for details on in-place or
+out-of-place handling.
+
+```julia
+IntegralFunction{iip,specialize}(f, [integrand_prototype])
+```
+
+Note that only `f` is required, and in the case of inplace integrands a mutable container
+`integrand_prototype` to store the result of the integrand. If `integrand_prototype` is
+present, `f` is interpreted as in-place, and otherwise `f` is assumed to be out-of-place.
+
+## iip: In-Place vs Out-Of-Place
+
+Out-of-place functions must be of the form ``y = f(u, p)`` and in-place functions of the form
+``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+arrays), in-place functions must provide a container `integrand_prototype` that is of the
+right type for the variable ``y``, and the result is written to this container in-place.
+When in-place forms are used, in-place array operations, i.e. broadcasting, may be used by
+algorithms to reduce allocations. If `integrand_prototype` is not provided, `f` is assumed
+to be out-of-place and quadrature is performed assuming immutable return types.
+
+## specialize
+
+This field is currently unused
+
+## Fields
+
+The fields of the IntegralFunction type directly match the names of the inputs.
+"""
+struct IntegralFunction{iip, specialize, F, T} <:
+       AbstractIntegralFunction{iip}
+    f::F
+    integrand_prototype::T
+end
+
+TruncatedStacktraces.@truncate_stacktrace IntegralFunction 1 2
+
+@doc doc"""
+BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+
+A representation of an integrand `f` that can be evaluated at multiple points simultaneously
+using threads, the gpu, or distributed memory defined by:
+
+```math
+y = f(u, p)
+```
+
+``u`` is a vector whose elements correspond to distinct evaluation points to `f`, whose
+output must be returned as an array whose last "batching" dimension corresponds to integrand
+evaluations at the different points in ``u``. In general, the integration algorithm is
+allowed to vary the number of evaluation points between subsequent calls to `f`.
+
+For an in-place form of `f` see the `iip` section below for details on in-place or
+out-of-place handling.
+
+```julia
+BatchIntegralFunction{iip,specialize}(f, [integrand_prototype];
+                                     max_batch=typemax(Int))
+```
+Note that only `f` is required, and in the case of inplace integrands a mutable container
+`integrand_prototype` to store the result of the integrand of one integrand, without a last
+"batching" dimension.
+
+The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
+same time so that memory usage is controlled.
+
+If `integrand_prototype` is present, `f` is interpreted as in-place, and otherwise `f` is
+assumed to be out-of-place.
+
+## iip: In-Place vs Out-Of-Place
+
+Out-of-place functions must be of the form ``y = f(u,p)`` and in-place functions of the form
+``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+arrays), in-place functions must provide a container `integrand_prototype` of the right type
+for a single integrand evaluation. The integration algorithm will then allocate a ``y``
+array with the same element type as `integrand_prototype` and an additional last "batching"
+dimension to store multiple integrand evaluations. In the out-of-place case, the algorithm
+may infer the type of ``y`` by passing `f` an empty array of input points. This means ``y``
+is a vector in the out-of-place case, or a matrix/array in the in-place case. The number of
+batched points may vary between subsequent calls to `f`. When in-place forms are used,
+in-place array operations may be used by algorithms to reduce allocations. If
+`integrand_prototype` is not provided, `f` is assumed to be out-of-place.
+
+## specialize
+
+This field is currently unused
+
+## Fields
+
+The fields of the BatchIntegralFunction type directly match the names of the inputs.
+"""
+struct BatchIntegralFunction{iip, specialize, F, T} <:
+       AbstractIntegralFunction{iip}
+    f::F
+    integrand_prototype::T
+    max_batch::Int
+end
+
+TruncatedStacktraces.@truncate_stacktrace BatchIntegralFunction 1 2
+
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
 (f::NonlinearFunction)(args...) = f.f(args...)
 (f::IntervalNonlinearFunction)(args...) = f.f(args...)
+(f::IntegralFunction)(args...) = f.f(args...)
+(f::BatchIntegralFunction)(args...) = f.f(args...)
 
 function (f::DynamicalODEFunction)(u, p, t)
     ArrayPartition(f.f1(u.x[1], u.x[2], p, t), f.f2(u.x[1], u.x[2], p, t))
@@ -3941,6 +4073,64 @@ function BVPFunction(f, bc; twopoint::Bool=false, kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
+function IntegralFunction{iip, specialize}(f, integrand_prototype) where {iip, specialize}
+    IntegralFunction{iip, specialize, typeof(f), typeof(integrand_prototype)}(f,
+        integrand_prototype)
+end
+
+function IntegralFunction{iip}(f, integrand_prototype) where {iip}
+    return IntegralFunction{iip, FullSpecialize}(f, integrand_prototype)
+end
+function IntegralFunction(f)
+    calculated_iip = isinplace(f, 3, "integral", true)
+    if calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, false))
+    end
+    IntegralFunction{false}(f, nothing)
+end
+function IntegralFunction(f, integrand_prototype)
+    calcuated_iip = isinplace(f, 3, "integral", true)
+    if !calcuated_iip
+        throw(IntegrandMismatchFunctionError(calcuated_iip, true))
+    end
+    IntegralFunction{true}(f, integrand_prototype)
+end
+
+function BatchIntegralFunction{iip, specialize}(f, integrand_prototype;
+    max_batch::Integer = typemax(Int)) where {iip, specialize}
+    BatchIntegralFunction{
+        iip,
+        specialize,
+        typeof(f),
+        typeof(integrand_prototype),
+    }(f,
+        integrand_prototype,
+        max_batch)
+end
+
+function BatchIntegralFunction{iip}(f,
+    integrand_prototype;
+    kwargs...) where {iip}
+    return BatchIntegralFunction{iip, FullSpecialize}(f,
+        integrand_prototype;
+        kwargs...)
+end
+
+function BatchIntegralFunction(f; kwargs...)
+    calculated_iip = isinplace(f, 3, "batchintegral", true)
+    if calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, false))
+    end
+    BatchIntegralFunction{false}(f, nothing; kwargs...)
+end
+function BatchIntegralFunction(f, integrand_prototype; kwargs...)
+    calculated_iip = isinplace(f, 3, "batchintegral", true)
+    if !calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, true))
+    end
+    BatchIntegralFunction{true}(f, integrand_prototype; kwargs...)
+end
+
 ########## Existence Functions
 
 # Check that field/property exists (may be nothing)
@@ -4050,7 +4240,9 @@ for S in [:ODEFunction
     :NonlinearFunction
     :IntervalNonlinearFunction
     :IncrementingODEFunction
-    :BVPFunction]
+    :BVPFunction
+    :IntegralFunction
+    :BatchIntegralFunction]
     @eval begin
         function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
             iip,
