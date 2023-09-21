@@ -109,10 +109,16 @@ struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, bc, u0, tspan,
-        p = NullParameters(); kwargs...) where {iip, TP}
+        p = NullParameters(); problem_type=nothing, kwargs...) where {iip, TP}
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        problem_type = TP ? TwoPointBVProblem() : StandardBVProblem()
+        prob_type = TP ? TwoPointBVProblem() : StandardBVProblem()
+        # Needed to ensure that `problem_type` doesn't get passed in kwargs
+        if problem_type === nothing
+            problem_type = prob_type
+        else
+            @assert prob_type === problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
+        end
         return new{typeof(u0), typeof(_tspan), iip, typeof(p), typeof(f), typeof(bc),
             typeof(problem_type), typeof(kwargs)}(f, bc, u0, _tspan, p, problem_type,
             kwargs)
