@@ -205,9 +205,9 @@ end
 
 const INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE = """
                                               Nonconforming functions detected. If an integrand function `f` is defined
-                                              as out-of-place (`f(u,p)`), then no integral_prototype can be passed into the
+                                              as out-of-place (`f(u,p)`), then no integrand_prototype can be passed into the
                                               function constructor. Likewise if `f` is defined as in-place (`f(out,u,p)`), then
-                                              an integral_prototype is required. Either change the use of the function
+                                              an integrand_prototype is required. Either change the use of the function
                                               constructor or define the appropriate dispatch for `f`.
                                               """
 
@@ -2291,26 +2291,26 @@ A representation of an integrand `f` defined by:
 f(u, p)
 ```
 
-For an in-place form of `f` see the `iip` section below for details on in-place or out-of-place
-handling.
+For an in-place form of `f` see the `iip` section below for details on in-place or
+out-of-place handling.
 
 ```julia
-IntegralFunction{iip,specialize}(f, [integral_prototype])
+IntegralFunction{iip,specialize}(f, [integrand_prototype])
 ```
 
 Note that only `f` is required, and in the case of inplace integrands a mutable container
-`integral_prototype` to store the result of the integral. If `integral_prototype` is present,
-`f` is interpreted as in-place, and otherwise `f` is assumed to be out-of-place.
+`integrand_prototype` to store the result of the integrand. If `integrand_prototype` is
+present, `f` is interpreted as in-place, and otherwise `f` is assumed to be out-of-place.
 
 ## iip: In-Place vs Out-Of-Place
 
 Out-of-place functions must be of the form ``f(u, p)`` and in-place functions of the form
 ``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
-arrays), in-place functions must provide a container `integral_prototype` that is of the
-right type for the final result of the integral, and the result is written to this container
-in-place. When in-place forms are used, in-place array operations may be used by algorithms
-to reduce allocations. If `integral_prototype` is not provided, `f` is assumed to be
-out-of-place and quadrature is performed assuming immutable return types.
+arrays), in-place functions must provide a container `integrand_prototype` that is of the
+right type for the variable ``y``, and the result is written to this container in-place.
+When in-place forms are used, in-place array operations, i.e. broadcasting, may be used by
+algorithms to reduce allocations. If `integrand_prototype` is not provided, `f` is assumed
+to be out-of-place and quadrature is performed assuming immutable return types.
 
 ## specialize
 
@@ -2323,7 +2323,7 @@ The fields of the IntegralFunction type directly match the names of the inputs.
 struct IntegralFunction{iip, specialize, F, T} <:
        AbstractIntegralFunction{iip}
     f::F
-    integral_prototype::T
+    integrand_prototype::T
 end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralFunction 1 2
@@ -2344,34 +2344,35 @@ output must be returned in the corresponding entries of ``y``. In general, the i
 algorithm is allowed to vary the number of evaluation points between subsequent calls to `f`
 
 ```julia
-BatchIntegralFunction{iip,specialize}(f, output_prototype, [integral_prototype];
+BatchIntegralFunction{iip,specialize}(f, output_prototype, [integrand_prototype];
                                      max_batch=typemax(Int))
 ```
 
 Note that `f` is required and a `resize`-able buffer `output_prototype` to store the output,
-or range of `f`, and in the case of inplace integrands a mutable container
-`integral_prototype` to store the result of the integral. These buffers can be reused across
-multiple compatible integrals to reduce allocations.
+or range of `f`, consisting of multiple integrand evaluations, and in the case of inplace
+integrands a mutable container `integrand_prototype` to store the result of one integrand
+evaluation. These buffers can be reused across multiple compatible integrals to reduce
+allocations.
 
 The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
 same time so that memory usage is controlled.
 
-If `integral_prototype` is present, `f` is interpreted as in-place, and otherwise `f` is
+If `integrand_prototype` is present, `f` is interpreted as in-place, and otherwise `f` is
 assumed to be out-of-place.
 
 ## iip: In-Place vs Out-Of-Place
 
 Out-of-place and in-place functions are both of the form ``f(y, u, p)``, but differ in the
-element type of ``y``. Since `f` is allowed to return any type (e.g. real or complex numbers
-or arrays), in-place functions must provide a container `integral_prototype` that is of the
-right type for the final result of the integral, and the result is written to this container
-in-place. When `f` is in-place, the buffer `output_prototype` is assumed to have a mutable
-element type, and the last dimension of `output_prototype` should correspond to the batch
-index. For example, `output_prototype` would have to be an `ElasticArray` or a
-`VectorOfSimilarArrays` of an `ElasticArray`. When in-place forms are used, in-place array
-operations may be used by algorithms to reduce allocations. If `integral_prototype` is not
-provided, `f` is assumed to be out-of-place and quadrature is performed assuming
-`output_prototype` is an `AbstractVector` with an immutable element type.
+type of ``y``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+arrays), in-place functions must provide a container `output_prototype` of the right type
+for ``y`` that stores multiple integrand evaluations. Typically, this means
+`output_prototype` is a vector in the out-of-place case, or a matrix/array whose last
+dimension is a batch index in the in-place case. For the in-place case, an
+`integrand_prototype` is required and must be a container of the right type for a single
+integrand evaluation. When `f` is in-place, the buffer `output_prototype` should be of the
+type used by the integrand. When in-place forms are used, in-place array operations may be
+used by algorithms to reduce allocations. If `integrand_prototype` is not provided, `f` is
+assumed to be out-of-place.
 
 ## specialize
 
@@ -2385,7 +2386,7 @@ struct BatchIntegralFunction{iip, specialize, F, Y, T} <:
        AbstractIntegralFunction{iip}
     f::F
     output_prototype::Y
-    integral_prototype::T
+    integrand_prototype::T
     max_batch::Int
 end
 
@@ -4085,13 +4086,13 @@ function BVPFunction(f, bc; kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
-function IntegralFunction{iip, specialize}(f, integral_prototype) where {iip, specialize}
-    IntegralFunction{iip, specialize, typeof(f), typeof(integral_prototype)}(f,
-        integral_prototype)
+function IntegralFunction{iip, specialize}(f, integrand_prototype) where {iip, specialize}
+    IntegralFunction{iip, specialize, typeof(f), typeof(integrand_prototype)}(f,
+        integrand_prototype)
 end
 
-function IntegralFunction{iip}(f, integral_prototype) where {iip}
-    return IntegralFunction{iip, FullSpecialize}(f, integral_prototype)
+function IntegralFunction{iip}(f, integrand_prototype) where {iip}
+    return IntegralFunction{iip, FullSpecialize}(f, integrand_prototype)
 end
 function IntegralFunction(f)
     calculated_iip = isinplace(f, 3, "integral", true)
@@ -4100,44 +4101,44 @@ function IntegralFunction(f)
     end
     IntegralFunction{false}(f, nothing)
 end
-function IntegralFunction(f, integral_prototype)
+function IntegralFunction(f, integrand_prototype)
     calcuated_iip = isinplace(f, 3, "integral", true)
     if !calcuated_iip
         throw(IntegrandMismatchFunctionError(calcuated_iip, true))
     end
-    IntegralFunction{true}(f, integral_prototype)
+    IntegralFunction{true}(f, integrand_prototype)
 end
 
-function BatchIntegralFunction{iip, specialize}(f, output_prototype, integral_prototype;
+function BatchIntegralFunction{iip, specialize}(f, output_prototype, integrand_prototype;
     max_batch::Integer = typemax(Int)) where {iip, specialize}
     BatchIntegralFunction{
         iip,
         specialize,
         typeof(f),
         typeof(output_prototype),
-        typeof(integral_prototype),
+        typeof(integrand_prototype),
     }(f,
         output_prototype,
-        integral_prototype,
+        integrand_prototype,
         max_batch)
 end
 
 function BatchIntegralFunction{iip}(f,
     output_prototype,
-    integral_prototype;
+    integrand_prototype;
     kwargs...) where {iip}
     return BatchIntegralFunction{iip, FullSpecialize}(f,
         output_prototype,
-        integral_prototype;
+        integrand_prototype;
         kwargs...)
 end
 function BatchIntegralFunction(f, output_prototype; kwargs...)
     calcuated_iip = isinplace(f, 3, "batchintegral", true; has_two_dispatches = false)
     BatchIntegralFunction{false}(f, output_prototype, nothing; kwargs...)
 end
-function BatchIntegralFunction(f, output_prototype, integral_prototype; kwargs...)
+function BatchIntegralFunction(f, output_prototype, integrand_prototype; kwargs...)
     calcuated_iip = isinplace(f, 3, "batchintegral", true; has_two_dispatches = false)
-    BatchIntegralFunction{true}(f, output_prototype, integral_prototype; kwargs...)
+    BatchIntegralFunction{true}(f, output_prototype, integrand_prototype; kwargs...)
 end
 
 ########## Existence Functions
