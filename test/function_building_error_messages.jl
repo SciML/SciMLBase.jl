@@ -620,16 +620,18 @@ IntegralFunction(iiip, Float64[])
 
 # BatchIntegralFunction
 
-boop(y, u, p) = y .= p .* u
-biip(y, u, p) = y .= p .* u # this example is not realistic
-bi1(y, u) = y .= p .* u
+boop(u, p) = p .* u
+biip(y, u, p) = y .= p .* u
+bi1(u) = u
 bitoo(y, u, p, a) = y .= p .* u
 
-BatchIntegralFunction(boop, Float64[])
-BatchIntegralFunction(boop, Float64[], max_batch = 20)
-BatchIntegralFunction(biip, Float64[], Float64[]) # the 2nd argument should be an ElasticArray
-@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1, Float64[])
-@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo,
-    Float64[],
-    Float64[])
+BatchIntegralFunction(boop)
+BatchIntegralFunction(boop, max_batch = 20)
+BatchIntegralFunction(biip, Float64[])
+BatchIntegralFunction(biip, Float64[], max_batch = 20)
+
+@test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(boop, Float64[])
+@test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(biip)
+@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1)
+@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo)
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[])
