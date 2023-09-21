@@ -445,10 +445,10 @@ SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs
 
 The fields match the names of the constructor arguments.
 """
-struct SampledIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
+struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     y::Y
     x::X
-    dim::D
+    dim::Int
     kwargs::K
     @add_kwonly function SampledIntegralProblem(y::AbstractArray, x::AbstractVector;
         dim = ndims(y),
@@ -456,7 +456,7 @@ struct SampledIntegralProblem{Y, X, D, K} <: AbstractIntegralProblem{false}
         @assert dim<=ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
         @assert length(x)==size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
         @assert axes(x, 1)==axes(y, dim) "The integrand `y` must obey the same indexing as the sampling points `x` along the integrated dimension."
-        new{typeof(y), typeof(x), Val{dim}, typeof(kwargs)}(y, x, Val(dim), kwargs)
+        new{typeof(y), typeof(x), typeof(kwargs)}(y, x, dim, kwargs)
     end
 end
 
