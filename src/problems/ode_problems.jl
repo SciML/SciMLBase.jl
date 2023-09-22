@@ -162,6 +162,16 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
 end
 TruncatedStacktraces.@truncate_stacktrace ODEProblem 3 1 2
 
+function Base.setproperty!(prob::ODEProblem, s::Symbol, v)
+    @warn "Mutation of ODEProblem detected. SciMLBase v2.0 has made ODEProblem temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and ODEProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
+    Base.setfield!(prob, s, v)
+end
+
+function Base.setproperty!(prob::ODEProblem, s::Symbol, v, order::Symbol)
+    @warn "Mutation of ODEProblem detected. SciMLBase v2.0 has made ODEProblem temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and ODEProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
+    Base.setfield!(prob, s, v, order)
+end
+
 """
     ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
 
