@@ -18,7 +18,10 @@ supply the common interface and allow for interexchange of mathematical problems
 The breaking changes in v2.0 are:
 
 * `IntegralProblem` has moved to an interface with `IntegralFunction` and `BatchedIntegralFunction` which requires specifying `prototype`s for the values to be modified
-  instead of `nout` and `batch`.
+  instead of `nout` and `batch`. https://github.com/SciML/SciMLBase.jl/pull/497
 * `ODEProblem` was made temporarily into a `mutable struct` to allow for EnzymeRules support. Using the mutation throws a warning that this is only experimental and should not be relied on.
+  https://github.com/SciML/SciMLBase.jl/pull/501
 * `BVProblem` now has a new interface for `TwoPointBVProblem` which splits the bc terms for the two sides, forcing a true two-point BVProblem to allow for further specializations and to allow
-  for wrapping Fortran solvers in the interface.
+  for wrapping Fortran solvers in the interface. https://github.com/SciML/SciMLBase.jl/pull/477
+* `SDEProblem` constructor was changed to remove an anti-pattern which required passing the diffusion function `g` twice, i.e. `SDEProblem(SDEFunction(f,g),g, ...)`.
+  Now this is simply `SDEProblem(SDEFunction(f,g),...)`. https://github.com/SciML/SciMLBase.jl/pull/489
