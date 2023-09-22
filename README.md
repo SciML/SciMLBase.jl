@@ -12,3 +12,13 @@
 SciMLBase.jl is the core interface definition of the SciML ecosystem. It is a
 low dependency library made to be depended on by the downstream libraries to
 supply the common interface and allow for interexchange of mathematical problems.
+
+## v2.0 Breaking Changes
+
+The breaking changes in v2.0 are:
+
+* `IntegralProblem` has moved to an interface with `IntegralFunction` and `BatchedIntegralFunction` which requires specifying `prototype`s for the values to be modified
+  instead of `nout` and `batch`.
+* `ODEProblem` was made temporarily into a `mutable struct` to allow for EnzymeRules support. Using the mutation throws a warning that this is only experimental and should not be relied on.
+* `BVProblem` now has a new interface for `TwoPointBVProblem` which splits the bc terms for the two sides, forcing a true two-point BVProblem to allow for further specializations and to allow
+  for wrapping Fortran solvers in the interface.
