@@ -123,12 +123,12 @@ function SDEProblem(f::AbstractSDEFunction,u0,tspan,p=NullParameters();kwargs...
 end
 =#
 
-function SDEProblem(f::AbstractSDEFunction, g, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem{isinplace(f)}(f, g, u0, tspan, p; kwargs...)
+function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
+    SDEProblem{isinplace(f)}(f, f.g, u0, tspan, p; kwargs...)
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem(SDEFunction(f, g), g, u0, tspan, p; kwargs...)
+    SDEProblem(SDEFunction(f, g), u0, tspan, p; kwargs...)
 end
 
 """
@@ -141,18 +141,19 @@ $(TYPEDEF)
 """
 struct SplitSDEProblem{iip} <: AbstractSplitSDEProblem end
 # u' = Au + f
+#=
 function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
     SplitSDEProblem(SplitSDEFunction(f1, f2, g), g, u0, tspan, p; kwargs...)
 end
-
-function SplitSDEProblem(f::SplitSDEFunction, g, u0, tspan, p = NullParameters(); kwargs...)
-    SplitSDEProblem{isinplace(f)}(f, g, u0, tspan, p; kwargs...)
+=#
+function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
+    SplitSDEProblem(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
 end
 
-function SplitSDEProblem{iip}(f1, f2, g, u0, tspan, p = NullParameters();
-    kwargs...) where {iip}
-    SplitSDEProblem(SplitSDEFunction(f1, f2, g), g, u0, tspan, p; kwargs...)
+function SplitSDEProblem(f::SplitSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
+    SplitSDEProblem{isinplace(f)}(f, f.g, u0, tspan, p; kwargs...)
 end
+
 function SplitSDEProblem{iip}(f::SplitSDEFunction, g, u0, tspan, p = NullParameters();
     func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
@@ -162,7 +163,7 @@ function SplitSDEProblem{iip}(f::SplitSDEFunction, g, u0, tspan, p = NullParamet
     else
         _f = f
     end
-    SDEProblem(_f, g, u0, tspan, p; kwargs...)
+    SDEProblem(_f, u0, tspan, p; kwargs...)
 end
 
 """
@@ -176,18 +177,14 @@ $(TYPEDEF)
 struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
 
 function DynamicalSDEProblem(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...)
-    DynamicalSDEProblem(DynamicalSDEFunction(f1, f2, g), g, v0, u0, tspan, p; kwargs...)
+    DynamicalSDEProblem(DynamicalSDEFunction(f1, f2, g), v0, u0, tspan, p; kwargs...)
 end
 
-function DynamicalSDEProblem(f::DynamicalSDEFunction, g, v0, u0, tspan,
+function DynamicalSDEProblem(f::DynamicalSDEFunction, v0, u0, tspan,
     p = NullParameters(); kwargs...)
-    DynamicalSDEProblem{isinplace(f)}(f, g, v0, u0, tspan, p; kwargs...)
+    DynamicalSDEProblem{isinplace(f)}(f, f.g, v0, u0, tspan, p; kwargs...)
 end
 
-function DynamicalSDEProblem{iip}(f1, f2, g, v0, u0, tspan, p = NullParameters();
-    kwargs...) where {iip}
-    DynamicalSDEProblem(DynamicalSDEFunction(f1, f2, g), g, v0, u0, tspan, p; kwargs...)
-end
 function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, g, v0, u0, tspan,
     p = NullParameters();
     func_cache = nothing, kwargs...) where {iip}
@@ -198,5 +195,5 @@ function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, g, v0, u0, tspan,
     else
         _f = f
     end
-    SDEProblem(_f, g, ArrayPartition(v0, u0), tspan, p; kwargs...)
+    SDEProblem(_f, ArrayPartition(v0, u0), tspan, p; kwargs...)
 end
