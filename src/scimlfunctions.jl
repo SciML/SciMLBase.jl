@@ -203,6 +203,27 @@ function Base.showerror(io::IO, e::NonconformingFunctionsError)
     printstyled(io, e.nonconforming; bold = true, color = :red)
 end
 
+const INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE = """
+                                              Nonconforming functions detected. If an integrand function `f` is defined
+                                              as out-of-place (`f(u,p)`), then no integrand_prototype can be passed into the
+                                              function constructor. Likewise if `f` is defined as in-place (`f(out,u,p)`), then
+                                              an integrand_prototype is required. Either change the use of the function
+                                              constructor or define the appropriate dispatch for `f`.
+                                              """
+
+struct IntegrandMismatchFunctionError <: Exception
+    iip::Bool
+    integrand_passed::Bool
+end
+
+function Base.showerror(io::IO, e::IntegrandMismatchFunctionError)
+    println(io, INTEGRAND_MISMATCH_FUNCTIONS_ERROR_MESSAGE)
+    print(io, "Mismatch: IIP=")
+    printstyled(io, e.iip; bold = true, color = :red)
+    print(io, ", Integrand passed=")
+    printstyled(io, e.integrand_passed; bold = true, color = :red)
+end
+
 """
 $(TYPEDEF)
 """
@@ -440,20 +461,20 @@ and exponential integrators.
 
 ```julia
 SplitFunction{iip,specialize}(f1,f2;
-                             mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                             analytic = __has_analytic(f) ? f.analytic : nothing,
-                             tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                             jac = __has_jac(f) ? f.jac : nothing,
-                             jvp = __has_jvp(f) ? f.jvp : nothing,
-                             vjp = __has_vjp(f) ? f.vjp : nothing,
-                             jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                             sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                             paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                             syms = __has_syms(f) ? f.syms : nothing,
-                             indepsym= __has_indepsym(f) ? f.indepsym : nothing,
-                             paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
-                             colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                             sys = __has_sys(f) ? f.sys : nothing)
+                             mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
+                             analytic = __has_analytic(f1) ? f1.analytic : nothing,
+                             tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
+                             jac = __has_jac(f1) ? f1.jac : nothing,
+                             jvp = __has_jvp(f1) ? f1.jvp : nothing,
+                             vjp = __has_vjp(f1) ? f1.vjp : nothing,
+                             jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
+                             sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
+                             paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
+                             syms = __has_syms(f1) ? f1.syms : nothing,
+                             indepsym= __has_indepsym(f1) ? f1.indepsym : nothing,
+                             paramsyms = __has_paramsyms(f1) ? f1.paramsyms : nothing,
+                             colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
+                             sys = __has_sys(f1) ? f1.sys : nothing)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -461,7 +482,7 @@ be given as `f_i!(du,u,p,t)` or `du = f_i(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
 
 All of the remaining functions are optional for improving or accelerating
-the usage of `f`. These include:
+the usage of the `SplitFunction`. These include:
 
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
@@ -2124,8 +2145,7 @@ TruncatedStacktraces.@truncate_stacktrace OptimizationFunction 1 2
 """
 $(TYPEDEF)
 """
-abstract type AbstractBVPFunction{iip} <:
-              AbstractDiffEqFunction{iip} end
+abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
     BVPFunction{iip,F,BF,TMM,Ta,Tt,TJ,BCTJ,JVP,VJP,JP,BCJP,SP,TW,TWt,TPJ,S,S2,S3,O,TCV,BCTCV} <: AbstractBVPFunction{iip,specialize}
@@ -2230,11 +2250,9 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the BVPFunction type directly match the names of the inputs.
 """
-struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
-    BCJP, SP, TW, TWt,
-    TPJ,
-    S, S2, S3, O, TCV, BCTCV,
-    SYS} <: AbstractBVPFunction{iip}
+struct BVPFunction{iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+    JP, BCJP, BCRP, SP, TW, TWt, TPJ, S, S2, S3, O, TCV, BCTCV,
+    SYS} <: AbstractBVPFunction{iip, twopoint}
     f::F
     bc::BF
     mass_matrix::TMM
@@ -2246,6 +2264,7 @@ struct BVPFunction{iip, specialize, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP, JP,
     vjp::VJP
     jac_prototype::JP
     bcjac_prototype::BCJP
+    bcresid_prototype::BCRP
     sparsity::SP
     Wfact::TW
     Wfact_t::TWt
@@ -2261,11 +2280,122 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace BVPFunction 1 2
 
+@doc doc"""
+    IntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+
+A representation of an integrand `f` defined by:
+
+```math
+f(u, p)
+```
+
+For an in-place form of `f` see the `iip` section below for details on in-place or
+out-of-place handling.
+
+```julia
+IntegralFunction{iip,specialize}(f, [integrand_prototype])
+```
+
+Note that only `f` is required, and in the case of inplace integrands a mutable container
+`integrand_prototype` to store the result of the integrand. If `integrand_prototype` is
+present, `f` is interpreted as in-place, and otherwise `f` is assumed to be out-of-place.
+
+## iip: In-Place vs Out-Of-Place
+
+Out-of-place functions must be of the form ``y = f(u, p)`` and in-place functions of the form
+``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+arrays), in-place functions must provide a container `integrand_prototype` that is of the
+right type for the variable ``y``, and the result is written to this container in-place.
+When in-place forms are used, in-place array operations, i.e. broadcasting, may be used by
+algorithms to reduce allocations. If `integrand_prototype` is not provided, `f` is assumed
+to be out-of-place and quadrature is performed assuming immutable return types.
+
+## specialize
+
+This field is currently unused
+
+## Fields
+
+The fields of the IntegralFunction type directly match the names of the inputs.
+"""
+struct IntegralFunction{iip, specialize, F, T} <:
+       AbstractIntegralFunction{iip}
+    f::F
+    integrand_prototype::T
+end
+
+TruncatedStacktraces.@truncate_stacktrace IntegralFunction 1 2
+
+@doc doc"""
+BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+
+A representation of an integrand `f` that can be evaluated at multiple points simultaneously
+using threads, the gpu, or distributed memory defined by:
+
+```math
+y = f(u, p)
+```
+
+``u`` is a vector whose elements correspond to distinct evaluation points to `f`, whose
+output must be returned as an array whose last "batching" dimension corresponds to integrand
+evaluations at the different points in ``u``. In general, the integration algorithm is
+allowed to vary the number of evaluation points between subsequent calls to `f`.
+
+For an in-place form of `f` see the `iip` section below for details on in-place or
+out-of-place handling.
+
+```julia
+BatchIntegralFunction{iip,specialize}(f, [integrand_prototype];
+                                     max_batch=typemax(Int))
+```
+Note that only `f` is required, and in the case of inplace integrands a mutable container
+`integrand_prototype` to store the result of the integrand of one integrand, without a last
+"batching" dimension.
+
+The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
+same time so that memory usage is controlled.
+
+If `integrand_prototype` is present, `f` is interpreted as in-place, and otherwise `f` is
+assumed to be out-of-place.
+
+## iip: In-Place vs Out-Of-Place
+
+Out-of-place functions must be of the form ``y = f(u,p)`` and in-place functions of the form
+``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+arrays), in-place functions must provide a container `integrand_prototype` of the right type
+for a single integrand evaluation. The integration algorithm will then allocate a ``y``
+array with the same element type as `integrand_prototype` and an additional last "batching"
+dimension to store multiple integrand evaluations. In the out-of-place case, the algorithm
+may infer the type of ``y`` by passing `f` an empty array of input points. This means ``y``
+is a vector in the out-of-place case, or a matrix/array in the in-place case. The number of
+batched points may vary between subsequent calls to `f`. When in-place forms are used,
+in-place array operations may be used by algorithms to reduce allocations. If
+`integrand_prototype` is not provided, `f` is assumed to be out-of-place.
+
+## specialize
+
+This field is currently unused
+
+## Fields
+
+The fields of the BatchIntegralFunction type directly match the names of the inputs.
+"""
+struct BatchIntegralFunction{iip, specialize, F, T} <:
+       AbstractIntegralFunction{iip}
+    f::F
+    integrand_prototype::T
+    max_batch::Int
+end
+
+TruncatedStacktraces.@truncate_stacktrace BatchIntegralFunction 1 2
+
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
 (f::NonlinearFunction)(args...) = f.f(args...)
 (f::IntervalNonlinearFunction)(args...) = f.f(args...)
+(f::IntegralFunction)(args...) = f.f(args...)
+(f::BatchIntegralFunction)(args...) = f.f(args...)
 
 function (f::DynamicalODEFunction)(u, p, t)
     ArrayPartition(f.f1(u.x[1], u.x[2], p, t), f.f2(u.x[1], u.x[2], p, t))
@@ -3648,9 +3778,8 @@ function NonlinearFunction{iip, specialize}(f;
                nothing,
     sys = __has_sys(f) ? f.sys : nothing,
     resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing) where {
-    iip,
-    specialize,
-}
+    iip, specialize}
+
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
@@ -3814,35 +3943,28 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         cons_expr, sys)
 end
 
-function BVPFunction{iip, specialize}(f, bc;
-    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
-                  I,
+function BVPFunction{iip, specialize, twopoint}(f, bc;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad = __has_tgrad(f) ? f.tgrad : nothing,
     jac = __has_jac(f) ? f.jac : nothing,
     bcjac = __has_jac(bc) ? bc.jac : nothing,
     jvp = __has_jvp(f) ? f.jvp : nothing,
     vjp = __has_vjp(f) ? f.vjp : nothing,
-    jac_prototype = __has_jac_prototype(f) ?
-                    f.jac_prototype :
-                    nothing,
-    bcjac_prototype = __has_jac_prototype(bc) ?
-                      bc.jac_prototype :
-                      nothing,
-    sparsity = __has_sparsity(f) ? f.sparsity :
-               jac_prototype,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
+    bcresid_prototype = nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
     Wfact = __has_Wfact(f) ? f.Wfact : nothing,
     Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
     syms = __has_syms(f) ? f.syms : nothing,
     indepsym = __has_indepsym(f) ? f.indepsym : nothing,
-    paramsyms = __has_paramsyms(f) ? f.paramsyms :
-                nothing,
-    observed = __has_observed(f) ? f.observed :
-               DEFAULT_OBSERVED,
+    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+    observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
-    sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize}
+    sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize, twopoint}
     if mass_matrix === I && typeof(f) <: Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
@@ -3882,7 +4004,7 @@ function BVPFunction{iip, specialize}(f, bc;
         _bccolorvec = bccolorvec
     end
 
-    bciip = isinplace(bc, 4, "bc", iip)
+    bciip = !twopoint ? isinplace(bc, 4, "bc", iip) : isinplace(bc, 3, "bc", iip)
     jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
     bcjaciip = bcjac !== nothing ? isinplace(bcjac, 4, "bcjac", bciip) : bciip
     tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
@@ -3892,18 +4014,23 @@ function BVPFunction{iip, specialize}(f, bc;
     Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
     paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
 
-    nonconforming = (jaciip,
-        tgradiip,
-        jvpiip,
-        vjpiip,
-        Wfactiip,
-        Wfact_tiip,
+    nonconforming = (bciip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
         paramjaciip) .!= iip
     bc_nonconforming = bcjaciip .!= bciip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
-        functions = ["jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
+        functions = ["bc", "jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t",
+            "paramjac"][nonconforming]
         throw(NonconformingFunctionsError(functions))
+    end
+
+    if twopoint
+        if iip && (bcresid_prototype === nothing || length(bcresid_prototype) != 2)
+            error("bcresid_prototype must be a tuple / indexable collection of length 2 for a inplace TwoPointBVPFunction")
+        end
+        if bcresid_prototype !== nothing && length(bcresid_prototype) == 2
+            bcresid_prototype = ArrayPartition(bcresid_prototype[1], bcresid_prototype[2])
+        end
     end
 
     if any(bc_nonconforming)
@@ -3913,47 +4040,96 @@ function BVPFunction{iip, specialize}(f, bc;
     end
 
     if specialize === NoSpecialize
-        BVPFunction{iip, specialize, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any, Any, Any, Any, Any,
+        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, typeof(syms), typeof(indepsym), typeof(paramsyms),
             Any, typeof(_colorvec), typeof(_bccolorvec), Any}(f, bc, mass_matrix,
-            analytic,
-            tgrad,
-            jac, bcjac, jvp, vjp,
-            jac_prototype,
-            bcjac_prototype,
-            sparsity, Wfact,
-            Wfact_t,
-            paramjac, syms,
-            indepsym, paramsyms,
-            observed,
+            analytic, tgrad, jac, bcjac, jvp, vjp, jac_prototype,
+            bcjac_prototype, bcresid_prototype,
+            sparsity, Wfact, Wfact_t, paramjac, syms, indepsym, paramsyms, observed,
             _colorvec, _bccolorvec, sys)
     else
-        BVPFunction{iip, specialize, typeof(f), typeof(bc), typeof(mass_matrix),
-            typeof(analytic),
-            typeof(tgrad),
-            typeof(jac), typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
-            typeof(bcjac_prototype),
-            typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-            typeof(paramjac), typeof(syms), typeof(indepsym), typeof(paramsyms),
-            typeof(observed),
+        BVPFunction{iip, specialize, twopoint, typeof(f), typeof(bc), typeof(mass_matrix),
+            typeof(analytic), typeof(tgrad), typeof(jac), typeof(bcjac), typeof(jvp),
+            typeof(vjp), typeof(jac_prototype),
+            typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
+            typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(syms),
+            typeof(indepsym), typeof(paramsyms), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys)}(f, bc, mass_matrix, analytic,
             tgrad, jac, bcjac, jvp, vjp,
-            jac_prototype, bcjac_prototype, sparsity,
+            jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
             Wfact, Wfact_t, paramjac,
             syms, indepsym, paramsyms, observed,
             _colorvec, _bccolorvec, sys)
     end
 end
 
-function BVPFunction{iip}(f, bc; kwargs...) where {iip}
-    BVPFunction{iip, FullSpecialize}(f, bc; kwargs...)
+function BVPFunction{iip}(f, bc; twopoint::Bool=false, kwargs...) where {iip}
+    BVPFunction{iip, FullSpecialize, twopoint}(f, bc; kwargs...)
 end
 BVPFunction{iip}(f::BVPFunction, bc; kwargs...) where {iip} = f
-function BVPFunction(f, bc; kwargs...)
-    BVPFunction{isinplace(f, 4), FullSpecialize}(f, bc; kwargs...)
+function BVPFunction(f, bc; twopoint::Bool=false, kwargs...)
+    BVPFunction{isinplace(f, 4), FullSpecialize, twopoint}(f, bc; kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
+
+function IntegralFunction{iip, specialize}(f, integrand_prototype) where {iip, specialize}
+    IntegralFunction{iip, specialize, typeof(f), typeof(integrand_prototype)}(f,
+        integrand_prototype)
+end
+
+function IntegralFunction{iip}(f, integrand_prototype) where {iip}
+    return IntegralFunction{iip, FullSpecialize}(f, integrand_prototype)
+end
+function IntegralFunction(f)
+    calculated_iip = isinplace(f, 3, "integral", true)
+    if calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, false))
+    end
+    IntegralFunction{false}(f, nothing)
+end
+function IntegralFunction(f, integrand_prototype)
+    calcuated_iip = isinplace(f, 3, "integral", true)
+    if !calcuated_iip
+        throw(IntegrandMismatchFunctionError(calcuated_iip, true))
+    end
+    IntegralFunction{true}(f, integrand_prototype)
+end
+
+function BatchIntegralFunction{iip, specialize}(f, integrand_prototype;
+    max_batch::Integer = typemax(Int)) where {iip, specialize}
+    BatchIntegralFunction{
+        iip,
+        specialize,
+        typeof(f),
+        typeof(integrand_prototype),
+    }(f,
+        integrand_prototype,
+        max_batch)
+end
+
+function BatchIntegralFunction{iip}(f,
+    integrand_prototype;
+    kwargs...) where {iip}
+    return BatchIntegralFunction{iip, FullSpecialize}(f,
+        integrand_prototype;
+        kwargs...)
+end
+
+function BatchIntegralFunction(f; kwargs...)
+    calculated_iip = isinplace(f, 3, "batchintegral", true)
+    if calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, false))
+    end
+    BatchIntegralFunction{false}(f, nothing; kwargs...)
+end
+function BatchIntegralFunction(f, integrand_prototype; kwargs...)
+    calculated_iip = isinplace(f, 3, "batchintegral", true)
+    if !calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, true))
+    end
+    BatchIntegralFunction{true}(f, integrand_prototype; kwargs...)
+end
 
 ########## Existence Functions
 
@@ -4064,7 +4240,9 @@ for S in [:ODEFunction
     :NonlinearFunction
     :IntervalNonlinearFunction
     :IncrementingODEFunction
-    :BVPFunction]
+    :BVPFunction
+    :IntegralFunction
+    :BatchIntegralFunction]
     @eval begin
         function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
             iip,

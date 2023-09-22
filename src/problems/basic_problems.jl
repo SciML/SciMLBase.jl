@@ -334,25 +334,17 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 
 ### Constructors
 
-IntegralProblem{iip}(f,lb,ub,p=NullParameters();
-                  nout=1, batch = 0, kwargs...)
+```
+IntegralProblem(f,domain,p=NullParameters(); kwargs...)
+IntegralProblem(f,lb,ub,p=NullParameters(); kwargs...)
+```
 
-- f: the integrand, `y = f(u,p)` for out-of-place or `f(y,u,p)` for in-place.
+- f: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
+  `IntegralFunction` or `BatchIntegralFunction` for inplace and batching optimizations.
+- domain: an object representing an integration domain, i.e. the tuple `(lb, ub)`.
 - lb: Either a number or vector of lower bounds.
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
-- nout: The output size of the function f. Defaults to 1, i.e., a scalar valued function.
-  If `nout > 1` f is a vector valued function .
-- batch: The preferred number of points to batch. This allows user-side parallelization
-  of the integrand. If `batch == 0` no batching is performed.
-  If `batch > 0` both `u` and `y` get an additional dimension added to it.
-  This means that:
-  if `f` is a multi variable function each `u[:,i]` is a different point to evaluate `f` at,
-  if `f` is a single variable function each `u[i]` is a different point to evaluate `f` at,
-  if `f` is a vector valued function each `y[:,i]` is the evaluation of `f` at a different point,
-  if `f` is a scalar valued function `y[i]` is the evaluation of `f` at a different point.
-  Note that batch is a suggestion for the number of points,
-  and it is not necessarily true that batch is the same as batchsize in all algorithms.
 - kwargs: Keyword arguments copied to the solvers.
 
 Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
@@ -362,32 +354,112 @@ compile time whether the integrator function is in-place.
 
 The fields match the names of the constructor arguments.
 """
-struct IntegralProblem{isinplace, P, F, B, K} <: AbstractIntegralProblem{isinplace}
+struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinplace}
     f::F
-    lb::B
-    ub::B
-    nout::Int
+    domain::T
     p::P
-    batch::Int
     kwargs::K
-    @add_kwonly function IntegralProblem{iip}(f, lb, ub, p = NullParameters();
-        nout = 1,
-        batch = 0, kwargs...) where {iip}
-        @assert typeof(lb)==typeof(ub) "Type of lower and upper bound must match"
+    @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain,
+        p = NullParameters();
+        kwargs...) where {iip}
         warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(lb), typeof(kwargs)}(f, lb, ub, nout, p,
-            batch, kwargs)
+        new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(f,
+            domain, p, kwargs)
     end
 end
 
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
-function IntegralProblem(f, lb, ub, args...; kwargs...)
-    IntegralProblem{isinplace(f, 3)}(f, lb, ub, args...; kwargs...)
+function IntegralProblem(f::AbstractIntegralFunction,
+    domain,
+    p = NullParameters();
+    kwargs...)
+    IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
+end
+
+function IntegralProblem(f::AbstractIntegralFunction,
+    lb::B,
+    ub::B,
+    p = NullParameters();
+    kwargs...) where {B}
+    IntegralProblem(f, (lb, ub), p; kwargs...)
+end
+
+function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
+    if nout !== nothing || batch !== nothing
+       @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
+    end
+
+    max_batch = batch === nothing ? 0 : batch
+    g = if isinplace(f, 3)
+        output_prototype = Vector{Float64}(undef, nout === nothing ? 1 : nout)
+        if max_batch == 0
+            IntegralFunction(f, output_prototype)
+        else
+            BatchIntegralFunction(f, output_prototype, max_batch=max_batch)
+        end
+    else
+        if max_batch == 0
+            IntegralFunction(f)
+        else
+            BatchIntegralFunction(f, max_batch=max_batch)
+        end
+    end
+    IntegralProblem(g, args...; kwargs...)
 end
 
 struct QuadratureProblem end
 @deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
+
+@doc doc"""
+
+Defines a integral problem over pre-sampled data.
+Documentation Page: https://docs.sciml.ai/Integrals/stable/
+
+## Mathematical Specification of a data Integral Problem
+
+Sampled integral problems are defined as:
+
+```math
+\sum_i w_i y_i
+```
+where `y_i` are sampled values of the integrand, and `w_i` are weights
+assigned by a quadrature rule, which depend on sampling points `x`.
+
+## Problem Type
+
+### Constructors
+
+```
+SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs...)
+```
+- y: The sampled integrand, must be a subtype of `AbstractArray`.
+  It is assumed that the values of `y` along dimension `dim`
+  correspond to the integrand evaluated at sampling points `x`
+- x: Sampling points, must be a subtype of `AbstractVector`.
+- dim: Dimension along which to integrate. Defaults to the last dimension of `y`.
+- kwargs: Keyword arguments copied to the solvers.
+
+### Fields
+
+The fields match the names of the constructor arguments.
+"""
+struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
+    y::Y
+    x::X
+    dim::Int
+    kwargs::K
+    @add_kwonly function SampledIntegralProblem(y::AbstractArray, x::AbstractVector;
+        dim = ndims(y),
+        kwargs...)
+        @assert dim<=ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
+        @assert length(x)==size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
+        @assert axes(x, 1)==axes(y, dim) "The integrand `y` must obey the same indexing as the sampling points `x` along the integrated dimension."
+        new{typeof(y), typeof(x), typeof(kwargs)}(y, x, dim, kwargs)
+    end
+end
+
+TruncatedStacktraces.@truncate_stacktrace SampledIntegralProblem 1 4
 
 @doc doc"""
 

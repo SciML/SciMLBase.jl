@@ -23,6 +23,7 @@ import TruncatedStacktraces
 import ADTypes: AbstractADType
 import ChainRulesCore
 import ZygoteRules: @adjoint
+import FillArrays
 
 using Reexport
 using SciMLOperators
@@ -588,6 +589,14 @@ abstract type AbstractDiffEqFunction{iip} <:
 """
 $(TYPEDEF)
 
+Base for types defining integrand functions.
+"""
+abstract type AbstractIntegralFunction{iip} <:
+              AbstractSciMLFunction{iip} end
+
+"""
+$(TYPEDEF)
+
 Base for types defining optimization functions.
 """
 abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip} end
@@ -658,7 +667,9 @@ function specialization(::Union{ODEFunction{iip, specialize},
     RODEFunction{iip, specialize},
     NonlinearFunction{iip, specialize},
     OptimizationFunction{iip, specialize},
-    BVPFunction{iip, specialize}}) where {iip,
+    BVPFunction{iip, specialize},
+    IntegralFunction{iip, specialize},
+    BatchIntegralFunction{iip, specialize}}) where {iip,
     specialize}
     specialize
 end
@@ -760,9 +771,7 @@ export solve, solve!, init, discretize, symbolic_discretize
 
 export LinearProblem,
     NonlinearProblem, IntervalNonlinearProblem,
-    IntegralProblem, OptimizationProblem
-
-export IntegralProblem
+    IntegralProblem, SampledIntegralProblem, OptimizationProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
@@ -788,7 +797,8 @@ export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
     DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction
+    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
+    IntegralFunction, BatchIntegralFunction
 
 export OptimizationFunction
 
