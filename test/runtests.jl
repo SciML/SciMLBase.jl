@@ -92,5 +92,8 @@ end
         @time @safetestset "Autodiff Remake" begin
             include("downstream/remake_autodiff.jl")
         end
+        @time @safetestset "PyCall" begin
+            include("downstream/pycall.jl")
+        end
     end
 end

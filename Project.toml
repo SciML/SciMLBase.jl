@@ -33,9 +33,11 @@ TruncatedStacktraces = "781d530d-4396-4725-bb49-402e4bee1e77"
 ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 
 [weakdeps]
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [extensions]
+PyCallExt = "PyCall"
 ZygoteExt = "Zygote"
 
 [compat]
@@ -69,6 +71,7 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
@@ -76,4 +79,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Pkg", "SafeTestsets", "Test", "StaticArrays", "StochasticDiffEq", "Aqua", "Zygote"]
+test = ["Pkg", "PyCall", "SafeTestsets", "Test", "StaticArrays", "StochasticDiffEq", "Aqua", "Zygote"]
