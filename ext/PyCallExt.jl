@@ -3,7 +3,7 @@ module PyCallExt
 using PyCall: PyCall, PyObject, PyAny, pyfunctionret, pyimport, hasproperty
 using SciMLBase: SciMLBase, solve
 
-# SciMl uses a function's arity (number of arguments) to determine if it operates in place.
+# SciML uses a function's arity (number of arguments) to determine if it operates in place.
 # PyCall does not preserve arity, so we inspect Python functions to find their arity.
 function SciMLBase.numargs(f::PyObject)
     inspect = pyimport("inspect")
