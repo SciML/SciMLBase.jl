@@ -7,10 +7,11 @@ function test_num_args()
     numpar = SciMLBase.numargs(f) # Should be [1,2]
     g = (x, y) -> x^2
     numpar2 = SciMLBase.numargs(g) # [2]
+    numpar3 = SciMLBase.numargs(sqrt ∘ g) # [2]
     @show numpar, minimum(numpar) == 1, maximum(numpar) == 2
     minimum(numpar) == 1 && maximum(numpar) == 2 &&
         maximum(numpar2) == 2 &&
-        minimum(numpar2) == 2
+        only(numpar3) == 2
 end
 
 @test test_num_args()
@@ -614,7 +615,7 @@ bvjp(u, v, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
 bvjp(du, u, v, p, t) = [1.0]
 BVPFunction(bfiip, bciip, vjp = bvjp)
-  
+
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
 
 # IntegralFunction

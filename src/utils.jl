@@ -27,6 +27,8 @@ function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
     (length(T),)
 end
 
+numargs(f::ComposedFunction) = numargs(f.inner)
+
 """
 $(SIGNATURES)
 
