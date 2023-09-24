@@ -467,7 +467,7 @@ function IntegralProblem(f::AbstractIntegralFunction,
     ub::B,
     p = NullParameters();
     kwargs...) where {B}
-    IntegralProblem(f, (lb, ub), p; kwargs...)
+    IntegralProblem{isinplace(f)}(f, (lb, ub), p; kwargs...)
 end
 
 function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
