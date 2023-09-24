@@ -2379,7 +2379,8 @@ for ``y``. The only assumption that is enforced is that the last axes of `the `y
 arrays are the same length and correspond to distinct batched points. The algorithm will
 then allocate arrays `similar` to ``y`` to pass to the integrand. Since the algorithm may
 vary the number of points to batch, the length of the batching dimension of ``y`` may vary
-between subsequent calls to `f`. In the out-of-place case, the algorithm may infer the type
+between subsequent calls to `f`. To reduce allocations, views of ``y`` may also be passed to
+the integrand. In the out-of-place case, the algorithm may infer the type
 of ``y`` by passing `f` an empty array of input points. When in-place forms are used,
 in-place array operations may be used by algorithms to reduce allocations. If
 `integrand_prototype` is not provided, `f` is assumed to be out-of-place.
