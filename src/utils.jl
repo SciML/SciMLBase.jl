@@ -495,3 +495,36 @@ end
 
 _unwrap_val(::Val{B}) where {B} = B
 _unwrap_val(B) = B
+
+"""
+    prepare_initial_state(u0) = u0
+
+Whenever an initial state is passed to the SciML ecosystem, is passed to
+`prepare_initial_state` and the result is used instead. If you define a
+type which cannot be used as a state but can be converted to something that
+can be, then you may define `prepare_initial_state(x::YourType) = ...`.
+
+!!! warning
+    This function is experimental and may be removed in the future.
+
+See also: `prepare_function`.
+"""
+prepare_initial_state(u0) = u0
+
+"""
+    prepare_function(f) = f
+
+Whenever a function is passed to the SciML ecosystem, is passed to
+`prepare_function` and the result is used instead. If you define a type which
+cannot be used as a function in the SciML ecosystem but can be converted to
+something that can be, then you may define `prepare_function(x::YourType) = ...`.
+
+`prepare_function` may be called before or after
+the arity of a function is computed with `numargs`
+
+!!! warning
+    This function is experimental and may be removed in the future.
+
+See also: `prepare_initial_state`.
+"""
+prepare_function(f) = f
