@@ -94,7 +94,7 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     kwargs::K
     noise_rate_prototype::ND
     seed::UInt64
-    @add_kwonly function SDEProblem{iip}(f::AbstractSDEFunction{iip}, g, u0,
+    @add_kwonly function SDEProblem{iip}(f::AbstractSDEFunction{iip}, u0,
         tspan, p = NullParameters();
         noise_rate_prototype = nothing,
         noise = nothing, seed = UInt64(0),
@@ -109,22 +109,12 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
             noise, kwargs,
             noise_rate_prototype, seed)
     end
-
-    function SDEProblem{iip}(f, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        SDEProblem(SDEFunction{iip}(f, g), g, u0, tspan, p; kwargs...)
-    end
 end
 
 TruncatedStacktraces.@truncate_stacktrace SDEProblem 3 1 2
 
-#=
-function SDEProblem(f::AbstractSDEFunction,u0,tspan,p=NullParameters();kwargs...)
-  SDEProblem(f,f.g,u0,tspan,p;kwargs...)
-end
-=#
-
 function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem{isinplace(f)}(f, f.g, u0, tspan, p; kwargs...)
+    SDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
