@@ -109,6 +109,10 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
             noise, kwargs,
             noise_rate_prototype, seed)
     end
+
+    function SDEProblem{iip}(f, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+        SDEProblem(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
+    end
 end
 
 TruncatedStacktraces.@truncate_stacktrace SDEProblem 3 1 2
@@ -118,7 +122,8 @@ function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwa
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem(SDEFunction(f, g), u0, tspan, p; kwargs...)
+    iip = isinplace(f, 4)
+    SDEProblem{iip}(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
 end
 
 """
