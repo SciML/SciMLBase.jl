@@ -121,6 +121,68 @@ function remake(prob::ODEProblem; f = missing,
 end
 
 """
+    remake(prob::SDEProblem; f = missing, u0 = missing, tspan = missing,
+           p = missing, noise = missing, noise_rate_prototype = missing,
+           seed = missing, kwargs = missing, _kwargs...)
+
+Remake the given `SDEProblem`.
+"""
+function remake(prob::SDEProblem;
+    f = missing,
+    u0 = missing,
+    tspan = missing,
+    p = missing,
+    noise = missing,
+    noise_rate_prototype = missing,
+    seed = missing,
+    kwargs = missing,
+    _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    if p === missing
+        p = prob.p
+    end
+
+    if u0 === missing
+        u0 = prob.u0
+    end
+
+    if noise === missing
+        noise = prob.noise
+    end
+
+    if noise_rate_prototype === missing
+        noise_rate_prototype = prob.noise_rate_prototype
+    end
+
+    if seed === missing
+        seed = prob.seed
+    end
+
+    if f === missing #TODO: Need more features, e.g. remake `g`
+        f = prob.f
+    end
+
+    iip = isinplace(prob)
+
+    if kwargs === missing
+        SDEProblem{iip}(f,
+            u0,
+            tspan,
+            p;
+            noise,
+            noise_rate_prototype,
+            seed,
+            prob.kwargs...,
+            _kwargs...)
+    else
+        SDEProblem{iip}(f, u0, tspan, p; noise, noise_rate_prototype, seed, kwargs...)
+    end
+end
+
+"""
     remake(prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
         sense = missing, kwargs = missing, _kwargs...)
