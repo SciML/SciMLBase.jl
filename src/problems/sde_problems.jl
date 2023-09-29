@@ -145,6 +145,11 @@ function SplitSDEProblem{iip}(f1, f2, g, u0, tspan, p = NullParameters(); kwargs
     SplitSDEProblem{iip}(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
 end
 
+function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
+    ff = SplitSDEFunction(f1, f2, g)
+    SplitSDEProblem{isinplace(ff)}(ff, u0, tspan, p; kwargs...)
+end
+
 function SplitSDEProblem(f::SplitSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
     SplitSDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
@@ -171,8 +176,14 @@ $(TYPEDEF)
 """
 struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
 
+function DynamicalSDEProblem(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...)
+    ff = DynamicalSDEFunction(f1, f2, g)
+    DynamicalSDEProblem{isinplace(ff)}(ff, v0, u0, tspan, p; kwargs...)
+end
+
 function DynamicalSDEProblem{iip}(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-    DynamicalSDEProblem{iip}(DynamicalSDEFunction(f1, f2, g), v0, u0, tspan, p; kwargs...)
+    ff = DynamicalSDEFunction(f1, f2, g)
+    DynamicalSDEProblem{iip}(ff, v0, u0, tspan, p; kwargs...)
 end
 
 function DynamicalSDEProblem(f::DynamicalSDEFunction, v0, u0, tspan,
