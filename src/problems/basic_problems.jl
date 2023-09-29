@@ -459,7 +459,7 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace SampledIntegralProblem 1 4
+TruncatedStacktraces.@truncate_stacktrace SampledIntegralProblem
 
 @doc doc"""
 
