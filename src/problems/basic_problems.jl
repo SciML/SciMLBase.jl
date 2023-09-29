@@ -531,9 +531,9 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `lb`: the lower bounds for the optimization of `u`.
 * `ub`: the upper bounds for the optimization of `u`.
 * `int`: integrality indicator for `u`.
-* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
+* `lcons`: the vector of lower bounds for the constraints passed to [`OptimizationFunction`](@ref).
     Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
-* `ucons`: the vector of upper bounds for the constraints passed to [OptimizationFunction](@ref).
+* `ucons`: the vector of upper bounds for the constraints passed to [`OptimizationFunction`](@ref).
     Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
 * `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
 * `kwargs`: the keyword arguments passed on to the solvers.
