@@ -25,25 +25,27 @@ end
 """
 $(TYPEDEF)
 """
-struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
+struct EnsembleSolution{T, N, S, U} <: AbstractEnsembleSolution{T, N, S}
     u::S
     elapsedTime::Float64
     converged::Bool
+    stats::U
 end
-function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged) where {N}
-    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(sim, elapsedTime, converged)
+function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats) where {N}
+    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim), typeof(stats)}(sim, elapsedTime, converged, stats)
 end
-function EnsembleSolution(sim, elapsedTime, converged)
-    EnsembleSolution(sim, (length(sim),), elapsedTime, converged)
+function EnsembleSolution(sim, elapsedTime, converged, stats)
+    EnsembleSolution(sim, (length(sim),), elapsedTime, converged, stats)
 end # Vector of some type which is not an array
 function EnsembleSolution(sim::T, elapsedTime,
-    converged) where {T <: AbstractVector{T2}
+    converged, stats) where {T <: AbstractVector{T2}
 } where {T2 <:
          AbstractArray}
     EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1,
-        typeof(sim)}(sim,
+        typeof(sim), typeof(stats)}(sim,
         elapsedTime,
-        converged)
+        converged,
+        stats)
 end
 
 struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
@@ -56,7 +58,7 @@ struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
 end
 
 function Base.reverse(sim::EnsembleSolution)
-    EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged)
+    EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged, sim.stats)
 end
 
 """

@@ -23,6 +23,10 @@ $(TYPEDEF)
 """
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
+function merge_stats(us)
+    mapreduce(x -> x.stats, merge, us)
+end
+
 function __solve(prob::AbstractEnsembleProblem,
     alg::Union{AbstractDEAlgorithm, Nothing};
     kwargs...)
@@ -64,7 +68,8 @@ function __solve(prob::AbstractEnsembleProblem,
         elapsed_time = @elapsed u = solve_batch(prob, alg, ensemblealg, 1:trajectories,
             pmap_batch_size; kwargs...)
         _u = tighten_container_eltype(u)
-        return EnsembleSolution(_u, elapsed_time, true)
+        stats = merge_stats(_u)
+        return EnsembleSolution(_u, elapsed_time, true, stats)
     end
 
     converged::Bool = false
@@ -88,8 +93,8 @@ function __solve(prob::AbstractEnsembleProblem,
         end
     end
     _u = tighten_container_eltype(u)
-
-    return EnsembleSolution(_u, elapsed_time, converged)
+    stats = merge_stats(_u)
+    return EnsembleSolution(_u, elapsed_time, converged, stats)
 end
 
 function batch_func(i, prob, alg; kwargs...)
