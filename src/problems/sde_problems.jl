@@ -141,15 +141,15 @@ function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
     SplitSDEProblem(SplitSDEFunction(f1, f2, g), g, u0, tspan, p; kwargs...)
 end
 =#
-function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
-    SplitSDEProblem(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
+function SplitSDEProblem{iip}(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+    SplitSDEProblem{iip}(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
 end
 
 function SplitSDEProblem(f::SplitSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
-    SplitSDEProblem{isinplace(f)}(f, f.g, u0, tspan, p; kwargs...)
+    SplitSDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function SplitSDEProblem{iip}(f::SplitSDEFunction, g, u0, tspan, p = NullParameters();
+function SplitSDEProblem{iip}(f::SplitSDEFunction, u0, tspan, p = NullParameters();
     func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
@@ -171,16 +171,16 @@ $(TYPEDEF)
 """
 struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
 
-function DynamicalSDEProblem(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...)
-    DynamicalSDEProblem(DynamicalSDEFunction(f1, f2, g), v0, u0, tspan, p; kwargs...)
+function DynamicalSDEProblem{iip}(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+    DynamicalSDEProblem{iip}(DynamicalSDEFunction(f1, f2, g), v0, u0, tspan, p; kwargs...)
 end
 
 function DynamicalSDEProblem(f::DynamicalSDEFunction, v0, u0, tspan,
     p = NullParameters(); kwargs...)
-    DynamicalSDEProblem{isinplace(f)}(f, f.g, v0, u0, tspan, p; kwargs...)
+    DynamicalSDEProblem{isinplace(f)}(f, v0, u0, tspan, p; kwargs...)
 end
 
-function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, g, v0, u0, tspan,
+function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, v0, u0, tspan,
     p = NullParameters();
     func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
