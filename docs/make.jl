@@ -8,9 +8,9 @@ include("pages.jl")
 makedocs(sitename = "SciMLBase.jl",
     authors = "Chris Rackauckas",
     modules = [SciMLBase, ModelingToolkit],
-    clean = true, doctest = false,
-    format = Documenter.HTML(analytics = "UA-90474609-3",
-        assets = ["assets/favicon.ico"],
+    clean = true, doctest = false, linkcheck = true,
+    warnonly = [:docs_block, :missing_docs],
+    format = Documenter.HTML(assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/SciMLBase/stable"),
     pages = pages)
 
