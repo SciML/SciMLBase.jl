@@ -15,6 +15,12 @@ function activate_downstream_env()
     Pkg.instantiate()
 end
 
+function activate_python_env()
+    Pkg.activate("python")
+    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
+    Pkg.instantiate()
+end
+
 @time begin
     if GROUP == "Core" || GROUP == "All"
         @time @safetestset "Aqua" begin
@@ -95,6 +101,7 @@ end
     end
 
     if !is_APPVEYOR && GROUP == "Python"
+        activate_python_env()
         @time @safetestset "PyCall" begin
             include("python/pycall.jl")
         end
