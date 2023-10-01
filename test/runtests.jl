@@ -92,8 +92,11 @@ end
         @time @safetestset "Autodiff Remake" begin
             include("downstream/remake_autodiff.jl")
         end
+    end
+
+    if !is_APPVEYOR && GROUP == "Python"
         @time @safetestset "PyCall" begin
-            include("downstream/pycall.jl")
+            include("python/pycall.jl")
         end
     end
 end

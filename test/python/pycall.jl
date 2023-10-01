@@ -1,4 +1,7 @@
 using PyCall, SciMLBase, OrdinaryDiffEq
+import Conda
+Conda.pip_interop(true)
+Conda.pip("install", "julia")
 
 @testset "numargs" begin
     py"""
