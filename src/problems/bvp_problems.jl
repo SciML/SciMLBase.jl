@@ -108,7 +108,7 @@ struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
     problem_type::PT
     kwargs::K
 
-    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, bc, u0, tspan,
+    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
         p = NullParameters(); problem_type=nothing, kwargs...) where {iip, TP}
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
@@ -119,25 +119,25 @@ struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
         else
             @assert prob_type === problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
-        return new{typeof(u0), typeof(_tspan), iip, typeof(p), typeof(f), typeof(bc),
-            typeof(problem_type), typeof(kwargs)}(f, bc, u0, _tspan, p, problem_type,
+        return new{typeof(u0), typeof(_tspan), iip, typeof(p), typeof(f), typeof(f.bc),
+            typeof(problem_type), typeof(kwargs)}(f, f.bc, u0, _tspan, p, problem_type,
             kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        BVProblem(BVPFunction{iip}(f, bc), bc, u0, tspan, p; kwargs...)
+        BVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
 
 TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
-function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 4)
-    return BVProblem{iip}(BVPFunction{iip}(f, bc), bc, u0, tspan, p; kwargs...)
+function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
+    return BVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
-    return BVProblem{isinplace(f)}(f, f.bc, u0, tspan, p; kwargs...)
+function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
+    iip = isinplace(f, 4)
+    return BVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
 end
 
 # This is mostly a fake stuct and isn't used anywhere
@@ -157,7 +157,7 @@ end
 function TwoPointBVProblem(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
     p = NullParameters(); kwargs...) where {iip, twopoint}
     @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=true` during the construction of the `BVPFunction`."
-    return BVProblem{iip}(f, f.bc, u0, tspan, p; kwargs...)
+    return BVProblem{iip}(f, u0, tspan, p; kwargs...)
 end
 
 # Allow previous timeseries solution

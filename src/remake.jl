@@ -308,6 +308,26 @@ function remake(prob::NonlinearProblem;
     end
 end
 
+"""
+    remake(f::AbstractBVPFunction; f = missing, u0 = missing, tspan = missing,
+           p = missing, noise = missing, noise_rate_prototype = missing,
+           seed = missing, kwargs = missing, _kwargs...)
+
+Remake the given `BVPFunction`.
+"""
+function remake(ff::AbstractBVPFunction{iip, twopoint}; f = missing, bc = missing) where {iip, twopoint}
+    if f === missing
+        f = ff.f
+    end
+
+    if bc === missing
+        bc = ff.bc
+    end
+
+    return twopoint ? TwoPointBVPFunction{isinplace(ff)}(f, bc) : BVPFunction{isinplace(ff), false}(f, bc)
+end
+
+
 # overloaded in MTK to intercept symbolic remake
 function process_p_u0_symbolic(prob, p, u0)
     if typeof(prob) <: Union{AbstractDEProblem, OptimizationProblem, NonlinearProblem}
