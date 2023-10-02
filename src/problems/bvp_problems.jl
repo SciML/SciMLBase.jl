@@ -144,15 +144,17 @@ end
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
 struct TwoPointBVPFunction{iip} end
 
-@inline TwoPointBVPFunction(args...; kwargs...) = BVPFunction(args...; kwargs..., twopoint=true)
+@inline function TwoPointBVPFunction(args...; kwargs...)
+    return BVPFunction(args...; kwargs..., twopoint = Val(true))
+end
 @inline function TwoPointBVPFunction{iip}(args...; kwargs...) where {iip}
-    return BVPFunction{iip}(args...; kwargs..., twopoint=true)
+    return BVPFunction{iip}(args...; kwargs..., twopoint = Val(true))
 end
 
 function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
     bcresid_prototype=nothing, kwargs...) where {iip}
-    return TwoPointBVProblem(TwoPointBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan, p;
-        kwargs...)
+    return TwoPointBVProblem(TwoPointBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
+        p; kwargs...)
 end
 function TwoPointBVProblem(f, bc, u0, tspan, p = NullParameters();
     bcresid_prototype=nothing, kwargs...)
