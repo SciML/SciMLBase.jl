@@ -24,7 +24,17 @@ $(TYPEDEF)
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
-    mapreduce(x -> x.stats, merge, us)
+    st = Iterators.filter(!isnothing, (x.stats for x in us))
+    try
+        return reduce(merge, st)
+    catch e
+        if isa(e, MethodError)
+            # there were no stats or they didn't have a merge method
+            return nothing
+        else
+            rethrow(e)
+        end
+    end
 end
 
 function __solve(prob::AbstractEnsembleProblem,
