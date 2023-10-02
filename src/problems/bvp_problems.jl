@@ -6,7 +6,7 @@ struct StandardBVProblem end
 """
 $(TYPEDEF)
 """
-struct TwoPointBVProblem end
+struct TwoPointBVProblem{iip} end # The iip is needed to make type stable construction easier
 
 @doc doc"""
 
@@ -112,7 +112,7 @@ struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
         p = NullParameters(); problem_type=nothing, kwargs...) where {iip, TP}
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        prob_type = TP ? TwoPointBVProblem() : StandardBVProblem()
+        prob_type = TP ? TwoPointBVProblem{iip}() : StandardBVProblem()
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
             problem_type = prob_type
@@ -149,10 +149,20 @@ struct TwoPointBVPFunction{iip} end
     return BVPFunction{iip}(args...; kwargs..., twopoint=true)
 end
 
+function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
+    bcresid_prototype=nothing, kwargs...) where {iip}
+    return TwoPointBVProblem(TwoPointBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan, p;
+        kwargs...)
+end
 function TwoPointBVProblem(f, bc, u0, tspan, p = NullParameters();
     bcresid_prototype=nothing, kwargs...)
     return TwoPointBVProblem(TwoPointBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
         kwargs...)
+end
+function TwoPointBVProblem{iip}(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+    p = NullParameters(); kwargs...) where {iip, twopoint}
+    @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=true` during the construction of the `BVPFunction`."
+    return BVProblem{iip}(f, f.bc, u0, tspan, p; kwargs...)
 end
 function TwoPointBVProblem(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
     p = NullParameters(); kwargs...) where {iip, twopoint}
