@@ -6,12 +6,18 @@ function with_pycall_in_default_environment(f)
     path = Pkg.project().path
     Pkg.activate()
     install = "PyCall" ∉ keys(Pkg.project().dependencies)
-    install && Pkg.add("PyCall")
+    if install
+        Pkg.add("PyCall")
+    end
+    Pkg.activate(path)
     try
         f()
     finally
-        install && Pkg.rm("PyCall")
-        Pkg.activate(path)
+        if install
+            Pkg.activate()
+            Pkg.rm("PyCall")
+            Pkg.activate(path)
+        end
     end
 end
 
