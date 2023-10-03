@@ -1,6 +1,10 @@
 using PyCall
 
 py"""
+print("ZZZZZZZZZ")
+"""
+
+py"""
 print("AAAAAAAAAA")
 import sys
 print(sys.executable)
@@ -10,7 +14,7 @@ try:
 except:
     print("CCCCCCCCCC")
 
-import sys
+import subprocess
 subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
 
 try:
