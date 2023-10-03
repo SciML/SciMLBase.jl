@@ -15,7 +15,7 @@ except:
     print("CCCCCCCCCC")
 
 import subprocess
-subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
+subprocess.run([sys.executable, '-m', 'pip', 'install', 'julia'])
 
 try:
     import julia
@@ -24,6 +24,10 @@ except:
     print("EEEEEEEEEE")
 
 print("FFFFFFFFFF")
+"""
+
+py"""
+import julia
 """
 
 # using Pkg
