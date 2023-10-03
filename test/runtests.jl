@@ -1,7 +1,25 @@
 using PyCall
 
 py"""
-import julia
+print("AAAAAAAAAA")
+import sys
+print(sys.executable)
+try:
+    import julia
+    print("BBBBBBBBBB")
+except:
+    print("CCCCCCCCCC")
+
+import sys
+subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
+
+try:
+    import julia
+    print("DDDDDDDDDD")
+except:
+    print("EEEEEEEEEE")
+
+print("FFFFFFFFFF")
 """
 
 # using Pkg
