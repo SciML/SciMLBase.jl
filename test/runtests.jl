@@ -105,5 +105,8 @@ end
         @time @safetestset "PyCall" begin
             include("python/pycall.jl")
         end
+        @time @safetestset "PythonCall" begin
+            include("python/pythoncall.jl")
+        end
     end
 end
