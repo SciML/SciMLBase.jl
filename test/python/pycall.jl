@@ -1,7 +1,9 @@
-import Conda
-Conda.pip_interop(true)
-Conda.pip("install", "julia")
 using PyCall, SciMLBase, OrdinaryDiffEq
+
+py""" # TODO: upstream this into PyCall
+from pip import _internal
+_internal.main(['install', 'julia'])
+"""
 
 @testset "numargs" begin
     py"""
