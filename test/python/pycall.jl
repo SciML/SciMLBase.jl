@@ -1,62 +1,42 @@
+import Conda
+Conda.pip_interop(true)
+Conda.pip("install", "julia")
 using PyCall, SciMLBase, OrdinaryDiffEq
 
-# PyCall only works when PyCall is in the default environment :'(
-import Pkg
-function with_pycall_in_default_environment(f)
-    path = Pkg.project().path
-    Pkg.activate()
-    install = "PyCall" ∉ keys(Pkg.project().dependencies)
-    if install
-        Pkg.add("PyCall")
-    end
-    Pkg.activate(path)
-    try
-        f()
-    finally
-        if install
-            Pkg.activate()
-            Pkg.rm("PyCall")
-            Pkg.activate(path)
-        end
-    end
-end
+@testset "numargs" begin
+    py"""
+    def three_arg(a, b, c):
+        return a + b + c
 
-with_pycall_in_default_environment() do
-    @testset "numargs" begin
-        py"""
-        def three_arg(a, b, c):
+    def four_arg(a, b, c, d):
+        return a + b + c + d
+
+    class MyClass:
+        def three_arg_method(self, a, b, c):
             return a + b + c
 
-        def four_arg(a, b, c, d):
+        def four_arg_method(self, a, b, c, d):
             return a + b + c + d
+    """
 
-        class MyClass:
-            def three_arg_method(self, a, b, c):
-                return a + b + c
+    @test SciMLBase.numargs(py"three_arg") === 3
+    @test SciMLBase.numargs(py"four_arg") === 4
+    x = py"MyClass()"
+    @test SciMLBase.numargs(x.three_arg_method) === 3
+    @test SciMLBase.numargs(x.four_arg_method) === 4
+end
 
-            def four_arg_method(self, a, b, c, d):
-                return a + b + c + d
-        """
+@testset "solution handling" begin
+    py"""
+    from julia import OrdinaryDiffEq as ode
 
-        @test SciMLBase.numargs(py"three_arg") === 3
-        @test SciMLBase.numargs(py"four_arg") === 4
-        x = py"MyClass()"
-        @test SciMLBase.numargs(x.three_arg_method) === 3
-        @test SciMLBase.numargs(x.four_arg_method) === 4
-    end
+    def f(u,p,t):
+        return -u
 
-    @testset "solution handling" begin
-        py"""
-        from julia import OrdinaryDiffEq as ode
-
-        def f(u,p,t):
-            return -u
-
-        u0 = 0.5
-        tspan = (0., 1.)
-        prob = ode.ODEProblem(f, u0, tspan)
-        sol = ode.solve(prob, ode.Tsit5())
-        """
-        @test py"sol" isa ODESolution
-    end
-end # with_pycall_in_default_environment
+    u0 = 0.5
+    tspan = (0., 1.)
+    prob = ode.ODEProblem(f, u0, tspan)
+    sol = ode.solve(prob, ode.Tsit5())
+    """
+    @test py"sol" isa ODESolution
+end

@@ -1,10 +1,11 @@
 [deps]
+Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 
 [compat]
+Conda = "1.9"
 OrdinaryDiffEq = "6.33"
 PyCall = "1.96"
 SciMLBase = "2"
