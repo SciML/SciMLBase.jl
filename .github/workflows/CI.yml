@@ -18,6 +18,7 @@ jobs:
         group:
           - Core
           - Downstream
+          - Python
         version:
           - '1'
     steps:
