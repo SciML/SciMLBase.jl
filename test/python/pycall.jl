@@ -1,8 +1,9 @@
 using PyCall, SciMLBase, OrdinaryDiffEq
 
 py""" # This is a mess because normal site-packages is not writeable in CI
-import pip, site, sys
-pip._internal.main(['install', '--user', 'julia'])
+from pip import _internal as _internal
+_internal.main(['install', '--user', 'julia'])
+import site, sys
 sys.path.append(site.getusersitepackages())
 """
 
