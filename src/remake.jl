@@ -152,7 +152,7 @@ function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan 
     twopoint = problem_type isa TwoPointBVProblem
 
     if bc === missing
-        bc = prob.bc
+        bc = prob.f.bc
     end
 
     if f === missing
