@@ -35,13 +35,17 @@ using DifferentialEquations, PythonCall
     """, @__MODULE__)
     @test pyconvert(Any, pyeval("sol", @__MODULE__)) isa ODESolution
 
-    # TODO: test the types and shapes of sol.t and de.transpose(de.stack(sol.u)) but don't actually plot them in CI
-    # pyexec("""
-    # import matplotlib.pyplot as plt
-
-    # plt.plot(sol.t, de.transpose(de.stack(sol.u))) # :( fails without the conversion
-    # plt.show()
-    # """, @__MODULE__)
+    # Test that the types and shapes of sol.t and de.transpose(de.stack(sol.u)) are
+    # compatible with matplotlib, but don't actually plot anything.
+    pyexec("""
+    u2 = de.transpose(de.stack(sol.u))
+    ok = sol.t.shape == (10001,) and \
+         u2.shape == (10001, 3) and \
+         sol.t[0] == 0 and \
+         sol.t[-1] == 100 and \
+         type(u2[4123, 2]) == float
+    """, @__MODULE__)
+    @test pyconvert(Any, pyeval("ok", @__MODULE__))
 
     @pyexec """
     jul_f = Main.seval(""\"
