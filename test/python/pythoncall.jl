@@ -3,6 +3,7 @@ using DifferentialEquations, PythonCall
 @testset "Use of DifferentialEquations through PythonCall with user code written in Python" begin
     pyexec("""
     from juliacall import Main
+    Main.seval("using DifferentialEquations")
     de = Main.seval("DifferentialEquations")
 
     def f(u,p,t):
