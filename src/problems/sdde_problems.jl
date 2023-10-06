@@ -126,12 +126,13 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
                   det(f.mass_matrix) != 1,
         order_discontinuity_t0 = 0 // 1,
         kwargs...) where {iip}
+        _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
+        new{typeof(_u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
             typeof(p), typeof(noise), typeof(f), typeof(g), typeof(h), typeof(kwargs),
-            typeof(noise_rate_prototype)}(f, g, u0, h, _tspan, p, noise, constant_lags,
+            typeof(noise_rate_prototype)}(f, g, _u0, h, _tspan, p, noise, constant_lags,
             dependent_lags, kwargs, noise_rate_prototype,
             seed, neutral, order_discontinuity_t0)
     end
