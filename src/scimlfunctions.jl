@@ -4064,12 +4064,13 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     end
 end
 
-function BVPFunction{iip}(f, bc; twopoint::Bool=false, kwargs...) where {iip}
-    BVPFunction{iip, FullSpecialize, twopoint}(f, bc; kwargs...)
+function BVPFunction{iip}(f, bc; twopoint::Union{Val, Bool}=Val(false),
+    kwargs...) where {iip}
+    BVPFunction{iip, FullSpecialize, _unwrap_val(twopoint)}(f, bc; kwargs...)
 end
 BVPFunction{iip}(f::BVPFunction, bc; kwargs...) where {iip} = f
-function BVPFunction(f, bc; twopoint::Bool=false, kwargs...)
-    BVPFunction{isinplace(f, 4), FullSpecialize, twopoint}(f, bc; kwargs...)
+function BVPFunction(f, bc; twopoint::Union{Val, Bool}=Val(false), kwargs...)
+    BVPFunction{isinplace(f, 4), FullSpecialize, _unwrap_val(twopoint)}(f, bc; kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
