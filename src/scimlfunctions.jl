@@ -4016,7 +4016,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     end
     jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
     bcjaciip = if bcjac !== nothing
-        if twopoint
+        if !twopoint
             isinplace(bcjac, 4, "bcjac", bciip)
         else
             @assert length(bcjac) == 2
