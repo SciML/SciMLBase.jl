@@ -224,11 +224,13 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
         order_discontinuity_t0 = 0,
         problem_type = StandardDDEProblem(),
         kwargs...) where {iip}
+        _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
+        new{typeof(_u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
-            typeof(p), typeof(f), typeof(h), typeof(kwargs), typeof(problem_type)}(f, u0, h,
+            typeof(p), typeof(f), typeof(h), typeof(kwargs), typeof(problem_type)}(f, _u0,
+            h,
             _tspan,
             p,
             constant_lags,

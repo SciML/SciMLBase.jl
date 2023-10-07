@@ -116,6 +116,7 @@ struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
         p = NullParameters(); problem_type=nothing, kwargs...) where {iip, TP}
+        _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         prob_type = TP ? TwoPointBVProblem{iip}() : StandardBVProblem()
@@ -125,8 +126,8 @@ struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
         else
             @assert prob_type === problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
-        return new{typeof(u0), typeof(_tspan), iip, typeof(p), typeof(f),
-            typeof(problem_type), typeof(kwargs)}(f, u0, _tspan, p, problem_type, kwargs)
+        return new{typeof(_u0), typeof(_tspan), iip, typeof(p), typeof(f),
+            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}

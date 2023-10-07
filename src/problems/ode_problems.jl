@@ -112,13 +112,14 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         u0, tspan, p = NullParameters(),
         problem_type = StandardODEProblem();
         kwargs...) where {iip}
+        _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(u0), typeof(_tspan),
+        new{typeof(_u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),
             typeof(problem_type)}(f,
-            u0,
+            _u0,
             _tspan,
             p,
             kwargs,
@@ -133,9 +134,10 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function ODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+        _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-        ODEProblem(_f, u0, _tspan, p; kwargs...)
+        ODEProblem(_f, _u0, _tspan, p; kwargs...)
     end
 
     @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
@@ -145,19 +147,20 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
 
     function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
         kwargs...) where {iip}
+        _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
             if iip
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                    (u0, u0, p,
+                    (_u0, _u0, p,
                         _tspan[1])))
             else
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                    (u0, p,
+                    (_u0, p,
                         _tspan[1])))
             end
         end
-        ODEProblem{iip}(ff, u0, _tspan, p; kwargs...)
+        ODEProblem{iip}(ff, _u0, _tspan, p; kwargs...)
     end
 end
 TruncatedStacktraces.@truncate_stacktrace ODEProblem 3 1 2
@@ -183,9 +186,10 @@ end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
+    _u0 = prepare_initial_state(u0)
     _tspan = promote_tspan(tspan)
     _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-    ODEProblem(_f, u0, _tspan, p; kwargs...)
+    ODEProblem(_f, _u0, _tspan, p; kwargs...)
 end
 
 """

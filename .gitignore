@@ -4,3 +4,6 @@ Manifest.toml
 # vscode stuff
 .vscode
 .vscode/*
+
+# python extensions
+.CondaPkg
