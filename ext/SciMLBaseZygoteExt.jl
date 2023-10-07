@@ -1,4 +1,4 @@
-module ZygoteExt
+module SciMLBaseZygoteExt
 
 using Zygote: pullback
 using ZygoteRules: @adjoint

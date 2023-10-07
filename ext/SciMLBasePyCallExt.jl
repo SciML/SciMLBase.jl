@@ -1,4 +1,4 @@
-module PyCallExt
+module SciMLBasePyCallExt
 
 using PyCall: PyCall, PyObject, PyAny, pyfunctionret, pyimport, hasproperty
 using SciMLBase: SciMLBase, solve
