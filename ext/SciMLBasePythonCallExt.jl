@@ -1,4 +1,4 @@
-module PythonCallExt
+module SciMLBasePythonCallExt
 
 using PythonCall: Py, PyList, pyimport, hasproperty, pyconvert, pyisinstance, pybuiltins
 using SciMLBase: SciMLBase
