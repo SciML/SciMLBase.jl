@@ -4024,9 +4024,31 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         _bccolorvec = bccolorvec
     end
 
-    bciip = !twopoint ? isinplace(bc, 4, "bc", iip) : isinplace(bc, 3, "bc", iip)
+    bciip = if !twopoint
+        isinplace(bc, 4, "bc", iip)
+    else
+        @assert length(bc) == 2
+        bc = Tuple(bc)
+        if isinplace(first(bc), 3, "bc", iip) != isinplace(last(bc), 3, "bc", iip)
+            throw(NonconformingFunctionsError(["bc[1]", "bc[2]"]))
+        end
+        isinplace(first(bc), 3, "bc", iip)
+    end
     jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
-    bcjaciip = bcjac !== nothing ? isinplace(bcjac, 4, "bcjac", bciip) : bciip
+    bcjaciip = if bcjac !== nothing
+        if !twopoint
+            isinplace(bcjac, 4, "bcjac", bciip)
+        else
+            @assert length(bcjac) == 2
+            bcjac = Tuple(bcjac)
+            if isinplace(first(bcjac), 3, "bcjac", bciip) != isinplace(last(bcjac), 3, "bcjac", bciip)
+                throw(NonconformingFunctionsError(["bcjac[1]", "bcjac[2]"]))
+            end
+            isinplace(bcjac, 3, "bcjac", iip)
+        end
+    else
+        bciip
+    end
     tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
     jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
     vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
@@ -4049,8 +4071,13 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
             error("bcresid_prototype must be a tuple / indexable collection of length 2 for a inplace TwoPointBVPFunction")
         end
         if bcresid_prototype !== nothing && length(bcresid_prototype) == 2
-            bcresid_prototype = ArrayPartition(bcresid_prototype[1], bcresid_prototype[2])
+            bcresid_prototype = ArrayPartition(first(bcresid_prototype),
+                last(bcresid_prototype))
         end
+
+        bccolorvec !== nothing && length(bccolorvec) == 2 && (bccolorvec = Tuple(bccolorvec))
+
+        bcjac_prototype !== nothing && length(bcjac_prototype) == 2 && (bcjac_prototype = Tuple(bcjac_prototype))
     end
 
     if any(bc_nonconforming)
@@ -4086,12 +4113,13 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     end
 end
 
-function BVPFunction{iip}(f, bc; twopoint::Bool=false, kwargs...) where {iip}
-    BVPFunction{iip, FullSpecialize, twopoint}(f, bc; kwargs...)
+function BVPFunction{iip}(f, bc; twopoint::Union{Val, Bool}=Val(false),
+    kwargs...) where {iip}
+    BVPFunction{iip, FullSpecialize, _unwrap_val(twopoint)}(f, bc; kwargs...)
 end
 BVPFunction{iip}(f::BVPFunction, bc; kwargs...) where {iip} = f
-function BVPFunction(f, bc; twopoint::Bool=false, kwargs...)
-    BVPFunction{isinplace(f, 4), FullSpecialize, twopoint}(f, bc; kwargs...)
+function BVPFunction(f, bc; twopoint::Union{Val, Bool}=Val(false), kwargs...)
+    BVPFunction{isinplace(f, 4), FullSpecialize, _unwrap_val(twopoint)}(f, bc; kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 

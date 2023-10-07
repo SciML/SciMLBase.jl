@@ -121,6 +121,67 @@ function remake(prob::ODEProblem; f = missing,
 end
 
 """
+    remake(prob::BVProblem; f = missing, u0 = missing, tspan = missing,
+           p = missing, kwargs = missing, problem_type = missing, _kwargs...)
+
+Remake the given `BVProblem`.
+"""
+function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan = missing,
+    p = missing, kwargs = missing, problem_type = missing, _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    if p === missing && u0 === missing
+        p, u0 = prob.p, prob.u0
+    else # at least one of them has a value
+        if p === missing
+            p = prob.p
+        end
+        if u0 === missing
+            u0 = prob.u0
+        end
+    end
+
+    iip = isinplace(prob)
+
+    if problem_type === missing
+        problem_type = prob.problem_type
+    end
+
+    twopoint = problem_type isa TwoPointBVProblem
+
+    if bc === missing
+        bc = prob.f.bc
+    end
+
+    if f === missing
+        _f = prob.f
+    elseif f isa BVPFunction
+        _f = f
+        bc = f.bc
+    elseif specialization(prob.f) === FunctionWrapperSpecialize
+        ptspan = promote_tspan(tspan)
+        if iip
+            _f = BVPFunction{iip, FunctionWrapperSpecialize, twopoint}(wrapfun_iip(f,
+                (u0, u0, p, ptspan[1])), bc; prob.f.bcresid_prototype)
+        else
+            _f = BVPFunction{iip, FunctionWrapperSpecialize, twopoint}(wrapfun_oop(f,
+                (u0, p, ptspan[1])), bc; prob.f.bcresid_prototype)
+        end
+    else
+        _f = BVPFunction{isinplace(prob), specialization(prob.f), twopoint}(f, bc;
+            prob.f.bcresid_prototype)
+    end
+
+    if kwargs === missing
+        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, prob.kwargs..., _kwargs...)
+    else
+        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, kwargs...)
+    end
+end
+
+"""
     remake(prob::SDEProblem; f = missing, u0 = missing, tspan = missing,
            p = missing, noise = missing, noise_rate_prototype = missing,
            seed = missing, kwargs = missing, _kwargs...)

@@ -6,7 +6,7 @@ struct StandardBVProblem end
 """
 $(TYPEDEF)
 """
-struct TwoPointBVProblem end
+struct TwoPointBVProblem{iip} end # The iip is needed to make type stable construction easier
 
 @doc doc"""
 
@@ -71,11 +71,18 @@ time points, and for shooting type methods `u=sol` the ODE solution.
 Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
 
-If the bvp is a TwoPointBVProblem it must define either of the following functions
+If the bvp is a TwoPointBVProblem then `bc` must be a Tuple `(bca, bcb)` and each of them
+must define either of the following functions:
 
 ```julia
-bc!((resid_a, resid_b), (u_a, u_b), p)
-resid_a, resid_b = bc((u_a, u_b), p)
+begin
+    bca!(resid_a, u_a, p)
+    bcb!(resid_b, u_b, p)
+end
+begin
+    resid_a = bca(u_a, p)
+    resid_b = bcb(u_b, p)
+end
 ```
 
 where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
@@ -98,35 +105,33 @@ every solve call.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `kwargs`: The keyword arguments passed onto the solves.
 """
-struct BVProblem{uType, tType, isinplace, P, F, BF, PT, K} <:
+struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
        AbstractBVProblem{uType, tType, isinplace}
     f::F
-    bc::BF
     u0::uType
     tspan::tType
     p::P
     problem_type::PT
     kwargs::K
 
-    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, bc, u0, tspan,
+    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
         p = NullParameters(); problem_type=nothing, kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        prob_type = TP ? TwoPointBVProblem() : StandardBVProblem()
+        prob_type = TP ? TwoPointBVProblem{iip}() : StandardBVProblem()
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
             problem_type = prob_type
         else
             @assert prob_type === problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
-        return new{typeof(_u0), typeof(_tspan), iip, typeof(p), typeof(f), typeof(bc),
-            typeof(problem_type), typeof(kwargs)}(f, bc, _u0, _tspan, p, problem_type,
-            kwargs)
+        return new{typeof(_u0), typeof(_tspan), iip, typeof(p), typeof(f),
+            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        BVProblem(BVPFunction{iip}(f, bc), bc, u0, tspan, p; kwargs...)
+        BVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
 
@@ -134,31 +139,43 @@ TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
-    return BVProblem{iip}(BVPFunction{iip}(f, bc), bc, u0, tspan, p; kwargs...)
+    return BVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
 end
 
 function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
-    return BVProblem{isinplace(f)}(f, f.bc, u0, tspan, p; kwargs...)
+    return BVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 # This is mostly a fake stuct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
 struct TwoPointBVPFunction{iip} end
 
-@inline TwoPointBVPFunction(args...; kwargs...) = BVPFunction(args...; kwargs..., twopoint=true)
+@inline function TwoPointBVPFunction(args...; kwargs...)
+    return BVPFunction(args...; kwargs..., twopoint = Val(true))
+end
 @inline function TwoPointBVPFunction{iip}(args...; kwargs...) where {iip}
-    return BVPFunction{iip}(args...; kwargs..., twopoint=true)
+    return BVPFunction{iip}(args...; kwargs..., twopoint = Val(true))
 end
 
+function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
+    bcresid_prototype=nothing, kwargs...) where {iip}
+    return TwoPointBVProblem(TwoPointBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
+        p; kwargs...)
+end
 function TwoPointBVProblem(f, bc, u0, tspan, p = NullParameters();
     bcresid_prototype=nothing, kwargs...)
     return TwoPointBVProblem(TwoPointBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
         kwargs...)
 end
+function TwoPointBVProblem{iip}(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+    p = NullParameters(); kwargs...) where {iip, twopoint}
+    @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `BVPFunction`."
+    return BVProblem{iip}(f, u0, tspan, p; kwargs...)
+end
 function TwoPointBVProblem(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
     p = NullParameters(); kwargs...) where {iip, twopoint}
-    @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=true` during the construction of the `BVPFunction`."
-    return BVProblem{iip}(f, f.bc, u0, tspan, p; kwargs...)
+    @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `BVPFunction`."
+    return BVProblem{iip}(f, u0, tspan, p; kwargs...)
 end
 
 # Allow previous timeseries solution
