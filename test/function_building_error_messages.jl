@@ -618,6 +618,14 @@ BVPFunction(bfiip, bciip, vjp = bvjp)
 
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop, bciip, vjp = bvjp)
 
+# TwoPointBVPFunction
+
+tpbvpf(du, u, p, t) = du .= u
+tpbvpbca(resa, ua, p) = resa .= ua
+tpbvpbcb(resb, ub, p) = resb .= ub
+SciMLBase.TwoPointBVPFunction(tpbvpf, (tpbvpbca, tpbvpbcb))
+@test_throws ErrorException SciMLBase.TwoPointBVPFunction(tpbvpf, (tpbvpbca, tpbvpbcb), bcresid_prototype = (1, 1, 1))
+
 # IntegralFunction
 
 ioop(u, p) = p * u

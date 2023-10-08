@@ -4067,8 +4067,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     end
 
     if twopoint
-        if iip && (bcresid_prototype === nothing || length(bcresid_prototype) != 2)
-            error("bcresid_prototype must be a tuple / indexable collection of length 2 for a inplace TwoPointBVPFunction")
+        if iip && bcresid_prototype !== nothing
+            @assert length(bcresid_prototype) == 2 error("bcresid_prototype must be a tuple / indexable collection of length 2 for an inplace TwoPointBVPFunction")
         end
         if bcresid_prototype !== nothing && length(bcresid_prototype) == 2
             bcresid_prototype = ArrayPartition(first(bcresid_prototype),
