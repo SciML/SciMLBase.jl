@@ -40,7 +40,7 @@ end
 
 DEStats(x::Int = -1) = DEStats(x, x, x, x, x, x, x, x, x, x, 0.0)
 
-function Base.show(io::IO, s::DEStats)
+function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     println(io, summary(s))
     @printf io "%-50s %-d\n" "Number of function 1 evaluations:" s.nf
     @printf io "%-50s %-d\n" "Number of function 2 evaluations:" s.nf2
