@@ -25,16 +25,7 @@ struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
     st = Iterators.filter(!isnothing, (x.stats for x in us))
-    try
-        return reduce(merge, st)
-    catch e
-        if isa(e, MethodError)
-            # there were no stats or they didn't have a merge method
-            return nothing
-        else
-            rethrow(e)
-        end
-    end
+    reduce(merge, st)
 end
 
 function __solve(prob::AbstractEnsembleProblem,
