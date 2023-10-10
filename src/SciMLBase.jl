@@ -11,6 +11,7 @@ using LinearAlgebra
 using Statistics
 using Distributed
 using Markdown
+using Printf
 import Preferences
 
 import Logging, ArrayInterface
