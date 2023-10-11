@@ -94,7 +94,7 @@ function __solve(prob::AbstractEnsembleProblem,
         end
     end
     _u = tighten_container_eltype(u)
-    stats = merge_stats(_u)
+    stats = prob.reduction === DEFAULT_REDUCTION ? merge_stats(_u) : nothing
     return EnsembleSolution(_u, elapsed_time, converged, stats)
 end
 
