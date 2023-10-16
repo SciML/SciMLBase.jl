@@ -31,14 +31,14 @@ struct EnsembleSolution{T, N, S, U} <: AbstractEnsembleSolution{T, N, S}
     converged::Bool
     stats::U
 end
-function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats) where {N}
+function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats=nothing) where {N}
     EnsembleSolution{eltype(eltype(sim)), N, typeof(sim), typeof(stats)}(sim, elapsedTime, converged, stats)
 end
-function EnsembleSolution(sim, elapsedTime, converged, stats)
+function EnsembleSolution(sim, elapsedTime, converged, stats=nothing)
     EnsembleSolution(sim, (length(sim),), elapsedTime, converged, stats)
 end # Vector of some type which is not an array
 function EnsembleSolution(sim::T, elapsedTime,
-    converged, stats) where {T <: AbstractVector{T2}
+    converged, stats=nothing) where {T <: AbstractVector{T2}
 } where {T2 <:
          AbstractArray}
     EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1,
