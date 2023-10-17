@@ -43,9 +43,8 @@ end
     u0 = [1.0; 0.0; 0.0]
     tspan = (0.0, 100.0)
     p = [10.0,28.0,8/3]
-    prob = ODEProblem(lorenz!, u0, tspan,p=p;a=1.0,b=2.0)
+    prob = ODEProblem(lorenz!, u0, tspan,p;a=1.0,b=2.0)
     nlprob = NonlinearProblem(prob)
-    @test nlprob.kwargs[:p] == prob.kwargs[:p]
     @test nlprob.kwargs[:a] == prob.kwargs[:a]
     @test nlprob.kwargs[:b] == prob.kwargs[:b]
 end
@@ -59,9 +58,8 @@ end
     u0 = [1.0; 0.0; 0.0]
     tspan = (0.0, 100.0)
     p = [10.0,28.0,8/3]
-    prob = ODEProblem(lorenz!, u0, tspan,p=p;a=1.0,b=2.0)
+    prob = ODEProblem(lorenz!, u0, tspan,p;a=1.0,b=2.0)
     sprob = SteadyStateProblem(prob)
-    @test sprob.kwargs[:p] == prob.kwargs[:p]
     @test sprob.kwargs[:a] == prob.kwargs[:a]
     @test sprob.kwargs[:b] == prob.kwargs[:b]
 end
