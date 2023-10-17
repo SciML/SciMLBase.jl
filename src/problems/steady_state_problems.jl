@@ -123,5 +123,5 @@ $(SIGNATURES)
 Define a steady state problem from a standard ODE problem.
 """
 function SteadyStateProblem(prob::AbstractODEProblem)
-    SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+    SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
 end

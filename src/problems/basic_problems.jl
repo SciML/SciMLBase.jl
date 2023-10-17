@@ -260,8 +260,8 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     `isinplace` optionally sets whether the function is inplace or not.
     This is determined automatically, but not inferred.
     """
-    function NonlinearProblem{iip}(f, u0, p = NullParameters()) where {iip}
-        NonlinearProblem{iip}(NonlinearFunction{iip}(f), u0, p)
+    function NonlinearProblem{iip}(f, u0, p = NullParameters(); kwargs...) where {iip}
+        NonlinearProblem{iip}(NonlinearFunction{iip}(f), u0, p; kwargs...)
     end
 end
 
@@ -309,7 +309,7 @@ this is interpreted in the form of the steady state problem, i.e.
 find the ODE's solution at time ``t = \\infty``
 """
 function NonlinearProblem(prob::AbstractODEProblem)
-    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+    NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
 end
 
 @doc doc"""
