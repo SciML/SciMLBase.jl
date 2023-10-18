@@ -24,7 +24,8 @@ $(TYPEDEF)
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
-    st = Iterators.filter(!isnothing, (x.stats for x in us))
+    st = Iterators.filter(!isnothing, (hasproperty(x, :stats) ? x.stats : nothing for x in us))
+    isempty(st) && return nothing
     reduce(merge, st)
 end
 
@@ -94,7 +95,7 @@ function __solve(prob::AbstractEnsembleProblem,
         end
     end
     _u = tighten_container_eltype(u)
-    stats = prob.reduction === DEFAULT_REDUCTION ? merge_stats(_u) : nothing
+    stats = merge_stats(_u)
     return EnsembleSolution(_u, elapsed_time, converged, stats)
 end
 

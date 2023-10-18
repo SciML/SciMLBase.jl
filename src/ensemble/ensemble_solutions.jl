@@ -31,7 +31,7 @@ struct EnsembleSolution{T, N, S, U} <: AbstractEnsembleSolution{T, N, S}
     converged::Bool
     stats::U
 end
-function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats=nothing) where {N}
+function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats) where {N}
     EnsembleSolution{eltype(eltype(sim)), N, typeof(sim), typeof(stats)}(sim, elapsedTime, converged, stats)
 end
 function EnsembleSolution(sim, elapsedTime, converged, stats=nothing)
