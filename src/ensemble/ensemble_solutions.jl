@@ -25,14 +25,14 @@ end
 """
 $(TYPEDEF)
 """
-struct EnsembleSolution{T, N, S, U} <: AbstractEnsembleSolution{T, N, S}
+struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     u::S
     elapsedTime::Float64
     converged::Bool
-    stats::U
+    stats
 end
 function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats) where {N}
-    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim), typeof(stats)}(sim, elapsedTime, converged, stats)
+    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(sim, elapsedTime, converged, stats)
 end
 function EnsembleSolution(sim, elapsedTime, converged, stats=nothing)
     EnsembleSolution(sim, (length(sim),), elapsedTime, converged, stats)
@@ -41,8 +41,8 @@ function EnsembleSolution(sim::T, elapsedTime,
     converged, stats=nothing) where {T <: AbstractVector{T2}
 } where {T2 <:
          AbstractArray}
-    EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1,
-        typeof(sim), typeof(stats)}(sim,
+    EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1, typeof(sim)}(
+        sim,
         elapsedTime,
         converged,
         stats)
