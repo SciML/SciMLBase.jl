@@ -79,6 +79,6 @@ using DifferentialEquations, PythonCall
 end
 
 @testset "promotion" begin
-    _u0 = pyeval("""de.SciMLBase.prepare_initial_state([1.0, 0, 0])""", @__MODULE__)
+    _u0 = pyconvert(Any, pyeval("""de.SciMLBase.prepare_initial_state([1.0, 0, 0])""", @__MODULE__))
     @test _u0 isa Vector{Float64}
 end
