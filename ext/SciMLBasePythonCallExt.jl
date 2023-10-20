@@ -13,9 +13,17 @@ function SciMLBase.numargs(f::Py)
     pyconvert(Int, length(first(inspect.getfullargspec(f2))) - inspect.ismethod(f2))
 end
 
-_pyconvert(x::Py) = pyisinstance(x, pybuiltins.list) ? [_pyconvert(x) for x in x] : pyconvert(Any, x)
-_pyconvert(x::PyList) = [_pyconvert(x) for x in x]
+_pyconvert(x::Py) = pyisinstance(x, pybuiltins.list) ? _promoting_collect(_pyconvert(x) for x in x) : pyconvert(Any, x)
+_pyconvert(x::PyList) = _promoting_collect(_pyconvert(x) for x in x)
 _pyconvert(x) = x
+
+# _promoting_collect might copy its input
+_promoting_collect(x) = _promoting_collect(collect(x))
+function _promoting_collect(x::AbstractArray)
+    isconcretetype(eltype(x)) && return x
+    T = mapreduce(typeof, promote_type, x)
+    T == eltype(x) ? x : T.(x)
+end
 
 SciMLBase.prepare_initial_state(u0::Union{Py, PyList}) = _pyconvert(u0)
 SciMLBase.prepare_function(f::Py) = _pyconvert ∘ f
