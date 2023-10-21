@@ -77,3 +77,8 @@ using DifferentialEquations, PythonCall
     sol = de.solve(prob,reltol=1e-3,abstol=1e-3)
     """, @__MODULE__)
 end
+
+@testset "promotion" begin
+    _u0 = pyconvert(Any, pyeval("""de.SciMLBase.prepare_initial_state([1.0, 0, 0])""", @__MODULE__))
+    @test _u0 isa Vector{Float64}
+end
