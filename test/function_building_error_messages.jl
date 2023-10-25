@@ -16,6 +16,16 @@ end
 
 @test test_num_args()
 
+# Test isinplace on UnionAll
+# https://github.com/SciML/SciMLBase.jl/issues/529
+
+struct Foo{T} end
+f = Foo{1}()
+(this::Foo{T})(args...) where T=1
+@test SciMLBase.isinplace(Foo{Int}(), 4)
+
+## Problem argument tests
+
 ftoomany(u, p, t, x, y) = 2u
 u0 = 0.5
 tspan = (0.0, 1.0)
