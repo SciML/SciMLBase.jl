@@ -256,9 +256,15 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
             # Possible extra safety?
             # Find if there's a `f(args...)` dispatch
             # If so, no error
+            _parameters = if methods(f).ms[1].sig isa UnionAll
+                Base.unwrap_unionall(methods(f).ms[1].sig).parameters
+            else
+                methods(f).ms[1].sig.parameters
+            end
+            
             for i in 1:length(nargs)
                 if nargs[i] < inplace_param_number &&
-                   any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
+                   any(isequal(Vararg{Any}),_parameters)
                     # If varargs, assume iip
                     return iip_preferred
                 end
