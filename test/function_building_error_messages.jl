@@ -22,7 +22,7 @@ end
 struct Foo{T} end
 f = Foo{1}()
 (this::Foo{T})(args...) where T=1
-SciMLBase.isinplace(Foo{Int}(), 4)
+@test SciMLBase.isinplace(Foo{Int}(), 4)
 
 ## Problem argument tests
 
