@@ -1,7 +1,7 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
-version = "2.4.3"
+version = "2.5.0"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
@@ -33,12 +33,14 @@ TruncatedStacktraces = "781d530d-4396-4725-bb49-402e4bee1e77"
 ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 
 [weakdeps]
+PartialFunctions = "570af359-4316-4cb7-8c74-252c00c2016b"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [extensions]
+SciMLBasePartialFunctionsExt = "PartialFunctions"
 SciMLBasePyCallExt = "PyCall"
 SciMLBasePythonCallExt = "PythonCall"
 SciMLBaseRCallExt = "RCall"
@@ -55,6 +57,7 @@ EnumX = "1"
 FillArrays = "1.6"
 FunctionWrappersWrappers = "0.1.3"
 IteratorInterfaceExtensions = "^0.1, ^1"
+PartialFunctions = "1.1"
 PrecompileTools = "1"
 Preferences = "1.3"
 RCall = "0.13.18"
@@ -76,6 +79,7 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+PartialFunctions = "570af359-4316-4cb7-8c74-252c00c2016b"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
@@ -86,4 +90,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Pkg", "PyCall", "PythonCall", "SafeTestsets", "Test", "StaticArrays", "StochasticDiffEq", "Aqua", "Zygote"]
+test = ["Pkg", "PyCall", "PythonCall", "SafeTestsets", "Test", "StaticArrays", "StochasticDiffEq", "Aqua", "Zygote", "PartialFunctions"]
