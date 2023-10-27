@@ -152,7 +152,7 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
         else
             for i in 1:length(sol)
                 push!(sol.u_analytic,
-                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[i]))
+                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i]))
             end
         end
     end

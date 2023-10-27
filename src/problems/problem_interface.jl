@@ -1,41 +1,30 @@
-Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
-    if issymbollike(sym)
-        if sym isa AbstractArray
-            return map(s -> prob[s], sym)
-        end
-    end
+SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
+SymbolicIndexingInterface.parameter_values(prob::AbstractSciMLProblem) = prob.p
 
-    if issymbollike(sym)
-        if has_sys(prob.f) && is_indep_sym(prob.f.sys, sym) ||
-           Symbol(sym) == getindepsym(prob)
+Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
+    if symbolic_type(sym) == ScalarSymbolic()
+        if is_variable(prob.f, sym)
+            return prob.u0[variable_index(prob.f, sym)]
+        elseif is_parameter(prob.f, sym)
+        Base.depwarn("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.", :parameter_getindex)
+            return getp(prob, sym)(prob)
+        elseif is_independent_variable(prob.f, sym)
             return getindepsym(prob)
-        elseif has_sys(prob.f) && is_param_sym(prob.f.sys, sym)
-            return prob.p[param_sym_to_index(prob.f.sys, sym)]
-        elseif has_paramsyms(prob.f) && Symbol(sym) in getparamsyms(prob)
-            return prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(prob))]
-        elseif Symbol(sym) in getsyms(prob)
-            return prob.u0[sym_to_index(sym, prob)]
-        elseif has_sys(prob.f) && count('₊', String(Symbol(sym))) == 1   # Handles input like sys.X. 
-            s_names = Symbol.(prob.f.sys.name, :₊, getsyms(prob))
-            p_names = Symbol.(prob.f.sys.name, :₊, getparamsyms(prob))
-            if count(isequal(Symbol(sym)), s_names) == 1
-                return prob.u0[findfirst(isequal(Symbol(sym)), s_names)]
-            elseif count(isequal(Symbol(sym)), p_names) == 1
-                return prob.p[findfirst(isequal(Symbol(sym)), p_names)]
-            end
-        elseif (sym isa Symbol) && has_sys(prob.f)   # Handles input like :X (where X is a state). 
-            s_f = Symbol.(getproperty.(states(prob.f.sys), :f))
-            s_count = count(isequal(sym), s_f)
-            if s_count == 1
-                return prob.u0[findfirst(isequal(sym), s_f)]
-            elseif s_count > 1
-                error("Tried to index with a Symbol (:$(sym)) that could represent several different possible states.")
+        elseif is_observed(prob.f, sym)
+            obs = SymbolicIndexingInterface.observed(prob.f, sym)
+            if is_time_dependent(prob.f)
+                return obs(prob.u0, prob.p, 0.0)
+            else
+                return obs(prob.u0, prob.p)
             end
         else
             error("Invalid indexing of problem: $sym is not a state, parameter, or independent variable")
         end
+    elseif symbolic_type(sym) == ArraySymbolic()
+        return map(s -> prob[s], sym)
     else
-        error("Invalid indexing of problem: $sym is not a symbol")
+        sym isa AbstractArray || error("Invalid indexing of problem")
+        return map(s -> prob[s], sym)
     end
 end
 
@@ -43,51 +32,23 @@ function Base.setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
     ___internal_setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
 end
 function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
-    if has_sys(prob.f)
-        if issymbollike(sym)
-            params = getparamsyms(prob)
-            s = Symbol.(states(prob.f.sys))
-            params = Symbol.(params)
-
-            i = findfirst(isequal(Symbol(sym)), s)
-            if !isnothing(i)
-                prob.u0[i] = val
-                return prob
-            elseif sym isa Symbol  # Handles input like :X.
-                s_f = Symbol.(getproperty.(states(prob.f.sys), :f))
-                if count(isequal(Symbol(sym)), s_f) == 1
-                    i = findfirst(isequal(sym), s_f)
-                    prob.u0[i] = val
-                    return prob
-                elseif count(isequal(Symbol(sym)), s_f) > 1
-                    error("The input symbol $(sym) occurs several times among problem states. Please avoid use Symbol form (:$(sym)).")
-                end
-            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
-                s_names = Symbol.(prob.f.sys.name, :₊, s)
-                if count(isequal(Symbol(sym)), s_names) == 1
-                    i = findfirst(isequal(Symbol(sym)), s_names)
-                    prob.u0[i] = val
-                    return prob
-                end
-            end
-
-            i = findfirst(isequal(Symbol(sym)), params)
-            if !isnothing(i)
-                prob.p[i] = val
-                return prob
-            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
-                p_names = Symbol.(prob.f.sys.name, :₊, params)
-                if count(isequal(Symbol(sym)), p_names) == 1
-                    i = findfirst(isequal(Symbol(sym)), p_names)
-                    prob.p[i] = val
-                    return prob
-                end
-            end
-            error("Invalid indexing of problem: $sym is not a state or parameter, it may be an observed variable.")
+    has_sys(prob.f) || error("Invalid indexing of problem: Problem does not support indexing without a system")
+    if symbolic_type(sym) == ScalarSymbolic()
+        if is_variable(prob.f, sym)
+            prob.u0[variable_index(prob.f, sym)] = val
+        elseif is_parameter(prob.f, sym)
+            Base.depwarn("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.", :parameter_setindex)
+            setp(prob, sym)(prob, val)
         else
-            error("Invalid indexing of problem: $sym is not a symbol")
+            error("Invalid indexing of problem: $sym is not a state or parameter, it may be an observed variable.")
         end
+        return prob
+    elseif symbolic_type(sym) == ArraySymbolic()
+        setindex!.((prob,), val, collect(sym))
+        return prob
     else
-        error("Invalid indexing of problem: Problem does not support indexing without a system")
+        sym isa AbstractArray || error("Invalid indexing of problem")
+        setindex!.((prob,), val, sym)
+        return prob
     end
 end

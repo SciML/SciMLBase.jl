@@ -1,4 +1,4 @@
-using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, Test
+using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, SymbolicIndexingInterface, Test
 using Optimization, OptimizationOptimJL
 
 @parameters t σ ρ β
@@ -53,9 +53,9 @@ sol = solve(prob, Rodas4())
 @test sol[a, 1:5] isa AbstractVector
 @test sol[a, [1, 2, 3]] isa AbstractVector
 
-@test sol[1] isa AbstractVector
-@test sol[1:2] isa AbstractArray
-@test sol[[1, 2]] isa AbstractArray
+@test sol[:, 1] isa AbstractVector
+@test sol[:, 1:2] isa AbstractDiffEqArray
+@test sol[:, [1, 2]] isa AbstractDiffEqArray
 
 @test sol[lorenz1.x] isa Vector
 @test sol[lorenz1.x, 2] isa Float64
@@ -67,9 +67,9 @@ sol = solve(prob, Rodas4())
 @test sol[α] isa Vector
 @test sol[α, 3] isa Float64
 @test length(sol[α, 5:10]) == 6
-@test sol[γ] isa Real
-@test sol[γ] == 2.0
-@test sol[(lorenz1.σ, lorenz1.ρ)] isa Tuple
+@test getp(prob, γ)(sol) isa Real
+@test getp(prob, γ)(sol) == 2.0
+@test getp(prob, (lorenz1.σ, lorenz1.ρ))(sol) isa Tuple
 
 @test sol[[lorenz1.x, lorenz2.x]] isa Vector{Vector{Float64}}
 @test length(sol[[lorenz1.x, lorenz2.x]]) == length(sol)
@@ -132,7 +132,7 @@ sol4 = sol(0.1, idxs = [lorenz1.x, lorenz2.x])
 @test sol4 isa Vector
 @test length(sol4) == 2
 @test first(sol4) isa Real
-@test sol(0.1, idxs = [lorenz1.x, 1]) isa Vector{Real}
+@test sol(0.1, idxs = [lorenz1.x, 1]) isa Vector{<:Real}
 
 sol5 = sol(0.0:1.0:10.0, idxs = lorenz1.x)
 @test sol5.u isa Vector
@@ -201,7 +201,7 @@ D = Differential(t)
 @named fol = ODESystem([D(x) ~ (1 - x) / tau])
 prob = ODEProblem(fol, [x => 0.0], (0.0, 10.0), [tau => 3.0])
 sol = solve(prob, Tsit5())
-@test sol[tau] == 3
+@test getp(fol, tau)(sol) == 3
 
 @testset "OptimizationSolution" begin
     @variables begin
@@ -219,6 +219,6 @@ sol = solve(prob, Tsit5())
     sol = solve(prob, GradientDescent())
     @test sol[x]≈1 atol=1e-3
     @test sol[y]≈1 atol=1e-3
-    @test sol[a] ≈ 1
-    @test sol[b] ≈ 100
+    @test getp(sys, a)(sol) ≈ 1
+    @test getp(sys, b)(sol) ≈ 100
 end

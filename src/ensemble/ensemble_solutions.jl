@@ -40,9 +40,9 @@ end # Vector of some type which is not an array
 function EnsembleSolution(sim::T, elapsedTime,
     converged, stats=nothing) where {T <: AbstractVector{T2}
 } where {T2 <:
-         AbstractArray}
-    EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1, typeof(sim)}(
-        sim,
+         Union{AbstractArray,RecursiveArrayTools.AbstractVectorOfArray}}
+    EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1,
+        typeof(sim)}(sim,
         elapsedTime,
         converged,
         stats)
@@ -209,18 +209,8 @@ end
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s, ::Colon)
-    return [xi[s] for xi in x]
-end
-
-Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution,
-    ::Colon,
-    args::Colon...)
-    return invoke(getindex,
-        Tuple{RecursiveArrayTools.AbstractVectorOfArray, Colon, typeof.(args)...},
-        x,
-        :,
-        args...)
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, ::Union{ScalarSymbolic,ArraySymbolic}, s, ::Colon)
+    return [xi[s] for xi in x.u]
 end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)

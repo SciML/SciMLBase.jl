@@ -23,126 +23,66 @@ end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
 function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T, N, Q, B}
-    observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if has_sys(sol.prob.f)
-        DiffEqArray{T, N, Q, B, typeof(sol.prob.f.sys), typeof(observed), typeof(p)}(A.u,
-            A.t,
-            sol.prob.f.sys,
-            observed,
-            p)
-    else
-        syms = hasproperty(sol.prob.f, :syms) ? sol.prob.f.syms : nothing
-        DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
+    return DiffEqArray(A.u, A.t, p, sol)
+end
+
+# SymbolicIndexingInterface.jl
+const AbstractSolution = Union{AbstractTimeseriesSolution,AbstractNoTimeSolution}
+SymbolicIndexingInterface.symbolic_container(A::AbstractSolution) = A.prob.f
+SymbolicIndexingInterface.parameter_values(A::AbstractSolution) = A.prob.p
+
+SymbolicIndexingInterface.is_independent_variable(::AbstractNoTimeSolution, sym) = false
+
+SymbolicIndexingInterface.independent_variable_symbols(::AbstractNoTimeSolution) = []
+
+function SymbolicIndexingInterface.is_observed(A::AbstractSolution, sym)
+    return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()
+end
+
+function SymbolicIndexingInterface.observed(A::AbstractTimeseriesSolution, sym)
+    (u, p, t) -> getobserved(A)(sym, u, p, t)
+end
+
+function SymbolicIndexingInterface.observed(A::AbstractNoTimeSolution, sym)
+    (u, p) -> getobserved(A)(sym, u, p)
+end
+
+for soltype in [AbstractTimeseriesSolution, AbstractNoTimeSolution]
+    @eval function SymbolicIndexingInterface.observed(A::$(soltype), sym::Symbol)
+        has_sys(A.prob.f) || error("Cannot use observed without system")
+        return SymbolicIndexingInterface.observed(A, getproperty(A.prob.f.sys, sym))
     end
 end
 
-# Symbol Handling
+SymbolicIndexingInterface.is_time_dependent(::AbstractTimeseriesSolution) = true
 
-# For handling ambiguities
-for T in [Int, Colon]
-    @eval Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-        I::$T)
-        A.u[I]
-    end
-end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-    I::Union{Int, AbstractArray{Int},
-        CartesianIndex, Colon, BitArray,
-        AbstractArray{Bool}}...)
-    RecursiveArrayTools.VectorOfArray(A.u)[I...]
-end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-    ::Colon)
-    [A.u[j][i] for j in 1:length(A)]
-end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon,
-    i::Int)
-    A.u[i]
-end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-    II::AbstractArray{Int})
-    [A.u[j][i] for j in II]
-end
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-    ii::CartesianIndex)
-    ti = Tuple(ii)
-    i = last(ti)
-    jj = CartesianIndex(Base.front(ti))
-    return A.u[i][jj]
+SymbolicIndexingInterface.is_time_dependent(::AbstractNoTimeSolution) = false
+
+# TODO make this nontrivial once dynamic state selection works
+SymbolicIndexingInterface.constant_structure(::AbstractSolution) = true
+
+Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon)
+    return A.u[:]
 end
 
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym)
-    if issymbollike(sym)
-        if sym isa AbstractArray
-            return A[collect(sym)]
-        end
-        i = sym_to_index(sym, A)
-    elseif all(issymbollike, sym)
-        if has_sys(A.prob.f) && all(Base.Fix1(is_param_sym, A.prob.f.sys), sym) ||
-           !has_sys(A.prob.f) && has_paramsyms(A.prob.f) &&
-           all(in(getparamsyms(A)), Symbol.(sym))
-            return getindex.((A,), sym)
+Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
+    if symbolic_type(sym) == ScalarSymbolic()
+        if is_variable(A, sym)
+            return A[variable_index(A, sym)]
+        elseif is_parameter(A, sym)
+            Base.depwarn("Indexing with parameters is deprecated. Use `getp(sys, $sym)(sol)` for parameter indexing.", :parameter_getindex)
+            return getp(A, sym)(A)
+        elseif is_observed(A, sym)
+            return SymbolicIndexingInterface.observed(A, sym)(A.u, A.prob.p)
         else
-            return [getindex.((A,), sym, i) for i in eachindex(A)]
+            error("Tried to index solution with a Symbol that was not found in the system.")
         end
+    elseif symbolic_type(sym) == ArraySymbolic()
+        return A[collect(sym)]
     else
-        i = sym
-    end
-
-    if i === nothing
-        if issymbollike(sym)
-            if has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
-               Symbol(sym) == getindepsym(A)
-                return A.t
-            elseif has_sys(A.prob.f) && is_param_sym(A.prob.f.sys, sym)
-                return A.prob.p[param_sym_to_index(A.prob.f.sys, sym)]
-            elseif has_paramsyms(A.prob.f) && Symbol(sym) in getparamsyms(A)
-                return A.prob.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
-            else
-                if (sym isa Symbol) && has_sys(A.prob.f)
-                    if hasproperty(A.prob.f.sys, sym)
-                        return observed(A, getproperty(A.prob.f.sys, sym), :)
-                    else
-                        error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
-                    end
-                else
-                    return observed(A, sym, :)
-                end
-            end
-        else
-            observed(A, sym, :)
-        end
-    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i, :]
-    else
-        error("Invalid indexing of solution")
-    end
-end
-
-Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, sym, args...)
-    if issymbollike(sym)
-        if sym isa AbstractArray
-            return A[collect(sym), args...]
-        end
-        i = sym_to_index(sym, A)
-    elseif all(issymbollike, sym)
-        return reduce(vcat, map(s -> A[s, args...]', sym))
-    else
-        i = sym
-    end
-
-    if i === nothing
-        if issymbollike(sym) && has_sys(A.prob.f) && is_indep_sym(A.prob.f.sys, sym) ||
-           Symbol(sym) == getindepsym(A)
-            A.t[args...]
-        else
-            observed(A, sym, args...)
-        end
-    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i, args...]
-    else
-        error("Invalid indexing of solution")
+        sym isa AbstractArray || error("Invalid indexing of solution")
+        return getindex.((A,), sym)
     end
 end
 
@@ -156,32 +96,6 @@ end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
     getobserved(A).((sym,), A.u, (A.prob.p,), A.t)
-end
-
-Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
-    if issymbollike(sym)
-        if sym isa AbstractArray
-            return A[collect(sym)]
-        end
-        i = sym_to_index(sym, A)
-    elseif all(issymbollike, sym)
-        return reduce(vcat, map(s -> A[s]', sym))
-    else
-        i = sym
-    end
-
-    if i == nothing
-        paramsyms = getparamsyms(A)
-        if issymbollike(sym) && paramsyms !== nothing && Symbol(sym) in paramsyms
-            get_p(A)[findfirst(x -> isequal(x, Symbol(sym)), paramsyms)]
-        else
-            observed(A, sym)
-        end
-    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i]
-    else
-        error("Invalid indexing of solution")
-    end
 end
 
 function observed(A::AbstractNoTimeSolution, sym)
@@ -275,40 +189,40 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     seriestype --> :path
 
     # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if idxs isa Tuple && (issymbollike(idxs[1]) && issymbollike(idxs[2]))
-        val = issymbollike(int_vars[1][2]) ? String(Symbol(int_vars[1][2])) :
+    if idxs isa Tuple && (symbolic_type(idxs[1]) != NotSymbolic() && symbolic_type(idxs[2]) != NotSymbolic())
+        val = symbolic_type(int_vars[1][2]) != NotSymbolic() ? String(Symbol(int_vars[1][2])) :
               strs[int_vars[1][2]]
         xguide --> val
-        val = issymbollike(int_vars[1][3]) ? String(Symbol(int_vars[1][3])) :
+        val = symbolic_type(int_vars[1][3]) != NotSymbolic() ? String(Symbol(int_vars[1][3])) :
               strs[int_vars[1][3]]
         yguide --> val
         if length(idxs) > 2
-            val = issymbollike(int_vars[1][4]) ? String(Symbol(int_vars[1][4])) :
+            val = symbolic_type(int_vars[1][4]) != NotSymbolic() ? String(Symbol(int_vars[1][4])) :
                   strs[int_vars[1][4]]
             zguide --> val
         end
     end
 
-    if (!any(issymbollike, getindex.(int_vars, 1)) &&
+    if (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(int_vars, 1))) &&
         getindex.(int_vars, 1) == zeros(length(int_vars))) ||
-       (!any(issymbollike, getindex.(int_vars, 2)) &&
+       (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(int_vars, 2))) &&
         getindex.(int_vars, 2) == zeros(length(int_vars))) ||
        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(int_vars, 1)) ||
        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(int_vars, 2))
         xguide --> "$(getindepsym_defaultt(sol))"
     end
-    if length(int_vars[1]) >= 3 && ((!any(issymbollike, getindex.(int_vars, 3)) &&
+    if length(int_vars[1]) >= 3 && ((!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(int_vars, 3))) &&
          getindex.(int_vars, 3) == zeros(length(int_vars))) ||
         all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(int_vars, 3)))
         yguide --> "$(getindepsym_defaultt(sol))"
     end
-    if length(int_vars[1]) >= 4 && ((!any(issymbollike, getindex.(int_vars, 4)) &&
+    if length(int_vars[1]) >= 4 && ((!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(int_vars, 4))) &&
          getindex.(int_vars, 4) == zeros(length(int_vars))) ||
         all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(int_vars, 4)))
         zguide --> "$(getindepsym_defaultt(sol))"
     end
 
-    if (!any(issymbollike, getindex.(int_vars, 2)) &&
+    if (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(int_vars, 2))) &&
         getindex.(int_vars, 2) == zeros(length(int_vars))) ||
        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(int_vars, 2))
         if tspan === nothing
@@ -449,7 +363,7 @@ function interpret_vars(vars, sol, syms)
             if var isa Union{Tuple, AbstractArray} #eltype(var) <: Symbol # Some kind of iterable
                 tmp = []
                 for x in var
-                    if issymbollike(x)
+                    if symbolic_type(x) != NotSymbolic()
                         found = sym_to_index(x, syms)
                         push!(tmp,
                             found == nothing && getindepsym_defaultt(sol) == x ? 0 :
@@ -463,15 +377,22 @@ function interpret_vars(vars, sol, syms)
                 else
                     var_int = tmp
                 end
-            elseif issymbollike(var)
+            elseif symbolic_type(var) != NotSymbolic()
                 found = sym_to_index(var, syms)
                 if (var isa Symbol) && has_sys(sol.prob.f)
-                    if hasproperty(sol.prob.f.sys, var)
-                        var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
-                                  something(found, getproperty(sol.prob.f.sys, var))
+                    var_int = if found === nothing && getindepsym_defaultt(sol) == var
+                        0
+                    elseif found !== nothing
+                        found
+                    elseif is_variable(sol, var)
+                        variable_symbols(sol)[variable_index(sol, var)]
+                    elseif is_parameter(sol, var)
+                        parameter_symbols(sol)[parameter_index(sol, var)]
+                    elseif is_independent_variable(sol, var)
+                        independent_variable_symbols(sol)[1]
                     else
                         error("Tried to index solution with a Symbol that was not found in the system using `getproperty`.")
-                    end
+                    end 
                 else
                     var_int = found == nothing && getindepsym_defaultt(sol) == var ? 0 :
                               something(found, var)
@@ -490,8 +411,8 @@ function interpret_vars(vars, sol, syms)
 
     if vars === nothing
         # Default: plot all timeseries
-        if sol[1] isa Union{Tuple, AbstractArray}
-            vars = collect((DEFAULT_PLOT_FUNC, 0, i) for i in plot_indices(sol[1]))
+        if sol[:, 1] isa Union{Tuple, AbstractArray}
+            vars = collect((DEFAULT_PLOT_FUNC, 0, i) for i in plot_indices(sol[:, 1]))
         else
             vars = [(DEFAULT_PLOT_FUNC, 0, 1)]
         end
@@ -535,7 +456,7 @@ function interpret_vars(vars, sol, syms)
                 vars = [(DEFAULT_PLOT_FUNC, vars[end - 1], y) for y in vars[end]]
             else
                 # Both axes are numbers
-                if vars[1] isa Int || issymbollike(vars[1])
+                if vars[1] isa Int || symbolic_type(vars[1]) != NotSymbolic()
                     vars = [tuple(DEFAULT_PLOT_FUNC, vars...)]
                 else
                     vars = [vars]
@@ -553,9 +474,9 @@ end
 function add_labels!(labels, x, dims, sol, strs)
     lys = []
     for j in 3:dims
-        if !issymbollike(x[j]) && x[j] == 0
+        if symbolic_type(x[j]) == NotSymbolic() && x[j] == 0
             push!(lys, "$(getindepsym_defaultt(sol)),")
-        elseif issymbollike(x[j])
+        elseif symbolic_type(x[j]) != NotSymbolic()
             push!(lys, "$(x[j]),")
         else
             if strs !== nothing
@@ -566,22 +487,22 @@ function add_labels!(labels, x, dims, sol, strs)
         end
     end
     lys[end] = chop(lys[end]) # Take off the last comma
-    if !issymbollike(x[2]) && x[2] == 0 && dims == 3
+    if symbolic_type(x[2]) == NotSymbolic() && x[2] == 0 && dims == 3
         # if there are no dependence in syms, then we add "(t)"
         if strs !== nothing && (x[3] isa Int && endswith(strs[x[3]], r"(.*)")) ||
-           (issymbollike(x[3]) && endswith(string(x[3]), r"(.*)"))
+           (symbolic_type(x[3]) != NotSymbolic() && endswith(string(x[3]), r"(.*)"))
             tmp_lab = "$(lys...)"
         else
             tmp_lab = "$(lys...)($(getindepsym_defaultt(sol)))"
         end
     else
-        if strs !== nothing && !issymbollike(x[2]) && x[2] != 0
+        if strs !== nothing && symbolic_type(x[2]) == NotSymbolic() && x[2] != 0
             tmp = strs[x[2]]
             tmp_lab = "($tmp,$(lys...))"
         else
-            if !issymbollike(x[2]) && x[2] == 0
+            if symbolic_type(x[2]) == NotSymbolic() && x[2] == 0
                 tmp_lab = "($(getindepsym_defaultt(sol)),$(lys...))"
-            elseif issymbollike(x[2])
+            elseif symbolic_type(x[2]) != NotSymbolic()
                 tmp_lab = "($(x[2]),$(lys...))"
             else
                 tmp_lab = "(u$(x[2]),$(lys...))"
@@ -627,11 +548,11 @@ function add_analytic_labels!(labels, x, dims, sol, strs)
     end
 end
 
-function u_n(timeseries::AbstractArray, n::Int, sol, plott, plot_timeseries)
+function u_n(timeseries::Union{AbstractArray,RecursiveArrayTools.AbstractVectorOfArray}, n::Int, sol, plott, plot_timeseries)
     # Returns the nth variable from the timeseries, t if n == 0
     if n == 0
         return plott
-    elseif n == 1 && !(sol[1] isa Union{AbstractArray, ArrayPartition})
+    elseif n == 1 && !(sol[:, 1] isa Union{AbstractArray, ArrayPartition})
         return timeseries
     else
         tmp = Vector{eltype(sol[1])}(undef, length(plot_timeseries))
@@ -642,8 +563,8 @@ function u_n(timeseries::AbstractArray, n::Int, sol, plott, plot_timeseries)
     end
 end
 
-function u_n(timeseries::AbstractArray, sym, sol, plott, plot_timeseries)
-    @assert issymbollike(sym)
+function u_n(timeseries::Union{AbstractArray,RecursiveArrayTools.AbstractVectorOfArray}, sym, sol, plott, plot_timeseries)
+    @assert symbolic_type(sym) != NotSymbolic()
     if getindepsym_defaultt(sol) == Symbol(sym)
         return plott
     else

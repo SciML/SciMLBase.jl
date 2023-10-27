@@ -7,7 +7,7 @@ ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10,
     save_everystep = false)
 @test ndims(sim) == 2
-@test length(sim) == 10
+@test length(sim.u) == 10
 @test eltype(sim.u) <: ODESolution
 ts = 0.0:0.1:1.0
 

@@ -1,8 +1,8 @@
 using Test, SciMLBase
 using SciMLBase: __has_jac, __has_tgrad, __has_Wfact, __has_Wfact_t,
-    __has_paramjac, __has_syms, __has_analytic, __has_colorvec, has_jac,
+    __has_paramjac, __has_analytic, __has_colorvec, has_jac,
     has_tgrad,
-    has_Wfact, has_Wfact_t, has_paramjac, has_syms, has_analytic, has_colorvec,
+    has_Wfact, has_Wfact_t, has_paramjac, has_analytic, has_colorvec,
     AbstractDiffEqFunction
 
 struct Foo <: AbstractDiffEqFunction{false}
@@ -11,19 +11,17 @@ struct Foo <: AbstractDiffEqFunction{false}
     Wfact::Any
     Wfact_t::Any
     paramjac::Any
-    syms::Any
     analytic::Any
     colorvec::Any
 end
 
-f = Foo(1, 1, 1, 1, 1, 1, 1, 1)
+f = Foo(1, 1, 1, 1, 1, 1, 1)
 
 @test __has_jac(f)
 @test __has_tgrad(f)
 @test __has_Wfact(f)
 @test __has_Wfact_t(f)
 @test __has_paramjac(f)
-@test __has_syms(f)
 @test __has_analytic(f)
 @test __has_colorvec(f)
 
@@ -32,7 +30,6 @@ f = Foo(1, 1, 1, 1, 1, 1, 1, 1)
 @test has_Wfact(f)
 @test has_Wfact_t(f)
 @test has_paramjac(f)
-@test has_syms(f)
 @test has_analytic(f)
 @test has_colorvec(f)
 
@@ -50,7 +47,6 @@ f2 = Foo2(1, 1, nothing, nothing)
 @test __has_Wfact(f2)
 @test __has_Wfact_t(f2)
 @test !__has_paramjac(f2)
-@test !__has_syms(f2)
 @test !__has_analytic(f2)
 @test !__has_colorvec(f2)
 
@@ -59,6 +55,5 @@ f2 = Foo2(1, 1, nothing, nothing)
 @test !has_Wfact(f2)
 @test !has_Wfact_t(f2)
 @test !has_paramjac(f2)
-@test !has_syms(f2)
 @test !has_analytic(f2)
 @test !has_colorvec(f2)
