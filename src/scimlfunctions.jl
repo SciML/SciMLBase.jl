@@ -2040,20 +2040,20 @@ function described in [Callback Functions](@ref).
 
 ## Keyword Arguments
 
-- `grad(G,u,p)`: the gradient of `f` with respect to `u`. If `f` takes additional arguments
-    then `grad(G,u,p,args...)` should be used.
-- `hess(H,u,p)`: the Hessian of `f` with respect to `u`. If `f` takes additional arguments
-    then `hess(H,u,p,args...)` should be used.
-- `hv(Hv,u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``. If `f` takes additional arguments
-    then `hv(Hv,u,v,p,args...)` should be used.
-- `cons(res,x,p)`: the constraints function, should mutate the passed `res` array
+- `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`. If `f` takes additional arguments
+    then `grad(G,u,p,args...)` or `G=grad(u,p,args...)` should be used.
+- `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`. If `f` takes additional arguments
+    then `hess(H,u,p,args...)` or `H=hess(u,p,args...)` should be used.
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``. If `f` takes additional arguments
+    then `hv(Hv,u,v,p,args...)` or `Hv=hv(u,v,p, args...)` should be used.
+- `cons(res,x,p)` or `res=cons(x,p)` : the constraints function, should mutate the passed `res` array
     with value of the `i`th constraint, evaluated at the current values of variables
     inside the optimization routine. This takes just the function evaluations
     and the equality or inequality assertion is applied by the solver based on the constraint
     bounds passed as `lcons` and `ucons` to [`OptimizationProblem`](@ref), in case of equality
     constraints `lcons` and `ucons` should be passed equal values.
-- `cons_j(res,x,p)`: the Jacobian of the constraints.
-- `cons_h(res,x,p)`: the Hessian of the constraints, provided as
+- `cons_j(J,x,p)` or `J=cons_j(x,p)`: the Jacobian of the constraints.
+- `cons_h(H,x,p)` or `H=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
@@ -2115,7 +2115,6 @@ own dispatches below in the [Automatic Differentiation Construction Choice Recom
 ## iip: In-Place vs Out-Of-Place
 
 For more details on this argument, see the ODEFunction documentation.
-Note that currently Optimization.jl only supports in-place.
 
 ## specialize: Controlling Compilation and Specialization
 
