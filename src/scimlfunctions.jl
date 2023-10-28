@@ -1997,9 +1997,9 @@ end
 TruncatedStacktraces.@truncate_stacktrace IntervalNonlinearFunction 1 2
 
 """
-    OptimizationFunction{iip,AD,F,G,H,HV,C,CJ,CH,HP,CJP,CHP,S,S2,HCV,CJCV,CHCV} <: AbstractOptimizationFunction{iip,specialize}
+    OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2, O, EX, CEX, SYS} <: AbstractOptimizationFunction{iip,specialize}
 
-A representation of an optimization of an objective function `f`, defined by:
+A representation of an objective function `f`, defined by:
 
 ```math
 \\min_{u} f(u,p)
@@ -2014,13 +2014,13 @@ and more. For all cases, `u` is the state and `p` are the parameters.
 OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           grad = nothing, hess = nothing, hv = nothing,
                           cons = nothing, cons_j = nothing, cons_h = nothing,
-                          lag_h = nothing,
-                          hess_prototype = nothing, cons_jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+                          hess_prototype = nothing,
+                          cons_jac_prototype = nothing,
                           cons_hess_prototype = nothing,
-                          lag_hess_prototype = nothing,
                           syms = __has_syms(f) ? f.syms : nothing,
                           paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
                           observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED_NO_TIME,
+                          lag_h = nothing,
                           hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                           cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2030,32 +2030,34 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 
 ## Positional Arguments
 
-- `f(u,p)`: the function to optimize. `u` are the state variables and `p` are the hyperparameters of the optimization.
-  This function should return a scalar.
-- `adtype`: see the section "Defining Optimization Functions via AD"
+- `f(u,p,args...)`: the function to optimize. `u` are the optimization variables and `p` are parameters used in definition of
+the objective, even if no such parameters are used in the objective it should be an argument in the function. This can also take
+any additonal arguments that are relevant to the objective function, for example minibatches used in machine learning,
+take a look at the minibatching tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/). This should return
+a scalar, the loss value, as the first return output and if any additional outputs are returned, they will be passed to the `callback`
+function described in [Callback Functions](@ref).
+- `adtype`: see the section [Defining Optimization Functions via AD](@ref)
 
 ## Keyword Arguments
 
-- `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`
-- `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`
-- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``.
-- `cons(res,x,p)` or `cons(x,p)` : the constraints function, should mutate or return a vector
+- `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`. If `f` takes additional arguments
+    then `grad(G,u,p,args...)` or `G=grad(u,p,args...)` should be used.
+- `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`. If `f` takes additional arguments
+    then `hess(H,u,p,args...)` or `H=hess(u,p,args...)` should be used.
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``. If `f` takes additional arguments
+    then `hv(Hv,u,v,p,args...)` or `Hv=hv(u,v,p, args...)` should be used.
+- `cons(res,x,p)` or `res=cons(x,p)` : the constraints function, should mutate the passed `res` array
     with value of the `i`th constraint, evaluated at the current values of variables
     inside the optimization routine. This takes just the function evaluations
     and the equality or inequality assertion is applied by the solver based on the constraint
     bounds passed as `lcons` and `ucons` to [`OptimizationProblem`](@ref), in case of equality
     constraints `lcons` and `ucons` should be passed equal values.
-- `cons_j(res,x,p)` or `res=cons_j(x,p)`: the Jacobian of the constraints.
-- `cons_h(res,x,p)` or `res=cons_h(x,p)`: the Hessian of the constraints, provided as
-   an array of Hessians, with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
-- `lag_h(res,x,sigma,mu,p)` or `res=lag_h(x,sigma,mu,p)`: the Hessian of the Lagrangian,
-    where `sigma` is a multiplier of the cost function and `mu` are the Lagrange multipliers
-    multiplying the constraints. This can be provided instead of `hess` and `cons_h`
-    to solvers that directly use the Hessian of the Lagrangian.
-- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``df/dp``.
+- `cons_j(J,x,p)` or `J=cons_j(x,p)`: the Jacobian of the constraints.
+- `cons_h(H,x,p)` or `H=cons_h(x,p)`: the Hessian of the constraints, provided as
+   an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
-  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  as the prototype and optimization solvers will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Hessian.
   The default is `nothing`, which means a dense Hessian.
 - `cons_jac_prototype`: a prototype matrix matching the type that matches the constraint Jacobian.
@@ -2064,12 +2066,10 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
   This is defined as an array of matrices, where `hess[i]` is the Hessian w.r.t. the `i`th output.
   For example, if the Hessian is sparse, then `hess` is a `Vector{SparseMatrixCSC}`.
   The default is `nothing`, which means a dense constraint Hessian.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
+- `lag_h(res,x,sigma,mu,p)` or `res=lag_h(x,sigma,mu,p)`: the Hessian of the Lagrangian,
+  where `sigma` is a multiplier of the cost function and `mu` are the Lagrange multipliers
+  multiplying the constraints. This can be provided instead of `hess` and `cons_h`
+  to solvers that directly use the Hessian of the Lagrangian.
 - `hess_colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `hess_prototype`. This specializes the Hessian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -2081,23 +2081,36 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 - `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for
   the sparsity pattern of the `cons_hess_prototype`.
 
-## Defining Optimization Functions Via AD
+When [Symbolic Problem Building with ModelingToolkit](@ref) interface is used the following arguments are also relevant:
+
+- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
+  example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
+  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
+- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
+  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
+  naming to the values, allowing `sol[:a]` in the solution.
+- `observed`: an algebraic combination of optimization variables that is of interest to the user
+    which will be available in the solution. This can be single or multiple expressions.
+- `sys`: field that stores the `OptimizationSystem`.
+
+## Defining Optimization Functions via AD
 
 While using the keyword arguments gives the user control over defining
-all the possible functions, the simplest way to handle the generation
-of an `OptimizationFunction` is by specifying an AD type. By doing so,
-this will automatically fill in all the extra functions. For example,
+all of the possible functions, the simplest way to handle the generation
+of an `OptimizationFunction` is by specifying the `ADtype` which lets the user choose the
+Automatic Differentiation backend to use for automatically filling in all of the extra functions.
+For example,
 
 ```julia
-OptimizationFunction(f,AutoZygote())
+OptimizationFunction(f,AutoForwardDiff())
 ```
 
-will use [Zygote.jl](https://docs.sciml.ai/Zygote.jl/stable/) to define
+will use [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl) to define
 all of the necessary functions. Note that if any functions are defined
 directly, the auto-AD definition does not overwrite the user's choice.
 
 Each of the AD-based constructors are documented separately via their
-own dispatches.
+own dispatches below in the [Automatic Differentiation Construction Choice Recommendations](@ref) section.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -2111,10 +2124,9 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, LHP, S, S2,
-    O, HCV,
-    CJCV,
-    CHCV, LHCV, EX, CEX, SYS} <: AbstractOptimizationFunction{iip}
+struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, S, S2, O,
+                            EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
+       AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
@@ -2123,21 +2135,21 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, LH, HP, CJP, CHP, L
     cons::C
     cons_j::CJ
     cons_h::CH
-    lag_h::LH
     hess_prototype::HP
     cons_jac_prototype::CJP
     cons_hess_prototype::CHP
-    lag_hess_prototype::LHP
     syms::S
     paramsyms::S2
     observed::O
+    expr::EX
+    cons_expr::CEX
+    sys::SYS
+    lag_h::LH
+    lag_hess_prototype::LHP
     hess_colorvec::HCV
     cons_jac_colorvec::CJCV
     cons_hess_colorvec::CHCV
     lag_hess_colorvec::LHCV
-    expr::EX
-    cons_expr::CEX
-    sys::SYS
 end
 
 TruncatedStacktraces.@truncate_stacktrace OptimizationFunction 1 2
@@ -3922,45 +3934,42 @@ OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; k
 
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
     grad = nothing, hess = nothing, hv = nothing,
-    cons = nothing, cons_j = nothing, cons_h = nothing,
-    lag_h = nothing,
-    hess_prototype = nothing,
-    cons_jac_prototype = __has_jac_prototype(f) ?
-                         f.jac_prototype : nothing,
-    cons_hess_prototype = nothing,
-    lag_hess_prototype = nothing,
-    syms = __has_syms(f) ? f.syms : nothing,
-    paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
-    observed = __has_observed(f) ? f.observed :
-               DEFAULT_OBSERVED_NO_TIME,
-    hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-    cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
-                        nothing,
-    cons_hess_colorvec = __has_colorvec(f) ? f.colorvec :
-                         nothing,
-    lag_hess_colorvec = nothing,
-    expr = nothing, cons_expr = nothing,
-    sys = __has_sys(f) ? f.sys : nothing) where {iip}
-    _f = prepare_function(f)
-    isinplace(_f, 2; has_two_dispatches = false, isoptimization = true)
-    OptimizationFunction{iip, typeof(adtype), typeof(_f), typeof(grad), typeof(hess),
-        typeof(hv),
-        typeof(cons), typeof(cons_j), typeof(cons_h), typeof(lag_h),
-        typeof(hess_prototype),
-        typeof(cons_jac_prototype), typeof(cons_hess_prototype),
-        typeof(lag_hess_prototype),
-        typeof(syms), typeof(paramsyms), typeof(observed),
-        typeof(hess_colorvec), typeof(cons_jac_colorvec),
-        typeof(cons_hess_colorvec), typeof(lag_hess_colorvec),
-        typeof(expr), typeof(cons_expr),
-        typeof(sys)}(_f, adtype, grad, hess,
-        hv, cons, cons_j, cons_h, lag_h,
-        hess_prototype, cons_jac_prototype,
-        cons_hess_prototype, lag_hess_prototype, syms,
-        paramsyms, observed, hess_colorvec,
-        cons_jac_colorvec, cons_hess_colorvec,
-        lag_hess_colorvec, expr,
-        cons_expr, sys)
+                                   cons = nothing, cons_j = nothing, cons_h = nothing,
+                                   hess_prototype = nothing,
+                                   cons_jac_prototype = __has_jac_prototype(f) ?
+                                                        f.jac_prototype : nothing,
+                                   cons_hess_prototype = nothing,
+                                   syms = __has_syms(f) ? f.syms : nothing,
+                                   paramsyms = __has_paramsyms(f) ? f.paramsyms : nothing,
+                                   observed = __has_observed(f) ? f.observed :
+                                              DEFAULT_OBSERVED_NO_TIME,
+                                   expr = nothing, cons_expr = nothing,
+                                   sys = __has_sys(f) ? f.sys : nothing,
+                                   lag_h = nothing, lag_hess_prototype = nothing,
+                                   hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                   cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
+                                                       nothing,
+                                   cons_hess_colorvec = __has_colorvec(f) ? f.colorvec :
+                                                        nothing,
+                                   lag_hess_colorvec = nothing) where {iip}
+    isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
+    OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
+                         typeof(hv),
+                         typeof(cons), typeof(cons_j), typeof(cons_h),
+                         typeof(hess_prototype),
+                         typeof(cons_jac_prototype), typeof(cons_hess_prototype),
+                         typeof(syms), typeof(paramsyms), typeof(observed),
+                         typeof(expr), typeof(cons_expr), typeof(sys), typeof(lag_h),
+                         typeof(lag_hess_prototype), typeof(hess_colorvec),
+                         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
+                         typeof(lag_hess_colorvec)
+                         }(f, adtype, grad, hess,
+                           hv, cons, cons_j, cons_h,
+                           hess_prototype, cons_jac_prototype,
+                           cons_hess_prototype, syms,
+                           paramsyms, observed, expr, cons_expr, sys,
+                           lag_h, lag_hess_prototype, hess_colorvec, cons_jac_colorvec,
+                           cons_hess_colorvec, lag_hess_colorvec)
 end
 
 function BVPFunction{iip, specialize, twopoint}(f, bc;
