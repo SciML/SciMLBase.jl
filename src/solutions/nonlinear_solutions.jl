@@ -17,6 +17,20 @@ mutable struct NLStats
     nsteps::Int
 end
 
+function Base.show(io::IO, ::MIME"text/plain", s::NLStats)
+    println(io, summary(s))
+    @printf io "%-50s %-d\n" "Number of function evaluations:" s.nf
+    @printf io "%-50s %-d\n" "Number of Jacobians created:" s.njacs
+    @printf io "%-50s %-d\n" "Number of factorizations:" s.nfactors
+    @printf io "%-50s %-d\n" "Number of linear solves:" s.nsolve
+    @printf io "%-50s %-d" "Number of nonlinear solver iterations:" s.nsteps
+end
+
+function Base.merge(s1::NLStats, s2::NLStats)
+    NLStats(s1.nf + s2.nf, s1.njacs + s2.njacs, s1.nfactors + s2.nfactors,
+        s1.nsolve + s2.nsolve, s1.nsteps + s2.nsteps)
+end
+
 """
 $(TYPEDEF)
 

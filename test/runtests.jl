@@ -75,6 +75,9 @@ end
         @time @safetestset "solving Ensembles with multiple problems" begin
             include("downstream/ensemble_multi_prob.jl")
         end
+        @time @safetestset "Ensemble solution statistics" begin
+            include("downstream/ensemble_stats.jl")
+        end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/symbol_indexing.jl")
         end

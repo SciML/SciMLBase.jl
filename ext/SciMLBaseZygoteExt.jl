@@ -2,7 +2,8 @@ module SciMLBaseZygoteExt
 
 using Zygote: pullback
 using ZygoteRules: @adjoint
-using SciMLBase: ODESolution, issymbollike, sym_to_index, remake, getobserved
+import ZygoteRules
+using SciMLBase: EnsembleSolution, ODESolution, issymbollike, sym_to_index, remake, getobserved
 
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
@@ -53,6 +54,27 @@ end
         (Δ′, nothing, nothing)
     end
     VA[sym, j], ODESolution_getindex_pullback
+end
+
+ZygoteRules.@adjoint function EnsembleSolution(sim, time, converged, stats)
+    out = EnsembleSolution(sim, time, converged)
+    function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
+        arrarr = [[p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
+                   for j in 1:size(p̄)[end - 1]] for i in 1:size(p̄)[end]]
+        (EnsembleSolution(arrarr, 0.0, true), nothing, nothing, nothing)
+    end
+    function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
+        (EnsembleSolution(p̄, 0.0, true), nothing, nothing, nothing)
+    end
+    function EnsembleSolution_adjoint(p̄::EnsembleSolution)
+        (p̄, nothing, nothing, nothing)
+    end
+    out, EnsembleSolution_adjoint
+end
+
+ZygoteRules.@adjoint function ZygoteRules.literal_getproperty(sim::EnsembleSolution,
+    ::Val{:u})
+    sim.u, p̄ -> (EnsembleSolution(p̄, 0.0, true),)
 end
 
 end
