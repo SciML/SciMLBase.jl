@@ -493,6 +493,19 @@ function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
     IntegralProblem(g, args...; kwargs...)
 end
 
+function Base.getproperty(prob::IntegralProblem, name::Symbol)
+    if name === :lb
+        domain = getfield(prob, :domain)
+        lb, ub = domain
+        return lb
+    elseif name === :ub
+        domain = getfield(prob, :domain)
+        lb, ub = domain
+        return ub
+    end
+    return Base.getfield(prob, name)
+end
+
 struct QuadratureProblem end
 @deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
 
