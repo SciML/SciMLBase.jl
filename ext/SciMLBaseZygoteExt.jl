@@ -56,7 +56,7 @@ end
     VA[sym, j], ODESolution_getindex_pullback
 end
 
-ZygoteRules.@adjoint function DiffEqBase.EnsembleSolution(sim, time, converged, stats)
+ZygoteRules.@adjoint function EnsembleSolution(sim, time, converged, stats)
     out = EnsembleSolution(sim, time, converged)
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
         arrarr = [[p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
