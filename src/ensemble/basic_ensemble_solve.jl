@@ -57,10 +57,10 @@ function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}}
 end
 
 function __solve(prob::AbstractEnsembleProblem,
-    alg::Union{AbstractDEAlgorithm, Nothing},
+    alg::A,
     ensemblealg::BasicEnsembleAlgorithm;
     trajectories, batch_size = trajectories,
-    pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...)
+    pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...) where {A}
     num_batches = trajectories ÷ batch_size
     num_batches < 1 &&
         error("trajectories ÷ batch_size cannot be less than 1, got $num_batches")
