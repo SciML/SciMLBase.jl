@@ -78,6 +78,12 @@ end
         @time @safetestset "Ensemble solution statistics" begin
             include("downstream/ensemble_stats.jl")
         end
+        @time @safetestset "Ensemble Optimization and Nonlinear problems" begin
+            include("downstream/ensemble_nondes.jl")
+        end
+        @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
+            include("downstream/ensemble_diffeq.jl")
+        end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/symbol_indexing.jl")
         end
