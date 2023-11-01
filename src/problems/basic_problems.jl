@@ -414,8 +414,10 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 ### Constructors
 
 ```
-IntegralProblem(f,domain,p=NullParameters(); kwargs...)
-IntegralProblem(f,lb,ub,p=NullParameters(); kwargs...)
+IntegralProblem(f::AbstractIntegralFunction,domain,p=NullParameters(); kwargs...)
+IntegralProblem(f::AbstractIntegralFunction,lb,ub,p=NullParameters(); kwargs...)
+IntegralProblem(f,domain,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
+IntegralProblem(f,lb,ub,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
 ```
 
 - f: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
@@ -424,6 +426,10 @@ IntegralProblem(f,lb,ub,p=NullParameters(); kwargs...)
 - lb: Either a number or vector of lower bounds.
 - ub: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
+- nout: DEPRECATED (see `IntegralFunction`): length of the vector output of the integrand
+  (by default the integrand is assumed to be scalar)
+- batch: DEPRECATED (see `BatchIntegralFunction`): number of points the integrand can
+  evaluate simultaneously (by default there is no batching)
 - kwargs: Keyword arguments copied to the solvers.
 
 Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
@@ -461,7 +467,7 @@ function IntegralProblem(f::AbstractIntegralFunction,
     ub::B,
     p = NullParameters();
     kwargs...) where {B}
-    IntegralProblem(f, (lb, ub), p; kwargs...)
+    IntegralProblem{isinplace(f)}(f, (lb, ub), p; kwargs...)
 end
 
 function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
@@ -469,22 +475,35 @@ function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
     end
 
-    max_batch = batch === nothing ? 0 : batch
     g = if isinplace(f, 3)
-        output_prototype = Vector{Float64}(undef, nout === nothing ? 1 : nout)
-        if max_batch == 0
+        if batch === nothing
+            output_prototype = nout === nothing ? Array{Float64, 0}(undef) : Vector{Float64}(undef, nout)
             IntegralFunction(f, output_prototype)
         else
-            BatchIntegralFunction(f, output_prototype, max_batch=max_batch)
+            output_prototype = nout === nothing ? Float64[] : Matrix{Float64}(undef, nout, 0)
+            BatchIntegralFunction(f, output_prototype, max_batch=batch)
         end
     else
-        if max_batch == 0
+        if batch === nothing
             IntegralFunction(f)
         else
-            BatchIntegralFunction(f, max_batch=max_batch)
+            BatchIntegralFunction(f, max_batch=batch)
         end
     end
     IntegralProblem(g, args...; kwargs...)
+end
+
+function Base.getproperty(prob::IntegralProblem, name::Symbol)
+    if name === :lb
+        domain = getfield(prob, :domain)
+        lb, ub = domain
+        return lb
+    elseif name === :ub
+        domain = getfield(prob, :domain)
+        lb, ub = domain
+        return ub
+    end
+    return Base.getfield(prob, name)
 end
 
 struct QuadratureProblem end

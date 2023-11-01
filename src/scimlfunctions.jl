@@ -2361,8 +2361,8 @@ BatchIntegralFunction{iip,specialize}(f, [integrand_prototype];
                                      max_batch=typemax(Int))
 ```
 Note that only `f` is required, and in the case of inplace integrands a mutable container
-`integrand_prototype` to store the result of the integrand of one integrand, without a last
-"batching" dimension.
+`integrand_prototype` to store a batch of integrand evaluations, with a last "batching"
+dimension.
 
 The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
 same time so that memory usage is controlled.
@@ -2375,12 +2375,13 @@ assumed to be out-of-place.
 Out-of-place functions must be of the form ``y = f(u,p)`` and in-place functions of the form
 ``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
 arrays), in-place functions must provide a container `integrand_prototype` of the right type
-for a single integrand evaluation. The integration algorithm will then allocate a ``y``
-array with the same element type as `integrand_prototype` and an additional last "batching"
-dimension to store multiple integrand evaluations. In the out-of-place case, the algorithm
-may infer the type of ``y`` by passing `f` an empty array of input points. This means ``y``
-is a vector in the out-of-place case, or a matrix/array in the in-place case. The number of
-batched points may vary between subsequent calls to `f`. When in-place forms are used,
+for ``y``. The only assumption that is enforced is that the last axes of `the `y`` and ``u``
+arrays are the same length and correspond to distinct batched points. The algorithm will
+then allocate arrays `similar` to ``y`` to pass to the integrand. Since the algorithm may
+vary the number of points to batch, the length of the batching dimension of ``y`` may vary
+between subsequent calls to `f`. To reduce allocations, views of ``y`` may also be passed to
+the integrand. In the out-of-place case, the algorithm may infer the type
+of ``y`` by passing `f` an empty array of input points. When in-place forms are used,
 in-place array operations may be used by algorithms to reduce allocations. If
 `integrand_prototype` is not provided, `f` is assumed to be out-of-place.
 
