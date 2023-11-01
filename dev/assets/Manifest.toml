@@ -1065,7 +1065,7 @@ version = "0.6.42"
 deps = ["ADTypes", "ArrayInterface", "ChainRulesCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FillArrays", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables", "TruncatedStacktraces", "ZygoteRules"]
 path = "/home/runner/work/SciMLBase.jl/SciMLBase.jl"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.5.0"
+version = "2.6.0"
 
     [deps.SciMLBase.extensions]
     SciMLBasePartialFunctionsExt = "PartialFunctions"
