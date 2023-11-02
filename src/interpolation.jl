@@ -81,7 +81,7 @@ end
     continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
-    typeof(id) <: HermiteInterpolation && (du = id.du)
+    id isa HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
     idx = sortperm(tvals, rev = tdir < 0)
     i = 2 # Start the search thinking it's between t[1] and t[2]
@@ -91,9 +91,9 @@ end
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tvals[idx[1]] < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
-    if typeof(idxs) <: Number
+    if idxs isa Number
         vals = Vector{eltype(first(u))}(undef, length(tvals))
-    elseif typeof(idxs) <: AbstractVector
+    elseif idxs isa AbstractVector
         vals = Vector{Vector{eltype(first(u))}}(undef, length(tvals))
     else
         vals = Vector{eltype(u)}(undef, length(tvals))
@@ -101,7 +101,7 @@ end
     for j in idx
         tval = tvals[j]
         i = searchsortedfirst(@view(t[i:end]), tval, rev = tdir < 0) + i - 1 # It's in the interval t[i-1] to t[i]
-        avoid_constant_ends = deriv != Val{0} #|| typeof(tval) <: ForwardDiff.Dual
+        avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
         avoid_constant_ends && i == 1 && (i += 1)
         if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
             if idxs === nothing
@@ -118,11 +118,11 @@ end
                 vals[j] = u[k][idxs]
             end
         else
-            typeof(id) <: SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
+            id isa SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
             dt = t[i] - t[i - 1]
             Θ = (tval - t[i - 1]) / dt
             idxs_internal = idxs
-            if typeof(id) <: HermiteInterpolation
+            if id isa HermiteInterpolation
                 vals[j] = interpolant(Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i],
                     idxs_internal, deriv)
             else
@@ -143,7 +143,7 @@ times t (sorted), with values u and derivatives ks
     continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
-    typeof(id) <: HermiteInterpolation && (du = id.du)
+    id isa HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
     idx = sortperm(tvals, rev = tdir < 0)
     i = 2 # Start the search thinking it's between t[1] and t[2]
@@ -156,7 +156,7 @@ times t (sorted), with values u and derivatives ks
     for j in idx
         tval = tvals[j]
         i = searchsortedfirst(@view(t[i:end]), tval, rev = tdir < 0) + i - 1 # It's in the interval t[i-1] to t[i]
-        avoid_constant_ends = deriv != Val{0} #|| typeof(tval) <: ForwardDiff.Dual
+        avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
         avoid_constant_ends && i == 1 && (i += 1)
         if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
             if idxs === nothing
@@ -173,19 +173,19 @@ times t (sorted), with values u and derivatives ks
                 vals[j] = u[k][idxs]
             end
         else
-            typeof(id) <: SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
+            id isa SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
             dt = t[i] - t[i - 1]
             Θ = (tval - t[i - 1]) / dt
             idxs_internal = idxs
             if eltype(u) <: Union{AbstractArray, ArrayPartition}
-                if typeof(id) <: HermiteInterpolation
+                if id isa HermiteInterpolation
                     interpolant!(vals[j], Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i],
                         idxs_internal, deriv)
                 else
                     interpolant!(vals[j], Θ, id, dt, u[i - 1], u[i], idxs_internal, deriv)
                 end
             else
-                if typeof(id) <: HermiteInterpolation
+                if id isa HermiteInterpolation
                     vals[j] = interpolant(Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i],
                         idxs_internal, deriv)
                 else
@@ -206,7 +206,7 @@ times t (sorted), with values u and derivatives ks
     continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
-    typeof(id) <: HermiteInterpolation && (du = id.du)
+    id isa HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
     t[end] == t[1] && tval != t[end] &&
         error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
@@ -215,7 +215,7 @@ times t (sorted), with values u and derivatives ks
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     @inbounds i = searchsortedfirst(t, tval, rev = tdir < 0) # It's in the interval t[i-1] to t[i]
-    avoid_constant_ends = deriv != Val{0} #|| typeof(tval) <: ForwardDiff.Dual
+    avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
     avoid_constant_ends && i == 1 && (i += 1)
     if !avoid_constant_ends && t[i] == tval
         lasti = lastindex(t)
@@ -232,11 +232,11 @@ times t (sorted), with values u and derivatives ks
             val = u[i - 1][idxs]
         end
     else
-        typeof(id) <: SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
+        id isa SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
         dt = t[i] - t[i - 1]
         Θ = (tval - t[i - 1]) / dt
         idxs_internal = idxs
-        if typeof(id) <: HermiteInterpolation
+        if id isa HermiteInterpolation
             val = interpolant(Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i], idxs_internal,
                 deriv)
         else
@@ -256,7 +256,7 @@ times t (sorted), with values u and derivatives ks
     continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
-    typeof(id) <: HermiteInterpolation && (du = id.du)
+    id isa HermiteInterpolation && (du = id.du)
     tdir = sign(t[end] - t[1])
     t[end] == t[1] && tval != t[end] &&
         error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
@@ -265,7 +265,7 @@ times t (sorted), with values u and derivatives ks
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     @inbounds i = searchsortedfirst(t, tval, rev = tdir < 0) # It's in the interval t[i-1] to t[i]
-    avoid_constant_ends = deriv != Val{0} #|| typeof(tval) <: ForwardDiff.Dual
+    avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
     avoid_constant_ends && i == 1 && (i += 1)
     if !avoid_constant_ends && t[i] == tval
         lasti = lastindex(t)
@@ -282,11 +282,11 @@ times t (sorted), with values u and derivatives ks
             copy!(out, u[i - 1][idxs])
         end
     else
-        typeof(id) <: SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
+        id isa SensitivityInterpolation && error(SENSITIVITY_INTERP_MESSAGE)
         dt = t[i] - t[i - 1]
         Θ = (tval - t[i - 1]) / dt
         idxs_internal = idxs
-        if typeof(id) <: HermiteInterpolation
+        if id isa HermiteInterpolation
             interpolant!(out, Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i], idxs_internal,
                 deriv)
         else

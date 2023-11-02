@@ -37,7 +37,7 @@ function (L::AffineDiffEqOperator)(u, p, t::Number)
     update_coefficients!(L, u, p, t)
     du = sum(A * u for A in L.As)
     for B in L.Bs
-        if typeof(B) <: Union{Number, AbstractArray}
+        if B isa Union{Number, AbstractArray}
             du .+= B
         else
             du .+= B(t)
@@ -58,7 +58,7 @@ function (L::AffineDiffEqOperator)(du, u, p, t::Number)
         du .+= du_cache
     end
     for B in L.Bs
-        if typeof(B) <: Union{Number, AbstractArray}
+        if B isa Union{Number, AbstractArray}
             du .+= B
         else
             B(du_cache, t)

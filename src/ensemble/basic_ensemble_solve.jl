@@ -98,7 +98,7 @@ function batch_func(i, prob, alg; kwargs...)
     new_prob = prob.prob_func(_prob, i, iter)
     rerun = true
     x = prob.output_func(solve(new_prob, alg; kwargs...), i)
-    if !(typeof(x) <: Tuple)
+    if !(x isa Tuple)
         rerun_warn()
         _x = (x, false)
     else
@@ -110,7 +110,7 @@ function batch_func(i, prob, alg; kwargs...)
         _prob = prob.safetycopy ? deepcopy(prob.prob) : prob.prob
         new_prob = prob.prob_func(_prob, i, iter)
         x = prob.output_func(solve(new_prob, alg; kwargs...), i)
-        if !(typeof(x) <: Tuple)
+        if !(x isa Tuple)
             rerun_warn()
             _x = (x, false)
         else
@@ -163,7 +163,7 @@ function solve_batch(prob, alg, ensemblealg::EnsembleThreads, II, pmap_batch_siz
         return solve_batch(prob, alg, EnsembleSerial(), II, pmap_batch_size; kwargs...)
     end
 
-    if typeof(prob.prob) <: AbstractJumpProblem && length(II) != 1
+    if prob.prob isa AbstractJumpProblem && length(II) != 1
         probs = [deepcopy(prob.prob) for i in 1:nthreads]
     else
         probs = prob.prob

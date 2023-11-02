@@ -2475,7 +2475,7 @@ function ODEFunction{iip, specialize}(f;
     sys = __has_sys(f) ? f.sys : nothing) where {iip,
     specialize,
 }
-    if mass_matrix === I && typeof(f) <: Tuple
+    if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
@@ -2690,7 +2690,7 @@ end
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
-    if !(typeof(f1) <: AbstractSciMLOperator || typeof(f1.f) <: AbstractSciMLOperator) &&
+    if !(f1 isa AbstractSciMLOperator || f1.f isa AbstractSciMLOperator) &&
        isinplace(f1) != isinplace(f2)
         throw(NonconformingFunctionsError(["f2"]))
     end
@@ -2772,7 +2772,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
     jvp, vjp, jac_prototype, sparsity, Wfact,
     Wfact_t, paramjac, syms, indepsym, paramsyms,
     observed, colorvec, sys) where {iip}
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : ODEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : ODEFunction(f1)
     f2 = ODEFunction(f2)
 
     if isinplace(f1) != isinplace(f2)
@@ -3132,7 +3132,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
     jvp, vjp,
     jac_prototype, Wfact, Wfact_t, paramjac, observed,
     syms, indepsym, paramsyms, colorvec, sys)
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     SplitFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
@@ -3218,7 +3218,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
     jac_prototype, Wfact, Wfact_t, paramjac,
     syms, indepsym, paramsyms, observed, colorvec,
     sys)
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     DynamicalSDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
         typeof(mass_matrix),
@@ -3578,7 +3578,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
     paramjac,
     syms, indepsym, paramsyms, observed,
     colorvec) where {iip}
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : DDEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : DDEFunction(f1)
     f2 = DDEFunction(f2)
     DynamicalDDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
         typeof(mass_matrix),
@@ -3780,7 +3780,7 @@ function NonlinearFunction{iip, specialize}(f;
     resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing) where {
     iip, specialize}
 
-    if mass_matrix === I && typeof(f) <: Tuple
+    if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
@@ -3965,7 +3965,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize, twopoint}
-    if mass_matrix === I && typeof(f) <: Tuple
+    if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
