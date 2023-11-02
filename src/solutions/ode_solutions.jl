@@ -261,7 +261,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
         N = length((size(prob.u0)..., length(u)))
     end
 
-    if typeof(prob.f) <: Tuple
+    if prob.f isa Tuple
         f = prob.f[1]
     else
         f = prob.f
@@ -419,9 +419,9 @@ end
 function sensitivity_solution(sol::ODESolution, u, t)
     T = eltype(eltype(u))
     N = length((size(sol.prob.u0)..., length(u)))
-    interp = if typeof(sol.interp) <: LinearInterpolation
+    interp = if sol.interp isa LinearInterpolation
         LinearInterpolation(t, u)
-    elseif typeof(sol.interp) <: ConstantInterpolation
+    elseif sol.interp isa ConstantInterpolation
         ConstantInterpolation(t, u)
     else
         SensitivityInterpolation(t, u)

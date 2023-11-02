@@ -750,7 +750,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
 @recipe function f(integrator::DEIntegrator;
     denseplot = (integrator.opts.calck ||
-                 typeof(integrator) <: AbstractSDEIntegrator) &&
+                 integrator isa AbstractSDEIntegrator) &&
                 integrator.iter > 0,
     plotdensity = 10,
     plot_analytic = false, vars = nothing, idxs = nothing)
@@ -797,7 +797,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
             else # just get values
                 if x[j] == 0
                     push!(plot_vecs[j - 1], integrator.t)
-                elseif x[j] == 1 && !(typeof(integrator.u) <: AbstractArray)
+                elseif x[j] == 1 && !(integrator.u isa AbstractArray)
                     push!(plot_vecs[j - 1], integrator.u)
                 else
                     push!(plot_vecs[j - 1], integrator.u[x[j]])
@@ -816,7 +816,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
                 else # Just get values
                     if x[j] == 0
                         push!(plot_vecs[j], integrator.t)
-                    elseif x[j] == 1 && !(typeof(integrator.u) <: AbstractArray)
+                    elseif x[j] == 1 && !(integrator.u isa AbstractArray)
                         push!(plot_vecs[j],
                             integrator.sol.prob.f(Val{:analytic}, integrator.t,
                                 integrator.sol[1]))
@@ -840,7 +840,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
     end
 
     # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if typeof(idxs) <: Tuple && (typeof(idxs[1]) == Symbol && typeof(idxs[2]) == Symbol)
+    if idxs isa Tuple && (typeof(idxs[1]) == Symbol && typeof(idxs[2]) == Symbol)
         xlabel --> idxs[1]
         ylabel --> idxs[2]
         if length(idxs) > 2

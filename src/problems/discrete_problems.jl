@@ -147,7 +147,7 @@ Define a discrete problem with the identity map.
 """
 function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan::Tuple,
     p = NullParameters(); kwargs...)
-    iip = typeof(u0) <: AbstractArray
+    iip = u0 isa AbstractArray
     if iip
         f = DISCRETE_INPLACE_DEFAULT
     else

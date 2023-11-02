@@ -7,7 +7,7 @@ get_timestep(sim, i) = (getindex(sol, i) for sol in sim)
 get_timepoint(sim, t) = (sol(t) for sol in sim)
 function componentwise_vectors_timestep(sim, i)
     arr = [get_timestep(sim, i)...]
-    if typeof(arr[1]) <: AbstractArray
+    if arr[1] isa AbstractArray
         return vecarr_to_vectors(VectorOfArray(arr))
     else
         return arr
@@ -15,7 +15,7 @@ function componentwise_vectors_timestep(sim, i)
 end
 function componentwise_vectors_timepoint(sim, t)
     arr = [get_timepoint(sim, t)...]
-    if typeof(arr[1]) <: AbstractArray
+    if arr[1] isa AbstractArray
         return vecarr_to_vectors(VectorOfArray(arr))
     else
         return arr
@@ -123,7 +123,7 @@ end
 
 function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
     t = sim[1].t; quantiles = [0.05, 0.95]) where {T, N}
-    if typeof(sim[1]) <: SciMLSolution
+    if sim[1] isa SciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
         qlow = timeseries_point_quantile(sim, quantiles[1], t)
@@ -190,13 +190,13 @@ function componentwise_mean(A)
     mean = zero(x0) ./ 1
     for x in A
         n += 1
-        if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
             mean .+= x
         else
             mean += x
         end
     end
-    if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+    if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
         mean ./= n
     else
         mean /= n
@@ -215,7 +215,7 @@ function componentwise_meanvar(A; bessel = true)
     delta2 = zero(x0) ./ 1
     for x in A
         n += 1
-        if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
             delta .= x .- mean
             mean .+= delta ./ n
             delta2 .= x .- mean
@@ -231,13 +231,13 @@ function componentwise_meanvar(A; bessel = true)
         return NaN
     else
         if bessel
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 M2 .= M2 ./ (n .- 1)
             else
                 M2 = M2 ./ (n .- 1)
             end
         else
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 M2 .= M2 ./ n
             else
                 M2 = M2 ./ n
@@ -257,7 +257,7 @@ function componentwise_meancov(A, B; bessel = true)
     dx = zero(x0) ./ 1
     for (x, y) in zip(A, B)
         n += 1
-        if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
             dx .= x .- meanx
             meanx .+= dx ./ n
             meany .+= (y .- meany) ./ n
@@ -273,13 +273,13 @@ function componentwise_meancov(A, B; bessel = true)
         return NaN
     else
         if bessel
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 C .= C ./ (n .- 1)
             else
                 C = C ./ (n .- 1)
             end
         else
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 C .= C ./ n
             else
                 C = C ./ n
@@ -293,7 +293,7 @@ function componentwise_meancor(A, B; bessel = true)
     mx, my, cov = componentwise_meancov(A, B; bessel = bessel)
     mx, vx = componentwise_meanvar(A; bessel = bessel)
     my, vy = componentwise_meanvar(B; bessel = bessel)
-    if typeof(vx) <: AbstractArray
+    if vx isa AbstractArray
         vx .= sqrt.(vx)
         vy .= sqrt.(vy)
     else
@@ -316,7 +316,7 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
     dx = zero(x0) ./ 1
     for (x, y, w) in zip(A, B, W)
         n += 1
-        if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
             wsum .+= w
             wsum2 .+= w .* w
             dx .= x .- meanx
@@ -336,19 +336,19 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
         return NaN
     else
         if weight_type == :population
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 C .= C ./ wsum
             else
                 C = C ./ wsum
             end
         elseif weight_type == :reliability
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 C .= C ./ (wsum .- wsum2 ./ wsum)
             else
                 C = C ./ (wsum .- wsum2 ./ wsum)
             end
         elseif weight_type == :frequency
-            if typeof(x0) <: AbstractArray && !(typeof(x0) <: StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
                 C .= C ./ (wsum .- 1)
             else
                 C = C ./ (wsum .- 1)

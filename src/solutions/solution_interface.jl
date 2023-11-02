@@ -233,13 +233,13 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 @recipe function f(sol::AbstractTimeseriesSolution;
     plot_analytic = false,
     denseplot = (sol.dense ||
-                 typeof(sol.prob) <: AbstractDiscreteProblem) &&
-                !(typeof(sol) <: AbstractRODESolution) &&
+                 sol.prob isa AbstractDiscreteProblem) &&
+                !(sol isa AbstractRODESolution) &&
                 !(hasfield(typeof(sol), :interp) &&
-                  typeof(sol.interp) <: SensitivityInterpolation),
+                  sol.interp isa SensitivityInterpolation),
     plotdensity = min(Int(1e5),
         sol.tslocation == 0 ?
-        (typeof(sol.prob) <: AbstractDiscreteProblem ?
+        (sol.prob isa AbstractDiscreteProblem ?
          max(1000, 100 * length(sol)) :
          max(1000, 10 * length(sol))) :
         1000 * sol.tslocation),
@@ -271,7 +271,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     seriestype --> :path
 
     # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if typeof(idxs) <: Tuple && (issymbollike(idxs[1]) && issymbollike(idxs[2]))
+    if idxs isa Tuple && (issymbollike(idxs[1]) && issymbollike(idxs[2]))
         val = issymbollike(int_vars[1][2]) ? String(Symbol(int_vars[1][2])) :
               strs[int_vars[1][2]]
         xguide --> val
@@ -330,7 +330,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     # Analytical solutions do not save enough information to have a good idea
     # of the axis ahead of time
     # Only set axis for animations
-    if sol.tslocation != 0 && !(typeof(sol) <: AbstractAnalyticalSolution)
+    if sol.tslocation != 0 && !(sol isa AbstractAnalyticalSolution)
         if all(getindex.(int_vars, 1) .== DEFAULT_PLOT_FUNC)
             mins = minimum(sol[int_vars[1][3], :])
             maxs = maximum(sol[int_vars[1][3], :])
@@ -381,9 +381,9 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
 
     if denseplot
         # Generate the points from the plot from dense function
-        if tspan === nothing && !(typeof(sol) <: AbstractAnalyticalSolution)
+        if tspan === nothing && !(sol isa AbstractAnalyticalSolution)
             plott = collect(densetspacer(sol.t[start_idx], sol.t[end_idx], plotdensity))
-        elseif typeof(sol) <: AbstractAnalyticalSolution
+        elseif sol isa AbstractAnalyticalSolution
             tspan = sol.prob.tspan
             plott = collect(densetspacer(tspan[1], tspan[end], plotdensity))
         else
@@ -391,7 +391,7 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axi
         end
         plot_timeseries = sol(plott)
         if plot_analytic
-            if typeof(sol.prob.f) <: Tuple
+            if sol.prob.f isa Tuple
                 plot_analytic_timeseries = [sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p,
                     t) for t in plott]
             else
@@ -442,7 +442,7 @@ function interpret_vars(vars, sol, syms)
         # Do syms conversion
         tmp_vars = []
         for var in vars
-            if typeof(var) <: Union{Tuple, AbstractArray} #eltype(var) <: Symbol # Some kind of iterable
+            if var isa Union{Tuple, AbstractArray} #eltype(var) <: Symbol # Some kind of iterable
                 tmp = []
                 for x in var
                     if issymbollike(x)
@@ -454,7 +454,7 @@ function interpret_vars(vars, sol, syms)
                         push!(tmp, x)
                     end
                 end
-                if typeof(var) <: Tuple
+                if var isa Tuple
                     var_int = tuple(tmp...)
                 else
                     var_int = tmp
@@ -477,7 +477,7 @@ function interpret_vars(vars, sol, syms)
             end
             push!(tmp_vars, var_int)
         end
-        if typeof(vars) <: Tuple
+        if vars isa Tuple
             vars = tuple(tmp_vars...)
         else
             vars = tmp_vars
@@ -486,23 +486,23 @@ function interpret_vars(vars, sol, syms)
 
     if vars === nothing
         # Default: plot all timeseries
-        if typeof(sol[1]) <: Union{Tuple, AbstractArray}
+        if sol[1] isa Union{Tuple, AbstractArray}
             vars = collect((DEFAULT_PLOT_FUNC, 0, i) for i in plot_indices(sol[1]))
         else
             vars = [(DEFAULT_PLOT_FUNC, 0, 1)]
         end
     end
 
-    if typeof(vars) <: Base.Integer
+    if vars isa Base.Integer
         vars = [(DEFAULT_PLOT_FUNC, 0, vars)]
     end
 
-    if typeof(vars) <: AbstractArray
+    if vars isa AbstractArray
         # If list given, its elements should be tuples, or we assume x = time
         tmp = Tuple[]
         for x in vars
-            if typeof(x) <: Tuple
-                if typeof(x[1]) <: Int
+            if x isa Tuple
+                if x[1] isa Int
                     push!(tmp, tuple(DEFAULT_PLOT_FUNC, x...))
                 else
                     push!(tmp, x)
@@ -514,10 +514,10 @@ function interpret_vars(vars, sol, syms)
         vars = tmp
     end
 
-    if typeof(vars) <: Tuple
+    if vars isa Tuple
         # If tuple given...
-        if typeof(vars[end - 1]) <: AbstractArray
-            if typeof(vars[end]) <: AbstractArray
+        if vars[end - 1] isa AbstractArray
+            if vars[end] isa AbstractArray
                 # If both axes are lists we zip (will fail if different lengths)
                 vars = collect(zip([DEFAULT_PLOT_FUNC for i in eachindex(vars[end - 1])],
                     vars[end - 1], vars[end]))
@@ -526,12 +526,12 @@ function interpret_vars(vars, sol, syms)
                 vars = [(DEFAULT_PLOT_FUNC, x, vars[end]) for x in vars[end - 1]]
             end
         else
-            if typeof(vars[2]) <: AbstractArray
+            if vars[2] isa AbstractArray
                 # Just the y axis is a list
                 vars = [(DEFAULT_PLOT_FUNC, vars[end - 1], y) for y in vars[end]]
             else
                 # Both axes are numbers
-                if typeof(vars[1]) <: Int || issymbollike(vars[1])
+                if vars[1] isa Int || issymbollike(vars[1])
                     vars = [tuple(DEFAULT_PLOT_FUNC, vars...)]
                 else
                     vars = [vars]
@@ -564,7 +564,7 @@ function add_labels!(labels, x, dims, sol, strs)
     lys[end] = chop(lys[end]) # Take off the last comma
     if !issymbollike(x[2]) && x[2] == 0 && dims == 3
         # if there are no dependence in syms, then we add "(t)"
-        if strs !== nothing && (typeof(x[3]) <: Int && endswith(strs[x[3]], r"(.*)")) ||
+        if strs !== nothing && (x[3] isa Int && endswith(strs[x[3]], r"(.*)")) ||
            (issymbollike(x[3]) && endswith(string(x[3]), r"(.*)"))
             tmp_lab = "$(lys...)"
         else
@@ -627,7 +627,7 @@ function u_n(timeseries::AbstractArray, n::Int, sol, plott, plot_timeseries)
     # Returns the nth variable from the timeseries, t if n == 0
     if n == 0
         return plott
-    elseif n == 1 && !(typeof(sol[1]) <: Union{AbstractArray, ArrayPartition})
+    elseif n == 1 && !(sol[1] isa Union{AbstractArray, ArrayPartition})
         return timeseries
     else
         tmp = Vector{eltype(sol[1])}(undef, length(plot_timeseries))
