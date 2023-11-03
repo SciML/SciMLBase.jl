@@ -1,9 +1,10 @@
 module SciMLBaseZygoteExt
 
-using Zygote: pullback
+using Zygote
+using Zygote: pullback, ZygoteRules
 using ZygoteRules: @adjoint
-import ZygoteRules
-using SciMLBase: EnsembleSolution, ODESolution, issymbollike, sym_to_index, remake, getobserved
+using SciMLBase
+using SciMLBase: ODESolution, issymbollike, sym_to_index, remake, getobserved
 
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
@@ -56,15 +57,15 @@ end
     VA[sym, j], ODESolution_getindex_pullback
 end
 
-ZygoteRules.@adjoint function EnsembleSolution(sim, time, converged, stats)
-    out = EnsembleSolution(sim, time, converged)
+@adjoint function EnsembleSolution(sim, time, converged, stats)
+    out = EnsembleSolution(sim, time, converged, stats)
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
         arrarr = [[p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
                    for j in 1:size(p̄)[end - 1]] for i in 1:size(p̄)[end]]
-        (EnsembleSolution(arrarr, 0.0, true), nothing, nothing, nothing)
+        (EnsembleSolution(arrarr, 0.0, true, stats), nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
-        (EnsembleSolution(p̄, 0.0, true), nothing, nothing, nothing)
+        (EnsembleSolution(p̄, 0.0, true, stats), nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::EnsembleSolution)
         (p̄, nothing, nothing, nothing)
@@ -72,9 +73,148 @@ ZygoteRules.@adjoint function EnsembleSolution(sim, time, converged, stats)
     out, EnsembleSolution_adjoint
 end
 
-ZygoteRules.@adjoint function ZygoteRules.literal_getproperty(sim::EnsembleSolution,
+@adjoint function getindex(VA::ODESolution, i::Int)
+    function ODESolution_getindex_pullback(Δ)
+        Δ′ = [(i == j ? Δ : FillArrays.Fill(zero(eltype(x)), size(x)))
+              for (x, j) in zip(VA.u, 1:length(VA))]
+        (Δ′, nothing)
+    end
+    VA[i], ODESolution_getindex_pullback
+end
+
+@adjoint function ZygoteRules.literal_getproperty(sim::EnsembleSolution,
     ::Val{:u})
-    sim.u, p̄ -> (EnsembleSolution(p̄, 0.0, true),)
+    sim.u, p̄ -> (EnsembleSolution(p̄, 0.0, true, sim.stats),)
+end
+
+@adjoint function getindex(VA::ODESolution, sym)
+    function ODESolution_getindex_pullback(Δ)
+        i = issymbollike(sym) ? sym_to_index(sym, VA) : sym
+        if i === nothing
+            throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        else
+            Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
+                  for (x, j) in zip(VA.u, 1:length(VA))]
+            (Δ′, nothing)
+        end
+    end
+    VA[sym], ODESolution_getindex_pullback
+end
+
+@adjoint function ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12
+    }(u,
+        args...) where {T1, T2, T3, T4, T5, T6, T7, T8,
+        T9, T10, T11, T12}
+        function ODESolutionAdjoint(ȳ)
+            (ȳ, ntuple(_ -> nothing, length(args))...)
+        end
+    
+        ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12}(u, args...),
+        ODESolutionAdjoint
+end
+
+@adjoint function SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND}(u,
+    args...) where
+    {uType, tType, isinplace, P, NP, F, G, K, ND}
+    function SDESolutionAdjoint(ȳ)
+        (ȳ, ntuple(_ -> nothing, length(args))...)
+    end
+
+    SDESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDESolutionAdjoint
+end
+
+@adjoint function NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u,
+    args...) where {
+    T,
+    N,
+    uType,
+    R,
+    P,
+    A,
+    O,
+    uType2,
+}
+    function NonlinearSolutionAdjoint(ȳ)
+        (ȳ, ntuple(_ -> nothing, length(args))...)
+    end
+    NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u, args...), NonlinearSolutionAdjoint
+end
+
+@adjoint function ZygoteRules.literal_getproperty(sol::AbstractTimeseriesSolution,
+    ::Val{:u})
+    function solu_adjoint(Δ)
+        zerou = zero(sol.prob.u0)
+        _Δ = @. ifelse(Δ === nothing, (zerou,), Δ)
+        (DiffEqBase.build_solution(sol.prob, sol.alg, sol.t, _Δ),)
+    end
+    sol.u, solu_adjoint
+end
+
+@adjoint function ZygoteRules.literal_getproperty(sol::AbstractNoTimeSolution,
+    ::Val{:u})
+    function solu_adjoint(Δ)
+        zerou = zero(sol.prob.u0)
+        _Δ = @. ifelse(Δ === nothing, zerou, Δ)
+        (DiffEqBase.build_solution(sol.prob, sol.alg, _Δ, sol.resid),)
+    end
+    sol.u, solu_adjoint
+end
+
+@adjoint function ZygoteRules.literal_getproperty(sol::SciMLBase.OptimizationSolution,
+    ::Val{:u})
+    function solu_adjoint(Δ)
+        zerou = zero(sol.u)
+        _Δ = @. ifelse(Δ === nothing, zerou, Δ)
+        (DiffEqBase.build_solution(sol.cache, sol.alg, _Δ, sol.objective),)
+    end
+    sol.u, solu_adjoint
+end
+
+function ∇tmap(cx, f, args...)
+    ys_and_backs = SciMLBase.tmap((args...) -> Zygote._pullback(cx, f, args...), args...)
+    if isempty(ys_and_backs)
+        ys_and_backs, _ -> (NoTangent(), NoTangent())
+    else
+        ys, backs = Zygote.unzip(ys_and_backs)
+        function ∇tmap_internal(Δ)
+            Δf_and_args_zipped = SciMLBase.tmap((f, δ) -> f(δ), backs, Δ)
+            Δf_and_args = Zygote.unzip(Δf_and_args_zipped)
+            Δf = reduce(Zygote.accum, Δf_and_args[1])
+            (Δf, Δf_and_args[2:end]...)
+        end
+        ys, ∇tmap_internal
+    end
+end
+
+function ∇responsible_map(cx, f, args...)
+    ys_and_backs = SciMLBase.responsible_map((args...) -> Zygote._pullback(cx, f, args...),
+        args...)
+    if isempty(ys_and_backs)
+        ys_and_backs, _ -> (NoTangent(), NoTangent())
+    else
+        ys, backs = Zygote.unzip(ys_and_backs)
+        ys,
+        function ∇responsible_map_internal(Δ)
+            # Apply pullbacks in reverse order. Needed for correctness if `f` is stateful.
+            Δf_and_args_zipped = SciMLBase.responsible_map((f, δ) -> f(δ),
+                Zygote._tryreverse(SciMLBase.responsible_map,
+                    backs, Δ)...)
+            Δf_and_args = Zygote.unzip(Zygote._tryreverse(SciMLBase.responsible_map,
+                Δf_and_args_zipped))
+            Δf = reduce(Zygote.accum, Δf_and_args[1])
+            (Δf, Δf_and_args[2:end]...)
+        end
+    end
+end
+
+@adjoint function SciMLBase.tmap(f, args::Union{AbstractArray, Tuple}...)
+    ∇tmap(__context__, f, args...)
+end
+
+@adjoint function SciMLBase.responsible_map(f,
+    args::Union{AbstractArray, Tuple
+    }...)
+    ∇responsible_map(__context__, f, args...)
 end
 
 end
