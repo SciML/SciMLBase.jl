@@ -1,5 +1,6 @@
 module SciMLBaseChainRulesCoreExt
 
+using SciMLBase
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable
 
@@ -118,7 +119,7 @@ function ChainRulesCore.rrule(::Type{
     SDESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDESolutionAdjoint
 end
 
-function ChainRulesCore.rrule(::DiffEqBase.EnsembleSolution, sim, time, converged)
+function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged)
     out = EnsembleSolution(sim, time, converged)
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
         arrarr = [[p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
