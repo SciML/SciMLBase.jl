@@ -77,7 +77,7 @@ end
 
 @adjoint function getindex(VA::ODESolution, i::Int)
     function ODESolution_getindex_pullback(Δ)
-        Δ′ = [(i == j ? Δ : FillArrays.Fill(zero(eltype(x)), size(x)))
+        Δ′ = [(i == j ? Δ : Zygote.FillArrays.Fill(zero(eltype(x)), size(x)))
               for (x, j) in zip(VA.u, 1:length(VA))]
         (Δ′, nothing)
     end
