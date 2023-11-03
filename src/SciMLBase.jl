@@ -22,8 +22,6 @@ import RuntimeGeneratedFunctions
 import EnumX
 import TruncatedStacktraces
 import ADTypes: AbstractADType
-import ChainRulesCore
-import ZygoteRules: @adjoint
 import FillArrays
 
 using Reexport
