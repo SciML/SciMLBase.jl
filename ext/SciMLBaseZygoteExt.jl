@@ -31,7 +31,7 @@ end
 @adjoint function getindex(VA::ODESolution, sym, j::Int)
     function ODESolution_getindex_pullback(Δ)
         i = issymbollike(sym) ? sym_to_index(sym, VA) : sym
-        du, dprob = if i ==== nothing
+        du, dprob = if i === nothing
             getter = getobserved(VA)
             grz = pullback(getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
             du = [k == j ? grz[2] : zero(VA.u[1]) for k in 1:length(VA.u)]
@@ -90,7 +90,7 @@ end
 @adjoint function getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = issymbollike(sym) ? sym_to_index(sym, VA) : sym
-        if i ==== nothing
+        if i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
             Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
