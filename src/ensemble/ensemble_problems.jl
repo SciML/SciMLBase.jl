@@ -44,26 +44,6 @@ function EnsembleProblem(; prob,
     EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
 end
 
-function EnsembleProblem(; prob,
-    u0s::Union{Nothing, Vector{uType}} = nothing,
-    prob_func = (prob, i, repeat) -> remake(prob, u0 = u0s[i]),
-    output_func = DEFAULT_OUTPUT_FUNC,
-    reduction = DEFAULT_REDUCTION,
-    u_init = nothing, p = nothing,
-    safetycopy = prob_func !== DEFAULT_PROB_FUNC) where {uType}
-    EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
-end
-
-function EnsembleProblem(; prob,
-    trajectories::Int,
-    prob_func,
-    output_func = DEFAULT_OUTPUT_FUNC,
-    reduction = DEFAULT_REDUCTION,
-    u_init = nothing, p = nothing,
-    safetycopy = prob_func !== DEFAULT_PROB_FUNC)
-    EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
-end
-
 struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
        AbstractEnsembleProblem
     ensembleprob::T1
