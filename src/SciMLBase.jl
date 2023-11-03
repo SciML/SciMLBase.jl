@@ -714,7 +714,6 @@ include("solutions/optimization_solutions.jl")
 include("solutions/dae_solutions.jl")
 include("solutions/pde_solutions.jl")
 include("solutions/solution_interface.jl")
-include("solutions/zygote.jl")
 
 include("ensemble/ensemble_solutions.jl")
 include("ensemble/ensemble_problems.jl")
