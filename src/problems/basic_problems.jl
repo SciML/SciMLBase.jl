@@ -688,6 +688,14 @@ function OptimizationProblem(f, args...; kwargs...)
     OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
 end
 
+function OptimizationProblem(prob::NonlinearLeastSquaresProblem; kwargs...)
+    if isinplace(prob)
+        throw(ArgumentError("Converting NonlinearLeastSquaresProblem to OptimizationProblem is not supported with in-place functions yet."))
+    end
+    optf = OptimizationFunction(sum ∘ prob.f, grad = (Jv, u, p) -> prob.f.jvp(Jv, prob.f(u, p), u, p), kwargs...)
+    return OptimizationProblem(optf, prob.u0, prob.p; prob.kwargs..., kwargs...)
+end
+
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
