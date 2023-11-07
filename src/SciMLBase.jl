@@ -25,7 +25,7 @@ import ADTypes: AbstractADType
 import ChainRulesCore
 import ZygoteRules: @adjoint
 import FillArrays
-
+import QuasiMonteCarlo
 using Reexport
 using SciMLOperators
 using SciMLOperators:

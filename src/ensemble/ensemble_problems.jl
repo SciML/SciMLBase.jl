@@ -44,6 +44,23 @@ function EnsembleProblem(; prob,
     EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
 end
 
+#since NonlinearProblem might want to use this dispatch as well
+function SciMLBase.EnsembleProblem(prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...) where {T}
+    prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[i])
+    return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
+end
+
+#only makes sense for OptimizationProblem, might make sense for IntervalNonlinearProblem
+function SciMLBase.EnsembleProblem(prob::OptimizationProblem, trajectories::Int; kwargs...)
+    if prob.lb !== nothing && prob.ub !== nothing
+        u0s = QuasiMonteCarlo.sample(trajectories, prob.lb, prob.ub, QuasiMonteCarlo.LatinHypercubeSample())
+        prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[:, i])
+    else
+        error("EnsembleProblem with `trajectories` as second argument requires lower and upper bounds to be defined in the `OptimizationProblem`.")
+    end
+    return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
+end
+
 struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
        AbstractEnsembleProblem
     ensembleprob::T1
