@@ -98,6 +98,10 @@ function solve(prob::OptimizationProblem, alg, args...;
     end
 end
 
+function SciMLBase.solve(prob::EnsembleProblem{T}, args...; kwargs...) where {T <: OptimizationProblem}
+    return SciMLBase.__solve(prob, args...; kwargs...)
+end
+
 function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     !allowsbounds(alg) && (!isnothing(prob.lb) || !isnothing(prob.ub)) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support box constraints. Either remove the `lb` or `ub` bounds passed to `OptimizationProblem` or use a different algorithm."))
