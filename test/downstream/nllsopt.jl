@@ -1,5 +1,4 @@
 using NonlinearSolve, Optimization, OptimizationNLopt, ForwardDiff
-import FastLevenbergMarquardt, LeastSquaresOptim
 
 true_function(x, θ) = @. θ[1] * exp(θ[2] * x) * cos(θ[3] * x + θ[4])
 
