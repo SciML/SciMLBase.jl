@@ -2361,8 +2361,8 @@ BatchIntegralFunction{iip,specialize}(f, [integrand_prototype];
                                      max_batch=typemax(Int))
 ```
 Note that only `f` is required, and in the case of inplace integrands a mutable container
-`integrand_prototype` to store the result of the integrand of one integrand, without a last
-"batching" dimension.
+`integrand_prototype` to store a batch of integrand evaluations, with a last "batching"
+dimension.
 
 The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
 same time so that memory usage is controlled.
@@ -2375,12 +2375,13 @@ assumed to be out-of-place.
 Out-of-place functions must be of the form ``y = f(u,p)`` and in-place functions of the form
 ``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
 arrays), in-place functions must provide a container `integrand_prototype` of the right type
-for a single integrand evaluation. The integration algorithm will then allocate a ``y``
-array with the same element type as `integrand_prototype` and an additional last "batching"
-dimension to store multiple integrand evaluations. In the out-of-place case, the algorithm
-may infer the type of ``y`` by passing `f` an empty array of input points. This means ``y``
-is a vector in the out-of-place case, or a matrix/array in the in-place case. The number of
-batched points may vary between subsequent calls to `f`. When in-place forms are used,
+for ``y``. The only assumption that is enforced is that the last axes of `the `y`` and ``u``
+arrays are the same length and correspond to distinct batched points. The algorithm will
+then allocate arrays `similar` to ``y`` to pass to the integrand. Since the algorithm may
+vary the number of points to batch, the length of the batching dimension of ``y`` may vary
+between subsequent calls to `f`. To reduce allocations, views of ``y`` may also be passed to
+the integrand. In the out-of-place case, the algorithm may infer the type
+of ``y`` by passing `f` an empty array of input points. When in-place forms are used,
 in-place array operations may be used by algorithms to reduce allocations. If
 `integrand_prototype` is not provided, `f` is assumed to be out-of-place.
 
@@ -2487,7 +2488,7 @@ function ODEFunction{iip, specialize}(f;
     sys = __has_sys(f) ? f.sys : nothing) where {iip,
     specialize,
 }
-    if mass_matrix === I && typeof(f) <: Tuple
+    if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
@@ -2704,7 +2705,7 @@ end
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
-    if !(typeof(f1) <: AbstractSciMLOperator || typeof(f1.f) <: AbstractSciMLOperator) &&
+    if !(f1 isa AbstractSciMLOperator || f1.f isa AbstractSciMLOperator) &&
        isinplace(f1) != isinplace(f2)
         throw(NonconformingFunctionsError(["f2"]))
     end
@@ -2786,7 +2787,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
     jvp, vjp, jac_prototype, sparsity, Wfact,
     Wfact_t, paramjac, syms, indepsym, paramsyms,
     observed, colorvec, sys) where {iip}
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : ODEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : ODEFunction(f1)
     f2 = ODEFunction(f2)
 
     if isinplace(f1) != isinplace(f2)
@@ -3150,7 +3151,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
     jvp, vjp,
     jac_prototype, Wfact, Wfact_t, paramjac, observed,
     syms, indepsym, paramsyms, colorvec, sys)
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     SplitFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
@@ -3236,7 +3237,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
     jac_prototype, Wfact, Wfact_t, paramjac,
     syms, indepsym, paramsyms, observed, colorvec,
     sys)
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : SDEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
     DynamicalSDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
         typeof(mass_matrix),
@@ -3602,7 +3603,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
     paramjac,
     syms, indepsym, paramsyms, observed,
     colorvec) where {iip}
-    f1 = typeof(f1) <: AbstractSciMLOperator ? f1 : DDEFunction(f1)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : DDEFunction(f1)
     f2 = DDEFunction(f2)
     DynamicalDDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
         typeof(mass_matrix),
@@ -3807,7 +3808,7 @@ function NonlinearFunction{iip, specialize}(f;
     resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing) where {
     iip, specialize}
 
-    if mass_matrix === I && typeof(f) <: Tuple
+    if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 
@@ -3994,7 +3995,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize, twopoint}
-    if mass_matrix === I && typeof(f) <: Tuple
+    if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
     end
 

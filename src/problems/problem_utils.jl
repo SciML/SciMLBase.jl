@@ -23,7 +23,7 @@ function Base.summary(io::IO, prob::AbstractDEProblem)
         type_color, typeof(prob.u0),
         no_color, " and tType ",
         type_color,
-        typeof(prob.tspan) <: Function ?
+        prob.tspan isa Function ?
         "Unknown" : (prob.tspan === nothing ?
          "Nothing" : typeof(prob.tspan[1])),
         no_color, ". In-place: ",

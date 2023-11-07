@@ -80,7 +80,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))
 
-    if typeof(prob.f) <: Tuple
+    if prob.f isa Tuple
         f = prob.f[1]
     else
         f = prob.f
@@ -134,7 +134,7 @@ end
 
 function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = true,
     timeseries_errors = true, dense_errors = true)
-    if typeof(sol.prob.f) <: Tuple
+    if sol.prob.f isa Tuple
         f = sol.prob.f[1]
     else
         f = sol.prob.f
@@ -232,9 +232,9 @@ end
 function sensitivity_solution(sol::AbstractRODESolution, u, t)
     T = eltype(eltype(u))
     N = length((size(sol.prob.u0)..., length(u)))
-    interp = if typeof(sol.interp) <: LinearInterpolation
+    interp = if sol.interp isa LinearInterpolation
         LinearInterpolation(t, u)
-    elseif typeof(sol.interp) <: ConstantInterpolation
+    elseif sol.interp isa ConstantInterpolation
         ConstantInterpolation(t, u)
     else
         SensitivityInterpolation(t, u)
