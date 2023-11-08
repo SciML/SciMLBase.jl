@@ -140,7 +140,8 @@ function __solve(prob::AbstractEnsembleProblem,
             elapsed_time = @elapsed u = solve_batch(prob, alg, ensemblealg, 1:trajectories,
                 pmap_batch_size; kwargs...)
             _u = tighten_container_eltype(u)
-            return EnsembleSolution(_u, elapsed_time, true)
+            stats = merge_stats(_u)
+            return EnsembleSolution(_u, elapsed_time, true, stats)
         end
 
         converged::Bool = false
