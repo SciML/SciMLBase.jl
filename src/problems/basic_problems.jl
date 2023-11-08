@@ -688,6 +688,21 @@ function OptimizationProblem(f, args...; kwargs...)
     OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
 end
 
+function OptimizationFunction(f::NonlinearFunction, adtype::AbstractADType = NoAD(); kwargs...)
+    if isinplace(f)
+        throw(ArgumentError("Converting NonlinearFunction to OptimizationFunction is not supported with in-place functions yet."))
+    end
+    OptimizationFunction((u, p) -> sum(abs2, f(u, p)), adtype; kwargs...)
+end
+
+function OptimizationProblem(prob::NonlinearLeastSquaresProblem, adtype::AbstractADType = NoAD(); kwargs...)
+    if isinplace(prob)
+        throw(ArgumentError("Converting NonlinearLeastSquaresProblem to OptimizationProblem is not supported with in-place functions yet."))
+    end
+    optf = OptimizationFunction(prob.f, adtype; kwargs...)
+    return OptimizationProblem(optf, prob.u0, prob.p; prob.kwargs..., kwargs...)
+end
+
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
