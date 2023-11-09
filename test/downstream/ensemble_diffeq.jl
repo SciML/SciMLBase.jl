@@ -1,4 +1,4 @@
-using DifferentialEquations
+using OrdinaryDiffEq
 
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 function prob_func(prob, i, repeat)
