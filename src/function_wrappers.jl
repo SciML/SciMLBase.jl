@@ -14,6 +14,8 @@ end
 
 (ff::UJacobianWrapper)(du1, uprev) = ff.f(du1, uprev, ff.p, ff.t)
 (ff::UJacobianWrapper)(uprev) = (du1 = similar(uprev); ff.f(du1, uprev, ff.p, ff.t); du1)
+(ff::UJacobianWrapper)(du1, uprev, p, t) = ff.f(du1, uprev, p, t)
+(ff::UJacobianWrapper)(uprev, p, t) = (du1 = similar(uprev); ff.f(du1, uprev, p, t); du1)
 
 mutable struct TimeDerivativeWrapper{F, uType, P} <: Function
     f::F
