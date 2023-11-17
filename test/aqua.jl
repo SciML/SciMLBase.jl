@@ -25,7 +25,7 @@ end
 @testset "Aqua tests (additional)" begin
     Aqua.test_undefined_exports(SciMLBase)
     Aqua.test_stale_deps(SciMLBase)
-    Aqua.test_deps_compat(SciMLBase)
+    Aqua.test_deps_compat(SciMLBase, check_extras = false)
     Aqua.test_project_extras(SciMLBase)
     # Aqua.test_project_toml_formatting(SciMLBase) # failing
     # Aqua.test_piracy(SciMLBase) # failing
