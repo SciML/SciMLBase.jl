@@ -52,7 +52,7 @@ or the steady state solution to a differential equation defined by a SteadyState
 - `right`: if the solver is bracketing method, this is the final right bracket value.
 - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
+struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
        AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
@@ -63,6 +63,7 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S} <:
     left::uType2
     right::uType2
     stats::S
+    trace::Tr
 end
 
 TruncatedStacktraces.@truncate_stacktrace NonlinearSolution 1 2
@@ -78,14 +79,14 @@ function build_solution(prob::AbstractNonlinearProblem,
     left = nothing,
     right = nothing,
     stats = nothing,
+    trace = nothing,
     kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
     NonlinearSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
-        typeof(original), typeof(left), typeof(stats)}(u, resid, prob, alg,
-        retcode, original,
-        left, right, stats)
+        typeof(original), typeof(left), typeof(stats), typeof(trace)}(u, resid, prob, alg,
+        retcode, original, left, right, stats, trace)
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
@@ -94,6 +95,6 @@ function sensitivity_solution(sol::AbstractNonlinearSolution, u)
 
     NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
         typeof(sol.alg), typeof(sol.original), typeof(sol.left),
-        typeof(sol.stats)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
-        sol.original, sol.left, sol.right, sol.stats)
+        typeof(sol.stats), trace(sol.trace)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
+        sol.original, sol.left, sol.right, sol.stats, sol.trace)
 end
