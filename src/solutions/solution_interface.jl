@@ -14,7 +14,9 @@ Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
-    println(io, string("retcode: ", A.retcode))
+    if hasfield(typeof(A), :retcode)
+        println(io, string("retcode: ", A.retcode))
+    end
     print(io, "u: ")
     show(io, m, A.u)
 end

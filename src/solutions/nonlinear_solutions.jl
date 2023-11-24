@@ -93,8 +93,11 @@ function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     T = eltype(eltype(u))
     N = ndims(u)
 
+    # Some of the subtypes might not have a trace field
+    trace = hasfield(typeof(sol), :trace) ? sol.trace : nothing
+
     NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
         typeof(sol.alg), typeof(sol.original), typeof(sol.left),
-        typeof(sol.stats), trace(sol.trace)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
-        sol.original, sol.left, sol.right, sol.stats, sol.trace)
+        typeof(sol.stats), trace(trace)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
+        sol.original, sol.left, sol.right, sol.stats, trace)
 end
