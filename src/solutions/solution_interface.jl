@@ -14,7 +14,9 @@ Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
-    (print(io, "u: "); show(io, m, A.u))
+    println(io, string("retcode: ", A.retcode))
+    print(io, "u: ")
+    show(io, m, A.u)
 end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
