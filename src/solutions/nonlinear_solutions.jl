@@ -98,6 +98,6 @@ function sensitivity_solution(sol::AbstractNonlinearSolution, u)
 
     NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
         typeof(sol.alg), typeof(sol.original), typeof(sol.left),
-        typeof(sol.stats), trace(trace)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
+        typeof(sol.stats), typeof(trace)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
         sol.original, sol.left, sol.right, sol.stats, trace)
 end
