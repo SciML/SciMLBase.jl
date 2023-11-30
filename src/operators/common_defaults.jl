@@ -14,7 +14,7 @@ function LinearAlgebra.opnorm(L::AbstractDiffEqLinearOperator, p::Real = 2)
     opnorm(convert(AbstractMatrix, L), p)
 end
 Base.@propagate_inbounds function Base.getindex(L::AbstractDiffEqLinearOperator,
-    I::Vararg{Any, N}) where {N}
+        I::Vararg{Any, N}) where {N}
     convert(AbstractMatrix, L)[I...]
 end
 function Base.getindex(L::AbstractDiffEqLinearOperator, I::Vararg{Int, N}) where {N}
@@ -41,25 +41,25 @@ end
 
 ### added in https://github.com/SciML/SciMLBase.jl/pull/377
 function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
-    B::AbstractVecOrMat)
+        B::AbstractVecOrMat)
     mul!(Y, convert(AbstractMatrix, L), B)
 end
 ###
 
 function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
-    B::AbstractArray)
+        B::AbstractArray)
     mul!(Y, convert(AbstractMatrix, L), B)
 end
 
 ### added in https://github.com/SciML/SciMLBase.jl/pull/377
 function LinearAlgebra.mul!(Y::AbstractVecOrMat, L::AbstractDiffEqLinearOperator,
-    B::AbstractVecOrMat, α::Number, β::Number)
+        B::AbstractVecOrMat, α::Number, β::Number)
     mul!(Y, convert(AbstractMatrix, L), B, α, β)
 end
 ###
 
 function LinearAlgebra.mul!(Y::AbstractArray, L::AbstractDiffEqLinearOperator,
-    B::AbstractArray, α::Number, β::Number)
+        B::AbstractArray, α::Number, β::Number)
     mul!(Y, convert(AbstractMatrix, L), B, α, β)
 end
 

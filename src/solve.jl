@@ -89,7 +89,7 @@ end
 ```
 """
 function solve(prob::OptimizationProblem, alg, args...;
-    kwargs...)::AbstractOptimizationSolution
+        kwargs...)::AbstractOptimizationSolution
     if supports_opt_cache_interface(alg)
         solve!(init(prob, alg, args...; kwargs...))
     else
@@ -98,7 +98,9 @@ function solve(prob::OptimizationProblem, alg, args...;
     end
 end
 
-function SciMLBase.solve(prob::EnsembleProblem{T}, args...; kwargs...) where {T <: OptimizationProblem}
+function SciMLBase.solve(prob::EnsembleProblem{T},
+        args...;
+        kwargs...) where {T <: OptimizationProblem}
     return SciMLBase.__solve(prob, args...; kwargs...)
 end
 
@@ -181,7 +183,7 @@ end
 supports_opt_cache_interface(alg) = false
 function __solve(cache::AbstractOptimizationCache)::AbstractOptimizationSolution end
 function __init(prob::OptimizationProblem, alg, args...;
-    kwargs...)::AbstractOptimizationCache
+        kwargs...)::AbstractOptimizationCache
     throw(OptimizerMissingError(alg))
 end
 

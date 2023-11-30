@@ -42,30 +42,30 @@ end
 # For handling ambiguities
 for T in [Int, Colon]
     @eval Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-        I::$T)
+            I::$T)
         A.u[I]
     end
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-    I::Union{Int, AbstractArray{Int},
-        CartesianIndex, Colon, BitArray,
-        AbstractArray{Bool}}...)
+        I::Union{Int, AbstractArray{Int},
+            CartesianIndex, Colon, BitArray,
+            AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-    ::Colon)
+        ::Colon)
     [A.u[j][i] for j in 1:length(A)]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon,
-    i::Int)
+        i::Int)
     A.u[i]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, i::Int,
-    II::AbstractArray{Int})
+        II::AbstractArray{Int})
     [A.u[j][i] for j in II]
 end
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution,
-    ii::CartesianIndex)
+        ii::CartesianIndex)
     ti = Tuple(ii)
     i = last(ti)
     jj = CartesianIndex(Base.front(ti))
@@ -235,20 +235,20 @@ DEFAULT_PLOT_FUNC(x...) = (x...,)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
 @recipe function f(sol::AbstractTimeseriesSolution;
-    plot_analytic = false,
-    denseplot = (sol.dense ||
-                 sol.prob isa AbstractDiscreteProblem) &&
-                !(sol isa AbstractRODESolution) &&
-                !(hasfield(typeof(sol), :interp) &&
-                  sol.interp isa SensitivityInterpolation),
-    plotdensity = min(Int(1e5),
-        sol.tslocation == 0 ?
-        (sol.prob isa AbstractDiscreteProblem ?
-         max(1000, 100 * length(sol)) :
-         max(1000, 10 * length(sol))) :
-        1000 * sol.tslocation),
-    tspan = nothing, axis_safety = 0.1,
-    vars = nothing, idxs = nothing)
+        plot_analytic = false,
+        denseplot = (sol.dense ||
+                     sol.prob isa AbstractDiscreteProblem) &&
+                    !(sol isa AbstractRODESolution) &&
+                    !(hasfield(typeof(sol), :interp) &&
+                      sol.interp isa SensitivityInterpolation),
+        plotdensity = min(Int(1e5),
+            sol.tslocation == 0 ?
+            (sol.prob isa AbstractDiscreteProblem ?
+             max(1000, 100 * length(sol)) :
+             max(1000, 10 * length(sol))) :
+            1000 * sol.tslocation),
+        tspan = nothing, axis_safety = 0.1,
+        vars = nothing, idxs = nothing)
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
             :f; force = true)
@@ -363,7 +363,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 end
 
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, axis_safety,
-    vars, int_vars, tscale, strs)
+        vars, int_vars, tscale, strs)
     if tspan === nothing
         if sol.tslocation == 0
             end_idx = length(sol)
@@ -652,7 +652,7 @@ function u_n(timeseries::AbstractArray, sym, sol, plott, plot_timeseries)
 end
 
 function solplot_vecs_and_labels(dims, vars, plot_timeseries, plott, sol, plot_analytic,
-    plot_analytic_timeseries, strs)
+        plot_analytic_timeseries, strs)
     plot_vecs = []
     labels = String[]
     for x in vars

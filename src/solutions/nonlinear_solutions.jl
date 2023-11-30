@@ -73,14 +73,14 @@ const SteadyStateSolution = NonlinearSolution
 get_p(p::AbstractNonlinearSolution) = p.prob.p
 
 function build_solution(prob::AbstractNonlinearProblem,
-    alg, u, resid; calculate_error = true,
-    retcode = ReturnCode.Default,
-    original = nothing,
-    left = nothing,
-    right = nothing,
-    stats = nothing,
-    trace = nothing,
-    kwargs...)
+        alg, u, resid; calculate_error = true,
+        retcode = ReturnCode.Default,
+        original = nothing,
+        left = nothing,
+        right = nothing,
+        stats = nothing,
+        trace = nothing,
+        kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 

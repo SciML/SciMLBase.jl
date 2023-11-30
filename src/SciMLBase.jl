@@ -653,23 +653,23 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
 end
 
 function specialization(::Union{ODEFunction{iip, specialize},
-    SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-    SDDEFunction{iip, specialize},
-    DAEFunction{iip, specialize},
-    DynamicalODEFunction{iip, specialize},
-    SplitFunction{iip, specialize},
-    DynamicalSDEFunction{iip, specialize},
-    SplitSDEFunction{iip, specialize},
-    DynamicalDDEFunction{iip, specialize},
-    DiscreteFunction{iip, specialize},
-    ImplicitDiscreteFunction{iip, specialize},
-    RODEFunction{iip, specialize},
-    NonlinearFunction{iip, specialize},
-    OptimizationFunction{iip, specialize},
-    BVPFunction{iip, specialize},
-    IntegralFunction{iip, specialize},
-    BatchIntegralFunction{iip, specialize}}) where {iip,
-    specialize}
+        SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
+        SDDEFunction{iip, specialize},
+        DAEFunction{iip, specialize},
+        DynamicalODEFunction{iip, specialize},
+        SplitFunction{iip, specialize},
+        DynamicalSDEFunction{iip, specialize},
+        SplitSDEFunction{iip, specialize},
+        DynamicalDDEFunction{iip, specialize},
+        DiscreteFunction{iip, specialize},
+        ImplicitDiscreteFunction{iip, specialize},
+        RODEFunction{iip, specialize},
+        NonlinearFunction{iip, specialize},
+        OptimizationFunction{iip, specialize},
+        BVPFunction{iip, specialize},
+        IntegralFunction{iip, specialize},
+        BatchIntegralFunction{iip, specialize}}) where {iip,
+        specialize}
     specialize
 end
 
@@ -687,6 +687,8 @@ include("operators/diffeq_operator.jl")
 include("operators/common_defaults.jl")
 include("symbolic_utils.jl")
 include("performance_warnings.jl")
+
+abstract type AbstractProblemType end
 
 include("problems/discrete_problems.jl")
 include("problems/implicit_discrete_problems.jl")

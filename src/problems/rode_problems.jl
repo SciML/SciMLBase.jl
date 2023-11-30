@@ -65,10 +65,10 @@ mutable struct RODEProblem{uType, tType, isinplace, P, NP, F, K, ND} <:
     rand_prototype::ND
     seed::UInt64
     @add_kwonly function RODEProblem{iip}(f::RODEFunction{iip}, u0, tspan,
-        p = NullParameters();
-        rand_prototype = nothing,
-        noise = nothing, seed = UInt64(0),
-        kwargs...) where {iip}
+            p = NullParameters();
+            rand_prototype = nothing,
+            noise = nothing, seed = UInt64(0),
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)

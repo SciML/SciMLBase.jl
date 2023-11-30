@@ -118,14 +118,14 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     order_discontinuity_t0::Rational{Int}
 
     @add_kwonly function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
-        p = NullParameters();
-        noise_rate_prototype = nothing, noise = nothing,
-        seed = UInt64(0),
-        constant_lags = (), dependent_lags = (),
-        neutral = f.mass_matrix !== I &&
-                  det(f.mass_matrix) != 1,
-        order_discontinuity_t0 = 0 // 1,
-        kwargs...) where {iip}
+            p = NullParameters();
+            noise_rate_prototype = nothing, noise = nothing,
+            seed = UInt64(0),
+            constant_lags = (), dependent_lags = (),
+            neutral = f.mass_matrix !== I &&
+                      det(f.mass_matrix) != 1,
+            order_discontinuity_t0 = 0 // 1,
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
@@ -138,8 +138,8 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     end
 
     function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
-        p = NullParameters();
-        order_discontinuity_t0 = 1 // 1, kwargs...) where {iip}
+            p = NullParameters();
+            order_discontinuity_t0 = 1 // 1, kwargs...) where {iip}
         SDDEProblem{iip}(f, g, h(p, first(tspan)), h, tspan, p;
             order_discontinuity_t0 = max(1 // 1, order_discontinuity_t0),
             kwargs...)
