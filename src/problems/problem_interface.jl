@@ -53,7 +53,7 @@ function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
             if !isnothing(i)
                 prob.u0[i] = val
                 return prob
-            elseif sym isa Symbol  # Hanldes input like :X.
+            elseif sym isa Symbol  # Handles input like :X.
                 s_f = Symbol.(getproperty.(states(prob.f.sys), :f))
                 if count(isequal(Symbol(sym)), s_f) == 1
                     i = findfirst(isequal(sym), s_f)

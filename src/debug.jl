@@ -34,7 +34,7 @@ ODEProblem{iip,SciMLBase.FullSpecialize}(f,u0,tspan,p)
 where `iip` is either true or false depending on the in-placeness of the definition of `f` (i.e. for ODEs
 if `f` has 3 arguments `(u,p,t)` then it's false, otherwise `f(du,u,p,t)` is true).
 
-For more information on the control of specailization options, please see the documentation at:
+For more information on the control of specialization options, please see the documentation at:
 
 https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choices
 
@@ -53,7 +53,7 @@ be `ODEProblem(f,u0,tspan,p)` in order to use parameters.
 
 2. Using the wrong function signature. For example, with `ODEProblem`s the function signature is always
 `f(du,u,p,t)` for the in-place form or `f(u,p,t)` for the out-of-place form. Note that the `p` argument
-will always be in the function signature reguardless of if the problem is defined with parameters!
+will always be in the function signature regardless of if the problem is defined with parameters!
 """
 
 function __init__()

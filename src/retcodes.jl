@@ -351,7 +351,7 @@ const symtrue = Symbol("true")
 const symfalse = Symbol("false")
 
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
-    @warn "Backwards compatability support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
+    @warn "Backwards compatibility support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
 
     if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default

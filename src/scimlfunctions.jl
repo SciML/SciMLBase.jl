@@ -129,7 +129,7 @@ but also includes the limitations:
   `DiffEqBase.wrap_iip` on `f` before calling
   `ODEFunction{true,FunctionWrapperSpecialize}(f)`. This is a fundamental
   limitation of the approach as the types of `(u,p,t)` are required in the
-  construction process and not accessible in the `AbstactSciMLFunction` constructors.
+  construction process and not accessible in the `AbstractSciMLFunction` constructors.
 
 ## Example
 
@@ -2032,7 +2032,7 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 
 - `f(u,p,args...)`: the function to optimize. `u` are the optimization variables and `p` are parameters used in definition of
 the objective, even if no such parameters are used in the objective it should be an argument in the function. This can also take
-any additonal arguments that are relevant to the objective function, for example minibatches used in machine learning,
+any additional arguments that are relevant to the objective function, for example minibatches used in machine learning,
 take a look at the minibatching tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/). This should return
 a scalar, the loss value, as the first return output and if any additional outputs are returned, they will be passed to the `callback`
 function described in [Callback Functions](@ref).
@@ -2223,7 +2223,7 @@ the usage of `f` and `bc`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `bcjac_prototype`: a prototype matrix maching the type that matches the Jacobian. For example,
+- `bcjac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
@@ -4150,9 +4150,9 @@ function IntegralFunction(f)
     IntegralFunction{false}(f, nothing)
 end
 function IntegralFunction(f, integrand_prototype)
-    calcuated_iip = isinplace(f, 3, "integral", true)
-    if !calcuated_iip
-        throw(IntegrandMismatchFunctionError(calcuated_iip, true))
+    calculated_iip = isinplace(f, 3, "integral", true)
+    if !calculated_iip
+        throw(IntegrandMismatchFunctionError(calculated_iip, true))
     end
     IntegralFunction{true}(f, integrand_prototype)
 end
