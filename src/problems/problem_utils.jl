@@ -153,7 +153,7 @@ be `ODEProblem(f,u0,tspan,p)` in order to use parameters.
 
 2. Using the wrong function signature. For example, with `ODEProblem`s the function signature is always
 `f(du,u,p,t)` for the in-place form or `f(u,p,t)` for the out-of-place form. Note that the `p` argument
-will always be in the function signature reguardless of if the problem is defined with parameters!
+will always be in the function signature regardless of if the problem is defined with parameters!
 """
 
 struct NullParameterIndexError <: Exception end

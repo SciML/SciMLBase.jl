@@ -146,7 +146,7 @@ function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwar
     return BVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-# This is mostly a fake stuct and isn't used anywhere
+# This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
 struct TwoPointBVPFunction{iip} end
 
