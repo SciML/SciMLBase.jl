@@ -112,9 +112,9 @@ end
 Intercept PDE wrapping. Please implement a method for the PDESolution types in your discretizer.
 """
 function SciMLBase.wrap_sol(sol,
-    metadata::AbstractDiscretizationMetadata{hasTime}) where {
-    hasTime,
-}
+        metadata::AbstractDiscretizationMetadata{hasTime}) where {
+        hasTime,
+    }
     if hasTime isa Val{true}
         return PDETimeSeriesSolution(sol, metadata)
     else

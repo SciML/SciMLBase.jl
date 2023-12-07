@@ -11,7 +11,9 @@ function TimeGradientWrapper(f::F, uprev, p) where {F}
     return TimeGradientWrapper{isinplace(f, 4)}(f, uprev, p)
 end
 
-(ff::TimeGradientWrapper{true})(t) = (du2 = similar(ff.uprev); ff.f(du2, ff.uprev, ff.p, t); du2)
+function (ff::TimeGradientWrapper{true})(t)
+    (du2 = similar(ff.uprev); ff.f(du2, ff.uprev, ff.p, t); du2)
+end
 (ff::TimeGradientWrapper{true})(du2, t) = ff.f(du2, ff.uprev, ff.p, t)
 
 (ff::TimeGradientWrapper{false})(t) = ff.f(ff.uprev, ff.p, t)
@@ -28,9 +30,13 @@ end
 UJacobianWrapper(f::F, t, p) where {F} = UJacobianWrapper{isinplace(f, 4)}(f, t, p)
 
 (ff::UJacobianWrapper{true})(du1, uprev) = ff.f(du1, uprev, ff.p, ff.t)
-(ff::UJacobianWrapper{true})(uprev) = (du1 = similar(uprev); ff.f(du1, uprev, ff.p, ff.t); du1)
+function (ff::UJacobianWrapper{true})(uprev)
+    (du1 = similar(uprev); ff.f(du1, uprev, ff.p, ff.t); du1)
+end
 (ff::UJacobianWrapper{true})(du1, uprev, p, t) = ff.f(du1, uprev, p, t)
-(ff::UJacobianWrapper{true})(uprev, p, t) = (du1 = similar(uprev); ff.f(du1, uprev, p, t); du1)
+function (ff::UJacobianWrapper{true})(uprev, p, t)
+    (du1 = similar(uprev); ff.f(du1, uprev, p, t); du1)
+end
 
 (ff::UJacobianWrapper{false})(uprev) = ff.f(uprev, ff.p, ff.t)
 (ff::UJacobianWrapper{false})(uprev, p, t) = ff.f(uprev, p, t)

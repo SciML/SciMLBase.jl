@@ -30,12 +30,12 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
 end
 
 function build_solution(cache::AbstractOptimizationCache,
-    alg, u, objective;
-    retcode = ReturnCode.Default,
-    original = nothing,
-    solve_time = nothing,
-    stats = nothing,
-    kwargs...)
+        alg, u, objective;
+        retcode = ReturnCode.Default,
+        original = nothing,
+        solve_time = nothing,
+        stats = nothing,
+        kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
@@ -63,10 +63,10 @@ end
 
 # for compatibility
 function build_solution(prob::AbstractOptimizationProblem,
-    alg, u, objective;
-    retcode = ReturnCode.Default,
-    original = nothing,
-    kwargs...)
+        alg, u, objective;
+        retcode = ReturnCode.Default,
+        original = nothing,
+        kwargs...)
     T = eltype(eltype(u))
     N = ndims(u)
 
@@ -104,7 +104,7 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
-    s::Symbol)
+        s::Symbol)
     if s === :minimizer
         Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
             "sol.minimizer")

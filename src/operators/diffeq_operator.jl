@@ -120,7 +120,7 @@ Base.:*(x::AbstractVecOrMat, L::DiffEqScaledOperator) = (x * L.op) * L.coeff
 Base.:*(x::AbstractArray, L::DiffEqScaledOperator) = (x * L.op) * L.coeff
 
 function LinearAlgebra.mul!(r::AbstractVecOrMat, L::DiffEqScaledOperator,
-    x::AbstractVecOrMat)
+        x::AbstractVecOrMat)
     mul!(r, L.op, x)
     r .= r * L.coeff
 end
@@ -130,7 +130,7 @@ function LinearAlgebra.mul!(r::AbstractArray, L::DiffEqScaledOperator, x::Abstra
 end
 
 function LinearAlgebra.mul!(r::AbstractVecOrMat, x::AbstractVecOrMat,
-    L::DiffEqScaledOperator)
+        L::DiffEqScaledOperator)
     mul!(r, x, L.op)
     r .= r * L.coeff
 end
@@ -154,15 +154,15 @@ Base.:\(x::AbstractArray, L::DiffEqScaledOperator) = L.coeff * (x \ L)
 for N in (2, 3)
     @eval begin
         function LinearAlgebra.mul!(Y::AbstractArray{T, $N},
-            L::DiffEqScaledOperator{T},
-            B::AbstractArray{T, $N}) where {T}
+                L::DiffEqScaledOperator{T},
+                B::AbstractArray{T, $N}) where {T}
             LinearAlgebra.lmul!(Y, L.coeff, mul!(Y, L.op, B))
         end
     end
 end
 
 function LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::DiffEqScaledOperator,
-    B::AbstractVecOrMat)
+        B::AbstractVecOrMat)
     lmul!(1 / L.coeff, ldiv!(Y, L.op, B))
 end
 function LinearAlgebra.ldiv!(Y::AbstractArray, L::DiffEqScaledOperator, B::AbstractArray)

@@ -122,7 +122,7 @@ function timepoint_weighted_meancov(sim, W, t1, t2)
 end
 
 function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
-    t = sim[1].t; quantiles = [0.05, 0.95]) where {T, N}
+        t = sim[1].t; quantiles = [0.05, 0.95]) where {T, N}
     if sim[1] isa SciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)

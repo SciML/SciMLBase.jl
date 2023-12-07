@@ -77,9 +77,9 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     kwargs::K
     differential_vars::D
     @add_kwonly function DAEProblem{iip}(f::AbstractDAEFunction{iip},
-        du0, u0, tspan, p = NullParameters();
-        differential_vars = nothing,
-        kwargs...) where {iip}
+            du0, u0, tspan, p = NullParameters();
+            differential_vars = nothing,
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _du0 = prepare_initial_state(du0)
         if !isnothing(_u0)

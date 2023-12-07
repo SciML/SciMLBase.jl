@@ -73,12 +73,12 @@ function (id::SensitivityInterpolation)(tvals, idxs, deriv, p, continuity::Symbo
     interpolation(tvals, id, idxs, deriv, p, continuity)
 end
 function (id::SensitivityInterpolation)(val, tvals, idxs, deriv, p,
-    continuity::Symbol = :left)
+        continuity::Symbol = :left)
     interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
 
 @inline function interpolation(tvals, id::I, idxs, deriv::D, p,
-    continuity::Symbol = :left) where {I, D}
+        continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
     id isa HermiteInterpolation && (du = id.du)
@@ -140,7 +140,7 @@ Get the value at tvals where the solution is known at the
 times t (sorted), with values u and derivatives ks
 """
 @inline function interpolation!(vals, tvals, id::I, idxs, deriv::D, p,
-    continuity::Symbol = :left) where {I, D}
+        continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
     id isa HermiteInterpolation && (du = id.du)
@@ -203,7 +203,7 @@ Get the value at tval where the solution is known at the
 times t (sorted), with values u and derivatives ks
 """
 @inline function interpolation(tval::Number, id::I, idxs, deriv::D, p,
-    continuity::Symbol = :left) where {I, D}
+        continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
     id isa HermiteInterpolation && (du = id.du)
@@ -253,7 +253,7 @@ Get the value at tval where the solution is known at the
 times t (sorted), with values u and derivatives ks
 """
 @inline function interpolation!(out, tval::Number, id::I, idxs, deriv::D, p,
-    continuity::Symbol = :left) where {I, D}
+        continuity::Symbol = :left) where {I, D}
     t = id.t
     u = id.u
     id isa HermiteInterpolation && (du = id.du)
@@ -296,7 +296,7 @@ times t (sorted), with values u and derivatives ks
 end
 
 @inline function interpolant(Θ, id::AbstractDiffEqInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    ::Type{Val{D}}) where {D}
+        ::Type{Val{D}}) where {D}
     error("$(string(typeof(id))) for $(D)th order not implemented")
 end
 ##################### Hermite Interpolants
@@ -307,7 +307,7 @@ Hairer Norsett Wanner Solving Ordinary Differential Equations I - Nonstiff Probl
 Hermite Interpolation
 """
 @inline function interpolant(Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{0}})
+        T::Type{Val{0}})
     if idxs === nothing
         out = @. (1 - Θ) * y₀ + Θ * y₁ +
                  Θ * (Θ - 1) * ((1 - 2Θ) * (y₁ - y₀) + (Θ - 1) * dt * dy₀ + Θ * dt * dy₁)
@@ -330,7 +330,7 @@ end
 Hermite Interpolation
 """
 @inline function interpolant(Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{1}})
+        T::Type{Val{1}})
     if idxs === nothing
         out = @. dy₀ +
                  Θ * (-4 * dt * dy₀ - 2 * dt * dy₁ - 6 * y₀ +
@@ -356,7 +356,7 @@ end
 Hermite Interpolation
 """
 @inline function interpolant(Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{2}})
+        T::Type{Val{2}})
     if idxs === nothing
         out = @. (-4 * dt * dy₀ - 2 * dt * dy₁ - 6 * y₀ +
                   Θ * (6 * dt * dy₀ + 6 * dt * dy₁ + 12 * y₀ - 12 * y₁) + 6 * y₁) /
@@ -378,7 +378,7 @@ end
 Hermite Interpolation
 """
 @inline function interpolant(Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{3}})
+        T::Type{Val{3}})
     if idxs === nothing
         out = @. (6 * dt * dy₀ + 6 * dt * dy₁ + 12 * y₀ - 12 * y₁) / (dt * dt * dt)
     elseif idxs isa Number
@@ -398,7 +398,7 @@ Hairer Norsett Wanner Solving Ordinary Differential Euations I - Nonstiff Proble
 Hermite Interpolation
 """
 @inline function interpolant!(out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{0}})
+        T::Type{Val{0}})
     if out === nothing
         return (1 - Θ) * y₀[idxs] + Θ * y₁[idxs] +
                Θ * (Θ - 1) *
@@ -419,7 +419,7 @@ end
 Hermite Interpolation
 """
 @inline function interpolant!(out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{1}})
+        T::Type{Val{1}})
     if out === nothing
         return dy₀[idxs] +
                Θ * (-4 * dt * dy₀[idxs] - 2 * dt * dy₁[idxs] - 6 * y₀[idxs] +
@@ -442,7 +442,7 @@ end
 Hermite Interpolation
 """
 @inline function interpolant!(out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{2}})
+        T::Type{Val{2}})
     if out === nothing
         return (-4 * dt * dy₀[idxs] - 2 * dt * dy₁[idxs] - 6 * y₀[idxs] +
                 Θ *
@@ -463,7 +463,7 @@ end
 Hermite Interpolation
 """
 @inline function interpolant!(out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
-    T::Type{Val{3}})
+        T::Type{Val{3}})
     if out === nothing
         return (6 * dt * dy₀[idxs] + 6 * dt * dy₁[idxs] + 12 * y₀[idxs] - 12 * y₁[idxs]) /
                (dt * dt * dt)
@@ -509,7 +509,7 @@ end
 Linear Interpolation
 """
 @inline function interpolant!(out, Θ, id::LinearInterpolation, dt, y₀, y₁, idxs,
-    T::Type{Val{0}})
+        T::Type{Val{0}})
     Θm1 = (1 - Θ)
     if out === nothing
         return Θm1 * y₀[idxs] + Θ * y₁[idxs]
@@ -524,7 +524,7 @@ end
 Linear Interpolation
 """
 @inline function interpolant!(out, Θ, id::LinearInterpolation, dt, y₀, y₁, idxs,
-    T::Type{Val{1}})
+        T::Type{Val{1}})
     if out === nothing
         return (y₁[idxs] - y₀[idxs]) / dt
     elseif idxs === nothing
@@ -540,7 +540,7 @@ end
 Constant Interpolation
 """
 @inline function interpolant(Θ, id::ConstantInterpolation, dt, y₀, y₁, idxs,
-    T::Type{Val{0}})
+        T::Type{Val{0}})
     if idxs === nothing
         out = @. y₀
     elseif idxs isa Number
@@ -553,7 +553,7 @@ Constant Interpolation
 end
 
 @inline function interpolant(Θ, id::ConstantInterpolation, dt, y₀, y₁, idxs,
-    T::Type{Val{1}})
+        T::Type{Val{1}})
     if idxs === nothing
         out = zeros(eltype(y₀), length(y₀))
     elseif idxs isa Number
@@ -569,7 +569,7 @@ end
 Constant Interpolation
 """
 @inline function interpolant!(out, Θ, id::ConstantInterpolation, dt, y₀, y₁, idxs,
-    T::Type{Val{0}})
+        T::Type{Val{0}})
     if out === nothing
         return y₀[idxs]
     elseif idxs === nothing
@@ -583,7 +583,7 @@ end
 Constant Interpolation
 """
 @inline function interpolant!(out, Θ, id::ConstantInterpolation, dt, y₀, y₁, idxs,
-    T::Type{Val{1}})
+        T::Type{Val{1}})
     if out === nothing
         return zeros(eltype(y₀), length(idxs))
     else

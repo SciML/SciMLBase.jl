@@ -56,8 +56,7 @@ function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
 end
 
 function Base.merge(a::DEStats, b::DEStats)
-    DEStats(
-        a.nf + b.nf,
+    DEStats(a.nf + b.nf,
         a.nf2 + b.nf2,
         a.nw + b.nw,
         a.nsolve + b.nsolve,
@@ -67,8 +66,7 @@ function Base.merge(a::DEStats, b::DEStats)
         a.ncondition + b.ncondition,
         a.naccept + b.naccept,
         a.nreject + b.nreject,
-        max(a.maxeig, b.maxeig),
-    ) 
+        max(a.maxeig, b.maxeig))
 end
 
 """
@@ -126,7 +124,7 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Sy
 end
 
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-    tslocation, stats, alg_choice, retcode) where {T, N}
+        tslocation, stats, alg_choice, retcode) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats),
@@ -135,35 +133,35 @@ function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense
 end
 
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
-    continuity = :left) where {deriv}
+        continuity = :left) where {deriv}
     sol(t, deriv, idxs, continuity)
 end
 function (sol::AbstractODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
-    continuity = :left) where {deriv}
+        continuity = :left) where {deriv}
     sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Nothing,
-    continuity) where {deriv}
+        continuity) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-    idxs::Nothing, continuity) where {deriv}
+        idxs::Nothing, continuity) where {deriv}
     augment(sol.interp(t, idxs, deriv, sol.prob.p, continuity), sol)
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Integer,
-    continuity) where {deriv}
+        continuity) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv},
-    idxs::AbstractVector{<:Integer},
-    continuity) where {deriv}
+        idxs::AbstractVector{<:Integer},
+        continuity) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-    idxs::Integer, continuity) where {deriv}
+        idxs::Integer, continuity) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
@@ -181,8 +179,8 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     end
 end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-    idxs::AbstractVector{<:Integer},
-    continuity) where {deriv}
+        idxs::AbstractVector{<:Integer},
+        continuity) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
@@ -201,20 +199,20 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
-    continuity) where {deriv}
+        continuity) where {deriv}
     issymbollike(idxs) || error("Incorrect specification of `idxs`")
     augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)[idxs][1]
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
-    continuity) where {deriv}
+        continuity) where {deriv}
     all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
     [first(interp_sol[idx]) for idx in idxs]
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
-    continuity) where {deriv}
+        continuity) where {deriv}
     issymbollike(idxs) || error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
@@ -228,7 +226,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-    idxs::AbstractVector, continuity) where {deriv}
+        idxs::AbstractVector, continuity) where {deriv}
     all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
@@ -245,14 +243,14 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
 end
 
 function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
-    alg, t, u; timeseries_errors = length(u) > 2,
-    dense = false, dense_errors = dense,
-    calculate_error = true,
-    k = nothing,
-    alg_choice = nothing,
-    interp = LinearInterpolation(t, u),
-    retcode = ReturnCode.Default, destats = missing, stats = nothing,
-    kwargs...)
+        alg, t, u; timeseries_errors = length(u) > 2,
+        dense = false, dense_errors = dense,
+        calculate_error = true,
+        k = nothing,
+        alg_choice = nothing,
+        interp = LinearInterpolation(t, u),
+        retcode = ReturnCode.Default, destats = missing, stats = nothing,
+        kwargs...)
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
@@ -314,7 +312,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
 end
 
 function calculate_solution_errors!(sol::AbstractODESolution; fill_uanalytic = true,
-    timeseries_errors = true, dense_errors = true)
+        timeseries_errors = true, dense_errors = true)
     f = sol.prob.f
 
     if fill_uanalytic

@@ -1,7 +1,7 @@
 """
 $(TYPEDEF)
 """
-struct StandardDDEProblem end
+struct StandardDDEProblem <: AbstractProblemType end
 
 @doc doc"""
 
@@ -201,7 +201,18 @@ prob = DDEProblemLibrary.prob_dde_constant_1delay_ip
 sol = solve(prob)
 ```
 """
-struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
+struct DDEProblem{
+    uType,
+    tType,
+    lType,
+    lType2,
+    isinplace,
+    P,
+    F,
+    H,
+    K,
+    PT <: AbstractProblemType,
+} <:
        AbstractDDEProblem{uType, tType, lType, isinplace}
     f::F
     u0::uType
@@ -216,14 +227,14 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     problem_type::PT
 
     @add_kwonly function DDEProblem{iip}(f::AbstractDDEFunction{iip}, u0, h, tspan,
-        p = NullParameters();
-        constant_lags = (),
-        dependent_lags = (),
-        neutral = f.mass_matrix !== I &&
-                  det(f.mass_matrix) != 1,
-        order_discontinuity_t0 = 0,
-        problem_type = StandardDDEProblem(),
-        kwargs...) where {iip}
+            p = NullParameters();
+            constant_lags = (),
+            dependent_lags = (),
+            neutral = f.mass_matrix !== I &&
+                      det(f.mass_matrix) != 1,
+            order_discontinuity_t0 = 0,
+            problem_type = StandardDDEProblem(),
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
@@ -242,8 +253,8 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     end
 
     function DDEProblem{iip}(f::AbstractDDEFunction{iip}, h, tspan::Tuple,
-        p = NullParameters();
-        order_discontinuity_t0 = 1, kwargs...) where {iip}
+            p = NullParameters();
+            order_discontinuity_t0 = 1, kwargs...) where {iip}
         DDEProblem{iip}(f, h(p, first(tspan)), h, tspan, p;
             order_discontinuity_t0 = max(1, order_discontinuity_t0), kwargs...)
     end
@@ -279,7 +290,7 @@ struct DynamicalDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 Define a dynamical DDE problem from a [`DynamicalDDEFunction`](@ref).
 """
 function DynamicalDDEProblem(f::DynamicalDDEFunction, v0, u0, h, tspan,
-    p = NullParameters(); dependent_lags = (), kwargs...)
+        p = NullParameters(); dependent_lags = (), kwargs...)
     DDEProblem(f, ArrayPartition(v0, u0), h, tspan, p;
         problem_type = DynamicalDDEProblem{isinplace(f)}(),
         dependent_lags = ntuple(i -> (u, p, t) -> dependent_lags[i](u[1], u[2], p, t),
@@ -287,7 +298,7 @@ function DynamicalDDEProblem(f::DynamicalDDEFunction, v0, u0, h, tspan,
         kwargs...)
 end
 function DynamicalDDEProblem(f::DynamicalDDEFunction, h, tspan, p = NullParameters();
-    kwargs...)
+        kwargs...)
     DynamicalDDEProblem(f, h(p, first(tspan))..., h, tspan, p; kwargs...)
 end
 function DynamicalDDEProblem(f1, f2, args...; kwargs...)

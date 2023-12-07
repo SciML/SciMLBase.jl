@@ -425,9 +425,9 @@ function sym_to_index(sym, integrator::DEIntegrator)
 end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
-    I::Union{Int, AbstractArray{Int},
-        CartesianIndex, Colon, BitArray,
-        AbstractArray{Bool}}...)
+        I::Union{Int, AbstractArray{Int},
+            CartesianIndex, Colon, BitArray,
+            AbstractArray{Bool}}...)
     RecursiveArrayTools.VectorOfArray(A.u)[I...]
 end
 
@@ -675,10 +675,10 @@ function Base.iterate(tup::IntegratorTuples, state = 0)
 end
 
 function Base.eltype(::Type{
-    IntegratorTuples{I},
-}) where {U, T,
-    I <:
-    DEIntegrator{<:Any, <:Any, U, T}}
+        IntegratorTuples{I},
+    }) where {U, T,
+        I <:
+        DEIntegrator{<:Any, <:Any, U, T}}
     Tuple{U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorTuples}) = Base.SizeUnknown()
@@ -702,11 +702,11 @@ function Base.iterate(tup::IntegratorIntervals, state = 0)
 end
 
 function Base.eltype(::Type{
-    IntegratorIntervals{I},
-}) where {U, T,
-    I <:
-    DEIntegrator{<:Any, <:Any, U, T
-    }}
+        IntegratorIntervals{I},
+    }) where {U, T,
+        I <:
+        DEIntegrator{<:Any, <:Any, U, T
+        }}
     Tuple{U, T, U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorIntervals}) = Base.SizeUnknown()
@@ -749,11 +749,11 @@ end
 Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
 @recipe function f(integrator::DEIntegrator;
-    denseplot = (integrator.opts.calck ||
-                 integrator isa AbstractSDEIntegrator) &&
-                integrator.iter > 0,
-    plotdensity = 10,
-    plot_analytic = false, vars = nothing, idxs = nothing)
+        denseplot = (integrator.opts.calck ||
+                     integrator isa AbstractSDEIntegrator) &&
+                    integrator.iter > 0,
+        plotdensity = 10,
+        plot_analytic = false, vars = nothing, idxs = nothing)
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
             :f; force = true)
