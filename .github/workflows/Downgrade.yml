@@ -12,6 +12,7 @@ on:
       - 'docs/**'
 jobs:
   test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         version: ['1']
