@@ -1,3 +1,5 @@
+name: Downgrade
+
 jobs:
   test:
     strategy:
