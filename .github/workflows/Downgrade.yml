@@ -22,7 +22,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
       - uses: cjdoris/julia-downgrade-compat-action@v1
-        if: ${{ matrix.version == '1.6' }}
+#        if: ${{ matrix.version == '1.6' }}
         with:
           skip: Pkg,TOML
       - uses: julia-actions/julia-buildpkg@v1
