@@ -87,12 +87,11 @@ end
 
 get_p(sol::OptimizationSolution) = sol.cache.p
 get_observed(sol::OptimizationSolution) = sol.cache.f.observed
-get_syms(sol::OptimizationSolution) = sol.cache.f.syms
-get_paramsyms(sol::OptimizationSolution) = sol.cache.f.paramsyms
-
+get_syms(sol::OptimizationSolution) = variable_symbols(sol.cache.f)
+get_paramsyms(sol::OptimizationSolution) = parameter_symbols(sol.cache.f)
 has_observed(sol::OptimizationSolution) = get_observed(sol) !== nothing
-has_syms(sol::OptimizationSolution) = get_syms(sol) !== nothing
-has_paramsyms(sol::OptimizationSolution) = get_paramsyms(sol) !== nothing
+has_syms(sol::OptimizationSolution) = !isempty(variable_symbols(sol.cache.f))
+has_paramsyms(sol::OptimizationSolution) = !isempty(parameter_symbols(sol.cache.f))
 
 function Base.show(io::IO, A::AbstractOptimizationSolution)
     println(io, string("retcode: ", A.retcode))
@@ -102,6 +101,9 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
     print(io, "Final objective value:     $(A.objective)\n")
     return
 end
+
+SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationSolution) = x.cache.p
+SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationSolution) = x.cache.f
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
     s::Symbol)

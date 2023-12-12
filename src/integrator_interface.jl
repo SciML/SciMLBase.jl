@@ -345,13 +345,13 @@ function set_u!(integrator::DEIntegrator, sym, val)
     # So any error checking happens to ensure we actually _can_ set state
     set_u!(integrator, integrator.u)
 
-    if !issymbollike(sym)
+    if symbolic_type(sym) == NotSymbolic()
         error("sym must be a symbol")
     end
-    i = sym_to_index(sym, integrator)
+    i = variable_index(integrator, sym)
 
     if isnothing(i)
-        error("sym is not a state variable")
+        error("$sym is not a state variable")
     end
 
     integrator.u[i] = val
@@ -385,27 +385,27 @@ end
 
 ### Indexing
 function getsyms(integrator::DEIntegrator)
-    if has_syms(integrator.f)
-        return integrator.f.syms
-    else
-        return keys(integrator.u[1])
+    syms = variable_symbols(integrator)
+    if isempty(syms)
+        syms = keys(integrator.u)
     end
+    return syms
 end
 
 function getindepsym(integrator::DEIntegrator)
-    if has_indepsym(integrator.f)
-        return integrator.f.indepsym
-    else
+    syms = independent_variable_symbols(integrator)
+    if isempty(syms)
         return nothing
     end
+    return syms
 end
 
 function getparamsyms(integrator::DEIntegrator)
-    if has_paramsyms(integrator.f)
-        return integrator.f.paramsyms
-    else
+    psyms = parameter_symbols(integrator)
+    if isempty(psyms)
         return nothing
     end
+    return psyms
 end
 
 function getobserved(integrator::DEIntegrator)
@@ -417,58 +417,76 @@ function getobserved(integrator::DEIntegrator)
 end
 
 function sym_to_index(sym, integrator::DEIntegrator)
-    if has_sys(integrator.f) && is_state_sym(integrator.f.sys, sym)
-        return state_sym_to_index(integrator.f.sys, sym)
+    idx = variable_index(integrator, sym)
+    if idx === nothing
+        idx = findfirst(isequal(sym), keys(integrator.u))
+    end
+    return idx
+end
+
+# SymbolicIndexingInterface
+SymbolicIndexingInterface.symbolic_container(A::DEIntegrator) = A.f
+SymbolicIndexingInterface.parameter_values(A::DEIntegrator) = A.p
+
+function SymbolicIndexingInterface.is_observed(A::DEIntegrator, sym)
+    return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()
+end
+
+function SymbolicIndexingInterface.observed(A::DEIntegrator, sym)
+    (u, p, t) -> getobserved(A)(sym, u, p, t)
+end
+
+SymbolicIndexingInterface.is_time_dependent(::DEIntegrator) = true
+
+# TODO make this nontrivial once dynamic state selection works
+SymbolicIndexingInterface.constant_structure(::DEIntegrator) = true
+
+function Base.getproperty(A::DEIntegrator, sym::Symbol)
+    if sym === :destats && hasfield(typeof(A), :stats)
+        @warn "destats has been deprecated for stats"
+        getfield(A, :stats)
     else
-        return sym_to_index(sym, getsyms(integrator))
+        return getfield(A, sym)
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator,
-    I::Union{Int, AbstractArray{Int},
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::NotSymbolic, I::Union{Int, AbstractArray{Int},
         CartesianIndex, Colon, BitArray,
         AbstractArray{Bool}}...)
-    RecursiveArrayTools.VectorOfArray(A.u)[I...]
+    A.u[I...]
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ScalarSymbolic, sym)
+    if is_variable(A, sym)
+        return A[variable_index(A, sym)]
+    elseif is_parameter(A, sym)
+        Base.depwarn("Indexing with parameters is deprecated. Use `getp(sys, $sym)(integrator)` for parameter indexing.", :parameter_getindex)
+        return getp(A, sym)(A)
+    elseif is_independent_variable(A, sym)
+        return A.t
+    elseif is_observed(A, sym)
+        return SymbolicIndexingInterface.observed(A, sym)(A.u, A.p, A.t)
+    else
+        error("Tried to index integrator with a Symbol that was not found in the system.")
+    end
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ArraySymbolic, sym)
+    return A[collect(sym)]
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ScalarSymbolic, sym::Union{Tuple,AbstractArray})
+    return getindex.((A,), sym)
 end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
-    if issymbollike(sym)
-        if sym isa AbstractArray
-            return A[collect(sym)]
-        end
-        i = sym_to_index(sym, A)
-    elseif all(issymbollike, sym)
-        return getindex.((A,), sym)
-    else
-        i = sym
-    end
+    symtype = symbolic_type(sym)
+    elsymtype = symbolic_type(eltype(sym))
 
-    if i === nothing
-        if issymbollike(sym)
-            if has_sys(A.f) && is_indep_sym(A.f.sys, sym) ||
-               Symbol(sym) == getindepsym(A)
-                return A.t
-            elseif has_sys(A.f) && is_param_sym(A.f.sys, sym)
-                return A.p[param_sym_to_index(A.f.sys, sym)]
-            elseif has_paramsyms(A.f) && Symbol(sym) in getparamsyms(A)
-                return A.p[findfirst(x -> isequal(x, Symbol(sym)), getparamsyms(A))]
-            elseif (sym isa Symbol) && has_sys(A.f) && hasproperty(A.f.sys, sym)   # Handles input like :X (where X is a state). 
-                return observed(A, getproperty(A.f.sys, sym))
-            elseif has_sys(A.f) && (count('₊', String(Symbol(sym))) == 1) &&
-                   (count(isequal(Symbol(sym)),
-                       Symbol.(A.f.sys.name, :₊, getparamsyms(A))) == 1)   # Handles input like sys.X (where X is a parameter).  
-                return A.p[findfirst(isequal(Symbol(sym)),
-                    Symbol.(A.f.sys.name, :₊, getparamsyms(A)))]
-            else
-                return observed(A, sym)
-            end
-        else
-            observed(A, sym)
-        end
-    elseif i isa Base.Integer || i isa AbstractRange || i isa AbstractVector{<:Base.Integer}
-        A[i]
+    if symtype != NotSymbolic()
+        return getindex(A, symtype, sym)
     else
-        error("Invalid indexing of integrator")
+        return getindex(A, elsymtype, sym)
     end
 end
 
@@ -477,52 +495,24 @@ function observed(A::DEIntegrator, sym)
 end
 
 function Base.setindex!(A::DEIntegrator, val, sym)
-    if has_sys(A.f)
-        if issymbollike(sym)
-            params = getparamsyms(A)
-            s = Symbol.(states(A.f.sys))
-            params = Symbol.(params)
-
-            i = findfirst(isequal(Symbol(sym)), s)
-            if !isnothing(i)
-                A.u[i] = val
-                return A
-            elseif sym isa Symbol  # Handles input like :X.
-                s_f = Symbol.(getproperty.(states(A.f.sys), :f))
-                if count(isequal(Symbol(sym)), s_f) == 1
-                    i = findfirst(isequal(sym), s_f)
-                    A.u[i] = val
-                    return A
-                elseif count(isequal(Symbol(sym)), s_f) > 1
-                    error("The input symbol $(sym) occurs several times among integrator states. Please avoid use Symbol form (:$(sym)).")
-                end
-            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
-                s_names = Symbol.(A.f.sys.name, :₊, s)
-                if count(isequal(Symbol(sym)), s_names) == 1
-                    i = findfirst(isequal(Symbol(sym)), s_names)
-                    A.u[i] = val
-                    return A
-                end
-            end
-
-            i = findfirst(isequal(Symbol(sym)), params)
-            if !isnothing(i)
-                A.p[i] = val
-                return A
-            elseif count('₊', String(Symbol(sym))) == 1  # Handles input like sys.X. 
-                p_names = Symbol.(A.f.sys.name, :₊, params)
-                if count(isequal(Symbol(sym)), p_names) == 1
-                    i = findfirst(isequal(Symbol(sym)), p_names)
-                    A.p[i] = val
-                    return A
-                end
-            end
-            error("Invalid indexing of integrator: $sym is not a state or parameter, it may be an observed variable.")
+    has_sys(A.f) || error("Invalid indexing of integrator: Integrator does not support indexing without a system")
+    if symbolic_type(sym) == ScalarSymbolic()
+        if is_variable(A, sym)
+            A.u[variable_index(A, sym)] = val
+        elseif is_parameter(A, sym)
+            Base.depwarn("Parameter indexing is deprecated. Use `setp(sys, $sym)(integrator, $val)` to set parameter value.", :parameter_setindex)
+            setp(A, sym)(A, val)
         else
-            error("Invalid indexing of integrator: $sym is not a symbol")
+            error("Invalid indexing of integrator: $sym is not a state or parameter, it may be an observed variable.")
         end
+        return A
+    elseif symbolic_type(sym) == ArraySymbolic()
+        setindex!.((A,), val, collect(sym))
+        return A
     else
-        error("Invalid indexing of integrator: Integrator does not support indexing without a system")
+        sym isa AbstractArray || error("Invalid indexing of integrator")
+        setindex!.((A,), val, sym)
+        return A
     end
 end
 

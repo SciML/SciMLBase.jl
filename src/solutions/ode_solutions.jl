@@ -165,83 +165,44 @@ end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     idxs::Integer, continuity) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
-    observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if has_sys(sol.prob.f)
-        DiffEqArray{typeof(A).parameters[1:4]..., typeof(sol.prob.f.sys), typeof(observed),
-            typeof(p)}(A.u,
-            A.t,
-            sol.prob.f.sys,
-            observed,
-            p)
-    else
-        syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ?
-               [sol.prob.f.syms[idxs]] : nothing
-        DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
-    end
+    return DiffEqArray(A.u, A.t, p, sol)
 end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     idxs::AbstractVector{<:Integer},
     continuity) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
-    observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if has_sys(sol.prob.f)
-        DiffEqArray{typeof(A).parameters[1:4]..., typeof(sol.prob.f.sys), typeof(observed),
-            typeof(p)}(A.u,
-            A.t,
-            sol.prob.f.sys,
-            observed,
-            p)
-    else
-        syms = hasproperty(sol.prob.f, :syms) && sol.prob.f.syms !== nothing ?
-               sol.prob.f.syms[idxs] : nothing
-        DiffEqArray(A.u, A.t, syms, getindepsym(sol), observed, p)
-    end
+    return DiffEqArray(A.u, A.t, p, sol)
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
     continuity) where {deriv}
-    issymbollike(idxs) || error("Incorrect specification of `idxs`")
+    symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)[idxs][1]
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
     continuity) where {deriv}
-    all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
+    all(!isequal(NotSymbolic()), symbolic_type.(idxs)) || error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
     [first(interp_sol[idx]) for idx in idxs]
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
     continuity) where {deriv}
-    issymbollike(idxs) || error("Incorrect specification of `idxs`")
+    symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
-    observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if has_sys(sol.prob.f)
-        return DiffEqArray(interp_sol[idxs], t, [idxs],
-            independent_variables(sol.prob.f.sys), observed, p)
-    else
-        return DiffEqArray(interp_sol[idxs], t, [idxs], getindepsym(sol), observed, p)
-    end
+    return DiffEqArray(interp_sol[idxs], t, p, sol)
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     idxs::AbstractVector, continuity) where {deriv}
-    all(issymbollike.(idxs)) || error("Incorrect specification of `idxs`")
+    all(!isequal(NotSymbolic()), symbolic_type.(idxs)) || error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
-    observed = has_observed(sol.prob.f) ? sol.prob.f.observed : DEFAULT_OBSERVED
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    if has_sys(sol.prob.f)
-        return DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t,
-            idxs,
-            independent_variables(sol.prob.f.sys), observed, p)
-    else
-        return DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t,
-            idxs,
-            getindepsym(sol), observed, p)
-    end
+    return DiffEqArray([[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, p, sol)
 end
 
 function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},

@@ -1,62 +1,55 @@
 function getsyms(sol::AbstractSciMLSolution)
-    if has_syms(sol.prob.f)
-        return sol.prob.f.syms
-    else
-        return keys(sol.u[1])
+    syms = variable_symbols(sol)
+    if isempty(syms)
+        syms = keys(sol.u[1])
     end
+    return syms
 end
 
 function getsyms(prob::AbstractSciMLProblem)
-    if has_syms(prob.f)
-        return prob.f.syms
-    else
-        return []
-    end
+    return variable_symbols(prob.f)
 end
 
 function getsyms(sol::AbstractOptimizationSolution)
-    if has_syms(sol)
-        return get_syms(sol)
-    else
-        return keys(sol.u[1])
+    syms = variable_symbols(sol)
+    if isempty(syms)
+        syms = keys(sol.u[1])
     end
+    return syms
 end
 
 function getindepsym(prob::AbstractSciMLProblem)
-    if has_indepsym(prob.f)
-        return prob.f.indepsym
-    else
+    syms = independent_variable_symbols(prob.f)
+    if isempty(syms)
         return nothing
+    else
+        return syms[1]
     end
 end
 
 getindepsym(sol::AbstractSciMLSolution) = getindepsym(sol.prob)
 
 function getparamsyms(prob::AbstractSciMLProblem)
-    if has_paramsyms(prob.f)
-        return prob.f.paramsyms
-    else
+    psyms = parameter_symbols(prob.f)
+    if isempty(psyms)
         return nothing
     end
+    return psyms
 end
 
 getparamsyms(sol) = getparamsyms(sol.prob)
 
 function getparamsyms(sol::AbstractOptimizationSolution)
-    if has_paramsyms(sol)
-        return get_paramsyms(sol)
-    else
+    psyms = parameter_symbols(sol)
+    if isempty(psyms)
         return nothing
     end
+    return psyms
 end
 
 # Only for compatibility!
 function getindepsym_defaultt(sol)
-    if has_indepsym(sol.prob.f)
-        return sol.prob.f.indepsym
-    else
-        return :t
-    end
+    return something(getindepsym(sol), :t)
 end
 
 function getobserved(prob::AbstractSciMLProblem)
@@ -95,20 +88,13 @@ function cleansym(sym::Symbol)
 end
 
 function sym_to_index(sym, prob::AbstractSciMLProblem)
-    if has_sys(prob.f) && is_state_sym(prob.f.sys, sym)
-        return state_sym_to_index(prob.f.sys, sym)
-    else
-        return sym_to_index(sym, getsyms(prob))
-    end
+    return variable_index(prob.f, sym)
 end
-
 function sym_to_index(sym, sol::AbstractSciMLSolution)
-    if has_sys(sol.prob.f) && is_state_sym(sol.prob.f.sys, sym)
-        return state_sym_to_index(sol.prob.f.sys, sym)
-    else
-        return sym_to_index(sym, getsyms(sol))
+    idx = variable_index(sol.prob.f, sym)
+    if idx === nothing
+        idx = findfirst(isequal(sym), keys(sol.u[1]))
     end
+    return idx
 end
-
 sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
-const issymbollike = RecursiveArrayTools.issymbollike

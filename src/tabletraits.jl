@@ -25,16 +25,18 @@ end
 
 function Tables.rows(sol::AbstractTimeseriesSolution)
     VT = eltype(sol.u)
+    syms = variable_symbols(sol)
     if VT <: AbstractArray
         N = length(sol.u[1])
         names = [
             :timestamp,
-            (has_syms(sol.prob.f) ? (sol.prob.f.syms[i] for i in 1:N) :
-             (Symbol("value", i) for i in 1:N))...,
+            (isempty(syms) ? (Symbol("value", i) for i in 1:N) :
+            (syms[i] for i in 1:N))...,
         ]
         types = Type[eltype(sol.t), (eltype(sol.u[1]) for i in 1:N)...]
     else
-        names = [:timestamp, has_syms(sol.prob.f) ? sol.prob.f.syms[1] : :value]
+
+        names = [:timestamp, isempty(syms) ? :value : syms[1]]
         types = Type[eltype(sol.t), VT]
     end
     return AbstractTimeseriesSolutionRows(names, types, sol.t, sol.u)
