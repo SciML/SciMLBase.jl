@@ -8,6 +8,7 @@ using SciMLBase: ODESolution, sym_to_index, remake,
                  getobserved, build_solution, EnsembleSolution,
                  NonlinearSolution, AbstractTimeseriesSolution
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic
+using RecursiveArrayTools
 
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
@@ -68,6 +69,9 @@ end
         (EnsembleSolution(arrarr, 0.0, true, stats), nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
+        (EnsembleSolution(p̄, 0.0, true, stats), nothing, nothing, nothing)
+    end
+    function EnsembleSolution_adjoint(p̄::RecursiveArrayTools.AbstractVectorOfArray)
         (EnsembleSolution(p̄, 0.0, true, stats), nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::EnsembleSolution)
