@@ -49,7 +49,7 @@ Additionally, the following rules apply to subsets of uses:
 ### Adaptive Number Types
 
 * `x::T / y::T = z::T`
-* Default choices of norms can assume `sqrt(x::T)::T` exists. If `internalnorm` is overriden then this
+* Default choices of norms can assume `sqrt(x::T)::T` exists. If `internalnorm` is overridden then this
   may not be required (for example, changing the norm to inf-norm).
 * `x::T ^ y::T = z::T`
 
