@@ -2,7 +2,9 @@
 
 pages = [
     "Home" => "index.md",
-    "Interfaces" => Any["interfaces/Problems.md",
+    "Interfaces" => Any[
+        "interfaces/Array_and_Number.md",
+        "interfaces/Problems.md",
         "interfaces/SciMLFunctions.md",
         "interfaces/Algorithms.md",
         "interfaces/Solutions.md",
