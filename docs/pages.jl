@@ -6,7 +6,6 @@ pages = [
         "interfaces/Array_and_Number.md",
         "interfaces/Problems.md",
         "interfaces/SciMLFunctions.md",
-        "interfaces/Array_and_Number.md",
         "interfaces/Algorithms.md",
         "interfaces/Solutions.md",
         "interfaces/Init_Solve.md",
