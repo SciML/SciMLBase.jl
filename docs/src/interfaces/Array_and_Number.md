@@ -88,6 +88,7 @@ Additionally, the following rules apply to subsets of uses:
 * `z::T .= x::T .+ y::T` is defined
 * `z::T .= x::T .* y::T` is defined
 * `z::T .= t::T2 .* x::T` where `T2` is the time type (a Number) and `T` is the container type.
+* (Optional) `Base.resize!(x,i)` is required for `resize!(integrator,i)` to be supported.
 
 ### SciML Matrix (Operator) Type
 
