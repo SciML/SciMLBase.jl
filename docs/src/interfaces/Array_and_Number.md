@@ -17,7 +17,7 @@ in SciML tools.
     To do this, set `interface_checks = false` as a keyword argument to `init`/`solve`
     to bypass any of the internal interface checks. This means you will no longer get
     a nice high-level error message and instead it will attempt to use the type
-    without restrictions. Note that not every problem/solver has not implemented this
+    without restrictions. Note that not every problem/solver has implemented this
     new keyword argument as of 2023.
 
 ## Note About Wrapped Solvers
