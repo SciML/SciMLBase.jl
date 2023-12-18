@@ -91,7 +91,7 @@ Additionally, the following rules apply to subsets of uses:
 
 ### SciML Matrix (Operator) Type
 
-Note that the matrix type may not match the type of the initial container `u0`. An example is `ComponetMatrix`
+Note that the matrix type may not match the type of the initial container `u0`. An example is `ComponentMatrix`
 as the matrix structure corresponding to a `ComponentArray`. However, the following actions are assumed
 to hold on the resulting matrix type:
 
