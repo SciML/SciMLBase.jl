@@ -613,7 +613,7 @@ are the lower and upper bounds for `cons[i]`.
 
 The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](@ref)
 to specify the objective function and its derivatives either by passing 
-predefined functions for them or automatically generated using the [`ADType`](@ref). 
+predefined functions for them or automatically generated using the [ADType](https://github.com/SciML/ADTypes.jl). 
 
 If `f` is a standard Julia function, it is automatically transformed into an
 `OptimizationFunction` with `NoAD()`, meaning the derivative functions are not
@@ -639,7 +639,7 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 
 ## Inequality and Equality Constraints
 
-Both inequality and equality constraints are defined by the `f.cons` function in the [`OptimizationFunction`](@ref)
+Both inequality and equality constraints are defined by the `f.cons` function in the [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
 description of the problem structure. This `f.cons` is given as a function `f.cons(u,p)` which computes
 the value of the constraints at `u`. For example, take `f.cons(u,p) = u[1] - u[2]`.
 With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
