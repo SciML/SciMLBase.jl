@@ -1988,8 +1988,8 @@ the objective, even if no such parameters are used in the objective it should be
 any additional arguments that are relevant to the objective function, for example minibatches used in machine learning,
 take a look at the minibatching tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/). This should return
 a scalar, the loss value, as the first return output and if any additional outputs are returned, they will be passed to the `callback`
-function described in [Callback Functions](@ref).
-- `adtype`: see the section [Defining Optimization Functions via AD](@ref)
+function described in [Callback Functions](https://docs.sciml.ai/Optimization/stable/API/solve/#Common-Solver-Options-(Solve-Keyword-Arguments)).
+- `adtype`: see the Defining Optimization Functions via AD section below.
 
 ## Keyword Arguments
 
@@ -2034,7 +2034,7 @@ function described in [Callback Functions](@ref).
 - `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for
   the sparsity pattern of the `cons_hess_prototype`.
 
-When [Symbolic Problem Building with ModelingToolkit](@ref) interface is used the following arguments are also relevant:
+When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Optimization/stable/tutorials/symbolic/) interface is used the following arguments are also relevant:
 
 - `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
   example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
