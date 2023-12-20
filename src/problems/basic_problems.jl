@@ -630,9 +630,9 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 * `ub`: the upper bounds for the optimization variables `u`.
 * `int`: integrality indicator for `u`. If `int[i] == true`, then `u[i]` is an integer variable.
     Defaults to `nothing`, implying no integrality constraints.
-* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](@ref).
+* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
     Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
-* `ucons`: the vector of upper bounds for the constraints passed to [`OptimizationFunction`](@ref).
+* `ucons`: the vector of upper bounds for the constraints passed to [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
     Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
 * `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
 * `kwargs`: the keyword arguments passed on to the solvers.
