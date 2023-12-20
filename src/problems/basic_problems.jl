@@ -611,7 +611,7 @@ optimization and if they are set to be equal then it represents an equality cons
 They should be an `AbstractArray` matching the geometry of `u`, where `(lcons[i],ucons[i])`
 are the lower and upper bounds for `cons[i]`.
 
-The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](@ref)
+The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
 to specify the objective function and its derivatives either by passing 
 predefined functions for them or automatically generated using the [ADType](https://github.com/SciML/ADTypes.jl). 
 
