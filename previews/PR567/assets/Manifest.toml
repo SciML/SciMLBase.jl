@@ -530,9 +530,9 @@ version = "0.1.2"
 
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "199288db29b37c0d3fbd30c66c9b66fa4aea5ceb"
+git-tree-sha1 = "5fdf2fe6724d8caabf43b557b84ce53f3b7e2f6b"
 uuid = "1d5cc7b8-4909-519e-a0f8-d0f5ad9712d0"
-version = "2024.0.0+1"
+version = "2024.0.2+0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
