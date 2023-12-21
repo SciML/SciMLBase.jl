@@ -159,7 +159,7 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
                     if iip
                         _nlls = false # Should we assume `true` instead?
                     else
-                        _nlls = length(f.bc(FFakeSolutionObject(u0), p, tspan)) != length(_u0)
+                        _nlls = length(f.bc(FakeSolutionObject(u0), p, tspan)) != length(_u0)
                     end
                 end
             end
