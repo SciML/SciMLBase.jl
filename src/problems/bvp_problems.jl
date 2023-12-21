@@ -11,7 +11,7 @@ struct TwoPointBVProblem{iip} end # The iip is needed to make type stable constr
 @doc doc"""
 
 Defines an BVP problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/)
 
 ## Mathematical Specification of a BVP Problem
 
@@ -41,16 +41,16 @@ u(t_f) = b
 ### Constructors
 
 ```julia
-TwoPointBVProblem{isinplace}(f,bc,u0,tspan,p=NullParameters();kwargs...)
-BVProblem{isinplace}(f,bc,u0,tspan,p=NullParameters();kwargs...)
+TwoPointBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
+BVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
 ```
 
-or if we have an initial guess function `initialGuess(t)` for the given BVP,
+or if we have an initial guess function `initialGuess(p, t)` for the given BVP,
 we can pass the initial guess to the problem constructors:
 
 ```julia
-TwoPointBVProblem{isinplace}(f,bc,initialGuess,tspan,p=NullParameters();kwargs...)
-BVProblem{isinplace}(f,bc,initialGuess,tspan,p=NullParameters();kwargs...)
+TwoPointBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
+BVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
 ```
 
 For any BVP problem type, `bc` must be inplace if `f` is inplace. Otherwise it must be
@@ -104,9 +104,18 @@ every solve call.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `kwargs`: The keyword arguments passed onto the solves.
+
+### Special Keyword Arguments
+
+- `nlls`: Specify that the BVP is a nonlinear least squares problem. Use `Val(true)` or
+  `Val(false)` for type stability. By default this is automatically inferred based on the
+  size of the input and outputs, however this is type unstable for any array type that
+  doesn't store array size as part of type information. Note that if problem is inplace
+  and `bcresid_prototype` in BVPFunction is not specified, then `nlls` is assumed to be
+  `false`.
 """
-struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
-       AbstractBVProblem{uType, tType, isinplace}
+struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
+       AbstractBVProblem{uType, tType, isinplace, nlls}
     f::F
     u0::uType
     tspan::tType
@@ -115,18 +124,50 @@ struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
-            p = NullParameters(); problem_type = nothing, kwargs...) where {iip, TP}
+            p = NullParameters(); problem_type=nothing, nlls=nothing,
+            kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         prob_type = TP ? TwoPointBVProblem{iip}() : StandardBVProblem()
+
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
             problem_type = prob_type
         else
             @assert prob_type===problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
-        return new{typeof(_u0), typeof(_tspan), iip, typeof(p), typeof(f),
+
+        if nlls === nothing
+            # Try to infer it
+            if problem_type isa TwoPointBVProblem
+                if f.bcresid_prototype !== nothing
+                    l1, l2 = length(f.bcresid_prototype[1]), length(f.bcresid_prototype[2])
+                    _nlls = l1 + l2 != length(_u0)
+                else
+                    # iip without bcresid_prototype is not possible
+                    if !iip
+                        l1 = length(f.bc[1](u0, p))
+                        l2 = length(f.bc[2](u0, p))
+                        _nlls = l1 + l2 != length(_u0)
+                    end
+                end
+            else
+                if f.bcresid_prototype !== nothing
+                    _nlls = length(f.bcresid_prototype) != length(_u0)
+                else
+                    if iip
+                        _nlls = false # Should we assume `true` instead?
+                    else
+                        _nlls = length(f.bc(FFakeSolutionObject(u0), p, tspan)) != length(_u0)
+                    end
+                end
+            end
+        else
+            _nlls = _unwrap_val(nlls)
+        end
+
+        return new{typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p), typeof(f),
             typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end
 
@@ -134,6 +175,15 @@ struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
         BVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
+
+struct FakeSolutionObject{U}
+    u::U
+end
+
+(sol::FakeSolutionObject)(t) = sol.u
+Base.getindex(sol::FakeSolutionObject, i::Int) = sol.u
+
+TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
