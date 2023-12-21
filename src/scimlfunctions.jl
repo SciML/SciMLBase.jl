@@ -2032,8 +2032,8 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the BVPFunction type directly match the names of the inputs.
 """
 struct BVPFunction{iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
-        JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
-        SYS} <: AbstractBVPFunction{iip, twopoint}
+    JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
+    SYS} <: AbstractBVPFunction{iip, twopoint}
     f::F
     bc::BF
     mass_matrix::TMM
@@ -2337,11 +2337,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-<<<<<<< HEAD
             observed, _colorvec, sys, initializeprob, initializeprobmap)
-=======
-            observed, _colorvec, sys)
->>>>>>> 65d8f530 (Add a nlls trait to BVProblem)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2354,11 +2350,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-<<<<<<< HEAD
             observed, _colorvec, sys, initializeprob, initializeprobmap)
-=======
-            observed, _colorvec, sys)
->>>>>>> 65d8f530 (Add a nlls trait to BVProblem)
     end
 end
 
@@ -3921,7 +3913,9 @@ end
 function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
     if sys === nothing &&
        (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
-        Base.depwarn("The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.", :syms)
+        Base.depwarn(
+            "The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.",
+            :syms)
         sys = SymbolCache(syms, paramsyms, indepsym)
     end
     return sys

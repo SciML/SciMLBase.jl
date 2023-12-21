@@ -10,7 +10,7 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 @test !SciMLBase.Tables.isrowtable(SciMLBase.QuadratureSolution)
 @test !SciMLBase.Tables.isrowtable(SciMLBase.OptimizationSolution)
 
-@variables x(t)=1
+@variables x(t) = 1
 eqs = [D(x) ~ -x]
 @named sys = ODESystem(eqs, t)
 sys = complete(sys)

@@ -137,8 +137,8 @@ end
 
 # FIXME: Remove the defaults for resid and original on a breaking release
 function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
-    tslocation, stats, alg_choice, retcode, resid = nothing,
-    original = nothing) where {T, N}
+        tslocation, stats, alg_choice, retcode, resid = nothing,
+        original = nothing) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid),

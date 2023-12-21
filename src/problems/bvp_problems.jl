@@ -110,9 +110,8 @@ every solve call.
 - `nlls`: Specify that the BVP is a nonlinear least squares problem. Use `Val(true)` or
   `Val(false)` for type stability. By default this is automatically inferred based on the
   size of the input and outputs, however this is type unstable for any array type that
-  doesn't store array size as part of type information. Note that if problem is inplace
-  and `bcresid_prototype` in BVPFunction is not specified, then `nlls` is assumed to be
-  `false`.
+  doesn't store array size as part of type information. If we can't reliably infer this,
+  we set it to `Nothing`. Downstreams solvers must be setup to deal with this case.
 """
 struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
        AbstractBVProblem{uType, tType, isinplace, nlls}
@@ -124,7 +123,7 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
-            p = NullParameters(); problem_type=nothing, nlls=nothing,
+            p = NullParameters(); problem_type = nothing, nlls = nothing,
             kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
@@ -156,11 +155,7 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
                 if f.bcresid_prototype !== nothing
                     _nlls = length(f.bcresid_prototype) != length(_u0)
                 else
-                    if iip
-                        _nlls = false # Should we assume `true` instead?
-                    else
-                        _nlls = length(f.bc(FakeSolutionObject(u0), p, tspan)) != length(_u0)
-                    end
+                    _nlls = Nothing # Cannot reliably infer
                 end
             end
         else
@@ -175,28 +170,6 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
         BVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
-
-"""
-    isnonlinearleastsquares(prob::BVProblem)
-
-Returns `true` if the underlying problem is a nonlinear least squares problem.
-"""
-@inline function isnonlinearleastsquares(::BVProblem{uType,
-        tType, iip, nlls}) where {uType, tType, iip, nlls}
-    return nlls
-end
-
-struct FakeSolutionObject{U}
-    u::U
-end
-
-(sol::FakeSolutionObject)(t) = sol.u
-Base.length(::FakeSolutionObject) = 1
-Base.firstindex(::FakeSolutionObject) = 1
-Base.lastindex(::FakeSolutionObject) = 1
-Base.getindex(sol::FakeSolutionObject, i::Int) = sol.u
-
-TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
