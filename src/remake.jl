@@ -128,15 +128,14 @@ end
 
 Remake the given `BVProblem`.
 """
-function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan = missing,
-        p = missing, kwargs = missing, problem_type = missing, interpret_symbolicmap = true, _kwargs...)
+function remake(prob::BVProblem{uType, tType, iip, nlls}; f = missing, bc = missing,
+    u0 = missing, tspan = missing, p = missing, kwargs = missing, problem_type = missing,
+    _kwargs...) where {uType, tType, iip, nlls}
     if tspan === missing
         tspan = prob.tspan
     end
 
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
-
-    iip = isinplace(prob)
 
     if problem_type === missing
         problem_type = prob.problem_type
@@ -170,9 +169,10 @@ function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan 
     end
 
     if kwargs === missing
-        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, prob.kwargs..., _kwargs...)
+        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, nlls=Val(nlls), prob.kwargs...,
+            _kwargs...)
     else
-        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, kwargs...)
+        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, nlls=Val(nlls), kwargs...)
     end
 end
 
