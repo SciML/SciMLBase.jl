@@ -181,6 +181,9 @@ struct FakeSolutionObject{U}
 end
 
 (sol::FakeSolutionObject)(t) = sol.u
+Base.length(::FakeSolutionObject) = 1
+Base.firstindex(::FakeSolutionObject) = 1
+Base.lastindex(::FakeSolutionObject) = 1
 Base.getindex(sol::FakeSolutionObject, i::Int) = sol.u
 
 TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
