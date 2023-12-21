@@ -176,6 +176,16 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
     end
 end
 
+"""
+    isnonlinearleastsquares(prob::BVProblem)
+
+Returns `true` if the underlying problem is a nonlinear least squares problem.
+"""
+@inline function isnonlinearleastsquares(::BVProblem{uType,
+        tType, iip, nlls}) where {uType, tType, iip, nlls}
+    return nlls
+end
+
 struct FakeSolutionObject{U}
     u::U
 end
