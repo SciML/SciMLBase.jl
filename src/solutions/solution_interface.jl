@@ -32,6 +32,8 @@ const AbstractSolution = Union{AbstractTimeseriesSolution,AbstractNoTimeSolution
 SymbolicIndexingInterface.symbolic_container(A::AbstractSolution) = A.prob.f
 SymbolicIndexingInterface.parameter_values(A::AbstractSolution) = A.prob.p
 
+SymbolicIndexingInterface.symbolic_container(A::AbstractPDESolution) = A.disc_data.pdesys
+
 SymbolicIndexingInterface.is_independent_variable(::AbstractNoTimeSolution, sym) = false
 
 SymbolicIndexingInterface.independent_variable_symbols(::AbstractNoTimeSolution) = []
