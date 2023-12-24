@@ -55,9 +55,7 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
-page.
+For specifying Jacobians and mass matrices, see the DiffEqFunctions page.
 
 ### Fields
 
