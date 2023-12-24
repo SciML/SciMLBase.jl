@@ -244,6 +244,9 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
         p = NullParameters(),
         problem_type = StandardNonlinearProblem();
         kwargs...) where {iip}
+        if haskey(kwargs, :p)
+	    error("`p` specified as a keyword argument `p = $(kwargs[:p])` to `NonlinearProblem`. This is not supported.")
+	end
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f,
