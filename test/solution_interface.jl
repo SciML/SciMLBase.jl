@@ -14,18 +14,14 @@ end
         push!(sol.u, ode.u0)
     end
 
-    syms = SciMLBase.interpret_vars(nothing, sol, SciMLBase.getsyms(sol))
-    int_vars = SciMLBase.interpret_vars(nothing, sol, syms) # nothing = idxs
+    int_vars = SciMLBase.interpret_vars(nothing, sol) # nothing = idxs
     plot_vecs, labels = SciMLBase.diffeq_to_arrays(sol,
         true, # plot_analytic
         true, # denseplot
         10, # plotdensity
         ode.tspan,
-        0.1, # axis_safety
-        nothing, # idxs
         int_vars,
-        :identity, # tscale
-        nothing) # strs
+        :identity) # tscale
     @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
 end
 
