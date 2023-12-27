@@ -752,20 +752,19 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         idxs = vars
     end
 
-    syms = getsyms(integrator)
-    int_vars = interpret_vars(idxs, integrator.sol, syms)
-    strs = cleansyms(syms)
+    int_vars = interpret_vars(idxs, integrator.sol)
 
     if denseplot
         # Generate the points from the plot from dense function
-        plott = collect(range(integrator.tprev; step = integrator.t, length = plotdensity))
-        plot_timeseries = integrator(plott)
+        plott = collect(range(integrator.tprev, integrator.t; length = plotdensity))
         if plot_analytic
             plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
                 integrator.sol.prob.p,
                 t) for t in plott]
         end
-    end # if not denseplot, we'll just get the values right from the integrator.
+    else
+        plott = nothing
+    end
 
     dims = length(int_vars[1])
     for var in int_vars
@@ -779,11 +778,18 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
     end
 
     labels = String[]# Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
+    strs = String[]
+    varsyms = variable_symbols(integrator)
+    @show plott
+
     for x in int_vars
         for j in 2:dims
             if denseplot
-                push!(plot_vecs[j - 1],
-                    u_n(plot_timeseries, x[j], integrator.sol, plott, plot_timeseries))
+                if (x[j] isa Integer && x[j] == 0) || isequal(x[j],getindepsym_defaultt(integrator))
+                    push!(plot_vecs[j - 1], plott)
+                else
+                    push!(plot_vecs[j - 1], Vector(integrator(plott; idxs = x[j])))
+                end
             else # just get values
                 if x[j] == 0
                     push!(plot_vecs[j - 1], integrator.t)
@@ -792,6 +798,14 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
                 else
                     push!(plot_vecs[j - 1], integrator.u[x[j]])
                 end
+            end
+
+            if !isempty(varsyms) && x[j] isa Integer
+                push!(strs, String(getname(varsyms[x[j]])))
+            elseif hasname(x[j])
+                push!(strs, String(getname(x[j])))
+            else
+                push!(strs, "u[$(x[j])]")
             end
         end
         add_labels!(labels, x, dims, integrator.sol, strs)
