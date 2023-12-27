@@ -69,33 +69,3 @@ function getobserved(sol::AbstractOptimizationSolution)
         return DEFAULT_OBSERVED
     end
 end
-
-cleansyms(syms::Nothing) = nothing
-cleansyms(syms::Tuple) = collect(cleansym(sym) for sym in syms)
-cleansyms(syms::Vector) = cleansyms(Symbol.(syms))
-cleansyms(syms::Vector{Symbol}) = cleansym.(syms)
-cleansyms(syms::LinearIndices) = nothing
-cleansyms(syms::CartesianIndices) = nothing
-cleansyms(syms::Base.OneTo) = nothing
-
-function cleansym(sym::Symbol)
-    str = String(sym)
-    # MTK generated names
-    rules = ("₊" => ".", "⦗" => "(", "⦘" => ")")
-    for r in rules
-        str = replace(str, r)
-    end
-    return str
-end
-
-function sym_to_index(sym, prob::AbstractSciMLProblem)
-    return variable_index(prob.f, sym)
-end
-function sym_to_index(sym, sol::AbstractSciMLSolution)
-    idx = variable_index(sol.prob.f, sym)
-    if idx === nothing
-        idx = findfirst(isequal(sym), keys(sol.u[1]))
-    end
-    return idx
-end
-sym_to_index(sym, syms) = findfirst(isequal(Symbol(sym)), syms)
