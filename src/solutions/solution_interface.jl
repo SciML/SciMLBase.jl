@@ -189,8 +189,6 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     xflip --> tdir < 0
     seriestype --> :path
 
-    @show labels
-
     # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
     if idxs isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
         val = hasname(vars[1][2]) ? String(getname(vars[1][2])) : vars[1][2]
