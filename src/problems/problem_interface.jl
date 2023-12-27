@@ -1,13 +1,20 @@
 SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
 SymbolicIndexingInterface.parameter_values(prob::AbstractSciMLProblem) = prob.p
 
+Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)
+    return getindex(prob, variable_symbols(prob))
+end
+
+Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.AllVariables)
+    return getindex(prob, all_variable_symbols(prob))
+end
+
 Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
     if symbolic_type(sym) == ScalarSymbolic()
         if is_variable(prob.f, sym)
             return prob.u0[variable_index(prob.f, sym)]
         elseif is_parameter(prob.f, sym)
-        Base.depwarn("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.", :parameter_getindex)
-            return getp(prob, sym)(prob)
+        error("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.")
         elseif is_independent_variable(prob.f, sym)
             return getindepsym(prob)
         elseif is_observed(prob.f, sym)
@@ -37,8 +44,7 @@ function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
         if is_variable(prob.f, sym)
             prob.u0[variable_index(prob.f, sym)] = val
         elseif is_parameter(prob.f, sym)
-            Base.depwarn("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.", :parameter_setindex)
-            setp(prob, sym)(prob, val)
+            error("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.", :parameter_setindex)
         else
             error("Invalid indexing of problem: $sym is not a state or parameter, it may be an observed variable.")
         end

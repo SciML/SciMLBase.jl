@@ -28,7 +28,8 @@ integrator = init(oprob, Rodas4())
 
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 2.0
 @test integrator[s2] == integrator[population_model.s2] == integrator[:s2] == 1.0
-
+@test integrator[solvedvariables] == integrator.u
+@test integrator[allvariables] == integrator.u
 step!(integrator, 100.0, true)
 
 @test getp(population_model, a)(integrator) == getp(population_model, population_model.a)(integrator) == getp(population_model, :a)(integrator) == 2.0

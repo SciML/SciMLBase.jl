@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, Test
+using SymbolicIndexingInterface
 
 @parameters σ ρ β
 @variables t x(t) y(t) z(t)
@@ -33,6 +34,8 @@ oprob = ODEProblem(sys, u0, tspan, p, jac = true)
 @test oprob[x] == oprob[sys.x] == oprob[:x] == 1.0
 @test oprob[y] == oprob[sys.y] == oprob[:y] == 0.0
 @test oprob[z] == oprob[sys.z] == oprob[:z] == 0.0
+@test oprob[solvedvariables] == [2.0, 1.0, 0.0, 0.0]
+@test oprob[allvariables] == [2.0, 1.0, 0.0, 0.0]
 
 oprob[σ] = 10.0
 @test oprob[σ] == oprob[sys.σ] == oprob[:σ] == 10.0

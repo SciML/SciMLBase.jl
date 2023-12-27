@@ -49,9 +49,13 @@ sol = solve(prob, Rodas4())
 @test_throws Any sol['a', [1, 2, 3]]
 
 @test sol[a] isa AbstractVector
+@test sol[:a] == sol[a]
 @test sol[a, 1] isa Real
+@test sol[:a, 1] == sol[a, 1]
 @test sol[a, 1:5] isa AbstractVector
+@test sol[:a, 1:5] == sol[a, 1:5]
 @test sol[a, [1, 2, 3]] isa AbstractVector
+@test sol[:a, [1, 2, 3]] == sol[a, [1, 2, 3]]
 
 @test sol[:, 1] isa AbstractVector
 @test sol[:, 1:2] isa AbstractDiffEqArray
@@ -68,7 +72,7 @@ sol = solve(prob, Rodas4())
 @test sol[α, 3] isa Float64
 @test length(sol[α, 5:10]) == 6
 @test getp(prob, γ)(sol) isa Real
-@test getp(prob, γ)(sol) == 2.0
+@test getp(prob, γ)(sol) == getp(prob, :γ)(sol) == 2.0
 @test getp(prob, (lorenz1.σ, lorenz1.ρ))(sol) isa Tuple
 
 @test sol[[lorenz1.x, lorenz2.x]] isa Vector{Vector{Float64}}
@@ -170,6 +174,12 @@ sol9 = sol(0.0:1.0:10.0, idxs = 2)
 
 sol10 = sol(0.1, idxs = 2)
 @test sol10 isa Real
+
+sol11 = solve(prob, Rodas4(), save_idxs = [lorenz1.x, lorenz2.z, a])
+@test length(sol11[:, 1]) == 3
+@test sol11[lorenz1.x] == sol11[:, 1] == sol[lorenz1.x]
+@test sol11[lorenz2.z] == sol11[:, 2] == sol[lorenz2.z]
+@test sol11[a] == sol11[:, 3] == sol[a]
 
 #=
 using Plots

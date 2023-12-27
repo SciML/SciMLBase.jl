@@ -450,18 +450,17 @@ function Base.getproperty(A::DEIntegrator, sym::Symbol)
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::NotSymbolic, I::Union{Int, AbstractArray{Int},
+Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::NotSymbolic, I::Union{Int, AbstractArray{Int},
         CartesianIndex, Colon, BitArray,
         AbstractArray{Bool}}...)
     A.u[I...]
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ScalarSymbolic, sym)
+Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ScalarSymbolic, sym)
     if is_variable(A, sym)
         return A[variable_index(A, sym)]
     elseif is_parameter(A, sym)
-        Base.depwarn("Indexing with parameters is deprecated. Use `getp(sys, $sym)(integrator)` for parameter indexing.", :parameter_getindex)
-        return getp(A, sym)(A)
+        error("Indexing with parameters is deprecated. Use `getp(sys, $sym)(integrator)` for parameter indexing")
     elseif is_independent_variable(A, sym)
         return A.t
     elseif is_observed(A, sym)
@@ -471,11 +470,11 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ScalarSymboli
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ArraySymbolic, sym)
+Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ArraySymbolic, sym)
     return A[collect(sym)]
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::ScalarSymbolic, sym::Union{Tuple,AbstractArray})
+Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ScalarSymbolic, sym::Union{Tuple,AbstractArray})
     return getindex.((A,), sym)
 end
 
@@ -484,10 +483,18 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
     elsymtype = symbolic_type(eltype(sym))
 
     if symtype != NotSymbolic()
-        return getindex(A, symtype, sym)
+        return _getindex(A, symtype, sym)
     else
-        return getindex(A, elsymtype, sym)
+        return _getindex(A, elsymtype, sym)
     end
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::SymbolicIndexingInterface.SolvedVariables)
+    return getindex(A, variable_symbols(A))
+end
+
+Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::SymbolicIndexingInterface.AllVariables)
+    return getindex(A, all_variable_symbols(A))
 end
 
 function observed(A::DEIntegrator, sym)
@@ -500,8 +507,7 @@ function Base.setindex!(A::DEIntegrator, val, sym)
         if is_variable(A, sym)
             A.u[variable_index(A, sym)] = val
         elseif is_parameter(A, sym)
-            Base.depwarn("Parameter indexing is deprecated. Use `setp(sys, $sym)(integrator, $val)` to set parameter value.", :parameter_setindex)
-            setp(A, sym)(A, val)
+            error("Parameter indexing is deprecated. Use `setp(sys, $sym)(integrator, $val)` to set parameter value.")
         else
             error("Invalid indexing of integrator: $sym is not a state or parameter, it may be an observed variable.")
         end
