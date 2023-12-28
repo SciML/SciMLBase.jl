@@ -4,10 +4,10 @@ using Zygote
 using Zygote: @adjoint, pullback
 import Zygote: literal_getproperty
 using SciMLBase
-using SciMLBase: ODESolution, sym_to_index, remake, 
+using SciMLBase: ODESolution, remake, 
                  getobserved, build_solution, EnsembleSolution,
                  NonlinearSolution, AbstractTimeseriesSolution
-using SymbolicIndexingInterface: symbolic_type, NotSymbolic
+using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index
 using RecursiveArrayTools
 
 # This method resolves the ambiguity with the pullback defined in
@@ -34,7 +34,7 @@ end
 
 @adjoint function getindex(VA::ODESolution, sym, j::Int)
     function ODESolution_getindex_pullback(Δ)
-        i = symbolic_type(sym) != NotSymbolic() ? sym_to_index(sym, VA) : sym
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         du, dprob = if i === nothing
             getter = getobserved(VA)
             grz = pullback(getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
@@ -96,7 +96,7 @@ end
 
 @adjoint function getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
-        i = symbolic_type(sym) != NotSymbolic() ? sym_to_index(sym, VA) : sym
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else

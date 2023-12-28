@@ -186,16 +186,16 @@ plot(sol,idxs=(t,α))
 
 using LinearAlgebra
 @variables t
-sts = @variables x[1:3](t)=[1, 2, 3.0] y(t)=1.0
+sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
 eqs = [collect(D.(x) .~ x)
     D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
-@test_broken sol = solve(prob, Tsit5())
-@test_broken sol[x] isa Vector{<:Vector}
-@test_broken sol[@nonamespace sys.x] isa Vector{<:Vector}
+sol = solve(prob, Tsit5())
+@test sol[x] isa Vector{<:Vector}
+@test sol[@nonamespace sys.x] isa Vector{<:Vector}
 
 # accessing parameters
 @variables t x(t)

@@ -44,7 +44,7 @@ function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
         if is_variable(prob.f, sym)
             prob.u0[variable_index(prob.f, sym)] = val
         elseif is_parameter(prob.f, sym)
-            error("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.", :parameter_setindex)
+            error("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.")
         else
             error("Invalid indexing of problem: $sym is not a state or parameter, it may be an observed variable.")
         end

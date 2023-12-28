@@ -27,22 +27,37 @@ tspan = (0.0, 100.0)
 # ODEProblem.
 oprob = ODEProblem(sys, u0, tspan, p, jac = true)
 
-@test oprob[σ] == oprob[sys.σ] == oprob[:σ] == 28.0
-@test oprob[ρ] == oprob[sys.ρ] == oprob[:ρ] == 10.0
-@test oprob[β] == oprob[sys.β] == oprob[:β] == 8 / 3
+@test_throws Exception oprob[σ]
+@test_throws Exception oprob[sys.σ]
+@test_throws Exception oprob[:σ]
+getσ1 = getp(sys, σ)
+getσ2 = getp(sys, sys.σ)
+getσ3 = getp(sys, :σ)
+@test getσ1(oprob) == getσ2(oprob) == getσ3(oprob) == 28.0
+getρ1 = getp(sys, ρ)
+getρ2 = getp(sys, sys.ρ)
+getρ3 = getp(sys, :ρ)
+@test getρ1(oprob) == getρ2(oprob) == getρ3(oprob) == 10.0
+getβ1 = getp(sys, β)
+getβ2 = getp(sys, sys.β)
+getβ3 = getp(sys, :β)
+@test getβ1(oprob) == getβ2(oprob) == getβ3(oprob) == 8 / 3
 
 @test oprob[x] == oprob[sys.x] == oprob[:x] == 1.0
 @test oprob[y] == oprob[sys.y] == oprob[:y] == 0.0
 @test oprob[z] == oprob[sys.z] == oprob[:z] == 0.0
-@test oprob[solvedvariables] == [2.0, 1.0, 0.0, 0.0]
-@test oprob[allvariables] == [2.0, 1.0, 0.0, 0.0]
+@test oprob[solvedvariables] == oprob[variable_symbols(sys)]
+@test oprob[allvariables] == oprob[all_variable_symbols(sys)]
 
-oprob[σ] = 10.0
-@test oprob[σ] == oprob[sys.σ] == oprob[:σ] == 10.0
-oprob[sys.ρ] = 20.0
-@test oprob[ρ] == oprob[sys.ρ] == oprob[:ρ] == 20.0
-oprob[σ] = 30.0
-@test oprob[σ] == oprob[sys.σ] == oprob[:σ] == 30.0
+setσ = setp(sys, σ)
+setσ(oprob, 10.0)
+@test getσ1(oprob) == getσ2(oprob) == getσ3(oprob) == 10.0
+setρ = setp(sys, sys.ρ)
+setρ(oprob, 20.0)
+@test getρ1(oprob) == getρ2(oprob) == getρ3(oprob) == 20.0
+setβ = setp(sys, :β)
+setβ(oprob, 30.0)
+@test getβ1(oprob) == getβ2(oprob) == getβ3(oprob) == 30.0
 
 oprob[x] = 10.0
 @test oprob[x] == oprob[sys.x] == oprob[:x] == 10.0
@@ -59,20 +74,22 @@ noiseeqs = [0.1 * x,
 sprob = SDEProblem(noise_sys, u0, (0.0, 100.0), p)
 u0
 
-@test sprob[σ] == sprob[noise_sys.σ] == sprob[:σ] == 28.0
-@test sprob[ρ] == sprob[noise_sys.ρ] == sprob[:ρ] == 10.0
-@test sprob[β] == sprob[noise_sys.β] == sprob[:β] == 8 / 3
+@test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == 28.0
+@test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == 10.0
+@test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == 8 / 3
 
 @test sprob[x] == sprob[noise_sys.x] == sprob[:x] == 1.0
 @test sprob[y] == sprob[noise_sys.y] == sprob[:y] == 0.0
 @test sprob[z] == sprob[noise_sys.z] == sprob[:z] == 0.0
 
-sprob[σ] = 10.0
-@test sprob[σ] == sprob[noise_sys.σ] == sprob[:σ] == 10.0
-sprob[noise_sys.ρ] = 20.0
-@test sprob[ρ] == sprob[noise_sys.ρ] == sprob[:ρ] == 20.0
-sprob[σ] = 30.0
-@test sprob[σ] == sprob[noise_sys.σ] == sprob[:σ] == 30.0
+setσ(sprob, 10.0)
+@test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == 10.0
+setρ(sprob, 20.0)
+@test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == 20.0
+setp(noise_sys, noise_sys.ρ)(sprob, 25.0)
+@test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == 25.0
+setβ(sprob, 30.0)
+@test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == 30.0
 
 sprob[x] = 10.0
 @test sprob[x] == sprob[noise_sys.x] == sprob[:x] == 10.0
