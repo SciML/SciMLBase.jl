@@ -21,9 +21,9 @@ sol = solve(oprob, Rodas4())
 @test sol[s1] == sol[population_model.s1] == sol[:s1]
 @test sol[s2] == sol[population_model.s2] == sol[:s2]
 @test sol[s1][end] ≈ 1.0
-@test_deprecated sol[a]
-@test_deprecated sol[population_model.a]
-@test_deprecated sol[:a]
+@test_throws Exception sol[a]
+@test_throws Exception sol[population_model.a]
+@test_throws Exception sol[:a]
 
 # Tests on SDEProblem
 noiseeqs = [0.1 * s1,
@@ -34,9 +34,9 @@ sol = solve(sprob, ImplicitEM())
 
 @test sol[s1] == sol[noisy_population_model.s1] == sol[:s1]
 @test sol[s2] == sol[noisy_population_model.s2] == sol[:s2]
-@test_deprecated sol[a]
-@test_deprecated sol[noisy_population_model.a]
-@test_deprecated sol[:a]
+@test_throws Exception sol[a]
+@test_throws Exception sol[noisy_population_model.a]
+@test_throws Exception sol[:a]
 ### Tests on layered model (some things should not work). ###
 
 @parameters t σ ρ β

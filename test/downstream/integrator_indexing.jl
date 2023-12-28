@@ -18,9 +18,9 @@ tspan = (0.0, 1000000.0)
 oprob = ODEProblem(population_model, u0, tspan, p)
 integrator = init(oprob, Rodas4())
 
-@test_deprecated integrator[a]
-@test_deprecated integrator[population_model.a]
-@test_deprecated integrator[:a]
+@test_throws Exception integrator[a]
+@test_throws Exception integrator[population_model.a]
+@test_throws Exception integrator[:a]
 @test getp(oprob, a)(integrator) == getp(oprob, population_model.a)(integrator) == getp(oprob, :a)(integrator) == 2.0
 @test getp(oprob, b)(integrator) == getp(oprob, population_model.b)(integrator) == getp(oprob, :b)(integrator) == 1.0
 @test getp(oprob, c)(integrator) == getp(oprob, population_model.c)(integrator) == getp(oprob, :c)(integrator) == 1.0
@@ -28,7 +28,8 @@ integrator = init(oprob, Rodas4())
 
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 2.0
 @test integrator[s2] == integrator[population_model.s2] == integrator[:s2] == 1.0
-
+@test integrator[solvedvariables] == integrator.u
+@test integrator[allvariables] == integrator.u
 step!(integrator, 100.0, true)
 
 @test getp(population_model, a)(integrator) == getp(population_model, population_model.a)(integrator) == getp(population_model, :a)(integrator) == 2.0
@@ -299,6 +300,6 @@ eqs = [collect(D.(x) .~ x)
     D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
-@test_broken local integrator = init(prob, Tsit5())
-@test_broken integrator[x] isa Vector{<:Vector}
-@test_broken integrator[@nonamespace sys.x] isa Vector{<:Vector}
+integrator = init(prob, Tsit5())
+@test integrator[x] isa Vector{Float64}
+@test integrator[@nonamespace sys.x] isa Vector{Float64}

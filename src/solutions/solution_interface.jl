@@ -73,8 +73,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
         if is_variable(A, sym)
             return A[variable_index(A, sym)]
         elseif is_parameter(A, sym)
-            Base.depwarn("Indexing with parameters is deprecated. Use `getp(sys, $sym)(sol)` for parameter indexing.", :parameter_getindex)
-            return getp(A, sym)(A)
+            error("Indexing with parameters is deprecated. Use `getp(sys, $sym)(sol)` for parameter indexing.")
         elseif is_observed(A, sym)
             return SymbolicIndexingInterface.observed(A, sym)(A.u, A.prob.p)
         else
@@ -86,6 +85,14 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
         sym isa AbstractArray || error("Invalid indexing of solution")
         return getindex.((A,), sym)
     end
+end
+
+Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, ::SymbolicIndexingInterface.SolvedVariables)
+    return getindex(A, variable_symbols(A))
+end
+
+Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, ::SymbolicIndexingInterface.AllVariables)
+    return getindex(A, all_variable_symbols(A))
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Int)

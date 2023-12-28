@@ -17,7 +17,7 @@ sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(), EnsembleDistr
 @test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
 
 prob = OptimizationProblem(optf, x0, lb = [-0.5, -0.5], ub = [0.5, 0.5])
-ensembleprob = Optimization.EnsembleProblem(prob, 5, prob_func = (prob, i, repeat) -> remake(prob, u0 = rand(-0.5:0.001:0.5, 2)))
+ensembleprob = Optimization.EnsembleProblem(prob, prob_func = (prob, i, repeat) -> remake(prob, u0 = rand(-0.5:0.001:0.5, 2)))
 
 sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(), EnsembleThreads(), trajectories = 5, maxiters = 5)
 @test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
