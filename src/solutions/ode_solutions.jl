@@ -179,22 +179,30 @@ end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
     continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
-    augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)[idxs][1]
+    if is_parameter(sol, idxs)
+        return getp(sol, idxs)(sol)
+    else
+        return augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)[idxs][1]
+    end
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
     continuity) where {deriv}
     all(!isequal(NotSymbolic()), symbolic_type.(idxs)) || error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
-    [first(interp_sol[idx]) for idx in idxs]
+    [is_parameter(sol, idx) ? getp(sol, idx)(sol) : first(interp_sol[idx]) for idx in idxs]
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
     continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
-    interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
-    p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(interp_sol[idxs], t, p, sol)
+    if is_parameter(sol, idxs)
+        return getp(sol, idxs)(sol)
+    else
+        interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
+        p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+        return DiffEqArray(interp_sol[idxs], t, p, sol)
+    end
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
