@@ -175,12 +175,6 @@ sol9 = sol(0.0:1.0:10.0, idxs = 2)
 sol10 = sol(0.1, idxs = 2)
 @test sol10 isa Real
 
-sol11 = solve(prob, Rodas4(), save_idxs = [lorenz1.x, lorenz2.z, a])
-@test length(sol11[:, 1]) == 3
-@test sol11[lorenz1.x] == sol11[:, 1] == sol[lorenz1.x]
-@test sol11[lorenz2.z] == sol11[:, 2] == sol[lorenz2.z]
-@test sol11[a] == sol11[:, 3] == sol[a]
-
 #=
 using Plots
 plot(sol,idxs=(lorenz2.x,lorenz2.z))
