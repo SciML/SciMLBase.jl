@@ -46,7 +46,7 @@ function (L::AffineDiffEqOperator)(u, p, t::Number)
     du
 end
 
-function (L::AffineDiffEqOperator)(du, u, p, t::Number)
+function (L::AffineDiffEqOperator)(du::AbstractArray, u::AbstractArray, p, t::Number)
     update_coefficients!(L, u, p, t)
     L.du_cache === nothing &&
         error("Can only use inplace AffineDiffEqOperator if du_cache is given.")
