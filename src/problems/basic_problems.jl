@@ -426,8 +426,8 @@ IntegralProblem(f,lb,ub,p=NullParameters(); nout=nothing, batch=nothing, kwargs.
 - f: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
   `IntegralFunction` or `BatchIntegralFunction` for inplace and batching optimizations.
 - domain: an object representing an integration domain, i.e. the tuple `(lb, ub)`.
-- lb: Either a number or vector of lower bounds.
-- ub: Either a number or vector of upper bounds.
+- lb: DEPRECATED: Either a number or vector of lower bounds.
+- ub: DEPRECATED: Either a number or vector of upper bounds.
 - p: The parameters associated with the problem.
 - nout: DEPRECATED (see `IntegralFunction`): length of the vector output of the integrand
   (by default the integrand is assumed to be scalar)
@@ -465,13 +465,10 @@ function IntegralProblem(f::AbstractIntegralFunction,
     IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-function IntegralProblem(f::AbstractIntegralFunction,
-    lb::B,
-    ub::B,
-    p = NullParameters();
-    kwargs...) where {B}
-    IntegralProblem{isinplace(f)}(f, (lb, ub), p; kwargs...)
-end
+@deprecate IntegralProblem(f::AbstractIntegralFunction,
+    lb::Union{Number,AbstractVector{<:Number}},
+    ub::Union{Number,AbstractVector{<:Number}},
+    p = NullParameters(); kwargs...) IntegralProblem(f, promote(lb, ub), p; kwargs...)
 
 function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
     if nout !== nothing || batch !== nothing
@@ -615,8 +612,8 @@ They should be an `AbstractArray` matching the geometry of `u`, where `(lcons[i]
 are the lower and upper bounds for `cons[i]`.
 
 The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
-to specify the objective function and its derivatives either by passing 
-predefined functions for them or automatically generated using the [ADType](https://github.com/SciML/ADTypes.jl). 
+to specify the objective function and its derivatives either by passing
+predefined functions for them or automatically generated using the [ADType](https://github.com/SciML/ADTypes.jl).
 
 If `f` is a standard Julia function, it is automatically transformed into an
 `OptimizationFunction` with `NoAD()`, meaning the derivative functions are not
