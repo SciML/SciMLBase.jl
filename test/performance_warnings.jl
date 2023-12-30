@@ -34,7 +34,7 @@ p = [1, "2"]
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) LinearProblem(f_4, x, p)
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) IntervalNonlinearProblem(f_2, tspan, p)
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) NonlinearProblem(f_3, x, p)
-@test_logs (:warn, WARN_PARAMTYPE_MESSAGE) IntegralProblem(f_3, x, x, p)
+@test_logs (:warn, WARN_PARAMTYPE_MESSAGE) IntegralProblem(f_3, (x, x), p)
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) OptimizationProblem(f_2, x, p)
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) BVProblem(f_4, f_4, x, tspan, p)
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) DAEProblem(f_4, x, x, tspan, p)
