@@ -468,7 +468,7 @@ end
 @deprecate IntegralProblem(f::AbstractIntegralFunction,
     lb::Union{Number,AbstractVector{<:Number}},
     ub::Union{Number,AbstractVector{<:Number}},
-    p = NullParameters(); kwargs...) IntegralProblem(f, promote(lb, ub), p; kwargs...)
+    p = NullParameters(); kwargs...) IntegralProblem(f, (lb, ub), p; kwargs...)
 
 function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
     if nout !== nothing || batch !== nothing
