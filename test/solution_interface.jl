@@ -21,7 +21,8 @@ end
         10, # plotdensity
         ode.tspan,
         int_vars,
-        :identity) # tscale
+        :identity,
+        nothing) # tscale
     @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
 end
 
