@@ -169,7 +169,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
         (sol.prob isa AbstractDiscreteProblem ?
          max(1000, 100 * length(sol)) :
          max(1000, 10 * length(sol))) :
-        1000 * sol.tslocation),
+        1000 * sol.tslocation, plotat = nothing),
     tspan = nothing,
     vars = nothing, idxs = nothing)
     if vars !== nothing
@@ -190,7 +190,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
     tscale = get(plotattributes, :xscale, :identity)
     plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
-        plotdensity, tspan, vars, tscale)
+        plotdensity, tspan, vars, tscale, plotat)
 
     tdir = sign(sol.t[end] - sol.t[1])
     xflip --> tdir < 0
@@ -267,7 +267,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 end
 
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
-    vars, tscale)
+    vars, tscale, plott)
     if tspan === nothing
         if sol.tslocation == 0
             end_idx = length(sol)
@@ -287,7 +287,9 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
         (start, stop, n) -> range(start; stop = stop, length = n)
     end
 
-    if denseplot
+    if plotat !== nothing
+        plott = plotat
+    elseif denseplot
         # Generate the points from the plot from dense function
         if tspan === nothing && !(sol isa AbstractAnalyticalSolution)
             plott = collect(densetspacer(sol.t[start_idx], sol.t[end_idx], plotdensity))
