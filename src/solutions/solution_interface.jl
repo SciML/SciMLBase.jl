@@ -267,7 +267,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 end
 
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
-    vars, tscale, plott)
+    vars, tscale, plotat)
     if tspan === nothing
         if sol.tslocation == 0
             end_idx = length(sol)
