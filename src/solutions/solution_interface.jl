@@ -289,6 +289,7 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
 
     if plotat !== nothing
         plott = plotat
+        plot_analytic_timeseries = nothing
     elseif denseplot
         # Generate the points from the plot from dense function
         if tspan === nothing && !(sol isa AbstractAnalyticalSolution)
