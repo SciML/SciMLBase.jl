@@ -169,7 +169,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
         (sol.prob isa AbstractDiscreteProblem ?
          max(1000, 100 * length(sol)) :
          max(1000, 10 * length(sol))) :
-        1000 * sol.tslocation, plotat = nothing),
+        1000 * sol.tslocation), plotat = nothing,
     tspan = nothing,
     vars = nothing, idxs = nothing)
     if vars !== nothing
