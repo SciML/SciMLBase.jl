@@ -186,6 +186,7 @@ end
 
 Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
 Base.size(L::FactorizedDiffEqArrayOperator, args...) = size(L.F, args...)
+Base.size(L::FactorizedDiffEqArrayOperator, i::Integer) = size(L.F, i)
 function LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::FactorizedDiffEqArrayOperator,
     B::AbstractVecOrMat)
     ldiv!(Y, L.F, B)
@@ -202,5 +203,5 @@ has_ldiv!(::FactorizedDiffEqArrayOperator) = true
 # The (u,p,t) and (du,u,p,t) interface
 for T in [DiffEqScalar, DiffEqArrayOperator, FactorizedDiffEqArrayOperator, DiffEqIdentity]
     (L::T)(u, p, t) = (update_coefficients!(L, u, p, t); L * u)
-    (L::T)(du, u, p, t) = (update_coefficients!(L, u, p, t); mul!(du, L, u))
+    (L::T)(du::AbstractArray, u::AbstractArray, p, t) = (update_coefficients!(L, u, p, t); mul!(du, L, u))
 end

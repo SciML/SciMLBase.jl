@@ -3,11 +3,7 @@ using SafeTestsets
 using Test
 using SciMLBase
 
-# https://github.com/JuliaArrays/FillArrays.jl/pull/163
-@test_broken isempty(detect_ambiguities(SciMLBase))
-
 const GROUP = get(ENV, "GROUP", "All")
-const is_APPVEYOR = (Sys.iswindows() && haskey(ENV, "APPVEYOR"))
 
 function activate_downstream_env()
     Pkg.activate("downstream")
@@ -23,8 +19,8 @@ end
 
 @time begin
     if GROUP == "Core" || GROUP == "All"
-        @time @safetestset "Aqua" begin
-            include("aqua.jl")
+        @time @safetestset "Quality Assurance" begin
+            include("qa.jl")
         end
         @time @safetestset "Display" begin
             include("display.jl")
@@ -64,7 +60,7 @@ end
         end
     end
 
-    if !is_APPVEYOR && GROUP == "Downstream"
+    if GROUP == "Downstream"
         activate_downstream_env()
         @time @safetestset "Ensembles of Zero Length Solutions" begin
             include("downstream/ensemble_zero_length.jl")
@@ -87,16 +83,14 @@ end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/symbol_indexing.jl")
         end
-        if VERSION >= v"1.8"
-            @time @safetestset "Symbol and integer based indexing of integrators" begin
-                include("downstream/integrator_indexing.jl")
-            end
-            @time @safetestset "Problem Indexing" begin
-                include("downstream/problem_interface.jl")
-            end
-            @time @safetestset "Solution Indexing" begin
-                include("downstream/solution_interface.jl")
-            end
+        @time @safetestset "Symbol and integer based indexing of integrators" begin
+            include("downstream/integrator_indexing.jl")
+        end
+        @time @safetestset "Problem Indexing" begin
+            include("downstream/problem_interface.jl")
+        end
+        @time @safetestset "Solution Indexing" begin
+            include("downstream/solution_interface.jl")
         end
         @time @safetestset "Unitful interpolations" begin
             include("downstream/unitful_interpolations.jl")
@@ -112,7 +106,7 @@ end
         end
     end
 
-    if !is_APPVEYOR && GROUP == "Python"
+    if GROUP == "Python"
         activate_python_env()
         @time @safetestset "PyCall" begin
             include("python/pycall.jl")
