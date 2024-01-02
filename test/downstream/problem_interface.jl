@@ -46,6 +46,8 @@ getβ3 = getp(sys, :β)
 @test oprob[x] == oprob[sys.x] == oprob[:x] == 1.0
 @test oprob[y] == oprob[sys.y] == oprob[:y] == 0.0
 @test oprob[z] == oprob[sys.z] == oprob[:z] == 0.0
+@test oprob[[x, y]] == oprob[[sys.x, sys.y]] == oprob[[:x, :y]] == [1.0, 0.0]
+@test oprob[(x, y)] == oprob[(sys.x, sys.y)] == oprob[(:x, :y)] == (1.0, 0.0)
 @test oprob[solvedvariables] == oprob[variable_symbols(sys)]
 @test oprob[allvariables] == oprob[all_variable_symbols(sys)]
 

@@ -1,5 +1,7 @@
 SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
+SymbolicIndexingInterface.symbolic_container(prob::AbstractJumpProblem) = prob.prob
 SymbolicIndexingInterface.parameter_values(prob::AbstractSciMLProblem) = prob.p
+SymbolicIndexingInterface.parameter_values(prob::AbstractJumpProblem) = parameter_values(prob.prob)
 
 Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)
     return getindex(prob, variable_symbols(prob))
@@ -30,7 +32,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
     elseif symbolic_type(sym) == ArraySymbolic()
         return map(s -> prob[s], sym)
     else
-        sym isa AbstractArray || error("Invalid indexing of problem")
+        sym isa Union{<:AbstractArray, <:Tuple} || error("Invalid indexing of problem")
         return map(s -> prob[s], sym)
     end
 end
