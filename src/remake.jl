@@ -19,13 +19,7 @@ for T in [
     @eval remaker_of(::$T) = $T
 end
 
-"""
-    remake(thing; <keyword arguments>)
-
-Re-construct `thing` with new field values specified by the keyword
-arguments.
-"""
-function remake(thing; kwargs...)
+function _remake_internal(thing; kwargs...)
     T = remaker_of(thing)
     if :kwargs ∈ fieldnames(typeof(thing))
         if :kwargs ∉ keys(kwargs)
@@ -36,6 +30,21 @@ function remake(thing; kwargs...)
     else
         T(; struct_as_namedtuple(thing)..., kwargs...)
     end
+end
+
+"""
+    remake(thing; <keyword arguments>)
+
+Re-construct `thing` with new field values specified by the keyword
+arguments.
+"""
+function remake(thing; kwargs...)
+    _remake_internal(thing; kwargs...)
+end
+
+function remake(prob::DiscreteProblem; u0 = missing, p = missing, kwargs...)
+    p, u0 = _remake_get_p_u0(prob; p, u0)
+    _remake_internal(prob; p, u0, kwargs...)
 end
 
 function isrecompile(prob::ODEProblem{iip}) where {iip}
@@ -59,25 +68,7 @@ function remake(prob::ODEProblem; f = missing,
         tspan = prob.tspan
     end
 
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
-            p, u0 = process_p_u0_symbolic(prob, p, u0)
-        end
-    end
+    p, u0 = _remake_get_p_u0(prob; p, u0)
 
     iip = isinplace(prob)
 
@@ -132,15 +123,11 @@ function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan 
         tspan = prob.tspan
     end
 
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
+    if p === missing
+        p = prob.p
+    end
+    if u0 === missing
+        u0 = prob.u0
     end
 
     iip = isinplace(prob)
@@ -202,13 +189,7 @@ function remake(prob::SDEProblem;
         tspan = prob.tspan
     end
 
-    if p === missing
-        p = prob.p
-    end
-
-    if u0 === missing
-        u0 = prob.u0
-    end
+    p, u0 = _remake_get_p_u0(prob; p, u0)
 
     if noise === missing
         noise = prob.noise
@@ -263,26 +244,7 @@ function remake(prob::OptimizationProblem;
     sense = missing,
     kwargs = missing,
     _kwargs...)
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
-            p, u0 = process_p_u0_symbolic(prob, p, u0)
-        end
-    end
-
+    p, u0 = _remake_get_p_u0(prob; p, u0)
     if f === missing
         f = prob.f
     end
@@ -332,25 +294,7 @@ function remake(prob::NonlinearProblem;
     problem_type = missing,
     kwargs = missing,
     _kwargs...)
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
-            p, u0 = process_p_u0_symbolic(prob, p, u0)
-        end
-    end
+    p, u0 = _remake_get_p_u0(prob; p, u0)
 
     if f === missing
         f = prob.f
@@ -418,4 +362,27 @@ function remake(thing::AbstractEnsembleProblem; kwargs...)
     T = parameterless_type(thing)
     en_kwargs = [k for k in kwargs if first(k) ∈ fieldnames(T)]
     T(remake(thing.prob; setdiff(kwargs, en_kwargs)...); en_kwargs...)
+end
+
+function _remake_get_p_u0(prob; p = missing, u0 = missing)
+    if p === missing && u0 === missing
+        p, u0 = prob.p, prob.u0
+    else # at least one of them has a value
+        if p === missing
+            p = prob.p
+        end
+        if u0 === missing
+            u0 = prob.u0
+        end
+        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
+            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
+                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
+                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
+            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
+                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
+                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
+            p, u0 = process_p_u0_symbolic(prob, p, u0)
+        end
+    end
+    return p, u0
 end
