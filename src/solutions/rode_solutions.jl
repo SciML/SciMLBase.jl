@@ -63,6 +63,22 @@ TruncatedStacktraces.@truncate_stacktrace RODESolution 1 2
 
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
     continuity = :left) where {deriv}
+    if idxs !== nothing
+        if !(idxs isa Union{<:AbstractArray, <:Tuple})
+            idxs = [idxs]
+        end
+        idxs = map(idxs) do idx
+            if symbolic_type(idx) === NotSymbolic()
+                return idx
+            elseif symbolic_type(idx) === ScalarSymbolic()
+                return variable_index(sol, idx)
+            else
+                return variable_index.((sol,), collect(idx))
+            end
+        end
+        any(i === nothing for i in idxs) && error("All idxs must be variables")
+        idxs = reduce(vcat, idxs)
+    end
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::RODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
