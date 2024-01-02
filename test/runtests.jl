@@ -62,6 +62,9 @@ end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+        @time @safetestset "Remake tests" begin
+            include("remake.jl")
+        end
     end
 
     if !is_APPVEYOR && GROUP == "Downstream"
