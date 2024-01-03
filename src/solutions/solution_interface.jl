@@ -29,6 +29,15 @@ end
 
 # SymbolicIndexingInterface.jl
 const AbstractSolution = Union{AbstractTimeseriesSolution,AbstractNoTimeSolution}
+
+Base.@propagate_inbounds function Base.getproperty(A::AbstractSolution, sym::Symbol)
+    if sym === :ps
+        return ParameterIndexingProxy(A)
+    else
+        return getfield(A, sym)
+    end
+end
+
 SymbolicIndexingInterface.symbolic_container(A::AbstractSolution) = A.prob.f
 SymbolicIndexingInterface.parameter_values(A::AbstractSolution) = A.prob.p
 

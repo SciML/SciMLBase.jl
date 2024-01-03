@@ -115,6 +115,8 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
         Base.depwarn("`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
             "sol.prob")
         return getfield(x, :cache)
+    elseif s === :ps
+        return ParameterIndexingProxy(x)
     end
     return getfield(x, s)
 end

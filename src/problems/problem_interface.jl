@@ -1,3 +1,10 @@
+Base.@propagate_inbounds function Base.getproperty(prob::AbstractSciMLProblem, sym::Symbol)
+    if sym === :ps
+        return ParameterIndexingProxy(prob)
+    end
+    return getfield(prob, sym)
+end
+
 SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
 function SymbolicIndexingInterface.is_observed(A::AbstractSciMLProblem, sym)
     return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()

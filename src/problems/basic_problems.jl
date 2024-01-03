@@ -502,6 +502,8 @@ function Base.getproperty(prob::IntegralProblem, name::Symbol)
         domain = getfield(prob, :domain)
         lb, ub = domain
         return ub
+    elseif name === :ps
+        return ParameterIndexingProxy(prob)
     end
     return Base.getfield(prob, name)
 end

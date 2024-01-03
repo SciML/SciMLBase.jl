@@ -72,8 +72,10 @@ sol = solve(prob, Rodas4())
 @test sol[α, 3] isa Float64
 @test length(sol[α, 5:10]) == 6
 @test getp(prob, γ)(sol) isa Real
-@test getp(prob, γ)(sol) == getp(prob, :γ)(sol) == 2.0
+@test sol.ps[γ] isa Real
+@test getp(prob, γ)(sol) == getp(prob, :γ)(sol) == sol.ps[γ] == sol.ps[:γ] == 2.0
 @test getp(prob, (lorenz1.σ, lorenz1.ρ))(sol) isa Tuple
+@test sol.ps[(lorenz1.σ, lorenz1.ρ)] isa Tuple
 
 @test sol[[lorenz1.x, lorenz2.x]] isa Vector{Vector{Float64}}
 @test length(sol[[lorenz1.x, lorenz2.x]]) == length(sol)
@@ -179,8 +181,8 @@ sol10 = sol(0.1, idxs = 2)
 getx = getu(sys_simplified, lorenz1.x)
 get_arr = getu(sys_simplified, [lorenz1.x, lorenz2.x])
 get_tuple = getu(sys_simplified, (lorenz1.x, lorenz2.x))
-get_obs = getu(sys_simplified, lorenz1.x + lorenz2.x)
-get_obs_arr = getu(sys_simplified, [lorenz1.x + lorenz2.x, lorenz1.y + lorenz2.y])
+get_obs = getu(sol, lorenz1.x + lorenz2.x) # can't use sys for observed
+get_obs_arr = getu(sol, [lorenz1.x + lorenz2.x, lorenz1.y + lorenz2.y])
 l1x_idx = variable_index(sol, lorenz1.x)
 l2x_idx = variable_index(sol, lorenz2.x)
 l1y_idx = variable_index(sol, lorenz1.y)
@@ -213,6 +215,7 @@ prob = ODEProblem(sys, [], (0, 1.0))
 sol = solve(prob, Tsit5())
 @test sol[x] isa Vector{<:Vector}
 @test sol[@nonamespace sys.x] isa Vector{<:Vector}
+@test sol.ps[p] == [1, 2, 3]
 
 getx = getu(sys, x)
 get_mix_arr = getu(sys, [x, y])
@@ -251,4 +254,6 @@ sol = solve(prob, Tsit5())
     @test sol[y]≈1 atol=1e-3
     @test getp(sys, a)(sol) ≈ 1
     @test getp(sys, b)(sol) ≈ 100
+    @test sol.ps[a] ≈ 1
+    @test sol.ps[b] ≈ 100
 end

@@ -121,6 +121,8 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Sy
     if s === :destats
         Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
         return getfield(x, :stats)
+    elseif s === :ps
+        return ParameterIndexingProxy(x)
     end
     return getfield(x, s)
 end
