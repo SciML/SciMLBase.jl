@@ -28,7 +28,7 @@ timestep_mean(sim, ::Colon) = timeseries_steps_mean(sim)
 function timestep_median(sim, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([median(x) for x in arr], size(sim[1][i])...)
+        return reshape([median(x) for x in arr], size(sim.u[1][i])...)
     else
         return median(arr)
     end
@@ -37,7 +37,7 @@ timestep_median(sim, ::Colon) = timeseries_steps_median(sim)
 function timestep_quantile(sim, q, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([quantile(x, q) for x in arr], size(sim[1][i])...)
+        return reshape([quantile(x, q) for x in arr], size(sim.u[1][i])...)
     else
         return quantile(arr, q)
     end
@@ -61,43 +61,43 @@ function timestep_weighted_meancov(sim, W, ::Colon, ::Colon)
 end
 
 function timeseries_steps_mean(sim)
-    DiffEqArray([timestep_mean(sim, i) for i in 1:length(sim[1])], sim[1].t)
+    DiffEqArray([timestep_mean(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
 end
 function timeseries_steps_median(sim)
-    DiffEqArray([timestep_median(sim, i) for i in 1:length(sim[1])], sim[1].t)
+    DiffEqArray([timestep_median(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
 end
 function timeseries_steps_quantile(sim, q)
-    DiffEqArray([timestep_quantile(sim, q, i) for i in 1:length(sim[1])], sim[1].t)
+    DiffEqArray([timestep_quantile(sim, q, i) for i in 1:length(sim.u[1])], sim.u[1].t)
 end
 function timeseries_steps_meanvar(sim)
     m, v = timestep_meanvar(sim, 1)
     means = [m]
     vars = [v]
-    for i in 2:length(sim[1])
+    for i in 2:length(sim.u[1])
         m, v = timestep_meanvar(sim, i)
         push!(means, m)
         push!(vars, v)
     end
-    DiffEqArray(means, sim[1].t), DiffEqArray(vars, sim[1].t)
+    DiffEqArray(means, sim.u[1].t), DiffEqArray(vars, sim.u[1].t)
 end
 function timeseries_steps_meancov(sim)
-    reshape([timestep_meancov(sim, i, j) for i in 1:length(sim[1])
-             for j in 1:length(sim[1])], length(sim[1]), length(sim[1]))
+    reshape([timestep_meancov(sim, i, j) for i in 1:length(sim.u[1])
+             for j in 1:length(sim.u[1])], length(sim.u[1]), length(sim.u[1]))
 end
 function timeseries_steps_meancor(sim)
-    reshape([timestep_meancor(sim, i, j) for i in 1:length(sim[1])
-             for j in 1:length(sim[1])], length(sim[1]), length(sim[1]))
+    reshape([timestep_meancor(sim, i, j) for i in 1:length(sim.u[1])
+             for j in 1:length(sim.u[1])], length(sim.u[1]), length(sim.u[1]))
 end
 function timeseries_steps_weighted_meancov(sim, W)
-    reshape([timestep_meancov(sim, W, i, j) for i in 1:length(sim[1])
-             for j in 1:length(sim[1])], length(sim[1]), length(sim[1]))
+    reshape([timestep_meancov(sim, W, i, j) for i in 1:length(sim.u[1])
+             for j in 1:length(sim.u[1])], length(sim.u[1]), length(sim.u[1]))
 end
 
 timepoint_mean(sim, t) = componentwise_mean(get_timepoint(sim, t))
 function timepoint_median(sim, t)
     arr = componentwise_vectors_timepoint(sim, t)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([median(x) for x in arr], size(sim[1][1])...)
+        return reshape([median(x) for x in arr], size(sim.u[1][1])...)
     else
         return median(arr)
     end
@@ -105,7 +105,7 @@ end
 function timepoint_quantile(sim, q, t)
     arr = componentwise_vectors_timepoint(sim, t)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([quantile(x, q) for x in arr], size(sim[1][1])...)
+        return reshape([quantile(x, q) for x in arr], size(sim.u[1][1])...)
     else
         return quantile(arr, q)
     end
@@ -122,8 +122,8 @@ function timepoint_weighted_meancov(sim, W, t1, t2)
 end
 
 function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
-    t = sim[1].t; quantiles = [0.05, 0.95]) where {T, N}
-    if sim[1] isa SciMLSolution
+    t = sim.u[1].t; quantiles = [0.05, 0.95]) where {T, N}
+    if sim.u[1] isa SciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
         qlow = timeseries_point_quantile(sim, quantiles[1], t)
