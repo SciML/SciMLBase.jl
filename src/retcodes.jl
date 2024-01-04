@@ -343,6 +343,17 @@ EnumX.@enumx ReturnCode begin
     * successful_retcode = false
     """
     MaxTime
+
+    """
+    `ReturnCode.InternalLineSearchFailed`
+
+    Internal Line Search used by the algorithm has failed.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    InternalLineSearchFailed
 end
 
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
