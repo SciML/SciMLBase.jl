@@ -14,7 +14,6 @@ Representation of the solution to a non-linear optimization defined by an Optimi
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 - `original`: if the solver is wrapped from an alternative solver ecosystem, such as
   Optim.jl, then this is the original return from said solver library.
-- `solve_time`: Solve time from the solver in Seconds
 - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
 struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, S, ST} <:
@@ -25,7 +24,6 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
     objective::OV
     retcode::ReturnCode.T
     original::O # original output of the optimizer
-    solve_time::S # [s] solve time from the solver
     stats::ST
 end
 
@@ -33,7 +31,6 @@ function build_solution(cache::AbstractOptimizationCache,
     alg, u, objective;
     retcode = ReturnCode.Default,
     original = nothing,
-    solve_time = nothing,
     stats = nothing,
     kwargs...)
     T = eltype(eltype(u))
@@ -43,9 +40,8 @@ function build_solution(cache::AbstractOptimizationCache,
     retcode = symbol_to_ReturnCode(retcode)
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original), typeof(solve_time),
-        typeof(stats)}(u, cache, alg, objective, retcode, original,
-        solve_time, stats)
+        typeof(objective), typeof(original), typeof(stats)}(u, cache, 
+        alg, objective, retcode, original, solve_time, stats)
 end
 
 TruncatedStacktraces.@truncate_stacktrace OptimizationSolution 1 2
