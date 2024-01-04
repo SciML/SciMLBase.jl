@@ -41,7 +41,7 @@ function build_solution(cache::AbstractOptimizationCache,
 
     OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
         typeof(objective), typeof(original), typeof(stats)}(u, cache, 
-        alg, objective, retcode, original, solve_time, stats)
+        alg, objective, retcode, original, stats)
 end
 
 TruncatedStacktraces.@truncate_stacktrace OptimizationSolution 1 2
