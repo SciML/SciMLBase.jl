@@ -66,6 +66,35 @@ oprob[sys.y] = 10.0
 oprob[:z] = 1.0
 @test oprob[z] == oprob[sys.z] == oprob[:z] == 1.0
 
+getx = getu(oprob, x)
+gety = getu(oprob, :y)
+get_arr = getu(oprob, [x, y])
+get_tuple = getu(oprob, (y, z))
+get_obs = getu(oprob, sys.x + sys.z + t + σ)
+@test getx(oprob) == 10.0
+@test gety(oprob) == 10.0
+@test get_arr(oprob) == [10.0, 10.0]
+@test get_tuple(oprob) == (10.0, 1.0)
+@test get_obs(oprob) == 39.0
+
+setx! = setu(oprob, x)
+sety! = setu(oprob, :y)
+set_arr! = setu(oprob, [x, y])
+set_tuple! = setu(oprob, (y, z))
+
+setx!(oprob, 11.0)
+@test getx(oprob) == 11.0
+sety!(oprob, 12.0)
+@test gety(oprob) == 12.0
+set_arr!(oprob, 10.0)
+@test get_arr(oprob) == [10.0, 10.0]
+set_arr!(oprob, [11.0, 12.0])
+@test get_arr(oprob) == [11.0, 12.0]
+set_tuple!(oprob, 13.0)
+@test get_tuple(oprob) == (13.0, 13.0)
+set_tuple!(oprob, [10.0, 10.0])
+@test get_tuple(oprob) == (10.0, 10.0)
+
 # SDEProblem.
 noiseeqs = [0.1 * x,
     0.1 * y,
@@ -97,3 +126,32 @@ sprob[noise_sys.y] = 10.0
 @test sprob[y] == sprob[noise_sys.y] == sprob[:y] == 10.0
 sprob[:z] = 1.0
 @test sprob[z] == sprob[noise_sys.z] == sprob[:z] == 1.0
+
+getx = getu(sprob, x)
+gety = getu(sprob, :y)
+get_arr = getu(sprob, [x, y])
+get_tuple = getu(sprob, (y, z))
+get_obs = getu(sprob, sys.x + sys.z + t + σ)
+@test getx(sprob) == 10.0
+@test gety(sprob) == 10.0
+@test get_arr(sprob) == [10.0, 10.0]
+@test get_tuple(sprob) == (10.0, 1.0)
+@test get_obs(sprob) == 39.0
+
+setx! = setu(sprob, x)
+sety! = setu(sprob, :y)
+set_arr! = setu(sprob, [x, y])
+set_tuple! = setu(sprob, (y, z))
+
+setx!(sprob, 11.0)
+@test getx(sprob) == 11.0
+sety!(sprob, 12.0)
+@test gety(sprob) == 12.0
+set_arr!(sprob, 10.0)
+@test get_arr(sprob) == [10.0, 10.0]
+set_arr!(sprob, [11.0, 12.0])
+@test get_arr(sprob) == [11.0, 12.0]
+set_tuple!(sprob, 13.0)
+@test get_tuple(sprob) == (13.0, 13.0)
+set_tuple!(sprob, [10.0, 10.0])
+@test get_tuple(sprob) == (10.0, 10.0)

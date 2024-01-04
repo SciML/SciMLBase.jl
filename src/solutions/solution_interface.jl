@@ -38,18 +38,6 @@ SymbolicIndexingInterface.is_independent_variable(::AbstractNoTimeSolution, sym)
 
 SymbolicIndexingInterface.independent_variable_symbols(::AbstractNoTimeSolution) = []
 
-function SymbolicIndexingInterface.is_observed(A::AbstractSolution, sym)
-    return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()
-end
-
-function SymbolicIndexingInterface.observed(A::AbstractTimeseriesSolution, sym)
-    (u, p, t) -> getobserved(A)(sym, u, p, t)
-end
-
-function SymbolicIndexingInterface.observed(A::AbstractNoTimeSolution, sym)
-    (u, p) -> getobserved(A)(sym, u, p)
-end
-
 for soltype in [AbstractTimeseriesSolution, AbstractNoTimeSolution]
     @eval function SymbolicIndexingInterface.observed(A::$(soltype), sym::Symbol)
         has_sys(A.prob.f) || error("Cannot use observed without system")
@@ -63,6 +51,7 @@ SymbolicIndexingInterface.is_time_dependent(::AbstractNoTimeSolution) = false
 
 # TODO make this nontrivial once dynamic state selection works
 SymbolicIndexingInterface.constant_structure(::AbstractSolution) = true
+SymbolicIndexingInterface.state_values(A::AbstractNoTimeSolution) = A.u
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon)
     return A.u[:]

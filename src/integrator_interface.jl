@@ -426,14 +426,20 @@ end
 
 # SymbolicIndexingInterface
 SymbolicIndexingInterface.symbolic_container(A::DEIntegrator) = A.f
-SymbolicIndexingInterface.parameter_values(A::DEIntegrator) = A.p
-
 function SymbolicIndexingInterface.is_observed(A::DEIntegrator, sym)
     return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()
 end
-
 function SymbolicIndexingInterface.observed(A::DEIntegrator, sym)
-    (u, p, t) -> getobserved(A)(sym, u, p, t)
+    return getobserved(A)(sym)
+end
+SymbolicIndexingInterface.parameter_values(A::DEIntegrator) = A.p
+SymbolicIndexingInterface.state_values(A::DEIntegrator) = A.u
+SymbolicIndexingInterface.current_time(A::DEIntegrator) = A.t
+function SymbolicIndexingInterface.set_state!(A::DEIntegrator, val, idx)
+    # So any error checking happens to ensure we actually _can_ set state
+    set_u!(A, A.u)
+    A.u[idx] = val
+    u_modified!(A, true)
 end
 
 SymbolicIndexingInterface.is_time_dependent(::DEIntegrator) = true
@@ -506,6 +512,7 @@ function Base.setindex!(A::DEIntegrator, val, sym)
     if symbolic_type(sym) == ScalarSymbolic()
         if is_variable(A, sym)
             A.u[variable_index(A, sym)] = val
+            u_modified!(A, true)
         elseif is_parameter(A, sym)
             error("Parameter indexing is deprecated. Use `setp(sys, $sym)(integrator, $val)` to set parameter value.")
         else

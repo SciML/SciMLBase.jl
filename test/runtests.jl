@@ -84,16 +84,7 @@ end
         @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
             include("downstream/ensemble_diffeq.jl")
         end
-        @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
-            include("downstream/symbol_indexing.jl")
-        end
         if VERSION >= v"1.8"
-            @time @safetestset "Symbol and integer based indexing of integrators" begin
-                include("downstream/integrator_indexing.jl")
-            end
-            @time @safetestset "Problem Indexing" begin
-                include("downstream/problem_interface.jl")
-            end
             @time @safetestset "Solution Indexing" begin
                 include("downstream/solution_interface.jl")
             end
@@ -109,6 +100,20 @@ end
         end
         @time @safetestset "Partial Functions" begin
             include("downstream/partial_functions.jl")
+        end
+    end
+
+    if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")
+        @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
+            include("downstream/symbol_indexing.jl")
+        end
+        if VERSION >= v"1.8"
+            @time @safetestset "Symbol and integer based indexing of integrators" begin
+                include("downstream/integrator_indexing.jl")
+            end
+            @time @safetestset "Problem Indexing" begin
+                include("downstream/problem_interface.jl")
+            end
         end
     end
 

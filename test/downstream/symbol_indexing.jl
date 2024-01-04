@@ -175,6 +175,23 @@ sol9 = sol(0.0:1.0:10.0, idxs = 2)
 sol10 = sol(0.1, idxs = 2)
 @test sol10 isa Real
 
+@test is_timeseries(sol) == Timeseries()
+getx = getu(sys_simplified, lorenz1.x)
+get_arr = getu(sys_simplified, [lorenz1.x, lorenz2.x])
+get_tuple = getu(sys_simplified, (lorenz1.x, lorenz2.x))
+get_obs = getu(sys_simplified, lorenz1.x + lorenz2.x)
+get_obs_arr = getu(sys_simplified, [lorenz1.x + lorenz2.x, lorenz1.y + lorenz2.y])
+l1x_idx = variable_index(sol, lorenz1.x)
+l2x_idx = variable_index(sol, lorenz2.x)
+l1y_idx = variable_index(sol, lorenz1.y)
+l2y_idx = variable_index(sol, lorenz2.y)
+
+@test getx(sol) == sol[:, l1x_idx]
+@test get_arr(sol) == sol[:, [l1x_idx, l2x_idx]]
+@test get_tuple(sol) == tuple.(sol[:, l1x_idx], sol[:, l2x_idx])
+@test get_obs(sol) == sol[:, l1x_idx] + sol[:, l2x_idx]
+@test get_obs_arr(sol) == vcat.(sol[:, l1x_idx] + sol[:, l2x_idx], sol[:, l1y_idx] + sol[:, l2y_idx])
+
 #=
 using Plots
 plot(sol,idxs=(lorenz2.x,lorenz2.z))
@@ -196,6 +213,15 @@ prob = ODEProblem(sys, [], (0, 1.0))
 sol = solve(prob, Tsit5())
 @test sol[x] isa Vector{<:Vector}
 @test sol[@nonamespace sys.x] isa Vector{<:Vector}
+
+getx = getu(sys, x)
+get_mix_arr = getu(sys, [x, y])
+get_mix_tuple = getu(sys, (x, y))
+x_idx = variable_index.((sys,), [x[1], x[2], x[3]])
+y_idx = variable_index(sys, y)
+@test getx(sol) == sol[:, x_idx]
+@test get_mix_arr(sol) == vcat.(sol[:, x_idx], sol[:, y_idx])
+@test get_mix_tuple(sol) == tuple.(sol[:, x_idx], sol[:, y_idx])
 
 # accessing parameters
 @variables t x(t)
