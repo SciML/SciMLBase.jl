@@ -16,7 +16,7 @@ Representation of the solution to a non-linear optimization defined by an Optimi
   Optim.jl, then this is the original return from said solver library.
 - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, S, ST} <:
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST} <:
        AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
