@@ -231,7 +231,15 @@ end
 
 function sensitivity_solution(sol::AbstractRODESolution, u, t)
     T = eltype(eltype(u))
-    N = length((size(sol.prob.u0)..., length(u)))
+
+    # handle save_idxs
+    u0 = first(u)
+    if u0 isa Number
+        N = 1
+    else
+        N = length((size(prob.u0)..., length(u)))
+    end
+
     interp = if sol.interp isa LinearInterpolation
         LinearInterpolation(t, u)
     elseif sol.interp isa ConstantInterpolation
