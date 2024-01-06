@@ -393,7 +393,7 @@ function sensitivity_solution(sol::ODESolution, u, t)
     if u0 isa Number
         N = 1
     else
-        N = length((size(prob.u0)..., length(u)))
+        N = length((size(u0)..., length(u)))
     end
 
     interp = if sol.interp isa LinearInterpolation
