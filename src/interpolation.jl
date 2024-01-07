@@ -4,6 +4,7 @@ enable_interpolation_sensitivitymode(interp::Nothing) = nothing
 
 # Pass through should be deprecated in the future, made for backwards compat
 enable_interpolation_sensitivitymode(interp::AbstractDiffEqInterpolation) = interp
+struct SensitivityInterpolation end
 
 """
 $(TYPEDEF)
