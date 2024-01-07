@@ -462,14 +462,14 @@ NonlinearFunction(nfoop, vjp = nvjp)
 
 # Integrals
 intf(u) = 1.0
-@test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intf, 0.0, 1.0)
+@test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intf, (0.0, 1.0))
 intf(u, p) = 1.0
 p = 2.0
 
-IntegralProblem(intf, 0.0, 1.0)
-IntegralProblem(intf, 0.0, 1.0, p)
-IntegralProblem(intf, [0.0], [1.0])
-IntegralProblem(intf, [0.0], [1.0], p)
+IntegralProblem(intf, (0.0, 1.0))
+IntegralProblem(intf, (0.0, 1.0), p)
+IntegralProblem(intf, ([0.0], [1.0]))
+IntegralProblem(intf, ([0.0], [1.0]), p)
 
 x = [1.0, 2.0]
 y = rand(2, 2)
