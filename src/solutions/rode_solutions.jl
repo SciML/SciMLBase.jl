@@ -240,13 +240,7 @@ function sensitivity_solution(sol::AbstractRODESolution, u, t)
         N = length((size(u0)..., length(u)))
     end
 
-    interp = if sol.interp isa LinearInterpolation
-        LinearInterpolation(t, u)
-    elseif sol.interp isa ConstantInterpolation
-        ConstantInterpolation(t, u)
-    else
-        SensitivityInterpolation(t, u)
-    end
+    interp = enable_interpolation_sensitivitymode(sol.interp)
 
     RODESolution{T, N, typeof(u), typeof(sol.u_analytic),
         typeof(sol.errors), typeof(t),
