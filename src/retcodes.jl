@@ -237,6 +237,9 @@ EnumX.@enumx ReturnCode begin
       nonlinear solver was chosen. If fixed point iteration is used on a stiff problem,
       it will be faster by avoiding the Jacobian but it will make a stiff ODE solver not
       stable for stiff problems!
+    * For nonlinear solvers, this can occur if certain threshold was exceeded. For example,
+      in approximate jacobian solvers like Broyden, Klement, etc. if the number of jacobian
+      resets exceeds the threshold, then this return code is given.
 
     ## Properties
 
@@ -354,6 +357,30 @@ EnumX.@enumx ReturnCode begin
     * successful_retcode = false
     """
     InternalLineSearchFailed
+
+    """
+    `ReturnCode.ShrinkThresholdExceeded`
+
+    The trust region radius was shrunk more times than the provided threshold.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    ShrinkThresholdExceeded
+
+    """
+    `ReturnCode.Stalled`
+
+    The solution has stalled. This is only returned by algorithms for which stalling is a
+    failure mode. Certain solvers like Nonlinear Least Squares solvers are considered
+    successful if the solution has stalled, in those cases `ReturnCode.Success` is returned.
+
+    ## Properties
+
+    * successful_retcode = false
+    """
+    Stalled
 end
 
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
