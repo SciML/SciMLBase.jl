@@ -43,7 +43,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
             error("Invalid indexing of problem: $sym is not a state, parameter, or independent variable")
         end
     elseif symbolic_type(sym) == ArraySymbolic()
-        return map(s -> prob[s], sym)
+        return map(s -> prob[s], collect(sym))
     else
         sym isa AbstractArray || error("Invalid indexing of problem")
         return map(s -> prob[s], sym)
