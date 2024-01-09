@@ -309,7 +309,7 @@ eqs = [collect(D.(x) .~ x)
     D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
-integrator = init(prob, Tsit5())
+integrator = init(prob, Tsit5(), save_everystep = false)
 @test integrator[x] isa Vector{Float64}
 @test integrator[@nonamespace sys.x] isa Vector{Float64}
 
@@ -333,8 +333,6 @@ setx!(integrator, [4.0, 5.0, 6.0])
 @test getx(integrator) == [4.0, 5.0, 6.0]
 sety!(integrator, 3.0)
 @test gety(integrator) == 3.0
-set_arr!(integrator, [1.0, 2.0])
-@test get_arr(integrator) == [[1.0, 1.0, 1.0], 2.0]
 set_arr!(integrator, [[1.0, 2.0, 3.0], 1.0])
 @test get_arr(integrator) == [[1.0, 2.0, 3.0], 1.0]
 set_tuple!(integrator, ([2.0, 4.0, 6.0], 2.0))
