@@ -426,12 +426,6 @@ end
 
 # SymbolicIndexingInterface
 SymbolicIndexingInterface.symbolic_container(A::DEIntegrator) = A.f
-function SymbolicIndexingInterface.is_observed(A::DEIntegrator, sym)
-    return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()
-end
-function SymbolicIndexingInterface.observed(A::DEIntegrator, sym)
-    return getobserved(A)(sym)
-end
 SymbolicIndexingInterface.parameter_values(A::DEIntegrator) = A.p
 SymbolicIndexingInterface.state_values(A::DEIntegrator) = A.u
 SymbolicIndexingInterface.current_time(A::DEIntegrator) = A.t
