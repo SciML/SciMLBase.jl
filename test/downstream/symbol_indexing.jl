@@ -53,6 +53,14 @@ sol = solve(prob, Rodas4())
     end
 end
 
+@testset "observed shouldn't error" begin
+    for obj in [prob, integ, sol]
+        obj[:a]
+        observed(obh, :a)
+    end
+end
+
+
 @test sol[a] isa AbstractVector
 @test sol[:a] == sol[a]
 @test sol[a, 1] isa Real
