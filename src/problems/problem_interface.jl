@@ -28,7 +28,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
         elseif is_independent_variable(prob.f, sym)
             return getindepsym(prob)
         elseif is_observed(prob.f, sym)
-            obs = SymbolicIndexingInterface.observed(prob.f, sym)
+            obs = SymbolicIndexingInterface.observed(prob, sym)
             if is_time_dependent(prob.f)
                 return obs(prob.u0, prob.p, 0.0)
             else

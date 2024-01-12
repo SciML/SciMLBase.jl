@@ -47,13 +47,6 @@ SymbolicIndexingInterface.is_independent_variable(::AbstractNoTimeSolution, sym)
 
 SymbolicIndexingInterface.independent_variable_symbols(::AbstractNoTimeSolution) = []
 
-for soltype in [AbstractTimeseriesSolution, AbstractNoTimeSolution]
-    @eval function SymbolicIndexingInterface.observed(A::$(soltype), sym::Symbol)
-        has_sys(A.prob.f) || error("Cannot use observed without system")
-        return SymbolicIndexingInterface.observed(A, getproperty(A.prob.f.sys, sym))
-    end
-end
-
 SymbolicIndexingInterface.is_time_dependent(::AbstractTimeseriesSolution) = true
 
 SymbolicIndexingInterface.is_time_dependent(::AbstractNoTimeSolution) = false
