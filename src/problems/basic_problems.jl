@@ -87,7 +87,7 @@ struct StandardNonlinearProblem end
 @doc doc"""
 
 Defines an interval nonlinear system problem.
-Documentation Page: https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/
+Documentation Page: [https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/](https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/)
 
 ## Mathematical Specification of an Interval Nonlinear Problem
 
@@ -98,7 +98,7 @@ which defines the nonlinear system:
 f(t,p) = u = 0
 ```
 
-along with an interval `tspan`, ``t \\in [t_0,t_f]``, within which the root should be found.
+along with an interval `tspan`, ``t \in [t_0,t_f]``, within which the root should be found.
 `f` should be specified as `f(t,p)` (or in-place as `f(u,t,p)`), and `tspan` should be a
 `Tuple{T,T} where T <: Number`.
 
@@ -114,8 +114,8 @@ along with an interval `tspan`, ``t \\in [t_0,t_f]``, within which the root shou
 ### Constructors
 
 ```julia
-IntervalNonlinearProblem(f::NonlinearFunction,tspan,p=NullParameters();kwargs...)
-IntervalNonlinearProblem{isinplace}(f,tspan,p=NullParameters();kwargs...)
+IntervalNonlinearProblem(f::NonlinearFunction, tspan, p = NullParameters(); kwargs...)
+IntervalNonlinearProblem{isinplace}(f, tspan, p = NullParameters(); kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not. This is
@@ -188,7 +188,7 @@ end
 @doc doc"""
 
 Defines a nonlinear system problem.
-Documentation Page: https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/
+Documentation Page: [https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/](https://docs.sciml.ai/NonlinearSolve/stable/basics/NonlinearProblem/)
 
 ## Mathematical Specification of a Nonlinear Problem
 
@@ -199,8 +199,8 @@ which defines the nonlinear system:
 f(u,p) = 0
 ```
 
-and an initial guess ``u₀`` of where `f(u,p)=0`. `f` should be specified as `f(u,p)`
-(or in-place as `f(du,u,p)`), and `u₀` should be an AbstractArray (or number)
+and an initial guess ``u₀`` of where `f(u, p) = 0`. `f` should be specified as `f(u, p)`
+(or in-place as `f(du, u, p)`), and `u₀` should be an AbstractArray (or number)
 whose geometry matches the desired geometry of `u`. Note that we are not limited
 to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary
 matrices / higher-dimension tensors as well.
@@ -210,8 +210,8 @@ matrices / higher-dimension tensors as well.
 ### Constructors
 
 ```julia
-NonlinearProblem(f::NonlinearFunction,u0,p=NullParameters();kwargs...)
-NonlinearProblem{isinplace}(f,u0,p=NullParameters();kwargs...)
+NonlinearProblem(f::NonlinearFunction, u0, p = NullParameters(); kwargs...)
+NonlinearProblem{isinplace}(f, u0, p = NullParameters(); kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not. This is
@@ -223,8 +223,8 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [NonlinearFunctions](@ref nonlinearfunctions)
-page.
+For specifying Jacobians and mass matrices, see the
+[NonlinearFunctions](@ref nonlinearfunctions) page.
 
 ### Fields
 
@@ -328,7 +328,7 @@ nonlinear system:
 ```
 
 and an initial guess ``u_0`` for the minimization problem. ``f`` should be specified as
-``f(u, p)`` (or in-place as ``f(du, u, p)``), and ``u_0``` should be an AbstractArray (or
+``f(u, p)`` (or in-place as ``f(du, u, p)``), and ``u_0`` should be an AbstractArray (or
 number) whose geometry matches the desired geometry of ``u``. Note that we are not limited
 to numbers or vectors for ``u_0``; one is allowed to provide ``u_0`` as arbitrary
 matrices / higher-dimension tensors as well.
@@ -338,8 +338,8 @@ matrices / higher-dimension tensors as well.
 ### Constructors
 
 ```julia
-NonlinearLeastSquaresProblem(f::NonlinearFunction, u0, p=NullParameters(); kwargs...)
-NonlinearLeastSquaresProblem{isinplace}(f, u0, p=NullParameters(); kwargs...)
+NonlinearLeastSquaresProblem(f::NonlinearFunction, u0, p = NullParameters(); kwargs...)
+NonlinearLeastSquaresProblem{isinplace}(f, u0, p = NullParameters(); kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not. This is
