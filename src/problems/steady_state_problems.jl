@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a steady state ODE problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/)
 
 ## Mathematical Specification of a Steady State Problem
 
@@ -9,27 +9,27 @@ To define a Steady State Problem, you simply need to give the function ``f``
 which defines the ODE:
 
 ```math
-\frac{du}{dt} = f(u,p,t)
+\frac{du}{dt} = f(u, p, t)
 ```
 
-and an initial guess ``u_0`` of where `f(u,p,t)=0`. `f` should be specified as `f(u,p,t)`
-(or in-place as `f(du,u,p,t)`), and `u₀` should be an AbstractArray (or number)
-whose geometry matches the desired geometry of `u`. Note that we are not limited
+and an initial guess ``u_0`` of where `f(u, p, t) = 0`. `f` should be specified as
+`f(u, p, t)` (or in-place as `f(du, u, p, t)`), and `u₀` should be an AbstractArray
+(or number) whose geometry matches the desired geometry of `u`. Note that we are not limited
 to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary
 matrices / higher dimension tensors as well.
 
 Note that for the steady-state to be defined, we must have that `f` is autonomous,
 that is `f` is independent of `t`. But the form which matches the standard ODE
 solver should still be used. The steady state solvers interpret the `f` by
-fixing ``t=\\infty``.
+fixing ``t = \infty``.
 
 ## Problem Type
 
 ### Constructors
 
 ```julia
-SteadyStateProblem(f::ODEFunction,u0,p=NullParameters();kwargs...)
-SteadyStateProblem{isinplace,specialize}(f,u0,p=NullParameters();kwargs...)
+SteadyStateProblem(f::ODEFunction, u0, p = NullParameters(); kwargs...)
+SteadyStateProblem{isinplace, specialize}(f, u0, p = NullParameters(); kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is inplace or not. This is
