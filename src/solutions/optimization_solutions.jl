@@ -1,6 +1,40 @@
 """
 $(TYPEDEF)
 
+Stores the optimization run's statistics that is returned 
+in the `stats` field of the `OptimizationResult`. 
+
+## Fields
+- `iterations`: number of iterations
+- `time`: time taken to run the solver
+- `fevals`: number of function evaluations
+- `gevals`: number of gradient evaluations
+- `hevals`: number of hessian evaluations
+
+Default values for all the field are set to 0 and hence even when 
+you might expect non-zero values due to unavilability of the information 
+from the solver it would be 0.
+"""
+struct OptimizationStats
+    iterations::Int
+    time::Float64
+    fevals::Int
+    gevals::Int
+    hevals::Int
+end
+
+function OptimizationStats(; iterations = 0, time = 0.0, fevals = 0, gevals = 0, hevals = 0)
+    OptimizationStats(iterations, time, fevals, gevals, hevals)
+end
+
+function Base.merge(s1::OptimizationStats, s2::OptimizationStats)
+    OptimizationStats(s1.iterations + s2.iterations, s1.time + s2.time, s1.fevals + s2.fevals,
+        s1.gevals + s2.gevals, s1.hevals + s2.hevals)
+end
+
+"""
+$(TYPEDEF)
+
 Representation of the solution to a non-linear optimization defined by an OptimizationProblem
 
 ## Fields
