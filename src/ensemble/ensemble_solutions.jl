@@ -141,7 +141,8 @@ end
 @recipe function f(sim::AbstractEnsembleSolution;
     zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
               nothing,
-    trajectories = eachindex(sim))
+    trajectories = eachindex(sim),
+    idxs = nothing)
     for i in trajectories
         size(sim[i].u, 1) == 0 && continue
         @series begin
@@ -150,6 +151,9 @@ end
             ylims --> (-Inf, Inf)
             zlims --> (-Inf, Inf)
             marker_z --> zcolors[i]
+            if idxs !== nothing
+                idxs --> idxs
+            end
             sim[i]
         end
     end
@@ -158,7 +162,8 @@ end
 @recipe function f(sim::EnsembleSummary;
     trajectories = sim.u[1] isa AbstractArray ? eachindex(sim.u[1]) :
                    1,
-    error_style = :ribbon, ci_type = :quantile)
+    error_style = :ribbon, ci_type = :quantile,
+    idxs = nothing)
     if ci_type == :SEM
         if sim.u[1] isa AbstractArray
             u = vecarr_to_vectors(sim.u)
@@ -195,6 +200,9 @@ end
             legend --> false
             linewidth --> 3
             fillalpha --> 0.2
+            if idxs !== nothing
+                idxs --> idxs
+            end
             if error_style == :ribbon
                 ribbon --> (ci_low[i], ci_high[i])
             elseif error_style == :bars
