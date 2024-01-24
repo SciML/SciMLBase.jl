@@ -143,14 +143,14 @@ end
               nothing,
     trajectories = eachindex(sim))
     for i in trajectories
-        size(sim[i].u, 1) == 0 && continue
+        size(sim.u[i].u, 1) == 0 && continue
         @series begin
             legend := false
             xlims --> (-Inf, Inf)
             ylims --> (-Inf, Inf)
             zlims --> (-Inf, Inf)
             marker_z --> zcolors[i]
-            sim[i]
+            sim.u[i]
         end
     end
 end
@@ -170,12 +170,12 @@ end
                                                       1.96 for i in 1:length(sim.v)]))
             ci_high = ci_low
         else
-            ci_low = [[sqrt(sim.v[i] / length(sim.num_monte)) .* 1.96
+            ci_low = [[sqrt(sim.v.u[i] / length(sim.num_monte)) .* 1.96
                        for i in 1:length(sim.v)]]
             ci_high = ci_low
         end
     elseif ci_type == :quantile
-        if sim.med[1] isa AbstractArray
+        if sim.med.u[1] isa AbstractArray
             u = vecarr_to_vectors(sim.med)
         else
             u = [sim.med.u]

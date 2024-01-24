@@ -28,7 +28,7 @@ timestep_mean(sim, ::Colon) = timeseries_steps_mean(sim)
 function timestep_median(sim, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([median(x) for x in arr], size(sim.u[1][i])...)
+        return reshape([median(x) for x in arr], size(sim.u[1].u[i])...)
     else
         return median(arr)
     end
@@ -37,7 +37,7 @@ timestep_median(sim, ::Colon) = timeseries_steps_median(sim)
 function timestep_quantile(sim, q, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([quantile(x, q) for x in arr], size(sim.u[1][i])...)
+        return reshape([quantile(x, q) for x in arr], size(sim.u[1].u[i])...)
     else
         return quantile(arr, q)
     end
@@ -97,7 +97,7 @@ timepoint_mean(sim, t) = componentwise_mean(get_timepoint(sim, t))
 function timepoint_median(sim, t)
     arr = componentwise_vectors_timepoint(sim, t)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([median(x) for x in arr], size(sim.u[1][1])...)
+        return reshape([median(x) for x in arr], size(sim.u[1].u[1])...)
     else
         return median(arr)
     end
@@ -105,7 +105,7 @@ end
 function timepoint_quantile(sim, q, t)
     arr = componentwise_vectors_timepoint(sim, t)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([quantile(x, q) for x in arr], size(sim.u[1][1])...)
+        return reshape([quantile(x, q) for x in arr], size(sim.u[1].u[1])...)
     else
         return quantile(arr, q)
     end
@@ -122,7 +122,7 @@ function timepoint_weighted_meancov(sim, W, t1, t2)
 end
 
 function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
-    t = sim.u[1].t; quantiles = [0.05, 0.95]) where {T, N}
+        t = sim.u[1].t; quantiles = [0.05, 0.95]) where {T, N}
     if sim.u[1] isa SciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
