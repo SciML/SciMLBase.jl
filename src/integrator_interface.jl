@@ -451,6 +451,8 @@ function Base.getproperty(A::DEIntegrator, sym::Symbol)
     if sym === :destats && hasfield(typeof(A), :stats)
         @warn "destats has been deprecated for stats"
         getfield(A, :stats)
+    elseif sym === :ps
+        return ParameterIndexingProxy(A)
     else
         return getfield(A, sym)
     end

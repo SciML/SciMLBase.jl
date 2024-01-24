@@ -22,9 +22,13 @@ integrator = init(oprob, Rodas4())
 @test_throws Exception integrator[population_model.a]
 @test_throws Exception integrator[:a]
 @test getp(oprob, a)(integrator) == getp(oprob, population_model.a)(integrator) == getp(oprob, :a)(integrator) == 2.0
+@test integrator.ps[a] == integrator.ps[population_model.a] == integrator.ps[:a] == 2.0
 @test getp(oprob, b)(integrator) == getp(oprob, population_model.b)(integrator) == getp(oprob, :b)(integrator) == 1.0
+@test integrator.ps[b] == integrator.ps[population_model.b] == integrator.ps[:b] == 1.0
 @test getp(oprob, c)(integrator) == getp(oprob, population_model.c)(integrator) == getp(oprob, :c)(integrator) == 1.0
+@test integrator.ps[d] == integrator.ps[population_model.d] == integrator.ps[:d] == 1.0
 @test getp(oprob, d)(integrator) == getp(oprob, population_model.d)(integrator) == getp(oprob, :d)(integrator) == 1.0
+@test integrator.ps[d] == integrator.ps[population_model.d] == integrator.ps[:d] == 1.0
 
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 2.0
 @test integrator[s2] == integrator[population_model.s2] == integrator[:s2] == 1.0
@@ -42,10 +46,15 @@ step!(integrator, 100.0, true)
 
 setp(oprob, a)(integrator, 10.0)
 @test getp(integrator, a)(integrator) == getp(integrator, population_model.a)(integrator) == getp(integrator, :a)(integrator) == 10.0
+@test integrator.ps[a] == integrator.ps[population_model.a] == integrator.ps[:a] == 10.0
 setp(population_model, population_model.b)(integrator, 20.0)
 @test getp(integrator, b)(integrator) == getp(integrator, population_model.b)(integrator) == getp(integrator, :b)(integrator) == 20.0
+@test integrator.ps[b] == integrator.ps[population_model.b] == integrator.ps[:b] == 20.0
 setp(integrator, c)(integrator, 30.0)
 @test getp(integrator, c)(integrator) == getp(integrator, population_model.c)(integrator) == getp(integrator, :c)(integrator) == 30.0
+@test integrator.ps[c] == integrator.ps[population_model.c] == integrator.ps[:c] == 30.0
+integrator.ps[d] = 40.0
+@test integrator.ps[d] == integrator.ps[population_model.d] == integrator.ps[:d] == 40.0
 
 integrator[s1] = 10.0
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 10.0
@@ -300,7 +309,7 @@ eqs = [collect(D.(x) .~ x)
     D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
-integrator = init(prob, Tsit5())
+integrator = init(prob, Tsit5(), save_everystep = false)
 @test integrator[x] isa Vector{Float64}
 @test integrator[@nonamespace sys.x] isa Vector{Float64}
 
@@ -324,9 +333,12 @@ setx!(integrator, [4.0, 5.0, 6.0])
 @test getx(integrator) == [4.0, 5.0, 6.0]
 sety!(integrator, 3.0)
 @test gety(integrator) == 3.0
-set_arr!(integrator, [1.0, 2.0])
-@test get_arr(integrator) == [[1.0, 1.0, 1.0], 2.0]
 set_arr!(integrator, [[1.0, 2.0, 3.0], 1.0])
 @test get_arr(integrator) == [[1.0, 2.0, 3.0], 1.0]
 set_tuple!(integrator, ([2.0, 4.0, 6.0], 2.0))
 @test get_tuple(integrator) == ([2.0, 4.0, 6.0], 2.0)
+@test getp(sys, p)(integrator) == integrator.ps[p] == [1, 2, 3]
+setp(sys, p)(integrator, [4, 5, 6])
+@test getp(sys, p)(integrator) == integrator.ps[p] == [4, 5, 6]
+integrator.ps[p] = [7, 8, 9]
+@test getp(sys, p)(integrator) == integrator.ps[p] == [7, 8, 9]
