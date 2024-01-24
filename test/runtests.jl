@@ -104,6 +104,9 @@ end
     end
 
     if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")
+        if GROUP != "Downstream"
+            activate_downstream_env()
+        end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/symbol_indexing.jl")
         end
