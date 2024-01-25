@@ -236,7 +236,7 @@ integrator[lorenz2.x] = 2.0
 
 # integrator2 = integrator(0.1)
 # @test integrator2 isa Vector
-# @test length(integrator2) == length(states(sys_simplified))
+# @test length(integrator2) == length(unknowns(sys_simplified))
 # @test first(integrator2) isa Real
 
 # integrator3 = integrator(0.0:1.0:10.0, idxs = [lorenz1.x, lorenz2.x])

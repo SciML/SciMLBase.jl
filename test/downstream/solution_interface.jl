@@ -1,4 +1,6 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
+# compat for MTKv8 and v9
+unknowns = isdefined(ModelingToolkit, :states) ? ModelingToolkit.states : ModelingToolkit.unknowns
 
 ### Tests on non-layered model (everything should work). ###
 
@@ -78,5 +80,5 @@ prob = ODEProblem(sys_simplified, u0, tspan, p)
 sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
-@test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(states(sol.prob.f.sys))])
+@test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(unknowns(sol.prob.f.sys))])
 @test_throws ArgumentError sol[:x]

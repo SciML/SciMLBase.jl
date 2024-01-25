@@ -1,5 +1,7 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, SymbolicIndexingInterface, Test
 using Optimization, OptimizationOptimJL
+# compat for MTKv8 and v9
+unknowns = isdefined(ModelingToolkit, :states) ? ModelingToolkit.states : ModelingToolkit.unknowns
 
 @parameters t σ ρ β
 @variables x(t) y(t) z(t)
@@ -122,7 +124,7 @@ sol1 = sol(0.0:1.0:10.0)
 
 sol2 = sol(0.1)
 @test sol2 isa Vector
-@test length(sol2) == length(states(sys_simplified))
+@test length(sol2) == length(unknowns(sys_simplified))
 @test first(sol2) isa Real
 
 sol3 = sol(0.0:1.0:10.0, idxs = [lorenz1.x, lorenz2.x])

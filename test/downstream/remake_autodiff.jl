@@ -3,14 +3,14 @@ using OrdinaryDiffEq, ModelingToolkit, Zygote, SciMLSensitivity
 @variables t x(t) o(t)
 D = Differential(t)
 function lotka_volterra(; name = name)
-    states = @variables x(t)=1.0 y(t)=1.0 o(t)
+    unknowns = @variables x(t)=1.0 y(t)=1.0 o(t)
     params = @parameters p1=1.5 p2=1.0 p3=3.0 p4=1.0
     eqs = [
         D(x) ~ p1 * x - p2 * x * y,
         D(y) ~ -p3 * y + p4 * x * y,
         o ~ x * y,
     ]
-    return ODESystem(eqs, t, states, params; name = name)
+    return ODESystem(eqs, t, unknowns, params; name = name)
 end
 
 @named lotka_volterra_sys = lotka_volterra()
