@@ -73,7 +73,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
         elseif is_parameter(A, sym)
             error("Indexing with parameters is deprecated. Use `getp(sys, $sym)(sol)` for parameter indexing.")
         elseif is_observed(A, sym)
-            return SymbolicIndexingInterface.observed(A, sym)(A.u, A.prob.p)
+            return SymbolicIndexingInterface.observed(A, sym)(A.u, parameter_values(A))
         else
             error("Tried to index solution with a Symbol that was not found in the system.")
         end
@@ -94,23 +94,19 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, ::Sym
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Int)
-    getobserved(A)(sym, A[i], A.prob.p, A.t[i])
+    getobserved(A)(sym, A[i], parameter_values(A), A.t[i])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::AbstractArray{Int})
-    getobserved(A).((sym,), A.u[i], (A.prob.p,), A.t[i])
+    getobserved(A).((sym,), A.u[i], (parameter_values(A),), A.t[i])
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Colon)
-    getobserved(A).((sym,), A.u, (A.prob.p,), A.t)
+    getobserved(A).((sym,), A.u, (parameter_values(A),), A.t)
 end
 
 function observed(A::AbstractNoTimeSolution, sym)
-    getobserved(A)(sym, A.u, A.prob.p)
-end
-
-function observed(A::AbstractOptimizationSolution, sym)
-    getobserved(A)(sym, A.u, get_p(A))
+    getobserved(A)(sym, A.u, parameter_values(A))
 end
 
 ## AbstractTimeseriesSolution Interface
