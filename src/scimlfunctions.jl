@@ -4219,6 +4219,8 @@ end
 
 SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = fn.sys
 
+SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_observed(fn)
+
 function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym)
   if has_observed(fn)
     if is_time_dependent(fn)
