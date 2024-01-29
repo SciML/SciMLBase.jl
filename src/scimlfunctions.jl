@@ -2477,8 +2477,7 @@ function ODEFunction{iip, specialize}(f;
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
     if specialize === NoSpecialize
         ODEFunction{iip, specialize,
             Any, Any, Any, Any,
@@ -2695,7 +2694,7 @@ function SplitFunction{iip, specialize}(f1, f2;
     sys = __has_sys(f1) ? f1.sys : nothing) where {iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any,
@@ -2776,7 +2775,7 @@ function DynamicalODEFunction{iip, specialize}(f1, f2;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DynamicalODEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any,
@@ -2824,7 +2823,7 @@ function DiscreteFunction{iip, specialize}(f;
     specialize,
 }
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DiscreteFunction{iip, specialize, Any, Any, Any, Any}(_f, analytic,
@@ -2872,7 +2871,7 @@ function ImplicitDiscreteFunction{iip, specialize}(f;
     specialize,
 }
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         ImplicitDiscreteFunction{iip, specialize, Any, Any, Any, Any}(_f,
@@ -2968,7 +2967,7 @@ function SDEFunction{iip, specialize}(f, g;
     _f = prepare_function(f)
     _g = prepare_function(g)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         SDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
@@ -3098,7 +3097,7 @@ function SplitSDEFunction{iip, specialize}(f1, f2, g;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         SplitSDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any,
@@ -3181,7 +3180,7 @@ function DynamicalSDEFunction{iip, specialize}(f1, f2, g;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DynamicalSDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any,
@@ -3277,8 +3276,7 @@ function RODEFunction{iip, specialize}(f;
     =#
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         RODEFunction{iip, specialize, Any, Any, Any, Any, Any,
@@ -3365,8 +3363,7 @@ function DAEFunction{iip, specialize}(f;
     end
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DAEFunction{iip, specialize, Any, Any, Any,
@@ -3453,8 +3450,7 @@ function DDEFunction{iip, specialize}(f;
     end
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DDEFunction{iip, specialize, Any, Any, Any, Any,
@@ -3543,7 +3539,7 @@ function DynamicalDDEFunction{iip, specialize}(f1, f2;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DynamicalDDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
@@ -3623,8 +3619,7 @@ function SDDEFunction{iip, specialize}(f, g;
 
     _f = prepare_function(f)
     _g = prepare_function(g)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         SDDEFunction{iip, specialize, Any, Any, Any, Any, Any,
@@ -3727,9 +3722,7 @@ function NonlinearFunction{iip, specialize}(f;
     end
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms))
-
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
     if specialize === NoSpecialize
         NonlinearFunction{iip, specialize,
             Any, Any, Any, Any, Any,
@@ -3782,8 +3775,7 @@ function IntervalNonlinearFunction{iip, specialize}(f;
     specialize,
 }
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
 
     if specialize === NoSpecialize
         IntervalNonlinearFunction{iip, specialize,
@@ -3832,8 +3824,8 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                                         nothing,
                                    lag_hess_colorvec = nothing) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
-    sys = something(sys, SymbolCache(syms, paramsyms))
-    OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
+  OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
                          typeof(hv),
                          typeof(cons), typeof(cons_j), typeof(cons_h),
                          typeof(hess_prototype),
@@ -3976,7 +3968,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
 
     if specialize === NoSpecialize
@@ -4071,6 +4063,15 @@ function BatchIntegralFunction(f, integrand_prototype; kwargs...)
         throw(IntegrandMismatchFunctionError(calculated_iip, true))
     end
     BatchIntegralFunction{true}(f, integrand_prototype; kwargs...)
+end
+
+########## Utility functions
+
+function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
+  if sys === nothing && (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
+    sys = SymbolCache(syms, paramsyms, indepsym)
+  end
+  return sys
 end
 
 ########## Existence Functions
@@ -4217,7 +4218,7 @@ for S in [:ODEFunction
     end
 end
 
-SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = fn.sys
+SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = has_sys(fn) ? fn.sys : SymbolCache()
 
 SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_observed(fn)
 
