@@ -156,17 +156,17 @@ end
 end
 
 @recipe function f(sim::EnsembleSummary;
-    trajectories = sim.u[1] isa AbstractArray ? eachindex(sim.u[1]) :
+    trajectories = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
                    1,
     error_style = :ribbon, ci_type = :quantile)
     if ci_type == :SEM
-        if sim.u[1] isa AbstractArray
+        if sim.u.u[1] isa AbstractArray
             u = vecarr_to_vectors(sim.u)
         else
             u = [sim.u.u]
         end
-        if sim.u[1] isa AbstractArray
-            ci_low = vecarr_to_vectors(VectorOfArray([sqrt.(sim.v[i] / sim.num_monte) .*
+        if sim.u.u[1] isa AbstractArray
+            ci_low = vecarr_to_vectors(VectorOfArray([sqrt.(sim.v.u[i] / sim.num_monte) .*
                                                       1.96 for i in 1:length(sim.v)]))
             ci_high = ci_low
         else
@@ -180,7 +180,7 @@ end
         else
             u = [sim.med.u]
         end
-        if sim.u[1] isa AbstractArray
+        if sim.u.u[1] isa AbstractArray
             ci_low = u - vecarr_to_vectors(sim.qlow)
             ci_high = vecarr_to_vectors(sim.qhigh) - u
         else
