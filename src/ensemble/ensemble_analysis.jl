@@ -32,7 +32,7 @@ timestep_mean(sim, ::Colon) = timeseries_steps_mean(sim)
 function timestep_median(sim, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([median(x) for x in arr], size(sim.u[1].u[i])...)
+        return reshape([median(x) for x in arr], size(sim[1, i])...)
     else
         return median(arr)
     end
@@ -41,7 +41,7 @@ timestep_median(sim, ::Colon) = timeseries_steps_median(sim)
 function timestep_quantile(sim, q, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([quantile(x, q) for x in arr], size(sim.u[1].u[i])...)
+        return reshape([quantile(x, q) for x in arr], size(sim[1, i])...)
     else
         return quantile(arr, q)
     end
