@@ -290,7 +290,7 @@ function remake(prob::OptimizationProblem;
         ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
         if isu0symbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with" *
-                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
                 "with the `u0` keyword argument as a vector of values, paying attention to" *
                 "parameter order."))
         end
