@@ -3,7 +3,11 @@ module EnsembleAnalysis
 using SciMLBase, Statistics, RecursiveArrayTools, StaticArraysCore
 
 # Getters
-get_timestep(sim, i) = (sol.u[i] for sol in sim)
+function get_timestep(sim::EnsembleSolution{T, N, S},
+        i) where {T, N, S <: AbstractVectorOfArray}
+    (sol.u[i] for sol in sim)
+end
+get_timestep(sim, i) = (sol[i] for sol in sim)
 get_timepoint(sim, t) = (sol(t) for sol in sim)
 function componentwise_vectors_timestep(sim, i)
     arr = [get_timestep(sim, i)...]
