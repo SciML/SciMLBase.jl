@@ -124,7 +124,7 @@ end
 
 has_reinit(cache::SciMLBase.AbstractOptimizationCache) = hasfield(typeof(cache), :reinit_cache)
 function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
-        u0 = missing)
+        u0 = missing, interpret_symbolicmap = true)
     if p === missing && u0 === missing
         p, u0 = cache.p, cache.u0
     else # at least one of them has a value
@@ -134,11 +134,26 @@ function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
         if u0 === missing
             u0 = cache.u0
         end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            has_sys(cache.f) ||
-                throw(ArgumentError("This cache does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0`/`p` keyword arguments as vectors of values, paying attention to the order of initial values/parameters."))
-            p, u0 = SciMLBase.process_p_u0_symbolic(cache, p, u0)
+        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
+        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
+        if isu0symbolic && !has_sys(cache.f)
+            throw(ArgumentError("This cache does not support symbolic maps with" *
+                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                "parameter order."))
+        end
+        if ispsymbolic && !has_sys(cache.f)
+            throw(ArgumentError("This cache does not support symbolic maps with " *
+                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `p` keyword argument as a vector of values (paying attention to" *
+                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+        end
+        if isu0symbolic && ispsymbolic
+            p, u0 = process_p_u0_symbolic(cache, p, u0)
+        elseif isu0symbolic
+            _, u0 = process_p_u0_symbolic(cache, cache.p, u0)
+        elseif ispsymbolic
+            p, _ = process_p_u0_symbolic(cache, p, cache.u0)
         end
     end
 
