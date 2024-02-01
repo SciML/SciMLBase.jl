@@ -115,6 +115,57 @@ function build_solution(prob::AbstractOptimizationProblem,
         original)
 end
 
+function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
+    if x in (:u0, :p) && has_reinit(cache)
+        return getfield(cache.reinit_cache, x)
+    end
+    return getfield(cache, x)
+end
+
+has_reinit(cache::SciMLBase.AbstractOptimizationCache) = hasfield(typeof(cache), :reinit_cache)
+function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
+        u0 = missing, interpret_symbolicmap = true)
+    if p === missing && u0 === missing
+        p, u0 = cache.p, cache.u0
+    else # at least one of them has a value
+        if p === missing
+            p = cache.p
+        end
+        if u0 === missing
+            u0 = cache.u0
+        end
+        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
+        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
+        if isu0symbolic && !has_sys(cache.f)
+            throw(ArgumentError("This cache does not support symbolic maps with" *
+                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                "parameter order."))
+        end
+        if ispsymbolic && !has_sys(cache.f)
+            throw(ArgumentError("This cache does not support symbolic maps with " *
+                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `p` keyword argument as a vector of values (paying attention to" *
+                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+        end
+        if isu0symbolic && ispsymbolic
+            p, u0 = process_p_u0_symbolic(cache, p, u0)
+        elseif isu0symbolic
+            _, u0 = process_p_u0_symbolic(cache, cache.p, u0)
+        elseif ispsymbolic
+            p, _ = process_p_u0_symbolic(cache, p, cache.u0)
+        end
+    end
+
+    cache.reinit_cache.p = p
+    cache.reinit_cache.u0 = u0
+
+    return cache
+end
+
+SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationCache) = x.p
+SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationCache) = x.f
+
 get_p(sol::OptimizationSolution) = sol.cache.p
 get_observed(sol::OptimizationSolution) = sol.cache.f.observed
 get_syms(sol::OptimizationSolution) = variable_symbols(sol.cache.f)
@@ -132,8 +183,8 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
     return
 end
 
-SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationSolution) = x.cache.p
-SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationSolution) = x.cache.f
+SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationSolution) = parameter_values(x.cache)
+SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationSolution) = x.cache
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
     s::Symbol)

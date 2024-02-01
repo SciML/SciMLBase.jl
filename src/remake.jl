@@ -54,6 +54,7 @@ function remake(prob::ODEProblem; f = missing,
     tspan = missing,
     p = missing,
     kwargs = missing,
+    interpret_symbolicmap = true,
     _kwargs...)
     if tspan === missing
         tspan = prob.tspan
@@ -68,14 +69,26 @@ function remake(prob::ODEProblem; f = missing,
         if u0 === missing
             u0 = prob.u0
         end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
+        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
+        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
+        if isu0symbolic && !has_sys(prob.f)
+            throw(ArgumentError("This problem does not support symbolic maps with" *
+                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                "parameter order."))
+        end
+        if ispsymbolic && !has_sys(prob.f)
+            throw(ArgumentError("This problem does not support symbolic maps with " *
+                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `p` keyword argument as a vector of values (paying attention to" *
+                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+        end
+        if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(prob, p, u0)
+        elseif isu0symbolic
+            _, u0 = process_p_u0_symbolic(prob, prob.p, u0)
+        elseif ispsymbolic
+            p, _ = process_p_u0_symbolic(prob, p, prob.u0)
         end
     end
 
@@ -262,6 +275,7 @@ function remake(prob::OptimizationProblem;
     ucons = missing,
     sense = missing,
     kwargs = missing,
+    interpret_symbolicmap = true,
     _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
@@ -272,14 +286,26 @@ function remake(prob::OptimizationProblem;
         if u0 === missing
             u0 = prob.u0
         end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
+        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
+        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
+        if isu0symbolic && !has_sys(prob.f)
+            throw(ArgumentError("This problem does not support symbolic maps with" *
+                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                "parameter order."))
+        end
+        if ispsymbolic && !has_sys(prob.f)
+            throw(ArgumentError("This problem does not support symbolic maps with " *
+                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `p` keyword argument as a vector of values (paying attention to" *
+                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+        end
+        if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(prob, p, u0)
+        elseif isu0symbolic
+            _, u0 = process_p_u0_symbolic(prob, prob.p, u0)
+        elseif ispsymbolic
+            p, _ = process_p_u0_symbolic(prob, p, prob.u0)
         end
     end
 
@@ -331,6 +357,7 @@ function remake(prob::NonlinearProblem;
     p = missing,
     problem_type = missing,
     kwargs = missing,
+    interpret_symbolicmap = true,
     _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
@@ -341,14 +368,26 @@ function remake(prob::NonlinearProblem;
         if u0 === missing
             u0 = prob.u0
         end
-        if (eltype(p) <: Pair && !isempty(p)) || (eltype(u0) <: Pair && !isempty(u0)) # one is a non-empty symbolic map
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :ps) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `p` keyword argument as a vector of values, paying attention to parameter order."))
-            hasproperty(prob.f, :sys) && hasfield(typeof(prob.f.sys), :states) ||
-                throw(ArgumentError("This problem does not support symbolic maps with `remake`, i.e. it does not have a symbolic origin." *
-                                    " Please use `remake` with the `u0` keyword argument as a vector of values, paying attention to state order."))
+        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
+        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
+        if isu0symbolic && !has_sys(prob.f)
+            throw(ArgumentError("This problem does not support symbolic maps with" *
+                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                "parameter order."))
+        end
+        if ispsymbolic && !has_sys(prob.f)
+            throw(ArgumentError("This problem does not support symbolic maps with " *
+                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                "with the `p` keyword argument as a vector of values (paying attention to" *
+                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+        end
+        if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(prob, p, u0)
+        elseif isu0symbolic
+            _, u0 = process_p_u0_symbolic(prob, prob.p, u0)
+        elseif ispsymbolic
+            p, _ = process_p_u0_symbolic(prob, p, prob.u0)
         end
     end
 

@@ -255,9 +255,6 @@ ODEFunction{iip,specialize}(f;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           syms = nothing,
-                           indepsym= nothing,
-                           paramsyms = nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -286,14 +283,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -466,9 +455,6 @@ SplitFunction{iip,specialize}(f1,f2;
                              jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
                              sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
                              paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                             syms = nothing,
-                             indepsym= nothing,
-                             paramsyms = nothing,
                              colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
                              sys = __has_sys(f1) ? f1.sys : nothing)
 ```
@@ -497,14 +483,6 @@ the usage of the `SplitFunction`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df_1}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -594,9 +572,6 @@ DynamicalODEFunction{iip,specialize}(f1,f2;
                                     jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                                     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    syms = nothing,
-                                    indepsym= nothing,
-                                    paramsyms = nothing,
                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                     sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -627,14 +602,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -707,9 +674,6 @@ DDEFunction{iip,specialize}(f;
                  jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                  sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 syms = nothing,
-                 indepsym= nothing,
-                 paramsyms = nothing,
                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                  sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -740,14 +704,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -822,9 +778,6 @@ DynamicalDDEFunction{iip,specialize}(f1,f2;
                                     jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                                     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    syms = nothing,
-                                    indepsym= nothing,
-                                    paramsyms = nothing,
                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                     sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -857,14 +810,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,h,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -929,10 +874,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                syms = nothing
-                                indepsym = nothing,
-                                paramsyms = nothing)
+                                analytic = __has_analytic(f) ? f.analytic : nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -944,14 +886,6 @@ the usage of `f`. These include:
 
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -996,10 +930,7 @@ dt: the time step
 
 ```julia
 ImplicitDiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                syms = nothing
-                                indepsym = nothing,
-                                paramsyms = nothing)
+                                analytic = __has_analytic(f) ? f.analytic : nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1011,14 +942,6 @@ the usage of `f`. These include:
 
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -1074,9 +997,6 @@ SDEFunction{iip,specialize}(f,g;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           syms = nothing,
-                           indepsym= nothing,
-                           paramsyms = nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -1107,14 +1027,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1192,9 +1104,6 @@ SplitSDEFunction{iip,specialize}(f1,f2,g;
                  jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                  sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 syms = nothing,
-                 indepsym= nothing,
-                 paramsyms = nothing,
                  colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                  sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -1221,14 +1130,6 @@ are optional for improving or accelerating the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df_1}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1313,9 +1214,6 @@ DynamicalSDEFunction{iip,specialize}(f1,f2;
                                     jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                                     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    syms = nothing,
-                                    indepsym= nothing,
-                                    paramsyms = nothing,
                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                                     sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -1348,11 +1246,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1430,9 +1323,6 @@ RODEFunction{iip,specialize}(f;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           syms = nothing,
-                           indepsym= nothing,
-                           paramsyms = nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing,
                            analytic_full = __has_analytic_full(f) ? f.analytic_full : false)
@@ -1468,14 +1358,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t,W)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1546,9 +1428,6 @@ DAEFunction{iip,specialize}(f;
                            vjp = __has_vjp(f) ? f.vjp : nothing,
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           syms = nothing,
-                           indepsym= nothing,
-                           paramsyms = nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -1573,14 +1452,6 @@ the usage of `f`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1699,9 +1570,6 @@ SDDEFunction{iip,specialize}(f,g;
                  jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                  sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                  paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 syms = nothing,
-                 indepsym= nothing,
-                 paramsyms = nothing,
                  colorvec = __has_colorvec(f) ? f.colorvec : nothing
                  sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -1732,14 +1600,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1812,8 +1672,6 @@ NonlinearFunction{iip, specialize}(f;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           syms = nothing,
-                           paramsyms = nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -1836,12 +1694,6 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1905,8 +1757,6 @@ interval variable.
 ```julia
 IntervalNonlinearFunction{iip, specialize}(f;
                            analytic = __has_analytic(f) ? f.analytic : nothing,
-                           syms = nothing,
-                           paramsyms = nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
 
@@ -1919,12 +1769,6 @@ the usage of `f`. These include:
 
 - `analytic(p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -1970,8 +1814,6 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           hess_prototype = nothing,
                           cons_jac_prototype = nothing,
                           cons_hess_prototype = nothing,
-                          syms = nothing,
-                          paramsyms = nothing,
                           observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED_NO_TIME,
                           lag_h = nothing,
                           hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2036,12 +1878,6 @@ function described in [Callback Functions](https://docs.sciml.ai/Optimization/st
 
 When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Optimization/stable/tutorials/symbolic/) interface is used the following arguments are also relevant:
 
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `observed`: an algebraic combination of optimization variables that is of interest to the user
     which will be available in the solution. This can be single or multiple expressions.
 - `sys`: field that stores the `OptimizationSystem`.
@@ -2142,9 +1978,6 @@ BVPFunction{iip,specialize}(f, bc;
                            bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           syms = nothing,
-                           indepsym= nothing,
-                           paramsyms = nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
@@ -2180,14 +2013,6 @@ the usage of `f` and `bc`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
-- `syms`: the symbol names for the elements of the equation. This should match `u0` in size. For
-  example, if `u0 = [0.0,1.0]` and `syms = [:x, :y]`, this will apply a canonical naming to the
-  values, allowing `sol[:x]` in the solution and automatically naming values in plots.
-- `indepsym`: the canonical naming for the independent variable. Defaults to nothing, which
-  internally uses `t` as the representation in any plots.
-- `paramsyms`: the symbol names for the parameters of the equation. This should match `p` in
-  size. For example, if `p = [0.0, 1.0]` and `paramsyms = [:a, :b]`, this will apply a canonical
-  naming to the values, allowing `sol[:a]` in the solution.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -2477,8 +2302,7 @@ function ODEFunction{iip, specialize}(f;
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
     if specialize === NoSpecialize
         ODEFunction{iip, specialize,
             Any, Any, Any, Any,
@@ -2695,7 +2519,7 @@ function SplitFunction{iip, specialize}(f1, f2;
     sys = __has_sys(f1) ? f1.sys : nothing) where {iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any,
@@ -2776,7 +2600,7 @@ function DynamicalODEFunction{iip, specialize}(f1, f2;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DynamicalODEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any,
@@ -2824,7 +2648,7 @@ function DiscreteFunction{iip, specialize}(f;
     specialize,
 }
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DiscreteFunction{iip, specialize, Any, Any, Any, Any}(_f, analytic,
@@ -2872,7 +2696,7 @@ function ImplicitDiscreteFunction{iip, specialize}(f;
     specialize,
 }
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         ImplicitDiscreteFunction{iip, specialize, Any, Any, Any, Any}(_f,
@@ -2968,7 +2792,7 @@ function SDEFunction{iip, specialize}(f, g;
     _f = prepare_function(f)
     _g = prepare_function(g)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         SDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
@@ -3098,7 +2922,7 @@ function SplitSDEFunction{iip, specialize}(f1, f2, g;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         SplitSDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any,
@@ -3181,7 +3005,7 @@ function DynamicalSDEFunction{iip, specialize}(f1, f2, g;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DynamicalSDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any,
@@ -3277,8 +3101,7 @@ function RODEFunction{iip, specialize}(f;
     =#
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         RODEFunction{iip, specialize, Any, Any, Any, Any, Any,
@@ -3365,8 +3188,7 @@ function DAEFunction{iip, specialize}(f;
     end
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DAEFunction{iip, specialize, Any, Any, Any,
@@ -3453,8 +3275,7 @@ function DDEFunction{iip, specialize}(f;
     end
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DDEFunction{iip, specialize, Any, Any, Any, Any,
@@ -3543,7 +3364,7 @@ function DynamicalDDEFunction{iip, specialize}(f1, f2;
     iip,
     specialize,
 }
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         DynamicalDDEFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
@@ -3623,8 +3444,7 @@ function SDDEFunction{iip, specialize}(f, g;
 
     _f = prepare_function(f)
     _g = prepare_function(g)
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     if specialize === NoSpecialize
         SDDEFunction{iip, specialize, Any, Any, Any, Any, Any,
@@ -3727,9 +3547,7 @@ function NonlinearFunction{iip, specialize}(f;
     end
 
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms))
-
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
     if specialize === NoSpecialize
         NonlinearFunction{iip, specialize,
             Any, Any, Any, Any, Any,
@@ -3782,8 +3600,7 @@ function IntervalNonlinearFunction{iip, specialize}(f;
     specialize,
 }
     _f = prepare_function(f)
-    sys = something(sys, SymbolCache(syms, paramsyms))
-
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
 
     if specialize === NoSpecialize
         IntervalNonlinearFunction{iip, specialize,
@@ -3832,8 +3649,8 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                                                         nothing,
                                    lag_hess_colorvec = nothing) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
-    sys = something(sys, SymbolCache(syms, paramsyms))
-    OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
+  OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
                          typeof(hv),
                          typeof(cons), typeof(cons_j), typeof(cons_h),
                          typeof(hess_prototype),
@@ -3976,7 +3793,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
 
     if specialize === NoSpecialize
@@ -4071,6 +3888,16 @@ function BatchIntegralFunction(f, integrand_prototype; kwargs...)
         throw(IntegrandMismatchFunctionError(calculated_iip, true))
     end
     BatchIntegralFunction{true}(f, integrand_prototype; kwargs...)
+end
+
+########## Utility functions
+
+function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
+  if sys === nothing && (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
+    @warn "The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead."
+    sys = SymbolCache(syms, paramsyms, indepsym)
+  end
+  return sys
 end
 
 ########## Existence Functions
@@ -4217,7 +4044,9 @@ for S in [:ODEFunction
     end
 end
 
-SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = fn.sys
+SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = has_sys(fn) ? fn.sys : SymbolCache()
+
+SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_observed(fn)
 
 function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym)
   if has_observed(fn)
