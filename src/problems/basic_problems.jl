@@ -448,7 +448,7 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
     p::P
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain,
-        p = NullParameters();
+        p = NullParameters(); nout = nothing, batch = nothing,
         kwargs...) where {iip}
         warn_paramtype(p)
         new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(f,
@@ -470,12 +470,13 @@ end
     ub::Union{Number,AbstractVector{<:Number}},
     p = NullParameters(); kwargs...) IntegralProblem(f, (lb, ub), p; kwargs...)
 
-function IntegralProblem(f, args...; nout = nothing, batch = nothing, kwargs...)
+IntegralProblem(f, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
+function IntegralProblem{iip}(f, args...; nout = nothing, batch = nothing, kwargs...) where {iip}
     if nout !== nothing || batch !== nothing
        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
     end
 
-    g = if isinplace(f, 3)
+    g = if iip
         if batch === nothing
             output_prototype = nout === nothing ? Array{Float64, 0}(undef) : Vector{Float64}(undef, nout)
             IntegralFunction(f, output_prototype)
