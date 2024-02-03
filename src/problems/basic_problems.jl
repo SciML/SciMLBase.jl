@@ -465,10 +465,10 @@ function IntegralProblem(f::AbstractIntegralFunction,
     IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-@deprecate IntegralProblem(f::AbstractIntegralFunction,
+@deprecate IntegralProblem{iip}(f::AbstractIntegralFunction,
     lb::Union{Number,AbstractVector{<:Number}},
     ub::Union{Number,AbstractVector{<:Number}},
-    p = NullParameters(); kwargs...) IntegralProblem(f, (lb, ub), p; kwargs...)
+    p = NullParameters(); kwargs...) where {iip} IntegralProblem{iip}(f, (lb, ub), p; kwargs...)
 
 IntegralProblem(f, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
 function IntegralProblem{iip}(f, args...; nout = nothing, batch = nothing, kwargs...) where {iip}

@@ -461,15 +461,27 @@ NonlinearFunction(nfiip, vjp = nvjp)
 NonlinearFunction(nfoop, vjp = nvjp)
 
 # Integrals
-intf(u) = 1.0
-@test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intf, (0.0, 1.0))
+intfew(u) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intfew, (0.0, 1.0))
+@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(intfew)
+@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(intfew, zeros(3))
+@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(intfew)
+@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(intfew, zeros(3))
 intf(u, p) = 1.0
 p = 2.0
+intfiip(y, u, p) = y .= 1.0
 
-IntegralProblem(intf, (0.0, 1.0))
-IntegralProblem(intf, (0.0, 1.0), p)
-IntegralProblem(intf, ([0.0], [1.0]))
-IntegralProblem(intf, ([0.0], [1.0]), p)
+for (f, kws, iip) in (
+    (intf,                                  (;),        false),
+    (IntegralFunction(intf),                (;),        false),
+    (intfiip,                               (; nout=3), true),
+    (IntegralFunction(intfiip, zeros(3)),   (;),        true),
+), domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0],))
+    IntegralProblem(f, domain...; kws...)
+    IntegralProblem(f, domain..., p; kws...)
+    IntegralProblem{iip}(f, domain...; kws...)
+    IntegralProblem{iip}(f, domain..., p; kws...)
+end
 
 x = [1.0, 2.0]
 y = rand(2, 2)
