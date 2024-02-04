@@ -399,9 +399,9 @@ function sensitivity_solution(sol::ODESolution, u, t)
     end
 
     interp = enable_interpolation_sensitivitymode(sol.interp)
-
-    ODESolution{T, N}(u, sol.u_analytic, sol.errors, t,
-        nothing, sol.prob,
+    ODESolution{T, N}(u, sol.u_analytic, sol.errors, 
+        t isa Vector ? t : collect(t),
+        sol.k, sol.prob,
         sol.alg, interp,
         sol.dense, sol.tslocation,
         sol.stats, sol.alg_choice, sol.retcode)
