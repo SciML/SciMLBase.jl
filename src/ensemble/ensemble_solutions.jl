@@ -188,7 +188,7 @@ end
             ci_high = [sim.qhigh.u - u[1]]
         end
     else
-        error("ci_type choice not valid. Must be :variance or :quantile")
+        error("ci_type choice not valid. Must be `:SEM` or `:quantile`")
     end
     for i in trajectories
         @series begin
