@@ -31,23 +31,11 @@ function Makie.convert_arguments(
                         max(1000, 10 * length(sol))) :
                         1000 * sol.tslocation),
     plotat = nothing,
-    tspan = nothing, # we don't support this, since this is a plot recipe, not an axis spec!
+    tspan = nothing,
     tscale = :identity,
     vars = nothing, 
     idxs = nothing
     )
-
-    # Check for attributes unsupported in Makie
-
-    if tspan !== nothing
-        error(
-            """
-            `tspan` is not supported in the Makie recipe for any `AbstractTimeseriesSolution`.
-            
-            However, you can change the x-axis limits by setting the limits in the axis, or by using the `xlims!` function on this plot's parent Axis.
-            """
-            )
-    end
 
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
