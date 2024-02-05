@@ -6,15 +6,15 @@ using Makie
 import Makie.SpecApi as S
 
 function ensure_plottrait(PT::Type, arg, desired_plottrait_type::Type)
-    if !(Makie.conversion_trait(PT, sol) isa desired_plottrait_type)
+    if !(Makie.conversion_trait(PT, arg) isa desired_plottrait_type)
         error(
             """
-            `Makie.convert_arguments` for the plot type $PT and its conversion trait $(Makie.conversion_trait(PT, sol)) was unsuccessful.
+            `Makie.convert_arguments` for the plot type $PT and its conversion trait $(Makie.conversion_trait(PT, arg)) was unsuccessful.
             
             There is a recipe for the given arguments and the `$desired_plottrait_type` trait, however.
 
             The signature that could not be converted was:
-            ::$(string(typeof(sol)))
+            ::$(string(typeof(arg)))
 
             Makie needs to convert all plot input arguments to types that can be consumed by the backends (typically Arrays with Float32 elements).
             You can define a method for `Makie.convert_arguments` (a type recipe) for these types or their supertypes to make this set of arguments convertible (See http://docs.makie.org/stable/documentation/recipes/index.html).
