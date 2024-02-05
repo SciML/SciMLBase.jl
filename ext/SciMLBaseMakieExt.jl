@@ -127,6 +127,136 @@ function Makie.convert_arguments(
 
 end
 
+# ## Integrator recipes
+
+# This will be very similar to the timeseries solution recipe, but without some of the conveniences.
+
+Makie.plottype(integrator::SciMLBase.DEIntegrator) = Makie.Lines
+
+Makie.used_attributes(::Type{<: Plot}, integrator::SciMLBase.DEIntegrator) = (:plot_analytic, :denseplot, :plotdensity, :vars, :idxs)
+
+function Makie.convert_arguments(
+    PT::Type{<: Makie.Plot},
+    integrator::SciMLBase.DEIntegrator;
+    plot_analytic = false,
+    denseplot = Makie.automatic,
+    plotdensity = 10,
+    vars = nothing,
+    idxs = nothing,
+    )
+
+    ensure_plottrait(PT, integrator, Makie.PointBased)
+
+    # Interpret keyword arguments
+    if vars !== nothing
+        Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
+            :f; force = true)
+        (idxs !== nothing) &&
+            error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
+        idxs = vars
+    end
+
+    if denseplot isa Makie.Automatic
+        denseplot = (integrator.opts.calck ||
+        integrator isa AbstractSDEIntegrator) &&
+       integrator.iter > 0
+    end
+
+    # Begin deconstructing the integrator
+
+    int_vars = SciMLBase.interpret_vars(idxs, integrator.sol)
+
+    if denseplot
+        # Generate the points from the plot from dense function
+        plott = collect(range(integrator.tprev, integrator.t; length = plotdensity))
+        if plot_analytic
+            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
+                integrator.sol.prob.p,
+                t) for t in plott]
+        end
+    else
+        plott = nothing
+    end
+
+    dims = length(int_vars[1])
+    for var in int_vars
+        @assert length(var) == dims
+    end
+
+    plot_vecs = []
+    for i in 2:dims
+        push!(plot_vecs, [])
+    end
+
+    labels = String[]# Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
+    strs = String[]
+    varsyms = SciMLBase.variable_symbols(integrator)
+
+    for x in int_vars
+        for j in 2:dims
+            if denseplot
+                if (x[j] isa Integer && x[j] == 0) || isequal(x[j],SciMLBase.getindepsym_defaultt(integrator))
+                    push!(plot_vecs[j - 1], plott)
+                else
+                    push!(plot_vecs[j - 1], Vector(integrator(plott; idxs = x[j])))
+                end
+            else # just get values
+                if x[j] == 0
+                    push!(plot_vecs[j - 1], integrator.t)
+                elseif x[j] == 1 && !(integrator.u isa AbstractArray)
+                    push!(plot_vecs[j - 1], integrator.u)
+                else
+                    push!(plot_vecs[j - 1], integrator.u[x[j]])
+                end
+            end
+
+            if !isempty(varsyms) && x[j] isa Integer
+                push!(strs, String(SciMLBase.getname(varsyms[x[j]])))
+            elseif SciMLBase.hasname(x[j])
+                push!(strs, String(SciMLBase.getname(x[j])))
+            else
+                push!(strs, "u[$(x[j])]")
+            end
+        end
+        SciMLBase.add_labels!(labels, x, dims, integrator.sol, strs)
+    end
+
+    if plot_analytic
+        for x in int_vars
+            for j in 1:dims
+                if denseplot
+                    push!(plot_vecs[j],
+                        u_n(plot_timeseries, x[j], sol, plott, plot_timeseries))
+                else # Just get values
+                    if x[j] == 0
+                        push!(plot_vecs[j], integrator.t)
+                    elseif x[j] == 1 && !(integrator.u isa AbstractArray)
+                        push!(plot_vecs[j],
+                            integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                integrator.sol[1]))
+                    else
+                        push!(plot_vecs[j],
+                            integrator.sol.prob.f(Val{:analytic}, integrator.t,
+                                integrator.sol[1])[x[j]])
+                    end
+                end
+            end
+            SciMLBase.add_labels!(labels, x, dims, integrator.sol, strs)
+        end
+    end
+
+    # @show plot_vecs
+
+    plot_type_sym = Makie.plotsym(PT)
+
+    return if denseplot
+        [Makie.PlotSpec(plot_type_sym, Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]); label, color = Makie.Cycled(idx)) for (idx, label) in zip(1:length(plot_vecs[1]), labels)]
+    else
+        [S.Scatter([Point2f(plot_vecs[1][idx], plot_vecs[2][idx])]; label) for (idx, label) in zip(1:length(plot_vecs[1]), labels)]
+    end
+
+end
+
 # ## Ensemble recipes
 
 # Again, we first define the "ideal" plot type for ensemble solutions.
@@ -158,9 +288,7 @@ function Makie.convert_arguments(
 
     plot_type_sym = Makie.plotsym(PT)
 
-    @show idxs
-
-    mp = [S.Lines(sim.u[i]; plot_analytic, denseplot, plotdensity, plotat, tspan, tscale, idxs) for i in trajectories]
+    mp = [PlotSpec(plot_type_sym, sim.u[i]; plot_analytic, denseplot, plotdensity, plotat, tspan, tscale, idxs) for i in trajectories]
 
     # Main.Infiltrator.@infiltrate
 
