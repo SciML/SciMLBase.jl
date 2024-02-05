@@ -127,4 +127,124 @@ function Makie.convert_arguments(
 
 end
 
+# ## Ensemble recipes
+
+# Again, we first define the "ideal" plot type for ensemble solutions.
+Makie.plottype(sol::SciMLBase.AbstractEnsembleSolution) = Makie.Lines
+
+# We also define the attributes that are used by the ensemble solution recipe:
+Makie.used_attributes(::Type{<: Plot}, sol::SciMLBase.AbstractEnsembleSolution) = (:trajectories, :plot_analytic, :denseplot, :plotdensity, :plotat, :tspan, :tscale, :vars, :idxs)
+
+function Makie.convert_arguments(
+    PT::Type{<:Lines}, 
+    sim::SciMLBase.AbstractEnsembleSolution;
+    trajectories = eachindex(sim),
+    plot_analytic = false,
+    denseplot = Makie.automatic,
+    plotdensity = Makie.automatic,
+    plotat = nothing,
+    tspan = nothing,
+    tscale = :identity,
+    vars = nothing, 
+    idxs = nothing,
+    )
+
+    # First, we check if the plot type is PointBased, and if not, we throw the standard
+    # Makie error message for convert_arguments - just at a different place.
+    ensure_plottrait(PT, sim, Makie.PointBased)
+
+    @assert length(trajectories) > 0 "No trajectories to plot"
+    @assert length(sim.u) > 0 "No solutions to plot"
+
+    plot_type_sym = Makie.plotsym(PT)
+
+    @show idxs
+
+    mp = [S.Lines(sim.u[i]; plot_analytic, denseplot, plotdensity, plotat, tspan, tscale, idxs) for i in trajectories]
+
+    # Main.Infiltrator.@infiltrate
+
+    return mp
+
+end
+
+# ## EnsembleSummary recipes
+
+# WARNING: EXPERIMENTAL!
+
+Makie.plottype(sim::SciMLBase.EnsembleSummary) = Makie.Lines
+
+Makie.used_attributes(::Type{<: Lines}, sim::SciMLBase.EnsembleSummary) = (:trajectories, :error_style, :ci_type, :plot_analytic, :denseplot, :plotdensity, :plotat, :tspan, :tscale, :vars, :idxs)
+
+
+# TODO: should `error_style` be Makie plot types instead?  I.e. `Band`, `Errorbar`, etc
+function Makie.convert_arguments(
+    ::Type{<: Lines},
+    sim::SciMLBase.EnsembleSummary;
+    trajectories = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
+                   1,
+    error_style = :ribbon, ci_type = :quantile,
+    kwargs...
+    )
+    if ci_type == :SEM
+        if sim.u.u[1] isa AbstractArray
+            u = SciMLBase.vecarr_to_vectors(sim.u)
+        else
+            u = [sim.u.u]
+        end
+        if sim.u.u[1] isa AbstractArray
+            ci_low = SciMLBase.vecarr_to_vectors(VectorOfArray([sqrt.(sim.v.u[i] / sim.num_monte) .*
+                                                      1.96 for i in 1:length(sim.v)]))
+            ci_high = ci_low
+        else
+            ci_low = [[sqrt(sim.v.u[i] / length(sim.num_monte)) .* 1.96
+                       for i in 1:length(sim.v)]]
+            ci_high = ci_low
+        end
+    elseif ci_type == :quantile
+        if sim.med.u[1] isa AbstractArray
+            u = SciMLBase.vecarr_to_vectors(sim.med)
+        else
+            u = [sim.med.u]
+        end
+        if sim.u.u[1] isa AbstractArray
+            ci_low = u - SciMLBase.vecarr_to_vectors(sim.qlow)
+            ci_high = SciMLBase.vecarr_to_vectors(sim.qhigh) - u
+        else
+            ci_low = [u[1] - sim.qlow.u]
+            ci_high = [sim.qhigh.u - u[1]]
+        end
+    else
+        error("ci_type choice not valid. Must be `:SEM` or `:quantile`")
+    end
+
+    makie_plotlist = Makie.PlotSpec[]
+
+    for (count, idx) in enumerate(trajectories)
+        push!(
+            makie_plotlist, 
+            S.Lines(sim.t, u[idx]; color = Makie.Cycled(count), label = "u[$idx]")
+        )
+        if error_style == :ribbon
+            push!(
+                makie_plotlist, 
+                S.Band(sim.t, u[idx] .- ci_low[idx], u[idx] .+ ci_high[idx]; color = Makie.Cycled(count), alpha = 0.1)
+            )
+        elseif error_style == :bars
+            push!(
+                makie_plotlist, 
+                S.Errorbars(sim.t, u[idx], ci_low[idx], ci_high[idx])
+            )
+        elseif error_style == :none
+            nothing
+        else
+            error("error_style `$error_style` not recognized")
+        end
+    end
+
+    return makie_plotlist
+
+
+end
+
 end
