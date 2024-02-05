@@ -5,6 +5,27 @@ using Makie
 
 import Makie.SpecApi as S
 
+function ensure_plottrait(PT::Type, arg, desired_plottrait_type::Type)
+    if !(Makie.conversion_trait(PT, sol) isa desired_plottrait_type)
+        error(
+            """
+            `Makie.convert_arguments` for the plot type $PT and its conversion trait $(Makie.conversion_trait(PT, sol)) was unsuccessful.
+            
+            There is a recipe for the given arguments and the `$desired_plottrait_type` trait, however.
+
+            The signature that could not be converted was:
+            ::$(string(typeof(sol)))
+
+            Makie needs to convert all plot input arguments to types that can be consumed by the backends (typically Arrays with Float32 elements).
+            You can define a method for `Makie.convert_arguments` (a type recipe) for these types or their supertypes to make this set of arguments convertible (See http://docs.makie.org/stable/documentation/recipes/index.html).
+
+            Alternatively, you can define `Makie.convert_single_argument` for single arguments which have types that are unknown to Makie but which can be converted to known types and fed back to the conversion pipeline.
+            """
+        )
+    end
+
+end
+
 # ## `AbstractTimeseriesSolution` recipe
 
 # First, we define the standard plot type for timeseries solutions.
@@ -16,7 +37,7 @@ Makie.plottype(sol::SciMLBase.AbstractTimeseriesSolution) = Makie.Lines
 Makie.used_attributes(::Type{<: Plot}, sol::SciMLBase.AbstractTimeseriesSolution) = (:plot_analytic, :denseplot, :plotdensity, :plotat, :tspan, :tscale, :vars, :idxs)
 
 function Makie.convert_arguments(
-    ::Makie.PointBased, 
+    PT::Type{<:Plot}, 
     sol::SciMLBase.AbstractTimeseriesSolution;
     plot_analytic = false,
     denseplot = (sol.dense ||
@@ -36,6 +57,18 @@ function Makie.convert_arguments(
     vars = nothing, 
     idxs = nothing
     )
+
+    # First, this recipe is specifically only for timeseries solutions.
+    # This means that the recipe only applies to `PointBased` plot types.
+    #
+    # However, since we need to know the plot type (lines, scatter, scatterlines, etc)
+    # which the user passed in, we have to take the plot type directly instead of using
+    # the trait system!
+    #
+    # So, we first check if the plot type is PointBased, and if not, we throw the standard
+    # Makie error message for convert_arguments - just at a different place.
+    # TODO: this is a bit of a hack, but of course one can define specific dispatches elsewhere...
+    ensure_plottrait(PT, sol, Makie.PointBased)
 
     if vars !== nothing
         Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
@@ -69,7 +102,7 @@ function Makie.convert_arguments(
 
     # We must convert from plot Type to symbol here, for plotspec use
     # since PlotSpecs are defined based on symbols
-    plot_type_sym = Makie.plotsym(Makie.Lines) # TODO FIXME: this is a hack, we want to get the plot type from the user input
+    plot_type_sym = Makie.plotsym(PT) # TODO FIXME: this is a hack, we want to get the plot type from the user input
 
     # Finally, generate a vector of PlotSpecs (one per variable pair)
     # TODO: broadcast across all input attributes, or figure out how to 
