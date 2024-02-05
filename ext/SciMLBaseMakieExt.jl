@@ -40,22 +40,13 @@ function Makie.convert_arguments(
     PT::Type{<:Plot}, 
     sol::SciMLBase.AbstractTimeseriesSolution;
     plot_analytic = false,
-    denseplot = (sol.dense ||
-                typeof(sol.prob) <: SciMLBase.AbstractDiscreteProblem) &&
-                !(typeof(sol) <: SciMLBase.AbstractRODESolution) &&
-                !(hasfield(typeof(sol), :interp) &&
-                    typeof(sol.interp) <: SciMLBase.SensitivityInterpolation),
-    plotdensity = min(Int(1e5),
-                        sol.tslocation == 0 ?
-                        (sol.prob isa SciMLBase.AbstractDiscreteProblem ?
-                        max(1000, 100 * length(sol)) :
-                        max(1000, 10 * length(sol))) :
-                        1000 * sol.tslocation),
+    denseplot = Makie.automatic,
+    plotdensity = Makie.automatic,
     plotat = nothing,
     tspan = nothing,
     tscale = :identity,
     vars = nothing, 
-    idxs = nothing
+    idxs = nothing,
     )
 
     # First, this recipe is specifically only for timeseries solutions.
@@ -88,6 +79,25 @@ function Makie.convert_arguments(
         vars = SciMLBase.interpret_vars(idxs, sol)
     end
 
+    # Translate automatics inside the function, for ease of use + passthrough from higher 
+    # level recipes
+    if denseplot isa Makie.Automatic
+        denseplot = (sol.dense ||
+        typeof(sol.prob) <: SciMLBase.AbstractDiscreteProblem) &&
+        !(typeof(sol) <: SciMLBase.AbstractRODESolution) &&
+        !(hasfield(typeof(sol), :interp) &&
+            typeof(sol.interp) <: SciMLBase.SensitivityInterpolation)
+    end
+
+    if plotdensity isa Makie.Automatic
+        plotdensity = min(Int(1e5),
+                        sol.tslocation == 0 ?
+                        (sol.prob isa SciMLBase.AbstractDiscreteProblem ?
+                        max(1000, 100 * length(sol)) :
+                        max(1000, 10 * length(sol))) :
+                        1000 * sol.tslocation)
+    end
+
     # Originally, in the Plots recipe, `tscale` 
     # read the axis's `xscale` attribute, and passed that on.
     #
@@ -102,7 +112,7 @@ function Makie.convert_arguments(
 
     # We must convert from plot Type to symbol here, for plotspec use
     # since PlotSpecs are defined based on symbols
-    plot_type_sym = Makie.plotsym(PT) # TODO FIXME: this is a hack, we want to get the plot type from the user input
+    plot_type_sym = Makie.plotsym(PT) # TODO this is still a bit hacky!
 
     # Finally, generate a vector of PlotSpecs (one per variable pair)
     # TODO: broadcast across all input attributes, or figure out how to 
