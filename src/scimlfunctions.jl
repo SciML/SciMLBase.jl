@@ -4046,26 +4046,15 @@ end
 
 SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = has_sys(fn) ? fn.sys : SymbolCache()
 
-SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_observed(fn)
+SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_sys(fn) ? is_observed(fn.sys, sym) : has_observed(fn)
 
 function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym)
   if has_observed(fn)
-    if is_time_dependent(fn)
-      return if hasmethod(fn.observed, Tuple{typeof(sym)})
-        fn.observed(sym)
-      else
-        let obs = fn.observed, sym = sym
-          (u, p, t) -> obs(sym, u, p, t)
-        end
-      end
+    if hasmethod(fn.observed, Tuple{Any})
+      @show sym
+      return fn.observed(sym)
     else
-      return if hasmethod(fn.observed, Tuple{typeof(sym)})
-        fn.observed(sym)
-      else
-        let obs = fn.observed, sym = sym
-          (u, p) -> obs(sym, u, p)
-        end
-      end
+      return (args...) -> fn.observed(sym, args...)
     end
   end
   error("SciMLFunction does not have observed")

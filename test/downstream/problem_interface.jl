@@ -140,14 +140,12 @@ getx = getu(sprob, x)
 gety = getu(sprob, :y)
 get_arr = getu(sprob, [x, y])
 get_tuple = getu(sprob, (y, z))
-# observed doesn't work the same for SDEs
-# uncomment get_obs test below when fixed
-@test_broken get_obs = getu(sprob, sys.x + sys.z + t + σ)
+get_obs = getu(sprob, sys.x + sys.z + t + σ)
 @test getx(sprob) == 10.0
 @test gety(sprob) == 10.0
 @test get_arr(sprob) == [10.0, 10.0]
 @test get_tuple(sprob) == (10.0, 1.0)
-# @test get_obs(sprob) == 39.0
+@test get_obs(sprob) == 22.0
 
 setx! = setu(sprob, x)
 sety! = setu(sprob, :y)
