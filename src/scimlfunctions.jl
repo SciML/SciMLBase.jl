@@ -4051,7 +4051,6 @@ SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_sys(
 function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym)
   if has_observed(fn)
     if hasmethod(fn.observed, Tuple{Any})
-      @show sym
       return fn.observed(sym)
     else
       return (args...) -> fn.observed(sym, args...)
