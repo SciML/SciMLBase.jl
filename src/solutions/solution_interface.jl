@@ -40,6 +40,7 @@ end
 
 SymbolicIndexingInterface.symbolic_container(A::AbstractSolution) = A.prob.f
 SymbolicIndexingInterface.parameter_values(A::AbstractSolution) = A.prob.p
+SymbolicIndexingInterface.parameter_values(A::AbstractSolution, i) = parameter_values(parameter_values(A), i)
 
 SymbolicIndexingInterface.symbolic_container(A::AbstractPDESolution) = A.disc_data.pdesys
 
