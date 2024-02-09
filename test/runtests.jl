@@ -22,10 +22,12 @@ function activate_python_env()
 end
 
 @time begin
-    if GROUP == "Core" || GROUP == "All"
+    if GROUP == "QA"|| GROUP == "All"
         @time @safetestset "Aqua" begin
             include("aqua.jl")
         end
+    end
+    if GROUP == "Core" || GROUP == "All"
         @time @safetestset "Display" begin
             include("display.jl")
         end

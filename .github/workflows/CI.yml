@@ -17,6 +17,7 @@ jobs:
       matrix:
         group:
           - Core
+          - QA
           - Downstream
           - Python
         version:
