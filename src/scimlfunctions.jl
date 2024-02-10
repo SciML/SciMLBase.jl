@@ -2088,12 +2088,12 @@ present, `f` is interpreted as in-place, and otherwise `f` is assumed to be out-
 ## iip: In-Place vs Out-Of-Place
 
 Out-of-place functions must be of the form ``y = f(u, p)`` and in-place functions of the form
-``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
+``f(y, u, p)``, where `y` is a number or array containing the output. Since `f` is allowed to return any type (e.g. real or complex numbers or
 arrays), in-place functions must provide a container `integrand_prototype` that is of the
-right type for the variable ``y``, and the result is written to this container in-place.
+right type and size for the variable ``y``, and the result is written to this container in-place.
 When in-place forms are used, in-place array operations, i.e. broadcasting, may be used by
 algorithms to reduce allocations. If `integrand_prototype` is not provided, `f` is assumed
-to be out-of-place and quadrature is performed assuming immutable return types.
+to be out-of-place.
 
 ## specialize
 
@@ -2112,51 +2112,66 @@ end
 TruncatedStacktraces.@truncate_stacktrace IntegralFunction 1 2
 
 @doc doc"""
-BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+    BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
 
-A representation of an integrand `f` that can be evaluated at multiple points simultaneously
-using threads, the gpu, or distributed memory defined by:
+A batched representation of an (non-batched) integrand `f(u, p)` that can be
+evaluated at multiple points simultaneously using threads, the gpu, or
+distributed memory defined by:
 
 ```math
-y = f(u, p)
+by = bf(bu, p)
 ```
 
-``u`` is a vector whose elements correspond to distinct evaluation points to `f`, whose
-output must be returned as an array whose last "batching" dimension corresponds to integrand
-evaluations at the different points in ``u``. In general, the integration algorithm is
-allowed to vary the number of evaluation points between subsequent calls to `f`.
+Here we prefix variables with `b` to indicate they are batched variables, which
+implies that they are arrays whose **last** dimension is reserved for batching
+different evaluation points, or function values, and may be of a variable
+length. ``bu`` is an array whose elements correspond to distinct evaluation
+points to `f`,  and `bf` is a function to evaluate `f` 'point-wise' so that
+`f(bu[..., i], p) == bf(bu, p)[..., i]`. For example, a simple batching implementation
+of a scalar, univariate function is via broadcasting: `bf(bu, p) = f.(bu, Ref(p))`,
+although this interface exists in order to allow user parallelization.
+In general, the integration algorithm is allowed to vary the number of
+evaluation points between subsequent calls to `bf`.
 
-For an in-place form of `f` see the `iip` section below for details on in-place or
-out-of-place handling.
+For an in-place form of `bf` see the `iip` section below for details on in-place
+or out-of-place handling.
 
 ```julia
-BatchIntegralFunction{iip,specialize}(f, [integrand_prototype];
+BatchIntegralFunction{iip,specialize}(bf, [integrand_prototype];
                                      max_batch=typemax(Int))
 ```
-Note that only `f` is required, and in the case of inplace integrands a mutable container
-`integrand_prototype` to store a batch of integrand evaluations, with a last "batching"
-dimension.
+Note that only `bf` is required, and in the case of inplace integrands a mutable
+container `integrand_prototype` to store a batch of integrand evaluations, with
+a last "batching" dimension.
 
-The keyword `max_batch` is used to set a soft limit on the number of points to batch at the
-same time so that memory usage is controlled.
+The keyword `max_batch` is used to set a soft limit on the number of points to
+batch at the same time so that memory usage is controlled.
 
-If `integrand_prototype` is present, `f` is interpreted as in-place, and otherwise `f` is
-assumed to be out-of-place.
+If `integrand_prototype` is present, `bf` is interpreted as in-place, and
+otherwise `bf` is assumed to be out-of-place.
 
 ## iip: In-Place vs Out-Of-Place
 
-Out-of-place functions must be of the form ``y = f(u,p)`` and in-place functions of the form
-``f(y, u, p)``. Since `f` is allowed to return any type (e.g. real or complex numbers or
-arrays), in-place functions must provide a container `integrand_prototype` of the right type
-for ``y``. The only assumption that is enforced is that the last axes of `the `y`` and ``u``
-arrays are the same length and correspond to distinct batched points. The algorithm will
-then allocate arrays `similar` to ``y`` to pass to the integrand. Since the algorithm may
-vary the number of points to batch, the length of the batching dimension of ``y`` may vary
-between subsequent calls to `f`. To reduce allocations, views of ``y`` may also be passed to
-the integrand. In the out-of-place case, the algorithm may infer the type
-of ``y`` by passing `f` an empty array of input points. When in-place forms are used,
-in-place array operations may be used by algorithms to reduce allocations. If
-`integrand_prototype` is not provided, `f` is assumed to be out-of-place.
+Out-of-place functions must be of the form `by = bf(bu, p)` and in-place
+functions of the form `bf(by, bu, p)` where `by` is a batch array containing the
+output. Since the algorithm may vary the number of points to batch, the batching
+dimension can be of any length, including zero, and since `bf` is allowed to
+return arrays of any type (e.g. real or complex) or size, in-place functions
+must provide a container `integrand_prototype` of the desired type and size for
+`by`. If `integrand_prototype` is not provided, `bf` is assumed to be
+out-of-place.
+
+In the out-of-place case, we require `f(bu[..., i], p) == bf(bu, p)[..., i]`,
+and certain algorithms, such as those implemented in C, may infer the type or
+shape of `by` by calling `bf` with an empty array of input points, i.e. `bu`
+with `size(bu)[end] == 0`. Then it is expected for the resulting `by` to have
+the same type and `size(by)[begin:end-1]` for all subsequent calls.
+
+When the in-place form is used, we require `f(by[..., i], bu[..., i], p) ==
+bf(by, bu, p)[..., i]` and `size(by)[begin:end-1] ==
+size(integrand_prototype)[begin:end-1]`. The algorithm should always pass the
+integrand `by` arrays that are `similar` to `integrand_prototype`, and may use
+views and in-place array operations to reduce allocations.
 
 ## specialize
 
@@ -2164,7 +2179,8 @@ This field is currently unused
 
 ## Fields
 
-The fields of the BatchIntegralFunction type directly match the names of the inputs.
+The fields of the BatchIntegralFunction type are `f`, corresponding to `bf`
+above, and `integrand_prototype`.
 """
 struct BatchIntegralFunction{iip, specialize, F, T} <:
        AbstractIntegralFunction{iip}
