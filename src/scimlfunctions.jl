@@ -2340,7 +2340,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(_colorvec),
             typeof(sys)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac, 
+            Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys)
     else
         ODEFunction{iip, specialize,
@@ -2352,7 +2352,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(_colorvec),
             typeof(sys)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac, 
+            Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys)
     end
 end
@@ -2864,7 +2864,7 @@ function unwrapped_f(f::SDEFunction, newf = unwrapped_f(f.f),
             typeof(f.mass_matrix), typeof(f.analytic), typeof(f.tgrad),
             typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
             typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t),
-            typeof(f.paramjac), typeof(f.ggprime), 
+            typeof(f.paramjac), typeof(f.ggprime),
             typeof(f.observed), typeof(f.colorvec), typeof(f.sys)}(newf, newg,
             f.mass_matrix,
             f.analytic,
@@ -2959,7 +2959,7 @@ function SplitSDEFunction{iip, specialize}(f1, f2, g;
             typeof(colorvec),
             typeof(sys)}(f1, f2, g, mass_matrix, _func_cache, analytic,
             tgrad, jac, jvp, vjp, jac_prototype, sparsity,
-            Wfact, Wfact_t, paramjac, 
+            Wfact, Wfact_t, paramjac,
             observed, colorvec, sys)
     end
 end
@@ -3136,7 +3136,7 @@ function RODEFunction{iip, specialize}(f;
             typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
-            typeof(paramjac), 
+            typeof(paramjac),
             typeof(observed), typeof(_colorvec),
             typeof(sys)}(_f, mass_matrix, analytic, tgrad,
             jac, jvp, vjp, jac_prototype, sparsity,
@@ -3489,7 +3489,7 @@ function SDDEFunction{iip, specialize}(f, g;
             jvp, vjp, jac_prototype,
             sparsity, Wfact,
             Wfact_t,
-            paramjac, ggprime, 
+            paramjac, ggprime,
             observed, _colorvec, sys)
     end
 end
@@ -3582,7 +3582,7 @@ function NonlinearFunction{iip, specialize}(f;
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact),
-            typeof(Wfact_t), typeof(paramjac), 
+            typeof(Wfact_t), typeof(paramjac),
             typeof(observed),
             typeof(_colorvec), typeof(sys), typeof(resid_prototype)}(_f, mass_matrix,
             analytic, tgrad, jac,
@@ -3951,7 +3951,7 @@ has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
 has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
-function has_syms(f::AbstractSciMLFunction) 
+function has_syms(f::AbstractSciMLFunction)
   if __has_syms(f)
     f.syms !== nothing
   else
@@ -4062,14 +4062,14 @@ end
 
 SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction) = has_sys(fn) ? fn.sys : SymbolCache()
 
-SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_observed(fn)
+SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym) = has_sys(fn) ? is_observed(fn.sys, sym) : has_observed(fn)
 
 function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym)
   if has_observed(fn)
-    if is_time_dependent(fn)
-      return (u, p, t) -> fn.observed(sym, u, p, t)
+    if hasmethod(fn.observed, Tuple{Any})
+      return fn.observed(sym)
     else
-      return (u, p) -> fn.observed(sym, u, p)
+      return (args...) -> fn.observed(sym, args...)
     end
   end
   error("SciMLFunction does not have observed")

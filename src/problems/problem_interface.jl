@@ -6,12 +6,7 @@ Base.@propagate_inbounds function Base.getproperty(prob::AbstractSciMLProblem, s
 end
 
 SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
-function SymbolicIndexingInterface.is_observed(A::AbstractSciMLProblem, sym)
-    return !is_variable(A, sym) && !is_parameter(A, sym) && !is_independent_variable(A, sym) && symbolic_type(sym) == ScalarSymbolic()
-end
-function SymbolicIndexingInterface.observed(A::AbstractSciMLProblem, sym)
-    return getobserved(A)(sym)
-end
+
 SymbolicIndexingInterface.parameter_values(prob::AbstractSciMLProblem) = prob.p
 SymbolicIndexingInterface.state_values(prob::AbstractSciMLProblem) = prob.u0
 SymbolicIndexingInterface.current_time(prob::AbstractSciMLProblem) = prob.tspan[1]
@@ -33,7 +28,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
         elseif is_independent_variable(prob.f, sym)
             return getindepsym(prob)
         elseif is_observed(prob.f, sym)
-            obs = SymbolicIndexingInterface.observed(prob.f, sym)
+            obs = SymbolicIndexingInterface.observed(prob, sym)
             if is_time_dependent(prob.f)
                 return obs(prob.u0, prob.p, 0.0)
             else

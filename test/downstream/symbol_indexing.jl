@@ -39,21 +39,32 @@ p = [lorenz1.σ => 10.0,
 
 tspan = (0.0, 100.0)
 prob = ODEProblem(sys_simplified, u0, tspan, p)
+integ = init(prob, Rodas4())
 sol = solve(prob, Rodas4())
 
-@test_throws Any sol[b]
-@test_throws Any sol[b, 1]
-@test_throws Any sol[b, 1:5]
-@test_throws Any sol[b, [1, 2, 3]]
-@test_throws Any sol['a']
-@test_throws Any sol['a', 1]
-@test_throws Any sol['a', 1:5]
-@test_throws Any sol['a', [1, 2, 3]]
+@testset "indexing should error" begin
+    for obj in [prob, integ, sol]
+        for sym in ['a', :b]
+            @test_throws Any obj[sym]
+            @test_throws Any obj[sym, 1]
+            @test_throws Any obj[sym, 1:5]
+            @test_throws Any obj[sym, [1, 2, 3]]
+        end
+    end
+end
+
+@testset "observed shouldn't error" begin
+    for obj in [prob, integ, sol]
+        obj[:a]
+        SymbolicIndexingInterface.observed(obj, :a)
+    end
+end
+
 
 @test sol[a] isa AbstractVector
 @test sol[:a] == sol[a]
 @test sol[a, 1] isa Real
-@test sol[:a, 1] == sol[a, 1]
+@test sol[:a, 1] == sol[a, 1] == prob[a] == prob[:a] == integ[a] == integ[:a] == -1.0
 @test sol[a, 1:5] isa AbstractVector
 @test sol[:a, 1:5] == sol[a, 1:5]
 @test sol[a, [1, 2, 3]] isa AbstractVector
