@@ -27,13 +27,14 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S} <:
+struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S, rateType} <:
        AbstractDAESolution{T, N, uType}
     u::uType
     du::duType
     u_analytic::uType2
     errors::DType
     t::tType
+    k::rateType
     prob::P
     alg::A
     interp::ID
@@ -55,7 +56,7 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace DAESolution 1 2
 
-function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
+function build_solution(prob::AbstractDAEProblem, alg, t, u, du;
     timeseries_errors = length(u) > 2,
     dense = false,
     dense_errors = dense,
@@ -84,17 +85,18 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         end
         Base.depwarn(msg, :build_solution)
     end
-
     if has_analytic(prob.f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
 
         sol = DAESolution{T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
-            typeof(t),
-            typeof(prob), typeof(alg), typeof(interp), typeof(stats)}(u, du,
+            typeof(t), typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k)}(
+            u,
+            du,
             u_analytic,
             errors,
             t,
+            k,
             prob,
             alg,
             interp,
@@ -110,9 +112,10 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         sol
     else
         DAESolution{T, N, typeof(u), typeof(du), Nothing, Nothing, typeof(t),
-            typeof(prob), typeof(alg), typeof(interp), typeof(stats)}(u, du,
+            typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k)}(
+            u, du,
             nothing,
-            nothing, t,
+            nothing, t, k,
             prob, alg,
             interp,
             dense, 0,
@@ -161,12 +164,13 @@ end
 
 function build_solution(sol::AbstractDAESolution{T, N}, u_analytic, errors) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(u_analytic), typeof(errors),
-        typeof(sol.t),
-        typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.stats)}(sol.u,
+        typeof(sol.t), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
+        typeof(sol.stats), typeof(sol.k)}(sol.u,
         sol.du,
         u_analytic,
         errors,
         sol.t,
+        sol.k,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -178,12 +182,13 @@ end
 
 function solution_new_retcode(sol::AbstractDAESolution{T, N}, retcode) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
-        typeof(sol.errors), typeof(sol.t),
-        typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.stats)}(sol.u,
+        typeof(sol.errors), typeof(sol.t), typeof(sol.prob), typeof(sol.alg),
+        typeof(sol.interp), typeof(sol.stats), typeof(sol.k)}(sol.u,
         sol.du,
         sol.u_analytic,
         sol.errors,
         sol.t,
+        sol.k,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -195,12 +200,13 @@ end
 
 function solution_new_tslocation(sol::AbstractDAESolution{T, N}, tslocation) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
-        typeof(sol.errors), typeof(sol.t),
-        typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.stats)}(sol.u,
+        typeof(sol.errors), typeof(sol.t), typeof(sol.prob), typeof(sol.alg),
+        typeof(sol.interp), typeof(sol.stats), typeof(k)}(sol.u,
         sol.du,
         sol.u_analytic,
         sol.errors,
         sol.t,
+        sol.k,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -212,8 +218,8 @@ end
 
 function solution_slice(sol::AbstractDAESolution{T, N}, I) where {T, N}
     DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
-        typeof(sol.errors), typeof(sol.t),
-        typeof(sol.prob), typeof(sol.alg), typeof(sol.interp), typeof(sol.stats)}(sol.u[I],
+        typeof(sol.errors), typeof(sol.t), typeof(sol.prob), typeof(sol.alg),
+        typeof(sol.interp), typeof(sol.stats), typeof(sol.k)}(sol.u[I],
         sol.du[I],
         sol.u_analytic ===
         nothing ?
@@ -221,6 +227,7 @@ function solution_slice(sol::AbstractDAESolution{T, N}, I) where {T, N}
         sol.u_analytic[I],
         sol.errors,
         sol.t[I],
+        sol.k[I],
         sol.prob,
         sol.alg,
         sol.interp,
