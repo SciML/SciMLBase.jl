@@ -56,7 +56,7 @@ end
 
 TruncatedStacktraces.@truncate_stacktrace DAESolution 1 2
 
-function build_solution(prob::AbstractDAEProblem, alg, t, u, du;
+function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
     timeseries_errors = length(u) > 2,
     dense = false,
     dense_errors = dense,
