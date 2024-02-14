@@ -1,7 +1,7 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
-version = "2.25.0"
+version = "2.26.0"
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
