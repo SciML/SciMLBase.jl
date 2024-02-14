@@ -76,6 +76,27 @@ using DifferentialEquations, PythonCall
     prob = de.SDEProblem(f,g,u0,tspan)
     sol = de.solve(prob,reltol=1e-3,abstol=1e-3)
     """, @__MODULE__)
+
+    # Issue SciML/diffeqpy#136 (conditions must be prepared)
+    pyexec("""
+    from diffeqpy import ode
+
+    def simple_system_b(du, u, p, t):
+        du[0] = -1*p[0]*u[0]
+
+    def condition(u, t, integrator):
+        return t == 0.5
+
+    def affect_b(integrator):
+        integrator.u[0] += 10
+
+    cb = ode.DiscreteCallback(
+        condition, affect_b
+    )
+
+    prob = ode.ODEProblem(simple_system_b, [1.], (0.,10.), [0.2])
+    sol = ode.solve(prob, ode.Tsit5(), callback=cb, tstops=0.5)
+    """, @__MODULE__)
 end
 
 @testset "promotion" begin

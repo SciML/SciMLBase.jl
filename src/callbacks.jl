@@ -111,7 +111,8 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <: AbstractContin
         reltol::T2,
         repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2, T3, I, R
     }
-        new{F1, F2, F3, F4, F5, T, T2, T3, I, R}(condition,
+        _condition = prepare_function(condition)
+        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, I, R}(_condition,
             affect!, affect_neg!,
             initialize, finalize, idxs, rootfind,
             interp_points,
@@ -216,7 +217,8 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <:
         abstol::T, reltol::T2,
         repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2,
         T3, I, R}
-        new{F1, F2, F3, F4, F5, T, T2, T3, I, R}(condition,
+        _condition = prepare_function(condition)
+        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, I, R}(_condition,
             affect!, affect_neg!, len,
             initialize, finalize, idxs, rootfind,
             interp_points,
@@ -299,7 +301,8 @@ struct DiscreteCallback{F1, F2, F3, F4} <: AbstractDiscreteCallback
     function DiscreteCallback(condition::F1, affect!::F2,
         initialize::F3, finalize::F4,
         save_positions) where {F1, F2, F3, F4}
-        new{F1, F2, F3, F4}(condition,
+        _condition = prepare_function(condition)
+        new{typeof(_condition), F2, F3, F4}(_condition,
             affect!, initialize, finalize,
             BitArray(collect(save_positions)))
     end
