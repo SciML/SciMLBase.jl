@@ -313,10 +313,16 @@ end
 addsteps!(i::DEIntegrator, args...) = nothing
 
 """
-    reeval_internals_due_to_modification!(integrator::DDEIntegrator)
+    reeval_internals_due_to_modification!(integrator::DEIntegrator, continuous_modification=true)
 
-Recalculate interpolation data and update ODE integrator after changes by callbacks.
+Update DE integrator after changes by callbacks.
+For DAEs (either implicit or semi-explicit), this requires re-solving alebraic variables.
+If continuous_modification is true (or unspecified), this should also recalculate interpolation data.
+Otherwise the integrator is allowed to skip recalculating the interpolation.
 """
+function reeval_internals_due_to_modification!(integrator::DEIntegrator, continuous_modification)
+    reeval_internals_due_to_modification!(integrator::DEIntegrator)
+end
 reeval_internals_due_to_modification!(integrator::DEIntegrator) = nothing
 
 """
