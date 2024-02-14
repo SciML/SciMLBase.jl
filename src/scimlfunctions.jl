@@ -2430,9 +2430,7 @@ function ODEFunction{iip}(f::NonlinearFunction) where {iip}
         jac_prototype = f.jac_prototype,
         sparsity = f.sparsity,
         paramjac = f.paramjac,
-        syms = variable_symbols(f),
-        indepsym = nothing,
-        paramsyms = parameter_symbols(f),
+        sys = f.sys,
         observed = f.observed,
         colorvec = f.colorvec)
 end
@@ -2481,8 +2479,7 @@ function NonlinearFunction{iip}(f::ODEFunction) where {iip}
         jac_prototype = f.jac_prototype,
         sparsity = f.sparsity,
         paramjac = f.paramjac,
-        syms = variable_symbols(f),
-        paramsyms = parameter_symbols(f),
+        sys = f.sys,
         observed = f.observed,
         colorvec = f.colorvec)
 end
@@ -3910,7 +3907,7 @@ end
 
 function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
   if sys === nothing && (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
-    @warn "The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead."
+    error("The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.")
     sys = SymbolCache(syms, paramsyms, indepsym)
   end
   return sys
