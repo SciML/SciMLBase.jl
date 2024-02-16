@@ -43,7 +43,7 @@ function ChainRulesCore.rrule(config::ChainRulesCore.RuleConfig{
                 typeof(VA.alg),
                 typeof(VA.interp),
                 typeof(VA.alg_choice),
-                typeof(VA.destats),
+                typeof(VA.stats),
             }(du,
                 nothing,
                 nothing,
@@ -54,7 +54,7 @@ function ChainRulesCore.rrule(config::ChainRulesCore.RuleConfig{
                 VA.interp,
                 VA.dense,
                 0,
-                VA.destats,
+                VA.stats,
                 VA.alg_choice,
                 VA.retcode)
             (NoTangent(), Δ′, NoTangent(), NoTangent())
