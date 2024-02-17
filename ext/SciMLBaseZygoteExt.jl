@@ -24,8 +24,8 @@ using RecursiveArrayTools
         N = length(VA.prob.p)
         Δ′ = ODESolution{T, N, typeof(du), Nothing, Nothing, typeof(VA.t),
             typeof(VA.k), typeof(dprob), typeof(VA.alg), typeof(VA.interp),
-            typeof(VA.destats), typeof(VA.alg_choice)}(du, nothing, nothing,
-            VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.destats,
+            typeof(VA.stats), typeof(VA.alg_choice)}(du, nothing, nothing,
+            VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)
         (Δ′, nothing, nothing)
     end
@@ -53,8 +53,8 @@ end
         N = length(VA.prob.p)
         Δ′ = ODESolution{T, N, typeof(du), Nothing, Nothing, typeof(VA.t),
             typeof(VA.k), typeof(dprob), typeof(VA.alg), typeof(VA.interp),
-            typeof(VA.destats), typeof(VA.alg_choice)}(du, nothing, nothing,
-            VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.destats,
+            typeof(VA.stats), typeof(VA.alg_choice)}(du, nothing, nothing,
+            VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)
         (Δ′, nothing, nothing)
     end
