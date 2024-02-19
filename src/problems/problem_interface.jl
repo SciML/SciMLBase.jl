@@ -6,10 +6,14 @@ Base.@propagate_inbounds function Base.getproperty(prob::AbstractSciMLProblem, s
 end
 
 SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
+SymbolicIndexingInterface.symbolic_container(prob::AbstractJumpProblem) = prob.prob
 
 SymbolicIndexingInterface.parameter_values(prob::AbstractSciMLProblem) = prob.p
+SymbolicIndexingInterface.parameter_values(prob::AbstractJumpProblem) = prob.prob.p
 SymbolicIndexingInterface.state_values(prob::AbstractSciMLProblem) = prob.u0
+SymbolicIndexingInterface.state_values(prob::AbstractJumpProblem) = prob.prob.u0
 SymbolicIndexingInterface.current_time(prob::AbstractSciMLProblem) = prob.tspan[1]
+SymbolicIndexingInterface.current_time(prob::AbstractJumpProblem) = prob.prob.tspan[1]
 
 Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)
     return getindex(prob, variable_symbols(prob))
