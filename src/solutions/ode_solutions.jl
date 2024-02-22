@@ -32,13 +32,15 @@ mutable struct DEStats
     njacs::Int
     nnonliniter::Int
     nnonlinconvfail::Int
+    nfpiter::Int
+    nfpconvfail::Int
     ncondition::Int
     naccept::Int
     nreject::Int
     maxeig::Float64
 end
 
-DEStats(x::Int = -1) = DEStats(x, x, x, x, x, x, x, x, x, x, 0.0)
+DEStats(x::Int = -1) = DEStats(x, x, x, x, x, x, x, x, x, x, x, x, 0.0)
 
 function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     println(io, summary(s))
@@ -49,6 +51,8 @@ function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     @printf io "%-50s %-d\n" "Number of Jacobians created:" s.njacs
     @printf io "%-50s %-d\n" "Number of nonlinear solver iterations:" s.nnonliniter
     @printf io "%-50s %-d\n" "Number of nonlinear solver convergence failures:" s.nnonlinconvfail
+    @printf io "%-60s %-d\n" "Number of fixed-point solver iterations:" s.nfpiter
+    @printf io "%-60s %-d\n" "Number of fixed-point solver convergence failures:" s.nfpconvfail
     @printf io "%-50s %-d\n" "Number of rootfind condition calls:" s.ncondition
     @printf io "%-50s %-d\n" "Number of accepted steps:" s.naccept
     @printf io "%-50s %-d" "Number of rejected steps:" s.nreject
@@ -64,6 +68,8 @@ function Base.merge(a::DEStats, b::DEStats)
         a.njacs + b.njacs,
         a.nnonliniter + b.nnonliniter,
         a.nnonlinconvfail + b.nnonlinconvfail,
+        a.nfpiter + b.nfpiter,
+        a.nfpconvfail + b.nfpconvfail,
         a.ncondition + b.ncondition,
         a.naccept + b.naccept,
         a.nreject + b.nreject,
