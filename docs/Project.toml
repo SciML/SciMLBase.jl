@@ -5,5 +5,5 @@ SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 
 [compat]
 Documenter = "1"
-ModelingToolkit = "8.35"
+ModelingToolkit = "8.35, 9"
 SciMLBase = "1.74, 2"
