@@ -14,7 +14,7 @@ D = Differential(t)
 eqs = [D(x) ~ -x]
 @named sys = ODESystem(eqs)
 prob = ODEProblem(sys)
-sol = solve(prob, Tsit5(), tspan=(0.0, 1.0))
+sol = solve(prob, Tsit5(), tspan = (0.0, 1.0))
 df = DataFrame(sol)
 @test size(df) == (length(sol.u), 2)
 @test df.timestamp == sol.t

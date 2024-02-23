@@ -1,7 +1,7 @@
 # PyCall and PythonCall must use the same Python interpreter. This environment variable
 # tells PythonCall to use the same Python interpreter as PyCall. See
 # https://github.com/JuliaPy/PythonCall.jl/blob/5f56a9b96b867a9f6742ab1d1e2361abd844e19f/docs/src/pycall.md#tips
-ENV["JULIA_PYTHONCALL_EXE"]="@PyCall"
+ENV["JULIA_PYTHONCALL_EXE"] = "@PyCall"
 
 using DifferentialEquations, PythonCall
 
@@ -100,6 +100,7 @@ using DifferentialEquations, PythonCall
 end
 
 @testset "promotion" begin
-    _u0 = pyconvert(Any, pyeval("""de.SciMLBase.prepare_initial_state([1.0, 0, 0])""", @__MODULE__))
+    _u0 = pyconvert(
+        Any, pyeval("""de.SciMLBase.prepare_initial_state([1.0, 0, 0])""", @__MODULE__))
     @test _u0 isa Vector{Float64}
 end

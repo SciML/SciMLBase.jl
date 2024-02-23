@@ -60,7 +60,7 @@ struct LinearProblem{uType, isinplace, F, bType, P, K} <:
     p::P
     kwargs::K
     @add_kwonly function LinearProblem{iip}(A, b, p = NullParameters(); u0 = nothing,
-        kwargs...) where {iip}
+            kwargs...) where {iip}
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(A), typeof(b), typeof(p), typeof(kwargs)}(A, b, u0, p,
             kwargs)
@@ -141,13 +141,14 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
     p::P
     problem_type::PT
     kwargs::K
-    @add_kwonly function IntervalNonlinearProblem{iip}(f::AbstractIntervalNonlinearFunction{
-            iip,
-        },
-        tspan,
-        p = NullParameters(),
-        problem_type = StandardNonlinearProblem();
-        kwargs...) where {iip}
+    @add_kwonly function IntervalNonlinearProblem{iip}(
+            f::AbstractIntervalNonlinearFunction{
+                iip,
+            },
+            tspan,
+            p = NullParameters(),
+            problem_type = StandardNonlinearProblem();
+            kwargs...) where {iip}
         warn_paramtype(p)
         new{iip, typeof(tspan), typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f,
@@ -177,7 +178,7 @@ Define a nonlinear problem using an instance of
 [`IntervalNonlinearFunction`](@ref IntervalNonlinearFunction).
 """
 function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan,
-    p = NullParameters(); kwargs...)
+        p = NullParameters(); kwargs...)
     IntervalNonlinearProblem{isinplace(f)}(f, tspan, p; kwargs...)
 end
 
@@ -241,12 +242,12 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     problem_type::PT
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
-        p = NullParameters(),
-        problem_type = StandardNonlinearProblem();
-        kwargs...) where {iip}
+            p = NullParameters(),
+            problem_type = StandardNonlinearProblem();
+            kwargs...) where {iip}
         if haskey(kwargs, :p)
-	    error("`p` specified as a keyword argument `p = $(kwargs[:p])` to `NonlinearProblem`. This is not supported.")
-	end
+            error("`p` specified as a keyword argument `p = $(kwargs[:p])` to `NonlinearProblem`. This is not supported.")
+        end
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(p), typeof(f),
             typeof(kwargs), typeof(problem_type)}(f,
@@ -366,8 +367,10 @@ struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K} <:
     p::P
     kwargs::K
 
-    @add_kwonly function NonlinearLeastSquaresProblem{iip}(f::AbstractNonlinearFunction{
-            iip}, u0, p = NullParameters(); kwargs...) where {iip}
+    @add_kwonly function NonlinearLeastSquaresProblem{iip}(
+            f::AbstractNonlinearFunction{
+                iip}, u0,
+            p = NullParameters(); kwargs...) where {iip}
         warn_paramtype(p)
         return new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs)}(f, u0, p, kwargs)
     end
@@ -386,7 +389,7 @@ Define a nonlinear least squares problem using an instance of
 [`AbstractNonlinearFunction`](@ref AbstractNonlinearFunction).
 """
 function NonlinearLeastSquaresProblem(f::AbstractNonlinearFunction, u0,
-    p = NullParameters(); kwargs...)
+        p = NullParameters(); kwargs...)
     return NonlinearLeastSquaresProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
@@ -448,8 +451,8 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
     p::P
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain,
-        p = NullParameters(); nout = nothing, batch = nothing,
-        kwargs...) where {iip}
+            p = NullParameters(); nout = nothing, batch = nothing,
+            kwargs...) where {iip}
         warn_paramtype(p)
         new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(f,
             domain, p, kwargs)
@@ -459,36 +462,42 @@ end
 TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
 function IntegralProblem(f::AbstractIntegralFunction,
-    domain,
-    p = NullParameters();
-    kwargs...)
+        domain,
+        p = NullParameters();
+        kwargs...)
     IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
 @deprecate IntegralProblem{iip}(f::AbstractIntegralFunction,
-    lb::Union{Number,AbstractVector{<:Number}},
-    ub::Union{Number,AbstractVector{<:Number}},
-    p = NullParameters(); kwargs...) where {iip} IntegralProblem{iip}(f, (lb, ub), p; kwargs...)
+    lb::Union{Number, AbstractVector{<:Number}},
+    ub::Union{Number, AbstractVector{<:Number}},
+    p = NullParameters(); kwargs...) where {iip} IntegralProblem{iip}(
+    f, (lb, ub), p; kwargs...)
 
-IntegralProblem(f, args...; kwargs...) = IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
-function IntegralProblem{iip}(f, args...; nout = nothing, batch = nothing, kwargs...) where {iip}
+function IntegralProblem(f, args...; kwargs...)
+    IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
+end
+function IntegralProblem{iip}(
+        f, args...; nout = nothing, batch = nothing, kwargs...) where {iip}
     if nout !== nothing || batch !== nothing
-       @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
+        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
     end
 
     g = if iip
         if batch === nothing
-            output_prototype = nout === nothing ? Array{Float64, 0}(undef) : Vector{Float64}(undef, nout)
+            output_prototype = nout === nothing ? Array{Float64, 0}(undef) :
+                               Vector{Float64}(undef, nout)
             IntegralFunction(f, output_prototype)
         else
-            output_prototype = nout === nothing ? Float64[] : Matrix{Float64}(undef, nout, 0)
-            BatchIntegralFunction(f, output_prototype, max_batch=batch)
+            output_prototype = nout === nothing ? Float64[] :
+                               Matrix{Float64}(undef, nout, 0)
+            BatchIntegralFunction(f, output_prototype, max_batch = batch)
         end
     else
         if batch === nothing
             IntegralFunction(f)
         else
-            BatchIntegralFunction(f, max_batch=batch)
+            BatchIntegralFunction(f, max_batch = batch)
         end
     end
     IntegralProblem(g, args...; kwargs...)
@@ -551,8 +560,8 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     dim::Int
     kwargs::K
     @add_kwonly function SampledIntegralProblem(y::AbstractArray, x::AbstractVector;
-        dim = ndims(y),
-        kwargs...)
+            dim = ndims(y),
+            kwargs...)
         @assert dim<=ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
         @assert length(x)==size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
         @assert axes(x, 1)==axes(y, dim) "The integrand `y` must obey the same indexing as the sampling points `x` along the integrated dimension."

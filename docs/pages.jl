@@ -12,5 +12,5 @@ pages = [
         "interfaces/Common_Keywords.md",
         "interfaces/Differentiation.md",
         "interfaces/PDE.md"],
-    "Fundamentals" => Any["fundamentals/FAQ.md"],
+    "Fundamentals" => Any["fundamentals/FAQ.md"]
 ]

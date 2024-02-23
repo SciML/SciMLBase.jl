@@ -14,15 +14,15 @@ function numargs(f)
 end
 
 function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
-    T,
-    V,
-    W,
-    I,
+        T,
+        V,
+        W,
+        I
 }) where {
-    T,
-    V,
-    W,
-    I,
+        T,
+        V,
+        W,
+        I
 }
     (length(T),)
 end
@@ -237,10 +237,11 @@ dispatch, i.e. `f(u,p)` for OptimizationFunction, and thus the check for the oop
 form is disabled and the 2-argument signature is ensured to be matched.
 
 # See also
-* [`numargs`](@ref numargs)
+
+  - [`numargs`](@ref numargs)
 """
 function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
-    has_two_dispatches = true, isoptimization = false)
+        has_two_dispatches = true, isoptimization = false)
     nargs = numargs(f)
     iip_dispatch = any(x -> x == inplace_param_number, nargs)
     oop_dispatch = any(x -> x == inplace_param_number - 1, nargs)
@@ -261,10 +262,10 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
             else
                 methods(f).ms[1].sig.parameters
             end
-            
+
             for i in 1:length(nargs)
                 if nargs[i] < inplace_param_number &&
-                   any(isequal(Vararg{Any}),_parameters)
+                   any(isequal(Vararg{Any}), _parameters)
                     # If varargs, assume iip
                     return iip_preferred
                 end
@@ -305,7 +306,7 @@ end
 
 isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
 function isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number,
-    fname = nothing) where {iip}
+        fname = nothing) where {iip}
     iip
 end
 
@@ -391,7 +392,7 @@ function add_kwonly(::Type{<:Val}, ex)
 end
 
 function add_kwonly(::Union{Type{Val{:function}},
-        Type{Val{:(=)}}}, ex::Expr)
+            Type{Val{:(=)}}}, ex::Expr)
     body = ex.args[2:end]  # function body
     default_call = ex.args[1]  # e.g., :(f(a, b=2; c=3))
     kwonly_call = add_kwonly(default_call)
@@ -511,6 +512,7 @@ type which cannot be used as a state but can be converted to something that
 can be, then you may define `prepare_initial_state(x::YourType) = ...`.
 
 !!! warning
+
     This function is experimental and may be removed in the future.
 
 See also: `prepare_function`.
@@ -529,6 +531,7 @@ something that can be, then you may define `prepare_function(x::YourType) = ...`
 the arity of a function is computed with `numargs`
 
 !!! warning
+
     This function is experimental and may be removed in the future.
 
 See also: `prepare_initial_state`.

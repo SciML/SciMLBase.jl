@@ -111,7 +111,7 @@ end
 Base.@propagate_inbounds Base.convert(::Type{AbstractMatrix}, L::DiffEqArrayOperator) = L.A
 Base.@propagate_inbounds Base.setindex!(L::DiffEqArrayOperator, v, i::Int) = (L.A[i] = v)
 Base.@propagate_inbounds function Base.setindex!(L::DiffEqArrayOperator, v,
-    I::Vararg{Int, N}) where {N}
+        I::Vararg{Int, N}) where {N}
     (L.A[I...] = v)
 end
 
@@ -148,46 +148,46 @@ struct FactorizedDiffEqArrayOperator{T <: Number,
     FType <: Union{
         Factorization{T}, Diagonal{T}, Bidiagonal{T},
         AdjointFact{T, <:Factorization{T}},
-        TransposeFact{T, <:Factorization{T}},
-    },
+        TransposeFact{T, <:Factorization{T}}
+    }
 } <: AbstractDiffEqLinearOperator{T}
     F::FType
 end
 
 function Base.convert(::Type{AbstractMatrix},
-    L::FactorizedDiffEqArrayOperator{<:Any,
-        <:Union{Factorization, AbstractMatrix
-        }})
+        L::FactorizedDiffEqArrayOperator{<:Any,
+            <:Union{Factorization, AbstractMatrix
+            }})
     convert(AbstractMatrix, L.F)
 end
 function Base.convert(::Type{AbstractMatrix},
-    L::FactorizedDiffEqArrayOperator{<:Any, <:Union{Adjoint, AdjointFact}
-    })
+        L::FactorizedDiffEqArrayOperator{<:Any, <:Union{Adjoint, AdjointFact}
+        })
     adjoint(convert(AbstractMatrix, adjoint(L.F)))
 end
 function Base.convert(::Type{AbstractMatrix},
-    L::FactorizedDiffEqArrayOperator{<:Any,
-        <:Union{Transpose, TransposeFact}})
+        L::FactorizedDiffEqArrayOperator{<:Any,
+            <:Union{Transpose, TransposeFact}})
     transpose(convert(AbstractMatrix, transpose(L.F)))
 end
 
 function Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,
-    <:Union{Factorization, AbstractMatrix
-    }})
+        <:Union{Factorization, AbstractMatrix
+        }})
     Matrix(L.F)
 end
 function Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any, <:Union{Adjoint, AdjointFact}})
     adjoint(Matrix(adjoint(L.F)))
 end
 function Base.Matrix(L::FactorizedDiffEqArrayOperator{<:Any,
-    <:Union{Transpose, TransposeFact}})
+        <:Union{Transpose, TransposeFact}})
     transpose(Matrix(transpose(L.F)))
 end
 
 Base.adjoint(L::FactorizedDiffEqArrayOperator) = FactorizedDiffEqArrayOperator(L.F')
 Base.size(L::FactorizedDiffEqArrayOperator, args...) = size(L.F, args...)
 function LinearAlgebra.ldiv!(Y::AbstractVecOrMat, L::FactorizedDiffEqArrayOperator,
-    B::AbstractVecOrMat)
+        B::AbstractVecOrMat)
     ldiv!(Y, L.F, B)
 end
 LinearAlgebra.ldiv!(L::FactorizedDiffEqArrayOperator, B::AbstractVecOrMat) = ldiv!(L.F, B)

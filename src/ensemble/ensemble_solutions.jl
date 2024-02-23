@@ -11,13 +11,13 @@ struct EnsembleTestSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     converged::Bool
 end
 function EnsembleTestSolution(sim::AbstractEnsembleSolution{T, N}, errors, weak_errors,
-    error_means, error_medians, elapsedTime,
-    converged) where {T, N}
+        error_means, error_medians, elapsedTime,
+        converged) where {T, N}
     EnsembleTestSolution{T, N, typeof(sim.u)}(sim.u, errors, weak_errors, error_means,
         error_medians, sim.elapsedTime, sim.converged)
 end
 function EnsembleTestSolution(u, errors, weak_errors, error_means, error_medians,
-    elapsedTime, converged)
+        elapsedTime, converged)
     EnsembleTestSolution(EnsembleSolution(u, elapsedTime, converged), errors, weak_errors,
         error_means, error_medians, elapsedTime, converged)
 end
@@ -29,18 +29,20 @@ struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     u::S
     elapsedTime::Float64
     converged::Bool
-    stats
+    stats::Any
 end
 function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats) where {N}
-    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(sim, elapsedTime, converged, stats)
+    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(
+        sim, elapsedTime, converged, stats)
 end
-function EnsembleSolution(sim, elapsedTime, converged, stats=nothing)
+function EnsembleSolution(sim, elapsedTime, converged, stats = nothing)
     EnsembleSolution(sim, (length(sim),), elapsedTime, converged, stats)
 end # Vector of some type which is not an array
 function EnsembleSolution(sim::T, elapsedTime,
-    converged, stats=nothing) where {T <: AbstractVector{T2}
+        converged, stats = nothing) where {T <:
+                                           AbstractVector{T2}
 } where {T2 <:
-         Union{AbstractArray,RecursiveArrayTools.AbstractVectorOfArray}}
+             Union{AbstractArray, RecursiveArrayTools.AbstractVectorOfArray}}
     EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1,
         typeof(sim)}(sim,
         elapsedTime,
@@ -82,8 +84,8 @@ function calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
 end
 
 function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
-    weak_timeseries_errors = false,
-    weak_dense_errors = false)
+        weak_timeseries_errors = false,
+        weak_dense_errors = false)
     errors = Dict{Symbol, Vector{eltype(u[1].u[1])}}() #Should add type information
     error_means = Dict{Symbol, eltype(u[1].u[1])}()
     error_medians = Dict{Symbol, eltype(u[1].u[1])}()
@@ -111,7 +113,7 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
     if weak_dense_errors
         densetimes = collect(range(u[1].t[1], stop = u[1].t[end], length = 100))
         u_analytic = [[sol.prob.f.analytic(sol.prob.u0, sol.prob.p, densetimes[i],
-            sol.W(densetimes[i])[1])
+                           sol.W(densetimes[i])[1])
                        for i in eachindex(densetimes)] for sol in u]
         udense = [u[j](densetimes) for j in 1:length(u)]
         dense_weak_errors = [mean([udense[j][i] - u_analytic[j][i] for j in 1:length(u)])
@@ -139,9 +141,9 @@ end
 ### Plot Recipes
 
 @recipe function f(sim::AbstractEnsembleSolution;
-    zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
-              nothing,
-    trajectories = eachindex(sim))
+        zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
+                  nothing,
+        trajectories = eachindex(sim))
     for i in trajectories
         size(sim.u[i].u, 1) == 0 && continue
         @series begin
@@ -156,9 +158,9 @@ end
 end
 
 @recipe function f(sim::EnsembleSummary;
-    trajectories = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
-                   1,
-    error_style = :ribbon, ci_type = :quantile)
+        trajectories = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
+                       1,
+        error_style = :ribbon, ci_type = :quantile)
     if ci_type == :SEM
         if sim.u.u[1] isa AbstractArray
             u = vecarr_to_vectors(sim.u)
@@ -209,7 +211,8 @@ end
     end
 end
 
-Base.@propagate_inbounds function RecursiveArrayTools._getindex(x::AbstractEnsembleSolution, ::Union{ScalarSymbolic,ArraySymbolic}, s, ::Colon)
+Base.@propagate_inbounds function RecursiveArrayTools._getindex(
+        x::AbstractEnsembleSolution, ::Union{ScalarSymbolic, ArraySymbolic}, s, ::Colon)
     return [xi[s] for xi in x.u]
 end
 

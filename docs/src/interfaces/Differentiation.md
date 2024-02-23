@@ -7,14 +7,14 @@ of automatic differentiation overloads to dispatches defined in DiffEqSensitivit
 a top-level `solve` definition, for example:
 
 ```julia
-function solve(prob::AbstractDEProblem, args...; sensealg=nothing,
-  u0=nothing, p=nothing, kwargs...)
-  u0 = u0 !== nothing ? u0 : prob.u0
-  p = p !== nothing ? p : prob.p
-  if sensealg === nothing && haskey(prob.kwargs, :sensealg)
-    sensealg = prob.kwargs[:sensealg]
-  end
-  solve_up(prob, sensealg, u0, p, args...; kwargs...)
+function solve(prob::AbstractDEProblem, args...; sensealg = nothing,
+        u0 = nothing, p = nothing, kwargs...)
+    u0 = u0 !== nothing ? u0 : prob.u0
+    p = p !== nothing ? p : prob.p
+    if sensealg === nothing && haskey(prob.kwargs, :sensealg)
+        sensealg = prob.kwargs[:sensealg]
+    end
+    solve_up(prob, sensealg, u0, p, args...; kwargs...)
 end
 ```
 
@@ -24,17 +24,17 @@ interface. Then the `ChainRules` overloads are written on the `solve_up` calls, 
 
 ```julia
 function ChainRulesCore.frule(::typeof(solve_up), prob,
-  sensealg::Union{Nothing,AbstractSensitivityAlgorithm},
-  u0, p, args...;
-  kwargs...)
-  _solve_forward(prob, sensealg, u0, p, args...; kwargs...)
+        sensealg::Union{Nothing, AbstractSensitivityAlgorithm},
+        u0, p, args...;
+        kwargs...)
+    _solve_forward(prob, sensealg, u0, p, args...; kwargs...)
 end
 
 function ChainRulesCore.rrule(::typeof(solve_up), prob::SciMLBase.AbstractDEProblem,
-  sensealg::Union{Nothing,AbstractSensitivityAlgorithm},
-  u0, p, args...;
-  kwargs...)
-  _solve_adjoint(prob, sensealg, u0, p, args...; kwargs...)
+        sensealg::Union{Nothing, AbstractSensitivityAlgorithm},
+        u0, p, args...;
+        kwargs...)
+    _solve_adjoint(prob, sensealg, u0, p, args...; kwargs...)
 end
 ```
 
@@ -43,11 +43,11 @@ mechanism is not added:
 
 ```julia
 function _concrete_solve_adjoint(args...; kwargs...)
-  error("No adjoint rules exist. Check that you added `using DiffEqSensitivity`")
+    error("No adjoint rules exist. Check that you added `using DiffEqSensitivity`")
 end
 
 function _concrete_solve_forward(args...; kwargs...)
-  error("No sensitivity rules exist. Check that you added `using DiffEqSensitivity`")
+    error("No sensitivity rules exist. Check that you added `using DiffEqSensitivity`")
 end
 ```
 

@@ -15,23 +15,23 @@ The following standard principles should be adhered to across all
 
 The full interface available to the solvers is as follows:
 
-- `jac`: The Jacobian of the differential equation with respect to the state
-  variable `u` at a time `t` with parameters `p`.
-- `paramjac`: The Jacobian of the differential equation with respect to `p` at
-  state `u` at time `t`.
-- `analytic`: Defines an analytical solution using `u0` at time `t` with `p`
-  which will cause the solvers to return errors. Used for testing.
-- `syms`: Allows you to name your variables for automatic names in plots and
-  other output.
-- `jac_prototype`: Defines the type to be used for any internal Jacobians
-  within the solvers.
-- `sparsity`: Defines the sparsity pattern to be used for the sparse differentiation
-  schemes. By default this is equal to `jac_prototype`. See the sparsity handling
-  portion of this page for more information.
-- `colorvec`: The coloring pattern used by the sparse differentiator. See the
-  sparsity handling portion of this page for more information.
-- `observed`: A function which allows for generating other observables from a
-  solution.
+  - `jac`: The Jacobian of the differential equation with respect to the state
+    variable `u` at a time `t` with parameters `p`.
+  - `paramjac`: The Jacobian of the differential equation with respect to `p` at
+    state `u` at time `t`.
+  - `analytic`: Defines an analytical solution using `u0` at time `t` with `p`
+    which will cause the solvers to return errors. Used for testing.
+  - `syms`: Allows you to name your variables for automatic names in plots and
+    other output.
+  - `jac_prototype`: Defines the type to be used for any internal Jacobians
+    within the solvers.
+  - `sparsity`: Defines the sparsity pattern to be used for the sparse differentiation
+    schemes. By default this is equal to `jac_prototype`. See the sparsity handling
+    portion of this page for more information.
+  - `colorvec`: The coloring pattern used by the sparse differentiator. See the
+    sparsity handling portion of this page for more information.
+  - `observed`: A function which allows for generating other observables from a
+    solution.
 
 Each function type additionally has some specific arguments, refer to their
 documentation for details.
@@ -55,7 +55,7 @@ be specified.
 Each `SciMLFunction` type allows for specialization choices
 
 ```julia
-ODEFunction{iip,specialization}(f)
+ODEFunction{iip, specialization}(f)
 ```
 
 which designates how the compiler should specialize on the model function `f`. For
@@ -73,10 +73,10 @@ The following example creates an inplace `ODEFunction` whose Jacobian is a `Diag
 
 ```julia
 using LinearAlgebra
-f = (du,u,p,t) -> du .= t .* u
-jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
+f = (du, u, p, t) -> du .= t .* u
+jac = (J, u, p, t) -> (J[1, 1] = t; J[2, 2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac=jac, jac_prototype=jp)
+fun = ODEFunction(f; jac = jac, jac_prototype = jp)
 ```
 
 Note that the integrators will always make a deep copy of `fun.jac_prototype`, so

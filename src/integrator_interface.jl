@@ -1,5 +1,6 @@
 """
     step!(integ::DEIntegrator [, dt [, stop_at_tdt]])
+
 Perform one (successful) step on the integrator.
 
 Alternative, if a `dt` is given, then `step!` the integrator until
@@ -76,6 +77,7 @@ end
 Resizes the non-user facing caches to be compatible with a DE of size `k`. This includes resizing Jacobian caches.
 
 !!! note
+
     In many cases, [`resize!`](@ref) simply resizes [`full_cache`](@ref) variables and then
     calls this function. This finer control is required for some `AbstractArray`
     operations.
@@ -90,6 +92,7 @@ end
 [`deleteat!`](@ref)s the non-user facing caches at indices `idxs`. This includes resizing Jacobian caches.
 
 !!! note
+
     In many cases, `deleteat!` simply `deleteat!`s [`full_cache`](@ref) variables and then
     calls this function. This finer control is required for some `AbstractArray`
     operations.
@@ -102,7 +105,9 @@ end
     addat_non_user_cache!(i::DEIntegrator,idxs)
 
 [`addat!`](@ref)s the non-user facing caches at indices `idxs`. This includes resizing Jacobian caches.
+
 !!! note
+
     In many cases, `addat!` simply `addat!`s [`full_cache`](@ref) variables and then
     calls this function. This finer control is required for some `AbstractArray`
     operations.
@@ -174,10 +179,12 @@ and if `savevalues!` saved at the current time point, then `savedexactly` is
 true.
 
 The saving priority/order is as follows:
+
   - `save_on`
-    - `saveat`
-    - `force_save`
-    - `save_everystep`
+
+      + `saveat`
+      + `force_save`
+      + `save_everystep`
 """
 function savevalues!(i::DEIntegrator)
     error("savevalues!: method has not been implemented for the integrator")
@@ -255,18 +262,19 @@ The reinit function lets you restart the integration at a new value.
 
 # Arguments
 
-- `u0`: Value of `u` to start at. Default value is `integrator.sol.prob.u0`
+  - `u0`: Value of `u` to start at. Default value is `integrator.sol.prob.u0`
 
 # Keyword Arguments
-- `t0`: Starting timepoint. Default value is `integrator.sol.prob.tspan[1]`
-- `tf`: Ending timepoint. Default value is `integrator.sol.prob.tspan[2]`
-- `erase_sol=true`: Whether to start with no other values in the solution, or keep the previous solution.
-- `tstops`, `d_discontinuities`, & `saveat`: Cache where these are stored. Default is the original cache.
-- `reset_dt`: Set whether to reset the current value of `dt` using the automatic `dt` determination algorithm. Default is
-  `(integrator.dtcache == zero(integrator.dt)) && integrator.opts.adaptive`
-- `reinit_callbacks`: Set whether to run the callback initializations again (and `initialize_save` is for that). Default is `true`.
-- `reinit_cache`: Set whether to re-run the cache initialization function (i.e. resetting FSAL, not allocating vectors)
-  which should usually be true for correctness. Default is `true`.
+
+  - `t0`: Starting timepoint. Default value is `integrator.sol.prob.tspan[1]`
+  - `tf`: Ending timepoint. Default value is `integrator.sol.prob.tspan[2]`
+  - `erase_sol=true`: Whether to start with no other values in the solution, or keep the previous solution.
+  - `tstops`, `d_discontinuities`, & `saveat`: Cache where these are stored. Default is the original cache.
+  - `reset_dt`: Set whether to reset the current value of `dt` using the automatic `dt` determination algorithm. Default is
+    `(integrator.dtcache == zero(integrator.dt)) && integrator.opts.adaptive`
+  - `reinit_callbacks`: Set whether to run the callback initializations again (and `initialize_save` is for that). Default is `true`.
+  - `reinit_cache`: Set whether to re-run the cache initialization function (i.e. resetting FSAL, not allocating vectors)
+    which should usually be true for correctness. Default is `true`.
 
 Additionally, once can access [`auto_dt_reset!`](@ref) which will run the auto `dt` initialization algorithm.
 """
@@ -320,7 +328,8 @@ For DAEs (either implicit or semi-explicit), this requires re-solving alebraic v
 If continuous_modification is true (or unspecified), this should also recalculate interpolation data.
 Otherwise the integrator is allowed to skip recalculating the interpolation.
 """
-function reeval_internals_due_to_modification!(integrator::DEIntegrator, continuous_modification)
+function reeval_internals_due_to_modification!(
+        integrator::DEIntegrator, continuous_modification)
     reeval_internals_due_to_modification!(integrator::DEIntegrator)
 end
 reeval_internals_due_to_modification!(integrator::DEIntegrator) = nothing
@@ -458,9 +467,11 @@ function Base.getproperty(A::DEIntegrator, sym::Symbol)
     end
 end
 
-Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::NotSymbolic, I::Union{Int, AbstractArray{Int},
-        CartesianIndex, Colon, BitArray,
-        AbstractArray{Bool}}...)
+Base.@propagate_inbounds function _getindex(A::DEIntegrator,
+        ::NotSymbolic,
+        I::Union{Int, AbstractArray{Int},
+            CartesianIndex, Colon, BitArray,
+            AbstractArray{Bool}}...)
     A.u[I...]
 end
 
@@ -482,7 +493,8 @@ Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ArraySymbolic, sy
     return A[collect(sym)]
 end
 
-Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ScalarSymbolic, sym::Union{Tuple,AbstractArray})
+Base.@propagate_inbounds function _getindex(
+        A::DEIntegrator, ::ScalarSymbolic, sym::Union{Tuple, AbstractArray})
     return getindex.((A,), sym)
 end
 
@@ -497,11 +509,13 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::SymbolicIndexingInterface.SolvedVariables)
+Base.@propagate_inbounds function Base.getindex(
+        A::DEIntegrator, ::SymbolicIndexingInterface.SolvedVariables)
     return getindex(A, variable_symbols(A))
 end
 
-Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, ::SymbolicIndexingInterface.AllVariables)
+Base.@propagate_inbounds function Base.getindex(
+        A::DEIntegrator, ::SymbolicIndexingInterface.AllVariables)
     return getindex(A, all_variable_symbols(A))
 end
 
@@ -510,7 +524,8 @@ function observed(A::DEIntegrator, sym)
 end
 
 function Base.setindex!(A::DEIntegrator, val, sym)
-    has_sys(A.f) || error("Invalid indexing of integrator: Integrator does not support indexing without a system")
+    has_sys(A.f) ||
+        error("Invalid indexing of integrator: Integrator does not support indexing without a system")
     if symbolic_type(sym) == ScalarSymbolic()
         if is_variable(A, sym)
             A.u[variable_index(A, sym)] = val
@@ -680,10 +695,10 @@ function Base.iterate(tup::IntegratorTuples, state = 0)
 end
 
 function Base.eltype(::Type{
-    IntegratorTuples{I},
+        IntegratorTuples{I},
 }) where {U, T,
-    I <:
-    DEIntegrator{<:Any, <:Any, U, T}}
+        I <:
+        DEIntegrator{<:Any, <:Any, U, T}}
     Tuple{U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorTuples}) = Base.SizeUnknown()
@@ -707,11 +722,11 @@ function Base.iterate(tup::IntegratorIntervals, state = 0)
 end
 
 function Base.eltype(::Type{
-    IntegratorIntervals{I},
+        IntegratorIntervals{I},
 }) where {U, T,
-    I <:
-    DEIntegrator{<:Any, <:Any, U, T
-    }}
+        I <:
+        DEIntegrator{<:Any, <:Any, U, T
+        }}
     Tuple{U, T, U, T}
 end
 Base.IteratorSize(::Type{<:IntegratorIntervals}) = Base.SizeUnknown()
@@ -754,13 +769,14 @@ end
 Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
 @recipe function f(integrator::DEIntegrator;
-    denseplot = (integrator.opts.calck ||
-                 integrator isa AbstractSDEIntegrator) &&
-                integrator.iter > 0,
-    plotdensity = 10,
-    plot_analytic = false, vars = nothing, idxs = nothing)
+        denseplot = (integrator.opts.calck ||
+                     integrator isa AbstractSDEIntegrator) &&
+                    integrator.iter > 0,
+        plotdensity = 10,
+        plot_analytic = false, vars = nothing, idxs = nothing)
     if vars !== nothing
-        Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
+        Base.depwarn(
+            "To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
             :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
@@ -773,9 +789,10 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         # Generate the points from the plot from dense function
         plott = collect(range(integrator.tprev, integrator.t; length = plotdensity))
         if plot_analytic
-            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
-                integrator.sol.prob.p,
-                t) for t in plott]
+            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(
+                                            integrator.sol.prob.u0,
+                                            integrator.sol.prob.p,
+                                            t) for t in plott]
         end
     else
         plott = nothing
@@ -800,7 +817,8 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
     for x in int_vars
         for j in 2:dims
             if denseplot
-                if (x[j] isa Integer && x[j] == 0) || isequal(x[j],getindepsym_defaultt(integrator))
+                if (x[j] isa Integer && x[j] == 0) ||
+                   isequal(x[j], getindepsym_defaultt(integrator))
                     push!(plot_vecs[j - 1], plott)
                 else
                     push!(plot_vecs[j - 1], Vector(integrator(plott; idxs = x[j])))

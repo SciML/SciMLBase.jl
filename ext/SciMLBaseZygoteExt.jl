@@ -4,7 +4,7 @@ using Zygote
 using Zygote: @adjoint, pullback
 import Zygote: literal_getproperty
 using SciMLBase
-using SciMLBase: ODESolution, remake, 
+using SciMLBase: ODESolution, remake,
                  getobserved, build_solution, EnsembleSolution,
                  NonlinearSolution, AbstractTimeseriesSolution
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index
@@ -90,7 +90,7 @@ end
 end
 
 @adjoint function Zygote.literal_getproperty(sim::EnsembleSolution,
-    ::Val{:u})
+        ::Val{:u})
     sim.u, p̄ -> (EnsembleSolution(p̄, 0.0, true, sim.stats),)
 end
 
@@ -109,20 +109,20 @@ end
 end
 
 @adjoint function ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12
-    }(u,
+}(u,
         args...) where {T1, T2, T3, T4, T5, T6, T7, T8,
         T9, T10, T11, T12}
-        function ODESolutionAdjoint(ȳ)
-            (ȳ, ntuple(_ -> nothing, length(args))...)
-        end
-    
-        ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12}(u, args...),
-        ODESolutionAdjoint
+    function ODESolutionAdjoint(ȳ)
+        (ȳ, ntuple(_ -> nothing, length(args))...)
+    end
+
+    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12}(u, args...),
+    ODESolutionAdjoint
 end
 
 @adjoint function SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND}(u,
-    args...) where
-    {uType, tType, isinplace, P, NP, F, G, K, ND}
+        args...) where
+        {uType, tType, isinplace, P, NP, F, G, K, ND}
     function SDESolutionAdjoint(ȳ)
         (ȳ, ntuple(_ -> nothing, length(args))...)
     end
@@ -131,15 +131,15 @@ end
 end
 
 @adjoint function NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u,
-    args...) where {
-    T,
-    N,
-    uType,
-    R,
-    P,
-    A,
-    O,
-    uType2,
+        args...) where {
+        T,
+        N,
+        uType,
+        R,
+        P,
+        A,
+        O,
+        uType2
 }
     function NonlinearSolutionAdjoint(ȳ)
         (ȳ, ntuple(_ -> nothing, length(args))...)
@@ -148,7 +148,7 @@ end
 end
 
 @adjoint function literal_getproperty(sol::AbstractTimeseriesSolution,
-    ::Val{:u})
+        ::Val{:u})
     function solu_adjoint(Δ)
         zerou = zero(sol.prob.u0)
         _Δ = @. ifelse(Δ === nothing, (zerou,), Δ)
@@ -158,7 +158,7 @@ end
 end
 
 @adjoint function literal_getproperty(sol::SciMLBase.AbstractNoTimeSolution,
-    ::Val{:u})
+        ::Val{:u})
     function solu_adjoint(Δ)
         zerou = zero(sol.prob.u0)
         _Δ = @. ifelse(Δ === nothing, zerou, Δ)
@@ -168,7 +168,7 @@ end
 end
 
 @adjoint function literal_getproperty(sol::SciMLBase.OptimizationSolution,
-    ::Val{:u})
+        ::Val{:u})
     function solu_adjoint(Δ)
         zerou = zero(sol.u)
         _Δ = @. ifelse(Δ === nothing, zerou, Δ)
@@ -219,8 +219,8 @@ end
 end
 
 @adjoint function SciMLBase.responsible_map(f,
-    args::Union{AbstractArray, Tuple
-    }...)
+        args::Union{AbstractArray, Tuple
+        }...)
     ∇responsible_map(__context__, f, args...)
 end
 

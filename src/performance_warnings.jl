@@ -24,7 +24,8 @@ To turn it off globally within the active project you can execute the following 
 
 ```julia
 using Preferences, UUIDs
-set_preferences!(UUID("1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"), "PerformanceWarnings" => false)
+set_preferences!(
+    UUID("1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"), "PerformanceWarnings" => false)
 ```
 """
 function warn_paramtype(p, warn_performance = PERFORMANCE_WARNINGS)

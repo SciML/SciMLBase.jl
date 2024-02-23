@@ -23,11 +23,11 @@ function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...
         kwargs...)
 end
 function EnsembleProblem(prob;
-    prob_func = DEFAULT_PROB_FUNC,
-    output_func = DEFAULT_OUTPUT_FUNC,
-    reduction = DEFAULT_REDUCTION,
-    u_init = nothing,
-    safetycopy = prob_func !== DEFAULT_PROB_FUNC)
+        prob_func = DEFAULT_PROB_FUNC,
+        output_func = DEFAULT_OUTPUT_FUNC,
+        reduction = DEFAULT_REDUCTION,
+        u_init = nothing,
+        safetycopy = prob_func !== DEFAULT_PROB_FUNC)
     _prob_func = prepare_function(prob_func)
     _output_func = prepare_function(output_func)
     _reduction = prepare_function(reduction)
@@ -36,16 +36,17 @@ function EnsembleProblem(prob;
 end
 
 function EnsembleProblem(; prob,
-    prob_func = DEFAULT_PROB_FUNC,
-    output_func = DEFAULT_OUTPUT_FUNC,
-    reduction = DEFAULT_REDUCTION,
-    u_init = nothing, p = nothing,
-    safetycopy = prob_func !== DEFAULT_PROB_FUNC)
+        prob_func = DEFAULT_PROB_FUNC,
+        output_func = DEFAULT_OUTPUT_FUNC,
+        reduction = DEFAULT_REDUCTION,
+        u_init = nothing, p = nothing,
+        safetycopy = prob_func !== DEFAULT_PROB_FUNC)
     EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
 end
 
 #since NonlinearProblem might want to use this dispatch as well
-function SciMLBase.EnsembleProblem(prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...) where {T}
+function SciMLBase.EnsembleProblem(
+        prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...) where {T}
     prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[i])
     return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
 end

@@ -30,8 +30,8 @@ struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}
 end
 
 function build_linear_solution(alg, u, resid, cache;
-    retcode = ReturnCode.Default,
-    iters = 0, stats = nothing)
+        retcode = ReturnCode.Default,
+        iters = 0, stats = nothing)
     T = eltype(eltype(u))
     N = length((size(u)...,))
     LinearSolution{T, N, typeof(u), typeof(resid), typeof(alg), typeof(cache),
@@ -78,12 +78,13 @@ struct QuadratureSolution end
 @deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
 
 function build_solution(prob::AbstractIntegralProblem,
-    alg, u, resid; chi = nothing,
-    retcode = ReturnCode.Default, stats = nothing, kwargs...)
+        alg, u, resid; chi = nothing,
+        retcode = ReturnCode.Default, stats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(u)...,))
 
-    IntegralSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg), typeof(chi),
+    IntegralSolution{
+        T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg), typeof(chi),
         typeof(stats)}(u,
         resid,
         prob,

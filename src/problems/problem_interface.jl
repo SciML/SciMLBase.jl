@@ -15,11 +15,13 @@ SymbolicIndexingInterface.state_values(prob::AbstractJumpProblem) = prob.prob.u0
 SymbolicIndexingInterface.current_time(prob::AbstractSciMLProblem) = prob.tspan[1]
 SymbolicIndexingInterface.current_time(prob::AbstractJumpProblem) = prob.prob.tspan[1]
 
-Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)
+Base.@propagate_inbounds function Base.getindex(
+        prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)
     return getindex(prob, variable_symbols(prob))
 end
 
-Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.AllVariables)
+Base.@propagate_inbounds function Base.getindex(
+        prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.AllVariables)
     return getindex(prob, all_variable_symbols(prob))
 end
 
@@ -28,7 +30,7 @@ Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
         if is_variable(prob.f, sym)
             return prob.u0[variable_index(prob.f, sym)]
         elseif is_parameter(prob.f, sym)
-        error("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.")
+            error("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.")
         elseif is_independent_variable(prob.f, sym)
             return getindepsym(prob)
         elseif is_observed(prob.f, sym)
@@ -53,7 +55,8 @@ function Base.setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
     ___internal_setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
 end
 function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
-    has_sys(prob.f) || error("Invalid indexing of problem: Problem does not support indexing without a system")
+    has_sys(prob.f) ||
+        error("Invalid indexing of problem: Problem does not support indexing without a system")
     if symbolic_type(sym) == ScalarSymbolic()
         if is_variable(prob.f, sym)
             prob.u0[variable_index(prob.f, sym)] = val

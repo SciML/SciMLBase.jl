@@ -3,28 +3,28 @@
 """
 is_diagonal_noise(prob::AbstractSciMLProblem) = false
 function is_diagonal_noise(prob::AbstractRODEProblem{
-    uType,
-    tType,
-    iip,
-    Nothing,
+        uType,
+        tType,
+        iip,
+        Nothing
 }) where {
-    uType,
-    tType,
-    iip,
+        uType,
+        tType,
+        iip
 }
     true
 end
 function is_diagonal_noise(prob::AbstractSDDEProblem{
-    uType,
-    tType,
-    lType,
-    iip,
-    Nothing,
+        uType,
+        tType,
+        lType,
+        iip,
+        Nothing
 }) where {
-    uType,
-    tType,
-    lType,
-    iip,
+        uType,
+        tType,
+        lType,
+        iip
 }
     true
 end
@@ -40,44 +40,44 @@ isinplace(prob::AbstractNonlinearProblem{uType, iip}) where {uType, iip} = iip
 isinplace(prob::AbstractIntegralProblem{iip}) where {iip} = iip
 isinplace(prob::AbstractODEProblem{uType, tType, iip}) where {uType, tType, iip} = iip
 function isinplace(prob::AbstractRODEProblem{
-    uType,
-    tType,
-    iip,
-    ND,
+        uType,
+        tType,
+        iip,
+        ND
 }) where {uType, tType,
-    iip, ND}
+        iip, ND}
     iip
 end
 function isinplace(prob::AbstractDDEProblem{
-    uType,
-    tType,
-    lType,
-    iip,
+        uType,
+        tType,
+        lType,
+        iip
 }) where {uType, tType,
-    lType, iip}
+        lType, iip}
     iip
 end
 function isinplace(prob::AbstractDAEProblem{
-    uType,
-    duType,
-    tType,
-    iip,
+        uType,
+        duType,
+        tType,
+        iip
 }) where {uType,
-    duType,
-    tType, iip}
+        duType,
+        tType, iip}
     iip
 end
 isinplace(prob::AbstractNoiseProblem) = isinplace(prob.noise)
 isinplace(::SplitFunction{iip}) where {iip} = iip
 function isinplace(prob::AbstractSDDEProblem{
-    uType,
-    tType,
-    lType,
-    iip,
-    ND,
+        uType,
+        tType,
+        lType,
+        iip,
+        ND
 }) where {uType,
-    tType,
-    lType,
-    iip, ND}
+        tType,
+        lType,
+        iip, ND}
     iip
 end

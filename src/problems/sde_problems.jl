@@ -95,10 +95,10 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     noise_rate_prototype::ND
     seed::UInt64
     @add_kwonly function SDEProblem{iip}(f::AbstractSDEFunction{iip}, u0,
-        tspan, p = NullParameters();
-        noise_rate_prototype = nothing,
-        noise = nothing, seed = UInt64(0),
-        kwargs...) where {iip}
+            tspan, p = NullParameters();
+            noise_rate_prototype = nothing,
+            noise = nothing, seed = UInt64(0),
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
@@ -142,7 +142,8 @@ function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
     SplitSDEProblem(SplitSDEFunction(f1, f2, g), g, u0, tspan, p; kwargs...)
 end
 =#
-function SplitSDEProblem{iip}(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+function SplitSDEProblem{iip}(
+        f1, f2, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
     SplitSDEProblem{iip}(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
 end
 
@@ -156,7 +157,7 @@ function SplitSDEProblem(f::SplitSDEFunction, u0, tspan, p = NullParameters(); k
 end
 
 function SplitSDEProblem{iip}(f::SplitSDEFunction, u0, tspan, p = NullParameters();
-    func_cache = nothing, kwargs...) where {iip}
+        func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
         _f = SplitSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
@@ -182,19 +183,20 @@ function DynamicalSDEProblem(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwa
     DynamicalSDEProblem{isinplace(ff)}(ff, v0, u0, tspan, p; kwargs...)
 end
 
-function DynamicalSDEProblem{iip}(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+function DynamicalSDEProblem{iip}(
+        f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
     ff = DynamicalSDEFunction(f1, f2, g)
     DynamicalSDEProblem{iip}(ff, v0, u0, tspan, p; kwargs...)
 end
 
 function DynamicalSDEProblem(f::DynamicalSDEFunction, v0, u0, tspan,
-    p = NullParameters(); kwargs...)
+        p = NullParameters(); kwargs...)
     DynamicalSDEProblem{isinplace(f)}(f, v0, u0, tspan, p; kwargs...)
 end
 
 function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, v0, u0, tspan,
-    p = NullParameters();
-    func_cache = nothing, kwargs...) where {iip}
+        p = NullParameters();
+        func_cache = nothing, kwargs...) where {iip}
     if f.cache === nothing && iip
         cache = similar(u0)
         _f = DynamicalSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
