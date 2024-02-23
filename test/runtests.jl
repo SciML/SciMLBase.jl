@@ -22,7 +22,7 @@ function activate_python_env()
 end
 
 @time begin
-    if GROUP == "QA"|| GROUP == "All"
+    if GROUP == "QA" || GROUP == "All"
         @time @safetestset "Aqua" begin
             include("aqua.jl")
         end

@@ -21,7 +21,7 @@ end
 
 struct Foo{T} end
 f = Foo{1}()
-(this::Foo{T})(args...) where T=1
+(this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
 ## Problem argument tests
@@ -472,11 +472,11 @@ p = 2.0
 intfiip(y, u, p) = y .= 1.0
 
 for (f, kws, iip) in (
-    (intf,                                  (;),        false),
-    (IntegralFunction(intf),                (;),        false),
-    (intfiip,                               (; nout=3), true),
-    (IntegralFunction(intfiip, zeros(3)),   (;),        true),
-), domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0],))
+        (intf, (;), false),
+        (IntegralFunction(intf), (;), false),
+        (intfiip, (; nout = 3), true),
+        (IntegralFunction(intfiip, zeros(3)), (;), true)
+    ), domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0]))
     IntegralProblem(f, domain...; kws...)
     IntegralProblem(f, domain..., p; kws...)
     IntegralProblem{iip}(f, domain...; kws...)

@@ -13,8 +13,7 @@ Base.@pure remaker_of(alg::T) where {T} = parameterless_type(T)
 for T in [
     NoiseProblem,
     SplitFunction,  # TODO: use isinplace path for type-stability
-    TwoPointBVPFunction,
-    # EnsembleProblem,
+    TwoPointBVPFunction    # EnsembleProblem,
 ]
     @eval remaker_of(::$T) = $T
 end
@@ -50,12 +49,12 @@ Remake the given `ODEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::ODEProblem; f = missing,
-    u0 = missing,
-    tspan = missing,
-    p = missing,
-    kwargs = missing,
-    interpret_symbolicmap = true,
-    _kwargs...)
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
@@ -73,15 +72,15 @@ function remake(prob::ODEProblem; f = missing,
         ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
         if isu0symbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with" *
-                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
-                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                "parameter order."))
+                                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                                "parameter order."))
         end
         if ispsymbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with " *
-                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                "with the `p` keyword argument as a vector of values (paying attention to" *
-                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                "with the `p` keyword argument as a vector of values (paying attention to" *
+                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
         end
         if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(prob, p, u0)
@@ -98,11 +97,13 @@ function remake(prob::ODEProblem; f = missing,
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(unwrapped_f(prob.f.f),
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(
+                    unwrapped_f(prob.f.f),
                     (u0, u0, p,
                         ptspan[1])))
             else
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(unwrapped_f(prob.f.f),
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(
+                    unwrapped_f(prob.f.f),
                     (u0, p,
                         ptspan[1])))
             end
@@ -140,7 +141,7 @@ end
 Remake the given `BVProblem`.
 """
 function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan = missing,
-    p = missing, kwargs = missing, problem_type = missing, _kwargs...)
+        p = missing, kwargs = missing, problem_type = missing, _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
@@ -176,11 +177,13 @@ function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan 
     elseif specialization(prob.f) === FunctionWrapperSpecialize
         ptspan = promote_tspan(tspan)
         if iip
-            _f = BVPFunction{iip, FunctionWrapperSpecialize, twopoint}(wrapfun_iip(f,
-                (u0, u0, p, ptspan[1])), bc; prob.f.bcresid_prototype)
+            _f = BVPFunction{iip, FunctionWrapperSpecialize, twopoint}(
+                wrapfun_iip(f,
+                    (u0, u0, p, ptspan[1])), bc; prob.f.bcresid_prototype)
         else
-            _f = BVPFunction{iip, FunctionWrapperSpecialize, twopoint}(wrapfun_oop(f,
-                (u0, p, ptspan[1])), bc; prob.f.bcresid_prototype)
+            _f = BVPFunction{iip, FunctionWrapperSpecialize, twopoint}(
+                wrapfun_oop(f,
+                    (u0, p, ptspan[1])), bc; prob.f.bcresid_prototype)
         end
     else
         _f = BVPFunction{isinplace(prob), specialization(prob.f), twopoint}(f, bc;
@@ -202,15 +205,15 @@ end
 Remake the given `SDEProblem`.
 """
 function remake(prob::SDEProblem;
-    f = missing,
-    u0 = missing,
-    tspan = missing,
-    p = missing,
-    noise = missing,
-    noise_rate_prototype = missing,
-    seed = missing,
-    kwargs = missing,
-    _kwargs...)
+        f = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        noise = missing,
+        noise_rate_prototype = missing,
+        seed = missing,
+        kwargs = missing,
+        _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
@@ -265,18 +268,18 @@ Remake the given `OptimizationProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::OptimizationProblem;
-    f = missing,
-    u0 = missing,
-    p = missing,
-    lb = missing,
-    ub = missing,
-    int = missing,
-    lcons = missing,
-    ucons = missing,
-    sense = missing,
-    kwargs = missing,
-    interpret_symbolicmap = true,
-    _kwargs...)
+        f = missing,
+        u0 = missing,
+        p = missing,
+        lb = missing,
+        ub = missing,
+        int = missing,
+        lcons = missing,
+        ucons = missing,
+        sense = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
     else # at least one of them has a value
@@ -290,15 +293,15 @@ function remake(prob::OptimizationProblem;
         ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
         if isu0symbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with" *
-                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
-                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                "parameter order."))
+                                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                                "parameter order."))
         end
         if ispsymbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with " *
-                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                "with the `p` keyword argument as a vector of values (paying attention to" *
-                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                "with the `p` keyword argument as a vector of values (paying attention to" *
+                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
         end
         if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(prob, p, u0)
@@ -352,13 +355,13 @@ Remake the given `NonlinearProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::NonlinearProblem;
-    f = missing,
-    u0 = missing,
-    p = missing,
-    problem_type = missing,
-    kwargs = missing,
-    interpret_symbolicmap = true,
-    _kwargs...)
+        f = missing,
+        u0 = missing,
+        p = missing,
+        problem_type = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
     else # at least one of them has a value
@@ -372,15 +375,15 @@ function remake(prob::NonlinearProblem;
         ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
         if isu0symbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with" *
-                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
-                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                "parameter order."))
+                                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                                "with the `u0` keyword argument as a vector of values, paying attention to" *
+                                "parameter order."))
         end
         if ispsymbolic && !has_sys(prob.f)
             throw(ArgumentError("This problem does not support symbolic maps with " *
-                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                "with the `p` keyword argument as a vector of values (paying attention to" *
-                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                "with the `p` keyword argument as a vector of values (paying attention to" *
+                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
         end
         if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(prob, p, u0)
@@ -408,7 +411,6 @@ function remake(prob::NonlinearProblem;
     end
 end
 
-
 """
     remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
         kwargs = missing, _kwargs...)
@@ -416,7 +418,7 @@ end
 Remake the given `NonlinearLeastSquaresProblem`.
 """
 function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
-    kwargs = missing, _kwargs...)
+        kwargs = missing, _kwargs...)
     if p === missing && u0 === missing
         p, u0 = prob.p, prob.u0
     else # at least one of them has a value

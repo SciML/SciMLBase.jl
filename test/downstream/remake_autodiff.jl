@@ -8,7 +8,7 @@ function lotka_volterra(; name = name)
     eqs = [
         D(x) ~ p1 * x - p2 * x * y,
         D(y) ~ -p3 * y + p4 * x * y,
-        o ~ x * y,
+        o ~ x * y
     ]
     return ODESystem(eqs, t, unknowns, params; name = name)
 end

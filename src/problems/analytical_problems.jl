@@ -9,7 +9,7 @@ struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
     p::P
     kwargs::K
     @add_kwonly function AnalyticalProblem{iip}(f, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)

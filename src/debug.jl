@@ -59,7 +59,8 @@ will always be in the function signature regardless of if the problem is defined
 function __init__()
     Base.Experimental.register_error_hint(DomainError) do io, e
         if e isa DomainError &&
-           occursin("will only return a complex result if called with a complex argument. Try ",
+           occursin(
+            "will only return a complex result if called with a complex argument. Try ",
             e.msg)
             println(io, DOMAINERROR_COMPLEX_MSG)
         end

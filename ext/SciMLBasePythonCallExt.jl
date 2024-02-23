@@ -13,7 +13,10 @@ function SciMLBase.numargs(f::Py)
     pyconvert(Int, length(first(inspect.getfullargspec(f2))) - inspect.ismethod(f2))
 end
 
-_pyconvert(x::Py) = pyisinstance(x, pybuiltins.list) ? _promoting_collect(_pyconvert(x) for x in x) : pyconvert(Any, x)
+function _pyconvert(x::Py)
+    pyisinstance(x, pybuiltins.list) ? _promoting_collect(_pyconvert(x) for x in x) :
+    pyconvert(Any, x)
+end
 _pyconvert(x::PyList) = _promoting_collect(_pyconvert(x) for x in x)
 _pyconvert(x) = x
 

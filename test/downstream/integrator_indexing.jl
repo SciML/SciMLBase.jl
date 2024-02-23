@@ -1,4 +1,5 @@
-using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, SymbolicIndexingInterface, Test
+using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq,
+      SymbolicIndexingInterface, Test
 
 ### Tests on non-layered model (everything should work). ###
 
@@ -21,13 +22,17 @@ integrator = init(oprob, Rodas4())
 @test_throws Exception integrator[a]
 @test_throws Exception integrator[population_model.a]
 @test_throws Exception integrator[:a]
-@test getp(oprob, a)(integrator) == getp(oprob, population_model.a)(integrator) == getp(oprob, :a)(integrator) == 2.0
+@test getp(oprob, a)(integrator) == getp(oprob, population_model.a)(integrator) ==
+      getp(oprob, :a)(integrator) == 2.0
 @test integrator.ps[a] == integrator.ps[population_model.a] == integrator.ps[:a] == 2.0
-@test getp(oprob, b)(integrator) == getp(oprob, population_model.b)(integrator) == getp(oprob, :b)(integrator) == 1.0
+@test getp(oprob, b)(integrator) == getp(oprob, population_model.b)(integrator) ==
+      getp(oprob, :b)(integrator) == 1.0
 @test integrator.ps[b] == integrator.ps[population_model.b] == integrator.ps[:b] == 1.0
-@test getp(oprob, c)(integrator) == getp(oprob, population_model.c)(integrator) == getp(oprob, :c)(integrator) == 1.0
+@test getp(oprob, c)(integrator) == getp(oprob, population_model.c)(integrator) ==
+      getp(oprob, :c)(integrator) == 1.0
 @test integrator.ps[d] == integrator.ps[population_model.d] == integrator.ps[:d] == 1.0
-@test getp(oprob, d)(integrator) == getp(oprob, population_model.d)(integrator) == getp(oprob, :d)(integrator) == 1.0
+@test getp(oprob, d)(integrator) == getp(oprob, population_model.d)(integrator) ==
+      getp(oprob, :d)(integrator) == 1.0
 @test integrator.ps[d] == integrator.ps[population_model.d] == integrator.ps[:d] == 1.0
 
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 2.0
@@ -36,22 +41,33 @@ integrator = init(oprob, Rodas4())
 @test integrator[allvariables] == integrator.u
 step!(integrator, 100.0, true)
 
-@test getp(population_model, a)(integrator) == getp(population_model, population_model.a)(integrator) == getp(population_model, :a)(integrator) == 2.0
-@test getp(population_model, b)(integrator) == getp(population_model, population_model.b)(integrator) == getp(population_model, :b)(integrator) == 1.0
-@test getp(population_model, c)(integrator) == getp(population_model, population_model.c)(integrator) == getp(population_model, :c)(integrator) == 1.0
-@test getp(population_model, d)(integrator) == getp(population_model, population_model.d)(integrator) == getp(population_model, :d)(integrator) == 1.0
+@test getp(population_model, a)(integrator) ==
+      getp(population_model, population_model.a)(integrator) ==
+      getp(population_model, :a)(integrator) == 2.0
+@test getp(population_model, b)(integrator) ==
+      getp(population_model, population_model.b)(integrator) ==
+      getp(population_model, :b)(integrator) == 1.0
+@test getp(population_model, c)(integrator) ==
+      getp(population_model, population_model.c)(integrator) ==
+      getp(population_model, :c)(integrator) == 1.0
+@test getp(population_model, d)(integrator) ==
+      getp(population_model, population_model.d)(integrator) ==
+      getp(population_model, :d)(integrator) == 1.0
 
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] != 2.0
 @test integrator[s2] == integrator[population_model.s2] == integrator[:s2] != 1.0
 
 setp(oprob, a)(integrator, 10.0)
-@test getp(integrator, a)(integrator) == getp(integrator, population_model.a)(integrator) == getp(integrator, :a)(integrator) == 10.0
+@test getp(integrator, a)(integrator) == getp(integrator, population_model.a)(integrator) ==
+      getp(integrator, :a)(integrator) == 10.0
 @test integrator.ps[a] == integrator.ps[population_model.a] == integrator.ps[:a] == 10.0
 setp(population_model, population_model.b)(integrator, 20.0)
-@test getp(integrator, b)(integrator) == getp(integrator, population_model.b)(integrator) == getp(integrator, :b)(integrator) == 20.0
+@test getp(integrator, b)(integrator) == getp(integrator, population_model.b)(integrator) ==
+      getp(integrator, :b)(integrator) == 20.0
 @test integrator.ps[b] == integrator.ps[population_model.b] == integrator.ps[:b] == 20.0
 setp(integrator, c)(integrator, 30.0)
-@test getp(integrator, c)(integrator) == getp(integrator, population_model.c)(integrator) == getp(integrator, :c)(integrator) == 30.0
+@test getp(integrator, c)(integrator) == getp(integrator, population_model.c)(integrator) ==
+      getp(integrator, :c)(integrator) == 30.0
 @test integrator.ps[c] == integrator.ps[population_model.c] == integrator.ps[:c] == 30.0
 integrator.ps[d] = 40.0
 @test integrator.ps[d] == integrator.ps[population_model.d] == integrator.ps[:d] == 40.0
@@ -72,19 +88,29 @@ integrator = init(sprob, ImplicitEM())
 
 step!(integrator, 100.0, true)
 
-@test getp(sprob, a)(integrator) == getp(sprob, noisy_population_model.a)(integrator) == getp(sprob, :a)(integrator) == 2.0
-@test getp(sprob, b)(integrator) == getp(sprob, noisy_population_model.b)(integrator) == getp(sprob, :b)(integrator) == 1.0
-@test getp(sprob, c)(integrator) == getp(sprob, noisy_population_model.c)(integrator) == getp(sprob, :c)(integrator) == 1.0
-@test getp(sprob, d)(integrator) == getp(sprob, noisy_population_model.d)(integrator) == getp(sprob, :d)(integrator) == 1.0
+@test getp(sprob, a)(integrator) == getp(sprob, noisy_population_model.a)(integrator) ==
+      getp(sprob, :a)(integrator) == 2.0
+@test getp(sprob, b)(integrator) == getp(sprob, noisy_population_model.b)(integrator) ==
+      getp(sprob, :b)(integrator) == 1.0
+@test getp(sprob, c)(integrator) == getp(sprob, noisy_population_model.c)(integrator) ==
+      getp(sprob, :c)(integrator) == 1.0
+@test getp(sprob, d)(integrator) == getp(sprob, noisy_population_model.d)(integrator) ==
+      getp(sprob, :d)(integrator) == 1.0
 @test integrator[s1] == integrator[noisy_population_model.s1] == integrator[:s1] != 2.0
 @test integrator[s2] == integrator[noisy_population_model.s2] == integrator[:s2] != 1.0
 
 setp(integrator, a)(integrator, 10.0)
-@test getp(noisy_population_model, a)(integrator) == getp(noisy_population_model, noisy_population_model.a)(integrator) == getp(noisy_population_model, :a)(integrator) == 10.0
+@test getp(noisy_population_model, a)(integrator) ==
+      getp(noisy_population_model, noisy_population_model.a)(integrator) ==
+      getp(noisy_population_model, :a)(integrator) == 10.0
 setp(sprob, noisy_population_model.b)(integrator, 20.0)
-@test getp(noisy_population_model, b)(integrator) == getp(noisy_population_model, noisy_population_model.b)(integrator) == getp(noisy_population_model, :b)(integrator) == 20.0
+@test getp(noisy_population_model, b)(integrator) ==
+      getp(noisy_population_model, noisy_population_model.b)(integrator) ==
+      getp(noisy_population_model, :b)(integrator) == 20.0
 setp(noisy_population_model, c)(integrator, 30.0)
-@test getp(noisy_population_model, c)(integrator) == getp(noisy_population_model, noisy_population_model.c)(integrator) == getp(noisy_population_model, :c)(integrator) == 30.0
+@test getp(noisy_population_model, c)(integrator) ==
+      getp(noisy_population_model, noisy_population_model.c)(integrator) ==
+      getp(noisy_population_model, :c)(integrator) == 30.0
 
 integrator[s1] = 10.0
 @test integrator[s1] == integrator[noisy_population_model.s1] == integrator[:s1] == 10.0
@@ -157,7 +183,7 @@ step!(integrator, 100.0, true)
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
-    D(q[2]) ~ 2.0]
+       D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
 sys2_simplified = structural_simplify(sys2)
 prob2 = ODEProblem(sys2, [], (0.0, 5.0))
@@ -306,7 +332,7 @@ sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
 eqs = [collect(D.(x) .~ x)
-    D(y) ~ norm(x) * y - x[1]]
+       D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 integrator = init(prob, Tsit5(), save_everystep = false)

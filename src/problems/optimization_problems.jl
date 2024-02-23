@@ -104,10 +104,10 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     sense::S
     kwargs::K
     @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0,
-        p = NullParameters();
-        lb = nothing, ub = nothing, int = nothing,
-        lcons = nothing, ucons = nothing,
-        sense = nothing, kwargs...) where {iip}
+            p = NullParameters();
+            lb = nothing, ub = nothing, int = nothing,
+            lcons = nothing, ucons = nothing,
+            sense = nothing, kwargs...) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
@@ -129,14 +129,16 @@ function OptimizationProblem(f, args...; kwargs...)
     OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
 end
 
-function OptimizationFunction(f::NonlinearFunction, adtype::AbstractADType = NoAD(); kwargs...)
+function OptimizationFunction(
+        f::NonlinearFunction, adtype::AbstractADType = NoAD(); kwargs...)
     if isinplace(f)
         throw(ArgumentError("Converting NonlinearFunction to OptimizationFunction is not supported with in-place functions yet."))
     end
     OptimizationFunction((u, p) -> sum(abs2, f(u, p)), adtype; kwargs...)
 end
 
-function OptimizationProblem(prob::NonlinearLeastSquaresProblem, adtype::AbstractADType = NoAD(); kwargs...)
+function OptimizationProblem(
+        prob::NonlinearLeastSquaresProblem, adtype::AbstractADType = NoAD(); kwargs...)
     if isinplace(prob)
         throw(ArgumentError("Converting NonlinearLeastSquaresProblem to OptimizationProblem is not supported with in-place functions yet."))
     end
@@ -146,4 +148,3 @@ end
 
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
-

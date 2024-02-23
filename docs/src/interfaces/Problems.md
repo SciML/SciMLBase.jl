@@ -20,8 +20,8 @@ The following standard principles should be adhered to across all
 Each `AbstractSciMLProblem` type can be called with an "is inplace" (iip) choice. For example:
 
 ```julia
-ODEProblem(f,u0,tspan,p)
-ODEProblem{iip}(f,u0,tspan,p)
+ODEProblem(f, u0, tspan, p)
+ODEProblem{iip}(f, u0, tspan, p)
 ```
 
 which is a boolean for whether the function is in the inplace form (mutating to
@@ -44,8 +44,8 @@ scenarios but falls back to a runtime-optimal approach when further customizatio
 Specialization levels are given as the second type parameter in `AbstractSciMLProblem`
 constructors. For example, this is done via:
 
-```julia 
-ODEProblem{iip,specialization}(f,u0,tspan,p)
+```julia
+ODEProblem{iip, specialization}(f, u0, tspan, p)
 ```
 
 Note that `iip` choice is required for specialization choices to be made.
@@ -61,12 +61,12 @@ SciMLBase.FullSpecialize
 ```
 
 !!! note
-
+    
     The specialization level must be precompile snooped in the appropriate solver
     package in order to enable the full precompilation and system image generation
     for zero-latency usage. By default, this is only done with AutoSpecialize and
     on types `u isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-    `p isa Union{Vector{Float64}, SciMLBase.NullParameters}`. Precompilation snooping 
+    `p isa Union{Vector{Float64}, SciMLBase.NullParameters}`. Precompilation snooping
     in the solvers can be done using the Preferences.jl setup on the appropriate
     solver. See the solver library's documentation for more details.
 
@@ -117,7 +117,8 @@ shows how to set the specialization default to `FullSpecialize`:
 
 ```julia
 using Preferences, UUIDs
-set_preferences!(UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize")
+set_preferences!(
+    UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize")
 ```
 
 The default is `AutoSpecialize`.

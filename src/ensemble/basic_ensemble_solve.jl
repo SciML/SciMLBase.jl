@@ -24,12 +24,13 @@ $(TYPEDEF)
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
-    st = Iterators.filter(!isnothing, (hasproperty(x, :stats) ? x.stats : nothing for x in us))
+    st = Iterators.filter(
+        !isnothing, (hasproperty(x, :stats) ? x.stats : nothing for x in us))
     isempty(st) && return nothing
     reduce(merge, st)
 end
 
-mutable struct AggregateLogger{T<:Logging.AbstractLogger} <: Logging.AbstractLogger
+mutable struct AggregateLogger{T <: Logging.AbstractLogger} <: Logging.AbstractLogger
     progress::Dict{Symbol, Float64}
     done_counter::Int
     total::Float64
@@ -37,12 +38,15 @@ mutable struct AggregateLogger{T<:Logging.AbstractLogger} <: Logging.AbstractLog
     lock::ReentrantLock
     logger::T
 end
-AggregateLogger(logger::Logging.AbstractLogger) = AggregateLogger(Dict{Symbol, Float64}(),0 , 0.0, 0.0, ReentrantLock(), logger)
+function AggregateLogger(logger::Logging.AbstractLogger)
+    AggregateLogger(Dict{Symbol, Float64}(), 0, 0.0, 0.0, ReentrantLock(), logger)
+end
 
-function Logging.handle_message(l::AggregateLogger, level, message, _module, group, id, file, line; kwargs...)
+function Logging.handle_message(
+        l::AggregateLogger, level, message, _module, group, id, file, line; kwargs...)
     if convert(Logging.LogLevel, level) == Logging.LogLevel(-1) && haskey(kwargs, :progress)
         pr = kwargs[:progress]
-        if trylock(l.lock) || (pr == "done" && lock(l.lock)===nothing)
+        if trylock(l.lock) || (pr == "done" && lock(l.lock) === nothing)
             try
                 if pr == "done"
                     pr = 1.0
@@ -50,9 +54,9 @@ function Logging.handle_message(l::AggregateLogger, level, message, _module, gro
                 end
                 len = length(l.progress)
                 if haskey(l.progress, id)
-                    l.total += (pr-l.progress[id])/len
+                    l.total += (pr - l.progress[id]) / len
                 else
-                    l.total = l.total*(len/(len+1)) + pr/(len+1)
+                    l.total = l.total * (len / (len + 1)) + pr / (len + 1)
                     len += 1
                 end
                 l.progress[id] = pr
@@ -61,19 +65,19 @@ function Logging.handle_message(l::AggregateLogger, level, message, _module, gro
                 # @show tot l.total l.total ≈ tot
                 curr_time = time()
                 if l.done_counter >= len
-                    tot="done"
+                    tot = "done"
                     empty!(l.progress)
                     l.done_counter = 0
                     l.print_time = 0.0
-                elseif curr_time-l.print_time > 0.1
+                elseif curr_time - l.print_time > 0.1
                     tot = l.total
                     l.print_time = curr_time
                 else
                     return
                 end
-                id=:total
-                message="Total"
-                kwargs=merge(values(kwargs), (progress=tot,))
+                id = :total
+                message = "Total"
+                kwargs = merge(values(kwargs), (progress = tot,))
             finally
                 unlock(l.lock)
             end
@@ -81,15 +85,16 @@ function Logging.handle_message(l::AggregateLogger, level, message, _module, gro
             return
         end
     end
-    Logging.handle_message(l.logger, level, message, _module, group, id, file, line; kwargs...)
+    Logging.handle_message(
+        l.logger, level, message, _module, group, id, file, line; kwargs...)
 end
 Logging.shouldlog(l::AggregateLogger, args...) = Logging.shouldlog(l.logger, args...)
 Logging.min_enabled_level(l::AggregateLogger) = Logging.min_enabled_level(l.logger)
 Logging.catch_exceptions(l::AggregateLogger) = Logging.catch_exceptions(l.logger)
 
 function __solve(prob::AbstractEnsembleProblem,
-    alg::Union{AbstractDEAlgorithm, Nothing};
-    kwargs...)
+        alg::Union{AbstractDEAlgorithm, Nothing};
+        kwargs...)
     if alg isa EnsembleAlgorithm
         # Assume DifferentialEquations.jl is being used, so default alg
         ensemblealg = alg
@@ -107,20 +112,21 @@ tighten_container_eltype(u::Vector{Any}) = map(identity, u)
 tighten_container_eltype(u) = u
 
 function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}},
-    alg::Union{AbstractDEAlgorithm, Nothing},
-    ensemblealg::BasicEnsembleAlgorithm; kwargs...)
+        alg::Union{AbstractDEAlgorithm, Nothing},
+        ensemblealg::BasicEnsembleAlgorithm; kwargs...)
     # TODO: @invoke
     invoke(__solve, Tuple{AbstractEnsembleProblem, typeof(alg), typeof(ensemblealg)},
         prob, alg, ensemblealg; trajectories = length(prob.prob), kwargs...)
 end
 
 function __solve(prob::AbstractEnsembleProblem,
-    alg::A,
-    ensemblealg::BasicEnsembleAlgorithm;
-    trajectories, batch_size = trajectories, progress_aggregate=true,
-    pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...) where {A}
-    logger = progress_aggregate ? AggregateLogger(Logging.current_logger()) : Logging.current_logger()
-    
+        alg::A,
+        ensemblealg::BasicEnsembleAlgorithm;
+        trajectories, batch_size = trajectories, progress_aggregate = true,
+        pmap_batch_size = batch_size ÷ 100 > 0 ? batch_size ÷ 100 : 1, kwargs...) where {A}
+    logger = progress_aggregate ? AggregateLogger(Logging.current_logger()) :
+             Logging.current_logger()
+
     Logging.with_logger(logger) do
         num_batches = trajectories ÷ batch_size
         num_batches < 1 &&
@@ -131,10 +137,10 @@ function __solve(prob::AbstractEnsembleProblem,
             name = get(kwargs, :progress_name, "Ensemble")
             for i in 1:trajectories
                 msg = "$name #$i"
-                Logging.@logmsg(Logging.LogLevel(-1), msg, _id=Symbol("SciMLBase_$i"), progress=0)
+                Logging.@logmsg(Logging.LogLevel(-1), msg, _id=Symbol("SciMLBase_$i"),
+                    progress=0)
             end
         end
-        
 
         if num_batches == 1 && prob.reduction === DEFAULT_REDUCTION
             elapsed_time = @elapsed u = solve_batch(prob, alg, ensemblealg, 1:trajectories,
@@ -160,7 +166,8 @@ function __solve(prob::AbstractEnsembleProblem,
                 else
                     II = (batch_size * (i - 1) + 1):(batch_size * i)
                 end
-                batch_data = solve_batch(prob, alg, ensemblealg, II, pmap_batch_size; kwargs...)
+                batch_data = solve_batch(
+                    prob, alg, ensemblealg, II, pmap_batch_size; kwargs...)
                 u, converged = prob.reduction(u, batch_data, II)
             end
         end
@@ -181,7 +188,7 @@ function batch_func(i, prob, alg; kwargs...)
         name = get(kwargs, :progress_name, "Ensemble")
         progress_name = "$name #$i"
         progress_id = Symbol("SciMLBase_$i")
-        kwargs = (kwargs..., progress_name=progress_name, progress_id=progress_id)
+        kwargs = (kwargs..., progress_name = progress_name, progress_id = progress_id)
     end
     x = prob.output_func(solve(new_prob, alg; kwargs...), i)
     if !(x isa Tuple)
@@ -208,7 +215,7 @@ function batch_func(i, prob, alg; kwargs...)
 end
 
 function solve_batch(prob, alg, ensemblealg::EnsembleDistributed, II, pmap_batch_size;
-    kwargs...)
+        kwargs...)
     wp = CachingPool(workers())
 
     # Fix the return type of pmap
@@ -227,7 +234,8 @@ function solve_batch(prob, alg, ensemblealg::EnsembleDistributed, II, pmap_batch
 end
 
 function responsible_map(f, II...)
-    batch_data = Vector{Core.Compiler.return_type(f, Tuple{typeof.(getindex.(II, 1))...})}(undef,
+    batch_data = Vector{Core.Compiler.return_type(f, Tuple{typeof.(getindex.(II, 1))...})}(
+        undef,
         length(II[1]))
     for i in 1:length(II[1])
         batch_data[i] = f(getindex.(II, i)...)
@@ -243,7 +251,7 @@ function SciMLBase.solve_batch(prob, alg, ::EnsembleSerial, II, pmap_batch_size;
 end
 
 function solve_batch(prob, alg, ensemblealg::EnsembleThreads, II, pmap_batch_size;
-    kwargs...)
+        kwargs...)
     nthreads = min(Threads.nthreads(), length(II))
     if length(II) == 1 || nthreads == 1
         return solve_batch(prob, alg, EnsembleSerial(), II, pmap_batch_size; kwargs...)

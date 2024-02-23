@@ -31,11 +31,10 @@ function Tables.rows(sol::AbstractTimeseriesSolution)
         names = [
             :timestamp,
             (isempty(syms) ? (Symbol("value", i) for i in 1:N) :
-            (getname(syms[i]) for i in 1:N))...,
+             (getname(syms[i]) for i in 1:N))...
         ]
         types = Type[eltype(sol.t), (eltype(sol.u[1]) for i in 1:N)...]
     else
-
         names = [:timestamp, isempty(syms) ? :value : syms[1]]
         types = Type[eltype(sol.t), VT]
     end

@@ -1,6 +1,7 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
 # compat for MTKv8 and v9
-unknowns = isdefined(ModelingToolkit, :states) ? ModelingToolkit.states : ModelingToolkit.unknowns
+unknowns = isdefined(ModelingToolkit, :states) ? ModelingToolkit.states :
+           ModelingToolkit.unknowns
 
 ### Tests on non-layered model (everything should work). ###
 

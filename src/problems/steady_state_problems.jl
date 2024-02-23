@@ -79,8 +79,8 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     p::P
     kwargs::K
     @add_kwonly function SteadyStateProblem{iip}(f::AbstractODEFunction{iip},
-        u0, p = NullParameters();
-        kwargs...) where {iip}
+            u0, p = NullParameters();
+            kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         warn_paramtype(p)
         new{typeof(_u0), isinplace(f), typeof(p), typeof(f), typeof(kwargs)}(f, _u0, p,

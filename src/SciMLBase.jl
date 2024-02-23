@@ -27,16 +27,16 @@ import FillArrays
 using Reexport
 using SciMLOperators
 using SciMLOperators:
-    AbstractSciMLOperator,
-    IdentityOperator, NullOperator,
-    ScaledOperator, AddedOperator, ComposedOperator,
-    InvertedOperator, InvertibleOperator
+                      AbstractSciMLOperator,
+                      IdentityOperator, NullOperator,
+                      ScaledOperator, AddedOperator, ComposedOperator,
+                      InvertedOperator, InvertibleOperator
 
 import SciMLOperators:
-    DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
-    getops, isconstant, iscached, islinear, issquare,
-    has_adjoint, has_expmv, has_expmv!, has_exp,
-    has_mul, has_mul!, has_ldiv, has_ldiv!
+                       DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
+                       getops, isconstant, iscached, islinear, issquare,
+                       has_adjoint, has_expmv, has_expmv!, has_exp,
+                       has_mul, has_mul!, has_ldiv, has_ldiv!
 
 @reexport using SciMLOperators
 
@@ -653,23 +653,23 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
 end
 
 function specialization(::Union{ODEFunction{iip, specialize},
-    SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-    SDDEFunction{iip, specialize},
-    DAEFunction{iip, specialize},
-    DynamicalODEFunction{iip, specialize},
-    SplitFunction{iip, specialize},
-    DynamicalSDEFunction{iip, specialize},
-    SplitSDEFunction{iip, specialize},
-    DynamicalDDEFunction{iip, specialize},
-    DiscreteFunction{iip, specialize},
-    ImplicitDiscreteFunction{iip, specialize},
-    RODEFunction{iip, specialize},
-    NonlinearFunction{iip, specialize},
-    OptimizationFunction{iip, specialize},
-    BVPFunction{iip, specialize},
-    IntegralFunction{iip, specialize},
-    BatchIntegralFunction{iip, specialize}}) where {iip,
-    specialize}
+        SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
+        SDDEFunction{iip, specialize},
+        DAEFunction{iip, specialize},
+        DynamicalODEFunction{iip, specialize},
+        SplitFunction{iip, specialize},
+        DynamicalSDEFunction{iip, specialize},
+        SplitSDEFunction{iip, specialize},
+        DynamicalDDEFunction{iip, specialize},
+        DiscreteFunction{iip, specialize},
+        ImplicitDiscreteFunction{iip, specialize},
+        RODEFunction{iip, specialize},
+        NonlinearFunction{iip, specialize},
+        OptimizationFunction{iip, specialize},
+        BVPFunction{iip, specialize},
+        IntegralFunction{iip, specialize},
+        BatchIntegralFunction{iip, specialize}}) where {iip,
+        specialize}
     specialize
 end
 
@@ -769,23 +769,23 @@ export isinplace
 export solve, solve!, init, discretize, symbolic_discretize
 
 export LinearProblem, NonlinearProblem, IntervalNonlinearProblem,
-    IntegralProblem, SampledIntegralProblem, OptimizationProblem,
-    NonlinearLeastSquaresProblem
+       IntegralProblem, SampledIntegralProblem, OptimizationProblem,
+       NonlinearLeastSquaresProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
 export NoiseProblem
 export ODEProblem, ODESolution
 export DynamicalODEFunction,
-    DynamicalODEProblem,
-    SecondOrderODEProblem, SplitFunction, SplitODEProblem
+       DynamicalODEProblem,
+       SecondOrderODEProblem, SplitFunction, SplitODEProblem
 export SplitSDEProblem
 export DynamicalSDEFunction, DynamicalSDEProblem
 export RODEProblem, RODESolution, SDEProblem
 export DAEProblem, DAESolution
 export DDEProblem
 export DynamicalDDEFunction, DynamicalDDEProblem,
-    SecondOrderDDEProblem
+       SecondOrderDDEProblem
 export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
@@ -795,9 +795,9 @@ export BVProblem, TwoPointBVProblem
 export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
-    DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-    IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
-    IntegralFunction, BatchIntegralFunction
+       DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
+       IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
+       IntegralFunction, BatchIntegralFunction
 
 export OptimizationFunction
 
@@ -812,16 +812,16 @@ export AffineDiffEqOperator, DiffEqScaledOperator
 export DiffEqScalar, DiffEqArrayOperator, DiffEqIdentity
 
 export step!, deleteat!, addat!, get_tmp_cache,
-    full_cache, user_cache, u_cache, du_cache,
-    rand_cache, ratenoise_cache,
-    resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
-    terminate!,
-    add_tstop!, has_tstop, first_tstop, pop_tstop!,
-    add_saveat!, set_abstol!,
-    set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
-    u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
-    set_u!, check_error, change_t_via_interpolation!, addsteps!,
-    isdiscrete, reeval_internals_due_to_modification!
+       full_cache, user_cache, u_cache, du_cache,
+       rand_cache, ratenoise_cache,
+       resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
+       terminate!,
+       add_tstop!, has_tstop, first_tstop, pop_tstop!,
+       add_saveat!, set_abstol!,
+       set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
+       u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
+       set_u!, check_error, change_t_via_interpolation!, addsteps!,
+       isdiscrete, reeval_internals_due_to_modification!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 

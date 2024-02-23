@@ -8,21 +8,27 @@ optf = OptimizationFunction(rosenbrock, Optimization.AutoForwardDiff())
 prob = OptimizationProblem(optf, x0)
 sol1 = Optimization.solve(prob, OptimizationOptimJL.BFGS(), maxiters = 5)
 
-ensembleprob = Optimization.EnsembleProblem(prob, [x0, x0 .+ rand(2), x0 .+ rand(2), x0 .+ rand(2)])
+ensembleprob = Optimization.EnsembleProblem(
+    prob, [x0, x0 .+ rand(2), x0 .+ rand(2), x0 .+ rand(2)])
 
-sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(), EnsembleThreads(), trajectories = 4, maxiters = 5)
+sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
+    EnsembleThreads(), trajectories = 4, maxiters = 5)
 @test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
 
-sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(), EnsembleDistributed(), trajectories = 4, maxiters = 5)
+sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
+    EnsembleDistributed(), trajectories = 4, maxiters = 5)
 @test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
 
 prob = OptimizationProblem(optf, x0, lb = [-0.5, -0.5], ub = [0.5, 0.5])
-ensembleprob = Optimization.EnsembleProblem(prob, prob_func = (prob, i, repeat) -> remake(prob, u0 = rand(-0.5:0.001:0.5, 2)))
+ensembleprob = Optimization.EnsembleProblem(
+    prob, prob_func = (prob, i, repeat) -> remake(prob, u0 = rand(-0.5:0.001:0.5, 2)))
 
-sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(), EnsembleThreads(), trajectories = 5, maxiters = 5)
+sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
+    EnsembleThreads(), trajectories = 5, maxiters = 5)
 @test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
 
-sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(), EnsembleDistributed(), trajectories = 5, maxiters = 5)
+sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
+    EnsembleDistributed(), trajectories = 5, maxiters = 5)
 @test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
 
 using NonlinearSolve

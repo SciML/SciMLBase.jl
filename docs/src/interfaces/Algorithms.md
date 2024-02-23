@@ -5,7 +5,7 @@
 `SciMLAlgorithms` are defined as types which have dispatches to the function signature:
 
 ```julia
-CommonSolve.solve(prob::AbstractSciMLProblem,alg::AbstractSciMLAlgorithm;kwargs...)
+CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm; kwargs...)
 ```
 
 ### Algorithm-Specific Arguments

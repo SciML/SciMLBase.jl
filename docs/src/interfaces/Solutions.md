@@ -26,7 +26,7 @@ to access the value of `t` at timestep `j`. For multi-dimensional systems, this
 will address first by component and lastly by time, and thus
 
 ```julia
-sol[i,j]
+sol[i, j]
 ```
 
 will be the `i`th component at timestep `j`. Hence, `sol[j][i] == sol[i, j]`. This is done because Julia is column-major, so the leading dimension should be contiguous in memory. If the independent variables had shape
@@ -34,27 +34,27 @@ will be the `i`th component at timestep `j`. Hence, `sol[j][i] == sol[i, j]`. Th
 solutions with shape:
 
 ```julia
-sol[i,k,j]
+sol[i, k, j]
 ```
 
 gives the `[i,k]` component of the system at timestep `j`. The colon operator is
 supported, meaning that
 
 ```julia
-sol[i,:]
+sol[i, :]
 ```
 
 gives the timeseries for the `i`th component.
 
 ### Common Field Names
 
-- `u`: the solution values
-- `t`: the independent variable values, matching the length of the solution, if applicable
-- `resid`: the residual of the solution, if applicable
-- `original`: the solution object from the original solver, if it's a wrapper algorithm
-- `retcode`: see the documentation section on return codes
-- `prob`: the problem that was solved
-- `alg`: the algorithm used to solve the problem
+  - `u`: the solution values
+  - `t`: the independent variable values, matching the length of the solution, if applicable
+  - `resid`: the residual of the solution, if applicable
+  - `original`: the solution object from the original solver, if it's a wrapper algorithm
+  - `retcode`: see the documentation section on return codes
+  - `prob`: the problem that was solved
+  - `alg`: the algorithm used to solve the problem
 
 ## [Return Codes (RetCodes)](@id retcodes)
 

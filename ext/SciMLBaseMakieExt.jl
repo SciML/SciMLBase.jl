@@ -44,7 +44,7 @@ function Makie.convert_arguments(PT::Type{<:Plot},
         tspan = nothing,
         tscale = :identity,
         vars = nothing,
-        idxs = nothing,)
+        idxs = nothing)
 
     # First, this recipe is specifically only for timeseries solutions.
     # This means that the recipe only applies to `PointBased` plot types.
@@ -59,7 +59,8 @@ function Makie.convert_arguments(PT::Type{<:Plot},
     ensure_plottrait(PT, sol, Makie.PointBased)
 
     if vars !== nothing
-        Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
+        Base.depwarn(
+            "To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
             :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
@@ -146,12 +147,13 @@ function Makie.convert_arguments(PT::Type{<:Makie.Plot},
         denseplot = Makie.automatic,
         plotdensity = 10,
         vars = nothing,
-        idxs = nothing,)
+        idxs = nothing)
     ensure_plottrait(PT, integrator, Makie.PointBased)
 
     # Interpret keyword arguments
     if vars !== nothing
-        Base.depwarn("To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
+        Base.depwarn(
+            "To maintain consistency with solution indexing, keyword argument vars will be removed in a future version. Please use keyword argument idxs instead.",
             :f; force = true)
         (idxs !== nothing) &&
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
@@ -172,9 +174,10 @@ function Makie.convert_arguments(PT::Type{<:Makie.Plot},
         # Generate the points from the plot from dense function
         plott = collect(range(integrator.tprev, integrator.t; length = plotdensity))
         if plot_analytic
-            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(integrator.sol.prob.u0,
-                integrator.sol.prob.p,
-                t) for t in plott]
+            plot_analytic_timeseries = [integrator.sol.prob.f.analytic(
+                                            integrator.sol.prob.u0,
+                                            integrator.sol.prob.p,
+                                            t) for t in plott]
         end
     else
         plott = nothing
@@ -254,9 +257,9 @@ function Makie.convert_arguments(PT::Type{<:Makie.Plot},
 
     return if denseplot
         [Makie.PlotSpec(plot_type_sym,
-            Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]);
-            label,
-            color = Makie.Cycled(idx))
+             Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]);
+             label,
+             color = Makie.Cycled(idx))
          for (idx, label) in zip(1:length(plot_vecs[1]), labels)]
     else
         [S.Scatter([Point2f(plot_vecs[1][idx], plot_vecs[2][idx])]; label)
@@ -292,7 +295,7 @@ function Makie.convert_arguments(PT::Type{<:Lines},
         tspan = nothing,
         tscale = :identity,
         vars = nothing,
-        idxs = nothing,)
+        idxs = nothing)
 
     # First, we check if the plot type is PointBased, and if not, we throw the standard
     # Makie error message for convert_arguments - just at a different place.
@@ -304,14 +307,14 @@ function Makie.convert_arguments(PT::Type{<:Lines},
     plot_type_sym = Makie.plotsym(PT)
 
     mp = [PlotSpec(plot_type_sym,
-        sim.u[i];
-        plot_analytic,
-        denseplot,
-        plotdensity,
-        plotat,
-        tspan,
-        tscale,
-        idxs) for i in trajectories]
+              sim.u[i];
+              plot_analytic,
+              denseplot,
+              plotdensity,
+              plotat,
+              tspan,
+              tscale,
+              idxs) for i in trajectories]
 
     # Main.Infiltrator.@infiltrate
 

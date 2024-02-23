@@ -46,24 +46,24 @@ domain type. A 2-tuple can be used to indicate an `Interval`.
 Thus forms for the `indepvar` can be like:
 
 ```julia
-t ∈ (0.0,1.0)
-(t,x) ∈ UnitDisk()
-[v,w,x,y,z] ∈ VectorUnitBall(5)
+t ∈ (0.0, 1.0)
+(t, x) ∈ UnitDisk()
+[v, w, x, y, z] ∈ VectorUnitBall(5)
 ```
 
 #### Domain Types (WIP)
 
-- `Interval(a,b)`: Defines the domain of an interval from `a` to `b` (requires explicit
-import from `DomainSets.jl`, but a 2-tuple can be used instead)
+  - `Interval(a,b)`: Defines the domain of an interval from `a` to `b` (requires explicit
+    import from `DomainSets.jl`, but a 2-tuple can be used instead)
 
 ## `discretize` and `symbolic_discretize`
 
 The only functions which act on a PDESystem are the following:
 
-- `discretize(sys,discretizer)`: produces the outputted `AbstractSystem` or
-  `AbstractSciMLProblem`.
-- `symbolic_discretize(sys,discretizer)`: produces a debugging symbolic description
-  of the discretized problem.
+  - `discretize(sys,discretizer)`: produces the outputted `AbstractSystem` or
+    `AbstractSciMLProblem`.
+  - `symbolic_discretize(sys,discretizer)`: produces a debugging symbolic description
+    of the discretized problem.
 
 ## Boundary Conditions (WIP)
 

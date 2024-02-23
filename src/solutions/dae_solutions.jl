@@ -57,17 +57,17 @@ end
 TruncatedStacktraces.@truncate_stacktrace DAESolution 1 2
 
 function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
-    timeseries_errors = length(u) > 2,
-    dense = false,
-    dense_errors = dense,
-    calculate_error = true,
-    k = nothing,
-    interp = du === nothing ? LinearInterpolation(t, u) :
-             HermiteInterpolation(t, u, du),
-    retcode = ReturnCode.Default,
-    destats = missing,
-    stats = nothing,
-    kwargs...)
+        timeseries_errors = length(u) > 2,
+        dense = false,
+        dense_errors = dense,
+        calculate_error = true,
+        k = nothing,
+        interp = du === nothing ? LinearInterpolation(t, u) :
+                 HermiteInterpolation(t, u, du),
+        retcode = ReturnCode.Default,
+        destats = missing,
+        stats = nothing,
+        kwargs...)
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
@@ -125,8 +125,8 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
 end
 
 function calculate_solution_errors!(sol::AbstractDAESolution;
-    fill_uanalytic = true, timeseries_errors = true,
-    dense_errors = true)
+        fill_uanalytic = true, timeseries_errors = true,
+        dense_errors = true)
     prob = sol.prob
     f = prob.f
 

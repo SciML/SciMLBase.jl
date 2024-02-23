@@ -64,21 +64,21 @@ end
 TruncatedStacktraces.@truncate_stacktrace RODESolution 1 2
 
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
-    continuity = :left) where {deriv}
+        continuity = :left) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::RODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
-    continuity = :left) where {deriv}
+        continuity = :left) where {deriv}
     sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 
 function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
-    alg, t, u; W = nothing, timeseries_errors = length(u) > 2,
-    dense = false, dense_errors = dense, calculate_error = true,
-    interp = LinearInterpolation(t, u),
-    retcode = ReturnCode.Default,
-    alg_choice = nothing,
-    seed = UInt64(0), destats = missing, stats = nothing, kwargs...)
+        alg, t, u; W = nothing, timeseries_errors = length(u) > 2,
+        dense = false, dense_errors = dense, calculate_error = true,
+        interp = LinearInterpolation(t, u),
+        retcode = ReturnCode.Default,
+        alg_choice = nothing,
+        seed = UInt64(0), destats = missing, stats = nothing, kwargs...)
     T = eltype(eltype(u))
     N = length((size(prob.u0)..., length(u)))
 
@@ -135,7 +135,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
 end
 
 function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = true,
-    timeseries_errors = true, dense_errors = true)
+        timeseries_errors = true, dense_errors = true)
     if sol.prob.f isa Tuple
         f = sol.prob.f[1]
     else
