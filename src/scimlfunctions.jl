@@ -2281,8 +2281,8 @@ function ODEFunction{iip, specialize}(f;
                DEFAULT_OBSERVED,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing,
-    initializeprob = _has_initializeprob(f) ? f.sys : nothing,
-    initializeprobmap = _has_initializeprobmap(f) ? f.sys : nothing
+    initializeprob = __has_initializeprob(f) ? f.sys : nothing,
+    initializeprobmap = __has_initializeprobmap(f) ? f.sys : nothing
     ) where {iip,
     specialize,
 }
@@ -3192,8 +3192,8 @@ function DAEFunction{iip, specialize}(f;
                    DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
-        initializeprob = _has_initializeprob(f) ? f.sys : nothing,
-        initializeprobmap = _has_initializeprobmap(f) ? f.sys : nothing) where {iip,
+        initializeprob = __has_initializeprob(f) ? f.sys : nothing,
+        initializeprobmap = __has_initializeprobmap(f) ? f.sys : nothing) where {iip,
         specialize
 }
     if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
