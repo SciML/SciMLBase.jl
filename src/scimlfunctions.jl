@@ -402,7 +402,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV,
-    SYS} <: AbstractODEFunction{iip}
+    SYS, IProb, IProbMap} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -419,6 +419,8 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     observed::O
     colorvec::TCV
     sys::SYS
+    initializeprob::IProb
+    initializeprobmap::IProbMap
 end
 
 TruncatedStacktraces.@truncate_stacktrace ODEFunction 1 2
@@ -2254,30 +2256,33 @@ end
 ######### Basic Constructor
 
 function ODEFunction{iip, specialize}(f;
-        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
-                      I,
-        analytic = __has_analytic(f) ? f.analytic : nothing,
-        tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-        jac = __has_jac(f) ? f.jac : nothing,
-        jvp = __has_jvp(f) ? f.jvp : nothing,
-        vjp = __has_vjp(f) ? f.vjp : nothing,
-        jac_prototype = __has_jac_prototype(f) ?
-                        f.jac_prototype :
-                        nothing,
-        sparsity = __has_sparsity(f) ? f.sparsity :
-                   jac_prototype,
-        Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-        Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-        W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
-        paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
-        observed = __has_observed(f) ? f.observed :
-                   DEFAULT_OBSERVED,
-        colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-        sys = __has_sys(f) ? f.sys : nothing) where {iip,
-        specialize
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
+                  I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ?
+                    f.jac_prototype :
+                    nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity :
+               jac_prototype,
+    Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+    Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+    W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    syms = nothing,
+    indepsym = nothing,
+    paramsyms = nothing,
+    observed = __has_observed(f) ? f.observed :
+               DEFAULT_OBSERVED,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing,
+    initializeprob = nothing,
+    initializeprobmap = nothing
+    ) where {iip,
+    specialize,
 }
     if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
@@ -2321,7 +2326,10 @@ function ODEFunction{iip, specialize}(f;
 
     _f = prepare_function(f)
 
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+
+    @assert typeof(initializeprob) <: Union{NonlinearProblem, NonlinearLeastSquaresProblem}
+
     if specialize === NoSpecialize
         ODEFunction{iip, specialize,
             Any, Any, Any, Any,
@@ -2329,10 +2337,10 @@ function ODEFunction{iip, specialize}(f;
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,
             typeof(_colorvec),
-            typeof(sys)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys)
+            observed, _colorvec, sys, initializeprob, initializeprobmap)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2341,10 +2349,11 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), typeof(initializeprob),
+            typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys)
+            Wfact_t, W_prototype, paramjac, 
+            observed, _colorvec, sys, initializeprob, initializeprobmap)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2353,10 +2362,11 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), typeof(initializeprob),
+            typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys)
+            Wfact_t, W_prototype, paramjac, 
+            observed, _colorvec, sys, initializeprob, initializeprobmap)
     end
 end
 
@@ -2373,10 +2383,10 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any,
             Any, typeof(f.colorvec),
-            typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.sys), Any, Any}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys)
+            f.observed, f.colorvec, f.sys, f.initializeprob, f.initializeprobmap)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
@@ -2384,10 +2394,12 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
             typeof(f.paramjac),
             typeof(f.observed), typeof(f.colorvec),
-            typeof(f.sys)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.sys), typeof(initializeprob),
+            typeof(initializeprobmap)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys)
+            f.observed, f.colorvec, f.sys, f.initializeprob,
+            f.initializeprobmap)
     end
 end
 
