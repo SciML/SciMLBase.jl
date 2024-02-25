@@ -2258,33 +2258,33 @@ end
 ######### Basic Constructor
 
 function ODEFunction{iip, specialize}(f;
-    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
-                  I,
-    analytic = __has_analytic(f) ? f.analytic : nothing,
-    tgrad = __has_tgrad(f) ? f.tgrad : nothing,
-    jac = __has_jac(f) ? f.jac : nothing,
-    jvp = __has_jvp(f) ? f.jvp : nothing,
-    vjp = __has_vjp(f) ? f.vjp : nothing,
-    jac_prototype = __has_jac_prototype(f) ?
-                    f.jac_prototype :
-                    nothing,
-    sparsity = __has_sparsity(f) ? f.sparsity :
-               jac_prototype,
-    Wfact = __has_Wfact(f) ? f.Wfact : nothing,
-    Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
-    W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
-    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-    syms = nothing,
-    indepsym = nothing,
-    paramsyms = nothing,
-    observed = __has_observed(f) ? f.observed :
-               DEFAULT_OBSERVED,
-    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-    sys = __has_sys(f) ? f.sys : nothing,
-    initializeprob = __has_initializeprob(f) ? f.sys : nothing,
-    initializeprobmap = __has_initializeprobmap(f) ? f.sys : nothing
-    ) where {iip,
-    specialize,
+        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
+                      I,
+        analytic = __has_analytic(f) ? f.analytic : nothing,
+        tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+        jac = __has_jac(f) ? f.jac : nothing,
+        jvp = __has_jvp(f) ? f.jvp : nothing,
+        vjp = __has_vjp(f) ? f.vjp : nothing,
+        jac_prototype = __has_jac_prototype(f) ?
+                        f.jac_prototype :
+                        nothing,
+        sparsity = __has_sparsity(f) ? f.sparsity :
+                   jac_prototype,
+        Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+        Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+        W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
+        paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+        syms = nothing,
+        indepsym = nothing,
+        paramsyms = nothing,
+        observed = __has_observed(f) ? f.observed :
+                   DEFAULT_OBSERVED,
+        colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+        sys = __has_sys(f) ? f.sys : nothing,
+        initializeprob = __has_initializeprob(f) ? f.sys : nothing,
+        initializeprobmap = __has_initializeprobmap(f) ? f.sys : nothing
+) where {iip,
+        specialize
 }
     if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
@@ -2330,7 +2330,8 @@ function ODEFunction{iip, specialize}(f;
 
     sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
-    @assert typeof(initializeprob) <: Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
+    @assert typeof(initializeprob) <:
+            Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
 
     if specialize === NoSpecialize
         ODEFunction{iip, specialize,
@@ -2354,7 +2355,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(sys), typeof(initializeprob),
             typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac, 
+            Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initializeprob, initializeprobmap)
     else
         ODEFunction{iip, specialize,
@@ -2367,7 +2368,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(sys), typeof(initializeprob),
             typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac, 
+            Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initializeprob, initializeprobmap)
     end
 end
@@ -3225,7 +3226,8 @@ function DAEFunction{iip, specialize}(f;
     _f = prepare_function(f)
     sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
-    @assert typeof(initializeprob) <: Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
+    @assert typeof(initializeprob) <:
+            Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
 
     if specialize === NoSpecialize
         DAEFunction{iip, specialize, Any, Any, Any,
@@ -3978,8 +3980,12 @@ has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
 has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
-has_initializeprob(f::AbstractSciMLFunction) = __has_initializeprob(f) && f.initializeprob !== nothing
-has_initializeprobmap(f::AbstractSciMLFunction) = __has_initializeprobmap(f) && f.initializeprobmap !== nothing
+function has_initializeprob(f::AbstractSciMLFunction)
+    __has_initializeprob(f) && f.initializeprob !== nothing
+end
+function has_initializeprobmap(f::AbstractSciMLFunction)
+    __has_initializeprobmap(f) && f.initializeprobmap !== nothing
+end
 
 function has_syms(f::AbstractSciMLFunction)
     if __has_syms(f)
