@@ -12,7 +12,8 @@ using ModelingToolkit, OrdinaryDiffEq, DataFrames
 @variables t x(t)=1
 D = Differential(t)
 eqs = [D(x) ~ -x]
-@named sys = ODESystem(eqs)
+@named sys = ODESystem(eqs, t)
+sys = complete(sys)
 prob = ODEProblem(sys)
 sol = solve(prob, Tsit5(), tspan = (0.0, 1.0))
 df = DataFrame(sol)
