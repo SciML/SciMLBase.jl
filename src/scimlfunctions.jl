@@ -423,8 +423,6 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     initializeprobmap::IProbMap
 end
 
-TruncatedStacktraces.@truncate_stacktrace ODEFunction 1 2
-
 @doc doc"""
 $(TYPEDEF)
 
@@ -540,8 +538,6 @@ struct SplitFunction{
     sys::SYS
 end
 
-TruncatedStacktraces.@truncate_stacktrace SplitFunction 1 2
-
 @doc doc"""
 $(TYPEDEF)
 
@@ -644,7 +640,6 @@ struct DynamicalODEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, 
     colorvec::TCV
     sys::SYS
 end
-TruncatedStacktraces.@truncate_stacktrace DynamicalODEFunction 1 2
 
 """
 $(TYPEDEF)
@@ -746,8 +741,6 @@ struct DDEFunction{
     colorvec::TCV
     sys::SYS
 end
-
-TruncatedStacktraces.@truncate_stacktrace DDEFunction 1 2
 
 @doc doc"""
 $(TYPEDEF)
@@ -854,7 +847,6 @@ struct DynamicalDDEFunction{iip, specialize, F1, F2, TMM, Ta, Tt, TJ, JVP, VJP, 
     sys::SYS
 end
 
-TruncatedStacktraces.@truncate_stacktrace DynamicalDDEFunction 1 2
 """
 $(TYPEDEF)
 """
@@ -911,8 +903,6 @@ struct DiscreteFunction{iip, specialize, F, Ta, O, SYS} <:
     sys::SYS
 end
 
-TruncatedStacktraces.@truncate_stacktrace DiscreteFunction 1 2
-
 @doc doc"""
 $(TYPEDEF)
 
@@ -966,8 +956,6 @@ struct ImplicitDiscreteFunction{iip, specialize, F, Ta, O, SYS} <:
     observed::O
     sys::SYS
 end
-
-TruncatedStacktraces.@truncate_stacktrace ImplicitDiscreteFunction 1 2
 
 """
 $(TYPEDEF)
@@ -1072,8 +1060,6 @@ struct SDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
     colorvec::TCV
     sys::SYS
 end
-
-TruncatedStacktraces.@truncate_stacktrace SDEFunction 1 2
 
 @doc doc"""
 $(TYPEDEF)
@@ -1181,8 +1167,6 @@ struct SplitSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP
     colorvec::TCV
     sys::SYS
 end
-
-TruncatedStacktraces.@truncate_stacktrace SplitSDEFunction 1 2
 
 @doc doc"""
 $(TYPEDEF)
@@ -1294,8 +1278,6 @@ struct DynamicalSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP,
     sys::SYS
 end
 
-TruncatedStacktraces.@truncate_stacktrace DynamicalSDEFunction 1 2
-
 """
 $(TYPEDEF)
 """
@@ -1402,8 +1384,6 @@ struct RODEFunction{
     sys::SYS
     analytic_full::Bool
 end
-
-TruncatedStacktraces.@truncate_stacktrace RODEFunction 1 2
 
 """
 $(TYPEDEF)
@@ -1544,8 +1524,6 @@ struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TP
     initializeprobmap::IProbMap
 end
 
-TruncatedStacktraces.@truncate_stacktrace DAEFunction 1 2
-
 """
 $(TYPEDEF)
 """
@@ -1648,8 +1626,6 @@ struct SDDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW
     sys::SYS
 end
 
-TruncatedStacktraces.@truncate_stacktrace SDDEFunction 1 2
-
 """
 $(TYPEDEF)
 """
@@ -1740,8 +1716,6 @@ struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, 
     resid_prototype::RP
 end
 
-TruncatedStacktraces.@truncate_stacktrace NonlinearFunction 1 2
-
 """
 $(TYPEDEF)
 """
@@ -1797,8 +1771,6 @@ struct IntervalNonlinearFunction{iip, specialize, F, Ta,
     observed::O
     sys::SYS
 end
-
-TruncatedStacktraces.@truncate_stacktrace IntervalNonlinearFunction 1 2
 
 """
 $(TYPEDEF)
@@ -1946,8 +1918,6 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, O,
     lag_hess_colorvec::LHCV
 end
 
-TruncatedStacktraces.@truncate_stacktrace OptimizationFunction 1 2
-
 """
 $(TYPEDEF)
 """
@@ -2070,8 +2040,6 @@ struct BVPFunction{iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP,
     sys::SYS
 end
 
-TruncatedStacktraces.@truncate_stacktrace BVPFunction 1 2
-
 @doc doc"""
     IntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
 
@@ -2115,8 +2083,6 @@ struct IntegralFunction{iip, specialize, F, T} <:
     f::F
     integrand_prototype::T
 end
-
-TruncatedStacktraces.@truncate_stacktrace IntegralFunction 1 2
 
 @doc doc"""
     BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
@@ -2195,8 +2161,6 @@ struct BatchIntegralFunction{iip, specialize, F, T} <:
     integrand_prototype::T
     max_batch::Int
 end
-
-TruncatedStacktraces.@truncate_stacktrace BatchIntegralFunction 1 2
 
 ######### Backwards Compatibility Overloads
 

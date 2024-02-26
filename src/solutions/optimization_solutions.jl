@@ -79,8 +79,6 @@ function build_solution(cache::AbstractOptimizationCache,
         alg, objective, retcode, original, stats)
 end
 
-TruncatedStacktraces.@truncate_stacktrace OptimizationSolution 1 2
-
 """
 $(TYPEDEF)
 

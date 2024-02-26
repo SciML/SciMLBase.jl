@@ -22,8 +22,6 @@ struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace AnalyticalProblem 3 1 2
-
 function AnalyticalProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
     AnalyticalProblem{iip}(f, u0, tspan, p; kwargs...)

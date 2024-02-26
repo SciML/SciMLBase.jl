@@ -99,8 +99,6 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace SteadyStateProblem 2 1
-
 """
 $(SIGNATURES)
 

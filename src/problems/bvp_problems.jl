@@ -135,8 +135,6 @@ struct BVProblem{uType, tType, isinplace, P, F, PT, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace BVProblem 3 1 2
-
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
     return BVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)

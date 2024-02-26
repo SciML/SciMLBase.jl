@@ -66,8 +66,6 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
     trace::Tr
 end
 
-TruncatedStacktraces.@truncate_stacktrace NonlinearSolution 1 2
-
 const SteadyStateSolution = NonlinearSolution
 
 get_p(p::AbstractNonlinearSolution) = p.prob.p

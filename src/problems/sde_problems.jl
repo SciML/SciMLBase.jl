@@ -116,8 +116,6 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace SDEProblem 3 1 2
-
 function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
     SDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end

@@ -119,8 +119,6 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace OptimizationProblem 1 3
-
 function OptimizationProblem(f::OptimizationFunction, args...; kwargs...)
     OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
 end

@@ -150,8 +150,6 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace SDDEProblem 5 1 2
-
 function SDDEProblem(f, g, args...; kwargs...)
     SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
 end

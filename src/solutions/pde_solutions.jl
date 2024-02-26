@@ -50,8 +50,6 @@ struct PDETimeSeriesSolution{T, N, uType, Disc, Sol, DType, tType, domType, ivTy
     stats::S
 end
 
-TruncatedStacktraces.@truncate_stacktrace PDETimeSeriesSolution 1 2
-
 """
 Dispatch for the following function should be implemented in each discretizer package, for their relevant metadata type `D`.
 """
@@ -95,8 +93,6 @@ struct PDENoTimeSolution{T, N, uType, Disc, Sol, domType, ivType, dvType, P, A,
     retcode::ReturnCode.T
     stats::S
 end
-
-TruncatedStacktraces.@truncate_stacktrace PDENoTimeSolution 1 2
 
 const PDESolution{T, N, S, D} = Union{PDETimeSeriesSolution{T, N, S, D},
     PDENoTimeSolution{T, N, S, D}}
