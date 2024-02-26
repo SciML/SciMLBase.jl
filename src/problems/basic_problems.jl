@@ -77,8 +77,6 @@ function LinearProblem(A, b, args...; kwargs...)
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace LinearProblem 1
-
 """
 $(TYPEDEF)
 """
@@ -169,7 +167,6 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
         IntervalNonlinearProblem{iip}(IntervalNonlinearFunction{iip}(f), tspan, p)
     end
 end
-TruncatedStacktraces.@truncate_stacktrace IntervalNonlinearProblem 1 2
 
 """
 $(SIGNATURES)
@@ -269,7 +266,6 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace NonlinearProblem 2 1
 """
 $(SIGNATURES)
 
@@ -380,8 +376,6 @@ struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace NonlinearLeastSquaresProblem 2 1
-
 """
 $(SIGNATURES)
 
@@ -458,8 +452,6 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
             domain, p, kwargs)
     end
 end
-
-TruncatedStacktraces.@truncate_stacktrace IntegralProblem 1 4
 
 function IntegralProblem(f::AbstractIntegralFunction,
         domain,
@@ -568,5 +560,3 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
         new{typeof(y), typeof(x), typeof(kwargs)}(y, x, dim, kwargs)
     end
 end
-
-TruncatedStacktraces.@truncate_stacktrace SampledIntegralProblem

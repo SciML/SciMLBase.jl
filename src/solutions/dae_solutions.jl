@@ -54,8 +54,6 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Sy
     return getfield(x, s)
 end
 
-TruncatedStacktraces.@truncate_stacktrace DAESolution 1 2
-
 function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         timeseries_errors = length(u) > 2,
         dense = false,

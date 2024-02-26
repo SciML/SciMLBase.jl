@@ -253,8 +253,6 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace DDEProblem 5 1 2
-
 DDEProblem(f, args...; kwargs...) = DDEProblem(DDEFunction(f), args...; kwargs...)
 
 function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)

@@ -122,8 +122,6 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace DiscreteProblem 3 1 2
-
 """
     DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
 

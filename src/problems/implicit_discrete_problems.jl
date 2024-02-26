@@ -104,8 +104,6 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
     end
 end
 
-TruncatedStacktraces.@truncate_stacktrace ImplicitDiscreteProblem 3 1 2
-
 """
     ImplicitDiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
 

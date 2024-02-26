@@ -61,8 +61,6 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::S
     return getfield(x, s)
 end
 
-TruncatedStacktraces.@truncate_stacktrace RODESolution 1 2
-
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
         continuity = :left) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)

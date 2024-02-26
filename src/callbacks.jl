@@ -155,8 +155,6 @@ function ContinuousCallback(condition, affect!;
         dtrelax, abstol, reltol, repeat_nudge)
 end
 
-TruncatedStacktraces.@truncate_stacktrace ContinuousCallback
-
 """
 ```julia
 VectorContinuousCallback(condition, affect!, affect_neg!, len;
@@ -263,8 +261,6 @@ function VectorContinuousCallback(condition, affect!, len;
         dtrelax, abstol, reltol, repeat_nudge)
 end
 
-TruncatedStacktraces.@truncate_stacktrace VectorContinuousCallback
-
 """
 ```julia
 DiscreteCallback(condition, affect!;
@@ -316,8 +312,6 @@ function DiscreteCallback(condition, affect!;
         save_positions = (true, true))
     DiscreteCallback(condition, affect!, initialize, finalize, save_positions)
 end
-
-TruncatedStacktraces.@truncate_stacktrace DiscreteCallback
 
 """
 $(TYPEDEF)

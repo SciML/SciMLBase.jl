@@ -44,8 +44,6 @@ function build_linear_solution(alg, u, resid, cache;
         stats)
 end
 
-TruncatedStacktraces.@truncate_stacktrace LinearSolution 1 2
-
 """
 $(TYPEDEF)
 
@@ -71,8 +69,6 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
     chi::C
     stats::S
 end
-
-TruncatedStacktraces.@truncate_stacktrace IntegralSolution 1 2
 
 struct QuadratureSolution end
 @deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
