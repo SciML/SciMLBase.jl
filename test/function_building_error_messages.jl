@@ -474,6 +474,7 @@ intfiip(y, u, p) = y .= 1.0
 for (f, kws, iip) in (
         (intf, (;), false),
         (IntegralFunction(intf), (;), false),
+        (IntegralFunction(intf, 1.0), (;), false),
         (intfiip, (; nout = 3), true),
         (IntegralFunction(intfiip, zeros(3)), (;), true)
     ), domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0]))
