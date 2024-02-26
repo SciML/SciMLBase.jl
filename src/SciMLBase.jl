@@ -629,6 +629,13 @@ struct ChainRulesOriginator <: ADOriginator end
 """
 $(TYPEDEF)
 
+Internal. Used for signifying the AD context comes from an Enzyme.jl definition.
+"""
+struct EnzymeOriginator <: ADOriginator end
+
+"""
+$(TYPEDEF)
+
 Internal. Used for signifying the AD context comes from a ReverseDiff.jl context.
 """
 struct ReverseDiffOriginator <: ADOriginator end
