@@ -46,8 +46,8 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs)
-@named lorenz2 = ODESystem(eqs)
+@named lorenz1 = ODESystem(eqs,t)
+@named lorenz2 = ODESystem(eqs,t)
 
 @parameters γ
 @variables a(t) α(t)
