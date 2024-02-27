@@ -9,7 +9,7 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
     D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
-@mtkbuild population_model = ODESystem(eqs,t)
+@mtkbuild population_model = ODESystem(eqs, t)
 
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]

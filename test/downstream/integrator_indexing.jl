@@ -9,7 +9,7 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
     D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
-@named population_model = ODESystem(eqs,t)
+@named population_model = ODESystem(eqs, t)
 
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]
@@ -126,14 +126,15 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs,t)
-@named lorenz2 = ODESystem(eqs,t)
+@named lorenz1 = ODESystem(eqs, t)
+@named lorenz2 = ODESystem(eqs, t)
 
 @parameters γ
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ]
-@mtkbuild sys_simplified = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
+@mtkbuild sys_simplified = ODESystem(
+    connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
 sys_simplified = complete(structural_simplify(sys))
 
 u0 = [lorenz1.x => 1.0,
@@ -197,7 +198,7 @@ integrator2 = init(prob2, Tsit5())
     @variables u(t)
     eqs = [D(u) ~ u]
 
-    @mtkbuild sys2 = ODESystem(eqs,t)
+    @mtkbuild sys2 = ODESystem(eqs, t)
 
     tspan = (0.0, 5.0)
 

@@ -3,11 +3,11 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 @variables x(t), y(t)
 
 @mtkbuild sys1 = ODESystem([D(x) ~ x,
-    D(y) ~ -y],t)
+        D(y) ~ -y], t)
 @mtkbuild sys2 = ODESystem([D(x) ~ 2x,
-    D(y) ~ -2y],t)
+        D(y) ~ -2y], t)
 @mtkbuild sys3 = ODESystem([D(x) ~ 3x,
-    D(y) ~ -3y],t)
+        D(y) ~ -3y], t)
 
 prob1 = ODEProblem(sys1, [1.0, 1.0], (0.0, 1.0))
 prob2 = ODEProblem(sys2, [2.0, 2.0], (0.0, 1.0))
