@@ -2056,9 +2056,10 @@ out-of-place handling.
 IntegralFunction{iip,specialize}(f, [integrand_prototype])
 ```
 
-Note that only `f` is required, and in the case of inplace integrands a mutable container
+Note that only `f` is required, and in the case of inplace integrands a mutable array
 `integrand_prototype` to store the result of the integrand. If `integrand_prototype` is
-present, `f` is interpreted as in-place, and otherwise `f` is assumed to be out-of-place.
+present for either in-place or out-of-place integrands it is used to infer the return type
+of the integrand.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -2114,14 +2115,14 @@ BatchIntegralFunction{iip,specialize}(bf, [integrand_prototype];
                                      max_batch=typemax(Int))
 ```
 Note that only `bf` is required, and in the case of inplace integrands a mutable
-container `integrand_prototype` to store a batch of integrand evaluations, with
+array `integrand_prototype` to store a batch of integrand evaluations, with
 a last "batching" dimension.
 
 The keyword `max_batch` is used to set a soft limit on the number of points to
 batch at the same time so that memory usage is controlled.
 
-If `integrand_prototype` is present, `bf` is interpreted as in-place, and
-otherwise `bf` is assumed to be out-of-place.
+If `integrand_prototype` is present for either in-place or out-of-place integrands it is
+used to infer the return type of the integrand.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -3158,7 +3159,8 @@ function DAEFunction{iip, specialize}(f;
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing) where {iip,
+        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing) where {
+        iip,
         specialize
 }
     if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
@@ -3854,10 +3856,7 @@ function IntegralFunction(f)
 end
 function IntegralFunction(f, integrand_prototype)
     calculated_iip = isinplace(f, 3, "integral", true)
-    if !calculated_iip
-        throw(IntegrandMismatchFunctionError(calculated_iip, true))
-    end
-    IntegralFunction{true}(f, integrand_prototype)
+    IntegralFunction{calculated_iip}(f, integrand_prototype)
 end
 
 function BatchIntegralFunction{iip, specialize}(f, integrand_prototype;
@@ -3890,10 +3889,7 @@ function BatchIntegralFunction(f; kwargs...)
 end
 function BatchIntegralFunction(f, integrand_prototype; kwargs...)
     calculated_iip = isinplace(f, 3, "batchintegral", true)
-    if !calculated_iip
-        throw(IntegrandMismatchFunctionError(calculated_iip, true))
-    end
-    BatchIntegralFunction{true}(f, integrand_prototype; kwargs...)
+    BatchIntegralFunction{calculated_iip}(f, integrand_prototype; kwargs...)
 end
 
 ########## Utility functions

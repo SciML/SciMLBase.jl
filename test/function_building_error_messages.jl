@@ -474,6 +474,7 @@ intfiip(y, u, p) = y .= 1.0
 for (f, kws, iip) in (
         (intf, (;), false),
         (IntegralFunction(intf), (;), false),
+        (IntegralFunction(intf, 1.0), (;), false),
         (intfiip, (; nout = 3), true),
         (IntegralFunction(intfiip, zeros(3)), (;), true)
     ), domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0]))
@@ -648,9 +649,9 @@ i1(u) = u
 itoo(y, u, p, a) = y .= u * p
 
 IntegralFunction(ioop)
+IntegralFunction(ioop, 0.0)
 IntegralFunction(iiip, Float64[])
 
-@test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(ioop, Float64[])
 @test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(iiip)
 @test_throws SciMLBase.TooFewArgumentsError IntegralFunction(i1)
 @test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo)
@@ -665,10 +666,11 @@ bitoo(y, u, p, a) = y .= p .* u
 
 BatchIntegralFunction(boop)
 BatchIntegralFunction(boop, max_batch = 20)
+BatchIntegralFunction(boop, Float64[])
+BatchIntegralFunction(boop, Float64[], max_batch = 20)
 BatchIntegralFunction(biip, Float64[])
 BatchIntegralFunction(biip, Float64[], max_batch = 20)
 
-@test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(boop, Float64[])
 @test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(biip)
 @test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1)
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo)
