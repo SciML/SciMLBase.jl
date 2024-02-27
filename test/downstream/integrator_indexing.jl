@@ -1,16 +1,15 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq,
       SymbolicIndexingInterface, Test
-
+using ModelingToolkit: t_nounits as t, D_nounits as D
 ### Tests on non-layered model (everything should work). ###
 
-@parameters t a b c d
+@parameters a b c d
 @variables s1(t) s2(t)
-D = Differential(t)
 
 eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
     D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
-@named population_model = ODESystem(eqs)
+@named population_model = ODESystem(eqs,t)
 
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]
@@ -127,15 +126,15 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs)
-@named lorenz2 = ODESystem(eqs)
+@named lorenz1 = ODESystem(eqs,t)
+@named lorenz2 = ODESystem(eqs,t)
 
 @parameters γ
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ]
-@named sys = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
-sys_simplified = structural_simplify(sys)
+@mtkbuild sys_simplified = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
+sys_simplified = complete(structural_simplify(sys))
 
 u0 = [lorenz1.x => 1.0,
     lorenz1.y => 0.0,
@@ -185,7 +184,7 @@ step!(integrator, 100.0, true)
 eqs = [D(q[1]) ~ 2q[1]
        D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
-sys2_simplified = structural_simplify(sys2)
+sys2_simplified = complete(structural_simplify(sys2))
 prob2 = ODEProblem(sys2, [], (0.0, 5.0))
 integrator2 = init(prob2, Tsit5())
 
@@ -198,7 +197,7 @@ integrator2 = init(prob2, Tsit5())
     @variables u(t)
     eqs = [D(u) ~ u]
 
-    @named sys2 = ODESystem(eqs)
+    @mtkbuild sys2 = ODESystem(eqs,t)
 
     tspan = (0.0, 5.0)
 
@@ -333,7 +332,7 @@ ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
-@named sys = ODESystem(eqs, t, [sts...;], [ps...;])
+@mtkbuild sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 integrator = init(prob, Tsit5(), save_everystep = false)
 @test integrator[x] isa Vector{Float64}

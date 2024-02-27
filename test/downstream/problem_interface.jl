@@ -1,17 +1,15 @@
 using ModelingToolkit, OrdinaryDiffEq, Test
+using ModelingToolkit: t_nounits as t, D_nounits as D
 using SymbolicIndexingInterface
 
 @parameters σ ρ β
-@variables t x(t) y(t) z(t)
-D = Differential(t)
+@variables x(t) y(t) z(t)
 
 eqs = [D(D(x)) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named sys = ODESystem(eqs)
-
-sys = structural_simplify(sys)
+@mtkbuild sys = ODESystem(eqs,t)
 
 u0 = [D(x) => 2.0,
     x => 1.0,
@@ -187,7 +185,7 @@ ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
-@named sys = ODESystem(eqs, t, [sts...;], [ps...;])
+@mtkbuild sys = ODESystem(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 @test getp(sys, p)(prob) == prob.ps[p] == [1, 2, 3]
 setp(sys, p)(prob, [4, 5, 6])
