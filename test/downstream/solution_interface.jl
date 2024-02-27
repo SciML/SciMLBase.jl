@@ -39,9 +39,8 @@ sol = solve(sprob, ImplicitEM())
 @test_throws Exception sol[:a]
 ### Tests on layered model (some things should not work). ###
 
-@parameters t σ ρ β
+@parameters σ ρ β
 @variables x(t) y(t) z(t)
-D = Differential(t)
 
 eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
