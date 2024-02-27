@@ -3,6 +3,7 @@ using PyCall, SciMLBase, OrdinaryDiffEq
 py""" # This is a mess because normal site-packages is not writeable in CI
 import subprocess, sys, site
 subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
+subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'diffeqpy'])
 sys.path.append(site.getusersitepackages())
 """
 
