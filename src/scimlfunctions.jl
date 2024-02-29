@@ -2293,7 +2293,7 @@ function ODEFunction{iip, specialize}(f;
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
 
     @assert typeof(initializeprob) <:
             Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
@@ -3897,7 +3897,7 @@ end
 function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
     if sys === nothing &&
        (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
-        error("The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.")
+        Base.depwarn("The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.", :syms)
         sys = SymbolCache(syms, paramsyms, indepsym)
     end
     return sys

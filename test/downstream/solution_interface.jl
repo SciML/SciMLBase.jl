@@ -29,7 +29,8 @@ sol = solve(oprob, Rodas4())
 noiseeqs = [0.1 * s1,
     0.1 * s2]
 @named noisy_population_model = SDESystem(population_model, noiseeqs)
-sprob = SDEProblem(complete(noisy_population_model), u0, (0.0, 100.0), p)
+noisy_population_model = complete(noisy_population_model)
+sprob = SDEProblem(noisy_population_model, u0, (0.0, 100.0), p)
 sol = solve(sprob, ImplicitEM())
 
 @test sol[s1] == sol[noisy_population_model.s1] == sol[:s1]
@@ -46,8 +47,8 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs,t)
-@named lorenz2 = ODESystem(eqs,t)
+@named lorenz1 = ODESystem(eqs, t)
+@named lorenz2 = ODESystem(eqs, t)
 
 @parameters γ
 @variables a(t) α(t)

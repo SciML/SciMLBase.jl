@@ -110,6 +110,7 @@ noiseeqs = [0.1 * x,
     0.1 * y,
     0.1 * z]
 @named noise_sys = SDESystem(sys, noiseeqs)
+noise_sys = complete(noise_sys)
 sprob = SDEProblem(noise_sys, u0, (0.0, 100.0), p)
 u0
 
@@ -181,7 +182,6 @@ set_tuple!(sprob, [10.0, 10.0])
 using LinearAlgebra
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
-D = Differential(t)
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
 @mtkbuild sys = ODESystem(eqs, t, [sts...;], [ps...;])
