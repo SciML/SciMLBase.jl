@@ -215,7 +215,6 @@ plot(sol,idxs=(t,α))
 =#
 
 using LinearAlgebra
-@variables t
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
@@ -339,7 +338,7 @@ for (sym, oldval, newval, check_inference) in [
 end
 
 # accessing parameters
-@variables t x(t)
+@variables x(t)
 @parameters tau
 D = Differential(t)
 

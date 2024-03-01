@@ -179,7 +179,6 @@ set_tuple!(sprob, [10.0, 10.0])
 @test get_tuple(sprob) == (10.0, 10.0)
 
 using LinearAlgebra
-@variables t
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)

@@ -118,7 +118,7 @@ integrator[noisy_population_model.s2] = 10.0
 integrator[:s1] = 1.0
 @test integrator[s1] == integrator[noisy_population_model.s1] == integrator[:s1] == 1.0
 
-@parameters t σ ρ β
+@parameters σ ρ β
 @variables x(t) y(t) z(t)
 D = Differential(t)
 
@@ -327,7 +327,6 @@ plot(sol,idxs=(t,α))
 =#
 
 using LinearAlgebra
-@variables t
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 D = Differential(t)
