@@ -119,6 +119,17 @@ Defaults to false.
 requiresconstraints(opt) = false
 
 """
+requiresderivative(opt)
+
+Trait declaration for whether an optimizer
+requires derivatives specified in
+`cons` in `OptimizationProblem`.
+
+Defaults to false.
+"""
+requiresderivative(opt) = false
+
+"""
 allowscallback(opt)
 
 Trait declaration for whether an optimizer
