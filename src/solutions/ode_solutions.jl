@@ -105,7 +105,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
+struct ODESolution{T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
     AC <: Union{Nothing, Vector{Int}}} <:
        AbstractODESolution{T, N, uType}
     u::uType
@@ -113,6 +113,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
     errors::DType
     t::tType
     k::rateType
+    discretes::discType
     prob::P
     alg::A
     interp::IType
@@ -133,12 +134,12 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Sy
     return getfield(x, s)
 end
 
-function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
+function ODESolution{T, N}(u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-        typeof(k), typeof(prob), typeof(alg), typeof(interp),
+        typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats),
-        typeof(alg_choice)}(u, u_analytic, errors, t, k, prob, alg, interp,
+        typeof(alg_choice)}(u, u_analytic, errors, t, k, discretes, prob, alg, interp,
         dense, tslocation, stats, alg_choice, retcode)
 end
 
@@ -257,6 +258,17 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
         Base.depwarn(msg, :build_solution)
     end
 
+    ps = parameter_values(prob)
+    if ps === NullParameters() || ps === nothing || ps isa Number
+        discretes = nothing
+    else
+        discs, _, _ = SciMLStructures.canonicalize(SciMLStructures.Discrete(), ps)
+        if discs === nothing || isempty(discs)
+            discretes = nothing
+        else
+            discretes = DiffEqArray(typeof(discs)[copy(discs)], eltype(t)[current_time(prob)], nothing, nothing)
+        end
+    end
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
@@ -264,6 +276,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
             u_analytic,
             errors,
             t, k,
+            discretes,
             prob,
             alg,
             interp,
@@ -282,6 +295,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
             nothing,
             nothing,
             t, k,
+            discretes,
             prob,
             alg,
             interp,
@@ -339,6 +353,7 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
         errors,
         sol.t,
         sol.k,
+        sol.discretes,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -355,6 +370,7 @@ function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
         sol.errors,
         sol.t,
         sol.k,
+        sol.discretes,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -371,6 +387,7 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
         sol.errors,
         sol.t,
         sol.k,
+        sol.discretes,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -382,11 +399,20 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
+    new_t = sol.t[I]
+    if sol.discretes === nothing
+        discretes = nothing
+    else
+        mint, maxt = extrema(new_t)
+        disc_mask = mint .<= sol.discretes.t .<= maxt
+        discretes = sol.discretes[:, disc_mask]
+    end
     ODESolution{T, N}(sol.u[I],
         sol.u_analytic === nothing ? nothing : sol.u_analytic[I],
         sol.errors,
-        sol.t[I],
+        new_t,
         sol.dense ? sol.k[I] : sol.k,
+        discretes,
         sol.prob,
         sol.alg,
         sol.interp,
@@ -411,6 +437,7 @@ function sensitivity_solution(sol::ODESolution, u, t)
     interp = enable_interpolation_sensitivitymode(sol.interp)
     ODESolution{T, N}(u, sol.u_analytic, sol.errors,
         t isa Vector ? t : collect(t),
+        sol.discretes,
         sol.k, sol.prob,
         sol.alg, interp,
         sol.dense, sol.tslocation,

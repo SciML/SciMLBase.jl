@@ -7,6 +7,7 @@ using ConstructionBase
 using RecipesBase, RecursiveArrayTools, Tables
 using SciMLStructures
 using SymbolicIndexingInterface
+using SciMLStructures
 using DocStringExtensions
 using LinearAlgebra
 using Statistics

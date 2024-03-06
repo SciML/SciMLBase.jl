@@ -54,9 +54,50 @@ SymbolicIndexingInterface.is_time_dependent(::AbstractTimeseriesSolution) = true
 
 SymbolicIndexingInterface.is_time_dependent(::AbstractNoTimeSolution) = false
 
+function SymbolicIndexingInterface.parameter_timeseries(A::AbstractTimeseriesSolution)
+    if !isdefined(A, :discretes) || (discretes = A.discretes) === nothing
+        return [0]
+    end
+    return discretes.t
+end
+
+function SymbolicIndexingInterface.parameter_values_at_time(A::AbstractTimeseriesSolution, t)
+    ps = parameter_values(A)
+    if !isdefined(A, :discretes) || (discretes = A.discretes) === nothing
+        return ps
+    end
+    return SciMLStructures.replace(SciMLStructures.Discrete(), ps, discretes.u[t])
+end
+
+function SymbolicIndexingInterface.parameter_values_at_state_time(A::AbstractTimeseriesSolution, tidx)
+    ps = parameter_values(A)
+    if !isdefined(A, :discretes) || (discretes = A.discretes) === nothing
+        return ps
+    end
+    t = A.t[tidx]
+    idx = searchsortedfirst(discretes.t, t; lt = <=)
+    if idx == firstindex(discretes.t)
+        error("This should never happen: there is no discrete parameter value before the current time")
+    end
+    return SciMLStructures.replace(SciMLStructures.Discrete(), ps, discretes.u[idx - 1])
+end
+
 # TODO make this nontrivial once dynamic state selection works
 SymbolicIndexingInterface.constant_structure(::AbstractSolution) = true
 SymbolicIndexingInterface.state_values(A::AbstractNoTimeSolution) = A.u
+
+function save_discrete_parameters_after_callback(A::AbstractTimeseriesSolution, ps, t)
+    if !isdefined(A, :discretes) || A.discretes === nothing
+        return
+    end
+    discretes, _, alias = SciMLStructures.canonicalize(SciMLStructures.Discrete(), ps)
+    if alias
+        discretes = copy(discretes)
+    end
+    push!(A.discretes.u, discretes)
+    push!(A.discretes.t, t)
+    nothing
+end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon)
     return A.u[:]
