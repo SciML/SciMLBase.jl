@@ -15,6 +15,7 @@ supply the common interface and allow for interexchange of mathematical problems
 
 ## v2.0 Breaking Changes
 
+
 The breaking changes in v2.0 are:
 
   - `IntegralProblem` has moved to an interface with `IntegralFunction` and `BatchedIntegralFunction` which requires specifying `prototype`s for the values to be modified
