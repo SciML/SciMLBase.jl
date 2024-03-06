@@ -64,6 +64,9 @@ end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+        @time @safetestset "Remake" begin
+            include("remake_tests.jl")
+        end
     end
 
     if !is_APPVEYOR && GROUP == "Downstream"
@@ -102,6 +105,9 @@ end
         end
         @time @safetestset "Partial Functions" begin
             include("downstream/partial_functions.jl")
+        end
+        @time @safetestset "ModelingToolkit Remake" begin
+            include("downstream/modelingtoolkit_remake.jl")
         end
     end
 

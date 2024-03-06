@@ -1,6 +1,7 @@
 [deps]
 BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+JumpProcesses = "ccbc3e58-028d-4f4c-8cd5-9ae44345cda5"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
@@ -19,6 +20,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 [compat]
 BoundaryValueDiffEq = "5"
 ForwardDiff = "0.10"
+JumpProcesses = "9.10"
 ModelingToolkit = "8.37, 9"
 NonlinearSolve = "2, 3"
 Optimization = "3"
