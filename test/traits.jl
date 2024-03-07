@@ -1,5 +1,6 @@
 using SciMLBase, Test
 using ModelingToolkit, OrdinaryDiffEq, DataFrames
+using ModelingToolkit: t_nounits as t, D_nounits as D
 
 @test SciMLBase.Tables.isrowtable(ODESolution)
 @test SciMLBase.Tables.isrowtable(RODESolution)
@@ -9,10 +10,10 @@ using ModelingToolkit, OrdinaryDiffEq, DataFrames
 @test !SciMLBase.Tables.isrowtable(SciMLBase.QuadratureSolution)
 @test !SciMLBase.Tables.isrowtable(SciMLBase.OptimizationSolution)
 
-@variables t x(t)=1
-D = Differential(t)
+@variables x(t)=1
 eqs = [D(x) ~ -x]
-@named sys = ODESystem(eqs)
+@named sys = ODESystem(eqs, t)
+sys = complete(sys)
 prob = ODEProblem(sys)
 sol = solve(prob, Tsit5(), tspan = (0.0, 1.0))
 df = DataFrame(sol)

@@ -1,6 +1,7 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq,
       SymbolicIndexingInterface, Test
 using ModelingToolkit: t_nounits as t, D_nounits as D
+using SciMLStructures: canonicalize, Tunable
 ### Tests on non-layered model (everything should work). ###
 
 @parameters a b c d
@@ -9,8 +10,8 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
     D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
-@named population_model = ODESystem(eqs, t)
-
+@named pop_model = ODESystem(eqs, t)
+population_model = complete(pop_model)
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]
 p = [a => 2.0, b => 1.0, c => 1.0, d => 1.0]
@@ -81,7 +82,8 @@ integrator[:s1] = 1.0
 # Tests on SDEProblem
 noiseeqs = [0.1 * s1,
     0.1 * s2]
-@named noisy_population_model = SDESystem(population_model, noiseeqs)
+@named noisy_population_model = SDESystem(pop_model, noiseeqs)
+noisy_population_model = complete(noisy_population_model)
 sprob = SDEProblem(noisy_population_model, u0, (0.0, 100.0), p)
 integrator = init(sprob, ImplicitEM())
 
@@ -120,7 +122,6 @@ integrator[:s1] = 1.0
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t)
-D = Differential(t)
 
 eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
@@ -133,9 +134,8 @@ eqs = [D(x) ~ σ * (y - x),
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ]
-@mtkbuild sys_simplified = ODESystem(
+@mtkbuild sys = ODESystem(
     connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
-sys_simplified = complete(structural_simplify(sys))
 
 u0 = [lorenz1.x => 1.0,
     lorenz1.y => 0.0,
@@ -154,7 +154,7 @@ p = [lorenz1.σ => 10.0,
     γ => 2.0]
 
 tspan = (0.0, 100.0)
-prob = ODEProblem(sys_simplified, u0, tspan, p)
+prob = ODEProblem(sys, u0, tspan, p)
 integrator = init(prob, Rodas4())
 step!(integrator, 100.0, true)
 
@@ -185,8 +185,8 @@ step!(integrator, 100.0, true)
 eqs = [D(q[1]) ~ 2q[1]
        D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
-sys2_simplified = complete(structural_simplify(sys2))
-prob2 = ODEProblem(sys2, [], (0.0, 5.0))
+sys2_simplified = structural_simplify(sys2)
+prob2 = ODEProblem(sys2_simplified, [], (0.0, 5.0))
 integrator2 = init(prob2, Tsit5())
 
 @test integrator2[q] isa Vector{Float64}
@@ -215,8 +215,9 @@ end
 
 # Tests various interface methods:
 @test_throws Any getp(sys, σ)(integrator)
-@test in(getp(sys, lorenz1.σ)(integrator), integrator.p)
-@test in(getp(sys, lorenz2.σ)(integrator), integrator.p)
+tunable, _, _ = canonicalize(Tunable(), integrator.p)
+@test in(getp(sys, lorenz1.σ)(integrator), tunable)
+@test in(getp(sys, lorenz2.σ)(integrator), tunable)
 @test_throws Any getp(sol, :σ)(sol)
 
 @test_throws Any integrator[x]
@@ -329,7 +330,6 @@ plot(sol,idxs=(t,α))
 using LinearAlgebra
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
-D = Differential(t)
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
 @mtkbuild sys = ODESystem(eqs, t, [sts...;], [ps...;])

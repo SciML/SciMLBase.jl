@@ -2,7 +2,6 @@ using OrdinaryDiffEq, ModelingToolkit, Zygote, SciMLSensitivity
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 @variables x(t) o(t)
-D = Differential(t)
 function lotka_volterra(; name = name)
     unknowns = @variables x(t)=1.0 y(t)=1.0 o(t)
     params = @parameters p1=1.5 p2=1.0 p3=3.0 p4=1.0

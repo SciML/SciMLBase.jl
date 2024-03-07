@@ -4,14 +4,13 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t)
-D = Differential(t)
 
 eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs)
-@named lorenz2 = ODESystem(eqs)
+@named lorenz1 = ODESystem(eqs, t)
+@named lorenz2 = ODESystem(eqs, t)
 
 @parameters γ
 @variables a(t) α(t)
@@ -103,7 +102,7 @@ eqs = [D(q[1]) ~ 2q[1]
        D(q[2]) ~ 2.0]
 @named sys2 = ODESystem(eqs, t, [q...], [])
 sys2_simplified = structural_simplify(sys2)
-prob2 = ODEProblem(sys2, [], (0.0, 5.0))
+prob2 = ODEProblem(sys2_simplified, [], (0.0, 5.0))
 sol2 = solve(prob2, Tsit5())
 
 @test sol2[q] isa Vector{Vector{Float64}}
@@ -217,10 +216,10 @@ plot(sol,idxs=(t,α))
 using LinearAlgebra
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
-D = Differential(t)
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
 @named sys = ODESystem(eqs, t, [sts...;], [ps...;])
+sys = complete(sys)
 prob = ODEProblem(sys, [], (0, 1.0))
 sol = solve(prob, Tsit5())
 @test sol[x] isa Vector{<:Vector}
@@ -340,9 +339,9 @@ end
 # accessing parameters
 @variables x(t)
 @parameters tau
-D = Differential(t)
 
-@named fol = ODESystem([D(x) ~ (1 - x) / tau])
+@named fol = ODESystem([D(x) ~ (1 - x) / tau], t)
+fol = complete(fol)
 prob = ODEProblem(fol, [x => 0.0], (0.0, 10.0), [tau => 3.0])
 sol = solve(prob, Tsit5())
 @test getp(fol, tau)(sol) == 3
@@ -355,6 +354,7 @@ sol = solve(prob, Tsit5())
     @parameters a=1 b=1
     loss = (a - x)^2 + b * (y - x^2)^2
     @named sys = OptimizationSystem(loss, [x, y], [a, b])
+    sys = complete(sys)
     u0 = [x => 1.0
           y => 2.0]
     p = [a => 1.0
