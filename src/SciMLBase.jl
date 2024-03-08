@@ -5,6 +5,7 @@ if isdefined(Base, :Experimental) &&
 end
 using ConstructionBase
 using RecipesBase, RecursiveArrayTools, Tables
+using SciMLStructures
 using SymbolicIndexingInterface
 using DocStringExtensions
 using LinearAlgebra

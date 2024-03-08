@@ -25,6 +25,10 @@ Re-construct `thing` with new field values specified by the keyword
 arguments.
 """
 function remake(thing; kwargs...)
+    _remake_internal(thing; kwargs...)
+end
+
+function _remake_internal(thing; kwargs...)
     T = remaker_of(thing)
     if :kwargs ∈ fieldnames(typeof(thing))
         if :kwargs ∉ keys(kwargs)
@@ -39,6 +43,20 @@ end
 
 function isrecompile(prob::ODEProblem{iip}) where {iip}
     (prob.f isa ODEFunction) ? !isfunctionwrapper(prob.f.f) : true
+end
+
+function remake(prob::AbstractSciMLProblem; u0 = missing, p = missing, interpret_symbolicmap = true, kwargs...)
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
+    _remake_internal(prob; kwargs..., u0, p)
+end
+
+function remake(prob::AbstractNoiseProblem; kwargs...)
+    _remake_internal(prob; kwargs...)
+end
+
+function remake(prob::AbstractIntegralProblem; p = missing, interpret_symbolicmap = true, kwargs...)
+    p = updated_p(prob, p; interpret_symbolicmap)
+    _remake_internal(prob; kwargs..., p)
 end
 
 """
@@ -59,37 +77,7 @@ function remake(prob::ODEProblem; f = missing,
         tspan = prob.tspan
     end
 
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
-        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
-        if isu0symbolic && !has_sys(prob.f)
-            throw(ArgumentError("This problem does not support symbolic maps with" *
-                                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                                "parameter order."))
-        end
-        if ispsymbolic && !has_sys(prob.f)
-            throw(ArgumentError("This problem does not support symbolic maps with " *
-                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `p` keyword argument as a vector of values (paying attention to" *
-                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
-        end
-        if isu0symbolic && ispsymbolic
-            p, u0 = process_p_u0_symbolic(prob, p, u0)
-        elseif isu0symbolic
-            _, u0 = process_p_u0_symbolic(prob, prob.p, u0)
-        elseif ispsymbolic
-            p, _ = process_p_u0_symbolic(prob, p, prob.u0)
-        end
-    end
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
 
     iip = isinplace(prob)
 
@@ -141,21 +129,12 @@ end
 Remake the given `BVProblem`.
 """
 function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan = missing,
-        p = missing, kwargs = missing, problem_type = missing, _kwargs...)
+        p = missing, kwargs = missing, problem_type = missing, interpret_symbolicmap = true, _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
 
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-    end
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
 
     iip = isinplace(prob)
 
@@ -211,6 +190,7 @@ function remake(prob::SDEProblem;
         p = missing,
         noise = missing,
         noise_rate_prototype = missing,
+        interpret_symbolicmap = true,
         seed = missing,
         kwargs = missing,
         _kwargs...)
@@ -218,13 +198,7 @@ function remake(prob::SDEProblem;
         tspan = prob.tspan
     end
 
-    if p === missing
-        p = prob.p
-    end
-
-    if u0 === missing
-        u0 = prob.u0
-    end
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
 
     if noise === missing
         noise = prob.noise
@@ -280,38 +254,8 @@ function remake(prob::OptimizationProblem;
         kwargs = missing,
         interpret_symbolicmap = true,
         _kwargs...)
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
-        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
-        if isu0symbolic && !has_sys(prob.f)
-            throw(ArgumentError("This problem does not support symbolic maps with" *
-                                " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                                "parameter order."))
-        end
-        if ispsymbolic && !has_sys(prob.f)
-            throw(ArgumentError("This problem does not support symbolic maps with " *
-                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `p` keyword argument as a vector of values (paying attention to" *
-                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
-        end
-        if isu0symbolic && ispsymbolic
-            p, u0 = process_p_u0_symbolic(prob, p, u0)
-        elseif isu0symbolic
-            _, u0 = process_p_u0_symbolic(prob, prob.p, u0)
-        elseif ispsymbolic
-            p, _ = process_p_u0_symbolic(prob, p, prob.u0)
-        end
-    end
 
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
     if f === missing
         f = prob.f
     end
@@ -362,38 +306,7 @@ function remake(prob::NonlinearProblem;
         kwargs = missing,
         interpret_symbolicmap = true,
         _kwargs...)
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-        isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
-        ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
-        if isu0symbolic && !has_sys(prob.f)
-            throw(ArgumentError("This problem does not support symbolic maps with" *
-                                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
-                                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                                "parameter order."))
-        end
-        if ispsymbolic && !has_sys(prob.f)
-            throw(ArgumentError("This problem does not support symbolic maps with " *
-                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `p` keyword argument as a vector of values (paying attention to" *
-                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
-        end
-        if isu0symbolic && ispsymbolic
-            p, u0 = process_p_u0_symbolic(prob, p, u0)
-        elseif isu0symbolic
-            _, u0 = process_p_u0_symbolic(prob, prob.p, u0)
-        elseif ispsymbolic
-            p, _ = process_p_u0_symbolic(prob, p, prob.u0)
-        end
-    end
-
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
     if f === missing
         f = prob.f
     end
@@ -418,17 +331,8 @@ end
 Remake the given `NonlinearLeastSquaresProblem`.
 """
 function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
-        kwargs = missing, _kwargs...)
-    if p === missing && u0 === missing
-        p, u0 = prob.p, prob.u0
-    else # at least one of them has a value
-        if p === missing
-            p = prob.p
-        end
-        if u0 === missing
-            u0 = prob.u0
-        end
-    end
+        interpret_symbolicmap = true, kwargs = missing, _kwargs...)
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
 
     if f === missing
         f = prob.f
@@ -440,6 +344,83 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     else
         return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, kwargs...)
     end
+end
+
+function updated_u0_p(prob, u0, p; interpret_symbolicmap = true)
+    newp = updated_p(prob, p; interpret_symbolicmap)
+    newu0 = updated_u0(prob, u0, p)
+    return newu0, newp
+end
+
+function updated_u0(prob, u0, p)
+    if u0 === missing || u0 isa Function
+        return state_values(prob)
+    end
+    if u0 isa Number
+        return u0
+    end
+    if eltype(u0) <: Pair
+        u0 = Dict(u0)
+    else
+        return u0
+    end
+    if !has_sys(prob.f)
+        throw(ArgumentError("This problem does not support symbolic maps with" *
+                            " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
+                            "with the `u0` keyword argument as a vector of values, paying attention to the order."))
+    end
+    newu0 = copy(state_values(prob))
+    if all(==(NotSymbolic()), symbolic_type.(values(u0)))
+        setu(prob, collect(keys(u0)))(newu0, collect(values(u0)))
+    else
+        value_syms = [k for (k, v) in u0 if symbolic_type(v) === NotSymbolic()]
+        dependent_syms = [k for (k, v) in u0 if symbolic_type(v) !== NotSymbolic()]
+        setu(prob, value_syms)(newu0, getindex.((u0,), value_syms))
+        obs = SymbolicIndexingInterface.observed(prob, getindex.((u0,), dependent_syms))
+        if is_time_dependent(prob)
+            dependent_vals = obs(newu0, p, current_time(prob))
+        else
+            dependent_vals = obs(newu0, p)
+        end
+        setu(prob, dependent_syms)(newu0, dependent_vals)
+    end
+    return newu0
+end
+
+function updated_p(prob, p; interpret_symbolicmap = true)
+    if p === missing
+        return parameter_values(prob)
+    end
+    if eltype(p) <: Pair
+        if interpret_symbolicmap
+            has_sys(prob.f) || throw(ArgumentError("This problem does not support symbolic maps with " *
+                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                "with the `p` keyword argument as a vector of values (paying attention to" *
+                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+        else
+            return p
+        end
+        p = Dict(p)
+    else
+        return p
+    end
+
+    newp = copy(parameter_values(prob))
+    if all(==(NotSymbolic()), symbolic_type.(values(p)))
+        setp(prob, collect(keys(p)))(newp, collect(values(p)))
+    else
+        value_syms = [k for (k, v) in p if symbolic_type(v) === NotSymbolic()]
+        dependent_syms = [k for (k, v) in p if symbolic_type(v) !== NotSymbolic()]
+        setp(prob, value_syms)(newp, getindex.((p,), value_syms))
+        obs = SymbolicIndexingInterface.observed(prob, getindex.((p,), dependent_syms))
+        if is_time_dependent(prob)
+            dependent_vals = obs(state_values(prob), newp, current_time(prob))
+        else
+            dependent_vals = obs(state_values(prob), newp)
+        end
+        setp(prob, dependent_syms)(newp, dependent_vals)
+    end
+    return newp
 end
 
 # overloaded in MTK to intercept symbolic remake
