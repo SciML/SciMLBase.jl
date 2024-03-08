@@ -130,6 +130,46 @@ Defaults to false.
 requiresderivative(opt) = false
 
 """
+requiresgradient(opt)
+
+Trait declaration for whether an optimizer
+requires gradient in `instantiate_function`.
+
+Defaults to false.
+"""
+requiresgradient(opt) = false
+
+"""
+requireshessian(opt)
+
+Trait declaration for whether an optimizer
+requires hessian in `instantiate_function`.
+
+Defaults to false.
+"""
+requireshessian(opt) = false
+
+"""
+requiresconsjac(opt)
+
+Trait declaration for whether an optimizer
+requires cons_j in `instantiate_function`, that is, does the optimizer require a constant Jacobian.
+
+Defaults to false.
+"""
+requiresconsjac(opt) = false
+
+"""
+requiresconshess(opt)
+
+Trait declaration for whether an optimizer
+requires cons_h in `instantiate_function`, that is, does the optimizer require a constant hessian.
+
+Defaults to false.
+"""
+requiresconshess(opt) = false
+
+"""
 allowscallback(opt)
 
 Trait declaration for whether an optimizer
