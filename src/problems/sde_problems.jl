@@ -35,7 +35,7 @@ with initial condition `u0`.
 
 ### Constructors
 
-- `SDEProblem(f::SDEFunction,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)`
+- `SDEProblem(f::SDEFunction,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)`
 - `SDEProblem{isinplace,specialize}(f,g,u0,tspan,p=NullParameters();noise=WHITE_NOISE,noise_rate_prototype=nothing)` :
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
