@@ -1865,9 +1865,9 @@ When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Opti
 
 While using the keyword arguments gives the user control over defining
 all of the possible functions, the simplest way to handle the generation
-of an `OptimizationFunction` is by specifying the `ADtype` which lets the user choose the
-Automatic Differentiation backend to use for automatically filling in all of the extra functions.
-For example,
+of an `OptimizationFunction` is by specifying an option from ADTypes.jl
+which lets the user choose the Automatic Differentiation backend to use
+for automatically filling in all of the extra functions. For example,
 
 ```julia
 OptimizationFunction(f,AutoForwardDiff())
@@ -1878,7 +1878,7 @@ all of the necessary functions. Note that if any functions are defined
 directly, the auto-AD definition does not overwrite the user's choice.
 
 Each of the AD-based constructors are documented separately via their
-own dispatches below in the [Automatic Differentiation Construction Choice Recommendations](@ref) section.
+own dispatches below in the [Automatic Differentiation Construction Choice Recommendations](@ref ad) section.
 
 ## iip: In-Place vs Out-Of-Place
 
