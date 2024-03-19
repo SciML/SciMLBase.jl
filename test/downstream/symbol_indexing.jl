@@ -368,3 +368,31 @@ sol = solve(prob, Tsit5())
     @test sol.ps[a] ≈ 1
     @test sol.ps[b] ≈ 100
 end
+
+dt = 0.1
+@variables x(t) y(t) u(t) yd(t) ud(t) r(t)
+@parameters kp
+
+eqs = [yd ~ Sample(t, dt)(y)
+       ud ~ kp * (r - yd)
+       r ~ 1.0
+
+       # plant (time continuous part)
+       u ~ Hold(ud)
+       D(x) ~ -x + u
+       y ~ x]
+
+@mtkbuild sys = ODESystem(eqs, t)
+prob = ODEProblem(sys, [x => 1.0], (0.0, 10.0), [kp => 10.0, Hold(ud) => 1.0])
+sol = solve(prob, Tsit5(), kwargshandle = KeywordArgSilent)
+@test sol.discretes isa DiffEqArray
+@test length(sol.discretes) == 100
+
+getter = getp(sol, Hold(ud))
+@test sol(0.1, idxs = Hold(ud)) == sol(0.1 + eps(0.1), idxs = Hold(ud)) == sol(0.2 - eps(0.2), idxs = Hold(ud)) == getter(parameter_values_at_time(sol, 2))
+@test sol.ps[Hold(ud)] == getter(sol.prob.p)
+@test sol.ps[Hold(ud), :] isa Vector{Float64}
+@test length(sol.ps[Hold(ud), :]) == 100
+for i in 1:100
+    @test sol.ps[Hold(ud), i] == getter(parameter_values_at_time(sol, i))
+end
