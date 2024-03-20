@@ -27,6 +27,15 @@ function OptimizationStats(; iterations = 0, time = 0.0, fevals = 0, gevals = 0,
     OptimizationStats(iterations, time, fevals, gevals, hevals)
 end
 
+function Base.show(io::IO, ::MIME"text/plain", s::OptimizationStats)
+    println(io, summary(s))
+    @printf io "%-50s %-d\n" "Number of iterations:" s.iterations
+    @printf io "%-50s %-f\n" "Time in seconds:" s.time
+    @printf io "%-50s %-d\n" "Number of function evaluations:" s.fevals
+    @printf io "%-50s %-d\n" "Number of gradient evaluations:" s.gevals
+    @printf io "%-50s %-d" "Number of hessian evaluations:" s.hevals
+end
+
 function Base.merge(s1::OptimizationStats, s2::OptimizationStats)
     OptimizationStats(
         s1.iterations + s2.iterations, s1.time + s2.time, s1.fevals + s2.fevals,
