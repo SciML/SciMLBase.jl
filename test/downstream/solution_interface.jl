@@ -1,5 +1,6 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
 using ModelingToolkit: t_nounits as t, D_nounits as D
+using Plots: Plots, plot
 
 ### Tests on non-layered model (everything should work). ###
 
@@ -24,6 +25,29 @@ sol = solve(oprob, Rodas4())
 @test_throws Exception sol[a]
 @test_throws Exception sol[population_model.a]
 @test_throws Exception sol[:a]
+
+@testset "plot ODE solution" begin
+    Plots.unicodeplots()
+    f = ODEFunction((u, p, t) -> -u, analytic = (u0, p, t) -> u0 * exp(-t))
+
+    # scalar
+    ode = ODEProblem(f, 1.0, (0.0, 1.0))
+    sol = solve(ode, Tsit5())
+    @test_nowarn plot(sol)
+    @test_nowarn plot(sol; plot_analytic = true)
+
+    # vector
+    ode = ODEProblem(f, [1.0, 2.0], (0.0, 1.0))
+    sol = solve(ode, Tsit5())
+    @test_nowarn plot(sol)
+    @test_nowarn plot(sol; plot_analytic = true)
+
+    # matrix
+    ode = ODEProblem(f, [1.0 2.0; 3.0 4.0], (0.0, 1.0))
+    sol = solve(ode, Tsit5())
+    @test_nowarn plot(sol)
+    @test_nowarn plot(sol; plot_analytic = true)
+end
 
 # Tests on SDEProblem
 noiseeqs = [0.1 * s1,

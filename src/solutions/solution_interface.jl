@@ -490,9 +490,10 @@ function solplot_vecs_and_labels(dims, vars, plott, sol, plot_analytic,
                         push!(strs, "u[$(x[j])]")
                     end
                 else
+                    global Main.debug[] = plot_analytic_timeseries
                     _tmp = Vector{eltype(sol[1])}(undef, length(plot_analytic_timeseries))
                     for n in 1:length(plot_analytic_timeseries)
-                        _tmp[n] = plot_analytic_timeseries[n][j]
+                        _tmp[n] = plot_analytic_timeseries[n][x[j]]
                     end
                     push!(tmp, _tmp)
                     if !isempty(varsyms) && x[j] isa Integer
