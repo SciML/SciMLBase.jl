@@ -173,6 +173,10 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
         idxs = vars
     end
 
+    if plot_analytic && (sol.u_analytic === nothing)
+        throw(ArgumentError("No analytic solution was found but `plot_analytic` was set to `true`."))
+    end
+
     idxs = idxs === nothing ? (1:length(sol.u[1])) : idxs
 
     if !(idxs isa Union{Tuple, AbstractArray})
@@ -466,8 +470,6 @@ function solplot_vecs_and_labels(dims, vars, plott, sol, plot_analytic,
     end
 
     if plot_analytic
-        @assert sol.u_analytic !== Nothing
-        analytic_plot_vecs = []
         for x in vars
             tmp = []
             strs = String[]
@@ -488,9 +490,10 @@ function solplot_vecs_and_labels(dims, vars, plott, sol, plot_analytic,
                         push!(strs, "u[$(x[j])]")
                     end
                 else
-                    _tmp = Vector{eltype(sol[1])}(undef, length(plot_timeseries))
-                    for j in 1:length(plot_timeseries)
-                        _tmp[j] = plot_timeseries[j][n]
+                    global Main.debug[] = plot_analytic_timeseries
+                    _tmp = Vector{eltype(sol[1])}(undef, length(plot_analytic_timeseries))
+                    for n in 1:length(plot_analytic_timeseries)
+                        _tmp[n] = plot_analytic_timeseries[n][x[j]]
                     end
                     push!(tmp, _tmp)
                     if !isempty(varsyms) && x[j] isa Integer
