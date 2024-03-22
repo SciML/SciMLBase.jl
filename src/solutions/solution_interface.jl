@@ -467,7 +467,6 @@ function solplot_vecs_and_labels(dims, vars, plott, sol, plot_analytic,
 
     if plot_analytic
         @assert sol.u_analytic !== Nothing
-        analytic_plot_vecs = []
         for x in vars
             tmp = []
             strs = String[]
