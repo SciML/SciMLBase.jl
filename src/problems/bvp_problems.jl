@@ -138,22 +138,32 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
         end
 
         if nlls === nothing
+            if !hasmethod(length, Tuple{typeof(_u0)})
+                # If _u0 is a function for initial guess we won't be able to infer
+                __u0 = _u0 isa Function ?
+                       (hasmethod(_u0, Tuple{typeof(p), typeof(first(_tspan))}) ?
+                        _u0(p, first(_tspan)) : _u0(first(_tspan))) : nothing
+            else
+                __u0 = _u0
+            end
             # Try to infer it
-            if problem_type isa TwoPointBVProblem
+            if __u0 isa Nothing
+                _nlls = Nothing
+            elseif problem_type isa TwoPointBVProblem
                 if f.bcresid_prototype !== nothing
                     l1, l2 = length(f.bcresid_prototype[1]), length(f.bcresid_prototype[2])
-                    _nlls = l1 + l2 != length(_u0)
+                    _nlls = l1 + l2 != length(__u0)
                 else
                     # iip without bcresid_prototype is not possible
                     if !iip
                         l1 = length(f.bc[1](u0, p))
                         l2 = length(f.bc[2](u0, p))
-                        _nlls = l1 + l2 != length(_u0)
+                        _nlls = l1 + l2 != length(__u0)
                     end
                 end
             else
                 if f.bcresid_prototype !== nothing
-                    _nlls = length(f.bcresid_prototype) != length(_u0)
+                    _nlls = length(f.bcresid_prototype) != length(__u0)
                 else
                     _nlls = Nothing # Cannot reliably infer
                 end

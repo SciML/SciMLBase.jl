@@ -242,6 +242,10 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
 
     if prob.u0 === nothing
         N = 2
+    elseif prob isa BVProblem && !hasmethod(size, Tuple{typeof(prob.u0)})
+        __u0 = hasmethod(prob.u0, Tuple{typeof(prob.p), typeof(first(prob.tspan))}) ?
+               prob.u0(prob.p, first(prob.tspan)) : prob.u0(first(prob.tspan))
+        N = length((size(__u0)..., length(u)))
     else
         N = length((size(prob.u0)..., length(u)))
     end
