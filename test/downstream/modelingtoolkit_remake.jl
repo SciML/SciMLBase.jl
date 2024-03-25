@@ -101,11 +101,11 @@ sprob3 = remake(sprob; u0 = [x => 3.0], p = [σ => 30.0]) # partial update
 
 # NonlinearProblem
 @named ns = NonlinearSystem(
-    [0 ~ σ*(y-x),
-    0 ~ x*(ρ-z)-y,
-    0 ~ x*y - β*z],
-    [x,y,z],
-    [σ,ρ,β]
+    [0 ~ σ * (y - x),
+        0 ~ x * (ρ - z) - y,
+        0 ~ x * y - β * z],
+    [x, y, z],
+    [σ, ρ, β]
 )
 ns = complete(ns)
 nlprob = NonlinearProblem(ns, u0, p)
@@ -131,14 +131,14 @@ nlprob3 = remake(nlprob; u0 = [x => 3.0], p = [σ => 30.0]) # partial update
 
 @parameters β γ
 @variables S(t) I(t) R(t)
-rate₁   = β*S*I
+rate₁ = β * S * I
 affect₁ = [S ~ S - 1, I ~ I + 1]
-rate₂   = γ*I
+rate₂ = γ * I
 affect₂ = [I ~ I - 1, R ~ R + 1]
-j₁      = ConstantRateJump(rate₁,affect₁)
-j₂      = ConstantRateJump(rate₂,affect₂)
-j₃      = MassActionJump(2*β+γ, [R => 1], [S => 1, R => -1])
-@named js      = JumpSystem([j₁,j₂,j₃], t, [S,I,R], [β,γ])
+j₁ = ConstantRateJump(rate₁, affect₁)
+j₂ = ConstantRateJump(rate₂, affect₂)
+j₃ = MassActionJump(2 * β + γ, [R => 1], [S => 1, R => -1])
+@named js = JumpSystem([j₁, j₂, j₃], t, [S, I, R], [β, γ])
 js = complete(js)
 u₀map = [S => 999, I => 1, R => 0.0]
 parammap = [β => 0.1 / 1000, γ => 0.01]

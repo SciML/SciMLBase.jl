@@ -1929,13 +1929,20 @@ $(TYPEDEF)
 A representation of a BVP function `f`, defined by:
 
 ```math
-\frac{du}{dt}=f(u,p,t)
+\frac{du}{dt} = f(u, p, t)
 ```
 
 and the constraints:
 
 ```math
-\frac{du}{dt}=g(u,p,t)
+g(u, p, t) = 0
+```
+
+If the size of `g(u, p, t)` is different from the size of `u`, then the constraints are
+interpreted as a least squares problem, i.e. the objective function is:
+
+```math
+\min_{u} \| g_i(u, p, t) \|^2
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1943,21 +1950,25 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-BVPFunction{iip,specialize}(f, bc;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           bcjac = __has_jac(bc) ? bc.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+BVPFunction{iip, specialize}(f, bc;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    bcjac = __has_jac(bc) ? bc.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    syms = nothing,
+    indepsym= nothing,
+    paramsyms = nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing,
+    twopoint::Union{Val, Bool} = Val(false)
 ```
 
 Note that both the function `f` and boundary condition `bc` are required. `f` should
@@ -1985,7 +1996,7 @@ the usage of `f` and `bc`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `bcjac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
- if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
@@ -2002,6 +2013,11 @@ the usage of `f` and `bc`. These include:
   based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
+
+Additional Options:
+
+- `twopoint`: Specify that the BVP is a two-point boundary value problem. Use `Val(true)` or
+  `Val(false)` for type stability.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -3801,7 +3817,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
 
     _f = prepare_function(f)
 
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     if specialize === NoSpecialize
         BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any,
@@ -3813,9 +3829,9 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
             sparsity, Wfact, Wfact_t, paramjac, observed,
             _colorvec, _bccolorvec, sys)
     else
-        BVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc), typeof(mass_matrix),
-            typeof(analytic), typeof(tgrad), typeof(jac), typeof(bcjac), typeof(jvp),
-            typeof(vjp), typeof(jac_prototype),
+        BVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc),
+            typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
+            typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys)}(
@@ -3897,7 +3913,9 @@ end
 function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
     if sys === nothing &&
        (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
-        Base.depwarn("The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.", :syms)
+        Base.depwarn(
+            "The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.",
+            :syms)
         sys = SymbolCache(syms, paramsyms, indepsym)
     end
     return sys

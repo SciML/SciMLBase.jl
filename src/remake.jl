@@ -45,7 +45,8 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
     (prob.f isa ODEFunction) ? !isfunctionwrapper(prob.f.f) : true
 end
 
-function remake(prob::AbstractSciMLProblem; u0 = missing, p = missing, interpret_symbolicmap = true, kwargs...)
+function remake(prob::AbstractSciMLProblem; u0 = missing,
+        p = missing, interpret_symbolicmap = true, kwargs...)
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
     _remake_internal(prob; kwargs..., u0, p)
 end
@@ -54,7 +55,8 @@ function remake(prob::AbstractNoiseProblem; kwargs...)
     _remake_internal(prob; kwargs...)
 end
 
-function remake(prob::AbstractIntegralProblem; p = missing, interpret_symbolicmap = true, kwargs...)
+function remake(
+        prob::AbstractIntegralProblem; p = missing, interpret_symbolicmap = true, kwargs...)
     p = updated_p(prob, p; interpret_symbolicmap)
     _remake_internal(prob; kwargs..., p)
 end
@@ -128,15 +130,14 @@ end
 
 Remake the given `BVProblem`.
 """
-function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan = missing,
-        p = missing, kwargs = missing, problem_type = missing, interpret_symbolicmap = true, _kwargs...)
+function remake(prob::BVProblem{uType, tType, iip, nlls}; f = missing, bc = missing,
+        u0 = missing, tspan = missing, p = missing, kwargs = missing, problem_type = missing,
+        interpret_symbolicmap = true, _kwargs...) where {uType, tType, iip, nlls}
     if tspan === missing
         tspan = prob.tspan
     end
 
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
-
-    iip = isinplace(prob)
 
     if problem_type === missing
         problem_type = prob.problem_type
@@ -170,9 +171,11 @@ function remake(prob::BVProblem; f = missing, bc = missing, u0 = missing, tspan 
     end
 
     if kwargs === missing
-        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, prob.kwargs..., _kwargs...)
+        BVProblem{iip}(
+            _f, bc, u0, tspan, p; problem_type, nlls = Val(nlls), prob.kwargs...,
+            _kwargs...)
     else
-        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, kwargs...)
+        BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, nlls = Val(nlls), kwargs...)
     end
 end
 
@@ -254,7 +257,6 @@ function remake(prob::OptimizationProblem;
         kwargs = missing,
         interpret_symbolicmap = true,
         _kwargs...)
-
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap)
     if f === missing
         f = prob.f
@@ -393,10 +395,11 @@ function updated_p(prob, p; interpret_symbolicmap = true)
     end
     if eltype(p) <: Pair
         if interpret_symbolicmap
-            has_sys(prob.f) || throw(ArgumentError("This problem does not support symbolic maps with " *
-                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `p` keyword argument as a vector of values (paying attention to" *
-                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+            has_sys(prob.f) ||
+                throw(ArgumentError("This problem does not support symbolic maps with " *
+                                    "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                                    "with the `p` keyword argument as a vector of values (paying attention to" *
+                                    "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
         else
             return p
         end

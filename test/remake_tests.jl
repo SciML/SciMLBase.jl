@@ -2,14 +2,14 @@ using SciMLBase
 using SymbolicIndexingInterface
 
 # ODE
-function lorenz!(du,u,p,t)
- du[1] = p[1] * (u[2]-u[1])
- du[2] = u[1]*(p[2]-u[3]) - u[2]
- du[3] = u[1]*u[2] - p[3]*u[3]
+function lorenz!(du, u, p, t)
+    du[1] = p[1] * (u[2] - u[1])
+    du[2] = u[1] * (p[2] - u[3]) - u[2]
+    du[3] = u[1] * u[2] - p[3] * u[3]
 end
-u0 = [1.0;0.0;0.0]
-tspan = (0.0,100.0)
-p = [10.0, 28.0, 8/3]
+u0 = [1.0; 0.0; 0.0]
+tspan = (0.0, 100.0)
+p = [10.0, 28.0, 8 / 3]
 fn = ODEFunction(lorenz!; sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t))
 prob = ODEProblem(fn, u0, tspan, p)
 
@@ -21,7 +21,7 @@ prob = ODEProblem(fn, u0, tspan, p)
 @test remake(prob; p = [:a => 11.0, :c => 13.0, :b => 12.0]).p == [11.0, 12.0, 13.0]
 @test remake(prob; p = (11.0, 12.0, 13)).p == (11.0, 12.0, 13)
 @test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 0.0, 0.0]
-@test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 8/3]
+@test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 8 / 3]
 
 # BVP
 g = 9.81
@@ -39,7 +39,7 @@ function bc1!(residual, u, p, t)
 end
 u0 = [pi / 2, pi / 2]
 p = [g, L]
-fn = BVPFunction(simplependulum!, bc1!; sys = SymbolCache([:x, :y], [:a, :b], :t) )
+fn = BVPFunction(simplependulum!, bc1!; sys = SymbolCache([:x, :y], [:a, :b], :t))
 prob = BVProblem(fn, u0, tspan, p)
 
 @test remake(prob).u0 == u0
@@ -80,11 +80,11 @@ prob = SDEProblem(fn, u0, tspan, p)
 
 # OptimizationProblem
 function loss(u, p)
-    return (p[1] - u[1]) ^ 2 + p[2] * (u[2] - u[1] ^ 2) ^ 2
+    return (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
 end
 u0 = [1.0, 2.0]
 p = [1.0, 100.0]
-fn = OptimizationFunction(loss; sys = SymbolCache([:x, :y], [:a, :b], :t) )
+fn = OptimizationFunction(loss; sys = SymbolCache([:x, :y], [:a, :b], :t))
 prob = OptimizationProblem(fn, u0, p)
 @test remake(prob).u0 == u0
 @test remake(prob).p == p
@@ -128,4 +128,3 @@ prob = NonlinearLeastSquaresProblem(fn, u0, p)
 @test remake(prob; p = (11.0, 12.0, 13)).p == (11.0, 12.0, 13)
 @test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 0.0, 0.0]
 @test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 26.0]
-

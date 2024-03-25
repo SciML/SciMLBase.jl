@@ -180,7 +180,7 @@ $(TYPEDEF)
 
 Base for types which define BVP problems.
 """
-abstract type AbstractBVProblem{uType, tType, isinplace} <:
+abstract type AbstractBVProblem{uType, tType, isinplace, nlls} <:
               AbstractODEProblem{uType, tType, isinplace} end
 
 """
