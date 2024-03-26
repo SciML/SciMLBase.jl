@@ -445,8 +445,6 @@ SymbolicIndexingInterface.parameter_values(A::DEIntegrator) = A.p
 SymbolicIndexingInterface.state_values(A::DEIntegrator) = A.u
 SymbolicIndexingInterface.current_time(A::DEIntegrator) = A.t
 function SymbolicIndexingInterface.set_state!(A::DEIntegrator, val, idx)
-    # So any error checking happens to ensure we actually _can_ set state
-    set_u!(A, A.u)
     A.u[idx] = val
     u_modified!(A, true)
 end
@@ -528,8 +526,7 @@ function Base.setindex!(A::DEIntegrator, val, sym)
         error("Invalid indexing of integrator: Integrator does not support indexing without a system")
     if symbolic_type(sym) == ScalarSymbolic()
         if is_variable(A, sym)
-            A.u[variable_index(A, sym)] = val
-            u_modified!(A, true)
+            set_state!(A, val, variable_index(A, sym))
         elseif is_parameter(A, sym)
             error("Parameter indexing is deprecated. Use `setp(sys, $sym)(integrator, $val)` to set parameter value.")
         else
