@@ -116,6 +116,14 @@ function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
     !allowscallback(alg) && haskey(kwargs, :callback) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` keyword argument from the `solve` call."))
+    !requiresgradient(alg) && !(prob.f::OptimizationFunction) &&
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires gradients, pass them in `OptimizationFunction`."))
+    !requireshessian(alg) && !(prob.f::OptimizationFunction) &&
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires hessians, pass them in `OptimizationFunction`."))
+    !requiresconsjac(alg) && !(prob.f::OptimizationFunction) &&
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint jacobian, pass them with the `cons` kwarg in `OptimizationFunction`."))
+    !requiresconshess(alg) && !(prob.f::OptimizationFunction) &&
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint hessian, pass them with the `cons` kwarg in `OptimizationFunction`."))
     return
 end
 
