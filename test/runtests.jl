@@ -64,6 +64,10 @@ end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+    end
+
+    if !is_APPVEYOR &&
+       (GROUP == "Core" || GROUP == "All" || GROUP == "SymbolicIndexingInterface")
         @time @safetestset "Remake" begin
             include("remake_tests.jl")
         end
@@ -106,14 +110,14 @@ end
         @time @safetestset "Partial Functions" begin
             include("downstream/partial_functions.jl")
         end
-        @time @safetestset "ModelingToolkit Remake" begin
-            include("downstream/modelingtoolkit_remake.jl")
-        end
     end
 
     if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")
         if GROUP != "Downstream"
             activate_downstream_env()
+        end
+        @time @safetestset "ModelingToolkit Remake" begin
+            include("downstream/modelingtoolkit_remake.jl")
         end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/symbol_indexing.jl")
