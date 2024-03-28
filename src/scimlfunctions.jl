@@ -4083,12 +4083,17 @@ function SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym)
 end
 
 function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym)
-    if has_observed(fn)
+    if has_observed(fn) && fn.observed !== DEFAULT_OBSERVED &&
+       fn.observed !== DEFAULT_OBSERVED_NO_TIME
         if hasmethod(fn.observed, Tuple{Any})
             return fn.observed(sym)
         else
             return (args...) -> fn.observed(sym, args...)
         end
+    end
+    if has_sys(fn) &&
+       hasmethod(SymbolicIndexingInterface.observed, Tuple{typeof(fn.sys), typeof(sym)})
+        return SymbolicIndexingInterface.observed(fn.sys, sym)
     end
     error("SciMLFunction does not have observed")
 end
