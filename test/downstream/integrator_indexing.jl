@@ -367,3 +367,11 @@ setp(sys, p)(integrator, [4, 5, 6])
 @test getp(sys, p)(integrator) == integrator.ps[p] == [4, 5, 6]
 integrator.ps[p] = [7, 8, 9]
 @test getp(sys, p)(integrator) == integrator.ps[p] == [7, 8, 9]
+
+# Issue#653
+@parameters p
+@variables X(t)
+
+eq = D(X) ~ p - X
+@mtkbuild osys = ODESystem([eq], t)
+oprob = ODEProblem(osys, [X => 0.1], (0.0, 1.0), [p => 1.0])
