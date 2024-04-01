@@ -115,21 +115,26 @@ for prob in deepcopy(probs)
         @test prob2.u0 == u0
         @test prob2.p == typeof(prob.p)(p)
 
-        # respect defaults (:x), fallback to existing value (:z)
+        # not passing use_defaults ignores defaults
         prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2])
+        @test prob2.u0 == [1.0, 0.2, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        # respect defaults (:x), fallback to existing value (:z)
+        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2], use_defaults = true)
         @test prob2.u0 ≈ [0.1, 0.2, 3.0]
         @test prob2.p == typeof(prob.p)(p) # params unaffected
 
         # override defaults
-        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2])
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2], use_defaults = true)
         @test prob2.u0 ≈ [0.2, 2.0, 3.0]
         @test prob2.p == typeof(prob.p)(p)
 
-        prob2 = @inferred baseType remake(prob; p = [:b => 0.2])
+        prob2 = @inferred baseType remake(prob; p = [:b => 0.2], use_defaults = true)
         @test prob2.u0 == u0
         @test all(prob2.p .≈ [0.1, 0.2, 30.0])
 
-        prob2 = @inferred baseType remake(prob; p = [:a => 0.2])
+        prob2 = @inferred baseType remake(prob; p = [:a => 0.2], use_defaults = true)
         @test prob2.u0 == u0
         @test all(prob2.p .≈ [0.2, 20.0, 30.0])
 
@@ -145,21 +150,26 @@ for prob in deepcopy(probs)
         @test prob2.u0 == u0
         @test prob2.p == typeof(prob.p)(p)
 
-        # respect defaults (:y), fallback to existing value (:z)
+        # not passing use_defaults ignores defaults
         prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2])
+        @test prob2.u0 == [0.2, 2.0, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        # respect defaults (:y), fallback to existing value (:z)
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2], use_defaults = true)
         @test prob2.u0 ≈ [0.2, 0.6, 3.0]
         @test prob2.p == typeof(prob.p)(p) # params unaffected
 
         # override defaults
-        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2])
+        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2], use_defaults = true)
         @test prob2.u0 ≈ [1.0, 0.2, 3.0]
         @test prob2.p == typeof(prob.p)(p)
 
-        prob2 = @inferred baseType remake(prob; p = [:a => 0.2])
+        prob2 = @inferred baseType remake(prob; p = [:a => 0.2], use_defaults = true)
         @test prob2.u0 == u0
         @test all(prob2.p .≈ [0.2, 0.6, 30.0])
 
-        prob2 = @inferred baseType remake(prob; p = [:b => 0.2])
+        prob2 = @inferred baseType remake(prob; p = [:b => 0.2], use_defaults = true)
         @test prob2.u0 == u0
         @test all(prob2.p .≈ [10.0, 0.2, 30.0])
 
@@ -175,21 +185,30 @@ for prob in deepcopy(probs)
         @test prob2.u0 == u0
         @test prob2.p == typeof(prob.p)(p)
 
+        # not passing use_defaults ignores defaults
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2])
+        @test prob2.u0 == [0.2, 2.0, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
         # need to pass empty `Dict()` to prevent defaulting to existing values
-        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2], p = Dict())
+        prob2 = @inferred baseType remake(
+            prob; u0 = [:x => 0.2], p = Dict(), use_defaults = true)
         @test prob2.u0 ≈ [0.2, 30.0, 3.0]
         @test all(prob2.p .≈ [10.0, 0.6, 30.0])
 
         # override defaults
-        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2], p = Dict())
+        prob2 = @inferred baseType remake(
+            prob; u0 = [:y => 0.2], p = Dict(), use_defaults = true)
         @test prob2.u0 ≈ [1.0, 0.2, 3.0]
         @test all(prob2.p .≈ [10.0, 3.0, 30.0])
 
-        prob2 = @inferred baseType remake(prob; p = [:a => 0.2], u0 = Dict())
+        prob2 = @inferred baseType remake(
+            prob; p = [:a => 0.2], u0 = Dict(), use_defaults = true)
         @test prob2.u0 ≈ [1.0, 0.6, 3.0]
         @test all(prob2.p .≈ [0.2, 3.0, 30.0])
 
-        prob2 = @inferred baseType remake(prob; p = [:b => 0.2], u0 = Dict())
+        prob2 = @inferred baseType remake(
+            prob; p = [:b => 0.2], u0 = Dict(), use_defaults = true)
         @test prob2.u0 ≈ [1.0, 30.0, 3.0]
         @test all(prob2.p .≈ [10.0, 0.2, 30.0])
 
