@@ -1,130 +1,226 @@
 using SciMLBase
 using SymbolicIndexingInterface
+using StaticArrays
+using ForwardDiff
 
+probs = []
+containerTypes = [Vector, Tuple, SVector{3}, MVector{3}, SizedVector{3}]
 # ODE
 function lorenz!(du, u, p, t)
     du[1] = p[1] * (u[2] - u[1])
     du[2] = u[1] * (p[2] - u[3]) - u[2]
     du[3] = u[1] * u[2] - p[3] * u[3]
 end
-u0 = [1.0; 0.0; 0.0]
+u0 = [1.0; 2.0; 3.0]
 tspan = (0.0, 100.0)
-p = [10.0, 28.0, 8 / 3]
-fn = ODEFunction(lorenz!; sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t))
-prob = ODEProblem(fn, u0, tspan, p)
-
-@test remake(prob).u0 == u0
-@test remake(prob).p == p
-@test remake(prob; u0 = [2.0, 3.0, 4.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; u0 = [:x => 2.0, :z => 4.0, :y => 3.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; p = [11.0, 12.0, 13.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = [:a => 11.0, :c => 13.0, :b => 12.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = (11.0, 12.0, 13)).p == (11.0, 12.0, 13)
-@test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 0.0, 0.0]
-@test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 8 / 3]
-
-# BVP
-g = 9.81
-L = 1.0
-tspan = (0.0, pi / 2)
-function simplependulum!(du, u, p, t)
-    θ = u[1]
-    dθ = u[2]
-    du[1] = dθ
-    du[2] = -(p[1] / p[2]) * sin(θ)
+p = [10.0, 20.0, 30.0]
+sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t)
+fn = ODEFunction(lorenz!; sys)
+for T in containerTypes
+    push!(probs, ODEProblem(fn, u0, tspan, T(p)))
 end
-function bc1!(residual, u, p, t)
-    residual[1] = u[end ÷ 2][1] + pi / 2 # the solution at the middle of the time span should be -pi/2
-    residual[2] = u[end][1] - pi / 2 # the solution at the end of the time span should be pi/2
-end
-u0 = [pi / 2, pi / 2]
-p = [g, L]
-fn = BVPFunction(simplependulum!, bc1!; sys = SymbolCache([:x, :y], [:a, :b], :t))
-prob = BVProblem(fn, u0, tspan, p)
 
-@test remake(prob).u0 == u0
-@test remake(prob).p == p
-@test remake(prob; u0 = [2.0, 3.0]).u0 == [2.0, 3.0]
-@test remake(prob; u0 = [:x => 2.0, :y => 3.0]).u0 == [2.0, 3.0]
-@test remake(prob; p = [11.0, 12.0]).p == [11.0, 12.0]
-@test remake(prob; p = [:a => 11.0, :b => 12.0]).p == [11.0, 12.0]
-@test remake(prob; p = (11.0, 12.0)).p == (11.0, 12.0)
-@test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, pi / 2]
-@test remake(prob; p = [:b => 11.0]).p == [g, 11.0]
-
-# SDE
-function sdef(du, u, p, t)
-    du[1] = p[1] * (u[2] - u[1])
-    du[2] = u[1] * (p[2] - u[3]) - u[2]
-    du[3] = u[1] * u[2] - p[3] * u[3]
+function residual!(resid, u, p, t)
+    resid[1] = u[1] - 0.5
+    resid[2] = u[2] - 0.5
+    resid[3] = u[3] - 0.5
 end
-function sdeg(du, u, p, t)
+fn = BVPFunction(lorenz!, residual!; sys)
+for T in containerTypes
+    push!(probs, BVProblem(fn, u0, tspan, T(p)))
+end
+
+function noise!(du, u, p, t)
     du .= 0.1u
 end
-
-u0 = [1.0, 0.0, 0.0]
-p = [10, 2.33, 26]
-tspan = (0, 100)
-fn = SDEFunction(sdef, sdeg; sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t))
-prob = SDEProblem(fn, u0, tspan, p)
-
-@test remake(prob).u0 == u0
-@test remake(prob).p == p
-@test remake(prob; u0 = [2.0, 3.0, 4.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; u0 = [:x => 2.0, :z => 4.0, :y => 3.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; p = [11.0, 12.0, 13.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = [:a => 11.0, :c => 13.0, :b => 12.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = (11.0, 12.0, 13)).p == (11.0, 12.0, 13)
-@test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 0.0, 0.0]
-@test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 26.0]
-
-# OptimizationProblem
-function loss(u, p)
-    return (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
+fn = SDEFunction(lorenz!, noise!; sys)
+for T in containerTypes
+    push!(probs, SDEProblem(fn, u0, tspan, T(p)))
 end
-u0 = [1.0, 2.0]
-p = [1.0, 100.0]
-fn = OptimizationFunction(loss; sys = SymbolCache([:x, :y], [:a, :b], :t))
-prob = OptimizationProblem(fn, u0, p)
-@test remake(prob).u0 == u0
-@test remake(prob).p == p
-@test remake(prob; u0 = [2.0, 3.0]).u0 == [2.0, 3.0]
-@test remake(prob; u0 = [:x => 2.0, :y => 3.0]).u0 == [2.0, 3.0]
-@test remake(prob; p = [11.0, 12.0]).p == [11.0, 12.0]
-@test remake(prob; p = [:a => 11.0, :b => 12.0]).p == [11.0, 12.0]
-@test remake(prob; p = (11.0, 12.0)).p == (11.0, 12.0)
-@test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 2.0]
-@test remake(prob; p = [:b => 11.0]).p == [1.0, 11.0]
 
-# NonlinearProblem
-function nlf(du, u, p)
-    du[1] = p[1] * (u[2] - u[1])
-    du[2] = u[1] * (p[2] - u[3]) - u[2]
-    du[3] = u[1] * u[2] - p[3] * u[3]
+function loss(x, p)
+    du = similar(x)
+    lorenz!(du, u, p, 0.0)
+    return sum(du)
 end
-u0 = [1.0, 0.0, 0.0]
-p = [10, 2.33, 26]
-fn = NonlinearFunction(nlf; sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t))
-prob = NonlinearProblem(fn, u0, p)
 
-@test remake(prob).u0 == u0
-@test remake(prob).p == p
-@test remake(prob; u0 = [2.0, 3.0, 4.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; u0 = [:x => 2.0, :z => 4.0, :y => 3.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; p = [11.0, 12.0, 13.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = [:a => 11.0, :c => 13.0, :b => 12.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = (11.0, 12.0, 13)).p == (11.0, 12.0, 13)
-@test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 0.0, 0.0]
-@test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 26.0]
+fn = OptimizationFunction(loss; sys)
+for T in containerTypes
+    push!(probs, OptimizationProblem(fn, u0, T(p)))
+end
 
-# NonlinearLeastSquaresProblem
-prob = NonlinearLeastSquaresProblem(fn, u0, p)
-@test remake(prob).u0 == u0
-@test remake(prob).p == p
-@test remake(prob; u0 = [2.0, 3.0, 4.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; u0 = [:x => 2.0, :z => 4.0, :y => 3.0]).u0 == [2.0, 3.0, 4.0]
-@test remake(prob; p = [11.0, 12.0, 13.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = [:a => 11.0, :c => 13.0, :b => 12.0]).p == [11.0, 12.0, 13.0]
-@test remake(prob; p = (11.0, 12.0, 13)).p == (11.0, 12.0, 13)
-@test remake(prob; u0 = [:x => 2.0]).u0 == [2.0, 0.0, 0.0]
-@test remake(prob; p = [:b => 11.0]).p == [10.0, 11.0, 26.0]
+function nllorenz!(du, u, p)
+    lorenz!(du, u, p, 0.0)
+end
+
+fn = NonlinearFunction(nllorenz!; sys)
+for T in containerTypes
+    push!(probs, NonlinearProblem(fn, u0, T(p)))
+end
+
+for T in containerTypes
+    push!(probs, NonlinearLeastSquaresProblem(fn, u0, T(p)))
+end
+
+for prob in deepcopy(probs)
+    prob2 = @inferred remake(prob)
+    @test prob2.u0 == u0
+    @test prob2.p == typeof(prob.p)(p)
+    baseType = Base.typename(typeof(prob)).wrapper
+    for T in containerTypes
+        if T !== Tuple
+            local u0 = T([2.0, 3.0, 4.0])
+            prob2 = @inferred baseType remake(prob; u0 = deepcopy(u0))
+            @test prob2.u0 == u0
+            @test prob2.u0 isa T
+        end
+        local p = T([11.0, 12.0, 13.0])
+        prob2 = @inferred baseType remake(prob; p = deepcopy(p))
+        @test prob2.p == p
+        @test prob2.p isa T
+    end
+
+    for T in [Float32, Float64]
+        local u0 = [:x => T(2.0), :z => T(4.0), :y => T(3.0)]
+        prob2 = @inferred baseType remake(prob; u0)
+        @test all(prob2.u0 .≈ T[2.0, 3.0, 4.0])
+        @test eltype(prob2.u0) == T
+
+        local u0 = [:x => T(2.0)]
+        prob2 = @inferred baseType remake(prob; u0)
+        @test all(prob2.u0 .≈ [2.0, 2.0, 3.0])
+        @test eltype(prob2.u0) == Float64 # partial update promotes, since fallback is Float64
+
+        local p = [:a => T(11.0), :b => T(12.0), :c => T(13.0)]
+        prob2 = @inferred baseType remake(prob; p)
+        @test all(prob2.p .≈ T[11.0, 12.0, 13.0])
+        @test eltype(prob2.p) == T
+
+        local p = [:a => T(11.0)]
+        prob2 = @inferred baseType remake(prob; p)
+        @test all(prob2.p .≈ [11.0, 20.0, 30.0])
+        if prob.p isa Tuple
+            @test prob2.p isa Tuple{T, Float64, Float64}
+        else
+            @test eltype(prob2.p) == Float64
+        end
+    end
+
+    # constant defaults
+    begin
+        prob.f.sys.defaults[:a] = 0.1
+        prob.f.sys.defaults[:x] = 0.1
+        # remake with no updates should use existing values
+        prob2 = @inferred baseType remake(prob)
+        @test prob2.u0 == u0
+        @test prob2.p == typeof(prob.p)(p)
+
+        # not passing use_defaults ignores defaults
+        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2])
+        @test prob2.u0 == [1.0, 0.2, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        # respect defaults (:x), fallback to existing value (:z)
+        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2], use_defaults = true)
+        @test prob2.u0 ≈ [0.1, 0.2, 3.0]
+        @test prob2.p == typeof(prob.p)(p) # params unaffected
+
+        # override defaults
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2], use_defaults = true)
+        @test prob2.u0 ≈ [0.2, 2.0, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        prob2 = @inferred baseType remake(prob; p = [:b => 0.2], use_defaults = true)
+        @test prob2.u0 == u0
+        @test all(prob2.p .≈ [0.1, 0.2, 30.0])
+
+        prob2 = @inferred baseType remake(prob; p = [:a => 0.2], use_defaults = true)
+        @test prob2.u0 == u0
+        @test all(prob2.p .≈ [0.2, 20.0, 30.0])
+
+        empty!(prob.f.sys.defaults)
+    end
+
+    # dependent defaults
+    begin
+        prob.f.sys.defaults[:b] = :(3a)
+        prob.f.sys.defaults[:y] = :(3x)
+        # remake with no updates should use existing values
+        prob2 = @inferred baseType remake(prob)
+        @test prob2.u0 == u0
+        @test prob2.p == typeof(prob.p)(p)
+
+        # not passing use_defaults ignores defaults
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2])
+        @test prob2.u0 == [0.2, 2.0, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        # respect defaults (:y), fallback to existing value (:z)
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2], use_defaults = true)
+        @test prob2.u0 ≈ [0.2, 0.6, 3.0]
+        @test prob2.p == typeof(prob.p)(p) # params unaffected
+
+        # override defaults
+        prob2 = @inferred baseType remake(prob; u0 = [:y => 0.2], use_defaults = true)
+        @test prob2.u0 ≈ [1.0, 0.2, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        prob2 = @inferred baseType remake(prob; p = [:a => 0.2], use_defaults = true)
+        @test prob2.u0 == u0
+        @test all(prob2.p .≈ [0.2, 0.6, 30.0])
+
+        prob2 = @inferred baseType remake(prob; p = [:b => 0.2], use_defaults = true)
+        @test prob2.u0 == u0
+        @test all(prob2.p .≈ [10.0, 0.2, 30.0])
+
+        empty!(prob.f.sys.defaults)
+    end
+
+    # defaults dependent on each other (params <-> states)
+    begin
+        prob.f.sys.defaults[:b] = :(3x)
+        prob.f.sys.defaults[:y] = :(3a)
+        # remake with no updates should use existing values
+        prob2 = @inferred baseType remake(prob)
+        @test prob2.u0 == u0
+        @test prob2.p == typeof(prob.p)(p)
+
+        # not passing use_defaults ignores defaults
+        prob2 = @inferred baseType remake(prob; u0 = [:x => 0.2])
+        @test prob2.u0 == [0.2, 2.0, 3.0]
+        @test prob2.p == typeof(prob.p)(p)
+
+        # need to pass empty `Dict()` to prevent defaulting to existing values
+        prob2 = @inferred baseType remake(
+            prob; u0 = [:x => 0.2], p = Dict(), use_defaults = true)
+        @test prob2.u0 ≈ [0.2, 30.0, 3.0]
+        @test all(prob2.p .≈ [10.0, 0.6, 30.0])
+
+        # override defaults
+        prob2 = @inferred baseType remake(
+            prob; u0 = [:y => 0.2], p = Dict(), use_defaults = true)
+        @test prob2.u0 ≈ [1.0, 0.2, 3.0]
+        @test all(prob2.p .≈ [10.0, 3.0, 30.0])
+
+        prob2 = @inferred baseType remake(
+            prob; p = [:a => 0.2], u0 = Dict(), use_defaults = true)
+        @test prob2.u0 ≈ [1.0, 0.6, 3.0]
+        @test all(prob2.p .≈ [0.2, 3.0, 30.0])
+
+        prob2 = @inferred baseType remake(
+            prob; p = [:b => 0.2], u0 = Dict(), use_defaults = true)
+        @test prob2.u0 ≈ [1.0, 30.0, 3.0]
+        @test all(prob2.p .≈ [10.0, 0.2, 30.0])
+
+        empty!(prob.f.sys.defaults)
+    end
+
+    if !isa(prob.p, Tuple)
+        function fakeloss!(p)
+            prob2 = @inferred baseType remake(prob; p = [:a => p])
+            @test eltype(prob2.p) <: ForwardDiff.Dual
+            return prob2.ps[:a]
+        end
+        ForwardDiff.derivative(fakeloss!, 1.0)
+    end
+end

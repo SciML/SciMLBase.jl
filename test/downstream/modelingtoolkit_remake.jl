@@ -1,18 +1,23 @@
 using ModelingToolkit, SymbolicIndexingInterface
 using JumpProcesses
 using ModelingToolkit: t_nounits as t, D_nounits as D
+using OrdinaryDiffEq
+using Optimization
+using OptimizationOptimJL
 
-@parameters σ ρ β
+probs = []
+syss = []
+
+@parameters σ ρ β q
 @variables x(t) y(t) z(t)
 
-eqs = [D(D(x)) ~ σ * (y - x),
+eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named sys = ODESystem(eqs, t)
-sys = structural_simplify(sys)
-u0 = [D(x) => 2.0,
-    x => 1.0,
+@named sys = ODESystem(eqs, t; parameter_dependencies = [q => 3β])
+sys = complete(sys)
+u0 = [x => 1.0,
     y => 0.0,
     z => 0.0]
 
@@ -21,145 +26,156 @@ p = [σ => 28.0,
     β => 8 / 3]
 
 tspan = (0.0, 100.0)
-oprob = ODEProblem(sys, u0, tspan, p, jac = true)
 
-@inferred typeof(oprob) remake(oprob; u0 = [x => 2.0], p = [σ => 29.0])
-oprob2 = remake(
-    oprob;
-    u0 = [x => 2.0, sys.y => 1.2, :z => 1.0],
-    p = [σ => 29.0, sys.ρ => 11.0, :β => 3.0]
-)
-@test oprob2.u0 isa Vector{<:Number}
-@test oprob2.p isa ModelingToolkit.MTKParameters
-@test oprob2[x] == oprob2[sys.x] == oprob2[:x] == 2.0
-@test oprob2[y] == oprob2[sys.y] == oprob2[:y] == 1.2
-@test oprob2[z] == oprob2[sys.z] == oprob2[:z] == 1.0
-@test getp(sys, σ)(oprob2) == 29.0
-@test getp(sys, sys.ρ)(oprob2) == 11.0
-@test getp(sys, :β)(oprob2) == 3.0
+push!(syss, sys)
+push!(probs, ODEProblem(sys, u0, tspan, p, jac = true))
 
-oprob3 = remake(oprob; u0 = [x => 3.0], p = [σ => 30.0]) # partial update
-@test oprob3[x] == 3.0
-@test getp(sys, σ)(oprob3) == 30.0
+noise_eqs = [0.1x, 0.1y, 0.1z]
+@named sdesys = SDESystem(sys, noise_eqs)
+sdesys = complete(sdesys)
 
-# SDEProblem.
-noiseeqs = [0.1 * x,
-    0.1 * y,
-    0.1 * z]
-@named noise_sys = SDESystem(sys, noiseeqs)
-noise_sys = complete(noise_sys)
-sprob = SDEProblem(noise_sys, u0, (0.0, 100.0), p)
+push!(syss, sdesys)
+push!(probs, SDEProblem(sdesys, u0, tspan, p, jac = true))
 
-@inferred typeof(sprob) remake(sprob; u0 = [x => 2.0], p = [σ => 29.0])
-sprob2 = remake(
-    sprob;
-    u0 = [x => 2.0, sys.y => 1.2, :z => 1.0],
-    p = [σ => 29.0, sys.ρ => 11.0, :β => 3.0]
-)
-@test sprob2.u0 isa Vector{<:Number}
-@test sprob2.p isa ModelingToolkit.MTKParameters
-@test sprob2[x] == sprob2[sys.x] == sprob2[:x] == 2.0
-@test sprob2[y] == sprob2[sys.y] == sprob2[:y] == 1.2
-@test sprob2[z] == sprob2[sys.z] == sprob2[:z] == 1.0
-@test getp(sys, σ)(sprob2) == 29.0
-@test getp(sys, sys.ρ)(sprob2) == 11.0
-@test getp(sys, :β)(sprob2) == 3.0
+@named nsys = NonlinearSystem([0 ~ eq.rhs for eq in eqs], [x, y, z], [σ, β, ρ])
+nsys = complete(nsys)
 
-sprob3 = remake(sprob; u0 = [x => 3.0], p = [σ => 30.0]) # partial update
-@test sprob3[x] == 3.0
-@test getp(sys, σ)(sprob3) == 30.0
+push!(syss, nsys)
+push!(probs, NonlinearProblem(nsys, u0, p, jac = true))
 
-# DiscreteProblem
-# @named de = DiscreteSystem(
-#     [D(x) ~ σ*(y-x),
-#     D(y) ~ x*(ρ-z)-y,
-#     D(z) ~ x*y - β*z],
-#     t,
-#     [x, y, z],
-#     [σ, ρ, β],
-# )
-# dprob = DiscreteProblem(de, u0, tspan, p)
-
-# @inferred typeof(dprob) remake(dprob; u0 = [x => 2.0], p = [σ => 29.0])
-# dprob2 = remake(
-#     dprob;
-#     u0 = [x => 2.0, sys.y => 1.2, :z => 1.0],
-#     p = [σ => 29.0, sys.ρ => 11.0, :β => 3.0]
-# )
-# @test dprob2.u0 isa Vector{<:Number}
-# @test dprob2.p isa ModelingToolkit.MTKParameters
-# @test dprob2[x] == dprob2[sys.x] == dprob2[:x] == 2.0
-# @test dprob2[y] == dprob2[sys.y] == dprob2[:y] == 1.2
-# @test dprob2[z] == dprob2[sys.z] == dprob2[:z] == 1.0
-# @test getp(de, σ)(dprob2) == 29.0
-# @test getp(de, sys.ρ)(dprob2) == 11.0
-# @test getp(de, :β)(dprob2) == 3.0
-
-# dprob3 = remake(dprob; u0 = [x => 3.0], p = [σ => 30.0]) # partial update
-# @test dprob3[x] == 3.0
-# @test getp(de, σ)(dprob3) == 30.0
-
-# NonlinearProblem
-@named ns = NonlinearSystem(
-    [0 ~ σ * (y - x),
-        0 ~ x * (ρ - z) - y,
-        0 ~ x * y - β * z],
-    [x, y, z],
-    [σ, ρ, β]
-)
-ns = complete(ns)
-nlprob = NonlinearProblem(ns, u0, p)
-
-@inferred typeof(nlprob) remake(nlprob; u0 = [x => 2.0], p = [σ => 29.0])
-nlprob2 = remake(
-    nlprob;
-    u0 = [x => 2.0, sys.y => 1.2, :z => 1.0],
-    p = [σ => 29.0, sys.ρ => 11.0, :β => 3.0]
-)
-@test nlprob2.u0 isa Vector{<:Number}
-@test nlprob2.p isa ModelingToolkit.MTKParameters
-@test nlprob2[x] == nlprob2[sys.x] == nlprob2[:x] == 2.0
-@test nlprob2[y] == nlprob2[sys.y] == nlprob2[:y] == 1.2
-@test nlprob2[z] == nlprob2[sys.z] == nlprob2[:z] == 1.0
-@test getp(ns, σ)(nlprob2) == 29.0
-@test getp(ns, sys.ρ)(nlprob2) == 11.0
-@test getp(ns, :β)(nlprob2) == 3.0
-
-nlprob3 = remake(nlprob; u0 = [x => 3.0], p = [σ => 30.0]) # partial update
-@test nlprob3[x] == 3.0
-@test getp(ns, σ)(nlprob3) == 30.0
-
-@parameters β γ
-@variables S(t) I(t) R(t)
-rate₁ = β * S * I
-affect₁ = [S ~ S - 1, I ~ I + 1]
-rate₂ = γ * I
-affect₂ = [I ~ I - 1, R ~ R + 1]
+rate₁ = β * x * y
+affect₁ = [x ~ x - σ, y ~ y + σ]
+rate₂ = ρ * y
+affect₂ = [y ~ y - 1, z ~ z + 1]
 j₁ = ConstantRateJump(rate₁, affect₁)
 j₂ = ConstantRateJump(rate₂, affect₂)
-j₃ = MassActionJump(2 * β + γ, [R => 1], [S => 1, R => -1])
-@named js = JumpSystem([j₁, j₂, j₃], t, [S, I, R], [β, γ])
+j₃ = MassActionJump(2 * β + ρ, [z => 1], [x => 1, z => -1])
+@named js = JumpSystem([j₁, j₂, j₃], t, [x, y, z], [σ, β, ρ])
 js = complete(js)
-u₀map = [S => 999, I => 1, R => 0.0]
-parammap = [β => 0.1 / 1000, γ => 0.01]
-tspan = (0.0, 250.0)
-jump_dprob = DiscreteProblem(js, u₀map, tspan, parammap)
-jprob = JumpProblem(js, jump_dprob, Direct())
+jump_dprob = DiscreteProblem(js, u0, tspan, p)
 
-@inferred typeof(jprob) remake(jprob; u0 = [S => 900], p = [β => 0.2e-3])
-jprob2 = remake(
-    jprob;
-    u0 = [S => 900, js.I => 2, :R => 0.1],
-    p = [β => 0.2 / 1000, js.γ => 11.0]
-)
-@test jprob2.prob.u0 isa Vector{<:Number}
-@test jprob2.prob.p isa ModelingToolkit.MTKParameters
-@test jprob2[S] == jprob2[js.S] == jprob2[:S] == 900.0
-@test jprob2[I] == jprob2[js.I] == jprob2[:I] == 2.0
-@test jprob2[R] == jprob2[js.R] == jprob2[:R] == 0.1
-@test getp(js, β)(jprob2) == 0.2 / 1000
-@test getp(js, js.γ)(jprob2) == 11.0
+push!(syss, js)
+push!(probs, JumpProblem(js, jump_dprob, Direct()))
 
-jprob3 = remake(jprob; u0 = [S => 901], p = [:β => 0.3 / 1000]) # partial update
-@test jprob3[S] == 901
-@test getp(js, β)(jprob3) == 0.3 / 1000
+@named optsys = OptimizationSystem(sum(eq.lhs for eq in eqs), [x, y, z], [σ, ρ, β])
+optsys = complete(optsys)
+push!(syss, optsys)
+push!(probs, OptimizationProblem(optsys, u0, p))
+
+k = ShiftIndex(t)
+@mtkbuild discsys = DiscreteSystem(
+    [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
+    t)
+# Roundabout method to avoid having to specify values for previous timestep
+fn = DiscreteFunction(discsys)
+ps = ModelingToolkit.MTKParameters(discsys, p)
+push!(syss, discsys)
+push!(probs, DiscreteProblem(fn, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], (0, 10), ps))
+
+for (sys, prob) in zip(syss, probs)
+    @test parameter_values(prob) isa ModelingToolkit.MTKParameters
+
+    @inferred typeof(prob) remake(prob)
+
+    baseType = Base.typename(typeof(prob)).wrapper
+    ugetter = getu(prob, [x, y, z])
+    prob2 = @inferred baseType remake(prob; u0 = [x => 2.0, y => 3.0, z => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x => 2.0, sys.y => 3.0, sys.z => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:x => 2.0, :y => 3.0, :z => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+    prob2 = @inferred baseType remake(prob; u0 = [x => 2.0, sys.y => 3.0, :z => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+
+    prob2 = @inferred baseType remake(prob; u0 = [x => 12.0])
+    @test ugetter(prob2) == [12.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x => 12.0])
+    @test ugetter(prob2) == [12.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:x => 12.0])
+    @test ugetter(prob2) == [12.0, 0.0, 0.0]
+
+    pgetter = getp(prob, [σ, β, ρ])
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.1, β => 0.2, ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+    prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.1, sys.β => 0.2, sys.ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+    prob2 = @inferred baseType remake(prob; p = [:σ => 0.1, :β => 0.2, :ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.1, sys.β => 0.2, :ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.5])
+    @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+    prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.5])
+    @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+    prob2 = @inferred baseType remake(prob; p = [:σ => 0.5])
+    @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+end
+
+@variables ud(t) xd(t) yd(t)
+@parameters p1 p2::Int [tunable = false] p3
+dt = 0.1
+c = Clock(t, dt)
+k = ShiftIndex(c)
+
+eqs = [D(x) ~ Hold(ud)
+       ud ~ ud(k - 1) * p1 + yd
+       yd ~ p2 * yd(k - 1) + xd(k - 2) * p3
+       xd ~ Sample(t, dt)(x)]
+@mtkbuild sys = ODESystem(eqs, t; parameter_dependencies = [p3 => 2p1])
+prob = ODEProblem(sys, [x => 1.0], (0.0, 5.0),
+    [p1 => 1.0, p2 => 2, ud(k - 1) => 3.0, xd(k - 1) => 4.0, xd(k - 2) => 5.0])
+
+# parameter dependencies
+prob2 = @inferred ODEProblem remake(prob; p = [p1 => 2.0])
+@test prob2.ps[p1] == 2.0
+@test prob2.ps[p3] == 4.0
+@test prob2.ps[p2] isa Int # type is preserved
+
+# ignore dependent parameter, preserve type
+# Vector of pairs automatically promotes the `3` to a `Float64`
+prob2 = @inferred ODEProblem remake(prob; p = Dict(p1 => 2.0, p3 => 1.0, p2 => 3))
+@test prob2.ps[p3] == 4.0
+@test prob2.ps[p2] isa Int
+
+# discrete portion
+prob2 = @inferred ODEProblem remake(prob; p = [ud => 2.5, xd => 3.5, xd(k - 1) => 4.5])
+@test prob2.ps[ud] == 2.5
+@test prob2.ps[xd] == 3.5
+@test prob2.ps[xd(k - 1)] == 4.5
+
+# Optimization
+@parameters p
+@mtkbuild sys = ODESystem([D(x) ~ -p * x], t)
+odeprob = ODEProblem(sys, [x => 1.0], (0.0, 10.0), [p => 0.5])
+
+ts = 0.0:0.5:10.0
+data = exp.(-2.5 .* ts)
+
+function loss(x, p)
+    prob = p[1]
+
+    prob = @inferred ODEProblem remake(
+        prob; p = [prob.f.sys.p => x[1]], u0 = typeof(x)(prob.u0))
+    sol = solve(prob, Tsit5())
+    vals = sol(ts; idxs = prob.f.sys.x).u
+    return sum((data .- vals) .^ 2) / length(ts)
+end
+
+f = OptimizationFunction(loss, Optimization.AutoForwardDiff())
+prob = OptimizationProblem(f, [0.5], [odeprob])
+sol = solve(prob, BFGS())
+@test sol.u[1]≈2.5 rtol=1e-4
