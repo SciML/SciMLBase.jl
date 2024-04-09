@@ -119,11 +119,11 @@ function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     !requiresgradient(alg) && !(prob.f::OptimizationFunction) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires gradients, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoForwardDiff())` or pass it in with `grad` kwarg."))
     !requireshessian(alg) && !(prob.f::OptimizationFunction) &&
-        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires hessians, pass them in `OptimizationFunction`."))
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires hessians, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoFiniteDiff(); kwargs...)` or pass them in with `hess` kwarg."))
     !requiresconsjac(alg) && !(prob.f::OptimizationFunction) &&
-        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint jacobian, pass them with the `cons` kwarg in `OptimizationFunction`."))
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint jacobians, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoFiniteDiff(); kwargs...)` or pass them in with `cons` kwarg."))
     !requiresconshess(alg) && !(prob.f::OptimizationFunction) &&
-        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint hessian, pass them with the `cons` kwarg in `OptimizationFunction`."))
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint hessians, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoFiniteDiff(), AutoFiniteDiff(hess=true); kwargs...)` or pass them in with `cons` kwarg."))
     return
 end
 
