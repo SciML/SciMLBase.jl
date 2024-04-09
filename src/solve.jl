@@ -117,7 +117,7 @@ function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     !allowscallback(alg) && haskey(kwargs, :callback) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` keyword argument from the `solve` call."))
     !requiresgradient(alg) && !(prob.f::OptimizationFunction) &&
-        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires gradients, pass them in `OptimizationFunction`."))
+        throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires gradients, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoForwardDiff())` or pass it in with `grad` kwarg."))
     !requireshessian(alg) && !(prob.f::OptimizationFunction) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires hessians, pass them in `OptimizationFunction`."))
     !requiresconsjac(alg) && !(prob.f::OptimizationFunction) &&
