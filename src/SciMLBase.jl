@@ -796,7 +796,7 @@ export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
 
-export BVProblem, TwoPointBVProblem
+export BVProblem, TwoPointBVProblem, SecondOrderBVProblem
 
 export remake
 

@@ -3751,7 +3751,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     end
 
     bciip = if !twopoint
-        isinplace(bc, 4, "bc", iip)
+        # bc in SecondOrderBVProblem should have 5 arguments
+        isinplace(f, 5) ? isinplace(bc, 5, "bc", iip) : isinplace(bc, 4, "bc", iip)
     else
         @assert length(bc) == 2
         bc = Tuple(bc)
