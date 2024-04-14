@@ -342,5 +342,5 @@ function SecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 function SecondOrderBVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
-    return SecondOrderBVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+    return SecondOrderBVProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
 end

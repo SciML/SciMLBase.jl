@@ -544,7 +544,7 @@ bcjac(u, p, t) = [1.0]
     bciip,
     jac = bjac,
     bcjac = bcjac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
     bciip,
     jac = bjac,
     bcjac = bcjac)
