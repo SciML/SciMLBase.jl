@@ -191,3 +191,65 @@ setp(sys, p)(prob, [4, 5, 6])
 @test getp(sys, p)(prob) == prob.ps[p] == [4, 5, 6]
 prob.ps[p] = [7, 8, 9]
 @test getp(sys, p)(prob) == prob.ps[p] == [7, 8, 9]
+
+# EnsembleProblem indexing
+# Issue#661
+@parameters p d
+@variables X(t) X2(t)
+eqs = [
+    D(X) ~ p - d * X,
+    X2 ~ 2 * X
+]
+@mtkbuild osys = ODESystem(eqs, t)
+
+u0 = [X => 0.1]
+tspan = (0.0, 10.0)
+ps = [p => 1.0, d => 0.2]
+oprob = ODEProblem(osys, u0, tspan, ps)
+eprob = EnsembleProblem(oprob)
+
+@test eprob[X] == 0.1
+@test eprob[:X] == 0.1
+@test eprob[osys.X] == 0.1
+@test eprob.ps[p] == 1.0
+@test eprob.ps[:p] == 1.0
+@test eprob.ps[osys.p] == 1.0
+@test getu(eprob, X)(eprob) == 0.1
+@test getu(eprob, :X)(eprob) == 0.1
+@test getu(eprob, osys.X)(eprob) == 0.1
+@test getp(eprob, p)(eprob) == 1.0
+@test getp(eprob, :p)(eprob) == 1.0
+@test getp(eprob, osys.p)(eprob) == 1.0
+
+@test_nowarn eprob[X] = 0.0
+@test eprob[X] == 0.0
+@test_nowarn eprob[:X] = 0.1
+@test eprob[:X] == 0.1
+@test_nowarn eprob[osys.X] = 0.0
+@test eprob[osys.X] == 0.0
+@test_nowarn eprob.ps[p] = 0.0
+@test eprob.ps[p] == 0.0
+@test_nowarn eprob.ps[:p] = 0.1
+@test eprob.ps[:p] == 0.1
+@test_nowarn eprob.ps[osys.p] = 0.0
+@test eprob.ps[osys.p] == 0.0
+@test_nowarn setu(eprob, X)(eprob, 0.1)
+@test eprob[X] == 0.1
+@test_nowarn setu(eprob, :X)(eprob, 0.0)
+@test eprob[:X] == 0.0
+@test_nowarn setu(eprob, osys.X)(eprob, 0.1)
+@test eprob[osys.X] == 0.1
+@test_nowarn setp(eprob, p)(eprob, 0.1)
+@test eprob.ps[p] == 0.1
+@test_nowarn setp(eprob, :p)(eprob, 0.0)
+@test eprob.ps[:p] == 0.0
+@test_nowarn setp(eprob, osys.p)(eprob, 0.1)
+@test eprob.ps[osys.p] == 0.1
+
+@test state_values(remake(eprob; u0 = [X => 0.1])) == [0.1]
+@test state_values(remake(eprob; u0 = [:X => 0.2])) == [0.2]
+@test state_values(remake(eprob; u0 = [osys.X => 0.3])) == [0.3]
+
+@test remake(eprob; p = [d => 0.4]).ps[d] == 0.4
+@test remake(eprob; p = [:d => 0.5]).ps[d] == 0.5
+@test remake(eprob; p = [osys.d => 0.6]).ps[d] == 0.6

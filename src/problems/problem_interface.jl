@@ -7,13 +7,25 @@ end
 
 SymbolicIndexingInterface.symbolic_container(prob::AbstractSciMLProblem) = prob.f
 SymbolicIndexingInterface.symbolic_container(prob::AbstractJumpProblem) = prob.prob
+SymbolicIndexingInterface.symbolic_container(prob::AbstractEnsembleProblem) = prob.prob
 
 SymbolicIndexingInterface.parameter_values(prob::AbstractSciMLProblem) = prob.p
-SymbolicIndexingInterface.parameter_values(prob::AbstractJumpProblem) = prob.prob.p
+function SymbolicIndexingInterface.parameter_values(prob::AbstractJumpProblem)
+    parameter_values(prob.prob)
+end
+function SymbolicIndexingInterface.parameter_values(prob::AbstractEnsembleProblem)
+    parameter_values(prob.prob)
+end
 SymbolicIndexingInterface.state_values(prob::AbstractSciMLProblem) = prob.u0
-SymbolicIndexingInterface.state_values(prob::AbstractJumpProblem) = prob.prob.u0
+SymbolicIndexingInterface.state_values(prob::AbstractJumpProblem) = state_values(prob.prob)
+function SymbolicIndexingInterface.state_values(prob::AbstractEnsembleProblem)
+    state_values(prob.prob)
+end
 SymbolicIndexingInterface.current_time(prob::AbstractSciMLProblem) = prob.tspan[1]
-SymbolicIndexingInterface.current_time(prob::AbstractJumpProblem) = prob.prob.tspan[1]
+SymbolicIndexingInterface.current_time(prob::AbstractJumpProblem) = current_time(prob.prob)
+function SymbolicIndexingInterface.current_time(prob::AbstractEnsembleProblem)
+    current_time(prob.prob)
+end
 
 Base.@propagate_inbounds function Base.getindex(
         prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)
@@ -27,18 +39,18 @@ end
 
 Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
     if symbolic_type(sym) == ScalarSymbolic()
-        if is_variable(prob.f, sym)
-            return prob.u0[variable_index(prob.f, sym)]
-        elseif is_parameter(prob.f, sym)
+        if is_variable(prob, sym)
+            return state_values(prob, variable_index(prob, sym))
+        elseif is_parameter(prob, sym)
             error("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.")
-        elseif is_independent_variable(prob.f, sym)
-            return getindepsym(prob)
-        elseif is_observed(prob.f, sym)
+        elseif is_independent_variable(prob, sym)
+            return current_time(prob)
+        elseif is_observed(prob, sym)
             obs = SymbolicIndexingInterface.observed(prob, sym)
-            if is_time_dependent(prob.f)
-                return obs(prob.u0, prob.p, 0.0)
+            if is_time_dependent(prob)
+                return obs(state_values(prob), parameter_values(prob), current_time(prob))
             else
-                return obs(prob.u0, prob.p)
+                return obs(state_values(prob), parameter_values(prob))
             end
         else
             error("Invalid indexing of problem: $sym is not a state, parameter, or independent variable")
@@ -55,12 +67,10 @@ function Base.setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
     ___internal_setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
 end
 function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
-    has_sys(prob.f) ||
-        error("Invalid indexing of problem: Problem does not support indexing without a system")
     if symbolic_type(sym) == ScalarSymbolic()
-        if is_variable(prob.f, sym)
-            prob.u0[variable_index(prob.f, sym)] = val
-        elseif is_parameter(prob.f, sym)
+        if is_variable(prob, sym)
+            set_state!(prob, val, variable_index(prob, sym))
+        elseif is_parameter(prob, sym)
             error("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.")
         else
             error("Invalid indexing of problem: $sym is not a state or parameter, it may be an observed variable.")
