@@ -3,6 +3,8 @@ mutable struct DummySolution
     retcode::Any
 end
 
+SciMLBase.solution_new_retcode(::DummySolution, code) = DummySolution(code)
+
 mutable struct DummyIntegrator{Alg, IIP, U, T} <: SciMLBase.DEIntegrator{Alg, IIP, U, T}
     uprev::U
     tprev::T
@@ -46,6 +48,9 @@ function SciMLBase.done(integrator::DummyIntegrator)
     integrator.t > 10
 end
 
+SciMLBase.check_error(::DummyIntegrator) = ReturnCode.Success
+SciMLBase.postamble!(::DummyIntegrator) = nothing
+
 integrator = DummyIntegrator()
 @test step_dt!(integrator, 1.5) == 2
 @test step_dt!(integrator, 1.5, true) == 1.5
@@ -62,3 +67,9 @@ for (uprev, tprev, u, t) in intervals(DummyIntegrator())
 end
 @test eltype(collect(intervals(DummyIntegrator()))) ==
       Tuple{Vector{Float64}, Float64, Vector{Float64}, Float64}
+
+@test integrator.sol.retcode == ReturnCode.Default
+@test check_error(integrator) == ReturnCode.Success
+@test integrator.sol.retcode == ReturnCode.Default
+@test SciMLBase.check_error!(integrator) == ReturnCode.Success
+@test integrator.sol.retcode == ReturnCode.Success
