@@ -246,7 +246,7 @@ Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/](h
 
 ## Mathematical Specification of a second order BVP Problem
 
-To define a BVP Problem, you simply need to give the function ``f`` and the initial
+To define a second order BVP Problem, you simply need to give the function ``f`` and the initial
 condition ``u_0`` which define an ODE:
 
 ```math
@@ -320,9 +320,9 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
     problem_type::PT
     kwargs::K
 
-    @add_kwonly function SecondOrderBVProblem{iip}(f::AbstractBVPFunction{iip}, u0, tspan,
-            p = NullParameters(); problem_type = StandardSecondOrderBVProblem(), nlls = nothing,
-            kwargs...) where {iip}
+    @add_kwonly function SecondOrderBVProblem{iip}(f::DynamicalBVPFunction{iip, TP}, u0, tspan,
+            p = NullParameters(); problem_type = nothing, nlls = nothing,
+            kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
@@ -332,15 +332,15 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
     end
 
     function SecondOrderBVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        SecondOrderBVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+        SecondOrderBVProblem(DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
 
 function SecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 5)
-    return SecondOrderBVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+    return SecondOrderBVProblem{iip}(DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
 end
 
-function SecondOrderBVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
-    return SecondOrderBVProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
+function SecondOrderBVProblem(f::DynamicalBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
+    return SecondOrderBVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end

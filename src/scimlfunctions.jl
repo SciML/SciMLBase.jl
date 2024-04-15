@@ -2057,6 +2057,112 @@ struct BVPFunction{iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP,
 end
 
 @doc doc"""
+$(TYPEDEF)
+
+A representation of a dynamical BVP function `f`, defined by:
+
+```math
+M \frac{ddu}{dt} = f(du,u,p,t)
+```
+
+along with its boundary condition:
+
+```math
+
+```
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+## Constructor
+
+```julia
+DynamicalBVPFunction{iip,specialize}(f, bc;
+                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                    analytic = __has_analytic(f) ? f.analytic : nothing,
+                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+                                    jac = __has_jac(f) ? f.jac : nothing,
+                                    jvp = __has_jvp(f) ? f.jvp : nothing,
+                                    vjp = __has_vjp(f) ? f.vjp : nothing,
+                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                                    sys = __has_sys(f) ? f.sys : nothing)
+```
+
+Note that only the functions `f_i` themselves are required. These functions should
+be given as `f_i!(du,du,u,p,t)` or `ddu = f_i(du,u,p,t)`. See the section on `iip`
+for more details on in-place vs out-of-place handling.
+
+All of the remaining functions are optional for improving or accelerating
+the usage of `f`. These include:
+
+- `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
+  to determine that the equation is actually a differential-algebraic equation (DAE)
+  if `M` is singular. Note that in this case special solvers are required, see the
+  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
+  of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
+  respectively.
+- `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
+  solution of the ODE. Generally only used for testing and development of the solvers.
+- `tgrad(dT,du,u,p,t)` or dT=tgrad(du,u,p,t): returns ``\frac{\partial f(du,u,p,t)}{\partial t}``
+- `jac(J,du,u,p,t)` or `J=jac(du,u,p,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,du,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## specialize: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the DynamicalBVPFunction type directly match the names of the inputs.
+"""
+struct DynamicalBVPFunction{iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+    JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
+    SYS} <: AbstractBVPFunction{iip, twopoint}
+    f::F
+    bc::BF
+    mass_matrix::TMM
+    analytic::Ta
+    tgrad::Tt
+    jac::TJ
+    bcjac::BCTJ
+    jvp::JVP
+    vjp::VJP
+    jac_prototype::JP
+    bcjac_prototype::BCJP
+    bcresid_prototype::BCRP
+    sparsity::SP
+    Wfact::TW
+    Wfact_t::TWt
+    paramjac::TPJ
+    observed::O
+    colorvec::TCV
+    bccolorvec::BCTCV
+    sys::SYS
+end
+
+@doc doc"""
     IntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
 
 A representation of an integrand `f` defined by:
@@ -2235,6 +2341,7 @@ end
 (f::RODEFunction)(args...) = f.f(args...)
 
 (f::BVPFunction)(args...) = f.f(args...)
+(f::DynamicalBVPFunction)(args...) = f.f(args...)
 
 ######### Basic Constructor
 
@@ -3858,6 +3965,173 @@ function BVPFunction(f, bc; twopoint::Union{Val, Bool} = Val(false), kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
+function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
+        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+        analytic = __has_analytic(f) ? f.analytic : nothing,
+        tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+        jac = __has_jac(f) ? f.jac : nothing,
+        bcjac = __has_jac(bc) ? bc.jac : nothing,
+        jvp = __has_jvp(f) ? f.jvp : nothing,
+        vjp = __has_vjp(f) ? f.vjp : nothing,
+        jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+        bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
+        bcresid_prototype = nothing,
+        sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+        Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+        Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+        paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+        syms = nothing,
+        indepsym = nothing,
+        paramsyms = nothing,
+        observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
+        colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+        bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
+        sys = __has_sys(f) ? f.sys : nothing) where {iip, specialize, twopoint}
+
+    if mass_matrix === I && f isa Tuple
+        mass_matrix = ((I for i in 1:length(f))...,)
+    end
+
+    if (specialize === FunctionWrapperSpecialize) &&
+       !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+        error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
+    end
+
+    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+        if iip_f
+            jac = update_coefficients! #(J,u,p,t)
+        else
+            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+        end
+    end
+
+    if bcjac === nothing && isa(bcjac_prototype, AbstractDiffEqLinearOperator)
+        if iip_bc
+            bcjac = update_coefficients! #(J,u,p,t)
+        else
+            bcjac = (u, p, t) -> update_coefficients!(deepcopy(bcjac_prototype), u, p, t)
+        end
+    end
+
+    if jac_prototype !== nothing && colorvec === nothing &&
+       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+    else
+        _colorvec = colorvec
+    end
+
+    if bcjac_prototype !== nothing && bccolorvec === nothing &&
+       ArrayInterfaceCore.fast_matrix_colors(bcjac_prototype)
+        _bccolorvec = ArrayInterfaceCore.matrix_colors(bcjac_prototype)
+    else
+        _bccolorvec = bccolorvec
+    end
+
+    bciip = if !twopoint
+        isinplace(bc, 5, "bc", iip)
+    else
+        @assert length(bc) == 2
+        bc = Tuple(bc)
+        if isinplace(first(bc), 4, "bc", iip) != isinplace(last(bc), 4, "bc", iip)
+            throw(NonconformingFunctionsError(["bc[1]", "bc[2]"]))
+        end
+        isinplace(first(bc), 4, "bc", iip)
+    end
+    jaciip = jac !== nothing ? isinplace(jac, 5, "jac", iip) : iip
+    bcjaciip = if bcjac !== nothing
+        if !twopoint
+            isinplace(bcjac, 5, "bcjac", bciip)
+        else
+            @assert length(bcjac) == 2
+            bcjac = Tuple(bcjac)
+            if isinplace(first(bcjac), 4, "bcjac", bciip) !=
+               isinplace(last(bcjac), 4, "bcjac", bciip)
+                throw(NonconformingFunctionsError(["bcjac[1]", "bcjac[2]"]))
+            end
+            isinplace(bcjac, 4, "bcjac", iip)
+        end
+    else
+        bciip
+    end
+    tgradiip = tgrad !== nothing ? isinplace(tgrad, 5, "tgrad", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 6, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 6, "vjp", iip) : iip
+    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 6, "Wfact", iip) : iip
+    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 6, "Wfact_t", iip) : iip
+    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 5, "paramjac", iip) : iip
+
+    nonconforming = (bciip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
+        paramjaciip) .!= iip
+    bc_nonconforming = bcjaciip .!= bciip
+    if any(nonconforming)
+        nonconforming = findall(nonconforming)
+        functions = ["bc", "jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t",
+            "paramjac"][nonconforming]
+        throw(NonconformingFunctionsError(functions))
+    end
+
+    if twopoint
+        if iip && (bcresid_prototype === nothing || length(bcresid_prototype) != 2)
+            error("bcresid_prototype must be a tuple / indexable collection of length 2 for a inplace TwoPointBVPFunction")
+        end
+        if bcresid_prototype !== nothing && length(bcresid_prototype) == 2
+            bcresid_prototype = ArrayPartition(first(bcresid_prototype),
+                last(bcresid_prototype))
+        end
+
+        bccolorvec !== nothing && length(bccolorvec) == 2 &&
+            (bccolorvec = Tuple(bccolorvec))
+
+        bcjac_prototype !== nothing && length(bcjac_prototype) == 2 &&
+            (bcjac_prototype = Tuple(bcjac_prototype))
+    end
+
+    if any(bc_nonconforming)
+        bc_nonconforming = findall(bc_nonconforming)
+        functions = ["bcjac"][bc_nonconforming]
+        throw(NonconformingFunctionsError(functions))
+    end
+
+    _f = prepare_function(f)
+
+    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
+    
+    if specialize === NoSpecialize
+        DynamicalBVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
+            Any,
+            Any, typeof(_colorvec), typeof(_bccolorvec), Any}(_f, bc, mass_matrix,
+            analytic, tgrad, jac, bcjac, jvp, vjp, jac_prototype,
+            bcjac_prototype, bcresid_prototype,
+            sparsity, Wfact, Wfact_t, paramjac, observed,
+            _colorvec, _bccolorvec, sys)
+    else
+        DynamicalBVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc),
+            typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
+            typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+            typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
+            typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
+            typeof(_colorvec), typeof(_bccolorvec), typeof(sys)}(
+            _f, bc, mass_matrix, analytic,
+            tgrad, jac, bcjac, jvp, vjp,
+            jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
+            Wfact, Wfact_t, paramjac,
+            observed,
+            _colorvec, _bccolorvec, sys)
+    end
+end
+
+function DynamicalBVPFunction{iip}(f, bc; twopoint::Union{Val, Bool} = Val(false),
+        kwargs...) where {iip}
+    DynamicalBVPFunction{iip, FullSpecialize, _unwrap_val(twopoint)}(f, bc; kwargs...)
+end
+DynamicalBVPFunction{iip}(f::DynamicalBVPFunction, bc; kwargs...) where {iip} = f
+function DynamicalBVPFunction(f, bc; twopoint::Union{Val, Bool} = Val(false), kwargs...)
+    DynamicalBVPFunction{isinplace(f, 5), FullSpecialize, _unwrap_val(twopoint)}(f, bc; kwargs...)
+end
+DynamicalBVPFunction(f::DynamicalBVPFunction; kwargs...) = f
+
+
 function IntegralFunction{iip, specialize}(f, integrand_prototype) where {iip, specialize}
     _f = prepare_function(f)
     IntegralFunction{iip, specialize, typeof(_f), typeof(integrand_prototype)}(_f,
@@ -4005,14 +4279,14 @@ has_Wfact_t(f::Union{SplitFunction, SplitSDEFunction}) = has_Wfact_t(f.f1)
 has_paramjac(f::Union{SplitFunction, SplitSDEFunction}) = has_paramjac(f.f1)
 has_colorvec(f::Union{SplitFunction, SplitSDEFunction}) = has_colorvec(f.f1)
 
-has_jac(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_jac(f.f1)
-has_jvp(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_jvp(f.f1)
-has_vjp(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_vjp(f.f1)
-has_tgrad(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_tgrad(f.f1)
-has_Wfact(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_Wfact(f.f1)
-has_Wfact_t(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_Wfact_t(f.f1)
-has_paramjac(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_paramjac(f.f1)
-has_colorvec(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_colorvec(f.f1)
+has_jac(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_jac(f.f1)
+has_jvp(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_jvp(f.f1)
+has_vjp(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_vjp(f.f1)
+has_tgrad(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_tgrad(f.f1)
+has_Wfact(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_Wfact(f.f1)
+has_Wfact_t(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_Wfact_t(f.f1)
+has_paramjac(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_paramjac(f.f1)
+has_colorvec(f::Union{DynamicalODEFunction, DynamicalDDEFunction, DynamicalBVPFunction}) = has_colorvec(f.f1)
 
 has_jac(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_jac(f.f)
 has_jvp(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_jvp(f.f)
@@ -4067,6 +4341,7 @@ for S in [:ODEFunction
           :IntervalNonlinearFunction
           :IncrementingODEFunction
           :BVPFunction
+          :DynamicalBVPFunction
           :IntegralFunction
           :BatchIntegralFunction]
     @eval begin
