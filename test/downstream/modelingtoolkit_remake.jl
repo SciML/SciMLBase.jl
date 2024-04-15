@@ -179,3 +179,20 @@ f = OptimizationFunction(loss, Optimization.AutoForwardDiff())
 prob = OptimizationProblem(f, [0.5], [odeprob])
 sol = solve(prob, BFGS())
 @test sol.u[1]≈2.5 rtol=1e-4
+
+# Issue ModelingToolkit.jl#2637
+@testset "remake with defaults containing expressions" begin
+    @variables x(t)
+    @parameters P
+
+    for sign in [+1.0, -1.0]
+        @named sys = ODESystem([D(x) ~ P], t, [x], [P]; defaults = [P => sign * x]) # set P from initial condition of x
+        sys = complete(sys)
+
+        prob1 = ODEProblem(sys, [x => 1.0], (0.0, 1.0))
+        @test prob1.ps[P] == sign * 1.0
+
+        prob2 = remake(prob1; u0 = [x => 2.0], p = Dict(), use_defaults = true) # use defaults to update parameters
+        @test prob2.ps[P] == sign * 2.0
+    end
+end
