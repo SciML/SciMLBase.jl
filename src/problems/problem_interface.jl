@@ -26,6 +26,7 @@ SymbolicIndexingInterface.current_time(prob::AbstractJumpProblem) = current_time
 function SymbolicIndexingInterface.current_time(prob::AbstractEnsembleProblem)
     current_time(prob.prob)
 end
+SymbolicIndexingInterface.current_time(::AbstractSteadyStateProblem) = Inf
 
 Base.@propagate_inbounds function Base.getindex(
         prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables)

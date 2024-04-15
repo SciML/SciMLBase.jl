@@ -253,3 +253,27 @@ eprob = EnsembleProblem(oprob)
 @test remake(eprob; p = [d => 0.4]).ps[d] == 0.4
 @test remake(eprob; p = [:d => 0.5]).ps[d] == 0.5
 @test remake(eprob; p = [osys.d => 0.6]).ps[d] == 0.6
+
+# SteadyStateProblem Indexing
+# Issue#660
+@parameters p d
+@variables X(t) X2(t)
+eqs = [
+    D(X) ~ p - d * X,
+    X2 ~ 2 * X
+]
+@mtkbuild osys = ODESystem(eqs, t)
+
+u0 = [X => 0.1]
+ps = [p => 1.0, d => 0.2]
+prob = SteadyStateProblem(osys, u0, ps)
+
+@test prob[X] == prob[osys.X] == prob[:X] == 0.1
+@test prob[X2] == prob[osys.X2] == prob[:X2] == 0.2
+@test prob[[X, X2]] == prob[[osys.X, osys.X2]] == prob[[:X, :X2]] == [0.1, 0.2]
+@test getu(prob, X)(prob) == getu(prob, osys.X)(prob) == getu(prob, :X)(prob) == 0.1
+@test getu(prob, X2)(prob) == getu(prob, osys.X2)(prob) == getu(prob, :X2)(prob) == 0.2
+@test getu(prob, [X, X2])(prob) == getu(prob, [osys.X, osys.X2])(prob) ==
+      getu(prob, [:X, :X2])(prob) == [0.1, 0.2]
+@test getu(prob, (X, X2))(prob) == getu(prob, (osys.X, osys.X2))(prob) ==
+      getu(prob, (:X, :X2))(prob) == (0.1, 0.2)
