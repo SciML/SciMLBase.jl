@@ -21,10 +21,16 @@ using RecursiveArrayTools
         dprob = remake(VA.prob, p = dp)
         du, dprob
         T = eltype(eltype(VA.u))
-        N = length(VA.prob.p)
-        Δ′ = ODESolution{T, N, typeof(du), Nothing, Nothing, typeof(VA.t),
-            typeof(VA.k), typeof(dprob), typeof(VA.alg), typeof(VA.interp),
-            typeof(VA.stats), typeof(VA.alg_choice)}(du, nothing, nothing,
+        if dprob.u0 === nothing
+            N = 2
+        elseif dprob isa SciMLBase.BVProblem && !hasmethod(size, Tuple{typeof(dprob.u0)})
+            __u0 = hasmethod(dprob.u0, Tuple{typeof(dprob.p), typeof(first(dprob.tspan))}) ?
+                   dprob.u0(dprob.p, first(dprob.tspan)) : dprob.u0(first(dprob.tspan))
+            N = length((size(__u0)..., length(du)))
+        else
+            N = length((size(dprob.u0)..., length(du)))
+        end
+        Δ′ = ODESolution{T, N}(du, nothing, nothing,
             VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)
         (Δ′, nothing, nothing)
@@ -50,10 +56,16 @@ end
             du, dprob
         end
         T = eltype(eltype(VA.u))
-        N = length(VA.prob.p)
-        Δ′ = ODESolution{T, N, typeof(du), Nothing, Nothing, typeof(VA.t),
-            typeof(VA.k), typeof(dprob), typeof(VA.alg), typeof(VA.interp),
-            typeof(VA.stats), typeof(VA.alg_choice)}(du, nothing, nothing,
+        if dprob.u0 === nothing
+            N = 2
+        elseif dprob isa SciMLBase.BVProblem && !hasmethod(size, Tuple{typeof(dprob.u0)})
+            __u0 = hasmethod(dprob.u0, Tuple{typeof(dprob.p), typeof(first(dprob.tspan))}) ?
+                   dprob.u0(dprob.p, first(dprob.tspan)) : dprob.u0(first(dprob.tspan))
+            N = length((size(__u0)..., length(du)))
+        else
+            N = length((size(dprob.u0)..., length(du)))
+        end
+        Δ′ = ODESolution{T, N}(du, nothing, nothing,
             VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)
         (Δ′, nothing, nothing)
