@@ -116,13 +116,13 @@ function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
     !allowscallback(alg) && haskey(kwargs, :callback) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` keyword argument from the `solve` call."))
-    !requiresgradient(alg) && !(prob.f::OptimizationFunction) &&
+    !requiresgradient(alg) && !(prob.f isa OptimizationFunction) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires gradients, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoForwardDiff())` or pass it in with `grad` kwarg."))
-    !requireshessian(alg) && !(prob.f::OptimizationFunction) &&
+    !requireshessian(alg) && !(prob.f isa OptimizationFunction) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires hessians, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoFiniteDiff(); kwargs...)` or pass them in with `hess` kwarg."))
-    !requiresconsjac(alg) && !(prob.f::OptimizationFunction) &&
+    !requiresconsjac(alg) && !(prob.f isa OptimizationFunction) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint jacobians, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoFiniteDiff(); kwargs...)` or pass them in with `cons` kwarg."))
-    !requiresconshess(alg) && !(prob.f::OptimizationFunction) &&
+    !requiresconshess(alg) && !(prob.f isa OptimizationFunction) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraint hessians, hence use `OptimizationFunction` to generate them with an automatic differentiation backend e.g. `OptimizationFunction(f, AutoFiniteDiff(), AutoFiniteDiff(hess=true); kwargs...)` or pass them in with `cons` kwarg."))
     return
 end
