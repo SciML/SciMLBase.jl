@@ -673,6 +673,7 @@ function specialization(::Union{ODEFunction{iip, specialize},
         NonlinearFunction{iip, specialize},
         OptimizationFunction{iip, specialize},
         BVPFunction{iip, specialize},
+        DynamicalBVPFunction{iip, specialize},
         IntegralFunction{iip, specialize},
         BatchIntegralFunction{iip, specialize}}) where {iip,
         specialize}
@@ -796,14 +797,14 @@ export SDDEProblem
 export PDEProblem
 export IncrementingODEProblem
 
-export BVProblem, TwoPointBVProblem
+export BVProblem, TwoPointBVProblem, SecondOrderBVProblem
 
 export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
        DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
        IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
-       IntegralFunction, BatchIntegralFunction
+       DynamicalBVPFunction, IntegralFunction, BatchIntegralFunction
 
 export OptimizationFunction
 
