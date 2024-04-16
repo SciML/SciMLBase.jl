@@ -383,6 +383,7 @@ function varmap_get(varmap, var, default = nothing)
 end
 
 anydict(d) = Dict{Any, Any}(d)
+anydict() = Dict{Any, Any}()
 
 function _updated_u0_p_internal(
         prob, ::Missing, p; interpret_symbolicmap = true, use_defaults = false)
@@ -393,8 +394,8 @@ function _updated_u0_p_internal(
             prob, u0, parameter_values(prob); interpret_symbolicmap)
     end
     eltype(p) <: Pair && interpret_symbolicmap || return u0, p
-    defs = use_defaults ? default_values(prob) : nothing
-    p = fill_p(prob, anydict(p); defs)
+    defs = default_values(prob)
+    p = fill_p(prob, anydict(p); defs, use_defaults)
     return _updated_u0_p_symmap(prob, u0, Val(false), p, Val(true))
 end
 
@@ -403,8 +404,8 @@ function _updated_u0_p_internal(
     p = parameter_values(prob)
 
     eltype(u0) <: Pair || return u0, p
-    defs = use_defaults ? default_values(prob) : nothing
-    u0 = fill_u0(prob, anydict(u0); defs)
+    defs = default_values(prob)
+    u0 = fill_u0(prob, anydict(u0); defs, use_defaults)
     return _updated_u0_p_symmap(prob, u0, Val(true), p, Val(false))
 end
 
@@ -416,39 +417,51 @@ function _updated_u0_p_internal(
     if !isu0symbolic && !ispsymbolic
         return u0, p
     end
-    defs = use_defaults ? default_values(prob) : nothing
+    defs = default_values(prob)
     if isu0symbolic
-        u0 = fill_u0(prob, anydict(u0); defs)
+        u0 = fill_u0(prob, anydict(u0); defs, use_defaults)
     end
     if ispsymbolic
-        p = fill_p(prob, anydict(p); defs)
+        p = fill_p(prob, anydict(p); defs, use_defaults)
     end
     return _updated_u0_p_symmap(prob, u0, Val(isu0symbolic), p, Val(ispsymbolic))
 end
 
-function fill_u0(prob, u0; defs = nothing)
+function fill_u0(prob, u0; defs = nothing, use_defaults = false)
     vsyms = variable_symbols(prob)
     if length(u0) == length(vsyms)
         return u0
     end
-    newvals = anydict(sym => if defs !== nothing && varmap_has_var(defs, sym)
-                          varmap_get(defs, sym)
-                      else
-                          getu(prob, sym)(prob)
-                      end for sym in vsyms if !varmap_has_var(u0, sym))
+    newvals = anydict()
+    for sym in vsyms
+        varmap_has_var(u0, sym) && continue
+        def = if defs === nothing || (defval = varmap_get(defs, sym)) === nothing ||
+                 (symbolic_type(defval) === NotSymbolic() && !use_defaults)
+            nothing
+        else
+            defval
+        end
+        newvals[sym] = @something def getu(prob, sym)(prob)
+    end
     return merge(u0, newvals)
 end
 
-function fill_p(prob, p; defs = nothing)
+function fill_p(prob, p; defs = nothing, use_defaults = false)
     psyms = parameter_symbols(prob)::Vector
     if length(p) == length(psyms)
         return p
     end
-    newvals = anydict(sym => if defs !== nothing && varmap_has_var(defs, sym)
-                          varmap_get(defs, sym)
-                      else
-                          getp(prob, sym)(prob)
-                      end for sym in psyms if !varmap_has_var(p, sym))
+    newvals = anydict()
+    for sym in psyms
+        varmap_has_var(p, sym) && continue
+        def = if defs === nothing || (defval = varmap_get(defs, sym)) === nothing ||
+                 (symbolic_type(defval) === NotSymbolic() && !use_defaults)
+            nothing
+        else
+            defval
+        end
+        newvals[sym] = @something def getp(prob, sym)(prob)
+    end
     return merge(p, newvals)
 end
 
