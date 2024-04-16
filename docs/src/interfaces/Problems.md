@@ -101,6 +101,35 @@ the original definition and extra structure.
 remake
 ```
 
+For problems that are created from a system (e.g. created through ModelingToolkit.jl) or
+define a DSL using `SymbolicIndexingInterface.SymbolCache`, `remake` can accept symbolic
+maps as `u0` or `p`. A symbolic map is a `Dict` or `Vector{<:Pair}` mapping symbols in
+`u0` or `p` to their values. These values can be numeric, or expressions of other symbols.
+Symbolic maps can be complete (specifying a value for each symbol in `u0` or `p`) or
+partial. For a partial symbolic map, the values of remaining symbols are obtained through
+the system's defaults (see `SymbolicIndexingInterface.default_values`) and the existing
+values in the problem passed to `remake`.
+
+If the system's defaults contain an expression for the missing symbol, that expression
+will be used for the value (it is treated as a dependent initialization). Otherwise,
+the existing value of that symbol in the problem passed to `remake` is used.
+
+If `default_values = true` is passed as a keyword argument to `remake`, then the value
+contained in the system's defaults is always preferred over the value in the problem.
+
+For example, consider a problem `prob` with parameters `:a`, `:b`, `:c` having values
+`1.0`, `2.0`, `3.0` respectively. Let us also assume that the system contains the
+defaults `Dict(:a => :(2b), :c => 0.1)`. Then:
+
+  - `remake(prob; p = [:b => 2.0])` will result in the values `4.0`, `2.0`, `3.0` for
+    `:a`, `:b` and `:c` respectively. Note how the numeric default for `:c` was not
+    respected.
+  - `remake(prob; p = [:b => 2.0], use_defaults = true)` will result in the values `4.0`,
+    `2.0`, `1.0` for `:a`, `:b` and `:c` respectively.
+  - `remake(prob; p = [:b => 2.0, :a => 3.0])` will result in the values `3.0`, `2.0`,
+    `3.0` for `:a`, `:b` and `:c` respectively. Note how the explicitly specified value for
+    `:a` overrides the dependent default.
+
 ## Problem Traits
 
 ```@docs
