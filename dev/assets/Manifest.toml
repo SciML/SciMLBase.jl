@@ -446,9 +446,9 @@ version = "1.2.0"
 
 [[deps.FiniteDiff]]
 deps = ["ArrayInterface", "LinearAlgebra", "Requires", "Setfield", "SparseArrays"]
-git-tree-sha1 = "bc0c5092d6caaea112d3c8e3b238d61563c58d5f"
+git-tree-sha1 = "2de436b72c3422940cbe1367611d137008af7ec3"
 uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
-version = "2.23.0"
+version = "2.23.1"
 
     [deps.FiniteDiff.extensions]
     FiniteDiffBandedMatricesExt = "BandedMatrices"
@@ -892,9 +892,9 @@ version = "0.5.4"
 
 [[deps.MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "2d106538aebe1c165e16d277914e10c550e9d9b7"
+git-tree-sha1 = "c2e2d748aea87f006a87c1654878349baa04aaf0"
 uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.4.2"
+version = "1.4.3"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -1153,9 +1153,9 @@ version = "0.4.0+0"
 
 [[deps.RuntimeGeneratedFunctions]]
 deps = ["ExprTools", "SHA", "Serialization"]
-git-tree-sha1 = "6aacc5eefe8415f47b3e34214c1d79d2674a0ba2"
+git-tree-sha1 = "04c968137612c4a5629fa531334bb81ad5680f00"
 uuid = "7e49a35a-f44a-4d26-94aa-eba1b4ca6b47"
-version = "0.5.12"
+version = "0.5.13"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
