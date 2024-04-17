@@ -63,7 +63,7 @@ end
 
 function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
         continuity = :left) where {deriv}
-    sol.interp(t, idxs, deriv, sol.prob.p, continuity)
+    sol(t, deriv, idxs, continuity)
 end
 function (sol::RODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
         continuity = :left) where {deriv}
