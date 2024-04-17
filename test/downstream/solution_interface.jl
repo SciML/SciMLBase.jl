@@ -62,6 +62,7 @@ sol = solve(sprob, ImplicitEM())
 @test_throws Exception sol[a]
 @test_throws Exception sol[noisy_population_model.a]
 @test_throws Exception sol[:a]
+@test_nowarn sol(0.5, idxs = noisy_population_model.s1)
 ### Tests on layered model (some things should not work). ###
 
 @parameters σ ρ β
