@@ -1789,7 +1789,8 @@ and more. For all cases, `u` is the state and `p` are the parameters.
 ```julia
 OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
                           grad = nothing, hess = nothing, hv = nothing,
-                          cons = nothing, cons_j = nothing, cons_h = nothing,
+                          cons = nothing, cons_j = nothing, cons_jvp = nothing,
+                          cons_vjp = nothing, cons_h = nothing,
                           hess_prototype = nothing,
                           cons_jac_prototype = nothing,
                           cons_hess_prototype = nothing,
@@ -1827,6 +1828,8 @@ function described in [Callback Functions](https://docs.sciml.ai/Optimization/st
     bounds passed as `lcons` and `ucons` to [`OptimizationProblem`](@ref), in case of equality
     constraints `lcons` and `ucons` should be passed equal values.
 - `cons_j(J,x,p)` or `J=cons_j(x,p)`: the Jacobian of the constraints.
+- `cons_jvp(Jv,v,x,p)` or `Jv=cons_jvp(v,x,p)`: the Jacobian-vector product of the constraints.
+- `cons_vjp(Jv,v,x,p)` or `Jv=cons_vjp(v,x,p)`: the Jacobian-vector product of the constraints.
 - `cons_h(H,x,p)` or `H=cons_h(x,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
@@ -1892,7 +1895,7 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, O,
+struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
     EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
        AbstractOptimizationFunction{iip}
     f::F
@@ -1902,6 +1905,8 @@ struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CH, HP, CJP, CHP, O,
     hv::HV
     cons::C
     cons_j::CJ
+    cons_jvp::CJV
+    cons_vjp::CVJ
     cons_h::CH
     hess_prototype::HP
     cons_jac_prototype::CJP
