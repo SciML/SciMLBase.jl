@@ -320,7 +320,8 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
     problem_type::PT
     kwargs::K
 
-    @add_kwonly function SecondOrderBVProblem{iip}(f::DynamicalBVPFunction{iip, TP}, u0, tspan,
+    @add_kwonly function SecondOrderBVProblem{iip}(
+            f::DynamicalBVPFunction{iip, TP}, u0, tspan,
             p = NullParameters(); problem_type = nothing, nlls = nothing,
             kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
@@ -331,16 +332,19 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
             typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end
 
-    function SecondOrderBVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+    function SecondOrderBVProblem{iip}(
+            f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         SecondOrderBVProblem(DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
 
 function SecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 5)
-    return SecondOrderBVProblem{iip}(DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+    return SecondOrderBVProblem{iip}(
+        DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
 end
 
-function SecondOrderBVProblem(f::DynamicalBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
+function SecondOrderBVProblem(
+        f::DynamicalBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
     return SecondOrderBVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
