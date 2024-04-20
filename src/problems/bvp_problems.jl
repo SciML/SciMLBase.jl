@@ -246,7 +246,6 @@ $(TYPEDEF)
 """
 struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type stable construction easier
 
-
 @doc doc"""
 
 Defines a second order BVP problem.
@@ -361,7 +360,7 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        
+
         return new{typeof(_u0), typeof(_tspan), iip, typeof(nlls), typeof(p), typeof(f),
             typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end
@@ -396,15 +395,18 @@ end
 
 function TwoPointSecondOrderBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
         bcresid_prototype = nothing, kwargs...) where {iip}
-    return TwoPointSecondOrderBVProblem(TwoPointDynamicalBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
+    return TwoPointSecondOrderBVProblem(
+        TwoPointDynamicalBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
         p; kwargs...)
 end
 function TwoPointSecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters();
         bcresid_prototype = nothing, kwargs...)
-    return TwoPointSecondOrderBVProblem(TwoPointDynamicalBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
+    return TwoPointSecondOrderBVProblem(
+        TwoPointDynamicalBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
         kwargs...)
 end
-function TwoPointSecondOrderBVProblem{iip}(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+function TwoPointSecondOrderBVProblem{iip}(
+        f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
         p = NullParameters(); kwargs...) where {iip, twopoint}
     @assert twopoint "`TwoPointSecondOrderBVProblem` can only be used with a `TwoPointDynamicalBVPFunction`. Instead of using `DynamicalBVPFunction`, use `TwoPointDynamicalBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `DynamicalBVPFunction`."
     return SecondOrderBVProblem{iip}(f, u0, tspan, p; kwargs...)
@@ -421,7 +423,8 @@ function TwoPointSecondOrderBVProblem(f::AbstractODEFunction, bc, sol::T, tspan:
     return TwoPointSecondOrderBVProblem(f, bc, sol.u, tspan, p; kwargs...)
 end
 # Allow initial guess function for the initial guess
-function TwoPointSecondOrderBVProblem(f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
+function TwoPointSecondOrderBVProblem(
+        f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
         p = NullParameters(); kwargs...)
     u0 = [initialGuess(i) for i in tspan]
     return TwoPointSecondOrderBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
