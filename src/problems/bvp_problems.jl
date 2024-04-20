@@ -234,10 +234,17 @@ function TwoPointBVProblem(f::AbstractODEFunction, bc, initialGuess, tspan::Abst
     return TwoPointBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
 
+######################## SecondOrderBVProblem ########################
+
 """
 $(TYPEDEF)
 """
 struct StandardSecondOrderBVProblem end
+
+"""
+$(TYPEDEF)
+"""
+struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type stable construction easier
 
 @doc doc"""
 
@@ -259,13 +266,20 @@ along with an implicit function `bc` which defines the residual equation, where
 bc(du,u,p,t) = 0
 ```
 
-is the manifold on which the solution must live.
+is the manifold on which the solution must live. A common form for this is the
+two-point `SecondOrderBVProblem` where the manifold defines the solution at two points:
+
+```math
+g(u(t_0),u'(t_0)) = 0
+g(u(t_f),u'(t_f)) = 0
+```
 
 ## Problem Type
 
 ### Constructors
 
 ```julia
+TwoPointSecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
 SecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
 ```
 
@@ -273,6 +287,7 @@ or if we have an initial guess function `initialGuess(p, t)` for the given BVP,
 we can pass the initial guess to the problem constructors:
 
 ```julia
+TwoPointSecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
 SecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
 ```
 
@@ -293,6 +308,24 @@ where `u[i]` is at time `t[i]`, while `p` are the parameters. For a `TwoPointBVP
 time points, and for shooting type methods `u=sol` the ODE solution.
 Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
+
+If the bvp is a `TwoPointSecondOrderBVProblem` then `bc` must be a Tuple `(bca, bcb)` and each of them
+must define either of the following functions:
+
+```julia
+begin
+    bca!(resid_a, du_a, u_a, p)
+    bcb!(resid_b, du_b, u_b, p)
+end
+begin
+    resid_a = bca(du_a, u_a, p)
+    resid_b = bcb(du_b, u_b, p)
+end
+```
+
+where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
+the solution values at the two endpoints, `du_a` and `du_b` are the derivative of solution values at the two endpoints, and `p` are the parameters.
+
 
 Parameters are optional, and if not given, then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
@@ -347,4 +380,52 @@ end
 function SecondOrderBVProblem(
         f::DynamicalBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
     return SecondOrderBVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+end
+
+# This is mostly a fake struct and isn't used anywhere
+# But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+struct TwoPointDynamicalBVPFunction{iip} end
+
+@inline function TwoPointDynamicalBVPFunction(args...; kwargs...)
+    return DynamicalBVPFunction(args...; kwargs..., twopoint = Val(true))
+end
+@inline function TwoPointDynamicalBVPFunction{iip}(args...; kwargs...) where {iip}
+    return DynamicalBVPFunction{iip}(args...; kwargs..., twopoint = Val(true))
+end
+
+function TwoPointSecondOrderBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
+        bcresid_prototype = nothing, kwargs...) where {iip}
+    return TwoPointSecondOrderBVProblem(
+        TwoPointDynamicalBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
+        p; kwargs...)
+end
+function TwoPointSecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters();
+        bcresid_prototype = nothing, kwargs...)
+    return TwoPointSecondOrderBVProblem(
+        TwoPointDynamicalBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
+        kwargs...)
+end
+function TwoPointSecondOrderBVProblem{iip}(
+        f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+        p = NullParameters(); kwargs...) where {iip, twopoint}
+    @assert twopoint "`TwoPointSecondOrderBVProblem` can only be used with a `TwoPointDynamicalBVPFunction`. Instead of using `DynamicalBVPFunction`, use `TwoPointDynamicalBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `DynamicalBVPFunction`."
+    return SecondOrderBVProblem{iip}(f, u0, tspan, p; kwargs...)
+end
+function TwoPointSecondOrderBVProblem(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+        p = NullParameters(); kwargs...) where {iip, twopoint}
+    @assert twopoint "`TwoPointSecondOrderBVProblem` can only be used with a `TwoPointDynamicalBVPFunction`. Instead of using `DynamicalBVPFunction`, use `TwoPointDynamicalBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `DynamicalBVPFunction`."
+    return SecondOrderBVProblem{iip}(f, u0, tspan, p; kwargs...)
+end
+
+# Allow previous timeseries solution
+function TwoPointSecondOrderBVProblem(f::AbstractODEFunction, bc, sol::T, tspan::Tuple,
+        p = NullParameters(); kwargs...) where {T <: AbstractTimeseriesSolution}
+    return TwoPointSecondOrderBVProblem(f, bc, sol.u, tspan, p; kwargs...)
+end
+# Allow initial guess function for the initial guess
+function TwoPointSecondOrderBVProblem(
+        f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
+        p = NullParameters(); kwargs...)
+    u0 = [initialGuess(i) for i in tspan]
+    return TwoPointSecondOrderBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
