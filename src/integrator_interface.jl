@@ -644,7 +644,9 @@ Same as `check_error` but also set solution's return code
 function check_error!(integrator::DEIntegrator)
     code = check_error(integrator)
     integrator.sol = solution_new_retcode(integrator.sol, code)
-    postamble!(integrator)
+    if code != ReturnCode.Success
+        postamble!(integrator)
+    end
     return code
 end
 
