@@ -1,6 +1,7 @@
 using SciMLBase
-mutable struct DummySolution
-    retcode::Any
+
+struct DummySolution
+    retcode::SciMLBase.ReturnCode.T
 end
 
 SciMLBase.solution_new_retcode(::DummySolution, code) = DummySolution(code)
@@ -73,3 +74,8 @@ end
 @test integrator.sol.retcode == ReturnCode.Default
 @test SciMLBase.check_error!(integrator) == ReturnCode.Success
 @test integrator.sol.retcode == ReturnCode.Success
+
+let
+    integrator = DummyIntegrator()
+    @test 0 == @allocated SciMLBase.check_error!(integrator)
+end
