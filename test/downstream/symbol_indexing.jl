@@ -1,4 +1,4 @@
-using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, SymbolicIndexingInterface, Test
+using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, SymbolicIndexingInterface, Zygote, Test
 using Optimization, OptimizationOptimJL
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
@@ -107,7 +107,7 @@ true_grad_sym[idx_sym] .= 1.
 @test "Symbolic Indexing Adjoint: Symbol" all(x -> x == true_grad_sym, gs_sym)
 
 gs_vec, = Zygote.gradient(sol) do sol
-	sum(sum.(sol[[lorenz1.x, lorenz2]]))
+	sum(sum.(sol[[lorenz1.x, lorenz2.x]]))
 end
 idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
 true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
@@ -116,7 +116,7 @@ true_grad_vecsym[idx_vecsym] .= 1.
 @test "Symbolic Indexing Adjoint: Vector{Symbol}" all(x -> x == true_grad_vecsym, gs_vec)
 
 gs_tup, = Zygote.gradient(sol) do sol
-	sum(sum.(collect.(sol[(lorenz1.x, lorenz2)])))
+	sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)])))
 end
 idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
 true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
