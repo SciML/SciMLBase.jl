@@ -172,6 +172,9 @@ end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
         continuity) where {deriv}
+    if eltype(sol.u) <: Number
+        idxs = only(idxs)
+    end
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
@@ -183,6 +186,9 @@ end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
         continuity) where {deriv}
+    if eltype(sol.u) <: Number
+        idxs = only(idxs)
+    end
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     return DiffEqArray(A.u, A.t, p, sol)
