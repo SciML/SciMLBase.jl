@@ -102,9 +102,9 @@ gs_sym, = Zygote.gradient(sol) do sol
 end
 idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
 true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_sym[idx_sym] .= 1.
+true_grad_sym[idx_sym] = 1.
 
-@test "Symbolic Indexing Adjoint: Symbol" all(x -> x == true_grad_sym, gs_sym)
+@test all(map(x -> x == true_grad_sym, gs_sym))
 
 gs_vec, = Zygote.gradient(sol) do sol
 	sum(sum.(sol[[lorenz1.x, lorenz2.x]]))
@@ -113,7 +113,7 @@ idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lor
 true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
 true_grad_vecsym[idx_vecsym] .= 1.
 
-@test "Symbolic Indexing Adjoint: Vector{Symbol}" all(x -> x == true_grad_vecsym, gs_vec)
+@test all(map(x -> x == true_grad_vecsym, gs_vec))
 
 gs_tup, = Zygote.gradient(sol) do sol
 	sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)])))
@@ -122,13 +122,13 @@ idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lor
 true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
 true_grad_tupsym[idx_tupsym] .= 1.
 
-@test "Symbolic Indexing Adjoint: Tuple{Symbol}" all(x -> x == true_grad_tupsym, gs_tup)
+@test all(x -> x == true_grad_tupsym, gs_tup)
 
 gs_ts, = Zygote.gradient(sol) do sol
         sum(sol[[lorenz1.x, lorenz2], :])
 end
 
-@test "Symbolic Indexing Adjoint: Timeseries/ Vector{Symbol}" all(x -> x == true_grad_vecsym, gs_ts)
+@test all(x -> x == true_grad_vecsym, gs_ts)
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
