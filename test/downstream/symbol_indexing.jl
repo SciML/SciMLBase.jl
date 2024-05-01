@@ -125,7 +125,7 @@ true_grad_tupsym[idx_tupsym] .= 1.
 @test all(x -> x == true_grad_tupsym, gs_tup)
 
 gs_ts, = Zygote.gradient(sol) do sol
-        sum(sol[[lorenz1.x, lorenz2], :])
+    sum(sol[[lorenz1.x, lorenz2.x], :])
 end
 
 @test all(x -> x == true_grad_vecsym, gs_ts)
