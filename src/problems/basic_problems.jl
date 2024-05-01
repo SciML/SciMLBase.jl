@@ -164,7 +164,7 @@ struct IntervalNonlinearProblem{isinplace, tType, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function IntervalNonlinearProblem{iip}(f, tspan, p = NullParameters()) where {iip}
-        IntervalNonlinearProblem{iip}(IntervalNonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f), tspan, p)
+        IntervalNonlinearProblem{iip}(IntervalNonlinearFunction{iip}(f), tspan, p)
     end
 end
 
@@ -180,8 +180,7 @@ function IntervalNonlinearProblem(f::AbstractIntervalNonlinearFunction, tspan,
 end
 
 function IntervalNonlinearProblem(f, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 3)
-    IntervalNonlinearProblem(IntervalNonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f), tspan, p; kwargs...)
+    IntervalNonlinearProblem(IntervalNonlinearFunction(f), tspan, p; kwargs...)
 end
 
 @doc doc"""
@@ -263,7 +262,7 @@ struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function NonlinearProblem{iip}(f, u0, p = NullParameters(); kwargs...) where {iip}
-        NonlinearProblem{iip}(NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f), u0, p; kwargs...)
+        NonlinearProblem{iip}(NonlinearFunction{iip}(f), u0, p; kwargs...)
     end
 end
 
@@ -278,8 +277,7 @@ function NonlinearProblem(f::AbstractNonlinearFunction, u0, p = NullParameters()
 end
 
 function NonlinearProblem(f, u0, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 3)
-    NonlinearProblem(NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f), u0, p; kwargs...)
+    NonlinearProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
 
 """
@@ -374,7 +372,7 @@ struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K} <:
     end
 
     function NonlinearLeastSquaresProblem{iip}(f, u0, p = NullParameters()) where {iip}
-        return NonlinearLeastSquaresProblem{iip}(NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f), u0, p)
+        return NonlinearLeastSquaresProblem{iip}(NonlinearFunction{iip}(f), u0, p)
     end
 end
 
@@ -390,8 +388,7 @@ function NonlinearLeastSquaresProblem(f::AbstractNonlinearFunction, u0,
 end
 
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 3)
-    return NonlinearLeastSquaresProblem(NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f), u0, p; kwargs...)
+    return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
 
 @doc doc"""
