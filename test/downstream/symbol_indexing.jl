@@ -122,13 +122,13 @@ idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lor
 true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
 true_grad_tupsym[idx_tupsym] .= 1.
 
-@test all(x -> x == true_grad_tupsym, gs_tup)
+@test all(map(x -> x == true_grad_tupsym, gs_tup))
 
 gs_ts, = Zygote.gradient(sol) do sol
     sum(sol[[lorenz1.x, lorenz2.x], :])
 end
 
-@test all(x -> x == true_grad_vecsym, gs_ts)
+@test all(map(x -> x == true_grad_vecsym, gs_ts))
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
