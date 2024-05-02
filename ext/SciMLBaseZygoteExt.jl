@@ -163,7 +163,7 @@ end
         (ȳ, ntuple(_ -> nothing, length(args))...)
     end
 
-    SDESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDESolutionAdjoint
+    SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDESolutionAdjoint
 end
 
 @adjoint function NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u,
