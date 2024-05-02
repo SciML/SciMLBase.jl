@@ -93,9 +93,9 @@ end
 @test length(sol[(lorenz1.x, lorenz2.x)]) == length(sol)
 @test all(length.(sol[(lorenz1.x, lorenz2.x)]) .== 2)
 
-@test sol[[lorenz1.x, lorenz2.x], :] isa Matrix{Float64}
-@test size(sol[[lorenz1.x, lorenz2.x], :]) == (2, length(sol))
-@test size(sol[[lorenz1.x, lorenz2.x], :]) == size(sol[[1, 2], :]) == size(sol[1:2, :])
+@test sol[[lorenz1.x, lorenz2.x], :] isa Vector{Vector{Float64}}
+@test length(sol[[lorenz1.x, lorenz2.x], :]) == length(sol)
+@test length(sol[[lorenz1.x, lorenz2.x], :][1]) == 2
 
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
