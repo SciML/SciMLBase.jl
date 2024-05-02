@@ -1,4 +1,5 @@
-using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, SymbolicIndexingInterface, Zygote, Test
+using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, SymbolicIndexingInterface,
+      Zygote, Test
 using Optimization, OptimizationOptimJL
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
@@ -98,29 +99,29 @@ end
 @test size(sol[[lorenz1.x, lorenz2.x], :]) == size(sol[[1, 2], :]) == size(sol[1:2, :])
 
 gs_sym, = Zygote.gradient(sol) do sol
-	sum(sol[lorenz1.x])
+    sum(sol[lorenz1.x])
 end
 idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
 true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_sym[idx_sym] = 1.
+true_grad_sym[idx_sym] = 1.0
 
 @test all(map(x -> x == true_grad_sym, gs_sym))
 
 gs_vec, = Zygote.gradient(sol) do sol
-	sum(sum.(sol[[lorenz1.x, lorenz2.x]]))
+    sum(sum.(sol[[lorenz1.x, lorenz2.x]]))
 end
 idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
 true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_vecsym[idx_vecsym] .= 1.
+true_grad_vecsym[idx_vecsym] .= 1.0
 
 @test all(map(x -> x == true_grad_vecsym, gs_vec))
 
 gs_tup, = Zygote.gradient(sol) do sol
-	sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)])))
+    sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)])))
 end
 idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
 true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_tupsym[idx_tupsym] .= 1.
+true_grad_tupsym[idx_tupsym] .= 1.0
 
 @test all(map(x -> x == true_grad_tupsym, gs_tup))
 

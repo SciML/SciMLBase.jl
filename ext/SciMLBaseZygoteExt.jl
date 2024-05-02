@@ -120,7 +120,8 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
-@adjoint function Base.getindex(VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where T
+@adjoint function Base.getindex(
+        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where {T}
     function ODESolution_getindex_pullback(Δ)
         sym = sym isa Tuple ? collect(sym) : sym
         i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
