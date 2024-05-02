@@ -13,7 +13,7 @@ using RecursiveArrayTools
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
 # https://github.com/SciML/RecursiveArrayTools.jl/blob/d06ecb856f43bc5e37cbaf50e5f63c578bf3f1bd/ext/RecursiveArrayToolsZygoteExt.jl#L67
-@adjoint function getindex(VA::ODESolution, i::Int, j::Int)
+@adjoint function Base.getindex(VA::ODESolution, i::Int, j::Int)
     function ODESolution_getindex_pullback(Δ)
         du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
               zero(VA.u[1]) for m in 1:length(VA.u)]
@@ -38,7 +38,7 @@ using RecursiveArrayTools
     VA[i, j], ODESolution_getindex_pullback
 end
 
-@adjoint function getindex(VA::ODESolution, sym, j::Int)
+@adjoint function Base.getindex(VA::ODESolution, sym, j::Int)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         du, dprob = if i === nothing
@@ -92,7 +92,7 @@ end
     out, EnsembleSolution_adjoint
 end
 
-@adjoint function getindex(VA::ODESolution, i::Int)
+@adjoint function Base.getindex(VA::ODESolution, i::Int)
     function ODESolution_getindex_pullback(Δ)
         Δ′ = [(i == j ? Δ : Zygote.FillArrays.Fill(zero(eltype(x)), size(x)))
               for (x, j) in zip(VA.u, 1:length(VA))]
@@ -106,7 +106,7 @@ end
     sim.u, p̄ -> (EnsembleSolution(p̄, 0.0, true, sim.stats),)
 end
 
-@adjoint function getindex(VA::ODESolution, sym)
+@adjoint function Base.getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if i === nothing
@@ -114,6 +114,30 @@ end
         else
             Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
                   for (x, j) in zip(VA.u, 1:length(VA))]
+            (Δ′, nothing)
+        end
+    end
+    VA[sym], ODESolution_getindex_pullback
+end
+
+@adjoint function Base.getindex(
+        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where {T}
+    function ODESolution_getindex_pullback(Δ)
+        sym = sym isa Tuple ? collect(sym) : sym
+        i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
+        if i === nothing
+            throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        else
+            Δ′ = map(enumerate(VA.u)) do (t_idx, us)
+                map(enumerate(us)) do (u_idx, u)
+                    if u_idx in i
+                        idx = findfirst(isequal(u_idx), i)
+                        Δ[t_idx][idx]
+                    else
+                        zero(T)
+                    end
+                end
+            end
             (Δ′, nothing)
         end
     end

@@ -3,6 +3,7 @@ module SciMLBaseChainRulesCoreExt
 using SciMLBase
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable
+using SymbolicIndexingInterface
 
 function ChainRulesCore.rrule(
         config::ChainRulesCore.RuleConfig{
@@ -13,7 +14,7 @@ function ChainRulesCore.rrule(
         sym,
         j::Integer)
     function ODESolution_getindex_pullback(Δ)
-        i = symbolic_type(sym) != NotSymbolic() ? sym_to_index(sym, VA) : sym
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if i === nothing
             getter = getobserved(VA)
             grz = rrule_via_ad(config, getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
@@ -66,7 +67,7 @@ end
 
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
-        i = symbolic_type(sym) != NotSymbolic() ? sym_to_index(sym, VA) : sym
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if i === nothing
             throw(error("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
