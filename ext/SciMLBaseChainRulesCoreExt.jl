@@ -120,7 +120,8 @@ function ChainRulesCore.rrule(
         (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    RODESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), RODESolutionAdjoint
+    RODESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...),
+    RODESolutionAdjoint
 end
 
 function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged)
