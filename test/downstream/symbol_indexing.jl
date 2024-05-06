@@ -226,6 +226,8 @@ sol = solve(prob, Tsit5())
 @test sol[x] isa Vector{<:Vector}
 @test sol[@nonamespace sys.x] isa Vector{<:Vector}
 @test sol.ps[p] == [1, 2, 3]
+# interpolation of array variables
+@test sol(1.0, idxs = x) == [sol(1.0, idxs = x[i]) for i in 1:3]
 
 x_idx = variable_index.((sys,), [x[1], x[2], x[3]])
 y_idx = variable_index(sys, y)

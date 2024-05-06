@@ -206,8 +206,10 @@ end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
         continuity) where {deriv}
-    all(!isequal(NotSymbolic()), symbolic_type.(idxs)) ||
+    if symbolic_type(idxs) == NotSymbolic() &&
+       any(isequal(NotSymbolic()), symbolic_type.(idxs))
         error("Incorrect specification of `idxs`")
+    end
     interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
     first(interp_sol[idxs])
 end
