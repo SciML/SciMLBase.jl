@@ -154,7 +154,7 @@ function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where T
     end
 
     nt = Zygote.nt_nothing(VA)
-    (Zygote.accum(nt, (u = Δ′,)))
+    Zygote.accum(nt, (u = Δ′,))
 end
 
 @adjoint function getindex(VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where T
