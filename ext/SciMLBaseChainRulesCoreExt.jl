@@ -112,15 +112,16 @@ end
 
 function ChainRulesCore.rrule(
         ::Type{
-            <:ODESolution{uType, tType, isinplace, P, NP, F, G, K,
+            <:RODESolution{uType, tType, isinplace, P, NP, F, G, K,
             ND
         }}, u,
         args...) where {uType, tType, isinplace, P, NP, F, G, K, ND}
-    function SDESolutionAdjoint(ȳ)
+    function RODESolutionAdjoint(ȳ)
         (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    SDESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDESolutionAdjoint
+    RODESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...),
+    RODESolutionAdjoint
 end
 
 function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged)

@@ -137,7 +137,8 @@ eqs = [D(x) ~ Hold(ud)
        xd ~ Sample(t, dt)(x)]
 @mtkbuild sys = ODESystem(eqs, t; parameter_dependencies = [p3 => 2p1])
 prob = ODEProblem(sys, [x => 1.0], (0.0, 5.0),
-    [p1 => 1.0, p2 => 2, ud(k - 1) => 3.0, xd(k - 1) => 4.0, xd(k - 2) => 5.0])
+    [p1 => 1.0, p2 => 2, ud(k - 1) => 3.0,
+        xd(k - 1) => 4.0, xd(k - 2) => 5.0, yd(k - 1) => 0.0])
 
 # parameter dependencies
 prob2 = @inferred ODEProblem remake(prob; p = [p1 => 2.0])

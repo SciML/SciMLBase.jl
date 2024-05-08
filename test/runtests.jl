@@ -130,6 +130,9 @@ end
                 include("downstream/problem_interface.jl")
             end
         end
+        @time @safetestset "Adjoints" begin
+            include("downstream/adjoints.jl")
+        end
     end
 
     if !is_APPVEYOR && GROUP == "Python"

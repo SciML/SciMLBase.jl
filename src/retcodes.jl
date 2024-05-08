@@ -380,6 +380,23 @@ EnumX.@enumx ReturnCode begin
       - successful_retcode = false
     """
     Stalled
+
+    """
+    `ReturnCode.InternalLinearSolveFailed`
+
+    The linear problem inside another problem (for example inside a NonlinearProblem)
+    could not be solved.
+
+    ## Common Reasons for Seeing this Return Code
+
+      - If a rank-deficient matrix originated inside the nonlinear solve and the
+        provided linear solver is incapable of handling those cases.
+
+    ## Properties
+
+      - successful_retcode = false
+    """
+    InternalLinearSolveFailed
 end
 
 Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s

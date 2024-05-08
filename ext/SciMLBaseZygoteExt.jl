@@ -157,7 +157,8 @@ function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where T
     Zygote.accum(nt, (u = Δ′,))
 end
 
-@adjoint function getindex(VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where T
+@adjoint function Base.getindex(
+        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where {T}
     function ODESolution_getindex_pullback(Δ)
         sym = sym isa Tuple ? collect(sym) : sym
         i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
@@ -189,11 +190,11 @@ end
 @adjoint function SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND}(u,
         args...) where
         {uType, tType, isinplace, P, NP, F, G, K, ND}
-    function SDESolutionAdjoint(ȳ)
+    function SDEProblemAdjoint(ȳ)
         (ȳ, ntuple(_ -> nothing, length(args))...)
     end
 
-    SDESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDESolutionAdjoint
+    SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...), SDEProblemAdjoint
 end
 
 @adjoint function NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u,

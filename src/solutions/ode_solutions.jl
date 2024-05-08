@@ -172,6 +172,9 @@ end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
         continuity) where {deriv}
+    if eltype(sol.u) <: Number
+        idxs = only(idxs)
+    end
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
@@ -183,6 +186,9 @@ end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
         continuity) where {deriv}
+    if eltype(sol.u) <: Number
+        idxs = only(idxs)
+    end
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     return DiffEqArray(A.u, A.t, p, sol)
@@ -203,7 +209,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
     all(!isequal(NotSymbolic()), symbolic_type.(idxs)) ||
         error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
-    [is_parameter(sol, idx) ? getp(sol, idx)(sol) : first(interp_sol[idx]) for idx in idxs]
+    first(interp_sol[idxs])
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
@@ -224,8 +230,9 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         error("Incorrect specification of `idxs`")
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+    indexed_sol = interp_sol[idxs]
     return DiffEqArray(
-        [[interp_sol[idx][i] for idx in idxs] for i in 1:length(t)], t, p, sol)
+        [indexed_sol[i] for i in 1:length(t)], t, p, sol)
 end
 
 function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
