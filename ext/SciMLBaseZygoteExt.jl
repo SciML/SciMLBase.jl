@@ -137,6 +137,10 @@ function obs_grads(VA, sym, obss_idx, Δ)
     back(Dobss)
 end
 
+function obs_grads(VA, sym, ::Nothing, Δ)
+    Zygote.nt_nothing(VA)
+end
+
 function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where T
     Δ′ = map(enumerate(VA.u)) do (t_idx, us)
         map(enumerate(us)) do (u_idx, u)
@@ -149,7 +153,8 @@ function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where T
         end
     end
 
-    ((u = Δ′,))
+    nt = Zygote.nt_nothing(VA)
+    (Zygote.accum(nt, (u = Δ′,)))
 end
 
 @adjoint function getindex(VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where T
@@ -160,7 +165,7 @@ end
         obss_idx = findall(s -> is_observed(VA, s), sym)
         not_obss_idx = setdiff(1:length(sym), obss_idx)
 
-        gs_obs = obs_grads(VA, sym, obss_idx, Δ)
+        gs_obs = obs_grads(VA, sym, isempty(obss_idx) ? nothing : obss_idx, Δ)
         gs_not_obs = not_obs_grads(VA, sym, not_obss_idx, i, Δ)
 
         a = Zygote.accum(gs_obs[1], gs_not_obs)
