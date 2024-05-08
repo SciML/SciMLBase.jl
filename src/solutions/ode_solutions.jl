@@ -146,6 +146,18 @@ function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense
         dense, tslocation, stats, alg_choice, retcode, resid, original)
 end
 
+error_if_observed_derivative(_, _, ::Type{Val{0}}) = nothing
+function error_if_observed_derivative(sys, idx, ::Type)
+    if symbolic_type(idx) != NotSymbolic() && is_observed(sys, idx) ||
+       symbolic_type(idx) == NotSymbolic() && any(x -> is_observed(sys, x), idx)
+        error("""
+        Cannot interpolate derivatives of observed variables. A possible solution could be
+        interpolating the symbolic expression that evaluates to the derivative of the
+        observed variable or using DataInterpolations.jl.
+        """)
+    end
+end
+
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
         continuity = :left) where {deriv}
     sol(t, deriv, idxs, continuity)
@@ -197,6 +209,7 @@ end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
         continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
+    error_if_observed_derivative(sol, idxs, deriv)
     if is_parameter(sol, idxs)
         return getp(sol, idxs)(sol)
     else
@@ -206,8 +219,11 @@ end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
         continuity) where {deriv}
-    all(!isequal(NotSymbolic()), symbolic_type.(idxs)) ||
+    if symbolic_type(idxs) == NotSymbolic() &&
+       any(isequal(NotSymbolic()), symbolic_type.(idxs))
         error("Incorrect specification of `idxs`")
+    end
+    error_if_observed_derivative(sol, idxs, deriv)
     interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
     first(interp_sol[idxs])
 end
@@ -215,6 +231,7 @@ end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
         continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
+    error_if_observed_derivative(sol, idxs, deriv)
     if is_parameter(sol, idxs)
         return getp(sol, idxs)(sol)
     else
@@ -228,6 +245,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector, continuity) where {deriv}
     all(!isequal(NotSymbolic()), symbolic_type.(idxs)) ||
         error("Incorrect specification of `idxs`")
+    error_if_observed_derivative(sol, idxs, deriv)
     interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     indexed_sol = interp_sol[idxs]

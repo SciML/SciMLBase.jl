@@ -226,6 +226,8 @@ sol = solve(prob, Tsit5())
 @test sol[x] isa Vector{<:Vector}
 @test sol[@nonamespace sys.x] isa Vector{<:Vector}
 @test sol.ps[p] == [1, 2, 3]
+# interpolation of array variables
+@test sol(1.0, idxs = x) == [sol(1.0, idxs = x[i]) for i in 1:3]
 
 x_idx = variable_index.((sys,), [x[1], x[2], x[3]])
 y_idx = variable_index(sys, y)
@@ -368,4 +370,19 @@ sol = solve(prob, Tsit5())
     @test getp(sys, b)(sol) ≈ 100
     @test sol.ps[a] ≈ 1
     @test sol.ps[b] ≈ 100
+end
+
+# Issue https://github.com/SciML/ModelingToolkit.jl/issues/2697
+@testset "Interpolation of derivative of observed variables" begin
+    @variables x(t) y(t) z(t) w(t)[1:2]
+    @named sys = ODESystem(
+        [D(x) ~ 1, y ~ x^2, z ~ 2y^2 + 3x, w[1] ~ x + y + z, w[2] ~ z * x * y], t)
+    sys = structural_simplify(sys)
+    prob = ODEProblem(sys, [x => 0.0], (0.0, 1.0))
+    sol = solve(prob, Tsit5())
+    @test_throws ErrorException sol(1.0, Val{1}, idxs = y)
+    @test_throws ErrorException sol(1.0, Val{1}, idxs = [y, z])
+    @test_throws ErrorException sol(1.0, Val{1}, idxs = w)
+    @test_throws ErrorException sol(1.0, Val{1}, idxs = [w, w])
+    @test_throws ErrorException sol(1.0, Val{1}, idxs = [w, y])
 end
