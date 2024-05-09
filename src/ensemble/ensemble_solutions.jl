@@ -211,8 +211,7 @@ end
     end
 end
 
-Base.@propagate_inbounds function RecursiveArrayTools._getindex(
-        x::AbstractEnsembleSolution, ::Union{ScalarSymbolic, ArraySymbolic}, s, ::Colon)
+Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s, ::Colon)
     return [xi[s] for xi in x.u]
 end
 
