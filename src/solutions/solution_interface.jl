@@ -436,6 +436,18 @@ function solplot_vecs_and_labels(dims, vars, plott, sol, plot_analytic,
     plot_vecs = []
     labels = String[]
     varsyms = variable_symbols(sol)
+    batch_symbolic_vars = []
+    for x in vars
+        for j in 2:length(x)
+            if (x[j] isa Integer && x[j] == 0) || isequal(x[j], getindepsym_defaultt(sol))
+            else
+                push!(batch_symbolic_vars, x[j])
+            end
+        end
+    end
+    batch_symbolic_vars = identity.(batch_symbolic_vars)
+    indexed_solution = sol(plott; idxs = batch_symbolic_vars)
+    idxx = 0
     for x in vars
         tmp = []
         strs = String[]
@@ -444,7 +456,8 @@ function solplot_vecs_and_labels(dims, vars, plott, sol, plot_analytic,
                 push!(tmp, plott)
                 push!(strs, "t")
             else
-                push!(tmp, sol(plott; idxs = x[j]))
+                idxx += 1
+                push!(tmp, indexed_solution[idxx, :])
                 if !isempty(varsyms) && x[j] isa Integer
                     push!(strs, String(getname(varsyms[x[j]])))
                 elseif hasname(x[j])
