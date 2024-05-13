@@ -1,5 +1,6 @@
 using ModelingToolkit, OrdinaryDiffEq
 using Zygote
+using ModelingToolkit: t_nounits as t, D_nounits as D
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
