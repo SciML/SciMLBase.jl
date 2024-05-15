@@ -1,6 +1,8 @@
 using ModelingToolkit, OrdinaryDiffEq
 using Zygote
 using ModelingToolkit: t_nounits as t, D_nounits as D
+import SymbolicIndexingInterface as SII
+import SciMLStructures as SS
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
