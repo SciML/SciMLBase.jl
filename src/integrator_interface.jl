@@ -619,10 +619,15 @@ function check_error(integrator::DEIntegrator)
     end
     if integrator.opts.unstable_check(integrator.dt, integrator.u, integrator.p,
         integrator.t)
-        if integrator.opts.verbose
-            @warn("Instability detected. Aborting")
+        bigtol = max(integrator.opts.reltol, integrator.opts.abstol)
+        # only declare instability if the dt is very small
+        # or we have at least one digit of accuracy in the solution
+        if integrator.dt<eps(integrator.t) || isdefined(integrator, :EEst) && integrator.EEst * bigtol < .1
+            if integrator.opts.verbose
+                @warn("Instability detected. Aborting")
+            end
+            return ReturnCode.Unstable
         end
-        return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
         if integrator.opts.verbose
