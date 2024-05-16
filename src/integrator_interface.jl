@@ -634,7 +634,7 @@ function check_error(integrator::DEIntegrator)
             return ReturnCode.Unstable
         end
     end
-    bigtol = max(opts.reltol, opts.abstol)
+    bigtol = max(max(opts.reltol), max(opts.abstol))
     if isdefined(integrator, :EEst) && integrator.EEst * bigtol < .1
         if opts.unstable_check(integrator.dt, integrator.u, integrator.p,
                                           integrator.t)
