@@ -31,8 +31,8 @@ sol = solve(prob, Tsit5())
     gs, = gradient(sol) do sol
         sum(sol[sys.w])
     end
-    du_ = [0., 1., 1., 1.]
-    du = [du_ for _ = sol.u]
+    du_ = [0.0, 1.0, 1.0, 1.0]
+    du = [du_ for _ in sol.u]
     @test du == gs.u
 end
 
@@ -100,15 +100,15 @@ function create_model(; C₁ = 3e-5, C₂ = 1e-6)
     @named ampermeter = MSL.Electrical.CurrentSensor()
 
     eqs = [connect(input_signal.output, source.V)
-        connect(source.p, capacitor1.n, capacitor2.n)
-        connect(source.n, resistor1.p, resistor2.p, ground.g)
-        connect(resistor1.n, capacitor1.p, ampermeter.n)
-        connect(resistor2.n, capacitor2.p, ampermeter.p)]
+           connect(source.p, capacitor1.n, capacitor2.n)
+           connect(source.n, resistor1.p, resistor2.p, ground.g)
+           connect(resistor1.n, capacitor1.p, ampermeter.n)
+           connect(resistor2.n, capacitor2.p, ampermeter.p)]
 
     @named circuit_model = ODESystem(eqs, t,
         systems = [
             resistor1, resistor2, capacitor1, capacitor2,
-            source, input_signal, ground, ampermeter,
+            source, input_signal, ground, ampermeter
         ])
 end
 

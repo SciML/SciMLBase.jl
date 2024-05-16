@@ -7,7 +7,8 @@ using SciMLBase
 using SciMLBase: ODESolution, remake,
                  getobserved, build_solution, EnsembleSolution,
                  NonlinearSolution, AbstractTimeseriesSolution
-using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed, observed, parameter_values
+using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
+                                 observed, parameter_values
 using RecursiveArrayTools
 
 # This method resolves the ambiguity with the pullback defined in
@@ -113,7 +114,7 @@ end
             y, back = Zygote.pullback(VA) do sol
                 f = observed(sol, sym)
                 p = parameter_values(sol)
-                f.(sol.u,Ref(p), sol.t)
+                f.(sol.u, Ref(p), sol.t)
             end
             gs = back(Δ)
             (gs[1], nothing)
@@ -133,7 +134,7 @@ function obs_grads(VA, sym, obss_idx, Δ)
         getindex.(Ref(sol), sym[obss_idx])
     end
     Dprime = reduce(hcat, Δ)
-    Dobss = eachrow(Dprime[obss_idx, :])    
+    Dobss = eachrow(Dprime[obss_idx, :])
     back(Dobss)
 end
 
@@ -141,7 +142,7 @@ function obs_grads(VA, sym, ::Nothing, Δ)
     Zygote.nt_nothing(VA)
 end
 
-function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where T
+function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
     Δ′ = map(enumerate(VA.u)) do (t_idx, us)
         map(enumerate(us)) do (u_idx, u)
             if u_idx in i
