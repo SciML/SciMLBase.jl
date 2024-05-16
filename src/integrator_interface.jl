@@ -603,7 +603,7 @@ function check_error(integrator::DEIntegrator)
 
     # The last part:
     # Bail out if we take a step with dt less than the minimum value (which may be time dependent)
-    # except if we are sucessfully taking such a small timestep is to hit a tstop exactly
+    # except if we are successfully taking such a small timestep is to hit a tstop exactly
     # We also exit if the ODE is unstable (by default this is the same as nonfinite u)
     # but only consider the ODE unstable if the error is somewhat controlled
     # (to prevent from bailing out as unstable when we just took way too big a step)
