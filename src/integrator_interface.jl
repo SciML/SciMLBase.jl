@@ -584,53 +584,68 @@ function check_error(integrator::DEIntegrator)
     if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
         return integrator.sol.retcode
     end
+    opts = integrator.opts
+    verbose = opts.verbose
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
     if isnan(integrator.dt)
-        if integrator.opts.verbose
+        if verbose
             @warn("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.")
         end
         return ReturnCode.DtNaN
     end
-    if integrator.iter > integrator.opts.maxiters
-        if integrator.opts.verbose
+    if integrator.iter > opts.maxiters
+        if verbose
             @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).")
         end
         return ReturnCode.MaxIters
     end
 
     # The last part:
-    # If you are close to the end, don't exit: let the user hit the end!
-    # However, if we try that and the step fails, exit instead of infinite loop
-    if !integrator.opts.force_dtmin && integrator.opts.adaptive &&
-       abs(integrator.dt) <= abs(integrator.opts.dtmin) &&
-       (((hasproperty(integrator, :opts) && hasproperty(integrator.opts, :tstops)) ?
-         integrator.t + integrator.dt < integrator.tdir * first(integrator.opts.tstops) :
-         true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
-        if integrator.opts.verbose
-            if isdefined(integrator, :EEst)
-                EEst = ", and step error estimate = $(integrator.EEst)"
-            else
-                EEst = ""
+    # Bail out if we take a step with dt less than the minimum value (which may be time dependent)
+    # except if we are sucessfully taking such a small timestep is to hit a tstop exactly
+    # We also exit if the ODE is unstable (by default this is the same as nonfinite u)
+    # but only consider the ODE unstable if the error is somewhat controlled
+    # (to prevent from bailing out as unstable when we just took way too big a step)
+    if !opts.force_dtmin && opts.adaptive
+        if abs(integrator.dt) <= abs(opts.dtmin) &&
+           (((hasproperty(integrator, :opts) && hasproperty(opts, :tstops)) ?
+             integrator.t + integrator.dt < integrator.tdir * first(opts.tstops) :
+             true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
+            if verbose
+                if isdefined(integrator, :EEst)
+                    EEst = ", and step error estimate = $(integrator.EEst)"
+                else
+                    EEst = ""
+                end
+                @warn("dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
             end
-            @warn("dt($(integrator.dt)) <= dtmin($(integrator.opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
+            return ReturnCode.DtLessThanMin
+        elseif abs(integrator.dt) <= abs(eps(integrator.t)) &&
+                hasproperty(integrator, :accept_step) && !integrator.accept_step
+            if verbose
+                if isdefined(integrator, :EEst)
+                    EEst = ", and step error estimate = $(integrator.EEst)"
+                else
+                    EEst = ""
+                end
+                @warn("dt($(integrator.dt)) <= eps(t)($(integrator.t)) $EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u))).")
+            end
+            return ReturnCode.Unstable
         end
-        return ReturnCode.DtLessThanMin
     end
-    if integrator.opts.unstable_check(integrator.dt, integrator.u, integrator.p,
-        integrator.t)
-        bigtol = max(integrator.opts.reltol, integrator.opts.abstol)
-        # only declare instability if the dt is very small
-        # or we have at least one digit of accuracy in the solution
-        if integrator.dt<eps(integrator.t) || isdefined(integrator, :EEst) && integrator.EEst * bigtol < .1
-            if integrator.opts.verbose
+    bigtol = max(opts.reltol, opts.abstol)
+    if isdefined(integrator, :EEst) && integrator.EEst * bigtol < .1
+        if opts.unstable_check(integrator.dt, integrator.u, integrator.p,
+                                          integrator.t)
+            if verbose
                 @warn("Instability detected. Aborting")
             end
             return ReturnCode.Unstable
         end
     end
     if last_step_failed(integrator)
-        if integrator.opts.verbose
+        if verbose
             @warn("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.")
         end
         return ReturnCode.ConvergenceFailure
