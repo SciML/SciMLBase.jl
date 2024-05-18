@@ -63,7 +63,7 @@ jobs:
           path: downstream
       - name: Checkout SII branch if SciMLSensitivity
         if: "contains(${{ matrix.package.repo }}, 'SciMLSensitivity.jl')"
-        run: git checkout dg/ss
+        run: git -C downstream checkout dg/ss
       - name: Load this and run the downstream tests
         shell: julia --color=yes --project=downstream {0}
         run: |
