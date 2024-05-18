@@ -3,6 +3,10 @@ using SafeTestsets
 using Test
 using SciMLBase
 
+# test with a different SciMLSensitivity branch to see full list of
+# failures
+Pkg.add(url = "https://github.com/SciML/SciMLSensitivity.jl", rev = "dg/ss")
+
 # https://github.com/JuliaArrays/FillArrays.jl/pull/163
 @test_broken isempty(detect_ambiguities(SciMLBase))
 
