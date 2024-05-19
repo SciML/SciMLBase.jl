@@ -3,6 +3,8 @@ using Zygote
 using ModelingToolkit: t_nounits as t, D_nounits as D
 import SymbolicIndexingInterface as SII
 import SciMLStructures as SS
+using ModelingToolkitStandardLibrary
+import ModelingToolkitStandardLibrary as MSL
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
@@ -34,59 +36,17 @@ sol = solve(prob, Tsit5())
     du_ = [0.0, 1.0, 1.0, 1.0]
     du = [du_ for _ in sol.u]
     @test du == gs.u
-end
 
-# Lorenz
-
-@parameters σ ρ β
-@variables x(t) y(t) z(t)
-
-eqs = [D(x) ~ σ * (y - x),
-    D(y) ~ x * (ρ - z) - y,
-    D(z) ~ x * y - β * z]
-
-@named lorenz1 = ODESystem(eqs, t)
-@named lorenz2 = ODESystem(eqs, t)
-
-@parameters γ
-@variables a(t) α(t)
-connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
-    α ~ 2lorenz1.x + a * γ]
-@mtkbuild sys = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
-
-u0 = [lorenz1.x => 1.0,
-    lorenz1.y => 0.0,
-    lorenz1.z => 0.0,
-    lorenz2.x => 0.0,
-    lorenz2.y => 1.0,
-    lorenz2.z => 0.0,
-    a => 2.0]
-
-p = [lorenz1.σ => 10.0,
-    lorenz1.ρ => 28.0,
-    lorenz1.β => 8 / 3,
-    lorenz2.σ => 10.0,
-    lorenz2.ρ => 28.0,
-    lorenz2.β => 8 / 3,
-    γ => 2.0]
-
-tspan = (0.0, 100.0)
-prob = ODEProblem(sys, u0, tspan, p)
-integ = init(prob, Rodas4())
-sol = solve(prob, Rodas4())
-
-gt = reduce(hcat, sol[[sys.a, sys.α]]) .+ randn.()
-
-gs, = Zygote.gradient(sol) do sol
-    mean(abs.(sol[[sys.a, sys.α]] .- gt), dims = 2)
+    # Observable in a vector
+    gs, = gradient(sol) do sol
+        sum(sum.(sol[[sys.w, sys.x]]))
+    end
+    du_ = [0.0, 1.0, 1.0, 2.0]
+    du = [du_ for _ in sol.u]
+    @test du == gs.u
 end
 
 # DAE
-
-using ModelingToolkit, OrdinaryDiffEq, Zygote
-using ModelingToolkitStandardLibrary
-import ModelingToolkitStandardLibrary as MSL
-using SciMLStructures
 
 function create_model(; C₁ = 3e-5, C₂ = 1e-6)
     @variables t
@@ -112,15 +72,20 @@ function create_model(; C₁ = 3e-5, C₂ = 1e-6)
         ])
 end
 
-model = create_model()
-sys = structural_simplify(model)
+@testset "DAE Observable function AD" begin
+    model = create_model()
+    sys = structural_simplify(model)
+    
+    prob = ODEProblem(sys, [], (0.0, 1.0))
+    sol = solve(prob, Rodas4())
 
-prob = ODEProblem(sys, [], (0.0, 1.0))
-sol = solve(prob, Rodas4())
-pf = getp(sol, sys.resistor1.R)
-mtkparams = SII.parameter_values(sol)
-tunables, _, _ = SS.canonicalize(SS.Tunable(), mtkparams)
-p_new = rand(length(tunables))
+    gs, = gradient(sol) do sol
+        sum(sol[sys.ampermeter.i])
+    end
+    du_ = [0.2, 1.0]
+    du = [du_ for _ in sol.u]
+    @test gs.u == du
+end
 
 # @testset "Adjoints with DAE" begin
 #     gs_mtkp, gs_p_new = gradient(mtkparams, p_new) do p, new_tunables

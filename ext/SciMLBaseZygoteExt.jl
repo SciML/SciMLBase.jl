@@ -220,9 +220,7 @@ end
     function solu_adjoint(Δ)
         zerou = zero(sol.prob.u0)
         _Δ = @. ifelse(Δ === nothing, (zerou,), Δ)
-        nt = Zygote.nt_nothing(sol)
-        gs = Zygote.accum(nt, (u = _Δ,))
-        (gs,)
+        (build_solution(sol.prob, sol.alg, sol.t, _Δ),)
     end
     sol.u, solu_adjoint
 end
