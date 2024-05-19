@@ -215,6 +215,16 @@ end
     NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u, args...), NonlinearSolutionAdjoint
 end
 
+@adjoint function literal_getproperty(sol::AbstractTimeseriesSolution,
+        ::Val{:u})
+    function solu_adjoint(Δ)
+        zerou = zero(sol.prob.u0)
+        _Δ = @. ifelse(Δ === nothing, (zerou,), Δ)
+        (build_solution(sol.prob, sol.alg, sol.t, _Δ),)
+    end
+    sol.u, solu_adjoint
+end
+
 @adjoint function literal_getproperty(sol::SciMLBase.AbstractNoTimeSolution,
         ::Val{:u})
     function solu_adjoint(Δ)
