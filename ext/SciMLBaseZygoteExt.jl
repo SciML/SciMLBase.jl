@@ -129,13 +129,13 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
-function obs_grads(VA, sym, obss_idx, Δ)
+function obs_grads(VA, sym, obs_idx, Δ)
     y, back = Zygote.pullback(VA) do sol
-        getindex.(Ref(sol), sym[obss_idx])
+        getindex.(Ref(sol), sym[obs_idx])
     end
-    Dprime = reduce(hcat, Δ)
-    Dobss = eachrow(Dprime[obss_idx, :])
-    back(Dobss)
+    Δreduced = reduce(hcat, Δ)
+    Δobs = eachrow(Δreduced[obs_idx, :])
+    back(Δobs)
 end
 
 function obs_grads(VA, sym, ::Nothing, Δ)
@@ -164,11 +164,11 @@ end
         sym = sym isa Tuple ? collect(sym) : sym
         i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
 
-        obss_idx = findall(s -> is_observed(VA, s), sym)
-        not_obss_idx = setdiff(1:length(sym), obss_idx)
+        obs_idx = findall(s -> is_observed(VA, s), sym)
+        not_obs_idx = setdiff(1:length(sym), obs_idx)
 
-        gs_obs = obs_grads(VA, sym, isempty(obss_idx) ? nothing : obss_idx, Δ)
-        gs_not_obs = not_obs_grads(VA, sym, not_obss_idx, i, Δ)
+        gs_obs = obs_grads(VA, sym, isempty(obs_idx) ? nothing : obs_idx, Δ)
+        gs_not_obs = not_obs_grads(VA, sym, not_obs_idx, i, Δ)
 
         a = Zygote.accum(gs_obs[1], gs_not_obs)
         (a, nothing)
@@ -220,7 +220,9 @@ end
     function solu_adjoint(Δ)
         zerou = zero(sol.prob.u0)
         _Δ = @. ifelse(Δ === nothing, (zerou,), Δ)
-        (build_solution(sol.prob, sol.alg, sol.t, _Δ),)
+        nt = Zygote.nt_nothing(sol)
+        gs = Zygote.accum(nt, (u = _Δ,))
+        (gs,)
     end
     sol.u, solu_adjoint
 end
