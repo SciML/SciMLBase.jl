@@ -35,7 +35,7 @@ sol = solve(prob, Tsit5())
     end
     du_ = [0.0, 1.0, 1.0, 1.0]
     du = [du_ for _ in sol.u]
-    @test du == gs.u
+    @test du == gs
 
     # Observable in a vector
     gs, = gradient(sol) do sol
@@ -43,7 +43,7 @@ sol = solve(prob, Tsit5())
     end
     du_ = [0.0, 1.0, 1.0, 2.0]
     du = [du_ for _ in sol.u]
-    @test du == gs.u
+    @test du == gs
 end
 
 # DAE
@@ -84,7 +84,7 @@ end
     end
     du_ = [0.2, 1.0]
     du = [du_ for _ in sol.u]
-    @test gs.u == du
+    @test gs == du
 end
 
 # @testset "Adjoints with DAE" begin

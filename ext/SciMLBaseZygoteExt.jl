@@ -6,9 +6,10 @@ import Zygote: literal_getproperty
 using SciMLBase
 using SciMLBase: ODESolution, remake,
                  getobserved, build_solution, EnsembleSolution,
-                 NonlinearSolution, AbstractTimeseriesSolution
+                 NonlinearSolution, AbstractTimeseriesSolution,
+                 SciMLStructures
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
-                                 observed, parameter_values
+                                 observed, parameter_values, state_values, current_time
 using RecursiveArrayTools
 
 # This method resolves the ambiguity with the pullback defined in
@@ -111,10 +112,13 @@ end
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if is_observed(VA, sym)
-            y, back = Zygote.pullback(VA) do sol
-                f = observed(sol, sym)
-                p = parameter_values(sol)
-                f.(sol.u, Ref(p), sol.t)
+            f = observed(VA, sym)
+            p = parameter_values(VA)
+            tunables, _, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
+            u = state_values(VA)
+            t = current_time(VA)
+            y, back = Zygote.pullback(u, tunables) do u, tunables
+                f.(u, Ref(tunables), t)
             end
             gs = back(Δ)
             (gs[1], nothing)
@@ -154,8 +158,7 @@ function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
         end
     end
 
-    nt = Zygote.nt_nothing(VA)
-    Zygote.accum(nt, (u = Δ′,))
+    Δ′
 end
 
 @adjoint function Base.getindex(
@@ -171,6 +174,7 @@ end
         gs_not_obs = not_obs_grads(VA, sym, not_obs_idx, i, Δ)
 
         a = Zygote.accum(gs_obs[1], gs_not_obs)
+        
         (a, nothing)
     end
     VA[sym], ODESolution_getindex_pullback
