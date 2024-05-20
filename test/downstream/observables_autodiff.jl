@@ -75,7 +75,7 @@ end
 @testset "DAE Observable function AD" begin
     model = create_model()
     sys = structural_simplify(model)
-    
+
     prob = ODEProblem(sys, [], (0.0, 1.0))
     sol = solve(prob, Rodas4())
 
