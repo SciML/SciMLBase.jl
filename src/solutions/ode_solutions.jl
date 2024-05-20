@@ -56,7 +56,7 @@ function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     @printf io "%-50s %-d\n" "Number of rootfind condition calls:" s.ncondition
     @printf io "%-50s %-d\n" "Number of accepted steps:" s.naccept
     @printf io "%-50s %-d" "Number of rejected steps:" s.nreject
-    iszero(s.maxeig) || @printf io "\n%-50s %-d" "Maximum eigenvalue recorded:" s.maxeig
+    iszero(s.maxeig) || @printf io "\n%-50s %-e" "Maximum eigenvalue recorded:" s.maxeig
 end
 
 function Base.merge(a::DEStats, b::DEStats)
