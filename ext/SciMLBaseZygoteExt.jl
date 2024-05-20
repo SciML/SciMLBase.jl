@@ -6,11 +6,11 @@ import Zygote: literal_getproperty
 using SciMLBase
 using SciMLBase: ODESolution, remake,
                  getobserved, build_solution, EnsembleSolution,
-                 NonlinearSolution, AbstractTimeseriesSolution,
-                 SciMLStructures
+                 NonlinearSolution, AbstractTimeseriesSolution
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
                                  observed, parameter_values, state_values, current_time
 using RecursiveArrayTools
+import SciMLStructures
 
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
