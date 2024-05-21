@@ -425,6 +425,14 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
         sol.original)
 end
 
+function solution_new_original_retcode(
+        sol::ODESolution{T, N}, original, retcode, resid) where {T, N}
+    return ODESolution{T, N}(
+        sol.u, sol.u_analytic, sol.errors, sol.t, sol.k, sol.prob, sol.alg,
+        sol.interp, sol.dense, sol.tslocation, sol.stats, sol.alg_choice, retcode, resid,
+        original)
+end
+
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     ODESolution{T, N}(sol.u[I],
         sol.u_analytic === nothing ? nothing : sol.u_analytic[I],
