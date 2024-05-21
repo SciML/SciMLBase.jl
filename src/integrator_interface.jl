@@ -604,7 +604,7 @@ function check_error(integrator::DEIntegrator)
     # The last part:
     # Bail out if we take a step with dt less than the minimum value (which may be time dependent)
     # except if we are successfully taking such a small timestep is to hit a tstop exactly
-    # We also exit if the ODE is unstable acording to a user chosen callbakc
+    # We also exit if the ODE is unstable according to a user chosen callback
     # but only if we accepted the step to prevent from bailing out as unstable
     # when we just took way too big a step)
     step_accepted = !hasproperty(integrator, :accept_step) || integrator.accept_step
