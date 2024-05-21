@@ -604,14 +604,15 @@ function check_error(integrator::DEIntegrator)
     # The last part:
     # Bail out if we take a step with dt less than the minimum value (which may be time dependent)
     # except if we are successfully taking such a small timestep is to hit a tstop exactly
-    # We also exit if the ODE is unstable (by default this is the same as nonfinite u)
-    # but only consider the ODE unstable if the error is somewhat controlled
-    # (to prevent from bailing out as unstable when we just took way too big a step)
+    # We also exit if the ODE is unstable acording to a user chosen callbakc
+    # but only if we accepted the step to prevent from bailing out as unstable
+    # when we just took way too big a step)
+    step_accepted = !hasproperty(integrator, :accept_step) || integrator.accept_step
     if !opts.force_dtmin && opts.adaptive
         if abs(integrator.dt) <= abs(opts.dtmin) &&
-           (((hasproperty(integrator, :opts) && hasproperty(opts, :tstops)) ?
+           (!step_accepted || ((hasproperty(integrator, :opts) && hasproperty(opts, :tstops)) ?
              integrator.t + integrator.dt < integrator.tdir * first(opts.tstops) :
-             true) || (hasproperty(integrator, :accept_step) && !integrator.accept_step))
+             true))
             if verbose
                 if isdefined(integrator, :EEst)
                     EEst = ", and step error estimate = $(integrator.EEst)"
@@ -621,8 +622,7 @@ function check_error(integrator::DEIntegrator)
                 @warn("dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
             end
             return ReturnCode.DtLessThanMin
-        elseif abs(integrator.dt) <= abs(eps(integrator.t)) &&
-                hasproperty(integrator, :accept_step) && !integrator.accept_step
+        elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
             if verbose
                 if isdefined(integrator, :EEst)
                     EEst = ", and step error estimate = $(integrator.EEst)"
@@ -634,15 +634,11 @@ function check_error(integrator::DEIntegrator)
             return ReturnCode.Unstable
         end
     end
-    bigtol = max(maximum(opts.reltol), maximum(opts.abstol))
-    if isdefined(integrator, :EEst) && integrator.EEst * bigtol < .1
-        if opts.unstable_check(integrator.dt, integrator.u, integrator.p,
-                                          integrator.t)
-            if verbose
-                @warn("Instability detected. Aborting")
-            end
-            return ReturnCode.Unstable
+    if step_accepted && opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
+        if verbose
+            @warn("Instability detected. Aborting")
         end
+        return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
         if verbose
