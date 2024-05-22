@@ -125,6 +125,10 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
     original::O
 end
 
+function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution{T, N}}
+    ODESolution{T, N}
+end
+
 Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
     if s === :destats
         Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
@@ -372,83 +376,31 @@ function calculate_solution_errors!(sol::AbstractODESolution; fill_uanalytic = t
 end
 
 function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
-    ODESolution{T, N}(sol.u,
-        u_analytic,
-        errors,
-        sol.t,
-        sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        sol.dense,
-        sol.tslocation,
-        sol.stats,
-        sol.alg_choice,
-        sol.retcode,
-        sol.resid,
-        sol.original)
+    @reset sol.u_analytic = u_analytic
+    return @set sol.errors = errors
 end
 
 function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
-    ODESolution{T, N}(sol.u,
-        sol.u_analytic,
-        sol.errors,
-        sol.t,
-        sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        sol.dense,
-        sol.tslocation,
-        sol.stats,
-        sol.alg_choice,
-        retcode,
-        sol.resid,
-        sol.original)
+    return @set sol.retcode = retcode
 end
 
 function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N}
-    ODESolution{T, N}(sol.u,
-        sol.u_analytic,
-        sol.errors,
-        sol.t,
-        sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        sol.dense,
-        tslocation,
-        sol.stats,
-        sol.alg_choice,
-        sol.retcode,
-        sol.resid,
-        sol.original)
+    return @set sol.tslocation = tslocation
 end
 
 function solution_new_original_retcode(
         sol::ODESolution{T, N}, original, retcode, resid) where {T, N}
-    return ODESolution{T, N}(
-        sol.u, sol.u_analytic, sol.errors, sol.t, sol.k, sol.prob, sol.alg,
-        sol.interp, sol.dense, sol.tslocation, sol.stats, sol.alg_choice, retcode, resid,
-        original)
+    @reset sol.original = original
+    @reset sol.retcode = retcode
+    return @set sol.resid = resid
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
-    ODESolution{T, N}(sol.u[I],
-        sol.u_analytic === nothing ? nothing : sol.u_analytic[I],
-        sol.errors,
-        sol.t[I],
-        sol.dense ? sol.k[I] : sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        false,
-        sol.tslocation,
-        sol.stats,
-        sol.alg_choice,
-        sol.retcode,
-        sol.resid,
-        sol.original)
+    @reset sol.u = sol.u[I]
+    @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
+    @reset sol.t = sol.t[I]
+    @reset sol.k = sol.dense ? sol.k[I] : sol.k
+    return @set sol.alg = false
 end
 
 function sensitivity_solution(sol::ODESolution, u, t)
@@ -463,10 +415,7 @@ function sensitivity_solution(sol::ODESolution, u, t)
     end
 
     interp = enable_interpolation_sensitivitymode(sol.interp)
-    ODESolution{T, N}(u, sol.u_analytic, sol.errors,
-        t isa Vector ? t : collect(t),
-        sol.k, sol.prob,
-        sol.alg, interp,
-        sol.dense, sol.tslocation,
-        sol.stats, sol.alg_choice, sol.retcode, sol.resid, sol.original)
+    @reset sol.u = u
+    @reset sol.t = t isa Vector ? t : collect(t)
+    return @set sol.interp = interp
 end
