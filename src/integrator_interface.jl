@@ -610,7 +610,7 @@ function check_error(integrator::DEIntegrator)
     step_accepted = !hasproperty(integrator, :accept_step) || integrator.accept_step
     if !opts.force_dtmin && opts.adaptive
         if abs(integrator.dt) <= abs(opts.dtmin) &&
-           (!step_accepted || ((hasproperty(integrator, :opts) && hasproperty(opts, :tstops)) ?
+           (!step_accepted || (hasproperty(opts, :tstops) ?
              integrator.t + integrator.dt < integrator.tdir * first(opts.tstops) :
              true))
             if verbose
