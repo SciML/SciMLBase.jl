@@ -110,6 +110,9 @@ end
         @time @safetestset "Partial Functions" begin
             include("downstream/partial_functions.jl")
         end
+        @time @safetestset "Autodiff Observable Functions" begin
+            include("downstream/observables_autodiff.jl")
+        end
     end
 
     if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")

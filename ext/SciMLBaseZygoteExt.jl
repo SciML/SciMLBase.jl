@@ -7,8 +7,10 @@ using SciMLBase
 using SciMLBase: ODESolution, remake,
                  getobserved, build_solution, EnsembleSolution,
                  NonlinearSolution, AbstractTimeseriesSolution
-using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index
+using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
+                                 observed, parameter_values, state_values, current_time
 using RecursiveArrayTools
+import SciMLStructures
 
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
@@ -109,7 +111,18 @@ end
 @adjoint function Base.getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
-        if i === nothing
+        if is_observed(VA, sym)
+            f = observed(VA, sym)
+            p = parameter_values(VA)
+            tunables, _, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
+            u = state_values(VA)
+            t = current_time(VA)
+            y, back = Zygote.pullback(u, tunables) do u, tunables
+                f.(u, Ref(tunables), t)
+            end
+            gs = back(Δ)
+            (gs[1], nothing)
+        elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
             Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
@@ -120,26 +133,49 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
+function obs_grads(VA, sym, obs_idx, Δ)
+    y, back = Zygote.pullback(VA) do sol
+        getindex.(Ref(sol), sym[obs_idx])
+    end
+    Δreduced = reduce(hcat, Δ)
+    Δobs = eachrow(Δreduced[obs_idx, :])
+    back(Δobs)
+end
+
+function obs_grads(VA, sym, ::Nothing, Δ)
+    Zygote.nt_nothing(VA)
+end
+
+function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
+    Δ′ = map(enumerate(VA.u)) do (t_idx, us)
+        map(enumerate(us)) do (u_idx, u)
+            if u_idx in i
+                idx = findfirst(isequal(u_idx), i)
+                Δ[t_idx][idx]
+            else
+                zero(T)
+            end
+        end
+    end
+
+    Δ′
+end
+
 @adjoint function Base.getindex(
         VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}) where {T}
     function ODESolution_getindex_pullback(Δ)
         sym = sym isa Tuple ? collect(sym) : sym
         i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
-        if i === nothing
-            throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
-        else
-            Δ′ = map(enumerate(VA.u)) do (t_idx, us)
-                map(enumerate(us)) do (u_idx, u)
-                    if u_idx in i
-                        idx = findfirst(isequal(u_idx), i)
-                        Δ[t_idx][idx]
-                    else
-                        zero(T)
-                    end
-                end
-            end
-            (Δ′, nothing)
-        end
+
+        obs_idx = findall(s -> is_observed(VA, s), sym)
+        not_obs_idx = setdiff(1:length(sym), obs_idx)
+
+        gs_obs = obs_grads(VA, sym, isempty(obs_idx) ? nothing : obs_idx, Δ)
+        gs_not_obs = not_obs_grads(VA, sym, not_obs_idx, i, Δ)
+
+        a = Zygote.accum(gs_obs[1], gs_not_obs)
+
+        (a, nothing)
     end
     VA[sym], ODESolution_getindex_pullback
 end
