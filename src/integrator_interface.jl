@@ -622,7 +622,8 @@ function check_error(integrator::DEIntegrator)
                 @warn("dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
             end
             return ReturnCode.DtLessThanMin
-        elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
+        elseif !step_accepted && integrator.t isa AbstractFloat &&
+               abs(integrator.dt) <= abs(eps(integrator.t))
             if verbose
                 if isdefined(integrator, :EEst)
                     EEst = ", and step error estimate = $(integrator.EEst)"
@@ -634,7 +635,8 @@ function check_error(integrator::DEIntegrator)
             return ReturnCode.Unstable
         end
     end
-    if step_accepted && opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
+    if step_accepted &&
+       opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
         if verbose
             @warn("Instability detected. Aborting")
         end
