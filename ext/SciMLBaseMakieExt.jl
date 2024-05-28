@@ -344,7 +344,7 @@ end
 # TODO: should `error_style` be Makie plot types instead?  I.e. `Band`, `Errorbar`, etc
 function Makie.convert_arguments(::Type{<:Lines},
         sim::SciMLBase.EnsembleSummary;
-        trajectories = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
+        idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
                        1,
         error_style = :ribbon, ci_type = :quantile,
         kwargs...)
@@ -384,7 +384,7 @@ function Makie.convert_arguments(::Type{<:Lines},
 
     makie_plotlist = Makie.PlotSpec[]
 
-    for (count, idx) in enumerate(trajectories)
+    for (count, idx) in enumerate(idxs)
         push!(makie_plotlist,
             S.Lines(sim.t, u[idx]; color = Makie.Cycled(count), label = "u[$idx]"))
         if error_style == :ribbon
