@@ -158,7 +158,7 @@ end
 end
 
 @recipe function f(sim::EnsembleSummary;
-        trajectories = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
+        idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
                        1,
         error_style = :ribbon, ci_type = :quantile)
     if ci_type == :SEM
@@ -192,7 +192,7 @@ end
     else
         error("ci_type choice not valid. Must be `:SEM` or `:quantile`")
     end
-    for i in trajectories
+    for i in idxs
         @series begin
             legend --> false
             linewidth --> 3
