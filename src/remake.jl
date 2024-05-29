@@ -78,7 +78,6 @@ end
            p = missing, kwargs = missing, _kwargs...)
 
 Remake the given `ODEProblem`.
-If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(prob::ODEProblem; f = missing,
         u0 = missing,
@@ -128,7 +127,18 @@ function remake(prob::ODEProblem; f = missing,
     else
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
-
+    if has_initializeprob(prob.f) && (typeof(u0) != typeof(prob.u0) || typeof(p) != typeof(prob.p) || typeof(tspan) != typeof(prob.tspan))
+        temp_state = ProblemState(; u = u0, p = p, t = tspan[1])
+        initu0 = [sym => getu(prob, sym)(temp_state) for sym in variable_symbols(prob.f.initializeprob)]
+        initp = [sym =>getu(prob, sym)(temp_state) for sym in parameter_symbols(prob.f.initializeprob)]
+        if initu0 == []
+            initu0 = nothing
+        end
+        if initp == []
+            initp = nothing
+        end
+        @reset _f.initializeprob = remake(prob.f.initializeprob, u0 = initu0, p = initp)
+    end
     if kwargs === missing
         ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
             _kwargs...)
