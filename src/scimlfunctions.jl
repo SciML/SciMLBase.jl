@@ -402,7 +402,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV,
-    SYS, IProb, IProbMap, IProbP} <: AbstractODEFunction{iip}
+    SYS, IProb, IProbInit, IProbUp} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -419,9 +419,14 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     observed::O
     colorvec::TCV
     sys::SYS
+    # The initialization problem.
     initializeprob::IProb
-    initializeprobmap::IProbMap
-    initializeprob_updatep!::IProbP
+    # Function which takes (initializeprob, integrator) and updates the problem with
+    # unknown and parameter values from the integrator.
+    initializeprob_init!::IProbInit
+    # Function which takes (integrator, initializesol) and updates the integrator with
+    # unknown and parameter values from initializesol (solution of initializeprob).
+    initializeprob_update!::IProbUp
 end
 
 @doc doc"""
@@ -1505,7 +1510,7 @@ automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
 struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, O, TCV,
-    SYS, IProb, IProbMap, IProbP} <:
+    SYS, IProb, IProbInit, IProbUp} <:
        AbstractDAEFunction{iip}
     f::F
     analytic::Ta
@@ -1521,9 +1526,14 @@ struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TP
     observed::O
     colorvec::TCV
     sys::SYS
+    # The initialization problem.
     initializeprob::IProb
-    initializeprobmap::IProbMap
-    initializeprob_updatep!::IProbP
+    # Function which takes (initializeprob, integrator) and updates the problem with
+    # unknown and parameter values from the integrator.
+    initializeprob_init!::IProbInit
+    # Function which takes (integrator, initializesol) and updates the integrator with
+    # unknown and parameter values from initializesol (solution of initializeprob).
+    initializeprob_update!::IProbUp
 end
 
 """
@@ -2378,8 +2388,8 @@ function ODEFunction{iip, specialize}(f;
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
-        initializeprob_updatep! = __has_initializeprob_updatep(f) ? f.initializeprob_updatep! : nothing
+        initializeprob_init! = __has_initializeprob_init(f) ? f.initializeprob_init! : nothing,
+        initializeprob_update! = __has_initializeprob_update(f) ? f.initializeprob_update! : nothing
 ) where {iip,
         specialize
 }
@@ -2440,8 +2450,8 @@ function ODEFunction{iip, specialize}(f;
             typeof(sys), Any, Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap,
-            initializeprob_updatep!)
+            observed, _colorvec, sys, initializeprob, initializeprob_init!,
+            initializeprob_update!)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2451,12 +2461,12 @@ function ODEFunction{iip, specialize}(f;
             typeof(observed),
             typeof(_colorvec),
             typeof(sys), typeof(initializeprob),
-            typeof(initializeprobmap),
-            typeof(initializeprob_updatep!)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(initializeprob_init!),
+            typeof(initializeprob_update!)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap,
-            initializeprob_updatep!)
+            observed, _colorvec, sys, initializeprob, initializeprob_init!,
+            initializeprob_update!)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2465,13 +2475,12 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initializeprob),
-            typeof(initializeprobmap),
-            typeof(initializeprob_updatep!)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), typeof(initializeprob), typeof(initializeprob_init!),
+            typeof(initializeprob_update!)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap,
-            initializeprob_updatep!)
+            observed, _colorvec, sys, initializeprob, initializeprob_init!,
+            initializeprob_update!)
     end
 end
 
@@ -2488,11 +2497,11 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any,
             Any, typeof(f.colorvec),
-            typeof(f.sys), Any, Any, Any}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.sys), Any, Any, Any, Any}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys, f.initializeprob, f.initializeprobmap,
-            f.initializeprob_updatep!)
+            f.observed, f.colorvec, f.sys, f.initializeprob, f.initializeprob_init!,
+            f.initializeprob_update!)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
@@ -2500,13 +2509,12 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
             typeof(f.paramjac),
             typeof(f.observed), typeof(f.colorvec),
-            typeof(f.sys), typeof(f.initializeprob),
-            typeof(f.initializeprobmap),
-            typeof(f.initializeprob_updatep!)}(newf, f.mass_matrix, f.analytic, f.tgrad,
+            typeof(f.sys), typeof(f.initializeprob), typeof(f.initializeprob_init!),
+            typeof(f.initializeprob_update!)}(newf, f.mass_matrix, f.analytic, f.tgrad,
             f.jac, f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys, f.initializeprob,
-            f.initializeprobmap, f.initializeprob_updatep!)
+            f.observed, f.colorvec, f.sys, f.initializeprob, f.initializeprob_init!,
+            f.initializeprob_update!)
     end
 end
 
@@ -3298,8 +3306,8 @@ function DAEFunction{iip, specialize}(f;
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
-        initializeprob_updatep! = __has_initializeprob_updatep(f) ? f.initializeprob_updatep! : nothing
+        initializeprob_init! = __has_initializeprob_init(f) ? f.initializeprob_init! : nothing,
+        initializeprob_update! = __has_initializeprob_update(f) ? f.initializeprob_update! : nothing
         ) where {
         iip,
         specialize
@@ -3340,22 +3348,23 @@ function DAEFunction{iip, specialize}(f;
         DAEFunction{iip, specialize, Any, Any, Any,
             Any, Any, Any, Any, Any,
             Any, Any, Any,
-            Any, typeof(_colorvec), Any, Any, Any, Any}(_f, analytic, tgrad, jac, jvp,
+            Any, typeof(_colorvec), Any, Any, Any}(_f, analytic, tgrad, jac, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
-            _colorvec, sys, initializeprob, initializeprobmap, initializeprob_updatep!)
+            _colorvec, sys, initializeprob, initializeprob_update!)
     else
         DAEFunction{iip, specialize, typeof(_f), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
             typeof(paramjac),
             typeof(observed), typeof(_colorvec),
-            typeof(sys), typeof(initializeprob), typeof(initializeprobmap),
-            typeof(initializeprob_updatep!)}(
+            typeof(sys), typeof(initializeprob), typeof(initializeprob_init!),
+            typeof(initializeprob_update!)}(
             _f, analytic, tgrad, jac, jvp, vjp,
             jac_prototype, sparsity, Wfact, Wfact_t,
             paramjac, observed,
-            _colorvec, sys, initializeprob, initializeprobmap, initializeprob_updatep!)
+            _colorvec, sys, initializeprob, initializeprob_init!,
+            initializeprob_update!)
     end
 end
 
@@ -4244,8 +4253,8 @@ __has_sys(f) = isdefined(f, :sys)
 __has_analytic_full(f) = isdefined(f, :analytic_full)
 __has_resid_prototype(f) = isdefined(f, :resid_prototype)
 __has_initializeprob(f) = isdefined(f, :initializeprob)
-__has_initializeprobmap(f) = isdefined(f, :initializeprobmap)
-__has_initializeprob_updatep(f) = isdefined(f, :initializeprob_updatep!)
+__has_initializeprob_init(f) = isdefined(f, :initializeprob_init!)
+__has_initializeprob_update(f) = isdefined(f, :initializeprob_update!)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
@@ -4261,11 +4270,11 @@ has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
 function has_initializeprob(f::AbstractSciMLFunction)
     __has_initializeprob(f) && f.initializeprob !== nothing
 end
-function has_initializeprobmap(f::AbstractSciMLFunction)
-    __has_initializeprobmap(f) && f.initializeprobmap !== nothing
+function has_initializeprob_init(f::AbstractSciMLFunction)
+    __has_initializeprob_init(f) && f.initializeprob_init! !== nothing
 end
-function has_initializeprob_updatep(f::AbstractSciMLFunction)
-    __has_initializeprob_updatep(f) && f.initializeprob_updatep! !== nothing
+function has_initializeprob_update(f::AbstractSciMLFunction)
+    __has_initializeprob_update(f) && f.initializeprob_update! !== nothing
 end
 
 
