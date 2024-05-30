@@ -3358,7 +3358,7 @@ function DAEFunction{iip, specialize}(f;
         DAEFunction{iip, specialize, Any, Any, Any,
             Any, Any, Any, Any, Any,
             Any, Any, Any,
-            Any, typeof(_colorvec), Any, Any, Any, Any}(_f, analytic, tgrad, jac, jvp,
+            Any, typeof(_colorvec), Any, Any, Any, Any, Any}(_f, analytic, tgrad, jac, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
             _colorvec, sys, initializeprob, initializeprobmap, initializeprob_init!, initializeprob_update!)
