@@ -2467,7 +2467,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initializeprob), typeof(initializeprobmap)
+            typeof(sys), typeof(initializeprob), typeof(initializeprobmap),
             typeof(initializeprob_init!),
             typeof(initializeprob_update!)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
