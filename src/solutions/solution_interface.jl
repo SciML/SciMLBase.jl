@@ -22,9 +22,10 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
 end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
-function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T, N, Q, B}
+function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution;
+        discretes = nothing) where {T, N, Q, B}
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol)
+    return DiffEqArray(A.u, A.t, p, sol; discretes)
 end
 
 # SymbolicIndexingInterface.jl
