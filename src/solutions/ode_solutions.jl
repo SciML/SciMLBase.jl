@@ -105,7 +105,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
+struct ODESolution{T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
     AC <: Union{Nothing, Vector{Int}}, R, O} <:
        AbstractODESolution{T, N, uType}
     u::uType
@@ -113,6 +113,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, P, A, IType, S,
     errors::DType
     t::tType
     k::rateType
+    discretes::discType
     prob::P
     alg::A
     interp::IType
@@ -135,7 +136,7 @@ function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
     T = eltype(eltype(u))
     patch = merge(getproperties(sol), patch)
     return ODESolution{T, N}(patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
-        patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
+        patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
         patch.alg_choice, patch.retcode, patch.resid, patch.original)
 end
 
@@ -150,13 +151,14 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Sy
 end
 
 # FIXME: Remove the defaults for resid and original on a breaking release
-function ODESolution{T, N}(u, u_analytic, errors, t, k, prob, alg, interp, dense,
+function ODESolution{T, N}(
+        u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode, resid = nothing,
         original = nothing) where {T, N}
     return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-        typeof(k), typeof(prob), typeof(alg), typeof(interp),
+        typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid),
-        typeof(original)}(u, u_analytic, errors, t, k, prob, alg, interp,
+        typeof(original)}(u, u_analytic, errors, t, k, discretes, prob, alg, interp,
         dense, tslocation, stats, alg_choice, retcode, resid, original)
 end
 
@@ -170,6 +172,22 @@ function error_if_observed_derivative(sys, idx, ::Type)
         observed variable or using DataInterpolations.jl.
         """)
     end
+end
+
+function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
+        T1, T2, T3, T4, T5, T6, T7,
+        S <: ODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection}}
+    Timeseries()
+end
+
+function get_interpolated_discretes(sol::AbstractODESolution, t, deriv, continuity)
+    is_parameter_timeseries(sol) == Timeseries() || return nothing
+
+    discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+    interp_discs = map(discs) do partition
+        ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
+    end
+    return ParameterTimeseriesCollection(interp_discs, parameter_values(discs))
 end
 
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
@@ -188,7 +206,8 @@ end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::Nothing, continuity) where {deriv}
-    augment(sol.interp(t, idxs, deriv, sol.prob.p, continuity), sol)
+    discretes = get_interpolated_discretes(sol, t, deriv, continuity)
+    augment(sol.interp(t, idxs, deriv, sol.prob.p, continuity), sol; discretes)
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Integer,
@@ -224,11 +243,23 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
         continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
-    if is_parameter(sol, idxs)
-        return getp(sol, idxs)(sol)
-    else
-        return augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)[idxs][1]
+    ps = parameter_values(sol)
+    if is_parameter(sol, idxs) && !is_timeseries_parameter(sol, idxs)
+        return getp(sol, idxs)(ps)
     end
+    # NOTE: This is basically SII.parameter_values_at_time but that isn't public API
+    # and once we move interpolation to SII, there's no reason for it to be
+    if is_parameter_timeseries(sol) == Timeseries()
+        discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+        ps = parameter_values(discs)
+        for ts_idx in eachindex(discs)
+            partition = discs[ts_idx]
+            interp_val = ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
+            ps = with_updated_parameter_timeseries_values(ps, ts_idx => interp_val)
+        end
+    end
+    state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
+    return getu(sol, idxs)(state)
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
@@ -238,21 +269,30 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
         error("Incorrect specification of `idxs`")
     end
     error_if_observed_derivative(sol, idxs, deriv)
-    interp_sol = augment(sol.interp([t], nothing, deriv, sol.prob.p, continuity), sol)
-    first(interp_sol[idxs])
+    ps = parameter_values(sol)
+    # NOTE: This is basically SII.parameter_values_at_time but that isn't public API
+    # and once we move interpolation to SII, there's no reason for it to be
+    if is_parameter_timeseries(sol) == Timeseries()
+        discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+        ps = parameter_values(discs)
+        for ts_idx in eachindex(discs)
+            partition = discs[ts_idx]
+            interp_val = ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
+            ps = with_updated_parameter_timeseries_values(ps, ts_idx => interp_val)
+        end
+    end
+    state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
+    return getu(sol, idxs)(state)
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
         continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
-    if is_parameter(sol, idxs)
-        return getp(sol, idxs)(sol)
-    else
-        interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
-        p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-        return DiffEqArray(interp_sol[idxs], t, p, sol)
-    end
+    p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+    discretes = get_interpolated_discretes(sol, t, deriv, continuity)
+    interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol; discretes)
+    return DiffEqArray(getu(interp_sol, idxs)(interp_sol), t, p, sol; discretes)
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
@@ -260,11 +300,58 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     all(!isequal(NotSymbolic()), symbolic_type.(idxs)) ||
         error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
-    interp_sol = augment(sol.interp(t, nothing, deriv, sol.prob.p, continuity), sol)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    indexed_sol = interp_sol[idxs]
+    discretes = get_interpolated_discretes(sol, t, deriv, continuity)
+    interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol; discretes)
     return DiffEqArray(
-        [indexed_sol[i] for i in 1:length(t)], t, p, sol)
+        getu(interp_sol, idxs)(interp_sol), t, p, sol; discretes)
+end
+
+# public API, used by MTK
+"""
+    create_parameter_timeseries_collection(sys, ps)
+
+Create a `SymbolicIndexingInterface.ParameterTimeseriesCollection` for the given system
+`sys` and parameter object `ps`. Return `nothing` if there are no timeseries parameters.
+Defaults to `nothing`.
+"""
+function create_parameter_timeseries_collection(sys, ps, tspan)
+    return nothing
+end
+
+const PeriodicDiffEqArray = DiffEqArray{T, N, A, B} where {T, N, A, B <: AbstractRange}
+
+# public API, used by MTK
+"""
+    get_saveable_values(ps, timeseries_idx)
+"""
+function get_saveable_values end
+
+function save_discretes!(integ::DEIntegrator, timeseries_idx)
+    save_discretes!(integ.sol, current_time(integ), get_saveable_values(parameter_values(integ), timeseries_idx), timeseries_idx)
+end
+
+save_discretes!(args...) = nothing
+
+# public API, used by MTK
+function save_discretes!(sol::AbstractODESolution, t, vals, timeseries_idx)
+    RecursiveArrayTools.has_discretes(sol) || return
+    disc = RecursiveArrayTools.get_discretes(sol)
+    _save_discretes_internal!(disc[timeseries_idx], t, vals)
+end
+
+function _save_discretes_internal!(A::AbstractDiffEqArray, t, vals)
+    push!(A.t, t)
+    push!(A.u, vals)
+end
+
+function _save_discretes_internal!(A::PeriodicDiffEqArray, t, vals)
+    # This is O(1) because A.t is a range
+    idx = searchsortedlast(A.t, t)
+    if idx == firstindex(A.t) - 1 || A.t[idx] ≉ t
+        error("Tried to save periodic discrete value with timeseries $(A.t) at time $t")
+    end
+    push!(A.u, vals)
 end
 
 function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
@@ -305,6 +392,8 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
         Base.depwarn(msg, :build_solution)
     end
 
+    ps = parameter_values(prob)
+    discretes = create_parameter_timeseries_collection(prob.f.sys, ps, prob.tspan)
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
@@ -312,6 +401,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
             u_analytic,
             errors,
             t, k,
+            discretes,
             prob,
             alg,
             interp,
@@ -332,6 +422,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
             nothing,
             nothing,
             t, k,
+            discretes,
             prob,
             alg,
             interp,
@@ -411,6 +502,36 @@ function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     @reset sol.t = sol.t[I]
     @reset sol.k = sol.dense ? sol.k[I] : sol.k
     return @set sol.alg = false
+end
+
+mask_discretes(::Nothing, _, _...) = nothing
+
+function mask_discretes(discretes::ParameterTimeseriesCollection, new_t, ::Union{Int, CartesianIndex})
+    masked_discretes = map(discretes) do disc
+        i = searchsortedlast(disc.t, new_t)
+        disc[i:i]
+    end
+    return ParameterTimeseriesCollection(masked_discretes, parameter_values(discretes))
+end
+
+function mask_discretes(discretes::ParameterTimeseriesCollection, new_t, ::AbstractRange)
+    mint, maxt = extrema(new_t)
+    masked_discretes = map(discretes) do disc
+        mini = searchsortedfirst(disc.t, mint)
+        maxi = searchsortedlast(disc.t, maxt)
+        disc[mini:maxi]
+    end
+    return ParameterTimeseriesCollection(masked_discretes, parameter_values(discretes))
+end
+
+function mask_discretes(discretes::ParameterTimeseriesCollection, new_t, _)
+    masked_discretes = map(discretes) do disc
+        idxs = map(new_t) do t
+            searchsortedlast(disc.t, t)
+        end
+        disc[idxs]
+    end
+    return ParameterTimeseriesCollection(masked_discretes, parameter_values(discretes))
 end
 
 function sensitivity_solution(sol::ODESolution, u, t)
