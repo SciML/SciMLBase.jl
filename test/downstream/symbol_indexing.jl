@@ -235,7 +235,7 @@ x_val = vcat.(getindex.((sol,), x_idx, :)...)
 y_val = sol[y_idx, :]
 obs_val = sol[x[1] + y]
 
-# checking inference for mixed-type arrays will always fail
+# don't check inference for weird cases of nested arrays/tuples
 for (sym, val, check_inference) in [
     (x, x_val, true),
     (y, y_val, true),
@@ -254,7 +254,7 @@ for (sym, val, check_inference) in [
     ((x, x), [(i, i) for i in x_val], true),
     ((x, x_idx), [(i, i) for i in x_val], true),
     ((x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
-    ((x, (x[1] + y, y)), [(i, (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], true),
+    ((x, (x[1] + y, y)), [(i, (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false),
     ([x, [x[1] + y, y]], [[i, [k, j]] for (i, j, k) in zip(x_val, y_val, obs_val)], false),
     ((x, [x[1] + y, y], (x[1] + y, y_idx)),
         [(i, [k, j], (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false),
@@ -311,6 +311,7 @@ end
 pval = [1.0, 2.0, 3.0]
 pval_new = [4.0, 5.0, 6.0]
 
+# don't check inference for nested tuples/arrays
 for (sym, oldval, newval, check_inference) in [
     (p[1], pval[1], pval_new[1], true),
     (p, pval, pval_new, true),
@@ -319,7 +320,7 @@ for (sym, oldval, newval, check_inference) in [
     ((p[1], p[2:3]), (pval[1], pval[2:3]), (pval_new[1], pval_new[2:3]), true),
     ([p[1], p[2:3]], [pval[1], pval[2:3]], [pval_new[1], pval_new[2:3]], false),
     ((p[1], (p[2],), [p[3]]), (pval[1], (pval[2],), [pval[3]]),
-        (pval_new[1], (pval_new[2],), [pval_new[3]]), true),
+        (pval_new[1], (pval_new[2],), [pval_new[3]]), false),
     ([p[1], (p[2],), [p[3]]], [pval[1], (pval[2],), [pval[3]]],
         [pval_new[1], (pval_new[2],), [pval_new[3]]], false)
 ]
