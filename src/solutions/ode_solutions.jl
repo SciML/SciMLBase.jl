@@ -129,6 +129,16 @@ function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution
     ODESolution{T, N}
 end
 
+function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
+    u = get(patch, :u, sol.u)
+    N = u === nothing ? 2 : ndims(eltype(u)) + 1
+    T = eltype(eltype(u))
+    patch = merge(getproperties(sol), patch)
+    return ODESolution{T, N}(patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
+        patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
+        patch.alg_choice, patch.retcode, patch.resid, patch.original)
+end
+
 Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
     if s === :destats
         Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
@@ -276,7 +286,7 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
                prob.u0(prob.p, first(prob.tspan)) : prob.u0(first(prob.tspan))
         N = length((size(__u0)..., length(u)))
     else
-        N = length((size(prob.u0)..., length(u)))
+        N = ndims(eltype(u)) + 1
     end
 
     if prob.f isa Tuple
