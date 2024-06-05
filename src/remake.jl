@@ -475,7 +475,10 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false})
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in u0)
     isdep || return remake_buffer(prob, state_values(prob), u0), p
 
-    temp_state = ProblemState(; p = p)
+    # FIXME: need to provide `u` since the observed function expects it.
+    # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
+    # used, since any state symbols in the expression were substituted out earlier.
+    temp_state = ProblemState(; u = state_values(prob), p = p)
     u0 = anydict(k => symbolic_type(v) === NotSymbolic() ? v : getu(prob, v)(temp_state)
     for (k, v) in u0)
     return remake_buffer(prob, state_values(prob), u0), p
@@ -492,8 +495,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true})
     isdep || return u0, remake_buffer(prob, parameter_values(prob), p)
 
     # FIXME: need to provide `p` since the observed function expects an `MTKParameters`
-    # this is sort of an implicit dependency on MTK. The values of `p` won't actually be used,
-    # since any parameter symbols in the expression were substituted out earlier.
+    # this is sort of an implicit dependency on MTK. The values of `p` won't actually be
+    # used, since any parameter symbols in the expression were substituted out earlier.
     temp_state = ProblemState(; u = u0, p = parameter_values(prob))
     p = anydict(k => symbolic_type(v) === NotSymbolic() ? v : getu(prob, v)(temp_state)
     for (k, v) in p)

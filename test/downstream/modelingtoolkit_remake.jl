@@ -123,6 +123,33 @@ for (sys, prob) in zip(syss, probs)
     @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
     prob2 = @inferred baseType remake(prob; p = [:σ => 0.5])
     @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+
+    # Test p dependent on u0
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.5x + 1])
+    @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
+    prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.5x + 1])
+    @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
+    prob2 = @inferred baseType remake(prob; p = [:σ => 0.5x + 1])
+    @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
+
+    # Test u0 dependent on p
+    prob2 = @inferred baseType remake(prob; u0 = [x => 0.5σ + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x => 0.5σ + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:x => 0.5σ + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+
+    # Test u0 dependent on p and p dependent on u0
+    prob2 = @inferred baseType remake(prob; u0 = [x => 0.5σ + 1], p = [β => 0.5x + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    @test pgeter(prob2) ≈ [28.0, 8.5, 10.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x => 0.5σ + 1], p = [sys.β => 0.5x + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    @test pgeter(prob2) ≈ [28.0, 8.5, 10.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:x => 0.5σ + 1], p = [:β => 0.5x + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    @test pgeter(prob2) ≈ [28.0, 8.5, 10.0]
 end
 
 @variables ud(t) xd(t) yd(t)
