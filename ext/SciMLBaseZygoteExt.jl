@@ -58,15 +58,7 @@ end
             du, dprob
         end
         T = eltype(eltype(VA.u))
-        if dprob.u0 === nothing
-            N = 2
-        elseif dprob isa SciMLBase.BVProblem && !hasmethod(size, Tuple{typeof(dprob.u0)})
-            __u0 = hasmethod(dprob.u0, Tuple{typeof(dprob.p), typeof(first(dprob.tspan))}) ?
-                   dprob.u0(dprob.p, first(dprob.tspan)) : dprob.u0(first(dprob.tspan))
-            N = length((size(__u0)..., length(du)))
-        else
-            N = length((size(dprob.u0)..., length(du)))
-        end
+        N = ndims(VA)
         Δ′ = ODESolution{T, N}(du, nothing, nothing,
             VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)

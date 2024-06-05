@@ -22,6 +22,7 @@ import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: AbstractADType
+import Accessors: @set, @reset
 
 using Reexport
 using SciMLOperators
