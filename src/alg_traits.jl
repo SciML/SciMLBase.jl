@@ -172,7 +172,8 @@ allowscallback(opt) = true
 """
 alg_order(alg)
 
-The theoretic convergence order of the algorithm.
+The theoretic convergence order of the algorithm. If the method is adaptive order, this is treated
+as the maximum order of the algorithm.
 """
 function alg_order(alg::AbstractODEAlgorithm)
     error("Order is not defined for this algorithm")
