@@ -69,8 +69,9 @@ k = ShiftIndex(t)
 # Roundabout method to avoid having to specify values for previous timestep
 fn = DiscreteFunction(discsys)
 ps = ModelingToolkit.MTKParameters(discsys, p)
+discu0 = Dict([u0..., x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
 push!(syss, discsys)
-push!(probs, DiscreteProblem(fn, [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], (0, 10), ps))
+push!(probs, DiscreteProblem(fn, getindex.((discu0,), unknowns(discsys)), (0, 10), ps))
 
 for (sys, prob) in zip(syss, probs)
     @test parameter_values(prob) isa ModelingToolkit.MTKParameters
