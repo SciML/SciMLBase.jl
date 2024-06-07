@@ -231,7 +231,7 @@ For specifying Jacobians and mass matrices, see the
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
+mutable struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
        AbstractNonlinearProblem{uType, isinplace}
     f::F
     u0::uType
@@ -311,6 +311,17 @@ find the ODE's solution at time ``t = \\infty``
 function NonlinearProblem(prob::AbstractODEProblem)
     NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
 end
+
+function Base.setproperty!(prob::NonlinearProblem, s::Symbol, v)
+    @warn "Mutation of NonlinearProblem detected. SciMLBase v2.0 has made NonlinearProblem temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and NonlinearProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
+    Base.setfield!(prob, s, v)
+end
+
+function Base.setproperty!(prob::NonlinearProblem, s::Symbol, v, order::Symbol)
+    @warn "Mutation of NonlinearProblem detected. SciMLBase v2.0 has made NonlinearProblem temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and NonlinearProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
+    Base.setfield!(prob, s, v, order)
+end
+
 
 @doc doc"""
 Defines a nonlinear least squares problem.
