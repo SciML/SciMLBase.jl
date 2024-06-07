@@ -630,7 +630,7 @@ function check_error(integrator::DEIntegrator)
                 else
                     EEst = ""
                 end
-                @warn("dt($(integrator.dt)) <= eps(t)($(integrator.t)) $EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u))).")
+                @warn("At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u))).")
             end
             return ReturnCode.Unstable
         end
