@@ -14,7 +14,6 @@ using Distributed
 using Markdown
 using Printf
 import Preferences
-using StaticArraysCore: SizedVector, SizedMatrix
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
