@@ -291,11 +291,11 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
         plot_analytic_timeseries = nothing
     elseif denseplot
         # Generate the points from the plot from dense function
-        if tspan === nothing && !(sol isa AbstractAnalyticalSolution)
-            plott = collect(densetspacer(sol.t[start_idx], sol.t[end_idx], plotdensity))
-        elseif sol isa AbstractAnalyticalSolution
+        if sol isa AbstractAnalyticalSolution
             tspan = sol.prob.tspan
             plott = collect(densetspacer(tspan[1], tspan[end], plotdensity))
+        elseif tspan === nothing
+            plott = collect(densetspacer(sol.t[start_idx], sol.t[end_idx], plotdensity))
         else
             plott = collect(densetspacer(tspan[1], tspan[end], plotdensity))
         end
