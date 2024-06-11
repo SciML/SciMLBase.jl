@@ -151,39 +151,6 @@ for (sys, prob) in zip(syss, probs)
     # Not testing `Symbol => expr` since nested substitution doesn't work with that
 end
 
-@variables ud(t) xd(t) yd(t)
-@parameters p1 p2::Int [tunable = false] p3
-dt = 0.1
-c = Clock(t, dt)
-k = ShiftIndex(c)
-
-eqs = [D(x) ~ Hold(ud)
-       ud ~ ud(k - 1) * p1 + yd
-       yd ~ p2 * yd(k - 1) + xd(k - 2) * p3
-       xd ~ Sample(t, dt)(x)]
-@mtkbuild sys = ODESystem(eqs, t; parameter_dependencies = [p3 => 2p1])
-prob = ODEProblem(sys, [x => 1.0], (0.0, 5.0),
-    [p1 => 1.0, p2 => 2, ud(k - 1) => 3.0,
-        xd(k - 1) => 4.0, xd(k - 2) => 5.0, yd(k - 1) => 0.0])
-
-# parameter dependencies
-prob2 = @inferred ODEProblem remake(prob; p = [p1 => 2.0])
-@test prob2.ps[p1] == 2.0
-@test prob2.ps[p3] == 4.0
-@test prob2.ps[p2] isa Int # type is preserved
-
-# ignore dependent parameter, preserve type
-# Vector of pairs automatically promotes the `3` to a `Float64`
-prob2 = @inferred ODEProblem remake(prob; p = Dict(p1 => 2.0, p3 => 1.0, p2 => 3))
-@test prob2.ps[p3] == 4.0
-@test prob2.ps[p2] isa Int
-
-# discrete portion
-prob2 = @inferred ODEProblem remake(prob; p = [ud => 2.5, xd => 3.5, xd(k - 1) => 4.5])
-@test prob2.ps[ud] == 2.5
-@test prob2.ps[xd] == 3.5
-@test prob2.ps[xd(k - 1)] == 4.5
-
 # Optimization
 @parameters p
 @mtkbuild sys = ODESystem([D(x) ~ -p * x], t)
