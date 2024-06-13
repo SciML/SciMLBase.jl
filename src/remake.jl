@@ -534,13 +534,13 @@ function updated_u0_p(prob, u0, p; interpret_symbolicmap = true, use_defaults = 
         return state_values(prob), parameter_values(prob)
     end
     if !has_sys(prob.f)
-        if interpret_symbolicmap && eltype(p) <: Pair
+        if interpret_symbolicmap && eltype(p) !== Union{} && eltype(p) <: Pair
             throw(ArgumentError("This problem does not support symbolic maps with " *
                                 "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
                                 "with the `p` keyword argument as a vector of values (paying attention to" *
                                 "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
         end
-        if eltype(u0) <: Pair
+        if eltype(u0) !== Union{} && eltype(u0) <: Pair
             throw(ArgumentError("This problem does not support symbolic maps with" *
                                 " remake, i.e. it does not have a symbolic origin. Please use `remake`" *
                                 "with the `u0` keyword argument as a vector of values, paying attention to the order."))

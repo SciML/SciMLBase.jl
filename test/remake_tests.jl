@@ -254,3 +254,14 @@ for prob in deepcopy(probs)
         ForwardDiff.derivative(fakeloss!, 1.0)
     end
 end
+
+# eltype(()) <: Pair, so ensure that this doesn't error
+function lorenz!(du, u, _, t)
+    du[1] = 1 * (u[2] - u[1])
+    du[2] = u[1] * (2 - u[3]) - u[2]
+    du[3] = u[1] * u[2] - 3 * u[3]
+end
+u0 = [1.0; 2.0; 3.0]
+tspan = (0.0, 100.0)
+prob = ODEProblem(lorenz!, u0, tspan, nothing)
+@test_nowarn remake(prob, p = (), interpret_symbolicmap = true)
