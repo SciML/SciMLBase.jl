@@ -465,46 +465,20 @@ function Base.getproperty(A::DEIntegrator, sym::Symbol)
     end
 end
 
-Base.@propagate_inbounds function _getindex(A::DEIntegrator,
-        ::NotSymbolic,
-        I::Union{Int, AbstractArray{Int},
-            CartesianIndex, Colon, BitArray,
-            AbstractArray{Bool}}...)
-    A.u[I...]
-end
-
-Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ScalarSymbolic, sym)
-    if is_variable(A, sym)
-        return A[variable_index(A, sym)]
-    elseif is_parameter(A, sym)
-        error("Indexing with parameters is deprecated. Use `getp(sys, $sym)(integrator)` for parameter indexing")
-    elseif is_independent_variable(A, sym)
-        return A.t
-    elseif is_observed(A, sym)
-        return SymbolicIndexingInterface.observed(A, sym)(A.u, A.p, A.t)
-    else
-        error("Tried to index integrator with a Symbol that was not found in the system.")
-    end
-end
-
-Base.@propagate_inbounds function _getindex(A::DEIntegrator, ::ArraySymbolic, sym)
-    return A[collect(sym)]
-end
-
-Base.@propagate_inbounds function _getindex(
-        A::DEIntegrator, ::ScalarSymbolic, sym::Union{Tuple, AbstractArray})
-    return getindex.((A,), sym)
-end
-
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
-    symtype = symbolic_type(sym)
-    elsymtype = symbolic_type(eltype(sym))
-
-    if symtype != NotSymbolic()
-        return _getindex(A, symtype, sym)
-    else
-        return _getindex(A, elsymtype, sym)
+    if is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `integrator.ps[$sym]` for parameter indexing.")
     end
+    return getu(A, sym)(A)
+end
+
+Base.@propagate_inbounds function Base.getindex(
+        A::DEIntegrator, sym::Union{AbstractArray, Tuple})
+    if symbolic_type(sym) == NotSymbolic() && any(x -> is_parameter(A, x), sym) ||
+       is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `integrator.ps[$sym]` for parameter indexing.")
+    end
+    return getu(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
@@ -522,25 +496,18 @@ function observed(A::DEIntegrator, sym)
 end
 
 function Base.setindex!(A::DEIntegrator, val, sym)
-    has_sys(A.f) ||
-        error("Invalid indexing of integrator: Integrator does not support indexing without a system")
-    if symbolic_type(sym) == ScalarSymbolic()
-        if is_variable(A, sym)
-            set_state!(A, val, variable_index(A, sym))
-        elseif is_parameter(A, sym)
-            error("Parameter indexing is deprecated. Use `setp(sys, $sym)(integrator, $val)` to set parameter value.")
-        else
-            error("Invalid indexing of integrator: $sym is not a state or parameter, it may be an observed variable.")
-        end
-        return A
-    elseif symbolic_type(sym) == ArraySymbolic()
-        setindex!.((A,), val, collect(sym))
-        return A
-    else
-        sym isa AbstractArray || error("Invalid indexing of integrator")
-        setindex!.((A,), val, sym)
-        return A
+    if is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `integrator.ps[$sym] = $val` for parameter indexing.")
     end
+    setu(A, sym)(A, val)
+end
+
+function Base.setindex!(A::DEIntegrator, val, sym::Union{AbstractArray, Tuple})
+    if symbolic_type(sym) == NotSymbolic() && any(x -> is_parameter(A, x), sym) ||
+       is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `integrator.ps[$sym] = $val` for parameter indexing.")
+    end
+    setu(A, sym)(A, val)
 end
 
 ### Integrator traits

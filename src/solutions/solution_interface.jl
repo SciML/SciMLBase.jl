@@ -63,22 +63,19 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, :
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
-    if symbolic_type(sym) == ScalarSymbolic()
-        if is_variable(A, sym)
-            return A[variable_index(A, sym)]
-        elseif is_parameter(A, sym)
-            error("Indexing with parameters is deprecated. Use `getp(sys, $sym)(sol)` for parameter indexing.")
-        elseif is_observed(A, sym)
-            return SymbolicIndexingInterface.observed(A, sym)(A.u, parameter_values(A))
-        else
-            error("Tried to index solution with a Symbol that was not found in the system.")
-        end
-    elseif symbolic_type(sym) == ArraySymbolic()
-        return A[collect(sym)]
-    else
-        sym isa AbstractArray || error("Invalid indexing of solution")
-        return getindex.((A,), sym)
+    if is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `sol.ps[$sym]` for parameter indexing.")
     end
+    return getu(A, sym)(A)
+end
+
+Base.@propagate_inbounds function Base.getindex(
+        A::AbstractNoTimeSolution, sym::Union{AbstractArray, Tuple})
+    if symbolic_type(sym) == NotSymbolic() && any(x -> is_parameter(A, x), sym) ||
+       is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `sol.ps[$sym]` for parameter indexing.")
+    end
+    return getu(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
