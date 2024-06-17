@@ -105,3 +105,45 @@ sol = solve(prob, Rodas4())
 @test_throws ArgumentError sol[x]
 @test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(unknowns(sol.prob.f.sys))])
 @test_throws ArgumentError sol[:x]
+
+### Non-symbolic indexing tests
+@test sol[:, 1] isa AbstractVector
+@test sol[:, 1:2] isa AbstractDiffEqArray
+@test sol[:, [1, 2]] isa AbstractDiffEqArray
+
+sol1 = sol(0.0:1.0:10.0)
+@test sol1.u isa Vector
+@test first(sol1.u) isa Vector
+@test length(sol1.u) == 11
+@test length(sol1.t) == 11
+
+sol2 = sol(0.1)
+@test sol2 isa Vector
+@test length(sol2) == length(unknowns(sys))
+@test first(sol2) isa Real
+
+sol3 = sol(0.0:1.0:10.0, idxs = [lorenz1.x, lorenz2.x])
+
+sol7 = sol(0.0:1.0:10.0, idxs = [2, 1])
+@test sol7.u isa Vector
+@test first(sol7.u) isa Vector
+@test length(sol7.u) == 11
+@test length(sol7.t) == 11
+@test collect(sol7[t]) ≈ sol3.t
+@test collect(sol7[t, 1:5]) ≈ sol3.t[1:5]
+
+sol8 = sol(0.1, idxs = [2, 1])
+@test sol8 isa Vector
+@test length(sol8) == 2
+@test first(sol8) isa Real
+
+sol9 = sol(0.0:1.0:10.0, idxs = 2)
+@test sol9.u isa Vector
+@test first(sol9.u) isa Real
+@test length(sol9.u) == 11
+@test length(sol9.t) == 11
+@test collect(sol9[t]) ≈ sol3.t
+@test collect(sol9[t, 1:5]) ≈ sol3.t[1:5]
+
+sol10 = sol(0.1, idxs = 2)
+@test sol10 isa Real
