@@ -174,7 +174,13 @@ function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
     return cache
 end
 
-SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationCache) = x.p
+function SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationCache)
+    if has_reinit(x)
+        x.reinit_cache.p
+    else
+        x.p
+    end
+end
 SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationCache) = x.f
 
 get_p(sol::OptimizationSolution) = sol.cache.p
