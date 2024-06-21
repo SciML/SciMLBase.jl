@@ -23,6 +23,7 @@ import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: AbstractADType
 import Accessors: @set, @reset
+using Expronicon.ADT: @adt, @match
 
 using Reexport
 using SciMLOperators
@@ -715,6 +716,7 @@ include("problems/problem_traits.jl")
 include("problems/problem_interface.jl")
 include("problems/optimization_problems.jl")
 
+include("clock.jl")
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
 include("solutions/ode_solutions.jl")

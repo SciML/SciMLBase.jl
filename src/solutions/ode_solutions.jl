@@ -199,6 +199,14 @@ function (sol::AbstractODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing
     sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 
+function (sol::AbstractODESolution)(t::IndexedClock, ::Type{deriv} = Val{0}; idxs = nothing,
+        continuity = :left) where {deriv}
+    sol(canonicalize_indexed_clock(t, sol), deriv, idxs, continuity)
+end
+function (sol::AbstractODESolution)(v, t::IndexedClock, ::Type{deriv} = Val{0}; idxs = nothing,
+        continuity = :left) where {deriv}
+    sol(canonicalize_indexed_clock(t, sol), deriv, idxs, continuity)
+end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Nothing,
         continuity) where {deriv}
     sol.interp(t, idxs, deriv, sol.prob.p, continuity)
@@ -247,8 +255,6 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
     if is_parameter(sol, idxs) && !is_timeseries_parameter(sol, idxs)
         return getp(sol, idxs)(ps)
     end
-    # NOTE: This is basically SII.parameter_values_at_time but that isn't public API
-    # and once we move interpolation to SII, there's no reason for it to be
     if is_parameter_timeseries(sol) == Timeseries()
         discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
         ps = parameter_values(discs)
@@ -270,8 +276,6 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
     end
     error_if_observed_derivative(sol, idxs, deriv)
     ps = parameter_values(sol)
-    # NOTE: This is basically SII.parameter_values_at_time but that isn't public API
-    # and once we move interpolation to SII, there's no reason for it to be
     if is_parameter_timeseries(sol) == Timeseries()
         discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
         ps = parameter_values(discs)
