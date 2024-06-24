@@ -103,7 +103,7 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     ucons::UC
     sense::S
     kwargs::K
-    @add_kwonly function OptimizationProblem{iip}(f::OptimizationFunction{iip}, u0,
+    @add_kwonly function OptimizationProblem{iip}(f::Union{OptimizationFunction{iip}, MultiObjectiveOptimizationFunction{iip}}, u0,
             p = NullParameters();
             lb = nothing, ub = nothing, int = nothing,
             lcons = nothing, ucons = nothing,
@@ -119,7 +119,7 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     end
 end
 
-function OptimizationProblem(f::OptimizationFunction, args...; kwargs...)
+function OptimizationProblem(f::Union{OptimizationFunction, MultiObjectiveOptimizationFunction}, args...; kwargs...)
     OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
 end
 function OptimizationProblem(f, args...; kwargs...)
