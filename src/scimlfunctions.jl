@@ -1926,6 +1926,38 @@ end
 """
 $(TYPEDEF)
 """
+
+struct MultiObjectiveOptimizationFunction{iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+    EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
+       AbstractOptimizationFunction{iip}
+    f::F
+    adtype::AD
+    jac::J                # Replacing grad with jac for the Jacobian
+    hess::Vector{H}       # Hess will be a vector of type H
+    hv::HV
+    cons::C
+    cons_j::CJ
+    cons_jvp::CJV
+    cons_vjp::CVJ
+    cons_h::CH
+    hess_prototype::HP
+    cons_jac_prototype::CJP
+    cons_hess_prototype::CHP
+    observed::O
+    expr::EX
+    cons_expr::CEX
+    sys::SYS
+    lag_h::LH
+    lag_hess_prototype::LHP
+    hess_colorvec::HCV
+    cons_jac_colorvec::CJCV
+    cons_hess_colorvec::CHCV
+    lag_hess_colorvec::LHCV
+end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
