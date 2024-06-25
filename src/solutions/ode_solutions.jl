@@ -294,9 +294,20 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+    getter = getu(sol, idxs)
+    if is_parameter_timeseries(sol) == NotTimeseries()
+        interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
+        return DiffEqArray(getter(interp_sol), t, p, sol)
+    end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
-    interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol; discretes)
-    return DiffEqArray(getu(interp_sol, idxs)(interp_sol), t, p, sol; discretes)
+    interp_sol = sol.interp(t, nothing, deriv, p, continuity)
+    return map(eachindex(t)) do ti
+        ps = parameter_values(discretes)
+        for i in eachindex(discretes)
+            ps = with_updated_parameter_timeseries_values(ps, i => discretes[i, ti])
+        end
+        return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
+    end
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
@@ -305,10 +316,20 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+    getter = getu(sol, idxs)
+    if is_parameter_timeseries(sol) == NotTimeseries()
+        interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
+        return DiffEqArray(getter(interp_sol), t, p, sol)
+    end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
-    interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol; discretes)
-    return DiffEqArray(
-        getu(interp_sol, idxs)(interp_sol), t, p, sol; discretes)
+    interp_sol = sol.interp(t, nothing, deriv, p, continuity)
+    return map(eachindex(t)) do ti
+        ps = parameter_values(discretes)
+        for i in eachindex(discretes)
+            ps = with_updated_parameter_timeseries_values(ps, i => discretes[i, ti])
+        end
+        return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
+    end
 end
 
 # public API, used by MTK
