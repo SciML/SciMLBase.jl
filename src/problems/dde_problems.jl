@@ -201,7 +201,7 @@ prob = DDEProblemLibrary.prob_dde_constant_1delay_ip
 sol = solve(prob)
 ```
 """
-struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
+mutable struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
        AbstractDDEProblem{uType, tType, lType, isinplace}
     f::F
     u0::uType
@@ -257,6 +257,16 @@ DDEProblem(f, args...; kwargs...) = DDEProblem(DDEFunction(f), args...; kwargs..
 
 function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)
     DDEProblem{isinplace(f)}(f, args...; kwargs...)
+end
+
+function Base.setproperty!(prob::DDEProblem, s::Symbol, v)
+    @warn "Mutation of DDEProblem detected. DDEProblem is temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and ODEProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
+    Base.setfield!(prob, s, v)
+end
+
+function Base.setproperty!(prob::DDEProblem, s::Symbol, v, order::Symbol)
+    @warn "Mutation of DDEProblem detected. DDEProblem is temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and ODEProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
+    Base.setfield!(prob, s, v, order)
 end
 
 """
