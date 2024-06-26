@@ -79,8 +79,7 @@ eqs = [D(x) ~ σ * (y - x),
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ]
-@named sys = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
-sys_simplified = complete(structural_simplify(sys))
+@mtkbuild sys = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
 
 u0 = [lorenz1.x => 1.0,
     lorenz1.y => 0.0,
@@ -99,7 +98,7 @@ p = [lorenz1.σ => 10.0,
     γ => 2.0]
 
 tspan = (0.0, 100.0)
-prob = ODEProblem(sys_simplified, u0, tspan, p)
+prob = ODEProblem(sys, u0, tspan, p)
 sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
