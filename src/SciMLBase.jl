@@ -23,7 +23,7 @@ import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: AbstractADType
 import Accessors: @set, @reset
-using Expronicon.ADT: @adt, @match
+using Expronicon.ADT: @match
 
 using Reexport
 using SciMLOperators
@@ -835,7 +835,6 @@ export step!, deleteat!, addat!, get_tmp_cache,
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
-export TimeDomain, clock, solver_step_clock, integer_sequence,
-       is_discrete_time_domain, is_concrete_time_domain
+export is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 end

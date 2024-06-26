@@ -1,42 +1,67 @@
-@adt TimeDomain begin
-    Inferred
-    InferredDiscrete
+module TimeDomain
+
+using Expronicon.ADT: @adt, @match
+
+@adt AbstractTimeDomain begin
     Continuous
     struct PeriodicClock
         t
         dt::Union{Nothing, Float64}
     end
     struct SolverStepClock
-        t
-    end
-    struct IntegerSequence
-        t
+        t = nothing
     end
 end
 
+Base.hash(c::AbstractTimeDomain, seed::UInt) = @match c begin
+    PeriodicClock(_, dt) => hash(dt, seed ⊻ 0x953d7a9a18874b90)
+    SolverStepClock(_) => seed ⊻ 0x953d7a9a18874b90
+    &Continuous => seed ⊻ 0xfd2a3dfeb13318e5
+end
+
+function Base.:(==)(c1::AbstractTimeDomain, c2::AbstractTimeDomain)
+    @match c1 begin
+        PeriodicClock(t1, dt1) => @match c2 begin
+            PeriodicClock(t2, dt2) => (t1 === nothing || t2 === nothing || isequal(t1, t2)) && dt1 == dt2
+            _ => false
+        end
+        SolverStepClock(t1) => @match c2 begin
+            SolverStepClock(t2) => t1 === nothing || t2 === nothing || isequal(t1, t2)
+            _ => false
+        end
+        &Continuous => iscontinuous(c2)
+    end
+end
+
+Base.Broadcast.broadcastable(d::AbstractTimeDomain) = Ref(d)
+
+end
+
+using .TimeDomain
+
 """
-    clock(t, dt)
-    clock(t)
-    clock(dt)
-    clock()
+    Clock(t, dt)
+    Clock(t)
+    Clock(dt)
+    Clock()
 
 The default periodic clock with symbolic independent variable `t` and tick interval `dt`.
 If `dt` is left unspecified, it will be inferred (if possible). If `t` is not specified,
 it is `nothing`.
 """
-clock(t, dt) = PeriodicClock(t, dt)
-function clock(arg)
+Clock(t, dt) = PeriodicClock(t, dt)
+function Clock(arg)
     if symbolic_type(arg) == NotSymbolic()
         return PeriodicClock(nothing, arg)
     else
         return PeriodicClock(arg, nothing)
     end
 end
-clock() = PeriodicClock(nothing, nothing)
+Clock() = PeriodicClock(nothing, nothing)
 
-"""
-    solver_step_clock(t)
-    solver_step_clock()
+@doc """
+    SolverStepClock(t)
+    SolverStepClock()
 
 A clock that ticks at each solver step (sometimes referred to as "continuous sample time").
 This clock **does generally not have equidistant tick intervals**, instead, the tick
@@ -47,67 +72,31 @@ continuous events, the tick interval will be given by the fixed solver time step
 Due to possibly non-equidistant tick intervals, this clock should typically not be used with
 discrete-time systems that assume a fixed sample time, such as PID controllers and digital
 filters.
-"""
-solver_step_clock(t) = SolverStepClock(t)
-solver_step_clock() = SolverStepClock(nothing)
-integer_sequence(t) = IntegerSequence(t)
-integer_sequence() = IntegerSequence(nothing)
+""" SolverStepClock
 
-function is_discrete_time_domain(c::TimeDomain)
-    return @match c begin
-        PeriodicClock(_...) => true
-        SolverStepClock(_...) => true
-        IntegerSequence(_...) => true
-        &InferredDiscrete => true
-        _ => false
-    end
+isclock(c) = @match c begin
+    PeriodicClock(_...) => true
+    _ => false
 end
 
-function is_concrete_time_domain(c)
-    return @match c begin
-        PeriodicClock(_...) => true
-        SolverStepClock(_...) => true
-        IntegerSequence(_...) => true
-        &Continuous => true
-        _ => false
-    end
+issolverstepclock(c) = @match c begin
+    SolverStepClock(_...) => true
+    _ => false
 end
 
-Base.hash(c::TimeDomain, seed::UInt) = @match c begin
-    PeriodicClock(_, dt) => hash(dt, seed ⊻ 0x953d7a9a18874b90)
-    SolverStepClock(_) => seed ⊻ 0x953d7a9a18874b90
-    IntegerSequence(_) => seed ⊻ 0x56f6815845619670
-    &Inferred => seed ⊻ 0xb7e0b94acc9a8b8d
-    &InferredDiscrete => seed ⊻ 0x308e0b97d61e6900
-    &Continuous => seed ⊻ 0xfd2a3dfeb13318e5
+iscontinuous(c) = @match c begin
+    &Continuous => true
+    _ => false
 end
 
-function Base.:(==)(c1::TimeDomain, c2::TimeDomain)
-    @match c1 begin
-        PeriodicClock(t1, dt1) => @match c2 begin
-            PeriodicClock(t2, dt2) => (t1 === nothing || t2 === nothing || isequal(t1, t2)) && dt1 == dt2
-            _ => false
-        end
-        SolverStepClock(t1) => @match c2 begin
-            SolverStepClock(t2) => t1 === nothing || t2 === nothing || isequal(t1, t2)
-            _ => false
-        end
-        IntegerSequence(t1) => @match c2 begin
-            IntegerSequence(t2) => t1 === nothing || t2 === nothing || isequal(t1, t2)
-            _ => false
-        end
-        _ => c1 === c2
-    end
-end
-
-Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
+is_discrete_time_domain(c) = !iscontinuous(c)
 
 struct IndexedClock{I}
-    clock::TimeDomain
+    clock::TimeDomain.AbstractTimeDomain
     idx::I
 end
 
-Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
+Base.getindex(c::TimeDomain.AbstractTimeDomain, idx) = IndexedClock(c, idx)
 
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
@@ -120,8 +109,6 @@ function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSol
             end
             sol.discretes[ssc_idx].t[ic.idx]
         end
-        IntegerSequence(_) => ic.idx
         &Continuous => sol.t[ic.idx]
-        _ => error("Cannot index $c")
     end
 end
