@@ -1,8 +1,10 @@
-module TimeDomain
+module Clocks
+
+export TimeDomain
 
 using Expronicon.ADT: @adt, @match
 
-@adt AbstractTimeDomain begin
+@adt TimeDomain begin
     Continuous
     struct PeriodicClock
         t
@@ -13,13 +15,13 @@ using Expronicon.ADT: @adt, @match
     end
 end
 
-Base.hash(c::AbstractTimeDomain, seed::UInt) = @match c begin
+Base.hash(c::TimeDomain, seed::UInt) = @match c begin
     PeriodicClock(_, dt) => hash(dt, seed ⊻ 0x953d7a9a18874b90)
     SolverStepClock(_) => seed ⊻ 0x953d7a9a18874b90
     &Continuous => seed ⊻ 0xfd2a3dfeb13318e5
 end
 
-function Base.:(==)(c1::AbstractTimeDomain, c2::AbstractTimeDomain)
+function Base.:(==)(c1::TimeDomain, c2::TimeDomain)
     @match c1 begin
         PeriodicClock(t1, dt1) => @match c2 begin
             PeriodicClock(t2, dt2) => (t1 === nothing || t2 === nothing || isequal(t1, t2)) && dt1 == dt2
@@ -33,11 +35,11 @@ function Base.:(==)(c1::AbstractTimeDomain, c2::AbstractTimeDomain)
     end
 end
 
-Base.Broadcast.broadcastable(d::AbstractTimeDomain) = Ref(d)
+Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
 
 end
 
-using .TimeDomain
+using .Clocks
 
 """
     Clock(t, dt)
@@ -92,11 +94,11 @@ end
 is_discrete_time_domain(c) = !iscontinuous(c)
 
 struct IndexedClock{I}
-    clock::TimeDomain.AbstractTimeDomain
+    clock::TimeDomain
     idx::I
 end
 
-Base.getindex(c::TimeDomain.AbstractTimeDomain, idx) = IndexedClock(c, idx)
+Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
 
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock

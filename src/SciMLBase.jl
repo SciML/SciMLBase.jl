@@ -835,6 +835,6 @@ export step!, deleteat!, addat!, get_tmp_cache,
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
-export is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
+export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 end
