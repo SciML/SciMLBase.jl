@@ -38,51 +38,38 @@ Base.@propagate_inbounds function Base.getindex(
     return getindex(prob, all_variable_symbols(prob))
 end
 
-Base.@propagate_inbounds function Base.getindex(prob::AbstractSciMLProblem, sym)
-    if symbolic_type(sym) == ScalarSymbolic()
-        if is_variable(prob, sym)
-            return state_values(prob, variable_index(prob, sym))
-        elseif is_parameter(prob, sym)
-            error("Indexing with parameters is deprecated. Use `getp(prob, $sym)(prob)` for parameter indexing.")
-        elseif is_independent_variable(prob, sym)
-            return current_time(prob)
-        elseif is_observed(prob, sym)
-            obs = SymbolicIndexingInterface.observed(prob, sym)
-            if is_time_dependent(prob)
-                return obs(state_values(prob), parameter_values(prob), current_time(prob))
-            else
-                return obs(state_values(prob), parameter_values(prob))
-            end
-        else
-            error("Invalid indexing of problem: $sym is not a state, parameter, or independent variable")
-        end
-    elseif symbolic_type(sym) == ArraySymbolic()
-        return map(s -> prob[s], collect(sym))
-    else
-        sym isa AbstractArray || error("Invalid indexing of problem")
-        return map(s -> prob[s], sym)
+Base.@propagate_inbounds function Base.getindex(A::AbstractSciMLProblem, sym)
+    if is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `prob.ps[$sym]` for parameter indexing.")
     end
+    return getu(A, sym)(A)
+end
+
+Base.@propagate_inbounds function Base.getindex(
+        A::AbstractSciMLProblem, sym::Union{AbstractArray, Tuple})
+    if symbolic_type(sym) == NotSymbolic() && any(x -> is_parameter(A, x), sym) ||
+       is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `prob.ps[$sym]` for parameter indexing.")
+    end
+    return getu(A, sym)(A)
 end
 
 function Base.setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
     ___internal_setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
 end
-function ___internal_setindex!(prob::AbstractSciMLProblem, val, sym)
-    if symbolic_type(sym) == ScalarSymbolic()
-        if is_variable(prob, sym)
-            set_state!(prob, val, variable_index(prob, sym))
-        elseif is_parameter(prob, sym)
-            error("Indexing with parameters is deprecated. Use `setp(prob, $sym)(prob, $val)` to set parameter value.")
-        else
-            error("Invalid indexing of problem: $sym is not a state or parameter, it may be an observed variable.")
-        end
-        return prob
-    elseif symbolic_type(sym) == ArraySymbolic()
-        setindex!.((prob,), val, collect(sym))
-        return prob
-    else
-        sym isa AbstractArray || error("Invalid indexing of problem")
-        setindex!.((prob,), val, sym)
-        return prob
+
+function ___internal_setindex!(A::AbstractSciMLProblem, val, sym)
+    if is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `prob.ps[$sym] = $val` for parameter indexing.")
     end
+    return setu(A, sym)(A, val)
+end
+
+function ___internal_setindex!(
+        A::AbstractSciMLProblem, val, sym::Union{AbstractArray, Tuple})
+    if symbolic_type(sym) == NotSymbolic() && any(x -> is_parameter(A, x), sym) ||
+       is_parameter(A, sym)
+        error("Indexing with parameters is deprecated. Use `prob.ps[$sym] = $val` for parameter indexing.")
+    end
+    return setu(A, sym)(A, val)
 end

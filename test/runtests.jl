@@ -119,7 +119,7 @@ end
             include("downstream/modelingtoolkit_remake.jl")
         end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
-            include("downstream/symbol_indexing.jl")
+            include("downstream/comprehensive_indexing.jl")
         end
         if VERSION >= v"1.8"
             @time @safetestset "Symbol and integer based indexing of integrators" begin
