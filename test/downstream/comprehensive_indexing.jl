@@ -786,8 +786,8 @@ end
     ud1interp = ud1val[2:4]
     ud2interp = ud2val[2:4]
 
-    c1 = SciMLBase.clock(t, 0.1)
-    c2 = SciMLBase.solver_step_clock(t)
+    c1 = SciMLBase.Clock(t, 0.1)
+    c2 = SciMLBase.SolverStepClock(t)
     for (sym, t, val) in [
         (x, c1[2], xinterp[1]),
         (x, c1[2:4], xinterp),
