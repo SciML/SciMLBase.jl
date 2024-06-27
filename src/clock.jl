@@ -31,7 +31,8 @@ function Base.:(==)(c1::TimeDomain, c2::TimeDomain)
             SolverStepClock(t2) => t1 === nothing || t2 === nothing || isequal(t1, t2)
             _ => false
         end
-        &Continuous => iscontinuous(c2)
+        # Singleton types use == in the macro expansion, which leads to StackOverflowError
+        _ => c1 === c2
     end
 end
 
@@ -92,6 +93,15 @@ iscontinuous(c) = @match c begin
 end
 
 is_discrete_time_domain(c) = !iscontinuous(c)
+
+function first_clock_tick_time(c, t0)
+    @match c begin
+        PeriodicClock(_, dt) => ceil(t0 / dt) * dt
+        SolverStepClock(_) => t0
+        &Continuous => error("Continuous is not a discrete clock")
+        _ => error("Unhandled clock $c")
+    end
+end
 
 struct IndexedClock{I}
     clock::TimeDomain
