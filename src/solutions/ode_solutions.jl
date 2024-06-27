@@ -278,7 +278,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
             interp_val = ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
-            ps = with_updated_parameter_timeseries_values(ps, ts_idx => interp_val)
+            ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
     state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
@@ -299,7 +299,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
             interp_val = ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
-            ps = with_updated_parameter_timeseries_values(ps, ts_idx => interp_val)
+            ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
     state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
@@ -321,7 +321,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     return map(eachindex(t)) do ti
         ps = parameter_values(discretes)
         for i in eachindex(discretes)
-            ps = with_updated_parameter_timeseries_values(ps, i => discretes[i, ti])
+            ps = with_updated_parameter_timeseries_values(sol, ps, i => discretes[i, ti])
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
@@ -343,7 +343,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     return map(eachindex(t)) do ti
         ps = parameter_values(discretes)
         for i in eachindex(discretes)
-            ps = with_updated_parameter_timeseries_values(ps, i => discretes[i, ti])
+            ps = with_updated_parameter_timeseries_values(sol, ps, i => discretes[i, ti])
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
