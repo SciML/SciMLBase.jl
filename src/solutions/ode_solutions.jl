@@ -180,12 +180,29 @@ function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
     Timeseries()
 end
 
+function _hold_discrete(disc_u, disc_t, t::Number)
+    idx = searchsortedlast(disc_t, t)
+    if idx == firstindex(disc_t) - 1
+        error("Cannot access discrete variable at time $t before initial save $(first(disc_t))")
+    end
+    return disc_u[idx]
+end
+
+function hold_discrete(disc_u, disc_t, t::Number)
+    val = _hold_discrete(disc_u, disc_t, t)
+    return DiffEqArray([val], [t])
+end
+
+function hold_discrete(disc_u, disc_t, t::AbstractVector{<:Number})
+    return DiffEqArray(_hold_discrete.((disc_u,), (disc_t,), t), t)
+end
+
 function get_interpolated_discretes(sol::AbstractODESolution, t, deriv, continuity)
     is_parameter_timeseries(sol) == Timeseries() || return nothing
 
     discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
     interp_discs = map(discs) do partition
-        ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
+        hold_discrete(partition.u, partition.t, t)
     end
     return ParameterTimeseriesCollection(interp_discs, parameter_values(discs))
 end
@@ -334,26 +351,32 @@ end
 
 # public API, used by MTK
 """
-    create_parameter_timeseries_collection(sys, ps)
+    create_parameter_timeseries_collection(sys, ps, tspan)
 
 Create a `SymbolicIndexingInterface.ParameterTimeseriesCollection` for the given system
 `sys` and parameter object `ps`. Return `nothing` if there are no timeseries parameters.
-Defaults to `nothing`.
+Defaults to `nothing`. Falls back on the basis of `symbolic_container`.
 """
 function create_parameter_timeseries_collection(sys, ps, tspan)
-    return nothing
+    if hasmethod(symbolic_container, Tuple{typeof(sys)})
+        return create_parameter_timeseries_collection(symbolic_container(sys), ps, tspan)
+    else
+        return nothing
+    end
 end
 
 const PeriodicDiffEqArray = DiffEqArray{T, N, A, B} where {T, N, A, B <: AbstractRange}
 
 # public API, used by MTK
 """
-    get_saveable_values(ps, timeseries_idx)
+    get_saveable_values(sys, ps, timeseries_idx)
 """
-function get_saveable_values end
+function get_saveable_values(sys, ps, timeseries_idx)
+    return get_saveable_values(symbolic_container(sys), ps, timeseries_idx)
+end
 
 function save_discretes!(integ::DEIntegrator, timeseries_idx)
-    save_discretes!(integ.sol, current_time(integ), get_saveable_values(parameter_values(integ), timeseries_idx), timeseries_idx)
+    save_discretes!(integ.sol, current_time(integ), get_saveable_values(integ, parameter_values(integ), timeseries_idx), timeseries_idx)
 end
 
 save_discretes!(args...) = nothing
@@ -371,9 +394,8 @@ function _save_discretes_internal!(A::AbstractDiffEqArray, t, vals)
 end
 
 function _save_discretes_internal!(A::PeriodicDiffEqArray, t, vals)
-    # This is O(1) because A.t is a range
-    idx = searchsortedlast(A.t, t)
-    if idx == firstindex(A.t) - 1 || A.t[idx] ≉ t
+    idx = length(A.u) + 1
+    if A.t[idx] ≉ t
         error("Tried to save periodic discrete value with timeseries $(A.t) at time $t")
     end
     push!(A.u, vals)
