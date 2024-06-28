@@ -265,3 +265,11 @@ u0 = [1.0; 2.0; 3.0]
 tspan = (0.0, 100.0)
 prob = ODEProblem(lorenz!, u0, tspan, nothing)
 @test_nowarn remake(prob, p = (), interpret_symbolicmap = true)
+
+# IntervalNonlinearProblem doesn't have a u0
+# Issue#726
+interval_f(u, p) = u * u - 2.0 + p[1]
+uspan = (1.0, 2.0)
+interval_prob = IntervalNonlinearProblem(interval_f, uspan)
+new_prob = @inferred IntervalNonlinearProblem remake(interval_prob; p = [0])
+@test new_prob.p == [0]
