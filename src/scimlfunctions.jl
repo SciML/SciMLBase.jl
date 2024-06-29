@@ -1973,7 +1973,7 @@ BVPFunction{iip, specialize}(f, bc;
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing,
-    twopoint::Union{Val, Bool} = Val(false)
+    twopoint::Union{Val, Bool} = Val(false))
 ```
 
 Note that both the function `f` and boundary condition `bc` are required. `f` should
@@ -2094,7 +2094,8 @@ DynamicalBVPFunction{iip,specialize}(f, bc;
                                     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                                     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                                     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+                                    sys = __has_sys(f) ? f.sys : nothing
+                                    twopoint::Union{Val, Bool} = Val(false))
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
