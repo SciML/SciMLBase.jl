@@ -25,7 +25,8 @@ using .Clocks
 The default periodic clock with tick interval `dt`. If `dt` is left unspecified, it will
 be inferred (if possible).
 """
-Clock(dt) = PeriodicClock(dt)
+Clock(dt::Union{<:Rational, Float64}) = PeriodicClock(dt)
+Clock(dt) = PeriodicClock(convert(Float64, dt))
 Clock() = PeriodicClock(nothing)
 
 @doc """
