@@ -102,7 +102,7 @@ $(TYPEDEF)
 
 Base for types which define nonlinear solve problems (f(u)=0).
 """
-abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem end
+abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractSciMLProblem end
 abstract type AbstractIntervalNonlinearProblem{uType, isinplace} <:
               AbstractNonlinearProblem{uType,
     isinplace} end
