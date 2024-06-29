@@ -354,13 +354,21 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
     kwargs::K
 
     @add_kwonly function SecondOrderBVProblem{iip}(
-            f::DynamicalBVPFunction{iip, TP}, u0, tspan,
+            f::DynamicalBVPFunction{iip, specialize, TP}, u0, tspan,
             p = NullParameters(); problem_type = nothing, nlls = nothing,
-            kwargs...) where {iip, TP}
+            kwargs...) where {iip, specialize, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
+        prob_type = TP ? TwoPointSecondOrderBVProblem{iip}() : StandardSecondOrderBVProblem()
 
+        # Needed to ensure that `problem_type` doesn't get passed in kwargs
+        if problem_type === nothing
+            problem_type = prob_type
+        else
+            @assert prob_type===problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
+        end
+        
         return new{typeof(_u0), typeof(_tspan), iip, typeof(nlls), typeof(p), typeof(f),
             typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end
