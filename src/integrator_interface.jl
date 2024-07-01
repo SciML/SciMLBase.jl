@@ -927,7 +927,7 @@ end
 has_stats(i::DEIntegrator) = false
 
 """
-    is_integrator_adaptive(i::DEIntegrator)
+    isadaptive(i::DEIntegrator)
 
 Checks if the integrator is adaptive
 """
