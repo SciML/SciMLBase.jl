@@ -70,7 +70,7 @@ Cases where automatic wrapping is disabled are equivalent to `FullSpecialize`.
 
 ## Example
 
-```
+```julia
 f(du,u,p,t) = (du .= u)
 
 # Note this is the same as ODEProblem(f, [1.0], (0.0,1.0))
@@ -93,7 +93,7 @@ time. Unlike `AutoSpecialize`, `NoSpecialize` can be used with any
 
 ## Example
 
-```
+```julia
 f(du,u,p,t) = (du .= u)
 ODEProblem{true, SciMLBase.NoSpecialize}(f, [1.0], (0.0,1.0))
 ```
@@ -133,7 +133,7 @@ but also includes the limitations:
 
 ## Example
 
-```
+```julia
 f(du,u,p,t) = (du .= u)
 ODEProblem{true, SciMLBase.FunctionWrapperSpecialize}(f, [1.0], (0.0,1.0))
 ```
@@ -154,7 +154,7 @@ is required, such as in long-running simulations and benchmarking.
 
 ## Example
 
-```
+```julia
 f(du,u,p,t) = (du .= u)
 ODEProblem{true, SciMLBase.FullSpecialize}(f, [1.0], (0.0,1.0))
 ```
