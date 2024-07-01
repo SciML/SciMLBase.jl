@@ -63,6 +63,11 @@ function remake(prob::AbstractSciMLProblem; u0 = missing,
     _remake_internal(prob; kwargs..., u0, p)
 end
 
+function remake(prob::AbstractIntervalNonlinearProblem; p = missing, interpret_symbolicmap = true, use_defaults = false, kwargs...)
+    _, p = updated_u0_p(prob, [], p; interpret_symbolicmap, use_defaults)
+    _remake_internal(prob; kwargs..., p)
+end
+
 function remake(prob::AbstractNoiseProblem; kwargs...)
     _remake_internal(prob; kwargs...)
 end
