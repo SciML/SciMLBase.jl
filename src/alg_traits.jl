@@ -142,7 +142,7 @@ requireshessian(opt) = false
     requiresconsjac(opt)
 
 Trait declaration for whether an optimizer
-requires cons_j in `instantiate_function`, that is, does the optimizer require a constant Jacobian.
+requires `cons_j` in `instantiate_function`, that is, does the optimizer require a constant Jacobian.
 
 Defaults to false.
 """

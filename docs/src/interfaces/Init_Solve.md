@@ -37,7 +37,7 @@ is distinctly different from the
 [LinearSolve init interface](https://docs.sciml.ai/LinearSolve/stable/tutorials/caching_interface)
 which is designed for caching efficiency with reusing factorizations.
 
-## __solve and High-Level Handling
+## `__solve` and High-Level Handling
 
 While `init` and `solve` are the common entry point for users, solver packages will
 mostly define dispatches on `SciMLBase.__init` and `SciMLBase.__solve`. The reason is

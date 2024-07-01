@@ -86,7 +86,7 @@ usage, a `AbstractSciMLProblem` might be associated with some solver configurati
 callback or tolerance. Thus, for flexibility the extra keyword arguments to the
 `AbstractSciMLProblem` are carried to the solver.
 
-### problem_type
+### `problem_type`
 
 `AbstractSciMLProblem` types include a non-public API definition of `problem_type` which holds
 a trait type corresponding to the way the `AbstractSciMLProblem` was constructed. For example,

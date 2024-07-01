@@ -49,7 +49,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Default
 
@@ -66,7 +66,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     Success
 
@@ -90,7 +90,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     Terminated
 
@@ -113,7 +113,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     DtNaN
 
@@ -145,7 +145,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     MaxIters
 
@@ -175,7 +175,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     DtLessThanMin
 
@@ -194,7 +194,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Unstable
 
@@ -219,7 +219,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     InitialFailure
 
@@ -242,7 +242,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     ConvergenceFailure
 
@@ -260,7 +260,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Failure
 
@@ -279,7 +279,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     ExactSolutionLeft
 
@@ -298,7 +298,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     ExactSolutionRight
 
@@ -317,7 +317,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     FloatingPointLimit
 
@@ -328,7 +328,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Infeasible
 
@@ -342,7 +342,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     MaxTime
 
@@ -353,7 +353,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     InternalLineSearchFailed
 
@@ -364,7 +364,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     ShrinkThresholdExceeded
 
@@ -377,7 +377,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Stalled
 
@@ -394,7 +394,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     InternalLinearSolveFailed
 end
