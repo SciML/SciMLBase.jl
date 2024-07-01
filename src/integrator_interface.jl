@@ -283,7 +283,7 @@ function reinit!(integrator::DEIntegrator, args...; kwargs...)
 end
 
 """
-initialize_dae!(integrator::DEIntegrator,initializealg = integrator.initializealg)
+    initialize_dae!(integrator::DEIntegrator,initializealg = integrator.initializealg)
 
 Runs the DAE initialization to find a consistent state vector. The optional
 argument `initializealg` can be used to specify a different initialization
