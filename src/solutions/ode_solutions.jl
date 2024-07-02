@@ -318,13 +318,14 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
     interp_sol = sol.interp(t, nothing, deriv, p, continuity)
-    return map(eachindex(t)) do ti
+    u = map(eachindex(t)) do ti
         ps = parameter_values(discretes)
         for i in eachindex(discretes)
             ps = with_updated_parameter_timeseries_values(sol, ps, i => discretes[i, ti])
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
+    return DiffEqArray(u, t, p, sol; discretes)
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
@@ -340,13 +341,14 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
     interp_sol = sol.interp(t, nothing, deriv, p, continuity)
-    return map(eachindex(t)) do ti
+    u = map(eachindex(t)) do ti
         ps = parameter_values(discretes)
         for i in eachindex(discretes)
             ps = with_updated_parameter_timeseries_values(sol, ps, i => discretes[i, ti])
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
+    return DiffEqArray(u, t, p, sol; discretes)
 end
 
 # public API, used by MTK
