@@ -1,5 +1,5 @@
 """
-`SciML.ReturnCode`
+    SciML.ReturnCode
 
 `SciML.ReturnCode` is the standard return code enum interface for the SciML interface.
 Return codes are notes given by the solvers to indicate the state of the solution, for
@@ -31,7 +31,7 @@ did not error.
 """
 EnumX.@enumx ReturnCode begin
     """
-    `ReturnCode.Default`
+        ReturnCode.Default
 
     The default state of the solver. If this return code is given, then the solving
     process is either still in process or the solver library has not been setup
@@ -49,12 +49,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Default
 
     """
-    `ReturnCode.Success`
+        ReturnCode.Success
 
     The success state of the solver. If this return code is given, then the solving
     process was successful, but no extra information about that success is given.
@@ -66,12 +66,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     Success
 
     """
-    `ReturnCode.Terminated`
+        ReturnCode.Terminated
 
     The successful termination state of the solver. If this return code is given,
     then the solving process was successful at terminating the solve, usually
@@ -90,12 +90,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     Terminated
 
     """
-    `ReturnCode.DtNaN`
+        ReturnCode.DtNaN
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the `dt` of the
@@ -113,12 +113,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     DtNaN
 
     """
-    `ReturnCode.MaxIters`
+        ReturnCode.MaxIters
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the solver's
@@ -145,12 +145,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     MaxIters
 
     """
-    `ReturnCode.DtLessThanMin`
+        ReturnCode.DtLessThanMin
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the `dt` of the
@@ -175,12 +175,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     DtLessThanMin
 
     """
-    `ReturnCode.Unstable`
+        ReturnCode.Unstable
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the `unstable_check`
@@ -194,12 +194,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Unstable
 
     """
-    `ReturnCode.InitialFailure`
+        ReturnCode.InitialFailure
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful because the initialization process failed.
@@ -219,12 +219,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     InitialFailure
 
     """
-    `ReturnCode.ConvergenceFailure`
+        ReturnCode.ConvergenceFailure
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful because internal nonlinear solver iterations
@@ -242,12 +242,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     ConvergenceFailure
 
     """
-    `ReturnCode.Failure`
+        ReturnCode.Failure
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful but no extra information is given.
@@ -260,12 +260,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Failure
 
     """
-    `ReturnCode.ExactSolutionLeft`
+        ReturnCode.ExactSolutionLeft
 
     The success state of the solver. If this return code is given, then the solving
     process was successful, and the left solution was given.
@@ -279,12 +279,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     ExactSolutionLeft
 
     """
-    `ReturnCode.ExactSolutionRight`
+        ReturnCode.ExactSolutionRight
 
     The success state of the solver. If this return code is given, then the solving
     process was successful, and the right solution was given.
@@ -298,12 +298,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     ExactSolutionRight
 
     """
-    `ReturnCode.FloatingPointLimit`
+        ReturnCode.FloatingPointLimit
 
     The success state of the solver. If this return code is given, then the solving
     process was successful, and the closest floating point value to the solution was given.
@@ -317,23 +317,23 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = true
+      - `successful_retcode` = `true`
     """
     FloatingPointLimit
 
     """
-    `ReturnCode.Infeasible`
+        ReturnCode.Infeasible
 
     The optimization problem was proven to be infeasible by the solver.
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Infeasible
 
     """
-    `ReturnCode.MaxTime`
+        ReturnCode.MaxTime
 
     A failure exit state of the solver. If this return code is given, then the
     solving process was unsuccessful and exited early because the solver's
@@ -342,34 +342,34 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     MaxTime
 
     """
-    `ReturnCode.InternalLineSearchFailed`
+        ReturnCode.InternalLineSearchFailed
 
     Internal Line Search used by the algorithm has failed.
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     InternalLineSearchFailed
 
     """
-    `ReturnCode.ShrinkThresholdExceeded`
+        ReturnCode.ShrinkThresholdExceeded
 
     The trust region radius was shrunk more times than the provided threshold.
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     ShrinkThresholdExceeded
 
     """
-    `ReturnCode.Stalled`
+        ReturnCode.Stalled
 
     The solution has stalled. This is only returned by algorithms for which stalling is a
     failure mode. Certain solvers like Nonlinear Least Squares solvers are considered
@@ -377,12 +377,12 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     Stalled
 
     """
-    `ReturnCode.InternalLinearSolveFailed`
+        ReturnCode.InternalLinearSolveFailed
 
     The linear problem inside another problem (for example inside a NonlinearProblem)
     could not be solved.
@@ -394,7 +394,7 @@ EnumX.@enumx ReturnCode begin
 
     ## Properties
 
-      - successful_retcode = false
+      - `successful_retcode` = `false`
     """
     InternalLinearSolveFailed
 end
@@ -477,8 +477,8 @@ function Base.convert(::Type{ReturnCode.T}, bool::Bool)
 end
 
 """
-`successful_retcode(retcode::ReturnCode.T)::Bool`
-`successful_retcode(sol::AbstractSciMLSolution)::Bool`
+    successful_retcode(retcode::ReturnCode.T)::Bool
+    successful_retcode(sol::AbstractSciMLSolution)::Bool
 
 Returns a boolean for whether a return code should be interpreted as a form of success.
 """

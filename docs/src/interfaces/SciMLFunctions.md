@@ -94,8 +94,8 @@ on setting up time/parameter dependent operators.
 The solver libraries internally use packages such as [FiniteDiff.jl](https://docs.sciml.ai/FiniteDiff/stable/)
 and [SparseDiffTools.jl](https://docs.sciml.ai/SparseDiffTools/stable/) for
 high performance calculation of sparse Jacobians and Hessians, along with matrix-free
-calculations of Jacobian-Vector products (J*v), vector-Jacobian products (v'*J),
-and Hessian-vector products (H*v). The SciML interface gives users the ability
+calculations of Jacobian-Vector products (`J*v`), vector-Jacobian products (`v'*J`),
+and Hessian-vector products (`H*v`). The SciML interface gives users the ability
 to control these connections in order to allow for top notch performance.
 
 The key arguments in the SciMLFunction is the `prototype`, which is an object
