@@ -8,6 +8,7 @@ using Expronicon.ADT: @adt, @match
     Continuous
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
+        phase::Float64 = 0.0
     end
     SolverStepClock
 end
@@ -25,9 +26,9 @@ using .Clocks
 The default periodic clock with tick interval `dt`. If `dt` is left unspecified, it will
 be inferred (if possible).
 """
-Clock(dt::Union{<:Rational, Float64}) = PeriodicClock(dt)
-Clock(dt) = PeriodicClock(convert(Float64, dt))
-Clock() = PeriodicClock(nothing)
+Clock(dt::Union{<:Rational, Float64}; phase = 0.0) = PeriodicClock(dt, phase)
+Clock(dt; phase = 0.0) = PeriodicClock(convert(Float64, dt), phase)
+Clock(; phase = 0.0) = PeriodicClock(nothing, phase)
 
 @doc """
     SolverStepClock
@@ -44,7 +45,7 @@ filters.
 """ SolverStepClock
 
 isclock(c) = @match c begin
-    PeriodicClock(_) => true
+    PeriodicClock(_...) => true
     _ => false
 end
 
@@ -62,7 +63,7 @@ is_discrete_time_domain(c) = !iscontinuous(c)
 
 function first_clock_tick_time(c, t0)
     @match c begin
-        PeriodicClock(dt) => ceil(t0 / dt) * dt
+        PeriodicClock(dt, _...) => ceil(t0 / dt) * dt
         &SolverStepClock => t0
         &Continuous => error("Continuous is not a discrete clock")
     end
@@ -79,7 +80,7 @@ function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSol
     c = ic.clock
     
     return @match c begin
-        PeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
+        PeriodicClock(dt, _...) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
         &SolverStepClock => begin
             ssc_idx = findfirst(eachindex(sol.discretes)) do i
                 !isa(sol.discretes[i].t, AbstractRange)
