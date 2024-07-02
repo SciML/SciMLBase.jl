@@ -45,7 +45,7 @@ filters.
 """ SolverStepClock
 
 isclock(c) = @match c begin
-    PeriodicClock(_) => true
+    PeriodicClock(_...) => true
     _ => false
 end
 
@@ -63,7 +63,7 @@ is_discrete_time_domain(c) = !iscontinuous(c)
 
 function first_clock_tick_time(c, t0)
     @match c begin
-        PeriodicClock(dt) => ceil(t0 / dt) * dt
+        PeriodicClock(dt, _...) => ceil(t0 / dt) * dt
         &SolverStepClock => t0
         &Continuous => error("Continuous is not a discrete clock")
     end
@@ -80,7 +80,7 @@ function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSol
     c = ic.clock
     
     return @match c begin
-        PeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
+        PeriodicClock(dt, _...) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
         &SolverStepClock => begin
             ssc_idx = findfirst(eachindex(sol.discretes)) do i
                 !isa(sol.discretes[i].t, AbstractRange)
