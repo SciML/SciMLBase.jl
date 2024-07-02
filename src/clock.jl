@@ -8,6 +8,7 @@ using Expronicon.ADT: @adt, @match
     Continuous
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
+        phase::Float64 = 0.0
     end
     SolverStepClock
 end
@@ -25,9 +26,9 @@ using .Clocks
 The default periodic clock with tick interval `dt`. If `dt` is left unspecified, it will
 be inferred (if possible).
 """
-Clock(dt::Union{<:Rational, Float64}) = PeriodicClock(dt)
-Clock(dt) = PeriodicClock(convert(Float64, dt))
-Clock() = PeriodicClock(nothing)
+Clock(dt::Union{<:Rational, Float64}; phase = 0.0) = PeriodicClock(dt, phase)
+Clock(dt; phase = 0.0) = PeriodicClock(convert(Float64, dt), phase)
+Clock(; phase = 0.0) = PeriodicClock(nothing, phase)
 
 @doc """
     SolverStepClock
