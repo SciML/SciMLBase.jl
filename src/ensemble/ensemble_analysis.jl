@@ -3,7 +3,11 @@ module EnsembleAnalysis
 using SciMLBase, Statistics, RecursiveArrayTools, StaticArraysCore
 
 # Getters
-get_timestep(sim, i) = (sol.u[i] for sol in sim)
+function get_timestep(sim::EnsembleSolution{T, N, S},
+        i) where {T, N, S <: AbstractVectorOfArray}
+    (sol.u[i] for sol in sim)
+end
+get_timestep(sim, i) = (sol[i] for sol in sim)
 get_timepoint(sim, t) = (sol(t) for sol in sim)
 function componentwise_vectors_timestep(sim, i)
     arr = [get_timestep(sim, i)...]
@@ -28,7 +32,7 @@ timestep_mean(sim, ::Colon) = timeseries_steps_mean(sim)
 function timestep_median(sim, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([median(x) for x in arr], size(sim.u[1].u[i])...)
+        return reshape([median(x) for x in arr], size(sim[1, i])...)
     else
         return median(arr)
     end
@@ -37,7 +41,7 @@ timestep_median(sim, ::Colon) = timeseries_steps_median(sim)
 function timestep_quantile(sim, q, i)
     arr = componentwise_vectors_timestep(sim, i)
     if typeof(first(arr)) <: AbstractArray
-        return reshape([quantile(x, q) for x in arr], size(sim.u[1].u[i])...)
+        return reshape([quantile(x, q) for x in arr], size(sim[1, i])...)
     else
         return quantile(arr, q)
     end
