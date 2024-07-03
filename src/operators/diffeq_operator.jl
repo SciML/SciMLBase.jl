@@ -1,5 +1,5 @@
 """
-AffineDiffEqOperator{T} <: AbstractDiffEqOperator{T}
+    AffineDiffEqOperator{T} <: AbstractDiffEqOperator{T}
 
 `Ex: (A₁(t) + ... + Aₙ(t))*u + B₁(t) + ... + Bₘ(t)`
 

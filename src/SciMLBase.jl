@@ -100,7 +100,7 @@ abstract type AbstractOptimizationCache end
 """
 $(TYPEDEF)
 
-Base for types which define nonlinear solve problems (f(u)=0).
+Base for types which define nonlinear solve problems (`f(u)=0`).
 """
 abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem end
 abstract type AbstractIntervalNonlinearProblem{uType, isinplace} <:
