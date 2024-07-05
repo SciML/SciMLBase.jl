@@ -106,7 +106,9 @@ set_tuple!(oprob, [10.0, 10.0])
 @test get_tuple(oprob) == (10.0, 10.0)
 
 # SDEProblem.
-noiseeqs = [0.1 * x,
+noiseeqs = [
+    0.1 * D(x),
+    0.1 * x,
     0.1 * y,
     0.1 * z]
 @named noise_sys = SDESystem(sys, noiseeqs)
