@@ -3846,7 +3846,7 @@ MultiObjectiveOptimizationFunction(args...; kwargs...) = MultiObjectiveOptimizat
 
 # Constructor with keyword arguments
 function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
-        jac = nothing, hess = Vector{nothing}(undef, 0), hv = nothing,
+        jac = nothing, hess = Vector{Nothing}(undef, 0), hv = nothing,
         cons = nothing, cons_j = nothing, cons_jvp = nothing,
         cons_vjp = nothing, cons_h = nothing,
         hess_prototype = nothing,
@@ -3889,10 +3889,10 @@ function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoA
 end
 
 # Placeholder functions for __has_jac_prototype, __has_observed, __has_sys, and __has_colorvec
-__has_jac_prototype(f) = false
-__has_observed(f) = false
-__has_sys(f) = false
-__has_colorvec(f) = false
+function __has_jac_prototype(f) return false end
+function __has_observed(f) return false end
+function __has_sys(f) return false end
+function __has_colorvec(f) return false end
 
 function BVPFunction{iip, specialize, twopoint}(f, bc;
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
