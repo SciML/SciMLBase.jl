@@ -21,6 +21,7 @@ jobs:
           - {user: SciML, repo: DelayDiffEq.jl, group: Integrators}
           - {user: SciML, repo: DelayDiffEq.jl, group: Regression}
           - {user: SciML, repo: DiffEqBase.jl, group: Core}
+          - {user: SciML, repo: DiffEqDevTools.jl, group: Core}
           - {user: SciML, repo: DiffEqBase.jl, group: Downstream}
           - {user: SciML, repo: DiffEqBase.jl, group: Downstream2}
           - {user: SciML, repo: DiffEqFlux.jl, group: DiffEqFlux}
