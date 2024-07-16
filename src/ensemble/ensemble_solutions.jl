@@ -97,12 +97,12 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
     # Now Calculate Weak Errors
     weak_errors = Dict{Symbol, eltype(u[1].u[1])}()
     # Final
-    m_final = mean([s[end] for s in u])
+    m_final = mean([s.u[end] for s in u])
     m_final_analytic = mean([s.u_analytic[end] for s in u])
     res = norm(m_final - m_final_analytic)
     weak_errors[:weak_final] = res
     if weak_timeseries_errors
-        ts_weak_errors = [mean([u[j][i] - u[j].u_analytic[i] for j in 1:length(u)])
+        ts_weak_errors = [mean([u.u[j][i] - u[j].u_analytic[i] for j in 1:length(u)])
                           for i in 1:length(u[1])]
         ts_l2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in ts_weak_errors]
         l2_tmp = sqrt(sum(abs2, ts_l2_errors) / length(ts_l2_errors))
@@ -111,11 +111,11 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
         weak_errors[:weak_l∞] = max_tmp
     end
     if weak_dense_errors
-        densetimes = collect(range(u[1].t[1], stop = u[1].t[end], length = 100))
+        densetimes = collect(range(u.u[1].t[1], stop = u[1].t[end], length = 100))
         u_analytic = [[sol.prob.f.analytic(sol.prob.u0, sol.prob.p, densetimes[i],
                            sol.W(densetimes[i])[1])
                        for i in eachindex(densetimes)] for sol in u]
-        udense = [u[j](densetimes) for j in 1:length(u)]
+        udense = [u.u[j](densetimes) for j in 1:length(u)]
         dense_weak_errors = [mean([udense[j][i] - u_analytic[j][i] for j in 1:length(u)])
                              for i in eachindex(densetimes)]
         dense_L2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in dense_weak_errors]
