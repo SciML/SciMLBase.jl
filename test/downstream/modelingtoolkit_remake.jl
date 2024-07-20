@@ -69,7 +69,7 @@ k = ShiftIndex(t)
 # Roundabout method to avoid having to specify values for previous timestep
 fn = DiscreteFunction(discsys)
 ps = ModelingToolkit.MTKParameters(discsys, p)
-discu0 = Dict([u0..., x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
+discu0 = Dict([u0..., x(k - 1) => 0.0, y(k - 1) => 0.0, z(k - 1) => 0.0])
 push!(syss, discsys)
 push!(probs, DiscreteProblem(fn, getindex.((discu0,), unknowns(discsys)), (0, 10), ps))
 
@@ -145,7 +145,8 @@ for (sys, prob) in zip(syss, probs)
     prob2 = @inferred baseType remake(prob; u0 = [x => 0.5σ + 1], p = [β => 0.5x + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test pgetter(prob2) ≈ [28.0, 8.5, 10.0]
-    prob2 = @inferred baseType remake(prob; u0 = [sys.x => 0.5σ + 1], p = [sys.β => 0.5x + 1])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [sys.x => 0.5σ + 1], p = [sys.β => 0.5x + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     # Not testing `Symbol => expr` since nested substitution doesn't work with that

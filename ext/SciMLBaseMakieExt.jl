@@ -345,7 +345,7 @@ end
 function Makie.convert_arguments(::Type{<:Lines},
         sim::SciMLBase.EnsembleSummary;
         idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
-                       1,
+               1,
         error_style = :ribbon, ci_type = :quantile,
         kwargs...)
     if ci_type == :SEM
