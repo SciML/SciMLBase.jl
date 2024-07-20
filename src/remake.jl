@@ -104,7 +104,7 @@ function remake(prob::ODEProblem; f = missing,
 
     if f isa AbstractODEFunction && !(f isa ODEFunction)
         _f = f
-    elseif f === missing
+    elseif f === missing && prob.f isa ODEFunction
         initializeprob, initializeprobmap = remake_initializeprob(
             prob.f.sys, prob.f, u0 === missing ? newu0 : u0,
             tspan[1], p === missing ? newp : p)
