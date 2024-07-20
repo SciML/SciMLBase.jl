@@ -3888,12 +3888,6 @@ function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoA
         cons_hess_colorvec, lag_hess_colorvec)
 end
 
-# Placeholder functions for __has_jac_prototype, __has_observed, __has_sys, and __has_colorvec
-function __has_jac_prototype(f) return false end
-function __has_observed(f) return false end
-function __has_sys(f) return false end
-function __has_colorvec(f) return false end
-
 function BVPFunction{iip, specialize, twopoint}(f, bc;
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
         analytic = __has_analytic(f) ? f.analytic : nothing,
