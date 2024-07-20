@@ -102,7 +102,9 @@ function remake(prob::ODEProblem; f = missing,
 
     iip = isinplace(prob)
 
-    if f === missing
+    if f isa AbstractODEFunction && !(f isa ODEFunction)
+        _f = f
+    elseif f === missing
         initializeprob, initializeprobmap = remake_initializeprob(
             prob.f.sys, prob.f, u0 === missing ? newu0 : u0,
             tspan[1], p === missing ? newp : p)
@@ -128,8 +130,6 @@ function remake(prob::ODEProblem; f = missing,
             @reset _f.initializeprob = initializeprob
             @reset _f.initializeprobmap = initializeprobmap
         end
-    elseif f isa AbstractODEFunction
-        _f = f
     elseif specialization(prob.f) === FunctionWrapperSpecialize
         ptspan = promote_tspan(tspan)
         if iip
