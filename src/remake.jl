@@ -63,7 +63,8 @@ function remake(prob::AbstractSciMLProblem; u0 = missing,
     _remake_internal(prob; kwargs..., u0, p)
 end
 
-function remake(prob::AbstractIntervalNonlinearProblem; p = missing, interpret_symbolicmap = true, use_defaults = false, kwargs...)
+function remake(prob::AbstractIntervalNonlinearProblem; p = missing,
+        interpret_symbolicmap = true, use_defaults = false, kwargs...)
     _, p = updated_u0_p(prob, [], p; interpret_symbolicmap, use_defaults)
     _remake_internal(prob; kwargs..., p)
 end
@@ -102,19 +103,25 @@ function remake(prob::ODEProblem; f = missing,
     iip = isinplace(prob)
 
     if f === missing
-        initializeprob, initializeprobmap = remake_initializeprob(prob.f.sys, prob.f, u0 === missing ? newu0 : u0, tspan[1], p === missing ? newp : p)
+        initializeprob, initializeprobmap = remake_initializeprob(
+            prob.f.sys, prob.f, u0 === missing ? newu0 : u0,
+            tspan[1], p === missing ? newp : p)
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(
-                    unwrapped_f(prob.f.f),
-                    (newu0, newu0, newp,
-                        ptspan[1])); initializeprob, initializeprobmap)
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(
+                    wrapfun_iip(
+                        unwrapped_f(prob.f.f),
+                        (newu0, newu0, newp,
+                            ptspan[1]));
+                    initializeprob, initializeprobmap)
             else
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(
-                    unwrapped_f(prob.f.f),
-                    (newu0, newp,
-                        ptspan[1])); initializeprob, initializeprobmap)
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(
+                    wrapfun_oop(
+                        unwrapped_f(prob.f.f),
+                        (newu0, newp,
+                            ptspan[1]));
+                    initializeprob, initializeprobmap)
             end
         else
             _f = prob.f
@@ -138,7 +145,8 @@ function remake(prob::ODEProblem; f = missing,
     end
 
     if kwargs === missing
-        ODEProblem{isinplace(prob)}(_f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
+        ODEProblem{isinplace(prob)}(
+            _f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
             _kwargs...)
     else
         ODEProblem{isinplace(prob)}(_f, newu0, tspan, newp, prob.problem_type; kwargs...)

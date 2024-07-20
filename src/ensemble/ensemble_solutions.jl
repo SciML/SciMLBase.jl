@@ -159,7 +159,7 @@ end
 
 @recipe function f(sim::EnsembleSummary;
         idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
-                       1,
+               1,
         error_style = :ribbon, ci_type = :quantile)
     if ci_type == :SEM
         if sim.u.u[1] isa AbstractArray
