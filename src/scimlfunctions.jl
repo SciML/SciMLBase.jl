@@ -2615,7 +2615,7 @@ end
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
-        typeof(sys), typeof(initializeprob), typeof(initializeprobmap}(f1, f2, mass_matrix, 
+        typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(f1, f2, mass_matrix, 
         cache, analytic, tgrad, jac, jvp, vjp,
         jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
         initializeprob, initializeprobmap)
