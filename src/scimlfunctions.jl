@@ -2601,7 +2601,7 @@ end
 
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, sparsity, Wfact, Wfact_t, paramjac,
-        observed, colorvec, sys)
+        observed, colorvec, sys, initializeprob, initializeprobmap)
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -2615,8 +2615,10 @@ end
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
-        typeof(sys)}(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp, vjp,
-        jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys)
+        typeof(sys), typeof(initializeprob), typeof(initializeprobmap}(f1, f2, mass_matrix, 
+        cache, analytic, tgrad, jac, jvp, vjp,
+        jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
+        initializeprob, initializeprobmap)
 end
 function SplitFunction{iip, specialize}(f1, f2;
         mass_matrix = __has_mass_matrix(f1) ?
