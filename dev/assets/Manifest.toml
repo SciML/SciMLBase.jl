@@ -5,9 +5,9 @@ manifest_format = "2.0"
 project_hash = "2aa775c1a81fe3724dbb6818319e7ffa2b7e39d2"
 
 [[deps.ADTypes]]
-git-tree-sha1 = "878aee357e230c375cc531952933889cbf9e9314"
+git-tree-sha1 = "aa4d425271a914d8c4af6ad9fccb6eb3aec662c7"
 uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
-version = "1.6.0"
+version = "1.6.1"
 weakdeps = ["ChainRulesCore", "EnzymeCore"]
 
     [deps.ADTypes.extensions]
@@ -664,9 +664,9 @@ version = "0.21.4"
 
 [[deps.JuliaFormatter]]
 deps = ["CSTParser", "CommonMark", "DataStructures", "Glob", "Pkg", "PrecompileTools", "Tokenize"]
-git-tree-sha1 = "b101a476705594c2a8ba106d731497058874bcf4"
+git-tree-sha1 = "0b50446cd3e52a51a7d48b52d49ec1a875aaf6e8"
 uuid = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
-version = "1.0.57"
+version = "1.0.58"
 
 [[deps.JumpProcesses]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "FunctionWrappers", "Graphs", "LinearAlgebra", "Markdown", "PoissonRandom", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays", "SymbolicIndexingInterface", "UnPack"]
@@ -1335,9 +1335,9 @@ version = "2.19.0"
 
 [[deps.SparseMatrixColorings]]
 deps = ["ADTypes", "Compat", "DocStringExtensions", "LinearAlgebra", "Random", "SparseArrays"]
-git-tree-sha1 = "bf25f53d0859b6e314532dca5e87dae8273e8ade"
+git-tree-sha1 = "277e10c002cd780a752bded3b95a8cbc791d646b"
 uuid = "0a514795-09f3-496d-8182-132a7b665d35"
-version = "0.3.4"
+version = "0.3.5"
 
 [[deps.Sparspak]]
 deps = ["Libdl", "LinearAlgebra", "Logging", "OffsetArrays", "Printf", "SparseArrays", "Test"]
@@ -1451,9 +1451,9 @@ version = "2.1.2"
 
 [[deps.Symbolics]]
 deps = ["ADTypes", "ArrayInterface", "Bijections", "CommonWorldInvalidations", "ConstructionBase", "DataStructures", "DiffRules", "Distributions", "DocStringExtensions", "DomainSets", "DynamicPolynomials", "ForwardDiff", "IfElse", "LaTeXStrings", "LambertW", "Latexify", "Libdl", "LinearAlgebra", "LogExpFunctions", "MacroTools", "Markdown", "NaNMath", "PrecompileTools", "RecipesBase", "Reexport", "Requires", "RuntimeGeneratedFunctions", "SciMLBase", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "SymbolicLimits", "SymbolicUtils", "TermInterface"]
-git-tree-sha1 = "8539a734b448ca27707709c62420b1bf115ed7d9"
+git-tree-sha1 = "44356a85991385883acd0f41ef66c6f770d9a2e7"
 uuid = "0c5d862f-8b57-4792-8d23-62f2024744c7"
-version = "5.33.0"
+version = "5.34.0"
 
     [deps.Symbolics.extensions]
     SymbolicsGroebnerExt = "Groebner"
@@ -1560,9 +1560,9 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[deps.Unitful]]
 deps = ["Dates", "LinearAlgebra", "Random"]
-git-tree-sha1 = "dd260903fdabea27d9b6021689b3cd5401a57748"
+git-tree-sha1 = "d95fe458f26209c66a187b1114df96fd70839efd"
 uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "1.20.0"
+version = "1.21.0"
 weakdeps = ["ConstructionBase", "InverseFunctions"]
 
     [deps.Unitful.extensions]
