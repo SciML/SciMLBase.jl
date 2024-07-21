@@ -2645,8 +2645,8 @@ function SplitFunction{iip, specialize}(f1, f2;
         colorvec = __has_colorvec(f1) ? f1.colorvec :
                    nothing,
         sys = __has_sys(f1) ? f1.sys : nothing,
-        initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing
+        initializeprob = __has_initializeprob(f1) ? f.initializeprob : nothing,
+        initializeprobmap = __has_initializeprobmap(f1) ? f.initializeprobmap : nothing
         ) where {iip,
         specialize
 }
