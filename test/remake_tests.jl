@@ -282,5 +282,5 @@ fn = SDEFunction(lorenz!, noise!; sys)
 sdeprob = SDEProblem(fn, u0, tspan, Tuple(p))
 newprob = remake(sdeprob; g = noise2!)
 @test newprob.f isa SDEFunction
-tmp = newprob.g([0.0,0.0, 0.0], [1.0, 2.0, 3.0], nothing, 0.0)
-@test tmp ≈ [0.2, 0.4, 0.6] atol=1e-6
+tmp = newprob.g([0.0, 0.0, 0.0], [1.0, 2.0, 3.0], nothing, 0.0)
+@test tmp≈[0.2, 0.4, 0.6] atol=1e-6
