@@ -225,7 +225,7 @@ function remake(prob::BVProblem{uType, tType, iip, nlls}; f = missing, bc = miss
 end
 
 """
-    remake(prob::SDEProblem; f = missing, u0 = missing, tspan = missing,
+    remake(prob::SDEProblem; f = missing, g = missing, u0 = missing, tspan = missing,
            p = missing, noise = missing, noise_rate_prototype = missing,
            seed = missing, kwargs = missing, _kwargs...)
 
@@ -233,6 +233,7 @@ Remake the given `SDEProblem`.
 """
 function remake(prob::SDEProblem;
         f = missing,
+        g = missing,
         u0 = missing,
         tspan = missing,
         p = missing,
@@ -261,8 +262,23 @@ function remake(prob::SDEProblem;
         seed = prob.seed
     end
 
-    if f === missing #TODO: Need more features, e.g. remake `g`
+    if f === missing && g === missing
         f = prob.f
+        g = prob.g
+    elseif f !== missing && g === missing
+        g = prob.g
+    elseif f === missing && g !== missing
+        if prob.f isa SDEFunction
+            f = remake(prob.f; g=g)
+        else
+            f = SDEFunction(prob.f, g)
+        end
+    else
+        if f isa SDEFunction
+            f = remake(f; g=g)
+        else
+            f = SDEFunction(f, g)
+        end
     end
 
     iip = isinplace(prob)
@@ -280,6 +296,38 @@ function remake(prob::SDEProblem;
     else
         SDEProblem{iip}(f, u0, tspan, p; noise, noise_rate_prototype, seed, kwargs...)
     end
+end
+
+"""
+    remake(func::SDEFunction; f = missing, g = missing,
+           mass_matrix = missing, analytic = missing, kwargs...)
+
+Remake the given `SDEFunction`.
+"""
+function remake(func::SDEFunction;
+    f = missing,
+    g = missing,
+    mass_matrix = missing,
+    analytic = missing,
+    kwargs...)
+
+    if f === missing
+        f = func.f
+    end
+
+    if g === missing
+        g = func.g
+    end
+
+    if mass_matrix === missing
+        mass_matrix = func.mass_matrix
+    end
+
+    if analytic === missing
+        analytic = func.analytic
+    end
+
+    return SDEFunction(f, g; mass_matrix, analytic, kwargs...)
 end
 
 """
