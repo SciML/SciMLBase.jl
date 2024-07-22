@@ -125,8 +125,20 @@ function remake(prob::ODEProblem; f = missing,
             end
         else
             _f = prob.f
-            @reset _f.initializeprob = initializeprob
-            @reset _f.initializeprobmap = initializeprobmap
+            if __has_initializeprob(_f)
+                props = getproperties(_f)
+                @reset props.initializeprob = initializeprob
+                props = values(props)
+                _f = parameterless_type(_f){
+                    iip, specialization(_f), map(typeof, props)...}(props...)
+            end
+            if __has_initializeprobmap(_f)
+                props = getproperties(_f)
+                @reset props.initializeprobmap = initializeprobmap
+                props = values(props)
+                _f = parameterless_type(_f){
+                    iip, specialization(_f), map(typeof, props)...}(props...)
+            end
         end
     elseif f isa AbstractODEFunction
         _f = f
