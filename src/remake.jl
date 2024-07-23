@@ -476,6 +476,10 @@ anydict(d) = Dict{Any, Any}(d)
 anydict() = Dict{Any, Any}()
 
 function _updated_u0_p_internal(
+    prob, ::Missing, ::Missing; interpret_symbolicmap = true, use_defaults = false)
+    return state_values(prob), parameter_values(prob)
+end
+function _updated_u0_p_internal(
         prob, ::Missing, p; interpret_symbolicmap = true, use_defaults = false)
     u0 = state_values(prob)
 
