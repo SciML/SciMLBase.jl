@@ -104,12 +104,6 @@ timeseries_systems = [osys, ssys, jsys]
 
 @testset "Non-timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
     deepcopy(non_timeseries_objects), non_timeseries_systems)
-    if valp isa SciMLBase.NonlinearSolution && valp.prob isa SteadyStateProblem
-        # Steady state problem indexing is broken, since the system is time-dependent but
-        # the solution isn't
-        @test_broken false
-        continue
-    end
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     @testset "State indexing" begin
