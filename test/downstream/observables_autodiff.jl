@@ -49,7 +49,6 @@ end
 # DAE
 
 function create_model(; C₁ = 3e-5, C₂ = 1e-6)
-    @variables t
     @named resistor1 = MSL.Electrical.Resistor(R = 5.0)
     @named resistor2 = MSL.Electrical.Resistor(R = 2.0)
     @named capacitor1 = MSL.Electrical.Capacitor(C = C₁)
