@@ -104,12 +104,6 @@ timeseries_systems = [osys, ssys, jsys]
 
 @testset "Non-timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
     deepcopy(non_timeseries_objects), non_timeseries_systems)
-    if valp isa SciMLBase.NonlinearSolution && valp.prob isa SteadyStateProblem
-        # Steady state problem indexing is broken, since the system is time-dependent but
-        # the solution isn't
-        @test_broken false
-        continue
-    end
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     @testset "State indexing" begin
@@ -209,7 +203,6 @@ end
 
 @testset "Timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
     timeseries_objects, timeseries_systems)
-    @info SciMLBase.parameterless_type(valp) typeof(indp)
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     xvals = getindex.(valp.u, uidxs[1])
@@ -840,8 +833,8 @@ end
         @test getter(integ) == val
     end
 
-    xinterp = sol(0.1:0.1:0.3, idxs = x)
-    xinterp2 = sol(sol.discretes.collection[2].t[2:4], idxs = x)
+    xinterp = sol(0.1:0.1:0.3, idxs = x).u
+    xinterp2 = sol(sol.discretes.collection[2].t[2:4], idxs = x).u
     ud1interp = ud1val[2:4]
     ud2interp = ud2val[2:4]
 
