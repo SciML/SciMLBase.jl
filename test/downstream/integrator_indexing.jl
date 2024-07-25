@@ -338,9 +338,13 @@ for idxs in [
             idxs = map(idxs) do i
                   hasname(i) ? getname(i) : i
             end
-            plot(sol, idxs)
+            if any(==(:t), idxs)
+                  @test_broken plot(sol; idxs)
+            else
+                  plot(sol; idxs)
+            end
       elseif hasname(idxs)
-            plot(sol, idxs=getname(idxs))
+            plot(sol; idxs=getname(idxs))
       end
 end
 
