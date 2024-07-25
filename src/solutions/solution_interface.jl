@@ -178,7 +178,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     idxs = idxs === nothing ? (1:length(sol.u[1])) : idxs
     disc_idxs = []
     cont_idxs = []
-    for idx in idxs
+    for idx in (idxs isa Union{Tuple, AbstractArray} ? idxs : [idxs])
         tsidxs = get_all_timeseries_indexes(sol, idx)
         if ContinuousTimeseries() in tsidxs
             push!(cont_idxs, idx)

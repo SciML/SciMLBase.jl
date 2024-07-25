@@ -156,6 +156,7 @@ p = [lorenz1.σ => 10.0,
 tspan = (0.0, 100.0)
 prob = ODEProblem(sys, u0, tspan, p)
 integrator = init(prob, Rodas4())
+sol = solve(prob, Rodas4())
 step!(integrator, 100.0, true)
 
 @test_throws Any integrator[b]
@@ -318,14 +319,34 @@ integrator[lorenz2.x] = 2.0
 # integrator10 = integrator(0.1, idxs = 2)
 # @test integrator10 isa Real
 
-#=
 using Plots
-plot(sol,idxs=(lorenz2.x,lorenz2.z))
-plot(sol,idxs=(α,lorenz2.z))
-plot(sol,idxs=(lorenz2.x,α))
-plot(sol,idxs=α)
-plot(sol,idxs=(t,α))
-=#
+for idxs in [
+      (lorenz2.x,lorenz2.z),
+      (α,lorenz2.z),
+      (lorenz2.x,α),
+      α,
+      (α,),
+      (t,α),
+      [lorenz2.x,lorenz2.z],
+      [α,lorenz2.z],
+      [lorenz2.x,α],
+      [α],
+      [t,α],
+]
+      plot(sol; idxs)
+      if idxs isa Union{Tuple, AbstractArray}
+            idxs = map(idxs) do i
+                  hasname(i) ? getname(i) : i
+            end
+            if any(==(:t), idxs)
+                  @test_broken plot(sol; idxs)
+            else
+                  plot(sol; idxs)
+            end
+      elseif hasname(idxs)
+            plot(sol; idxs=getname(idxs))
+      end
+end
 
 using LinearAlgebra
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
