@@ -328,8 +328,6 @@ end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector, continuity) where {deriv}
-    all(!isequal(NotSymbolic()), symbolic_type.(idxs)) ||
-        error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     getter = getu(sol, idxs)
