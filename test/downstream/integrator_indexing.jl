@@ -319,35 +319,6 @@ integrator[lorenz2.x] = 2.0
 # integrator10 = integrator(0.1, idxs = 2)
 # @test integrator10 isa Real
 
-using Plots
-for idxs in [
-      (lorenz2.x,lorenz2.z),
-      (α,lorenz2.z),
-      (lorenz2.x,α),
-      α,
-      (α,),
-      (t,α),
-      [lorenz2.x,lorenz2.z],
-      [α,lorenz2.z],
-      [lorenz2.x,α],
-      [α],
-      [t,α],
-]
-      plot(sol; idxs)
-      if idxs isa Union{Tuple, AbstractArray}
-            idxs = map(idxs) do i
-                  hasname(i) ? getname(i) : i
-            end
-            if any(==(:t), idxs)
-                  @test_broken plot(sol; idxs)
-            else
-                  plot(sol; idxs)
-            end
-      elseif hasname(idxs)
-            plot(sol; idxs=getname(idxs))
-      end
-end
-
 using LinearAlgebra
 sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]

@@ -179,28 +179,29 @@ end
     end
 
     idxs = idxs === nothing ? (1:length(sol.u[1])) : idxs
-    disc_idxs = []
-    cont_idxs = []
-    for idx in (idxs isa Union{Tuple, AbstractArray} ? idxs : [idxs])
-        tsidxs = get_all_timeseries_indexes(sol, idx)
-        if ContinuousTimeseries() in tsidxs
-            push!(cont_idxs, idx)
-        else
-            push!(disc_idxs, (idx, only(tsidxs)))
-        end
-    end
-    idxs = identity.(cont_idxs)
     if !(idxs isa Union{Tuple, AbstractArray})
         vars = interpret_vars([idxs], sol)
     else
         vars = interpret_vars(idxs, sol)
     end
+    disc_vars = Tuple[]
+    cont_vars = Tuple[]
+    for var in vars
+        tsidxs = union(get_all_timeseries_indexes(sol, var[2]), get_all_timeseries_indexes(sol, var[3]))
+        if ContinuousTimeseries() in tsidxs
+            push!(cont_vars, var)
+        else
+            push!(disc_vars, (var..., only(tsidxs)))
+        end
+    end
+    idxs = identity.(cont_vars)
+    vars = identity.(cont_vars)
     tdir = sign(sol.t[end] - sol.t[1])
     xflip --> tdir < 0
     seriestype --> :path
 
     @series begin
-        if isempty(idxs)
+        if idxs isa Union{AbstractArray, Tuple} && isempty(idxs)
             label --> nothing
             ([], [])
         else
@@ -281,7 +282,7 @@ end
             (plot_vecs...,)
         end
     end
-    for (idx, tsidx) in disc_idxs
+    for (func, xvar, yvar, tsidx) in disc_vars
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
         if tspan !== nothing
@@ -296,7 +297,15 @@ end
         end
         ts = ts[tstart:tend]
 
-        vals = getp(sol, idx)(sol, tstart:tend)
+        if symbolic_type(xvar) == NotSymbolic() && xvar == 0
+            xvar = only(independent_variable_symbols(sol))
+        end
+        xvals = sol(ts; idxs = xvar).u
+        # xvals = getu(sol, xvar)(sol, tstart:tend)
+        yvals = getp(sol, yvar)(sol, tstart:tend)
+        tmpvals = map(func, xvals, yvals)
+        xvals = getindex.(tmpvals, 1)
+        yvals = getindex.(tmpvals, 2)
         # Scatterplot of points
         @series begin
             seriestype := :line
@@ -304,10 +313,10 @@ end
             markershape --> :o
             markersize --> repeat([2, 0], length(ts)-1)
             markeralpha --> repeat([1, 0], length(ts)-1)
-            label --> string(hasname(idx) ? getname(idx) : idx)
+            label --> string(hasname(yvar) ? getname(yvar) : yvar)
 
-            x = vec([ts[1:end-1]'; ts[2:end]'])
-            y = repeat(vals, inner=2)[1:end-1]
+            x = vec([xvals[1:end-1]'; xvals[2:end]'])
+            y = repeat(yvals, inner=2)[1:end-1]
             x, y
         end
     end

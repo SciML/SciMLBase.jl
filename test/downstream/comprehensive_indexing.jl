@@ -1,7 +1,7 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
       OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
       SteadyStateDiffEq, StochasticDiffEq, SymbolicIndexingInterface,
-      DiffEqCallbacks, Test
+      DiffEqCallbacks, Test, Plots
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -548,6 +548,21 @@ end
         end
     end
     function SymbolicIndexingInterface.parameter_observed(s::NumSymbolCache, x)
+        if x isa Symbol
+            allsyms = all_symbols(s)
+            x = allsyms[findfirst(y -> hasname(y) && x == getname(y), allsyms)]
+        elseif x isa AbstractArray
+            allsyms = all_symbols(s)
+            newx = []
+            for i in eachindex(x)
+                if x[i] isa Symbol
+                    push!(newx, allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                else
+                    push!(newx, x[i])
+                end
+            end
+            x = newx
+        end
         res = ModelingToolkit.build_function(x,
             sort(parameter_symbols(s), by = Base.Fix1(parameter_index, s)),
             independent_variable_symbols(s)[]; expression = Val(false))
@@ -566,6 +581,21 @@ end
             x = ModelingToolkit.unwrap.(x)
         else
             x = ModelingToolkit.unwrap(x)
+        end
+        if x isa Symbol
+            allsyms = all_symbols(s)
+            x = allsyms[findfirst(y -> hasname(y) && x == getname(y), allsyms)]
+        elseif x isa AbstractArray
+            allsyms = all_symbols(s)
+            newx = []
+            for i in eachindex(x)
+                if x[i] isa Symbol
+                    push!(newx, allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                else
+                    push!(newx, x[i])
+                end
+            end
+            x = newx
         end
         vars = ModelingToolkit.vars(x)
         return mapreduce(union, vars; init = Set()) do sym
@@ -855,5 +885,22 @@ end
             res = res.u
         end
         @test res == val
+    end
+
+    @testset "Plotting" begin
+        plotfn(t, u) = (t, 2u)
+        all_idxs = [ud1, 2ud1, ud2, (plotfn, 0, ud1), (plotfn, t, ud1)]
+        sym_idxs = [:ud1, :ud2, (plotfn, 0, :ud1), (plotfn, 0, :ud1)]
+        
+        for idx in Iterators.flatten((all_idxs, sym_idxs))
+            @test_nowarn plot(sol; idxs = idx)
+            @test_nowarn plot(sol; idxs = [idx])
+        end
+        for idx in Iterators.flatten((Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
+            @test_nowarn plot(sol; idxs = collect(idx))
+            if !(idx[1] isa Tuple || idx[2] isa Tuple || length(get_all_timeseries_indexes(sol, collect(idx))) > 1)
+                @test_nowarn plot(sol; idxs = idx)
+            end
+        end
     end
 end
