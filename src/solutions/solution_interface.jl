@@ -147,13 +147,16 @@ end
 DEFAULT_PLOT_FUNC(x, y) = (x, y)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
+function isdenseplot(sol)
+    (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
+    !(sol isa AbstractRODESolution) &&
+    !(hasfield(typeof(sol), :interp) &&
+    sol.interp isa SensitivityInterpolation)
+end
+
 @recipe function f(sol::AbstractTimeseriesSolution;
         plot_analytic = false,
-        denseplot = (sol.dense ||
-                     sol.prob isa AbstractDiscreteProblem) &&
-                    !(sol isa AbstractRODESolution) &&
-                    !(hasfield(typeof(sol), :interp) &&
-                      sol.interp isa SensitivityInterpolation),
+        denseplot = isdenseplot(sol),
         plotdensity = min(Int(1e5),
             sol.tslocation == 0 ?
             (sol.prob isa AbstractDiscreteProblem ?
