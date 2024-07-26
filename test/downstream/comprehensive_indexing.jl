@@ -1,7 +1,7 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
       OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
       SteadyStateDiffEq, StochasticDiffEq, SymbolicIndexingInterface,
-      DiffEqCallbacks, Test
+      DiffEqCallbacks, Test, Plots
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
