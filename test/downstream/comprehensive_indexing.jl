@@ -314,11 +314,11 @@ end
     @testset "Interpolation" begin
         sol = valp
         interpolated_sol = sol(0.0:1.0:10.0)
-        @test interpolated_sol[XY] isa Vector
+        @test interpolated_sol.u[XY] isa Vector
         @test interpolated_sol[XY, :] isa Vector
         @test interpolated_sol[XY, 2] isa Float64
         @test length(interpolated_sol[XY, 1:5]) == 5
-        @test interpolated_sol[XY] ≈ interpolated_sol[X] .+ interpolated_sol[Y]
+        @test interpolated_sol.u[XY] ≈ interpolated_sol[X] .+ interpolated_sol[Y]
         @test collect(interpolated_sol[t]) isa Vector
         @test collect(interpolated_sol[t, :]) isa Vector
         @test interpolated_sol[t, 2] isa Float64
@@ -891,7 +891,7 @@ end
         plotfn(t, u) = (t, 2u)
         all_idxs = [ud1, 2ud1, ud2, (plotfn, 0, ud1), (plotfn, t, ud1)]
         sym_idxs = [:ud1, :ud2, (plotfn, 0, :ud1), (plotfn, 0, :ud1)]
-        
+
         for idx in Iterators.flatten((all_idxs, sym_idxs))
             @test_nowarn plot(sol; idxs = idx)
             @test_nowarn plot(sol; idxs = [idx])

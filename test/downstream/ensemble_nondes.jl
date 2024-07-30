@@ -13,11 +13,11 @@ ensembleprob = Optimization.EnsembleProblem(
 
 sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
     EnsembleThreads(), trajectories = 4, maxiters = 5)
-@test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
+@test findmin(i -> sol.u[i].objective, 1:4)[1] < sol1.objective
 
 sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
     EnsembleDistributed(), trajectories = 4, maxiters = 5)
-@test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
+@test findmin(i -> sol.u[i].objective, 1:4)[1] < sol1.objective
 
 prob = OptimizationProblem(optf, x0, lb = [-0.5, -0.5], ub = [0.5, 0.5])
 ensembleprob = Optimization.EnsembleProblem(
@@ -25,11 +25,11 @@ ensembleprob = Optimization.EnsembleProblem(
 
 sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
     EnsembleThreads(), trajectories = 5, maxiters = 5)
-@test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
+@test findmin(i -> sol.u[i].objective, 1:4)[1] < sol1.objective
 
 sol = Optimization.solve(ensembleprob, OptimizationOptimJL.BFGS(),
     EnsembleDistributed(), trajectories = 5, maxiters = 5)
-@test findmin(i -> sol[i].objective, 1:4)[1] < sol1.objective
+@test findmin(i -> sol.u[i].objective, 1:4)[1] < sol1.objective
 
 using NonlinearSolve
 
