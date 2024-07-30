@@ -60,6 +60,9 @@ end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+        @time @safetestset "Serialization tests" begin
+            include("serialization_tests.jl")
+        end
     end
 
     if !is_APPVEYOR &&

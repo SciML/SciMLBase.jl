@@ -2,7 +2,7 @@ module Clocks
 
 export TimeDomain
 
-using Expronicon.ADT: @adt, @match
+using Expronicon.ADT: variant_type, @adt, @match
 
 @adt TimeDomain begin
     Continuous
@@ -14,6 +14,16 @@ using Expronicon.ADT: @adt, @match
 end
 
 Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
+
+const DiscriminatorType = typeof(variant_type(Continuous))
+
+function Base.write(io::IO, x::DiscriminatorType)
+    write(io, Base.reinterpret(UInt32, x))
+end
+
+function Base.read(io::IO, ::Type{DiscriminatorType})
+    Base.reinterpret(DiscriminatorType, read(io, UInt32))
+end
 
 end
 
