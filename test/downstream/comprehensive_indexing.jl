@@ -318,7 +318,7 @@ end
         @test interpolated_sol[XY, :] isa Vector
         @test interpolated_sol[XY, 2] isa Float64
         @test length(interpolated_sol[XY, 1:5]) == 5
-        @test interpolated_sol.u[XY] ≈ interpolated_sol[X] .+ interpolated_sol[Y]
+        @test interpolated_sol[XY] ≈ interpolated_sol[X] .+ interpolated_sol[Y]
         @test collect(interpolated_sol[t]) isa Vector
         @test collect(interpolated_sol[t, :]) isa Vector
         @test interpolated_sol[t, 2] isa Float64
