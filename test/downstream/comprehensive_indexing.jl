@@ -314,7 +314,7 @@ end
     @testset "Interpolation" begin
         sol = valp
         interpolated_sol = sol(0.0:1.0:10.0)
-        @test interpolated_sol.u[XY] isa Vector
+        @test interpolated_sol[XY] isa Vector
         @test interpolated_sol[XY, :] isa Vector
         @test interpolated_sol[XY, 2] isa Float64
         @test length(interpolated_sol[XY, 1:5]) == 5
