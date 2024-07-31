@@ -211,6 +211,8 @@ end
     end
 end
 
+@deprecate Base.getindex(A::AbstractEnsembleSolution, I::Int) A.u[I] false
+
 Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s::Integer, i::Integer)
     return x.u[s].u[i]
 end
