@@ -103,7 +103,7 @@ sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
 @test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(unknowns(sol.prob.f.sys))])
-@test_throws ArgumentError sol[:x]
+@test_throws KeyError sol[:x]
 
 ### Non-symbolic indexing tests
 @test sol[:, 1] isa AbstractVector

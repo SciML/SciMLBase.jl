@@ -891,7 +891,7 @@ end
         plotfn(t, u) = (t, 2u)
         all_idxs = [ud1, 2ud1, ud2, (plotfn, 0, ud1), (plotfn, t, ud1)]
         sym_idxs = [:ud1, :ud2, (plotfn, 0, :ud1), (plotfn, 0, :ud1)]
-        
+
         for idx in Iterators.flatten((all_idxs, sym_idxs))
             @test_nowarn plot(sol; idxs = idx)
             @test_nowarn plot(sol; idxs = [idx])
