@@ -556,7 +556,8 @@ end
             newx = []
             for i in eachindex(x)
                 if x[i] isa Symbol
-                    push!(newx, allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                    push!(newx,
+                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
                 else
                     push!(newx, x[i])
                 end
@@ -590,7 +591,8 @@ end
             newx = []
             for i in eachindex(x)
                 if x[i] isa Symbol
-                    push!(newx, allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                    push!(newx,
+                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
                 else
                     push!(newx, x[i])
                 end
@@ -896,9 +898,11 @@ end
             @test_nowarn plot(sol; idxs = idx)
             @test_nowarn plot(sol; idxs = [idx])
         end
-        for idx in Iterators.flatten((Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
+        for idx in Iterators.flatten((
+            Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
             @test_nowarn plot(sol; idxs = collect(idx))
-            if !(idx[1] isa Tuple || idx[2] isa Tuple || length(get_all_timeseries_indexes(sol, collect(idx))) > 1)
+            if !(idx[1] isa Tuple || idx[2] isa Tuple ||
+                 length(get_all_timeseries_indexes(sol, collect(idx))) > 1)
                 @test_nowarn plot(sol; idxs = idx)
             end
         end

@@ -275,7 +275,8 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
-            interp_val = ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
+            interp_val = ConstantInterpolation(partition.t, partition.u)(
+                t, nothing, deriv, nothing, continuity)
             ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
@@ -296,7 +297,8 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
-            interp_val = ConstantInterpolation(partition.t, partition.u)(t, nothing, deriv, nothing, continuity)
+            interp_val = ConstantInterpolation(partition.t, partition.u)(
+                t, nothing, deriv, nothing, continuity)
             ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
@@ -374,7 +376,9 @@ function get_saveable_values(sys, ps, timeseries_idx)
 end
 
 function save_discretes!(integ::DEIntegrator, timeseries_idx)
-    save_discretes!(integ.sol, current_time(integ), get_saveable_values(integ, parameter_values(integ), timeseries_idx), timeseries_idx)
+    save_discretes!(integ.sol, current_time(integ),
+        get_saveable_values(integ, parameter_values(integ), timeseries_idx),
+        timeseries_idx)
 end
 
 save_discretes!(args...) = nothing
@@ -555,7 +559,8 @@ end
 
 mask_discretes(::Nothing, _, _...) = nothing
 
-function mask_discretes(discretes::ParameterTimeseriesCollection, new_t, ::Union{Int, CartesianIndex})
+function mask_discretes(
+        discretes::ParameterTimeseriesCollection, new_t, ::Union{Int, CartesianIndex})
     masked_discretes = map(discretes) do disc
         i = searchsortedlast(disc.t, new_t)
         disc[i:i]

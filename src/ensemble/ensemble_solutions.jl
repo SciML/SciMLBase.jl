@@ -211,11 +211,13 @@ end
     end
 end
 
-Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s::Integer, i::Integer)
+Base.@propagate_inbounds function Base.getindex(
+        x::AbstractEnsembleSolution, s::Integer, i::Integer)
     return x.u[s].u[i]
 end
 
-Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s::Integer, i2::Integer, i3::Integer, idxs::Integer...)
+Base.@propagate_inbounds function Base.getindex(
+        x::AbstractEnsembleSolution, s::Integer, i2::Integer, i3::Integer, idxs::Integer...)
     return x.u[s][i2, i3, idxs...]
 end
 

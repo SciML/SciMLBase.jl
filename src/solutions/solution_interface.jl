@@ -149,9 +149,9 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
 function isdenseplot(sol)
     (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
-    !(sol isa AbstractRODESolution) &&
-    !(hasfield(typeof(sol), :interp) &&
-    sol.interp isa SensitivityInterpolation)
+        !(sol isa AbstractRODESolution) &&
+        !(hasfield(typeof(sol), :interp) &&
+          sol.interp isa SensitivityInterpolation)
 end
 
 @recipe function f(sol::AbstractTimeseriesSolution;
@@ -187,7 +187,8 @@ end
     disc_vars = Tuple[]
     cont_vars = Tuple[]
     for var in vars
-        tsidxs = union(get_all_timeseries_indexes(sol, var[2]), get_all_timeseries_indexes(sol, var[3]))
+        tsidxs = union(get_all_timeseries_indexes(sol, var[2]),
+            get_all_timeseries_indexes(sol, var[3]))
         if ContinuousTimeseries() in tsidxs
             push!(cont_vars, var)
         else
@@ -208,7 +209,6 @@ end
             tscale = get(plotattributes, :xscale, :identity)
             plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
                 plotdensity, tspan, vars, tscale, plotat)
-
 
             # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
             if idxs isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
@@ -311,12 +311,12 @@ end
             seriestype := :line
             linestyle --> :dash
             markershape --> :o
-            markersize --> repeat([2, 0], length(ts)-1)
-            markeralpha --> repeat([1, 0], length(ts)-1)
+            markersize --> repeat([2, 0], length(ts) - 1)
+            markeralpha --> repeat([1, 0], length(ts) - 1)
             label --> string(hasname(yvar) ? getname(yvar) : yvar)
 
-            x = vec([xvals[1:end-1]'; xvals[2:end]'])
-            y = repeat(yvals, inner=2)[1:end-1]
+            x = vec([xvals[1:(end - 1)]'; xvals[2:end]'])
+            y = repeat(yvals, inner = 2)[1:(end - 1)]
             x, y
         end
     end

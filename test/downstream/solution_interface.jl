@@ -156,14 +156,15 @@ sol10 = sol(0.1, idxs = 2)
 
     plotfn(t, u) = (t, 2u)
     all_idxs = [x, x + p * y, t, (plotfn, 0, 1), (plotfn, t, 1), (plotfn, 0, x),
-                (plotfn, t, x), (plotfn, t, p * y)]
+        (plotfn, t, x), (plotfn, t, p * y)]
     sym_idxs = [:x, :t, (plotfn, :t, 1), (plotfn, 0, :x),
-                (plotfn, :t, :x)]
+        (plotfn, :t, :x)]
     for idx in Iterators.flatten((all_idxs, sym_idxs))
         @test_nowarn plot(sol; idxs = idx)
         @test_nowarn plot(sol; idxs = [idx])
     end
-    for idx in Iterators.flatten((Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
+    for idx in Iterators.flatten((
+        Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
         @test_nowarn plot(sol; idxs = collect(idx))
         if !(idx[1] isa Tuple || idx[2] isa Tuple)
             @test_nowarn plot(sol; idxs = idx)
