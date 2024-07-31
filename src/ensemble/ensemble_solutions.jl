@@ -116,7 +116,7 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
                            sol.W(densetimes[i])[1])
                        for i in eachindex(densetimes)] for sol in u]
         udense = [u[j](densetimes) for j in 1:length(u)]
-        dense_weak_errors = [mean([udense[j][i] - u_analytic[j][i] for j in 1:length(u)])
+        dense_weak_errors = [mean([udense[j].u[i] - u_analytic[j][i] for j in 1:length(u)])
                              for i in eachindex(densetimes)]
         dense_L2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in dense_weak_errors]
         L2_tmp = sqrt(sum(abs2, dense_L2_errors) / length(dense_L2_errors))
