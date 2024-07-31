@@ -88,7 +88,7 @@ Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
 
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
-    
+
     return @match c begin
         PeriodicClock(dt, _...) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
         &SolverStepClock => begin

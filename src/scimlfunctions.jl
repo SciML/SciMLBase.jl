@@ -2615,7 +2615,8 @@ end
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
-        typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(f1, f2, mass_matrix, 
+        typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(
+        f1, f2, mass_matrix,
         cache, analytic, tgrad, jac, jvp, vjp,
         jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
         initializeprob, initializeprobmap)
@@ -2649,7 +2650,7 @@ function SplitFunction{iip, specialize}(f1, f2;
         sys = __has_sys(f1) ? f1.sys : nothing,
         initializeprob = __has_initializeprob(f1) ? f1.initializeprob : nothing,
         initializeprobmap = __has_initializeprobmap(f1) ? f1.initializeprobmap : nothing
-        ) where {iip,
+) where {iip,
         specialize
 }
     sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)

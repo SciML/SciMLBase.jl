@@ -174,15 +174,16 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
-@adjoint function ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13
-, T14, T15}(u,
+@adjoint function ODESolution{
+        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}(u,
         args...) where {T1, T2, T3, T4, T5, T6, T7, T8,
         T9, T10, T11, T12, T13, T14, T15}
     function ODESolutionAdjoint(ȳ)
         (ȳ, ntuple(_ -> nothing, length(args))...)
     end
 
-    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}(u, args...),
+    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}(
+        u, args...),
     ODESolutionAdjoint
 end
 
