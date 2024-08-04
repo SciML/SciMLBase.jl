@@ -811,7 +811,7 @@ export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, D
        IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
        DynamicalBVPFunction, IntegralFunction, BatchIntegralFunction
 
-export OptimizationFunction
+export OptimizationFunction, MultiObjectiveOptimizationFunction
 
 export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
 

@@ -1928,6 +1928,38 @@ end
 """
 $(TYPEDEF)
 """
+
+struct MultiObjectiveOptimizationFunction{iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+    EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
+       AbstractOptimizationFunction{iip}
+    f::F
+    adtype::AD
+    jac::J                # Replacing grad with jac for the Jacobian
+    hess::Vector{H}       # Hess will be a vector of type H
+    hv::HV
+    cons::C
+    cons_j::CJ
+    cons_jvp::CJV
+    cons_vjp::CVJ
+    cons_h::CH
+    hess_prototype::HP
+    cons_jac_prototype::CJP
+    cons_hess_prototype::CHP
+    observed::O
+    expr::EX
+    cons_expr::CEX
+    sys::SYS
+    lag_h::LH
+    lag_hess_prototype::LHP
+    hess_colorvec::HCV
+    cons_jac_colorvec::CJCV
+    cons_hess_colorvec::CHCV
+    lag_hess_colorvec::LHCV
+end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
@@ -3811,6 +3843,56 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
         typeof(lag_hess_colorvec)
     }(f, adtype, grad, hess,
+        hv, cons, cons_j, cons_jvp,
+        cons_vjp, cons_h,
+        hess_prototype, cons_jac_prototype,
+        cons_hess_prototype, observed, expr, cons_expr, sys,
+        lag_h, lag_hess_prototype, hess_colorvec, cons_jac_colorvec,
+        cons_hess_colorvec, lag_hess_colorvec)
+end
+
+# Function call operator for MultiObjectiveOptimizationFunction
+(f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
+
+# Convenience constructor
+MultiObjectiveOptimizationFunction(args...; kwargs...) = MultiObjectiveOptimizationFunction{true}(args...; kwargs...)
+
+# Constructor with keyword arguments
+function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
+        jac = nothing, hess = Vector{Nothing}(undef, 0), hv = nothing,
+        cons = nothing, cons_j = nothing, cons_jvp = nothing,
+        cons_vjp = nothing, cons_h = nothing,
+        hess_prototype = nothing,
+        cons_jac_prototype = __has_jac_prototype(f) ?
+                             f.jac_prototype : nothing,
+        cons_hess_prototype = nothing,
+        syms = nothing,
+        paramsyms = nothing,
+        observed = __has_observed(f) ? f.observed :
+                   DEFAULT_OBSERVED_NO_TIME,
+        expr = nothing, cons_expr = nothing,
+        sys = __has_sys(f) ? f.sys : nothing,
+        lag_h = nothing, lag_hess_prototype = nothing,
+        hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+        cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
+                            nothing,
+        cons_hess_colorvec = __has_colorvec(f) ? f.colorvec :
+                             nothing,
+        lag_hess_colorvec = nothing) where {iip}
+    isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
+    MultiObjectiveOptimizationFunction{iip, typeof(adtype), typeof(f), typeof(jac), typeof(hess),
+        typeof(hv),
+        typeof(cons), typeof(cons_j), typeof(cons_jvp),
+        typeof(cons_vjp), typeof(cons_h),
+        typeof(hess_prototype),
+        typeof(cons_jac_prototype), typeof(cons_hess_prototype),
+        typeof(observed),
+        typeof(expr), typeof(cons_expr), typeof(sys), typeof(lag_h),
+        typeof(lag_hess_prototype), typeof(hess_colorvec),
+        typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
+        typeof(lag_hess_colorvec)
+    }(f, adtype, jac, hess,
         hv, cons, cons_j, cons_jvp,
         cons_vjp, cons_h,
         hess_prototype, cons_jac_prototype,
