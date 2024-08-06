@@ -174,6 +174,17 @@ function Base.setproperty!(prob::ODEProblem, s::Symbol, v, order::Symbol)
     Base.setfield!(prob, s, v, order)
 end
 
+function ConstructionBase.constructorof(::Type{P}) where {P <: ODEProblem}
+    function ctor(f, u0, tspan, p, kw, pt)
+        if f isa AbstractODEFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return ODEProblem{iip}(f, u0, tspan, p, pt; kw...)
+    end
+end
+
 """
     ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
 
