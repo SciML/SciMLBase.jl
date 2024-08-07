@@ -543,7 +543,6 @@ prepare_function(f) = f
 Returns a copy of the interpolation stripped of its function, to accommodate serialization.
 If the interpolation object has no function, returns the interpolation object as is.
 """
-
-function strip_interpolation(interp::AbstractDiffEqInterpolation)
+function strip_interpolation(id::Union{HermiteInterpolation, LinearInterpolation, ConstantInterpolation})
     interp
 end
