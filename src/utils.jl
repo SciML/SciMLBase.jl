@@ -537,3 +537,13 @@ the arity of a function is computed with `numargs`
 See also: `prepare_initial_state`.
 """
 prepare_function(f) = f
+
+"""
+        strip_interpolation(interp::AbstractDiffEqInterpolation)
+Returns a copy of the interpolation stripped of its function, to accommodate serialization.
+If the interpolation object has no function, returns the interpolation object as is.
+"""
+
+function strip_interpolation(interp::AbstractDiffEqInterpolation)
+    interp
+end
