@@ -538,3 +538,11 @@ See also: `prepare_initial_state`.
 """
 prepare_function(f) = f
 
+"""
+        strip_solution(sol)
+
+Strips a SciMLSolution object and its interpolation of their functions to better accommadate serialization.
+"""
+function strip_solution(sol::AbstractSciMLSolution)
+    sol
+end
