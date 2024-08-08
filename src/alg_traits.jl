@@ -75,6 +75,14 @@ Defaults to false.
 isdiscrete(alg::AbstractDEAlgorithm) = false
 
 """
+    has_lazy_interpolation(alg::AbstractDEAlgorithm)
+
+Trait declaration for whether an algorithm computes the solution interpolation lazily.
+
+Defaults to false.
+"""
+has_lazy_interpolation(alg::AbstractDEAlgorithm) = false
+"""
     allowsbounds(opt)
 
 Trait declaration for whether an optimizer allows for
