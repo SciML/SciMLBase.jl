@@ -1897,7 +1897,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, FG, H, FGH, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+struct OptimizationFunction{
+    iip, AD, F, G, FG, H, FGH, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
     EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
        AbstractOptimizationFunction{iip}
     f::F
