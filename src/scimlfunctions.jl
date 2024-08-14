@@ -1932,7 +1932,8 @@ end
 $(TYPEDEF)
 """
 
-struct MultiObjectiveOptimizationFunction{iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+struct MultiObjectiveOptimizationFunction{
+    iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
     EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
        AbstractOptimizationFunction{iip}
     f::F
@@ -3812,7 +3813,7 @@ struct NoAD <: AbstractADType end
 OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
 
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
-        grad = nothing, hess = nothing, hv = nothing,
+        grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
         cons = nothing, cons_j = nothing, cons_jvp = nothing,
         cons_vjp = nothing, cons_h = nothing,
         hess_prototype = nothing,
@@ -3834,8 +3835,9 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         lag_hess_colorvec = nothing) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     sys = sys_or_symbolcache(sys, syms, paramsyms)
-    OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
-        typeof(hv),
+    OptimizationFunction{
+        iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
+        typeof(fgh), typeof(hv),
         typeof(cons), typeof(cons_j), typeof(cons_jvp),
         typeof(cons_vjp), typeof(cons_h),
         typeof(hess_prototype),
@@ -3845,7 +3847,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         typeof(lag_hess_prototype), typeof(hess_colorvec),
         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
         typeof(lag_hess_colorvec)
-    }(f, adtype, grad, hess,
+    }(f, adtype, grad, fg, hess, fgh,
         hv, cons, cons_j, cons_jvp,
         cons_vjp, cons_h,
         hess_prototype, cons_jac_prototype,
@@ -3858,7 +3860,9 @@ end
 (f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
 
 # Convenience constructor
-MultiObjectiveOptimizationFunction(args...; kwargs...) = MultiObjectiveOptimizationFunction{true}(args...; kwargs...)
+function MultiObjectiveOptimizationFunction(args...; kwargs...)
+    MultiObjectiveOptimizationFunction{true}(args...; kwargs...)
+end
 
 # Constructor with keyword arguments
 function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
@@ -3884,7 +3888,8 @@ function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoA
         lag_hess_colorvec = nothing) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     sys = sys_or_symbolcache(sys, syms, paramsyms)
-    MultiObjectiveOptimizationFunction{iip, typeof(adtype), typeof(f), typeof(jac), typeof(hess),
+    MultiObjectiveOptimizationFunction{
+        iip, typeof(adtype), typeof(f), typeof(jac), typeof(hess),
         typeof(hv),
         typeof(cons), typeof(cons_j), typeof(cons_jvp),
         typeof(cons_vjp), typeof(cons_h),
