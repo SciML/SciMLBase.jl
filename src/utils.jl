@@ -537,4 +537,3 @@ the arity of a function is computed with `numargs`
 See also: `prepare_initial_state`.
 """
 prepare_function(f) = f
-
