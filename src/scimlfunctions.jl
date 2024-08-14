@@ -1897,13 +1897,15 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+struct OptimizationFunction{iip, AD, F, G, FG, H, FGH, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
     EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
        AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
+    fg::FG
     hess::H
+    fgh::FGH
     hv::HV
     cons::C
     cons_j::CJ
@@ -1934,8 +1936,8 @@ struct MultiObjectiveOptimizationFunction{iip, AD, F, J, H, HV, C, CJ, CJV, CVJ,
        AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
-    jac::J                # Replacing grad with jac for the Jacobian
-    hess::Vector{H}       # Hess will be a vector of type H
+    jac::J
+    hess::H
     hv::HV
     cons::C
     cons_j::CJ
