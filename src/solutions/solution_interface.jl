@@ -22,9 +22,10 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
 end
 
 # For augmenting system information to enable symbol based indexing of interpolated solutions
-function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution) where {T, N, Q, B}
+function augment(A::DiffEqArray{T, N, Q, B}, sol::AbstractODESolution;
+        discretes = nothing) where {T, N, Q, B}
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol)
+    return DiffEqArray(A.u, A.t, p, sol; discretes)
 end
 
 # SymbolicIndexingInterface.jl
@@ -146,13 +147,16 @@ end
 DEFAULT_PLOT_FUNC(x, y) = (x, y)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
+function isdenseplot(sol)
+    (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
+        !(sol isa AbstractRODESolution) &&
+        !(hasfield(typeof(sol), :interp) &&
+          sol.interp isa SensitivityInterpolation)
+end
+
 @recipe function f(sol::AbstractTimeseriesSolution;
         plot_analytic = false,
-        denseplot = (sol.dense ||
-                     sol.prob isa AbstractDiscreteProblem) &&
-                    !(sol isa AbstractRODESolution) &&
-                    !(hasfield(typeof(sol), :interp) &&
-                      sol.interp isa SensitivityInterpolation),
+        denseplot = isdenseplot(sol),
         plotdensity = min(Int(1e5),
             sol.tslocation == 0 ?
             (sol.prob isa AbstractDiscreteProblem ?
@@ -175,91 +179,147 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
     end
 
     idxs = idxs === nothing ? (1:length(sol.u[1])) : idxs
-
     if !(idxs isa Union{Tuple, AbstractArray})
         vars = interpret_vars([idxs], sol)
     else
         vars = interpret_vars(idxs, sol)
     end
-
-    tscale = get(plotattributes, :xscale, :identity)
-    plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
-        plotdensity, tspan, vars, tscale, plotat)
-
+    disc_vars = Tuple[]
+    cont_vars = Tuple[]
+    for var in vars
+        tsidxs = union(get_all_timeseries_indexes(sol, var[2]),
+            get_all_timeseries_indexes(sol, var[3]))
+        if ContinuousTimeseries() in tsidxs
+            push!(cont_vars, var)
+        else
+            push!(disc_vars, (var..., only(tsidxs)))
+        end
+    end
+    idxs = identity.(cont_vars)
+    vars = identity.(cont_vars)
     tdir = sign(sol.t[end] - sol.t[1])
     xflip --> tdir < 0
     seriestype --> :path
 
-    # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if idxs isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
-        val = hasname(vars[1][2]) ? String(getname(vars[1][2])) : vars[1][2]
-        if val isa Integer
-            if val == 0
-                val = "t"
-            else
-                val = "u[$val]"
-            end
-        end
-        xguide --> val
-        val = hasname(vars[1][3]) ? String(getname(vars[1][3])) : vars[1][3]
-        if val isa Integer
-            if val == 0
-                val = "t"
-            else
-                val = "u[$val]"
-            end
-        end
-        yguide --> val
-        if length(idxs) > 2
-            val = hasname(vars[1][4]) ? String(getname(vars[1][4])) : vars[1][4]
-            if val isa Integer
-                if val == 0
-                    val = "t"
-                else
-                    val = "u[$val]"
+    @series begin
+        if idxs isa Union{AbstractArray, Tuple} && isempty(idxs)
+            label --> nothing
+            ([], [])
+        else
+            tscale = get(plotattributes, :xscale, :identity)
+            plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
+                plotdensity, tspan, vars, tscale, plotat)
+
+            # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
+            if idxs isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
+                val = hasname(vars[1][2]) ? String(getname(vars[1][2])) : vars[1][2]
+                if val isa Integer
+                    if val == 0
+                        val = "t"
+                    else
+                        val = "u[$val]"
+                    end
+                end
+                xguide --> val
+                val = hasname(vars[1][3]) ? String(getname(vars[1][3])) : vars[1][3]
+                if val isa Integer
+                    if val == 0
+                        val = "t"
+                    else
+                        val = "u[$val]"
+                    end
+                end
+                yguide --> val
+                if length(idxs) > 2
+                    val = hasname(vars[1][4]) ? String(getname(vars[1][4])) : vars[1][4]
+                    if val isa Integer
+                        if val == 0
+                            val = "t"
+                        else
+                            val = "u[$val]"
+                        end
+                    end
+                    zguide --> val
                 end
             end
-            zguide --> val
+
+            if (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 1))) &&
+                getindex.(vars, 1) == zeros(length(vars))) ||
+               (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 2))) &&
+                getindex.(vars, 2) == zeros(length(vars))) ||
+               all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 1)) ||
+               all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 2))
+                xguide --> "$(getindepsym_defaultt(sol))"
+            end
+            if length(vars[1]) >= 3 &&
+               ((!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 3))) &&
+                 getindex.(vars, 3) == zeros(length(vars))) ||
+                all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 3)))
+                yguide --> "$(getindepsym_defaultt(sol))"
+            end
+            if length(vars[1]) >= 4 &&
+               ((!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 4))) &&
+                 getindex.(vars, 4) == zeros(length(vars))) ||
+                all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 4)))
+                zguide --> "$(getindepsym_defaultt(sol))"
+            end
+
+            if (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 2))) &&
+                getindex.(vars, 2) == zeros(length(vars))) ||
+               all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 2))
+                if tspan === nothing
+                    if tdir > 0
+                        xlims --> (sol.t[1], sol.t[end])
+                    else
+                        xlims --> (sol.t[end], sol.t[1])
+                    end
+                else
+                    xlims --> (tspan[1], tspan[end])
+                end
+            end
+
+            label --> reshape(labels, 1, length(labels))
+            (plot_vecs...,)
         end
     end
-
-    if (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 1))) &&
-        getindex.(vars, 1) == zeros(length(vars))) ||
-       (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 2))) &&
-        getindex.(vars, 2) == zeros(length(vars))) ||
-       all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 1)) ||
-       all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 2))
-        xguide --> "$(getindepsym_defaultt(sol))"
-    end
-    if length(vars[1]) >= 3 &&
-       ((!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 3))) &&
-         getindex.(vars, 3) == zeros(length(vars))) ||
-        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 3)))
-        yguide --> "$(getindepsym_defaultt(sol))"
-    end
-    if length(vars[1]) >= 4 &&
-       ((!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 4))) &&
-         getindex.(vars, 4) == zeros(length(vars))) ||
-        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 4)))
-        zguide --> "$(getindepsym_defaultt(sol))"
-    end
-
-    if (!any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 2))) &&
-        getindex.(vars, 2) == zeros(length(vars))) ||
-       all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 2))
-        if tspan === nothing
-            if tdir > 0
-                xlims --> (sol.t[1], sol.t[end])
-            else
-                xlims --> (sol.t[end], sol.t[1])
+    for (func, xvar, yvar, tsidx) in disc_vars
+        partition = sol.discretes[tsidx]
+        ts = current_time(partition)
+        if tspan !== nothing
+            tstart = searchsortedfirst(ts, tspan[1])
+            tend = searchsortedlast(ts, tspan[2])
+            if tstart == lastindex(ts) + 1 || tend == firstindex(ts) - 1
+                continue
             end
         else
-            xlims --> (tspan[1], tspan[end])
+            tstart = firstindex(ts)
+            tend = lastindex(ts)
+        end
+        ts = ts[tstart:tend]
+
+        if symbolic_type(xvar) == NotSymbolic() && xvar == 0
+            xvar = only(independent_variable_symbols(sol))
+        end
+        xvals = sol(ts; idxs = xvar).u
+        # xvals = getu(sol, xvar)(sol, tstart:tend)
+        yvals = getp(sol, yvar)(sol, tstart:tend)
+        tmpvals = map(func, xvals, yvals)
+        xvals = getindex.(tmpvals, 1)
+        yvals = getindex.(tmpvals, 2)
+        # Scatterplot of points
+        @series begin
+            seriestype := :line
+            linestyle --> :dash
+            markershape --> :o
+            markersize --> repeat([2, 0], length(ts) - 1)
+            markeralpha --> repeat([1, 0], length(ts) - 1)
+            label --> string(hasname(yvar) ? getname(yvar) : yvar)
+
+            x = vec([xvals[1:(end - 1)]'; xvals[2:end]'])
+            y = repeat(yvals, inner = 2)[1:(end - 1)]
+            x, y
         end
     end
-
-    label --> reshape(labels, 1, length(labels))
-    (plot_vecs...,)
 end
 
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,

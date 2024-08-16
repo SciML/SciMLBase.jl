@@ -518,7 +518,7 @@ information on generating the SplitFunction from this symbolic engine.
 struct SplitFunction{
     iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
     TPJ, O,
-    TCV, SYS} <: AbstractODEFunction{iip}
+    TCV, SYS, IProb, IProbMap} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -536,6 +536,8 @@ struct SplitFunction{
     observed::O
     colorvec::TCV
     sys::SYS
+    initializeprob::IProb
+    initializeprobmap::IProbMap
 end
 
 @doc doc"""
@@ -1895,12 +1897,48 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the OptimizationFunction type directly match the names of the inputs.
 """
-struct OptimizationFunction{iip, AD, F, G, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+struct OptimizationFunction{
+    iip, AD, F, G, FG, H, FGH, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
     EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
        AbstractOptimizationFunction{iip}
     f::F
     adtype::AD
     grad::G
+    fg::FG
+    hess::H
+    fgh::FGH
+    hv::HV
+    cons::C
+    cons_j::CJ
+    cons_jvp::CJV
+    cons_vjp::CVJ
+    cons_h::CH
+    hess_prototype::HP
+    cons_jac_prototype::CJP
+    cons_hess_prototype::CHP
+    observed::O
+    expr::EX
+    cons_expr::CEX
+    sys::SYS
+    lag_h::LH
+    lag_hess_prototype::LHP
+    hess_colorvec::HCV
+    cons_jac_colorvec::CJCV
+    cons_hess_colorvec::CHCV
+    lag_hess_colorvec::LHCV
+end
+
+"""
+$(TYPEDEF)
+"""
+
+struct MultiObjectiveOptimizationFunction{
+    iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
+    EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV} <:
+       AbstractOptimizationFunction{iip}
+    f::F
+    adtype::AD
+    jac::J
     hess::H
     hv::HV
     cons::C
@@ -2599,7 +2637,7 @@ end
 
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, sparsity, Wfact, Wfact_t, paramjac,
-        observed, colorvec, sys)
+        observed, colorvec, sys, initializeprob, initializeprobmap)
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -2613,8 +2651,11 @@ end
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
-        typeof(sys)}(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp, vjp,
-        jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys)
+        typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(
+        f1, f2, mass_matrix,
+        cache, analytic, tgrad, jac, jvp, vjp,
+        jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
+        initializeprob, initializeprobmap)
 end
 function SplitFunction{iip, specialize}(f1, f2;
         mass_matrix = __has_mass_matrix(f1) ?
@@ -2642,18 +2683,24 @@ function SplitFunction{iip, specialize}(f1, f2;
                    DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f1) ? f1.colorvec :
                    nothing,
-        sys = __has_sys(f1) ? f1.sys : nothing) where {iip,
+        sys = __has_sys(f1) ? f1.sys : nothing,
+        initializeprob = __has_initializeprob(f1) ? f1.initializeprob : nothing,
+        initializeprobmap = __has_initializeprobmap(f1) ? f1.initializeprobmap : nothing
+) where {iip,
         specialize
 }
     sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+    @assert typeof(initializeprob) <:
+            Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
+
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any,
-            Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
+            Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype,
             sparsity, Wfact, Wfact_t, paramjac,
-            observed, colorvec, sys)
+            observed, colorvec, sys, initializeprob, initializeprobmap)
     else
         SplitFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
             typeof(_func_cache), typeof(analytic),
@@ -2661,9 +2708,11 @@ function SplitFunction{iip, specialize}(f1, f2;
             typeof(jac_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(colorvec),
-            typeof(sys)}(f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac,
+            typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(f1, f2,
+            mass_matrix, _func_cache, analytic, tgrad, jac,
             jvp, vjp, jac_prototype,
-            sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys)
+            sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
+            initializeprob, initializeprobmap)
     end
 end
 
@@ -3764,7 +3813,7 @@ struct NoAD <: AbstractADType end
 OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
 
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
-        grad = nothing, hess = nothing, hv = nothing,
+        grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
         cons = nothing, cons_j = nothing, cons_jvp = nothing,
         cons_vjp = nothing, cons_h = nothing,
         hess_prototype = nothing,
@@ -3786,7 +3835,61 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         lag_hess_colorvec = nothing) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     sys = sys_or_symbolcache(sys, syms, paramsyms)
-    OptimizationFunction{iip, typeof(adtype), typeof(f), typeof(grad), typeof(hess),
+    OptimizationFunction{
+        iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
+        typeof(fgh), typeof(hv),
+        typeof(cons), typeof(cons_j), typeof(cons_jvp),
+        typeof(cons_vjp), typeof(cons_h),
+        typeof(hess_prototype),
+        typeof(cons_jac_prototype), typeof(cons_hess_prototype),
+        typeof(observed),
+        typeof(expr), typeof(cons_expr), typeof(sys), typeof(lag_h),
+        typeof(lag_hess_prototype), typeof(hess_colorvec),
+        typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
+        typeof(lag_hess_colorvec)
+    }(f, adtype, grad, fg, hess, fgh,
+        hv, cons, cons_j, cons_jvp,
+        cons_vjp, cons_h,
+        hess_prototype, cons_jac_prototype,
+        cons_hess_prototype, observed, expr, cons_expr, sys,
+        lag_h, lag_hess_prototype, hess_colorvec, cons_jac_colorvec,
+        cons_hess_colorvec, lag_hess_colorvec)
+end
+
+# Function call operator for MultiObjectiveOptimizationFunction
+(f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
+
+# Convenience constructor
+function MultiObjectiveOptimizationFunction(args...; kwargs...)
+    MultiObjectiveOptimizationFunction{true}(args...; kwargs...)
+end
+
+# Constructor with keyword arguments
+function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
+        jac = nothing, hess = Vector{Nothing}(undef, 0), hv = nothing,
+        cons = nothing, cons_j = nothing, cons_jvp = nothing,
+        cons_vjp = nothing, cons_h = nothing,
+        hess_prototype = nothing,
+        cons_jac_prototype = __has_jac_prototype(f) ?
+                             f.jac_prototype : nothing,
+        cons_hess_prototype = nothing,
+        syms = nothing,
+        paramsyms = nothing,
+        observed = __has_observed(f) ? f.observed :
+                   DEFAULT_OBSERVED_NO_TIME,
+        expr = nothing, cons_expr = nothing,
+        sys = __has_sys(f) ? f.sys : nothing,
+        lag_h = nothing, lag_hess_prototype = nothing,
+        hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+        cons_jac_colorvec = __has_colorvec(f) ? f.colorvec :
+                            nothing,
+        cons_hess_colorvec = __has_colorvec(f) ? f.colorvec :
+                             nothing,
+        lag_hess_colorvec = nothing) where {iip}
+    isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
+    sys = sys_or_symbolcache(sys, syms, paramsyms)
+    MultiObjectiveOptimizationFunction{
+        iip, typeof(adtype), typeof(f), typeof(jac), typeof(hess),
         typeof(hv),
         typeof(cons), typeof(cons_j), typeof(cons_jvp),
         typeof(cons_vjp), typeof(cons_h),
@@ -3797,7 +3900,7 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         typeof(lag_hess_prototype), typeof(hess_colorvec),
         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
         typeof(lag_hess_colorvec)
-    }(f, adtype, grad, hess,
+    }(f, adtype, jac, hess,
         hv, cons, cons_j, cons_jvp,
         cons_vjp, cons_h,
         hess_prototype, cons_jac_prototype,

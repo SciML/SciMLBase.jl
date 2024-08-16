@@ -608,3 +608,14 @@ Constant Interpolation
         @. out = 0
     end
 end
+
+"""
+        strip_interpolation(id::AbstractDiffEqInterpolation)
+
+Returns a copy of the interpolation stripped of its function, to accommodate serialization.
+If the interpolation object has no function, returns the interpolation object as is.
+"""
+strip_interpolation(id::AbstractDiffEqInterpolation) = id
+strip_interpolation(id::HermiteInterpolation) = id
+strip_interpolation(id::LinearInterpolation) = id
+strip_interpolation(id::ConstantInterpolation) = id

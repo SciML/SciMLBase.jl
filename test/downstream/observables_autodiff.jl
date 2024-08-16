@@ -49,7 +49,6 @@ end
 # DAE
 
 function create_model(; C₁ = 3e-5, C₂ = 1e-6)
-    @variables t
     @named resistor1 = MSL.Electrical.Resistor(R = 5.0)
     @named resistor2 = MSL.Electrical.Resistor(R = 2.0)
     @named capacitor1 = MSL.Electrical.Capacitor(C = C₁)
@@ -69,7 +68,7 @@ function create_model(; C₁ = 3e-5, C₂ = 1e-6)
         systems = [
             resistor1, resistor2, capacitor1, capacitor2,
             source, input_signal, ground, ampermeter
-        ])
+        ], defaults = [resistor1.n.v => 0.0])
 end
 
 @testset "DAE Observable function AD" begin
@@ -96,7 +95,7 @@ end
 #         # mean(abs.(sol[sys.ampermeter.i] .- gt))
 #         sum(sol[sys.ampermeter.i])
 #     end
-# 
+#
 #     @test isnothing(gs_mtkp)
 #     @test length(gs_p_new) == length(p_new)
 # end

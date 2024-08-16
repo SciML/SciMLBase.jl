@@ -103,7 +103,7 @@ sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
 @test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(unknowns(sol.prob.f.sys))])
-@test_throws ArgumentError sol[:x]
+@test_throws KeyError sol[:x]
 
 ### Non-symbolic indexing tests
 @test sol[:, 1] isa AbstractVector
@@ -146,3 +146,28 @@ sol9 = sol(0.0:1.0:10.0, idxs = 2)
 
 sol10 = sol(0.1, idxs = 2)
 @test sol10 isa Real
+
+@testset "Plot idxs" begin
+    @variables x(t) y(t)
+    @parameters p
+    @mtkbuild sys = ODESystem([D(x) ~ x * t, D(y) ~ y - p * x], t)
+    prob = ODEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0), [p => 1.0])
+    sol = solve(prob, Tsit5())
+
+    plotfn(t, u) = (t, 2u)
+    all_idxs = [x, x + p * y, t, (plotfn, 0, 1), (plotfn, t, 1), (plotfn, 0, x),
+        (plotfn, t, x), (plotfn, t, p * y)]
+    sym_idxs = [:x, :t, (plotfn, :t, 1), (plotfn, 0, :x),
+        (plotfn, :t, :x)]
+    for idx in Iterators.flatten((all_idxs, sym_idxs))
+        @test_nowarn plot(sol; idxs = idx)
+        @test_nowarn plot(sol; idxs = [idx])
+    end
+    for idx in Iterators.flatten((
+        Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
+        @test_nowarn plot(sol; idxs = collect(idx))
+        if !(idx[1] isa Tuple || idx[2] isa Tuple)
+            @test_nowarn plot(sol; idxs = idx)
+        end
+    end
+end

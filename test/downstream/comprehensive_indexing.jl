@@ -1,6 +1,7 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
       OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
-      SteadyStateDiffEq, StochasticDiffEq, SymbolicIndexingInterface, Test
+      SteadyStateDiffEq, StochasticDiffEq, SymbolicIndexingInterface,
+      DiffEqCallbacks, Test, Plots
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -103,12 +104,6 @@ timeseries_systems = [osys, ssys, jsys]
 
 @testset "Non-timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
     deepcopy(non_timeseries_objects), non_timeseries_systems)
-    if valp isa SciMLBase.NonlinearSolution && valp.prob isa SteadyStateProblem
-        # Steady state problem indexing is broken, since the system is time-dependent but
-        # the solution isn't
-        @test_broken false
-        continue
-    end
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     @testset "State indexing" begin
@@ -208,7 +203,6 @@ end
 
 @testset "Timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
     timeseries_objects, timeseries_systems)
-    @info SciMLBase.parameterless_type(valp) typeof(indp)
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     xvals = getindex.(valp.u, uidxs[1])
@@ -527,4 +521,390 @@ end
     @test_throws ErrorException sol(1.0, Val{1}, idxs = w)
     @test_throws ErrorException sol(1.0, Val{1}, idxs = [w, w])
     @test_throws ErrorException sol(1.0, Val{1}, idxs = [w, y])
+end
+
+@testset "Discrete save indexing" begin
+    struct NumSymbolCache{S}
+        sc::S
+    end
+    SymbolicIndexingInterface.symbolic_container(s::NumSymbolCache) = s.sc
+    function SymbolicIndexingInterface.is_observed(s::NumSymbolCache, x)
+        return symbolic_type(x) != NotSymbolic() && !is_variable(s, x) &&
+               !is_parameter(s, x) && !is_independent_variable(s, x)
+    end
+    function SymbolicIndexingInterface.observed(s::NumSymbolCache, x)
+        res = ModelingToolkit.build_function(x,
+            sort(variable_symbols(s); by = Base.Fix1(variable_index, s)),
+            sort(parameter_symbols(s), by = Base.Fix1(parameter_index, s)),
+            independent_variable_symbols(s)[]; expression = Val(false))
+        if res isa Tuple
+            return let oopfn = res[1], iipfn = res[2]
+                fn(out, u, p, t) = iipfn(out, u, p, t)
+                fn(u, p, t) = oopfn(u, p, t)
+                fn
+            end
+        else
+            return res
+        end
+    end
+    function SymbolicIndexingInterface.parameter_observed(s::NumSymbolCache, x)
+        if x isa Symbol
+            allsyms = all_symbols(s)
+            x = allsyms[findfirst(y -> hasname(y) && x == getname(y), allsyms)]
+        elseif x isa AbstractArray
+            allsyms = all_symbols(s)
+            newx = []
+            for i in eachindex(x)
+                if x[i] isa Symbol
+                    push!(newx,
+                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                else
+                    push!(newx, x[i])
+                end
+            end
+            x = newx
+        end
+        res = ModelingToolkit.build_function(x,
+            sort(parameter_symbols(s), by = Base.Fix1(parameter_index, s)),
+            independent_variable_symbols(s)[]; expression = Val(false))
+        if res isa Tuple
+            return let oopfn = res[1], iipfn = res[2]
+                fn(out, p, t) = iipfn(out, p, t)
+                fn(p, t) = oopfn(p, t)
+                fn
+            end
+        else
+            return res
+        end
+    end
+    function SymbolicIndexingInterface.get_all_timeseries_indexes(s::NumSymbolCache, x)
+        if symbolic_type(x) == NotSymbolic()
+            x = ModelingToolkit.unwrap.(x)
+        else
+            x = ModelingToolkit.unwrap(x)
+        end
+        if x isa Symbol
+            allsyms = all_symbols(s)
+            x = allsyms[findfirst(y -> hasname(y) && x == getname(y), allsyms)]
+        elseif x isa AbstractArray
+            allsyms = all_symbols(s)
+            newx = []
+            for i in eachindex(x)
+                if x[i] isa Symbol
+                    push!(newx,
+                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                else
+                    push!(newx, x[i])
+                end
+            end
+            x = newx
+        end
+        vars = ModelingToolkit.vars(x)
+        return mapreduce(union, vars; init = Set()) do sym
+            if is_variable(s, sym)
+                Set([ContinuousTimeseries()])
+            elseif is_parameter(s, sym) && is_timeseries_parameter(s, sym)
+                Set([timeseries_parameter_index(s, sym).timeseries_idx])
+            else
+                Set()
+            end
+        end
+    end
+    function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
+            ::NumSymbolCache, p::Vector{Float64}, args...)
+        for (idx, buf) in args
+            if idx == 1
+                p[1:2] .= buf
+            else
+                p[3:4] .= buf
+            end
+        end
+
+        return p
+    end
+    function SciMLBase.create_parameter_timeseries_collection(s::NumSymbolCache, ps, tspan)
+        trem = rem(tspan[1], 0.1, RoundDown)
+        if trem > 0
+            trem = 0.1 - trem
+        end
+        dea1 = DiffEqArray(Vector{Float64}[], (tspan[1] + trem):0.1:tspan[2])
+        dea2 = DiffEqArray(Vector{Float64}[], Float64[])
+        return ParameterTimeseriesCollection((dea1, dea2), deepcopy(ps))
+    end
+    function SciMLBase.get_saveable_values(::NumSymbolCache, p::Vector{Float64}, tsidx)
+        if tsidx == 1
+            return p[1:2]
+        else
+            return p[3:4]
+        end
+    end
+
+    @variables x(t) ud1(t) ud2(t) xd1(t) xd2(t)
+    @parameters kp
+    sc = SymbolCache([x],
+        Dict(ud1 => 1, xd1 => 2, ud2 => 3, xd2 => 4, kp => 5),
+        t;
+        timeseries_parameters = Dict(
+            ud1 => ParameterTimeseriesIndex(1, 1), xd1 => ParameterTimeseriesIndex(1, 2),
+            ud2 => ParameterTimeseriesIndex(2, 1), xd2 => ParameterTimeseriesIndex(2, 2)))
+    sys = NumSymbolCache(sc)
+
+    function f!(du, u, p, t)
+        du .= u .* t .+ p[5] * sum(u)
+    end
+    fn = ODEFunction(f!; sys = sys)
+    prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
+    cb1 = PeriodicCallback(0.1; initial_affect = true, final_affect = true,
+        save_positions = (false, false)) do integ
+        integ.p[1:2] .+= exp(-integ.t)
+        SciMLBase.save_discretes!(integ, 1)
+    end
+    function affect2!(integ)
+        integ.p[3:4] .+= only(integ.u)
+        SciMLBase.save_discretes!(integ, 2)
+    end
+    cb2 = DiscreteCallback((args...) -> true, affect2!, save_positions = (false, false),
+        initialize = (c, u, t, integ) -> affect2!(integ))
+    sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+    ud1val = getindex.(sol.discretes.collection[1].u, 1)
+    xd1val = getindex.(sol.discretes.collection[1].u, 2)
+    ud2val = getindex.(sol.discretes.collection[2].u, 1)
+    xd2val = getindex.(sol.discretes.collection[2].u, 2)
+
+    for (sym, timeseries_index, val, buffer, isobs, check_inference) in [(ud1,
+                                                                             1,
+                                                                             ud1val,
+                                                                             zeros(length(ud1val)),
+                                                                             false,
+                                                                             true)
+                                                                         ([ud1, xd1],
+                                                                             1,
+                                                                             vcat.(ud1val,
+                                                                                 xd1val),
+                                                                             map(
+                                                                                 _ -> zeros(2),
+                                                                                 ud1val),
+                                                                             false,
+                                                                             true)
+                                                                         ((ud2, xd2),
+                                                                             2,
+                                                                             tuple.(ud2val,
+                                                                                 xd2val),
+                                                                             map(
+                                                                                 _ -> zeros(2),
+                                                                                 ud2val),
+                                                                             false,
+                                                                             true)
+                                                                         (ud2 + xd2,
+                                                                             2,
+                                                                             ud2val .+
+                                                                             xd2val,
+                                                                             zeros(length(ud2val)),
+                                                                             true,
+                                                                             true)
+                                                                         (
+                                                                             [ud2 + xd2,
+                                                                                 ud2 * xd2],
+                                                                             2,
+                                                                             vcat.(
+                                                                                 ud2val .+
+                                                                                 xd2val,
+                                                                                 ud2val .*
+                                                                                 xd2val),
+                                                                             map(
+                                                                                 _ -> zeros(2),
+                                                                                 ud2val),
+                                                                             true,
+                                                                             true)
+                                                                         (
+                                                                             (ud1 + xd1,
+                                                                                 ud1 * xd1),
+                                                                             1,
+                                                                             tuple.(
+                                                                                 ud1val .+
+                                                                                 xd1val,
+                                                                                 ud1val .*
+                                                                                 xd1val),
+                                                                             map(
+                                                                                 _ -> zeros(2),
+                                                                                 ud1val),
+                                                                             true,
+                                                                             true)]
+        getter = getp(sys, sym)
+        if check_inference
+            @inferred getter(sol)
+            @inferred getter(deepcopy(buffer), sol)
+            if !isobs
+                @inferred getter(parameter_values(sol))
+                if !(eltype(val) <: Number)
+                    @inferred getter(deepcopy(buffer[1]), parameter_values(sol))
+                end
+            end
+        end
+
+        @test getter(sol) == val
+        if eltype(val) <: Number
+            target = val
+        else
+            target = collect.(val)
+        end
+        tmp = deepcopy(buffer)
+        getter(tmp, sol)
+        @test tmp == target
+
+        if !isobs
+            @test getter(parameter_values(sol)) == val[end]
+            if !(eltype(val) <: Number)
+                target = collect(val[end])
+                tmp = deepcopy(buffer)[end]
+                getter(tmp, parameter_values(sol))
+                @test tmp == target
+            end
+        end
+
+        for subidx in [
+            1, CartesianIndex(2), :, rand(Bool, length(val)), rand(eachindex(val), 4), 2:5]
+            if check_inference
+                @inferred getter(sol, subidx)
+                if !isa(val[subidx], Number)
+                    @inferred getter(deepcopy(buffer[subidx]), sol, subidx)
+                end
+            end
+            @test getter(sol, subidx) == val[subidx]
+            tmp = deepcopy(buffer[subidx])
+            if val[subidx] isa Number
+                continue
+            end
+            target = val[subidx]
+            if eltype(target) <: Number
+                target = collect(target)
+            else
+                target = collect.(target)
+            end
+            getter(tmp, sol, subidx)
+            @test tmp == target
+        end
+    end
+
+    for sym in [
+        [ud1, xd1, ud2],
+        (ud2, xd1, xd2),
+        ud1 + ud2,
+        [ud1 + ud2, ud1 * xd1],
+        (ud1 + ud2, ud1 * xd1)]
+        getter = getp(sys, sym)
+        @test_throws Exception getter(sol)
+        @test_throws Exception getter([], sol)
+        for subidx in [1, CartesianIndex(1), :, rand(Bool, 4), rand(1:4, 3), 1:2]
+            @test_throws Exception getter(sol, subidx)
+            @test_throws Exception getter([], sol, subidx)
+        end
+    end
+
+    kpval = sol.prob.p[5]
+    xval = getindex.(sol.u)
+
+    for (sym, val_is_timeseries, val, check_inference) in [
+        (kp, false, kpval, true),
+        ([kp, kp], false, [kpval, kpval], true),
+        ((kp, kp), false, (kpval, kpval), true),
+        (ud2, true, ud2val, true),
+        ([ud2, kp], true, vcat.(ud2val, kpval), false),
+        ((ud1, kp), true, tuple.(ud1val, kpval), false),
+        ([kp, x], true, vcat.(kpval, xval), false),
+        ((kp, x), true, tuple.(kpval, xval), false),
+        (2ud2, true, 2 .* ud2val, true),
+        ([kp, 2ud1], true, vcat.(kpval, 2 .* ud1val), false),
+        ((kp, 2ud1), true, tuple.(kpval, 2 .* ud1val), false)
+    ]
+        getter = getu(sys, sym)
+        if check_inference
+            @inferred getter(sol)
+        end
+        @test getter(sol) == val
+        reference = val_is_timeseries ? val : xval
+        for subidx in [
+            1, CartesianIndex(2), :, rand(Bool, length(reference)),
+            rand(eachindex(reference), 4), 2:6
+        ]
+            if check_inference
+                @inferred getter(sol, subidx)
+            end
+            target = if val_is_timeseries
+                val[subidx]
+            else
+                val
+            end
+            @test getter(sol, subidx) == target
+        end
+    end
+
+    _xval = xval[1]
+    _ud1val = ud1val[1]
+    _ud2val = ud2val[1]
+    _xd1val = xd1val[1]
+    _xd2val = xd2val[1]
+    integ = init(prob, Tsit5(); callback = CallbackSet(cb1, cb2))
+    for (sym, val, check_inference) in [
+        ([x, ud1], [_xval, _ud1val], false),
+        ((x, ud1), (_xval, _ud1val), true),
+        (x + ud2, _xval + _ud2val, true),
+        ([2x, 3xd1], [2_xval, 3_xd1val], true),
+        ((2x, 3xd2), (2_xval, 3_xd2val), true)
+    ]
+        getter = getu(sys, sym)
+        @test_throws Exception getter(sol)
+        for subidx in [1, CartesianIndex(1), :, rand(Bool, 4), rand(1:4, 3), 1:2]
+            @test_throws Exception getter(sol, subidx)
+        end
+
+        if check_inference
+            @inferred getter(integ)
+        end
+        @test getter(integ) == val
+    end
+
+    xinterp = sol(0.1:0.1:0.3, idxs = x).u
+    xinterp2 = sol(sol.discretes.collection[2].t[2:4], idxs = x).u
+    ud1interp = ud1val[2:4]
+    ud2interp = ud2val[2:4]
+
+    c1 = SciMLBase.Clock(0.1)
+    c2 = SciMLBase.SolverStepClock
+    for (sym, t, val) in [
+        (x, c1[2], xinterp[1]),
+        (x, c1[2:4], xinterp),
+        ([x, ud1], c1[2], [xinterp[1], ud1interp[1]]),
+        ([x, ud1], c1[2:4], vcat.(xinterp, ud1interp)),
+        (x, c2[2], xinterp2[1]),
+        (x, c2[2:4], xinterp2),
+        ([x, ud2], c2[2], [xinterp2[1], ud2interp[1]]),
+        ([x, ud2], c2[2:4], vcat.(xinterp2, ud2interp))
+    ]
+        res = sol(t, idxs = sym)
+        if res isa DiffEqArray
+            res = res.u
+        end
+        @test res == val
+    end
+
+    @testset "Plotting" begin
+        plotfn(t, u) = (t, 2u)
+        all_idxs = [ud1, 2ud1, ud2, (plotfn, 0, ud1), (plotfn, t, ud1)]
+        sym_idxs = [:ud1, :ud2, (plotfn, 0, :ud1), (plotfn, 0, :ud1)]
+
+        for idx in Iterators.flatten((all_idxs, sym_idxs))
+            @test_nowarn plot(sol; idxs = idx)
+            @test_nowarn plot(sol; idxs = [idx])
+        end
+        for idx in Iterators.flatten((
+            Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
+            @test_nowarn plot(sol; idxs = collect(idx))
+            if !(idx[1] isa Tuple || idx[2] isa Tuple ||
+                 length(get_all_timeseries_indexes(sol, collect(idx))) > 1)
+                @test_nowarn plot(sol; idxs = idx)
+            end
+        end
+    end
 end

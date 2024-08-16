@@ -33,7 +33,7 @@ import SciMLStructures
             N = length((size(dprob.u0)..., length(du)))
         end
         Δ′ = ODESolution{T, N}(du, nothing, nothing,
-            VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
+            VA.t, VA.k, VA.discretes, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)
         (Δ′, nothing, nothing)
     end
@@ -60,7 +60,7 @@ end
         T = eltype(eltype(VA.u))
         N = ndims(VA)
         Δ′ = ODESolution{T, N}(du, nothing, nothing,
-            VA.t, VA.k, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
+            VA.t, VA.k, VA.discretes, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
             VA.alg_choice, VA.retcode)
         (Δ′, nothing, nothing)
     end
@@ -117,9 +117,11 @@ end
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
-            Δ′ = [[i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
-                  for (x, j) in zip(VA.u, 1:length(VA))]
-            (Δ′, nothing)
+            VA = recursivecopy(VA)
+            recursivefill!(VA, zero(eltype(VA)))
+            v = view(VA, i, ntuple(_ -> :, ndims(VA) - 1)...)
+            copyto!(v, Δ)
+            (VA, nothing)
         end
     end
     VA[sym], ODESolution_getindex_pullback
@@ -172,15 +174,16 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
-@adjoint function ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14
-}(u,
+@adjoint function ODESolution{
+        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}(u,
         args...) where {T1, T2, T3, T4, T5, T6, T7, T8,
-        T9, T10, T11, T12, T13, T14}
+        T9, T10, T11, T12, T13, T14, T15}
     function ODESolutionAdjoint(ȳ)
         (ȳ, ntuple(_ -> nothing, length(args))...)
     end
 
-    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14}(u, args...),
+    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}(
+        u, args...),
     ODESolutionAdjoint
 end
 

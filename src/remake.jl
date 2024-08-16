@@ -63,7 +63,8 @@ function remake(prob::AbstractSciMLProblem; u0 = missing,
     _remake_internal(prob; kwargs..., u0, p)
 end
 
-function remake(prob::AbstractIntervalNonlinearProblem; p = missing, interpret_symbolicmap = true, use_defaults = false, kwargs...)
+function remake(prob::AbstractIntervalNonlinearProblem; p = missing,
+        interpret_symbolicmap = true, use_defaults = false, kwargs...)
     _, p = updated_u0_p(prob, [], p; interpret_symbolicmap, use_defaults)
     _remake_internal(prob; kwargs..., p)
 end
@@ -97,26 +98,47 @@ function remake(prob::ODEProblem; f = missing,
         tspan = prob.tspan
     end
 
-    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
     iip = isinplace(prob)
 
     if f === missing
+        initializeprob, initializeprobmap = remake_initializeprob(
+            prob.f.sys, prob.f, u0 === missing ? newu0 : u0,
+            tspan[1], p === missing ? newp : p)
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(
-                    unwrapped_f(prob.f.f),
-                    (u0, u0, p,
-                        ptspan[1])))
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(
+                    wrapfun_iip(
+                        unwrapped_f(prob.f.f),
+                        (newu0, newu0, newp,
+                            ptspan[1]));
+                    initializeprob, initializeprobmap)
             else
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(
-                    unwrapped_f(prob.f.f),
-                    (u0, p,
-                        ptspan[1])))
+                _f = ODEFunction{iip, FunctionWrapperSpecialize}(
+                    wrapfun_oop(
+                        unwrapped_f(prob.f.f),
+                        (newu0, newp,
+                            ptspan[1]));
+                    initializeprob, initializeprobmap)
             end
         else
             _f = prob.f
+            if __has_initializeprob(_f)
+                props = getproperties(_f)
+                @reset props.initializeprob = initializeprob
+                props = values(props)
+                _f = parameterless_type(_f){
+                    iip, specialization(_f), map(typeof, props)...}(props...)
+            end
+            if __has_initializeprobmap(_f)
+                props = getproperties(_f)
+                @reset props.initializeprobmap = initializeprobmap
+                props = values(props)
+                _f = parameterless_type(_f){
+                    iip, specialization(_f), map(typeof, props)...}(props...)
+            end
         end
     elseif f isa AbstractODEFunction
         _f = f
@@ -124,22 +146,38 @@ function remake(prob::ODEProblem; f = missing,
         ptspan = promote_tspan(tspan)
         if iip
             _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                (u0, u0, p,
+                (newu0, newu0, newp,
                     ptspan[1])))
         else
             _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                (u0, p, ptspan[1])))
+                (newu0, newp, ptspan[1])))
         end
     else
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
 
     if kwargs === missing
-        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; prob.kwargs...,
+        ODEProblem{isinplace(prob)}(
+            _f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
             _kwargs...)
     else
-        ODEProblem{isinplace(prob)}(_f, u0, tspan, p, prob.problem_type; kwargs...)
+        ODEProblem{isinplace(prob)}(_f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
+end
+
+"""
+    remake_initializeprob(sys, scimlfn, u0, t0, p)
+
+Re-create the initialization problem present in the function `scimlfn`, using the
+associated system `sys`, and the new values of `u0`, initial time `t0` and `p`. By
+default, returns `nothing, nothing` if `scimlfn` does not have an initialization
+problem, and `scimlfn.initializeprob, scimlfn.initializeprobmap` if it does.
+"""
+function remake_initializeprob(sys, scimlfn, u0, t0, p)
+    if !has_initializeprob(scimlfn)
+        return nothing, nothing
+    end
+    return scimlfn.initializeprob, scimlfn.initializeprobmap
 end
 
 """
@@ -199,7 +237,7 @@ function remake(prob::BVProblem{uType, tType, iip, nlls}; f = missing, bc = miss
 end
 
 """
-    remake(prob::SDEProblem; f = missing, u0 = missing, tspan = missing,
+    remake(prob::SDEProblem; f = missing, g = missing, u0 = missing, tspan = missing,
            p = missing, noise = missing, noise_rate_prototype = missing,
            seed = missing, kwargs = missing, _kwargs...)
 
@@ -207,6 +245,7 @@ Remake the given `SDEProblem`.
 """
 function remake(prob::SDEProblem;
         f = missing,
+        g = missing,
         u0 = missing,
         tspan = missing,
         p = missing,
@@ -235,8 +274,23 @@ function remake(prob::SDEProblem;
         seed = prob.seed
     end
 
-    if f === missing #TODO: Need more features, e.g. remake `g`
+    if f === missing && g === missing
         f = prob.f
+        g = prob.g
+    elseif f !== missing && g === missing
+        g = prob.g
+    elseif f === missing && g !== missing
+        if prob.f isa SDEFunction
+            f = remake(prob.f; g = g)
+        else
+            f = SDEFunction(prob.f, g)
+        end
+    else
+        if f isa SDEFunction
+            f = remake(f; g = g)
+        else
+            f = SDEFunction(f, g)
+        end
     end
 
     iip = isinplace(prob)
@@ -254,6 +308,37 @@ function remake(prob::SDEProblem;
     else
         SDEProblem{iip}(f, u0, tspan, p; noise, noise_rate_prototype, seed, kwargs...)
     end
+end
+
+"""
+    remake(func::SDEFunction; f = missing, g = missing,
+           mass_matrix = missing, analytic = missing, kwargs...)
+
+Remake the given `SDEFunction`.
+"""
+function remake(func::SDEFunction;
+        f = missing,
+        g = missing,
+        mass_matrix = missing,
+        analytic = missing,
+        kwargs...)
+    if f === missing
+        f = func.f
+    end
+
+    if g === missing
+        g = func.g
+    end
+
+    if mass_matrix === missing
+        mass_matrix = func.mass_matrix
+    end
+
+    if analytic === missing
+        analytic = func.analytic
+    end
+
+    return SDEFunction(f, g; mass_matrix, analytic, kwargs...)
 end
 
 """
@@ -390,6 +475,10 @@ end
 anydict(d) = Dict{Any, Any}(d)
 anydict() = Dict{Any, Any}()
 
+function _updated_u0_p_internal(
+        prob, ::Missing, ::Missing; interpret_symbolicmap = true, use_defaults = false)
+    return state_values(prob), parameter_values(prob)
+end
 function _updated_u0_p_internal(
         prob, ::Missing, p; interpret_symbolicmap = true, use_defaults = false)
     u0 = state_values(prob)

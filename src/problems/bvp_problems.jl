@@ -360,7 +360,8 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        prob_type = TP ? TwoPointSecondOrderBVProblem{iip}() : StandardSecondOrderBVProblem()
+        prob_type = TP ? TwoPointSecondOrderBVProblem{iip}() :
+                    StandardSecondOrderBVProblem()
 
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
@@ -368,7 +369,7 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
         else
             @assert prob_type===problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
-        
+
         return new{typeof(_u0), typeof(_tspan), iip, typeof(nlls), typeof(p), typeof(f),
             typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
     end

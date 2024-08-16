@@ -23,6 +23,7 @@ import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: AbstractADType
 import Accessors: @set, @reset
+using Expronicon.ADT: @match
 
 using Reexport
 using SciMLOperators
@@ -700,7 +701,9 @@ include("problems/discrete_problems.jl")
 include("problems/implicit_discrete_problems.jl")
 include("problems/steady_state_problems.jl")
 include("problems/analytical_problems.jl")
-include("problems/basic_problems.jl")
+include("problems/linear_problems.jl")
+include("problems/nonlinear_problems.jl")
+include("problems/integral_problems.jl")
 include("problems/ode_problems.jl")
 include("problems/rode_problems.jl")
 include("problems/sde_problems.jl")
@@ -715,6 +718,7 @@ include("problems/problem_traits.jl")
 include("problems/problem_interface.jl")
 include("problems/optimization_problems.jl")
 
+include("clock.jl")
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
 include("solutions/ode_solutions.jl")
@@ -807,7 +811,7 @@ export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, D
        IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
        DynamicalBVPFunction, IntegralFunction, BatchIntegralFunction
 
-export OptimizationFunction
+export OptimizationFunction, MultiObjectiveOptimizationFunction
 
 export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
 
@@ -832,5 +836,7 @@ export step!, deleteat!, addat!, get_tmp_cache,
        isdiscrete, reeval_internals_due_to_modification!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
+
+export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 end

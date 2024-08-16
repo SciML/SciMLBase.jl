@@ -97,12 +97,12 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
     # Now Calculate Weak Errors
     weak_errors = Dict{Symbol, eltype(u[1].u[1])}()
     # Final
-    m_final = mean([s[end] for s in u])
+    m_final = mean([s.u[end] for s in u])
     m_final_analytic = mean([s.u_analytic[end] for s in u])
     res = norm(m_final - m_final_analytic)
     weak_errors[:weak_final] = res
     if weak_timeseries_errors
-        ts_weak_errors = [mean([u[j][i] - u[j].u_analytic[i] for j in 1:length(u)])
+        ts_weak_errors = [mean([u[j].u[i] - u[j].u_analytic[i] for j in 1:length(u)])
                           for i in 1:length(u[1])]
         ts_l2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in ts_weak_errors]
         l2_tmp = sqrt(sum(abs2, ts_l2_errors) / length(ts_l2_errors))
@@ -116,7 +116,7 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
                            sol.W(densetimes[i])[1])
                        for i in eachindex(densetimes)] for sol in u]
         udense = [u[j](densetimes) for j in 1:length(u)]
-        dense_weak_errors = [mean([udense[j][i] - u_analytic[j][i] for j in 1:length(u)])
+        dense_weak_errors = [mean([udense[j].u[i] - u_analytic[j][i] for j in 1:length(u)])
                              for i in eachindex(densetimes)]
         dense_L2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in dense_weak_errors]
         L2_tmp = sqrt(sum(abs2, dense_L2_errors) / length(dense_L2_errors))
@@ -159,7 +159,7 @@ end
 
 @recipe function f(sim::EnsembleSummary;
         idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
-                       1,
+               1,
         error_style = :ribbon, ci_type = :quantile)
     if ci_type == :SEM
         if sim.u.u[1] isa AbstractArray
@@ -209,6 +209,16 @@ end
             sim.t, u[i]
         end
     end
+end
+
+Base.@propagate_inbounds function Base.getindex(
+        x::AbstractEnsembleSolution, s::Integer, i::Integer)
+    return x.u[s].u[i]
+end
+
+Base.@propagate_inbounds function Base.getindex(
+        x::AbstractEnsembleSolution, s::Integer, i2::Integer, i3::Integer, idxs::Integer...)
+    return x.u[s][i2, i3, idxs...]
 end
 
 Base.@propagate_inbounds function Base.getindex(x::AbstractEnsembleSolution, s, ::Colon)
