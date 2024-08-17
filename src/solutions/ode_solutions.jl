@@ -604,3 +604,17 @@ function sensitivity_solution(sol::ODESolution, u, t)
     @reset sol.t = t isa Vector ? t : collect(t)
     return @set sol.interp = interp
 end
+
+function strip_solution(sol::ODESolution)
+    if has_lazy_interpolation(sol.alg)
+        error("The algorithm $(sol.alg) uses lazy interpolation, which is incompatible with
+        solution stripping.")
+    end
+
+    interp = strip_interpolation(sol.interp)
+
+    ODESolution(sol.u, sol.u_analytic, sol.errors,
+        sol.t, sol.k, sol.discretes, nothing, nothing,
+        sol.interp, sol.dense, sol.tslocation, sol.stats,
+        sol.alg_choice, sol.retcode, sol.resid, sol.original)
+end
