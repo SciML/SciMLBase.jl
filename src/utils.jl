@@ -548,5 +548,6 @@ function strip_solution(sol::AbstractSciMLSolution)
 end
 
 function strip_cache(cache::DECache)
+    # most caches don't have jac_config or grad_config, so stripping not needed
     cache
 end
