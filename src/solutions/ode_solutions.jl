@@ -615,6 +615,6 @@ function strip_solution(sol::ODESolution)
 
     ODESolution(sol.u, sol.u_analytic, sol.errors,
         sol.t, sol.k, sol.discretes, nothing, nothing,
-        sol.interp, sol.dense, sol.tslocation, sol.stats,
+        interp, sol.dense, sol.tslocation, sol.stats,
         sol.alg_choice, sol.retcode, sol.resid, sol.original)
 end
