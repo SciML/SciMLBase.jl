@@ -18,22 +18,11 @@ solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm, args...; kw
 The arguments to `solve` are common across all of the optimizers.
 These common arguments are:
 
-  - `maxiters` (the maximum number of iterations)
-  - `maxtime` (the maximum of time the optimization runs for)
-  - `abstol` (absolute tolerance in changes of the objective value)
-  - `reltol` (relative tolerance  in changes of the objective value)
-  - `callback` (a callback function)
-
-If the chosen global optimizer employs a local optimization method,
-a similar set of common local optimizer arguments exists.
-The common local optimizer arguments are:
-
-  - `local_method` (optimizer used for local optimization in global method)
-  - `local_maxiters` (the maximum number of iterations)
-  - `local_maxtime` (the maximum of time the optimization runs for)
-  - `local_abstol` (absolute tolerance in changes of the objective value)
-  - `local_reltol` (relative tolerance  in changes of the objective value)
-  - `local_options` (NamedTuple of keyword arguments for local optimizer)
+  - `maxiters`: the maximum number of iterations
+  - `maxtime`: the maximum amount of time (typically in seconds) the optimization runs for
+  - `abstol`: absolute tolerance in changes of the objective value
+  - `reltol`: relative tolerance  in changes of the objective value
+  - `callback`: a callback function
 
 Some optimizer algorithms have special keyword arguments documented in the
 solver portion of the documentation and their respective documentation.
@@ -89,6 +78,17 @@ callback = function (state, l, pred; doplot = false) #callback function to obser
     return false
 end
 ```
+
+If the chosen method is a global optimizer that employs a local optimization 
+method, a similar set of common local optimizer arguments exists. Look at `MLSL` or `AUGLAG` 
+from NLopt for an example. The common local optimizer arguments are:
+
+  - `local_method`: optimizer used for local optimization in global method
+  - `local_maxiters`: the maximum number of iterations
+  - `local_maxtime`: the maximum amount of time (in seconds) the optimization runs for
+  - `local_abstol`: absolute tolerance in changes of the objective value
+  - `local_reltol`: relative tolerance  in changes of the objective value
+  - `local_options`: `NamedTuple` of keyword arguments for local optimizer
 """
 function solve(prob::OptimizationProblem, alg, args...;
         kwargs...)::AbstractOptimizationSolution
