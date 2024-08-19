@@ -6,3 +6,5 @@ prob = ODEProblem(f, u0, tspan)
 sol = solve(prob, Tsit5(), reltol = 1e-8, abstol = 1e-8)
 
 @test isnothing(strip_solution(sol).f)
+
+@test isnothing(strip_solution(sol).interp.f)
