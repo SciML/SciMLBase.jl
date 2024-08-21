@@ -123,9 +123,8 @@ function remake(prob::ODEProblem; f = missing,
     iip = isinplace(prob)
 
     if f === missing
-        initializeprob, initializeprobmap = remake_initializeprob(
-            prob.f.sys, prob.f, u0 === missing ? newu0 : u0,
-            tspan[1], p === missing ? newp : p)
+        initializeprob, initializeprobmap, initializeprobpmap = remake_initializeprob(
+            prob.f.sys, prob.f, u0, tspan[1], p)
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
@@ -134,14 +133,14 @@ function remake(prob::ODEProblem; f = missing,
                         unwrapped_f(prob.f.f),
                         (newu0, newu0, newp,
                             ptspan[1]));
-                    initializeprob, initializeprobmap)
+                    initializeprob, initializeprobmap, initializeprobpmap)
             else
                 _f = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_oop(
                         unwrapped_f(prob.f.f),
                         (newu0, newp,
                             ptspan[1]));
-                    initializeprob, initializeprobmap)
+                    initializeprob, initializeprobmap, initializeprobpmap)
             end
         else
             _f = prob.f
@@ -155,6 +154,13 @@ function remake(prob::ODEProblem; f = missing,
             if __has_initializeprobmap(_f)
                 props = getproperties(_f)
                 @reset props.initializeprobmap = initializeprobmap
+                props = values(props)
+                _f = parameterless_type(_f){
+                    iip, specialization(_f), map(typeof, props)...}(props...)
+            end
+            if __has_initializeprobpmap(_f)
+                props = getproperties(_f)
+                @reset props.initializeprobpmap = initializeprobpmap
                 props = values(props)
                 _f = parameterless_type(_f){
                     iip, specialization(_f), map(typeof, props)...}(props...)
@@ -189,15 +195,19 @@ end
     remake_initializeprob(sys, scimlfn, u0, t0, p)
 
 Re-create the initialization problem present in the function `scimlfn`, using the
-associated system `sys`, and the new values of `u0`, initial time `t0` and `p`. By
-default, returns `nothing, nothing` if `scimlfn` does not have an initialization
-problem, and `scimlfn.initializeprob, scimlfn.initializeprobmap` if it does.
+associated system `sys`, and the user-provided new values of `u0`, initial time `t0` and
+`p`. By default, returns `nothing, nothing, nothing` if `scimlfn` does not have an
+initialization problem, and
+`scimlfn.initializeprob, scimlfn.initializeprobmap, scimlfn.initializeprobpmap` if it
+does.
+
+Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
 function remake_initializeprob(sys, scimlfn, u0, t0, p)
     if !has_initializeprob(scimlfn)
-        return nothing, nothing
+        return nothing, nothing, nothing
     end
-    return scimlfn.initializeprob, scimlfn.initializeprobmap
+    return scimlfn.initializeprob, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
 end
 
 """
