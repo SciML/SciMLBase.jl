@@ -137,6 +137,17 @@ Defaults to false.
 requiresgradient(opt) = false
 
 """
+    allowsfg(opt)
+
+Trait declaration for whether an optimizer
+allows combined function and gradient evaluation 
+in `instantiate_function`.
+
+Defaults to false.
+"""
+allowsfg(opt) = false
+
+"""
     requireshessian(opt)
 
 Trait declaration for whether an optimizer
@@ -147,24 +158,70 @@ Defaults to false.
 requireshessian(opt) = false
 
 """
+    allowsfgh(opt)
+
+Trait declaration for whether an optimizer
+allows combined function, gradient, and hessian 
+evaluation in `instantiate_function`.
+
+Defaults to false.
+"""
+allowsfgh(opt) = false
+
+"""
     requiresconsjac(opt)
 
 Trait declaration for whether an optimizer
-requires `cons_j` in `instantiate_function`, that is, does the optimizer require a constant Jacobian.
+requires `cons_j` in `instantiate_function`, that is, 
+does the optimizer require a constraints' Jacobian.
 
 Defaults to false.
 """
 requiresconsjac(opt) = false
 
 """
+    allowsconsjvp(opt)
+
+Trait declaration for whether an optimizer
+allows  constraint's jacobian vector product
+in `instantiate_function`.
+
+Defaults to false.
+"""
+allowsconsjvp(opt) = false
+
+"""
+    allowsconsvjp(opt)
+
+Trait declaration for whether an optimizer
+allows  constraint's vector jacobian product
+in `instantiate_function`.
+
+Defaults to false.
+"""
+allowsconsvjp(opt) = false
+
+"""
     requiresconshess(opt)
 
 Trait declaration for whether an optimizer
-requires cons_h in `instantiate_function`, that is, does the optimizer require a constant hessian.
+requires cons_h in `instantiate_function`, that is, 
+does the optimizer require constraints' hessian.
 
 Defaults to false.
 """
 requiresconshess(opt) = false
+
+"""
+    requireslagh(opt)
+
+Trait declaration for whether an optimizer
+requires lag_h in `instantiate_function`, that is, 
+does the optimizer require lagrangian hessian.
+
+Defaults to false.
+"""
+requireslagh(opt) = false
 
 """
     allowscallback(opt)
