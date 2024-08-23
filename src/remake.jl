@@ -30,14 +30,34 @@ end
 
 function _remake_internal(thing; kwargs...)
     T = remaker_of(thing)
+    named_thing = struct_as_namedtuple(thing)
     if :kwargs ∈ fieldnames(typeof(thing))
-        if :kwargs ∉ keys(kwargs)
-            T(; struct_as_namedtuple(thing)..., thing.kwargs..., kwargs...)
+        if :args ∈ fieldnames(typeof(thing))
+            named_thing = Base.structdiff(named_thing, (;args=()))
+            if :args ∉ keys(kwargs)
+                k = Base.structdiff(named_thing, (;args=()))
+                if :kwargs ∉ keys(kwargs)
+                    T(; named_thing..., thing.kwargs..., kwargs...)
+                else
+                    T(; named_thing..., kwargs[:kwargs]...)
+                end
+            else
+                kwargs2 = Base.structdiff((;kwargs...), (;args=()))
+                if :kwargs ∉ keys(kwargs)
+                    T(kwargs[:args]...; named_thing..., thing.kwargs..., kwargs2...)
+                else
+                    T(kwargs[:args]...; named_thing..., kwargs2[:kwargs]...)
+                end
+            end
         else
-            T(; struct_as_namedtuple(thing)..., kwargs[:kwargs]...)
+            if :kwargs ∉ keys(kwargs)
+                T(; named_thing..., thing.kwargs..., kwargs...)
+            else
+                T(; named_thing..., kwargs[:kwargs]...)
+            end
         end
     else
-        T(; struct_as_namedtuple(thing)..., kwargs...)
+        T(; named_thing..., kwargs...)
     end
 end
 
