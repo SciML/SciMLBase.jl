@@ -286,12 +286,12 @@ tmp = newprob.g([0.0, 0.0, 0.0], [1.0, 2.0, 3.0], nothing, 0.0)
 @test tmp≈[0.2, 0.4, 0.6] atol=1e-6
 
 struct Remake_Test1
-   p
-   args
-   kwargs
+    p::Any
+    args::Any
+    kwargs::Any
 end
 Remake_Test1(args...; p, kwargs...) = Remake_Test1(p, args, kwargs)
-a = Remake_Test1(p=1)
-@test @inferred remake(a, p=2) == Remake_Test1(p=2)
-@test @inferred remake(a, args=1) == Remake_Test1(1, p=1)
-@test @inferred remake(a, kwargs=(;a=1)) == Remake_Test1(p=1, a=1)
+a = Remake_Test1(p = 1)
+@test @inferred remake(a, p = 2) == Remake_Test1(p = 2)
+@test @inferred remake(a, args = 1) == Remake_Test1(1, p = 1)
+@test @inferred remake(a, kwargs = (; a = 1)) == Remake_Test1(p = 1, a = 1)

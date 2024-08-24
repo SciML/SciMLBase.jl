@@ -79,8 +79,8 @@ callback = function (state, l, pred; doplot = false) #callback function to obser
 end
 ```
 
-If the chosen method is a global optimizer that employs a local optimization 
-method, a similar set of common local optimizer arguments exists. Look at `MLSL` or `AUGLAG` 
+If the chosen method is a global optimizer that employs a local optimization
+method, a similar set of common local optimizer arguments exists. Look at `MLSL` or `AUGLAG`
 from NLopt for an example. The common local optimizer arguments are:
 
   - `local_method`: optimizer used for local optimization in global method
