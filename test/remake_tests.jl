@@ -292,6 +292,6 @@ struct Remake_Test1
 end
 Remake_Test1(args...; p, kwargs...) = Remake_Test1(p, args, kwargs)
 a = Remake_Test1(p=1)
-@test remake(a, p=2) == Remake_Test1(p=2)
-@test remake(a, args=1) == Remake_Test1(1, p=1)
-@test remake(a, kwargs=(;a=1)) == Remake_Test1(p=1, a=1)
+@test @inferred remake(a, p=2) == Remake_Test1(p=2)
+@test @inferred remake(a, args=1) == Remake_Test1(1, p=1)
+@test @inferred remake(a, kwargs=(;a=1)) == Remake_Test1(p=1, a=1)
