@@ -12,7 +12,9 @@ prob = ODEProblem(lorenz!, u0, tspan)
 # implicit solver so we can test cache stripping worked
 sol = solve(prob, Rosenbrock23())
 
-@test isnothing(SciMLBase.strip_solution(sol).f)
+@test isnothing(SciMLBase.strip_solution(sol).prob)
+
+@test isnothing(SciMLBase.strip_solution(sol).alg)
 
 @test isnothing(SciMLBase.strip_solution(sol).interp.f)
 
