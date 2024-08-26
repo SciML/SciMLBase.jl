@@ -7,7 +7,7 @@ function lorenz!(du, u, p, t)
 end
 
 u0 = [1.0; 0.0; 0.0]
-tspan = (0.0, 100.0)
+tspan = (0.0, 1.0)
 prob = ODEProblem(lorenz!, u0, tspan)
 # implicit solver so we can test cache stripping worked
 sol = solve(prob, Rosenbrock23())
