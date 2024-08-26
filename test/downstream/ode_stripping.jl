@@ -19,3 +19,5 @@ sol = solve(prob, Rosenbrock23())
 @test isnothing(SciMLBase.strip_solution(sol).interp.f)
 
 @test isnothing(SciMLBase.strip_solution(sol).interp.cache.jac_config)
+
+@test isnothing(SciMLBase.strip_solution(sol).interp.cache.grad_config)
