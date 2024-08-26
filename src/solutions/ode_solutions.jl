@@ -613,7 +613,9 @@ function strip_solution(sol::ODESolution)
 
     interp = strip_interpolation(sol.interp)
 
-    ODESolution(sol.u, sol.u_analytic, sol.errors,
+    bigT = typeof(sol).parameters[1]
+    bigN = typeof(sol).parameters[2]
+    ODESolution{bigT,bigN}(sol.u, sol.u_analytic, sol.errors,
         sol.t, sol.k, sol.discretes, nothing, nothing,
         interp, sol.dense, sol.tslocation, sol.stats,
         sol.alg_choice, sol.retcode, sol.resid, sol.original)
