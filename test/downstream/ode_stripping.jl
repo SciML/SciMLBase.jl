@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEq, SciMLBase
 
 function lorenz!(du, u, p, t)
     du[1] = 10.0 * (u[2] - u[1])
@@ -12,8 +12,8 @@ prob = ODEProblem(lorenz!, u0, tspan)
 # implicit solver so we can test cache stripping worked
 sol = solve(prob, Rosenbrock23())
 
-@test isnothing(strip_solution(sol).f)
+@test isnothing(SciMLBase.strip_solution(sol).f)
 
-@test isnothing(strip_solution(sol).interp.f)
+@test isnothing(SciMLBase.strip_solution(sol).interp.f)
 
-@test isnothing(strip_solution(sol).interp.cache.jac_config)
+@test isnothing(SciMLBase.strip_solution(sol).interp.cache.jac_config)
