@@ -613,8 +613,7 @@ function strip_solution(sol::ODESolution)
 
     interp = strip_interpolation(sol.interp)
 
-    ODESolution(sol.u, sol.u_analytic, sol.errors,
-        sol.t, sol.k, sol.discretes, nothing, nothing,
-        interp, sol.dense, sol.tslocation, sol.stats,
-        sol.alg_choice, sol.retcode, sol.resid, sol.original)
+    @reset sol.interp = interp
+    @reset sol.prob = nothing
+    return @set sol.alg = nothing
 end
