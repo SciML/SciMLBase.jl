@@ -249,7 +249,7 @@ for prob in deepcopy(probs)
         function fakeloss!(p)
             prob2 = @inferred baseType remake(prob; p = [:a => p])
             @test eltype(prob2.p) <: ForwardDiff.Dual
-            return prob2.ps[:a]
+            return prob2.p[:a]
         end
         ForwardDiff.derivative(fakeloss!, 1.0)
     end
