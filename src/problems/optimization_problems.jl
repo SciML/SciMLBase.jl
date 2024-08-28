@@ -151,4 +151,4 @@ end
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
-Base.getproperty(prob::OptimizationProblem, sym::Symbol) = sym == :x0 ? getfield(prob, :u0) : getfield(prob, sym)
+Base.getproperty(prob::OptimizationProblem, sym::Symbol) = sym === :x0 ? getfield(prob, :u0) : getfield(prob, sym)
