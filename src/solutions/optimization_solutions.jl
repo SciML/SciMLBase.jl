@@ -49,14 +49,14 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 
 ## Fields
 
-- `u`: the representation of the optimization's solution.
+- `x`: the representation of the optimization's solution.
 - `cache::AbstractOptimizationCache`: the optimization cache` that was solved.
 - `alg`: the algorithm type used by the solver.
 - `objective`: Objective value of the solution
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
   successfully or whether it exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
-- `original`: if the solver is wrapped from an alternative solver ecosystem, such as
+- `original`: if the solver is wrapped from a external solver, e.g.
   Optim.jl, then this is the original return from said solver library.
 - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
