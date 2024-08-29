@@ -56,7 +56,7 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
   successfully or whether it exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
-- `original`: if the solver is wrapped from an alternative solver ecosystem, such as
+- `original`: if the solver is wrapped from a external solver, e.g.
   Optim.jl, then this is the original return from said solver library.
 - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
@@ -210,6 +210,8 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSoluti
     if s === :minimizer
         Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
             "sol.minimizer")
+        return getfield(x, :u)
+    elseif s === :x
         return getfield(x, :u)
     elseif s === :minimum
         Base.depwarn("`sol.minimum` is deprecated. Use `sol.objective` instead.",

@@ -1823,16 +1823,16 @@ function described in [Callback Functions](https://docs.sciml.ai/Optimization/st
     then `hess(H,u,p,args...)` or `H=hess(u,p,args...)` should be used.
 - `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``. If `f` takes additional arguments
     then `hv(Hv,u,v,p,args...)` or `Hv=hv(u,v,p, args...)` should be used.
-- `cons(res,x,p)` or `res=cons(x,p)` : the constraints function, should mutate the passed `res` array
+- `cons(res,u,p)` or `res=cons(u,p)` : the constraints function, should mutate the passed `res` array
     with value of the `i`th constraint, evaluated at the current values of variables
     inside the optimization routine. This takes just the function evaluations
     and the equality or inequality assertion is applied by the solver based on the constraint
     bounds passed as `lcons` and `ucons` to [`OptimizationProblem`](@ref), in case of equality
     constraints `lcons` and `ucons` should be passed equal values.
-- `cons_j(J,x,p)` or `J=cons_j(x,p)`: the Jacobian of the constraints.
-- `cons_jvp(Jv,v,x,p)` or `Jv=cons_jvp(v,x,p)`: the Jacobian-vector product of the constraints.
-- `cons_vjp(Jv,v,x,p)` or `Jv=cons_vjp(v,x,p)`: the Jacobian-vector product of the constraints.
-- `cons_h(H,x,p)` or `H=cons_h(x,p)`: the Hessian of the constraints, provided as
+- `cons_j(J,u,p)` or `J=cons_j(u,p)`: the Jacobian of the constraints.
+- `cons_jvp(Jv,u,v,p)` or `Jv=cons_jvp(u,v,p)`: the Jacobian-vector product of the constraints.
+- `cons_vjp(Jv,u,v,p)` or `Jv=cons_vjp(u,v,p)`: the Jacobian-vector product of the constraints.
+- `cons_h(H,u,p)` or `H=cons_h(u,p)`: the Hessian of the constraints, provided as
    an array of Hessians with `res[i]` being the Hessian with respect to the `i`th output on `cons`.
 - `hess_prototype`: a prototype matrix matching the type that matches the Hessian. For example,
   if the Hessian is tridiagonal, then an appropriately sized `Hessian` matrix can be used
@@ -1845,7 +1845,7 @@ function described in [Callback Functions](https://docs.sciml.ai/Optimization/st
   This is defined as an array of matrices, where `hess[i]` is the Hessian w.r.t. the `i`th output.
   For example, if the Hessian is sparse, then `hess` is a `Vector{SparseMatrixCSC}`.
   The default is `nothing`, which means a dense constraint Hessian.
-- `lag_h(res,x,sigma,mu,p)` or `res=lag_h(x,sigma,mu,p)`: the Hessian of the Lagrangian,
+- `lag_h(res,u,sigma,mu,p)` or `res=lag_h(u,sigma,mu,p)`: the Hessian of the Lagrangian,
   where `sigma` is a multiplier of the cost function and `mu` are the Lagrange multipliers
   multiplying the constraints. This can be provided instead of `hess` and `cons_h`
   to solvers that directly use the Hessian of the Lagrangian.
