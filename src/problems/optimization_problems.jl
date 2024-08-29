@@ -49,7 +49,7 @@ where `(lb[i],ub[i])` is the box constraint (lower and upper bounds) for `u[i]`.
 
 `lcons` and `ucons` are the upper and lower bounds in case of inequality constraints on the
 optimization and if they are set to be equal then it represents an equality constraint.
-They should be an `AbstractArray` matching the geometry of `u`, where `(lcons[i],ucons[i])`
+They should be an `AbstractArray`, where `(lcons[i],ucons[i])`
 are the lower and upper bounds for `cons[i]`.
 
 The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
