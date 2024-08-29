@@ -243,3 +243,13 @@ as the maximum order of the algorithm.
 function alg_order(alg::AbstractODEAlgorithm)
     error("Order is not defined for this algorithm")
 end
+
+"""
+    allows_non_wiener_noise(alg::AbstractSDEAlgorithm)
+
+Trait declaration for whether an algorithm allows for non-additive wiener noise.
+In general, this is false for any high order (that uses levy areas) or adaptive method.
+
+Defaults to false.
+"""
+allows_non_wiener_noise(alg::AbstractSDEAlgorithm) = false
