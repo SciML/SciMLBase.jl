@@ -605,11 +605,14 @@ function sensitivity_solution(sol::ODESolution, u, t)
     return @set sol.interp = interp
 end
 
-struct LazyInterpolationException <: Exception 
+struct LazyInterpolationException <: Exception
     var::Symbol
 end
 
-Base.showerror(io::IO, e::LazyInterpolationException) = print(io, "The algorithm", e.var, " uses lazy interpolation, which is incompatible with `strip_solution`.")
+function Base.showerror(io::IO, e::LazyInterpolationException)
+    print(io, "The algorithm", e.var,
+        " uses lazy interpolation, which is incompatible with `strip_solution`.")
+end
 
 function strip_solution(sol::ODESolution)
     if has_lazy_interpolation(sol.alg)
