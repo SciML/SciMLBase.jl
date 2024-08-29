@@ -1821,7 +1821,7 @@ function described in [Callback Functions](https://docs.sciml.ai/Optimization/st
     then `grad(G,u,p,args...)` or `G=grad(u,p,args...)` should be used.
 - `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`. If `f` takes additional arguments
     then `hess(H,u,p,args...)` or `H=hess(u,p,args...)` should be used.
-- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / dx^2) v``. If `f` takes additional arguments
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``. If `f` takes additional arguments
     then `hv(Hv,u,v,p,args...)` or `Hv=hv(u,v,p, args...)` should be used.
 - `cons(res,u,p)` or `res=cons(u,p)` : the constraints function, should mutate the passed `res` array
     with value of the `i`th constraint, evaluated at the current values of variables
