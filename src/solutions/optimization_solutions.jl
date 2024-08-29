@@ -49,7 +49,7 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 
 ## Fields
 
-- `x`: the representation of the optimization's solution.
+- `u`: the representation of the optimization's solution.
 - `cache::AbstractOptimizationCache`: the optimization cache` that was solved.
 - `alg`: the algorithm type used by the solver.
 - `objective`: Objective value of the solution
