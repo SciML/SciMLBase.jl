@@ -243,3 +243,5 @@ as the maximum order of the algorithm.
 function alg_order(alg::AbstractODEAlgorithm)
     error("Order is not defined for this algorithm")
 end
+
+function alg_interpretation end
