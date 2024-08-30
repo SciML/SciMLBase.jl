@@ -243,3 +243,18 @@ as the maximum order of the algorithm.
 function alg_order(alg::AbstractODEAlgorithm)
     error("Order is not defined for this algorithm")
 end
+
+"""
+Integral interpolation for the SDE solver algorithm. SDEs solutions depend on the chosen definition of the stochastic integral. In the Ito calculus, 
+the left-hand rule is taken, while Stratonovich calculus uses the right-hand rule. Unlike in standard Riemannian integration, these integral rules do 
+not converge to the same answer. In the context of a stochastic differential equation, the underlying solution (and its mean, variance, etc.) is dependent 
+on the integral rule that is chosen. This trait describes which interpretation the solver algorithm subscribes to, and thus whether the solution should 
+be interpretated as the solution to the SDE under the Ito or Stratonovich interpretation.
+
+For more information, see https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.html as a good high-level explanation.
+
+!!! note
+    The expected solution statistics are dependent on this output. Solutions from solvers with different 
+    interpretations are expected to have different answers on almost all SDEs without additive noise.
+"""
+function alg_interpretation end
