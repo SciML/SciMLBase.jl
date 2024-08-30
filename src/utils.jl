@@ -241,7 +241,7 @@ form is disabled and the 2-argument signature is ensured to be matched.
 
 # See also
 
-- [`numargs`](@ref numargs)
+  - [`numargs`](@ref numargs)
 """
 function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
         has_two_dispatches = true, isoptimization = false,
