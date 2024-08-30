@@ -249,7 +249,7 @@ Integral interpolation for the SDE solver algorithm. SDEs solutions depend on th
 the left-hand rule is taken, while Stratonovich calculus uses the right-hand rule. Unlike in standard Riemannian integration, these integral rules do 
 not converge to the same answer. In the context of a stochastic differential equation, the underlying solution (and its mean, variance, etc.) is dependent 
 on the integral rule that is chosen. This trait describes which interpretation the solver algorithm subscribes to, and thus whether the solution should 
-be interpretated as the solution to the SDE under the Ito or Stratonovich interpretation.
+be interpreted as the solution to the SDE under the Ito or Stratonovich interpretation.
 
 For more information, see https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.html as a good high-level explanation.
 
