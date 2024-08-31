@@ -6,7 +6,7 @@ struct StandardSDEProblem end
 @doc doc"""
 
 Defines an stochastic differential equation (SDE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/)
 
 ## Mathematical Specification of a SDE Problem
 
