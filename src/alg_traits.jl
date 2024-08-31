@@ -263,5 +263,5 @@ For more information, see https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.ht
     interpretations are expected to have different answers on almost all SDEs without additive noise.
 """
 function alg_interpretation(alg::AbstractSciMLAlgorithm)
-    error("Algorithm interpretation is not defined for this algorithm. It can be either AlgorithmInterpretation.Ito or AlgorithmInterpretation.Stratonovich")
+    error("Algorithm interpretation is not defined for this algorithm. It can be either `AlgorithmInterpretation.Ito` or `AlgorithmInterpretation.Stratonovich`")
 end
