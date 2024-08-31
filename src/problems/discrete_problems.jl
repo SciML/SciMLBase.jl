@@ -4,7 +4,7 @@ const DISCRETE_OUTOFPLACE_DEFAULT = DiscreteFunction{false}((u, p, t) -> u)
 @doc doc"""
 
 Defines a discrete dynamical system problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/)
 
 ## Mathematical Specification of a Discrete Problem
 
