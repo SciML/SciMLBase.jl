@@ -60,7 +60,11 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
     N = u === nothing ? 2 : ndims(eltype(u)) + 1
     T = eltype(eltype(u))
     patch = merge(getproperties(sol), patch)
-    return RODESolution{T, N}(patch.u, patch.u_analytic, patch.errors, patch.t, patch.W,
+    return RODESolution{
+        T, N, typeof(patch.u), typeof(patch.u_analytic), typeof(patch.errors),
+        typeof(patch.t), typeof(patch.W), typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
+        typeof(patch.stats), typeof(alg_choice)}(
+        patch.u, patch.u_analytic, patch.errors, patch.t, patch.W,
         patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
         patch.alg_choice, patch.retcode, patch.seed)
 end
