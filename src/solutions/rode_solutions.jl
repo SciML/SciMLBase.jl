@@ -51,6 +51,20 @@ struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, S,
     seed::UInt64
 end
 
+function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: RODESolution{T, N}}
+    RODESolution{T, N}
+end
+
+function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
+    u = get(patch, :u, sol.u)
+    N = u === nothing ? 2 : ndims(eltype(u)) + 1
+    T = eltype(eltype(u))
+    patch = merge(getproperties(sol), patch)
+    return RODESolution{T, N}(patch.u, patch.u_analytic, patch.errors, patch.t, patch.W, patch.k,
+        patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
+        patch.alg_choice, patch.retcode, patch.seed)
+end
+
 Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::Symbol)
     if s === :destats
         Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
