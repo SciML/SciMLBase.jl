@@ -3,7 +3,7 @@
 @doc doc"""
 
 Defines an optimization problem.
-Documentation Page: https://docs.sciml.ai/Optimization/stable/API/optimization_problem/
+Documentation Page: [https://docs.sciml.ai/Optimization/stable/API/optimization_problem/](https://docs.sciml.ai/Optimization/stable/API/optimization_problem/)
 
 ## Mathematical Specification of an Optimization Problem
 

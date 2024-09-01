@@ -6,7 +6,7 @@ struct StandardODEProblem end
 @doc doc"""
 
 Defines an ordinary differential equation (ODE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/)
 
 ## Mathematical Specification of an ODE Problem
 
