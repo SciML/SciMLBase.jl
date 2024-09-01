@@ -63,7 +63,7 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
     return RODESolution{
         T, N, typeof(patch.u), typeof(patch.u_analytic), typeof(patch.errors),
         typeof(patch.t), typeof(patch.W), typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
-        typeof(patch.stats), typeof(alg_choice)}(
+        typeof(patch.stats), typeof(patch.alg_choice)}(
         patch.u, patch.u_analytic, patch.errors, patch.t, patch.W,
         patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
         patch.alg_choice, patch.retcode, patch.seed)
