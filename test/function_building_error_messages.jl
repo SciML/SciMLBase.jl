@@ -24,6 +24,13 @@ f = Foo{1}()
 (this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
+@testset "isinplace accepts an out-of-place version with different numbers of parameters " begin
+    f1(u) = 2 * u
+    @test !isinplace(f1, 2)
+    @test_throws SciMLBase.TooFewArgumentsError SciMLBase.isinplace(f1, 4)
+    @test !isinplace(f1, 4; outofplace_param_number = 1)
+end
+
 ## Problem argument tests
 
 ftoomany(u, p, t, x, y) = 2u
