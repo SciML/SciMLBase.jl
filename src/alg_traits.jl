@@ -244,6 +244,26 @@ function alg_order(alg::AbstractODEAlgorithm)
     error("Order is not defined for this algorithm")
 end
 
+"""
+    allows_non_wiener_noise(alg::AbstractSDEAlgorithm)
+
+Trait declaration for whether an algorithm allows for non-wiener noise.
+In general, this is false for any high order (that uses levy areas) or adaptive method.
+
+Defaults to false.
+"""
+allows_non_wiener_noise(alg::AbstractSDEAlgorithm) = false
+
+"""
+    requires_additive_noise(alg::AbstractSDEAlgorithm)
+
+Trait declaration for whether an algorithm requires additive noise, i.e. the noise
+function is not a function of `u`.
+
+Defaults to false
+"""
+requires_additive_noise(alg::AbstractSDEAlgorithm) = false
+
 EnumX.@enumx AlgorithmInterpretation Ito Stratonovich
 
 """
