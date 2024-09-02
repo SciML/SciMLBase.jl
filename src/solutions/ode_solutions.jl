@@ -207,6 +207,11 @@ function get_interpolated_discretes(sol::AbstractODESolution, t, deriv, continui
     return ParameterTimeseriesCollection(interp_discs, parameter_values(discs))
 end
 
+function is_discrete_expression(indp, expr)
+    ts_idxs = get_all_timeseries_indexes(indp, expr)
+    length(ts_idxs) > 1 || length(ts_idxs) == 1 && only(ts_idxs) != ContinuousTimeseries()
+end
+
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
         continuity = :left) where {deriv}
     if t isa IndexedClock
@@ -270,7 +275,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
     if is_parameter(sol, idxs) && !is_timeseries_parameter(sol, idxs)
         return getp(sol, idxs)(ps)
     end
-    if is_parameter_timeseries(sol) == Timeseries()
+    if is_parameter_timeseries(sol) == Timeseries() && is_discrete_expression(sol, idxs)
         discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
@@ -292,7 +297,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
     end
     error_if_observed_derivative(sol, idxs, deriv)
     ps = parameter_values(sol)
-    if is_parameter_timeseries(sol) == Timeseries()
+    if is_parameter_timeseries(sol) == Timeseries() && is_discrete_expression(sol, idxs)
         discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
@@ -312,7 +317,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     getter = getu(sol, idxs)
-    if is_parameter_timeseries(sol) == NotTimeseries()
+    if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
         return DiffEqArray(getter(interp_sol), t, p, sol)
     end
@@ -333,7 +338,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     getter = getu(sol, idxs)
-    if is_parameter_timeseries(sol) == NotTimeseries()
+    if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
         return DiffEqArray(getter(interp_sol), t, p, sol)
     end
