@@ -233,12 +233,16 @@ function solve_batch(prob, alg, ensemblealg::EnsembleDistributed, II, pmap_batch
     tighten_container_eltype(batch_data)
 end
 
+__getindex(x, i) = x[i]
+__getindex(x::AbstractVectorOfArray, i) = x.u[i]
+
 function responsible_map(f, II...)
-    batch_data = Vector{Core.Compiler.return_type(f, Tuple{typeof.(getindex.(II, 1))...})}(
+    batch_data = Vector{Core.Compiler.return_type(
+        f, Tuple{ntuple(i -> typeof(__getindex(II[i], 1)), Val(length(II)))...})}(
         undef,
         length(II[1]))
     for i in 1:length(II[1])
-        batch_data[i] = f(getindex.(II, i)...)
+        batch_data[i] = f(ntuple(ii -> __getindex(II[ii], i), Val(length(II)))...)
     end
     batch_data
 end
