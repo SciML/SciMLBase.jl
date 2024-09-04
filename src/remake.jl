@@ -543,40 +543,76 @@ end
 
 function fill_u0(prob, u0; defs = nothing, use_defaults = false)
     vsyms = variable_symbols(prob)
-    if length(u0) == length(vsyms)
-        return u0
+    sym_to_idx = anydict()
+    idx_to_sym = anydict()
+    idx_to_val = anydict()
+    for (k, v) in u0
+        idx = variable_index(prob, k)
+        idx === nothing && continue
+        sym_to_idx[k] = idx
+        idx_to_sym[idx] = k
+        idx_to_val[idx] = v
+    end
+    for sym in vsyms
+        haskey(sym_to_idx, sym) && continue
+        idx = variable_index(prob, sym)
+        haskey(idx_to_val, idx) && continue
+        sym_to_idx[sym] = idx
+        idx_to_sym[idx] = sym
+        idx_to_val[idx] = if defs !== nothing &&
+                             (defval = varmap_get(defs, sym)) !== nothing &&
+                             (symbolic_type(defval) != NotSymbolic() || use_defaults)
+            defval
+        else
+            getu(prob, sym)(prob)
+        end
     end
     newvals = anydict()
-    for sym in vsyms
-        varmap_has_var(u0, sym) && continue
-        def = if defs === nothing || (defval = varmap_get(defs, sym)) === nothing ||
-                 (symbolic_type(defval) === NotSymbolic() && !use_defaults)
-            nothing
-        else
-            defval
-        end
-        newvals[sym] = @something def getu(prob, sym)(prob)
+    for (idx, val) in idx_to_val
+        newvals[idx_to_sym[idx]] = val
     end
-    return merge(u0, newvals)
+    for (k, v) in u0
+        haskey(sym_to_idx, k) && continue
+        newvals[k] = v
+    end
+    return newvals
 end
 
 function fill_p(prob, p; defs = nothing, use_defaults = false)
-    psyms = parameter_symbols(prob)::Vector
-    if length(p) == length(psyms)
-        return p
+    psyms = parameter_symbols(prob)
+    sym_to_idx = anydict()
+    idx_to_sym = anydict()
+    idx_to_val = anydict()
+    for (k, v) in p
+        idx = parameter_index(prob, k)
+        idx === nothing && continue
+        sym_to_idx[k] = idx
+        idx_to_sym[idx] = k
+        idx_to_val[idx] = v
+    end
+    for sym in psyms
+        haskey(sym_to_idx, sym) && continue
+        idx = parameter_index(prob, sym)
+        haskey(idx_to_val, idx) && continue
+        sym_to_idx[sym] = idx
+        idx_to_sym[idx] = sym
+        idx_to_val[idx] = if defs !== nothing &&
+                             (defval = varmap_get(defs, sym)) !== nothing &&
+                             (symbolic_type(defval) != NotSymbolic() || use_defaults)
+            defval
+        else
+            getp(prob, sym)(prob)
+        end
     end
     newvals = anydict()
-    for sym in psyms
-        varmap_has_var(p, sym) && continue
-        def = if defs === nothing || (defval = varmap_get(defs, sym)) === nothing ||
-                 (symbolic_type(defval) === NotSymbolic() && !use_defaults)
-            nothing
-        else
-            defval
-        end
-        newvals[sym] = @something def getp(prob, sym)(prob)
+    for (idx, val) in idx_to_val
+        newvals[idx_to_sym[idx]] = val
     end
-    return merge(p, newvals)
+    for (k, v) in p
+        haskey(sym_to_idx, k) && continue
+        newvals[k] = v
+    end
+    return newvals
 end
 
 function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false})
