@@ -617,13 +617,13 @@ end
 
 function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false})
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in u0)
-    isdep || return remake_buffer(prob, state_values(prob), u0), p
+    isdep || return remake_buffer(prob, state_values(prob), keys(u0), values(u0)), p
 
     u0 = anydict(k => symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, u0)
     for (k, v) in u0)
 
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in u0)
-    isdep || return remake_buffer(prob, state_values(prob), u0), p
+    isdep || return remake_buffer(prob, state_values(prob), keys(u0), values(u0)), p
 
     # FIXME: need to provide `u` since the observed function expects it.
     # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
@@ -631,18 +631,18 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false})
     temp_state = ProblemState(; u = state_values(prob), p = p)
     u0 = anydict(k => symbolic_type(v) === NotSymbolic() ? v : getu(prob, v)(temp_state)
     for (k, v) in u0)
-    return remake_buffer(prob, state_values(prob), u0), p
+    return remake_buffer(prob, state_values(prob), keys(u0), values(u0)), p
 end
 
 function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true})
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in p)
-    isdep || return u0, remake_buffer(prob, parameter_values(prob), p)
+    isdep || return u0, remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 
     p = anydict(k => symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, p)
     for (k, v) in p)
 
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in p)
-    isdep || return u0, remake_buffer(prob, parameter_values(prob), p)
+    isdep || return u0, remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 
     # FIXME: need to provide `p` since the observed function expects an `MTKParameters`
     # this is sort of an implicit dependency on MTK. The values of `p` won't actually be
@@ -650,7 +650,7 @@ function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true})
     temp_state = ProblemState(; u = u0, p = parameter_values(prob))
     p = anydict(k => symbolic_type(v) === NotSymbolic() ? v : getu(prob, v)(temp_state)
     for (k, v) in p)
-    return u0, remake_buffer(prob, parameter_values(prob), p)
+    return u0, remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 end
 
 function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true})
@@ -658,15 +658,15 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true})
     ispdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in p)
 
     if !isu0dep && !ispdep
-        return remake_buffer(prob, state_values(prob), u0),
-        remake_buffer(prob, parameter_values(prob), p)
+        return remake_buffer(prob, state_values(prob), keys(u0), values(u0)),
+        remake_buffer(prob, parameter_values(prob), keys(p), values(p))
     end
     if !isu0dep
-        u0 = remake_buffer(prob, state_values(prob), u0)
+        u0 = remake_buffer(prob, state_values(prob), keys(u0), values(u0))
         return _updated_u0_p_symmap(prob, u0, Val(false), p, Val(true))
     end
     if !ispdep
-        p = remake_buffer(prob, parameter_values(prob), p)
+        p = remake_buffer(prob, parameter_values(prob), keys(p), values(p))
         return _updated_u0_p_symmap(prob, u0, Val(true), p, Val(false))
     end
 
@@ -675,8 +675,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true})
     for (k, v) in u0)
     p = anydict(k => symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
     for (k, v) in p)
-    return remake_buffer(prob, state_values(prob), u0),
-    remake_buffer(prob, parameter_values(prob), p)
+    return remake_buffer(prob, state_values(prob), keys(u0), values(u0)),
+    remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 end
 
 function updated_u0_p(prob, u0, p; interpret_symbolicmap = true, use_defaults = false)
