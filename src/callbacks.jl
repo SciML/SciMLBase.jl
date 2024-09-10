@@ -171,11 +171,12 @@ function ContinuousCallback(condition, affect!;
         affect_neg! = affect!,
         interp_points = 10,
         dtrelax = 1,
-        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+        initializealg = nothing)
     ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize, idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg)
 end
 
 """
