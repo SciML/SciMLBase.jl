@@ -132,7 +132,7 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
             interp_points, save_positions, dtrelax::R, abstol::T,
             reltol::T2,
             repeat_nudge::T3,
-            initializealg::T4) where {F1, F2, F3, F4, F5, T, T2, T3, T4, I, R
+            initializealg::T4 = nothing) where {F1, F2, F3, F4, F5, T, T2, T3, T4, I, R
     }
         _condition = prepare_function(condition)
         new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R}(_condition,
@@ -243,7 +243,7 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
             interp_points, save_positions, dtrelax::R,
             abstol::T, reltol::T2,
             repeat_nudge::T3,
-            initializealg::T4) where {F1, F2, F3, F4, F5, T, T2,
+            initializealg::T4 = nothing) where {F1, F2, F3, F4, F5, T, T2,
             T3, T4, I, R}
         _condition = prepare_function(condition)
         new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R}(_condition,
@@ -350,7 +350,7 @@ struct DiscreteCallback{F1, F2, F3, F4, F5} <: AbstractDiscreteCallback
     function DiscreteCallback(condition::F1, affect!::F2,
             initialize::F3, finalize::F4,
             save_positions,
-            initializealg::F5) where {F1, F2, F3, F4, F5}
+            initializealg::F5 = nothing) where {F1, F2, F3, F4, F5}
         _condition = prepare_function(condition)
         new{typeof(_condition), F2, F3, F4, F5}(_condition,
             affect!, initialize, finalize,
