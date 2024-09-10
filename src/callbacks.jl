@@ -22,7 +22,8 @@ ContinuousCallback(condition, affect!, affect_neg!;
     rootfind = LeftRootFind,
     save_positions = (true, true),
     interp_points = 10,
-    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+    initializealg = nothing)
 ```
 
 ```julia
@@ -34,7 +35,8 @@ ContinuousCallback(condition, affect!;
     save_positions = (true, true),
     affect_neg! = affect!,
     interp_points = 10,
-    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+    initializealg = nothing)
 ```
 
 Contains a single callback whose `condition` is a continuous function. The callback is triggered when this function evaluates to 0.
@@ -91,8 +93,26 @@ Contains a single callback whose `condition` is a continuous function. The callb
   - `repeat_nudge = 1//100`: This is used to set the next testing point after a
     previously found zero. Defaults to 1//100, which means after a callback, the next
     sign check will take place at t + dt*1//100 instead of at t to avoid repeats.
+  - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
+    to run initialization after the effect. The default of `nothing` defers to the initialization
+    algorithm provided in the `solve`.
+
+!!! warn
+
+    The effect of using a callback with a DAE needs to be done with care because the solution
+    `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
+    a consistent initialization calculation must be run after running the callback. If the
+    chosen initialization alg is `BrownBasicInit()` (the default for `solve`), then the initialization
+    will change the algebraic variables to satisfy the conditions. Thus if `x` is an algebraic
+    variable and the callback performs `x+=1`, the initialization may "revert" the change to
+    satisfy the constraints. This behavior can be removed by setting `initializealg = CheckInit()`,
+    which simply checks that the state `u` is consistent, but requires that the result of the
+    `affect!` satisfies the constraints (or else errors). It is not recommended that `NoInit()` is
+    used as that will lead to an unstable step following initialization. This warning can be
+    ignored for non-DAE ODEs.
 """
-struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <: AbstractContinuousCallback
+struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
+       AbstractContinuousCallback
     condition::F1
     affect!::F2
     affect_neg!::F3
@@ -106,19 +126,21 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <: AbstractContin
     abstol::T
     reltol::T2
     repeat_nudge::T3
+    initializealg::T4
     function ContinuousCallback(condition::F1, affect!::F2, affect_neg!::F3,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R, abstol::T,
             reltol::T2,
-            repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2, T3, I, R
+            repeat_nudge::T3,
+            initializealg::T4) where {F1, F2, F3, F4, F5, T, T2, T3, T4, I, R
     }
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, I, R}(_condition,
+        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R}(_condition,
             affect!, affect_neg!,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
-            dtrelax, abstol, reltol, repeat_nudge)
+            dtrelax, abstol, reltol, repeat_nudge, initializealg)
     end
 end
 
@@ -131,12 +153,13 @@ function ContinuousCallback(condition, affect!, affect_neg!;
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0,
-        repeat_nudge = 1 // 100)
+        repeat_nudge = 1 // 100,
+        initializealg = nothing)
     ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize,
         idxs,
         rootfind, interp_points,
         save_positions,
-        dtrelax, abstol, reltol, repeat_nudge)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg)
 end
 
 function ContinuousCallback(condition, affect!;
@@ -148,11 +171,12 @@ function ContinuousCallback(condition, affect!;
         affect_neg! = affect!,
         interp_points = 10,
         dtrelax = 1,
-        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+        initializealg = nothing)
     ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize, idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg)
 end
 
 """
@@ -164,7 +188,8 @@ VectorContinuousCallback(condition, affect!, affect_neg!, len;
     rootfind = LeftRootFind,
     save_positions = (true, true),
     interp_points = 10,
-    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+    initializealg = nothing)
 ```
 
 ```julia
@@ -176,7 +201,8 @@ VectorContinuousCallback(condition, affect!, len;
     save_positions = (true, true),
     affect_neg! = affect!,
     interp_points = 10,
-    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+    initializealg = nothing)
 ```
 
 This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not feasible when you have many callbacks,
@@ -194,7 +220,7 @@ multiple events.
 
 Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
 """
-struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <:
+struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
        AbstractContinuousCallback
     condition::F1
     affect!::F2
@@ -210,20 +236,22 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, I, R} <:
     abstol::T
     reltol::T2
     repeat_nudge::T3
+    initializealg::T4
     function VectorContinuousCallback(
             condition::F1, affect!::F2, affect_neg!::F3, len::Int,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R,
             abstol::T, reltol::T2,
-            repeat_nudge::T3) where {F1, F2, F3, F4, F5, T, T2,
-            T3, I, R}
+            repeat_nudge::T3,
+            initializealg::T4) where {F1, F2, F3, F4, F5, T, T2,
+            T3, T4, I, R}
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, I, R}(_condition,
+        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R}(_condition,
             affect!, affect_neg!, len,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
-            dtrelax, abstol, reltol, repeat_nudge)
+            dtrelax, abstol, reltol, repeat_nudge, initializealg)
     end
 end
 
@@ -235,13 +263,14 @@ function VectorContinuousCallback(condition, affect!, affect_neg!, len;
         save_positions = (true, true),
         interp_points = 10,
         dtrelax = 1,
-        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+        initializealg = nothing)
     VectorContinuousCallback(condition, affect!, affect_neg!, len,
         initialize, finalize,
         idxs,
         rootfind, interp_points,
         save_positions, dtrelax,
-        abstol, reltol, repeat_nudge)
+        abstol, reltol, repeat_nudge, initializealg)
 end
 
 function VectorContinuousCallback(condition, affect!, len;
@@ -253,12 +282,13 @@ function VectorContinuousCallback(condition, affect!, len;
         affect_neg! = affect!,
         interp_points = 10,
         dtrelax = 1,
-        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100)
+        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
+        initializealg = nothing)
     VectorContinuousCallback(condition, affect!, affect_neg!, len, initialize, finalize,
         idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg)
 end
 
 """
@@ -266,7 +296,8 @@ end
 DiscreteCallback(condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
-    save_positions = (true, true))
+    save_positions = (true, true),
+    initializealg = nothing)
 ```
 
 # Arguments
@@ -291,26 +322,48 @@ DiscreteCallback(condition, affect!;
   - `finalize`: This is a function `(c,u,t,integrator)` which can be used to finalize
     the state of the callback `c`. It should can the argument `c` and the return is
     ignored.
+  - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
+    to run initialization after the effect. The default of `nothing` defers to the initialization
+    algorithm provided in the `solve`.
+
+!!! warn
+
+    The effect of using a callback with a DAE needs to be done with care because the solution
+    `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
+    a consistent initialization calculation must be run after running the callback. If the
+    chosen initialization alg is `BrownBasicInit()` (the default for `solve`), then the initialization
+    will change the algebraic variables to satisfy the conditions. Thus if `x` is an algebraic
+    variable and the callback performs `x+=1`, the initialization may "revert" the change to
+    satisfy the constraints. This behavior can be removed by setting `initializealg = CheckInit()`,
+    which simply checks that the state `u` is consistent, but requires that the result of the
+    `affect!` satisfies the constraints (or else errors). It is not recommended that `NoInit()` is
+    used as that will lead to an unstable step following initialization. This warning can be
+    ignored for non-DAE ODEs.
 """
-struct DiscreteCallback{F1, F2, F3, F4} <: AbstractDiscreteCallback
+struct DiscreteCallback{F1, F2, F3, F4, F5} <: AbstractDiscreteCallback
     condition::F1
     affect!::F2
     initialize::F3
     finalize::F4
     save_positions::BitArray{1}
+    initializealg::F5
     function DiscreteCallback(condition::F1, affect!::F2,
             initialize::F3, finalize::F4,
-            save_positions) where {F1, F2, F3, F4}
+            save_positions,
+            initializealg::F5) where {F1, F2, F3, F4, F5}
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4}(_condition,
+        new{typeof(_condition), F2, F3, F4, F5}(_condition,
             affect!, initialize, finalize,
-            BitArray(collect(save_positions)))
+            BitArray(collect(save_positions)),
+            initializealg)
     end
 end
 function DiscreteCallback(condition, affect!;
         initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
-        save_positions = (true, true))
-    DiscreteCallback(condition, affect!, initialize, finalize, save_positions)
+        save_positions = (true, true),
+        initializealg = nothing)
+    DiscreteCallback(
+        condition, affect!, initialize, finalize, save_positions, initializealg)
 end
 
 """
