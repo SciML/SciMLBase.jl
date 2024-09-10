@@ -111,7 +111,8 @@ Contains a single callback whose `condition` is a continuous function. The callb
     used as that will lead to an unstable step following initialization. This warning can be
     ignored for non-DAE ODEs.
 """
-struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <: AbstractContinuousCallback
+struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
+       AbstractContinuousCallback
     condition::F1
     affect!::F2
     affect_neg!::F3
@@ -326,17 +327,17 @@ DiscreteCallback(condition, affect!;
 
 !!! warn
 
-      The effect of using a callback with a DAE needs to be done with care because the solution
-      `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
-      a consistent initialization calculation must be run after running the callback. If the
-      chosen initialization alg is `BrownBasicInit()` (the default for `solve`), then the initialization
-      will change the algebraic variables to satisfy the conditions. Thus if `x` is an algebraic
-      variable and the callback performs `x+=1`, the initialization may "revert" the change to
-      satisfy the constraints. This behavior can be removed by setting `initializealg = CheckInit()`,
-      which simply checks that the state `u` is consistent, but requires that the result of the
-      `affect!` satisfies the constraints (or else errors). It is not recommended that `NoInit()` is
-      used as that will lead to an unstable step following initialization. This warning can be
-      ignored for non-DAE ODEs.
+    The effect of using a callback with a DAE needs to be done with care because the solution
+    `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
+    a consistent initialization calculation must be run after running the callback. If the
+    chosen initialization alg is `BrownBasicInit()` (the default for `solve`), then the initialization
+    will change the algebraic variables to satisfy the conditions. Thus if `x` is an algebraic
+    variable and the callback performs `x+=1`, the initialization may "revert" the change to
+    satisfy the constraints. This behavior can be removed by setting `initializealg = CheckInit()`,
+    which simply checks that the state `u` is consistent, but requires that the result of the
+    `affect!` satisfies the constraints (or else errors). It is not recommended that `NoInit()` is
+    used as that will lead to an unstable step following initialization. This warning can be
+    ignored for non-DAE ODEs.
 """
 struct DiscreteCallback{F1, F2, F3, F4, F5} <: AbstractDiscreteCallback
     condition::F1
@@ -360,7 +361,8 @@ function DiscreteCallback(condition, affect!;
         initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
         save_positions = (true, true),
         initializealg = nothing)
-    DiscreteCallback(condition, affect!, initialize, finalize, save_positions, initializealg)
+    DiscreteCallback(
+        condition, affect!, initialize, finalize, save_positions, initializealg)
 end
 
 """
