@@ -343,6 +343,11 @@ $(TYPEDEF)
 """
 struct NoInit <: DAEInitializationAlgorithm end
 
+"""
+$(TYPEDEF)
+"""
+struct CheckInit <: DAEInitializationAlgorithm end
+
 # PDE Discretizations
 
 """
