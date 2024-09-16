@@ -86,9 +86,10 @@ end
 function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
         weak_timeseries_errors = false,
         weak_dense_errors = false)
-    errors = Dict{Symbol, Vector{eltype(u[1].u[1])}}() #Should add type information
-    error_means = Dict{Symbol, eltype(u[1].u[1])}()
-    error_medians = Dict{Symbol, eltype(u[1].u[1])}()
+    err_type = typeof(collect(u[1].errors)[1][2])
+    errors = Dict{Symbol, Vector{err_type}}() #Should add type information
+    error_means = Dict{Symbol, err_type}()
+    error_medians = Dict{Symbol, err_type}()
 
     analyticvoa = u[1].u_analytic isa AbstractVectorOfArray ? true : false
 
@@ -98,7 +99,7 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
         error_medians[k] = median(errors[k])
     end
     # Now Calculate Weak Errors
-    weak_errors = Dict{Symbol, eltype(u[1].u[1])}()
+    weak_errors = Dict{Symbol, err_type}()
     # Final
     m_final = mean([s.u[end] for s in u])
 
