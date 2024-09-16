@@ -123,7 +123,7 @@ function remake(prob::ODEProblem; f = missing,
     iip = isinplace(prob)
 
     if f === missing
-        initializeprob, initializeprobmap, initializeprobpmap = remake_initializeprob(
+        initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap = remake_initializeprob(
             prob.f.sys, prob.f, u0, tspan[1], p)
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
@@ -133,20 +133,27 @@ function remake(prob::ODEProblem; f = missing,
                         unwrapped_f(prob.f.f),
                         (newu0, newu0, newp,
                             ptspan[1]));
-                    initializeprob, initializeprobmap, initializeprobpmap)
+                    initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
             else
                 _f = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_oop(
                         unwrapped_f(prob.f.f),
                         (newu0, newp,
                             ptspan[1]));
-                    initializeprob, initializeprobmap, initializeprobpmap)
+                    initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
             end
         else
             _f = prob.f
             if __has_initializeprob(_f)
                 props = getproperties(_f)
                 @reset props.initializeprob = initializeprob
+                props = values(props)
+                _f = parameterless_type(_f){
+                    iip, specialization(_f), map(typeof, props)...}(props...)
+            end
+            if __has_update_initializeprob!(_f)
+                props = getproperties(_f)
+                @reset props.update_initializeprob! = update_initializeprob!
                 props = values(props)
                 _f = parameterless_type(_f){
                     iip, specialization(_f), map(typeof, props)...}(props...)
@@ -196,18 +203,19 @@ end
 
 Re-create the initialization problem present in the function `scimlfn`, using the
 associated system `sys`, and the user-provided new values of `u0`, initial time `t0` and
-`p`. By default, returns `nothing, nothing, nothing` if `scimlfn` does not have an
+`p`. By default, returns `nothing, nothing, nothing, nothing` if `scimlfn` does not have an
 initialization problem, and
-`scimlfn.initializeprob, scimlfn.initializeprobmap, scimlfn.initializeprobpmap` if it
-does.
+`scimlfn.initializeprob, scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap`
+if it does.
 
 Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
 function remake_initializeprob(sys, scimlfn, u0, t0, p)
     if !has_initializeprob(scimlfn)
-        return nothing, nothing, nothing
+        return nothing, nothing, nothing, nothing
     end
-    return scimlfn.initializeprob, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
+    return scimlfn.initializeprob,
+    scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
 end
 
 """
@@ -703,7 +711,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
     remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 end
 
-function updated_u0_p(prob, u0, p, t0 = nothing; interpret_symbolicmap = true, use_defaults = false)
+function updated_u0_p(
+        prob, u0, p, t0 = nothing; interpret_symbolicmap = true, use_defaults = false)
     if u0 === missing && p === missing
         return state_values(prob), parameter_values(prob)
     end
