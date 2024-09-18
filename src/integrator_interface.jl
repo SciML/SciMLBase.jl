@@ -383,6 +383,15 @@ function set_ut!(integrator::DEIntegrator, u, t)
     set_t!(integrator, t)
 end
 
+"""
+    get_sol(integrator::DEIntegrator)
+
+Get the solution object contained in the integrator.
+"""
+function get_sol(integrator::DEIntegrator)
+    return integrator.sol
+end
+
 ### Addat isn't a real thing. Let's make it a real thing Gretchen
 
 function addat!(a::AbstractArray, idxs, val = nothing)
