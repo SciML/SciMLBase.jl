@@ -910,3 +910,7 @@ Checks if the integrator is adaptive
 function isadaptive(integrator::DEIntegrator)
     isdefined(integrator.opts, :adaptive) ? integrator.opts.adaptive : false
 end
+
+function SymbolicIndexingInterface.get_history_function(integ::AbstractDDEIntegrator)
+    DDESolutionHistoryWrapper(get_sol(integ))
+end
