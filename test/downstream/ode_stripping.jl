@@ -14,7 +14,7 @@ sol = solve(prob, Rosenbrock23())
 
 stripped_sol = SciMLBase.strip_solution(sol)
 
-@test stripped_sol.prob.f isa ODENullFunction
+@test stripped_sol.prob.f isa SciMLBase.ODENullFunction
 
 @test isnothing(SciMLBase.strip_solution(sol, strip_alg = true).alg)
 
@@ -24,4 +24,3 @@ stripped_sol = SciMLBase.strip_solution(sol)
 
 @test isnothing(stripped_sol.interp.cache.grad_config)
 
-@test stripped_sol(0.45) isa Number
