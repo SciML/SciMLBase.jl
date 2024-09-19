@@ -619,7 +619,9 @@ function Base.showerror(io::IO, e::LazyInterpolationException)
         " uses lazy interpolation, which is incompatible with `strip_solution`.")
 end
 
-function strip_solution(sol::ODESolution)
+struct ODENullFunction <: SciMLBase.AbstractODEFunction{false} end
+
+function strip_solution(sol::ODESolution; strip_alg = false)
     if has_lazy_interpolation(sol.alg)
         throw(LazyInterpolationException(nameof(typeof(sol.alg))))
     end
@@ -627,6 +629,13 @@ function strip_solution(sol::ODESolution)
     interp = strip_interpolation(sol.interp)
 
     @reset sol.interp = interp
-    @reset sol.prob = nothing
-    return @set sol.alg = nothing
+
+    @reset sol.prob = ODEProblem(ODENullFunction(), sol.prob.u0, sol.prob.tspan, p = sol.prob.p,
+        problem_type = sol.prob.problem_type, sol.prob.kwargs...)
+
+    if strip_alg
+        @reset sol.alg = nothing
+    end
+    
+    return sol
 end
