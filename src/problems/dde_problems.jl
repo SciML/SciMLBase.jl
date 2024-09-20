@@ -259,6 +259,8 @@ function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)
     DDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
 
+SymbolicIndexingInterface.get_history_function(prob::AbstractDDEProblem) = prob.h
+
 """
 $(TYPEDEF)
 """
