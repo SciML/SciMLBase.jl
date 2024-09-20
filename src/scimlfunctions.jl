@@ -1784,7 +1784,7 @@ A representation of an objective function `f`, defined by:
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
-and more. For all cases, `u` is the state and `p` are the parameters.
+and more. For all cases, `u` is the state which in this case are the optimization variables and `p` are the fixed parameters or data.
 
 ## Constructor
 
