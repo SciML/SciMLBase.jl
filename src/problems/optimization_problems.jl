@@ -66,7 +66,7 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 
 * `f`: the function in the problem.
 * `u0`: the initial guess for the optimization variables.
-* `p`: the constant parameters used for defining the problem. Defaults to `NullParameters`.
+* `p`: Either the constant parameters or fixed data (full batch) used in the objective or a [MLUtils](https://github.com/JuliaML/MLUtils.jl) [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader) for minibatching with stochastic optimization solvers. Defaults to `NullParameters`.
 * `lb`: the lower bounds for the optimization variables `u`.
 * `ub`: the upper bounds for the optimization variables `u`.
 * `int`: integrality indicator for `u`. If `int[i] == true`, then `u[i]` is an integer variable.
@@ -90,6 +90,10 @@ Inequality constraints are then given by making `lcons[i] != ucons[i]`. For exam
 
 Note that these vectors must be sized to match the number of constraints, with one set of conditions for each constraint.
 
+## Data handling
+
+As described above the second argument of the objective definition can take a full batch or a [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader) object for mini-batching which is useful for stochastic optimization solvers. Thus the data either as an Array or a `DataLoader` object should be passed as the third argument of the `OptimizationProblem` constructor.
+For an example of how to use this data handling, see the `Sophia` example in the [Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/optimization) or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
 """
 struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
        AbstractOptimizationProblem{iip}
