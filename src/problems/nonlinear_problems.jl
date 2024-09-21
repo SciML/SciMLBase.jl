@@ -321,3 +321,95 @@ end
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
     return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
+
+@doc doc"""
+
+Defines a nonlinear system problem.
+Documentation Page: [https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/](https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/)
+
+## Mathematical Specification of a Nonlinear Problem
+
+To define a Nonlinear Problem, you simply need to give the function ``f``
+which defines the nonlinear system:
+
+```math
+f(u,p) = 0
+```
+
+and an initial guess ``u₀`` of where `f(u, p) = 0`. `f` should be specified as `f(u, p)`
+(or in-place as `f(du, u, p)`), and `u₀` should be an AbstractArray (or number)
+whose geometry matches the desired geometry of `u`. Note that we are not limited
+to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary
+matrices / higher-dimension tensors as well.
+
+## Problem Type
+
+### Constructors
+
+```julia
+NonlinearProblem(f::NonlinearFunction, u0, p = NullParameters(); kwargs...)
+NonlinearProblem{isinplace}(f, u0, p = NullParameters(); kwargs...)
+```
+
+`isinplace` optionally sets whether the function is in-place or not. This is
+determined automatically, but not inferred.
+
+Parameters are optional, and if not given, then a `NullParameters()` singleton
+will be used, which will throw nice errors if you try to index non-existent
+parameters. Any extra keyword arguments are passed on to the solvers. For example,
+if you set a `callback` in the problem, then that `callback` will be added in
+every solve call.
+
+For specifying Jacobians and mass matrices, see the
+[NonlinearFunctions](@ref nonlinearfunctions) page.
+
+### Fields
+
+* `f`: The function in the problem.
+* `u0`: The initial guess for the root.
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `kwargs`: The keyword arguments passed on to the solvers.
+"""
+mutable struct SCCNonlinearProblem{uType, isinplace, P, F, K, PT} <:
+               AbstractNonlinearProblem{uType, isinplace}
+    f::F
+    u0::uType
+    p::P
+    problem_type::PT
+    kwargs::K
+    @add_kwonly function SCCNonlinearProblem{iip}(f::Union{AbstractVector,Tuple}, 
+            u0::Union{AbstractVector,Tuple},
+            p = NullParameters(),
+            problem_type = StandardNonlinearProblem();
+            kwargs...) where {iip}
+        if !(eltype(f) <: AbstractNonlinearFunction)
+            f = NonlinearFunction{iip}.(f)
+        end
+
+        eltype(u0) <: AbstractVector || error("!(eltype(u0) <: AbstractVector) detected. SCC states must be vector.")
+        length(f) != length(u0) && error("Number of SCCs undefined. length(f) = $(length(f)) != $(length(u0)) == length(u0)")
+        
+        if haskey(kwargs, :p)
+            error("`p` specified as a keyword argument `p = $(kwargs[:p])` to `NonlinearProblem`. This is not supported.")
+        end
+        warn_paramtype(p)
+        new{typeof(u0), iip, typeof(p), typeof(f),
+            typeof(kwargs), typeof(problem_type)}(f,
+            u0,
+            p,
+            problem_type,
+            kwargs)
+    end
+end
+
+"""
+$(SIGNATURES)
+"""
+function SCCNonlinearProblem(f::Union{AbstractVector,Tuple}, u0::Union{AbstractVector,Tuple}, p = NullParameters(); kwargs...)
+    if !(eltype(f) <: AbstractNonlinearFunction)
+        f = NonlinearFunction.(f)
+    end
+    all(isinplace,f) || all(!inplace,f) || error("All SCC Functions must match in-placeness")
+    iip = isinplace(f[1])
+    SCCNonlinearProblem{iip}(f, u0, p; kwargs...)
+end
