@@ -6,7 +6,7 @@ struct StandardDDEProblem end
 @doc doc"""
 
 Defines a delay differential equation (DDE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dde_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/dde_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/dde_types/)
 
 ## Mathematical Specification of a DDE Problem
 

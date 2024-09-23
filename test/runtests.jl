@@ -112,6 +112,9 @@ end
         @time @safetestset "Autodiff Observable Functions" begin
             include("downstream/observables_autodiff.jl")
         end
+        @time @safetestset "ODE Solution Stripping" begin
+            include("downstream/ode_stripping.jl")
+        end
     end
 
     if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")

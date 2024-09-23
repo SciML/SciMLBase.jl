@@ -908,3 +908,17 @@ end
         end
     end
 end
+
+# Issue https://github.com/SciML/ModelingToolkit.jl/issues/3004
+@testset "Continuous interpolation before discrete save" begin
+    @variables x(t)
+    @parameters c(t)
+    @mtkbuild sys = ODESystem(
+        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [1.0 => [c ~ c + 1]])
+    prob = ODEProblem(sys, [x => 0.0], (0.0, 2pi), [c => 1.0])
+    sol = solve(prob, Tsit5())
+    @test_nowarn sol(-0.1; idxs = sys.x)
+    @test_nowarn sol(-0.1; idxs = [sys.x, 2sys.x])
+    @test_throws ErrorException sol(-0.1; idxs = sys.c)
+    @test_throws ErrorException sol(-0.1; idxs = [sys.x, sys.x + sys.c])
+end

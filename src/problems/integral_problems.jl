@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines an integral problem.
-Documentation Page: https://docs.sciml.ai/Integrals/stable/
+Documentation Page: [https://docs.sciml.ai/Integrals/stable/](https://docs.sciml.ai/Integrals/stable/)
 
 ## Mathematical Specification of an Integral Problem
 

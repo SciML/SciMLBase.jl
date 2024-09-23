@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a linear system problem.
-Documentation Page: https://docs.sciml.ai/LinearSolve/stable/basics/LinearProblem/
+Documentation Page: [https://docs.sciml.ai/LinearSolve/stable/basics/LinearProblem/](https://docs.sciml.ai/LinearSolve/stable/basics/LinearProblem/)
 
 ## Mathematical Specification of a Linear Problem
 

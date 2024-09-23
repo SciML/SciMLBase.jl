@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a stochastic delay differential equation (SDDE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/
+Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/)
 
 ## Mathematical Specification of a Stochastic Delay Differential Equation (SDDE) Problem
 

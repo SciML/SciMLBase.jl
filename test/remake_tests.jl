@@ -284,3 +284,33 @@ newprob = remake(sdeprob; g = noise2!)
 @test newprob.f isa SDEFunction
 tmp = newprob.g([0.0, 0.0, 0.0], [1.0, 2.0, 3.0], nothing, 0.0)
 @test tmp≈[0.2, 0.4, 0.6] atol=1e-6
+
+struct Remake_Test1
+    p::Any
+    args::Any
+    kwargs::Any
+end
+Remake_Test1(args...; p, kwargs...) = Remake_Test1(p, args, kwargs)
+a = Remake_Test1(p = 1)
+@test @inferred remake(a, p = 2) == Remake_Test1(p = 2)
+@test @inferred remake(a, args = 1) == Remake_Test1(1, p = 1)
+@test @inferred remake(a, kwargs = (; a = 1)) == Remake_Test1(p = 1, a = 1)
+
+@testset "fill_u0 and fill_p ignore identical variables with different names" begin
+    sys = SymbolCache(Dict(:x => 1, :x2 => 1, :y => 2), Dict(:a => 1, :a2 => 1, :b => 2),
+        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4))
+    function foo(du, u, p, t)
+        du .= u .* p
+    end
+    prob = ODEProblem(ODEFunction(foo; sys), [1.5, 2.5], (0.0, 1.0), [3.5, 4.5])
+    u0 = Dict(:x2 => 2)
+    newu0 = SciMLBase.fill_u0(prob, u0; defs = default_values(sys))
+    @test length(newu0) == 2
+    @test get(newu0, :x2, 0) == 2
+    @test get(newu0, :y, 0) == 2.5
+    p = Dict(:a2 => 3)
+    newp = SciMLBase.fill_p(prob, p; defs = default_values(sys))
+    @test length(newp) == 2
+    @test get(newp, :a2, 0) == 3
+    @test get(newp, :b, 0) == 4.5
+end
