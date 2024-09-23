@@ -619,7 +619,7 @@ function Base.showerror(io::IO, e::LazyInterpolationException)
         " uses lazy interpolation, which is incompatible with `strip_solution`.")
 end
 
-function strip_solution(sol::ODESolution)
+function strip_solution(sol::ODESolution; strip_alg = false)
     if has_lazy_interpolation(sol.alg)
         throw(LazyInterpolationException(nameof(typeof(sol.alg))))
     end
@@ -627,6 +627,12 @@ function strip_solution(sol::ODESolution)
     interp = strip_interpolation(sol.interp)
 
     @reset sol.interp = interp
-    @reset sol.prob = nothing
-    return @set sol.alg = nothing
+
+    @reset sol.prob = (; p = nothing)
+
+    if strip_alg
+        @reset sol.alg = nothing
+    end
+
+    return sol
 end
