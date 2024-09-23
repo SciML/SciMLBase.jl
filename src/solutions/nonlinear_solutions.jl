@@ -70,7 +70,7 @@ const SteadyStateSolution = NonlinearSolution
 
 get_p(p::AbstractNonlinearSolution) = p.prob.p
 
-function build_solution(prob::AbstractNonlinearProblem,
+function build_solution(prob::Union{AbstractNonlinearProblem, SCCNonlinearProblem},
         alg, u, resid; calculate_error = true,
         retcode = ReturnCode.Default,
         original = nothing,

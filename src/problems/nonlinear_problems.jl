@@ -370,46 +370,6 @@ For specifying Jacobians and mass matrices, see the
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-mutable struct SCCNonlinearProblem{uType, isinplace, P, F, K, PT} <:
-               AbstractNonlinearProblem{uType, isinplace}
-    f::F
-    u0::uType
-    p::P
-    problem_type::PT
-    kwargs::K
-    @add_kwonly function SCCNonlinearProblem{iip}(f::Union{AbstractVector,Tuple}, 
-            u0::Union{AbstractVector,Tuple},
-            p = NullParameters(),
-            problem_type = StandardNonlinearProblem();
-            kwargs...) where {iip}
-        if !(eltype(f) <: AbstractNonlinearFunction)
-            f = NonlinearFunction{iip}.(f)
-        end
-
-        eltype(u0) <: AbstractVector || error("!(eltype(u0) <: AbstractVector) detected. SCC states must be vector.")
-        length(f) != length(u0) && error("Number of SCCs undefined. length(f) = $(length(f)) != $(length(u0)) == length(u0)")
-        
-        if haskey(kwargs, :p)
-            error("`p` specified as a keyword argument `p = $(kwargs[:p])` to `NonlinearProblem`. This is not supported.")
-        end
-        warn_paramtype(p)
-        new{typeof(u0), iip, typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f,
-            u0,
-            p,
-            problem_type,
-            kwargs)
-    end
-end
-
-"""
-$(SIGNATURES)
-"""
-function SCCNonlinearProblem(f::Union{AbstractVector,Tuple}, u0::Union{AbstractVector,Tuple}, p = NullParameters(); kwargs...)
-    if !(eltype(f) <: AbstractNonlinearFunction)
-        f = NonlinearFunction.(f)
-    end
-    all(isinplace,f) || all(!inplace,f) || error("All SCC Functions must match in-placeness")
-    iip = isinplace(f[1])
-    SCCNonlinearProblem{iip}(f, u0, p; kwargs...)
+mutable struct SCCNonlinearProblem{P}
+    probs::P
 end
