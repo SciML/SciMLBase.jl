@@ -633,6 +633,6 @@ function strip_solution(sol::ODESolution; strip_alg = false)
     if strip_alg
         @reset sol.alg = nothing
     end
-    
+
     return sol
 end

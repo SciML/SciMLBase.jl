@@ -21,4 +21,3 @@ stripped_sol = SciMLBase.strip_solution(sol)
 @test isnothing(stripped_sol.interp.cache.jac_config)
 
 @test isnothing(stripped_sol.interp.cache.grad_config)
-
