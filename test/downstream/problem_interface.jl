@@ -116,10 +116,19 @@ noise_sys = complete(noise_sys)
 sprob = SDEProblem(noise_sys, u0, (0.0, 100.0), p)
 u0
 
+getσ1 = getp(noise_sys, σ)
+getσ2 = getp(noise_sys, sys.σ)
+getσ3 = getp(noise_sys, :σ)
 @test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == sprob.ps[σ] == sprob.ps[sys.σ] ==
       sprob.ps[:σ] == 28.0
+getρ1 = getp(noise_sys, ρ)
+getρ2 = getp(noise_sys, sys.ρ)
+getρ3 = getp(noise_sys, :ρ)
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
       sprob.ps[:ρ] == 10.0
+getβ1 = getp(noise_sys, β)
+getβ2 = getp(noise_sys, sys.β)
+getβ3 = getp(noise_sys, :β)
 @test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == sprob.ps[β] == sprob.ps[sys.β] ==
       sprob.ps[:β] == 8 / 3
 
@@ -127,15 +136,18 @@ u0
 @test sprob[y] == sprob[noise_sys.y] == sprob[:y] == 0.0
 @test sprob[z] == sprob[noise_sys.z] == sprob[:z] == 0.0
 
+setσ = setp(noise_sys, σ)
 setσ(sprob, 10.0)
 @test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == sprob.ps[σ] == sprob.ps[sys.σ] ==
       sprob.ps[:σ] == 10.0
+setρ = setp(noise_sys, sys.ρ)
 setρ(sprob, 20.0)
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
       sprob.ps[:ρ] == 20.0
 setp(noise_sys, noise_sys.ρ)(sprob, 25.0)
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
       sprob.ps[:ρ] == 25.0
+setβ = setp(noise_sys, :β)
 setβ(sprob, 30.0)
 @test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == sprob.ps[β] == sprob.ps[sys.β] ==
       sprob.ps[:β] == 30.0
