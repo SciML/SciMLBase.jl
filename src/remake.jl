@@ -112,6 +112,7 @@ function remake(prob::ODEProblem; f = missing,
         p = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
+        build_initializeprob = true,
         use_defaults = false,
         _kwargs...)
     if tspan === missing
@@ -123,8 +124,12 @@ function remake(prob::ODEProblem; f = missing,
     iip = isinplace(prob)
 
     if f === missing
-        initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap = remake_initializeprob(
-            prob.f.sys, prob.f, u0, tspan[1], p)
+        if build_initializeprob
+            initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap = remake_initializeprob(
+                prob.f.sys, prob.f, u0, tspan[1], p)
+        else
+            initializeprob = update_initializeprob! = initializeprobmap = initializeprobpmap = nothing
+        end
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
