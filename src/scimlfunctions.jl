@@ -290,8 +290,8 @@ the usage of `f`. These include:
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
 - `nlfunc`: a `NonlinearFunction`
-- `nl_state_compres`: maps u->nlfunc_u
-- `nl_state_decompres`: maps nlfunc_u->u
+- `nl_state_compress`: maps u->nlfunc_u
+- `nl_state_decompress`: maps nlfunc_u->u
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -425,8 +425,8 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     initializeprob::IProb
     initializeprobmap::IProbMap
     nlfunc::NLF
-    nl_state_compres::NLSC
-    nl_state_decompres::NLISC
+    nl_state_compress::NLSC
+    nl_state_decompress::NLISC
 end
 
 @doc doc"""
@@ -545,8 +545,8 @@ struct SplitFunction{
     initializeprob::IProb
     initializeprobmap::IProbMap
     nlfunc::NLF
-    nl_state_compres::NLSC
-    nl_state_decompres::NLISC
+    nl_state_compress::NLSC
+    nl_state_decompress::NLISC
 end
 
 @doc doc"""
@@ -2426,8 +2426,8 @@ function ODEFunction{iip, specialize}(f;
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
         initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
         nlfunc = __has_nlfunc(f) ? f.nlfunc : nothing,
-        nl_state_compres = __has_nl_state_compres(f) ? f.nl_state_compres : identity,
-        nl_state_decompres = __has_nl_state_decompres(f) ? f.nl_state_decompres : identity
+        nl_state_compress = __has_nl_state_compress(f) ? f.nl_state_compress : identity,
+        nl_state_decompress = __has_nl_state_decompress(f) ? f.nl_state_decompress : identity
 ) where {iip,
         specialize
 }
@@ -2489,7 +2489,7 @@ function ODEFunction{iip, specialize}(f;
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initializeprob, initializeprobmap,
-            nlfunc, nl_state_compres, nl_state_decompres)
+            nlfunc, nl_state_compress, nl_state_decompress)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2501,12 +2501,12 @@ function ODEFunction{iip, specialize}(f;
             typeof(sys), typeof(initializeprob),
             typeof(initializeprobmap),
             typeof(nlfunc),
-            typeof(nl_state_compres),
-            typeof(nl_state_decompres)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(nl_state_compress),
+            typeof(nl_state_decompress)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initializeprob, initializeprobmap,
-            nlfunc, nl_state_compres, nl_state_decompres)
+            nlfunc, nl_state_compress, nl_state_decompress)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2518,12 +2518,12 @@ function ODEFunction{iip, specialize}(f;
             typeof(sys), typeof(initializeprob),
             typeof(initializeprobmap),
             typeof(nlfunc),
-            typeof(nl_state_compres),
-            typeof(nl_state_decompres)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(nl_state_compress),
+            typeof(nl_state_decompress)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initializeprob, initializeprobmap,
-            nlfunc, nl_state_compres, nl_state_decompres)
+            nlfunc, nl_state_compress, nl_state_decompress)
     end
 end
 
@@ -2546,7 +2546,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
             f.observed, f.colorvec, f.sys, f.initializeprob, f.initializeprobmap,
-            f.nlfunc, f.nl_state_compres, f.nl_state_decompres)
+            f.nlfunc, f.nl_state_compress, f.nl_state_decompress)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
@@ -2557,13 +2557,13 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.sys), typeof(f.initializeprob),
             typeof(f.initializeprobmap),
             typeof(f.nlfunc),
-            typeof(f.nl_state_compres),
-            typeof(f.nl_state_decompres)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.nl_state_compress),
+            typeof(f.nl_state_decompress)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
             f.observed, f.colorvec, f.sys, f.initializeprob,
             f.initializeprobmap,
-            f.nlfunc, f.nl_state_compres, f.nl_state_decompres)
+            f.nlfunc, f.nl_state_compress, f.nl_state_decompress)
     end
 end
 
@@ -4365,8 +4365,8 @@ __has_resid_prototype(f) = isdefined(f, :resid_prototype)
 __has_initializeprob(f) = isdefined(f, :initializeprob)
 __has_initializeprobmap(f) = isdefined(f, :initializeprobmap)
 __has_nlfunc(f) = isdefined(f, :nl_func)
-__has_nl_state_compres(f) = isdefined(f, :nl_state_compres)
-__has_nl_state_decompres(f) = isdefined(f, :nl_state_decompres)
+__has_nl_state_compress(f) = isdefined(f, :nl_state_compress)
+__has_nl_state_decompress(f) = isdefined(f, :nl_state_decompress)
 
 
 # compatibility
