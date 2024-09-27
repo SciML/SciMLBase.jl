@@ -549,9 +549,16 @@ function fill_u0(prob, u0; defs = nothing, use_defaults = false)
     for (k, v) in u0
         idx = variable_index(prob, k)
         idx === nothing && continue
-        sym_to_idx[k] = idx
-        idx_to_sym[idx] = k
-        idx_to_val[idx] = v
+        if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
+            idx = (idx,)
+            k = (k,)
+            v = (v,)
+        end
+        for (kk, vv, ii) in zip(k, v, idx)
+            sym_to_idx[kk] = ii
+            idx_to_sym[ii] = kk
+            idx_to_val[ii] = vv
+        end
     end
     for sym in vsyms
         haskey(sym_to_idx, sym) && continue
@@ -586,9 +593,16 @@ function fill_p(prob, p; defs = nothing, use_defaults = false)
     for (k, v) in p
         idx = parameter_index(prob, k)
         idx === nothing && continue
-        sym_to_idx[k] = idx
-        idx_to_sym[idx] = k
-        idx_to_val[idx] = v
+        if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
+            idx = (idx,)
+            k = (k,)
+            v = (v,)
+        end
+        for (kk, vv, ii) in zip(k, v, idx)
+            sym_to_idx[kk] = ii
+            idx_to_sym[ii] = kk
+            idx_to_val[ii] = vv
+        end
     end
     for sym in psyms
         haskey(sym_to_idx, sym) && continue
