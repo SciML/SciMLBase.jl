@@ -405,7 +405,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV, SYS, IProb, IProbMap,
-    NLF<:Union{Nothing, NonlinearFunction}, NLSC, NLISC} <: AbstractODEFunction{iip}
+    NLF, NLSC, NLISC} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -524,7 +524,7 @@ information on generating the SplitFunction from this symbolic engine.
 struct SplitFunction{
     iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
     TPJ, O, TCV, SYS, IProb, IProbMap,
-    NLF<:Union{Nothing, NonlinearFunction}, NLSC, NLISC} <: AbstractODEFunction{iip}
+    NLF, NLSC, NLISC} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -2424,9 +2424,9 @@ function ODEFunction{iip, specialize}(f;
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing
-        nlfunc = __has_nlfunc(f) ? f.nlfunc : nothing
-        nl_state_compres = __has_nl_state_compres(f) ? f.nl_state_compres : identity
+        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
+        nlfunc = __has_nlfunc(f) ? f.nlfunc : nothing,
+        nl_state_compres = __has_nl_state_compres(f) ? f.nl_state_compres : identity,
         nl_state_decompres = __has_nl_state_decompres(f) ? f.nl_state_decompres : identity
 ) where {iip,
         specialize
@@ -2485,7 +2485,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,typeof(_colorvec),
             typeof(sys), Any, Any,
-            Union{Nothing, NonlinearFunction}, Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
+            Any, Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initializeprob, initializeprobmap,
@@ -2540,8 +2540,8 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any,
             Any, typeof(f.colorvec),
-            typeof(f.sys), Any, Any
-            Union{Nothing, NonlinearFunction}, Any, Any
+            typeof(f.sys), Any, Any,
+            Any, Any, Any
             }(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
@@ -4364,6 +4364,7 @@ __has_analytic_full(f) = isdefined(f, :analytic_full)
 __has_resid_prototype(f) = isdefined(f, :resid_prototype)
 __has_initializeprob(f) = isdefined(f, :initializeprob)
 __has_initializeprobmap(f) = isdefined(f, :initializeprobmap)
+__has_nlfunc(f) = isdefined(f, :nl_func)
 __has_nl_state_compres(f) = isdefined(f, :nl_state_compres)
 __has_nl_state_decompres(f) = isdefined(f, :nl_state_decompres)
 
