@@ -26,7 +26,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 BoundaryValueDiffEq = "5"
-DiffEqCallbacks = "3"
+DiffEqCallbacks = "3, 4"
 ForwardDiff = "0.10"
 JumpProcesses = "9.10"
 ModelingToolkit = "9"
