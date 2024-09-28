@@ -46,7 +46,7 @@ callback = (state, loss_val) -> false
 where `state` is a `OptimizationState` and stores information for the current
 iteration of the solver and `loss_val` is loss/objective value. For more
 information about the fields of the `state` look at the `OptimizationState`
-documentation. The callback should return a Boolean value, and the default 
+documentation. The callback should return a Boolean value, and the default
 should be `false`, such that the optimization gets stopped if it returns `true`.
 
 ### Callback Example
