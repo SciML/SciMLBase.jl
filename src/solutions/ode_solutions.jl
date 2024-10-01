@@ -354,6 +354,28 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     return DiffEqArray(u, t, p, sol; discretes)
 end
 
+struct DDESolutionHistoryWrapper{T}
+    sol::T
+end
+
+function (w::DDESolutionHistoryWrapper)(p, t; idxs = nothing)
+    w.sol(t; idxs)
+end
+function (w::DDESolutionHistoryWrapper)(out, p, t; idxs = nothing)
+    w.sol(out, t; idxs)
+end
+function (w::DDESolutionHistoryWrapper)(p, t, deriv::Type{Val{i}}; idxs = nothing) where {i}
+    w.sol(t, deriv; idxs)
+end
+function (w::DDESolutionHistoryWrapper)(
+        out, p, t, deriv::Type{Val{i}}; idxs = nothing) where {i}
+    w.sol(out, t, deriv; idxs)
+end
+
+function SymbolicIndexingInterface.get_history_function(sol::ODESolution)
+    DDESolutionHistoryWrapper(sol)
+end
+
 # public API, used by MTK
 """
     create_parameter_timeseries_collection(sys, ps, tspan)
