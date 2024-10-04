@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
+using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using Plots: Plots, plot
 
@@ -168,5 +169,134 @@ sol10 = sol(0.1, idxs = 2)
         if !(idx[1] isa Tuple || idx[2] isa Tuple)
             @test_nowarn plot(sol; idxs = idx)
         end
+    end
+end
+
+@testset "Saved subsystem" begin
+    @testset "Pure ODE" begin
+        @variables x(t) y(t)
+        @parameters p
+        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t)
+        @test length(unknowns(sys)) == 2
+        xidx = variable_index(sys, x)
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0), [p => 0.5])
+
+        @test SciMLBase.SavedSubsystem(sys, prob.p, []) ===
+              SciMLBase.SavedSubsystem(sys, prob.p, nothing) === nothing
+        @test SciMLBase.SavedSubsystem(sys, prob.p, [x, y]) === nothing
+        @test begin
+            ss1 = SciMLBase.SavedSubsystem(sys, prob.p, [x])
+            ss2 = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
+            ss1.state_map == ss2.state_map
+        end
+
+        sol = solve(prob, Tsit5(); save_idxs = xidx)
+        subsys = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
+        xvals = sol[x]
+        # FIXME: hack for save_idxs
+        SciMLBase.@reset sol.saved_subsystem = subsys
+        @test sol[x] == xvals
+        @test is_parameter(sol, p)
+        @test parameter_index(sol, p) == parameter_index(sys, p)
+        @test isequal(only(parameter_symbols(sol)), p)
+        @test is_independent_variable(sol, t)
+
+        tmp = copy(prob.u0)
+        tmp[xidx] = xvals[2]
+        @test state_values(sol, 2) == tmp
+        @test state_values(sol) == [state_values(sol, i) for i in 1:length(sol)]
+    end
+
+    @testset "ODE with callbacks" begin
+        @variables x(t) y(t)
+        @parameters p q(t) r(t) s(t) u(t)
+        evs = [0.1 => [q ~ q + 1, s ~ s - 1], 0.3 => [r ~ 2r, u ~ u / 2]]
+        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x], t, [x, y],
+            [p, q, r, s, u], discrete_events = evs)
+        @test length(unknowns(sys)) == 2
+        @test length(parameters(sys)) == 5
+        @test is_timeseries_parameter(sys, q)
+        @test is_timeseries_parameter(sys, r)
+        xidx = variable_index(sys, x)
+        qidx = parameter_index(sys, q)
+        qpidx = timeseries_parameter_index(sys, q)
+        ridx = parameter_index(sys, r)
+        rpidx = timeseries_parameter_index(sys, r)
+        sidx = parameter_index(sys, s)
+        uidx = parameter_index(sys, u)
+
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
+            [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
+
+        @test SciMLBase.SavedSubsystem(sys, prob.p, [x, y, q, r, s, u]) === nothing
+
+        sol = solve(prob; save_idxs = xidx)
+        xvals = sol[x]
+        subsys = SciMLBase.SavedSubsystem(sys, prob.p, [x, q, r])
+        qvals = sol.ps[q]
+        rvals = sol.ps[r]
+        # FIXME: hack for save_idxs
+        SciMLBase.@reset sol.saved_subsystem = subsys
+        discq = DiffEqArray(SciMLBase.TupleOfArraysWrapper.(tuple.(Base.vect.(qvals))),
+            sol.discretes[qpidx.timeseries_idx].t, (1, 1))
+        discr = DiffEqArray(SciMLBase.TupleOfArraysWrapper.(tuple.(Base.vect.(rvals))),
+            sol.discretes[rpidx.timeseries_idx].t, (1, 1))
+        SciMLBase.@reset sol.discretes.collection[qpidx.timeseries_idx] = discq
+        SciMLBase.@reset sol.discretes.collection[rpidx.timeseries_idx] = discr
+
+        @test sol[x] == xvals
+
+        @test all(Base.Fix1(is_parameter, sol), [p, q, r, s, u])
+        @test all(Base.Fix1(is_timeseries_parameter, sol), [q, r])
+        @test all(!Base.Fix1(is_timeseries_parameter, sol), [s, u])
+        @test timeseries_parameter_index(sol, q) ==
+              ParameterTimeseriesIndex(qpidx.timeseries_idx, (1, 1))
+        @test timeseries_parameter_index(sol, r) ==
+              ParameterTimeseriesIndex(rpidx.timeseries_idx, (1, 1))
+        @test sol[q] == qvals
+        @test sol[r] == rvals
+    end
+
+    @testset "SavedSubsystemWithFallback" begin
+        @variables x(t) y(t)
+        @parameters p q(t) r(t) s(t) u(t)
+        evs = [0.1 => [q ~ q + 1, s ~ s - 1], 0.3 => [r ~ 2r, u ~ u / 2]]
+        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
+            [p, q, r, s, u], discrete_events = evs)
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
+            [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
+        ss = SciMLBase.SavedSubsystem(sys, prob.p, [x, q, s, r])
+        sswf = SciMLBase.SavedSubsystemWithFallback(ss, sys)
+        xidx = variable_index(sys, x)
+        qidx = parameter_index(sys, q)
+        qpidx = timeseries_parameter_index(sys, q)
+        ridx = parameter_index(sys, r)
+        rpidx = timeseries_parameter_index(sys, r)
+        sidx = parameter_index(sys, s)
+        uidx = parameter_index(sys, u)
+        @test qpidx.timeseries_idx in ss.identity_partitions
+        @test !(rpidx.timeseries_idx in ss.identity_partitions)
+        @test timeseries_parameter_index(sswf, q) == timeseries_parameter_index(sys, q)
+        @test timeseries_parameter_index(sswf, s) == timeseries_parameter_index(sys, s)
+
+        ptc = SciMLBase.create_parameter_timeseries_collection(sswf, prob.p, prob.tspan)
+        origptc = SciMLBase.create_parameter_timeseries_collection(sys, prob.p, prob.tspan)
+
+        @test ptc[qpidx.timeseries_idx] == origptc[qpidx.timeseries_idx]
+        @test eltype(ptc[rpidx.timeseries_idx].u) <: SciMLBase.TupleOfArraysWrapper
+        vals = SciMLBase.get_saveable_values(sswf, prob.p, qpidx.timeseries_idx)
+        origvals = SciMLBase.get_saveable_values(sys, prob.p, qpidx.timeseries_idx)
+        @test typeof(vals) == typeof(origvals)
+        @test !(vals isa SciMLBase.TupleOfArraysWrapper)
+
+        vals = SciMLBase.get_saveable_values(sswf, prob.p, rpidx.timeseries_idx)
+        @test vals isa SciMLBase.TupleOfArraysWrapper
+        @test vals.x isa Tuple{Vector{Float64}}
+        @test vals.x[1][1] == prob.ps[r]
+
+        vals[(1, 1)] = 2prob.ps[r]
+        newp = with_updated_parameter_timeseries_values(sswf,
+            parameter_values(ptc), rpidx.timeseries_idx => vals)
+        @test newp[ridx] == 2prob.ps[r]
     end
 end

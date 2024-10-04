@@ -724,6 +724,7 @@ include("problems/problem_interface.jl")
 include("problems/optimization_problems.jl")
 
 include("clock.jl")
+include("solutions/save_idxs.jl")
 include("solutions/basic_solutions.jl")
 include("solutions/nonlinear_solutions.jl")
 include("solutions/ode_solutions.jl")

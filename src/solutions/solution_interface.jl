@@ -59,6 +59,53 @@ SymbolicIndexingInterface.is_time_dependent(::AbstractNoTimeSolution) = false
 SymbolicIndexingInterface.constant_structure(::AbstractSolution) = true
 SymbolicIndexingInterface.state_values(A::AbstractNoTimeSolution) = A.u
 
+function get_saved_subsystem(sol::T) where {T <: AbstractTimeseriesSolution}
+    hasfield(T, :saved_subsystem) ? sol.saved_subsystem : nothing
+end
+
+for fn in [is_timeseries_parameter, timeseries_parameter_index,
+    with_updated_parameter_timeseries_values, get_saveable_values]
+    fname = nameof(fn)
+    mod = parentmodule(fn)
+
+    @eval function $(mod).$(fname)(sol::AbstractTimeseriesSolution, args...)
+        ss = get_saved_subsystem(sol)
+        if ss === nothing
+            $(fn)(symbolic_container(sol), args...)
+        else
+            $(fn)(SavedSubsystemWithFallback(ss, symbolic_container(sol)), args...)
+        end
+    end
+end
+
+function SymbolicIndexingInterface.state_values(sol::AbstractTimeseriesSolution, i)
+    ss = get_saved_subsystem(sol)
+    ss === nothing && return sol.u[i]
+
+    original = state_values(sol.prob)
+    saved = sol.u[i]
+    if !(saved isa AbstractArray)
+        saved = [saved]
+    end
+    idxs = similar(saved, eltype(keys(ss.state_map)))
+    for (k, v) in ss.state_map
+        idxs[v] = k
+    end
+    replaced = remake_buffer(sol, original, idxs, saved)
+    return replaced
+end
+
+function SymbolicIndexingInterface.state_values(sol::AbstractTimeseriesSolution)
+    ss = get_saved_subsystem(sol)
+    ss === nothing && return sol.u
+    return map(Base.Fix1(state_values, sol), eachindex(sol.u))
+end
+
+# Ambiguity resolution
+function SymbolicIndexingInterface.state_values(sol::AbstractTimeseriesSolution, ::Colon)
+    state_values(sol)
+end
+
 Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, ::Colon)
     return A.u[:]
 end
