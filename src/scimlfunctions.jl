@@ -1807,22 +1807,17 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 
 ## Positional Arguments
 
-- `f(u,p,args...)`: the function to optimize. `u` are the optimization variables and `p` are parameters used in definition of
-the objective, even if no such parameters are used in the objective it should be an argument in the function. This can also take
-any additional arguments that are relevant to the objective function, for example minibatches used in machine learning,
-take a look at the minibatching tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/). This should return
-a scalar, the loss value, as the first return output and if any additional outputs are returned, they will be passed to the `callback`
-function described in [Callback Functions](https://docs.sciml.ai/Optimization/stable/API/solve/#Common-Solver-Options-(Solve-Keyword-Arguments)).
+- `f(u,p)`: the function to optimize. `u` are the optimization variables and `p` are fixed parameters or data used in the objective, 
+even if no such parameters are used in the objective it should be an argument in the function. For minibatching `p` can be used to pass in
+a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/) to see how to do it. 
+This should return a scalar, the loss value, as the return output.
 - `adtype`: see the Defining Optimization Functions via AD section below.
 
 ## Keyword Arguments
 
-- `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`. If `f` takes additional arguments
-    then `grad(G,u,p,args...)` or `G=grad(u,p,args...)` should be used.
-- `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`. If `f` takes additional arguments
-    then `hess(H,u,p,args...)` or `H=hess(u,p,args...)` should be used.
-- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``. If `f` takes additional arguments
-    then `hv(Hv,u,v,p,args...)` or `Hv=hv(u,v,p, args...)` should be used.
+- `grad(G,u,p)` or `G=grad(u,p)`: the gradient of `f` with respect to `u`.
+- `hess(H,u,p)` or `H=hess(u,p)`: the Hessian of `f` with respect to `u`.
+- `hv(Hv,u,v,p)` or `Hv=hv(u,v,p)`: the Hessian-vector product ``(d^2 f / du^2) v``.
 - `cons(res,u,p)` or `res=cons(u,p)` : the constraints function, should mutate the passed `res` array
     with value of the `i`th constraint, evaluated at the current values of variables
     inside the optimization routine. This takes just the function evaluations
