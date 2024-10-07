@@ -314,3 +314,13 @@ a = Remake_Test1(p = 1)
     @test get(newp, :a2, 0) == 3
     @test get(newp, :b, 0) == 4.5
 end
+
+@testset "value of `nothing` is ignored" begin
+    sys = SymbolCache(Dict(:x => 1, :x2 => 1, :y => 2), Dict(:a => 1, :a2 => 1, :b => 2),
+        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4))
+    function foo(du, u, p, t)
+        du .= u .* p
+    end
+    prob = ODEProblem(ODEFunction(foo; sys), [1.5, 2.5], (0.0, 1.0), [3.5, 4.5])
+    @test_nowarn remake(prob; u0 = [:x => nothing], p = [:a => nothing])
+end
