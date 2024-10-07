@@ -14,11 +14,11 @@ function lotka_volterra(; name = name)
 end
 
 @named lotka_volterra_sys = lotka_volterra()
-lotka_volterra_sys = structural_simplify(lotka_volterra_sys)
+lotka_volterra_sys = structural_simplify(lotka_volterra_sys, split = false)
 prob = ODEProblem(lotka_volterra_sys, [], (0.0, 10.0), [])
 sol = solve(prob, Tsit5(), reltol = 1e-6, abstol = 1e-6)
-u0 = [1.0 1.0]
-p = [1.5 1.0 1.0 1.0]
+u0 = [1.0, 1.0]
+p = [1.5, 1.0, 1.0, 1.0]
 
 function sum_of_solution(u0, p)
     _prob = remake(prob, u0 = u0, p = p)

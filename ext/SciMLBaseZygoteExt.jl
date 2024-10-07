@@ -106,11 +106,12 @@ end
         if is_observed(VA, sym)
             f = observed(VA, sym)
             p = parameter_values(VA)
-            tunables, _, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
+            tunables, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
             u = state_values(VA)
             t = current_time(VA)
             y, back = Zygote.pullback(u, tunables) do u, tunables
-                f.(u, Ref(tunables), t)
+                _p = repack(tunables)
+                f.(u, Ref(_p), t)
             end
             gs = back(Δ)
             (gs[1], nothing)
