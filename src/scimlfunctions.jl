@@ -402,7 +402,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV,
-    SYS, IProb, IProbMap} <: AbstractODEFunction{iip}
+    SYS, IProb, UIProb, IProbMap, IProbPmap} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -420,7 +420,9 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     colorvec::TCV
     sys::SYS
     initializeprob::IProb
+    update_initializeprob!::UIProb
     initializeprobmap::IProbMap
+    initializeprobpmap::IProbPmap
 end
 
 @doc doc"""
@@ -518,7 +520,7 @@ information on generating the SplitFunction from this symbolic engine.
 struct SplitFunction{
     iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
     TPJ, O,
-    TCV, SYS, IProb, IProbMap} <: AbstractODEFunction{iip}
+    TCV, SYS, IProb, UIProb, IProbMap, IProbPmap} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -537,7 +539,9 @@ struct SplitFunction{
     colorvec::TCV
     sys::SYS
     initializeprob::IProb
+    update_initializeprob!::UIProb
     initializeprobmap::IProbMap
+    initializeprobpmap::IProbPmap
 end
 
 @doc doc"""
@@ -1506,7 +1510,7 @@ automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
 struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, O, TCV,
-    SYS, IProb, IProbMap} <:
+    SYS, IProb, UIProb, IProbMap, IProbPmap} <:
        AbstractDAEFunction{iip}
     f::F
     analytic::Ta
@@ -1523,7 +1527,9 @@ struct DAEFunction{iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TP
     colorvec::TCV
     sys::SYS
     initializeprob::IProb
+    update_initializeprob!::UIProb
     initializeprobmap::IProbMap
+    initializeprobpmap::IProbPmap
 end
 
 """
@@ -2410,7 +2416,10 @@ function ODEFunction{iip, specialize}(f;
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing
+        update_initializeprob! = __has_update_initializeprob!(f) ?
+                                 f.update_initializeprob! : nothing,
+        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
+        initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing
 ) where {iip,
         specialize
 }
@@ -2468,10 +2477,11 @@ function ODEFunction{iip, specialize}(f;
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,
             typeof(_colorvec),
-            typeof(sys), Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), Any, Any, Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap)
+            observed, _colorvec, sys, initializeprob, update_initializeprob!, initializeprobmap,
+            initializeprobpmap)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2480,11 +2490,13 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initializeprob),
-            typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), typeof(initializeprob), typeof(update_initializeprob!),
+            typeof(initializeprobmap), typeof(initializeprobpmap)}(_f, mass_matrix,
+            analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap)
+            observed, _colorvec, sys, initializeprob, update_initializeprob!, initializeprobmap,
+            initializeprobpmap)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2493,11 +2505,13 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initializeprob),
-            typeof(initializeprobmap)}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), typeof(initializeprob), typeof(update_initializeprob!),
+            typeof(initializeprobmap),
+            typeof(initializeprobpmap)}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap)
+            observed, _colorvec, sys, initializeprob, update_initializeprob!, initializeprobmap,
+            initializeprobpmap)
     end
 end
 
@@ -2514,10 +2528,13 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any,
             Any, typeof(f.colorvec),
-            typeof(f.sys), Any, Any}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.sys), Any, Any, Any, Any}(
+            newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys, f.initializeprob, f.initializeprobmap)
+            f.observed, f.colorvec, f.sys, f.initializeprob,
+            f.update_initializeprob!, f.initializeprobmap,
+            f.initializeprobpmap)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
@@ -2525,12 +2542,13 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
             typeof(f.paramjac),
             typeof(f.observed), typeof(f.colorvec),
-            typeof(f.sys), typeof(f.initializeprob),
-            typeof(f.initializeprobmap)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.sys), typeof(f.initializeprob), typeof(f.update_initializeprob!),
+            typeof(f.initializeprobmap),
+            typeof(f.initializeprobpmap)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys, f.initializeprob,
-            f.initializeprobmap)
+            f.observed, f.colorvec, f.sys, f.initializeprob, f.update_initializeprob!,
+            f.initializeprobmap, f.initializeprobpmap)
     end
 end
 
@@ -2632,7 +2650,8 @@ end
 
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, sparsity, Wfact, Wfact_t, paramjac,
-        observed, colorvec, sys, initializeprob, initializeprobmap)
+        observed, colorvec, sys, initializeprob, update_initializeprob!,
+        initializeprobmap, initializeprobpmap)
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -2646,11 +2665,12 @@ end
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
-        typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(
+        typeof(sys), typeof(initializeprob), typeof(update_initializeprob!), typeof(initializeprobmap),
+        typeof(initializeprobpmap)}(
         f1, f2, mass_matrix,
         cache, analytic, tgrad, jac, jvp, vjp,
         jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-        initializeprob, initializeprobmap)
+        initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
 end
 function SplitFunction{iip, specialize}(f1, f2;
         mass_matrix = __has_mass_matrix(f1) ?
@@ -2680,7 +2700,10 @@ function SplitFunction{iip, specialize}(f1, f2;
                    nothing,
         sys = __has_sys(f1) ? f1.sys : nothing,
         initializeprob = __has_initializeprob(f1) ? f1.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f1) ? f1.initializeprobmap : nothing
+        update_initializeprob! = __has_update_initializeprob!(f1) ?
+                                 f1.update_initializeprob! : nothing,
+        initializeprobmap = __has_initializeprobmap(f1) ? f1.initializeprobmap : nothing,
+        initializeprobpmap = __has_initializeprobpmap(f1) ? f1.initializeprobpmap : nothing
 ) where {iip,
         specialize
 }
@@ -2690,12 +2713,13 @@ function SplitFunction{iip, specialize}(f1, f2;
 
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
+            Any, Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype,
             sparsity, Wfact, Wfact_t, paramjac,
-            observed, colorvec, sys, initializeprob, initializeprobmap)
+            observed, colorvec, sys, initializeprob.update_initializeprob!, initializeprobmap,
+            initializeprobpmap, initializeprobpmap)
     else
         SplitFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
             typeof(_func_cache), typeof(analytic),
@@ -2703,11 +2727,13 @@ function SplitFunction{iip, specialize}(f1, f2;
             typeof(jac_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(colorvec),
-            typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(f1, f2,
+            typeof(sys), typeof(initializeprob), typeof(update_initializeprob!),
+            typeof(initializeprobmap),
+            typeof(initializeprobpmap)}(f1, f2,
             mass_matrix, _func_cache, analytic, tgrad, jac,
             jvp, vjp, jac_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-            initializeprob, initializeprobmap)
+            initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
     end
 end
 
@@ -3333,7 +3359,10 @@ function DAEFunction{iip, specialize}(f;
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
-        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing) where {
+        update_initializeprob! = __has_update_initializeprob!(f) ?
+                                 f.update_initializeprob! : nothing,
+        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
+        initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing) where {
         iip,
         specialize
 }
@@ -3373,21 +3402,25 @@ function DAEFunction{iip, specialize}(f;
         DAEFunction{iip, specialize, Any, Any, Any,
             Any, Any, Any, Any, Any,
             Any, Any, Any,
-            Any, typeof(_colorvec), Any, Any, Any}(_f, analytic, tgrad, jac, jvp,
+            Any, typeof(_colorvec), Any, Any, Any, Any, Any}(_f, analytic, tgrad, jac, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
-            _colorvec, sys, initializeprob, initializeprobmap)
+            _colorvec, sys, initializeprob, update_initializeprob!,
+            initializeprobmap, initializeprobpmap)
     else
         DAEFunction{iip, specialize, typeof(_f), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
             typeof(paramjac),
             typeof(observed), typeof(_colorvec),
-            typeof(sys), typeof(initializeprob), typeof(initializeprobmap)}(
+            typeof(sys), typeof(initializeprob), typeof(update_initializeprob!),
+            typeof(initializeprobmap),
+            typeof(initializeprobpmap)}(
             _f, analytic, tgrad, jac, jvp, vjp,
             jac_prototype, sparsity, Wfact, Wfact_t,
             paramjac, observed,
-            _colorvec, sys, initializeprob, initializeprobmap)
+            _colorvec, sys, initializeprob, update_initializeprob!,
+            initializeprobmap, initializeprobpmap)
     end
 end
 
@@ -4330,7 +4363,9 @@ __has_sys(f) = isdefined(f, :sys)
 __has_analytic_full(f) = isdefined(f, :analytic_full)
 __has_resid_prototype(f) = isdefined(f, :resid_prototype)
 __has_initializeprob(f) = isdefined(f, :initializeprob)
+__has_update_initializeprob!(f) = isdefined(f, :update_initializeprob!)
 __has_initializeprobmap(f) = isdefined(f, :initializeprobmap)
+__has_initializeprobpmap(f) = isdefined(f, :initializeprobpmap)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
@@ -4346,8 +4381,14 @@ has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
 function has_initializeprob(f::AbstractSciMLFunction)
     __has_initializeprob(f) && f.initializeprob !== nothing
 end
+function has_update_initializeprob!(f::AbstractSciMLFunction)
+    __has_update_initializeprob!(f) && f.update_initializeprob! !== nothing
+end
 function has_initializeprobmap(f::AbstractSciMLFunction)
     __has_initializeprobmap(f) && f.initializeprobmap !== nothing
+end
+function has_initializeprobpmap(f::AbstractSciMLFunction)
+    __has_initializeprobpmap(f) && f.initializeprobpmap !== nothing
 end
 
 function has_syms(f::AbstractSciMLFunction)
