@@ -570,6 +570,7 @@ function fill_u0(prob, u0; defs = nothing, use_defaults = false)
     idx_to_sym = anydict()
     idx_to_val = anydict()
     for (k, v) in u0
+        v === nothing && continue
         idx = variable_index(prob, k)
         idx === nothing && continue
         if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
@@ -614,6 +615,7 @@ function fill_p(prob, p; defs = nothing, use_defaults = false)
     idx_to_sym = anydict()
     idx_to_val = anydict()
     for (k, v) in p
+        v === nothing && continue
         idx = parameter_index(prob, k)
         idx === nothing && continue
         if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
