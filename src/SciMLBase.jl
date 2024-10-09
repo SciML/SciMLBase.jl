@@ -4,7 +4,7 @@ if isdefined(Base, :Experimental) &&
     @eval Base.Experimental.@max_methods 1
 end
 using ConstructionBase
-using RecipesBase, RecursiveArrayTools, Tables
+using RecipesBase, RecursiveArrayTools
 using SciMLStructures
 using SymbolicIndexingInterface
 using DocStringExtensions
@@ -741,7 +741,6 @@ include("ensemble/ensemble_analysis.jl")
 include("solve.jl")
 include("interpolation.jl")
 include("integrator_interface.jl")
-include("tabletraits.jl")
 include("remake.jl")
 include("callbacks.jl")
 
