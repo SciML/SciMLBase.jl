@@ -115,6 +115,9 @@ end
         @time @safetestset "ODE Solution Stripping" begin
             include("downstream/ode_stripping.jl")
         end
+        @time @safetestset "Tables interface with MTK" begin
+            include("downstream/tables.jl")
+        end
     end
 
     if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")

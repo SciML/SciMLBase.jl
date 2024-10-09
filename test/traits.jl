@@ -1,13 +1,14 @@
-using SciMLBase, Test
+using SciMLBase, Tables, Test
 using OrdinaryDiffEq, DataFrames, SymbolicIndexingInterface
 
-@test SciMLBase.Tables.isrowtable(ODESolution)
-@test SciMLBase.Tables.isrowtable(RODESolution)
-@test SciMLBase.Tables.isrowtable(DAESolution)
-@test !SciMLBase.Tables.isrowtable(SciMLBase.NonlinearSolution)
-@test !SciMLBase.Tables.isrowtable(SciMLBase.LinearSolution)
-@test !SciMLBase.Tables.isrowtable(SciMLBase.QuadratureSolution)
-@test !SciMLBase.Tables.isrowtable(SciMLBase.OptimizationSolution)
+# https://github.com/SciML/SciMLBase.jl/pull/813#issuecomment-2401803039
+@test !Tables.isrowtable(ODESolution)
+@test !Tables.isrowtable(RODESolution)
+@test !Tables.isrowtable(DAESolution)
+@test !Tables.isrowtable(SciMLBase.NonlinearSolution)
+@test !Tables.isrowtable(SciMLBase.LinearSolution)
+@test !Tables.isrowtable(SciMLBase.QuadratureSolution)
+@test !Tables.isrowtable(SciMLBase.OptimizationSolution)
 
 function rhs(u, p, t)
     return -u
