@@ -245,6 +245,9 @@ end
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
         continuity) where {deriv}
+    if isempty(idxs)
+        return eltype(eltype(sol.u))[]
+    end
     if eltype(sol.u) <: Number
         idxs = only(idxs)
     end
@@ -259,6 +262,9 @@ end
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
         continuity) where {deriv}
+    if isempty(idxs)
+        return map(_ -> eltype(eltype(sol.u))[], t)
+    end
     if eltype(sol.u) <: Number
         idxs = only(idxs)
     end
@@ -294,6 +300,9 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
     if symbolic_type(idxs) == NotSymbolic() &&
        any(isequal(NotSymbolic()), symbolic_type.(idxs))
         error("Incorrect specification of `idxs`")
+    end
+    if isempty(idxs)
+        return eltype(eltype(sol.u))[]
     end
     error_if_observed_derivative(sol, idxs, deriv)
     ps = parameter_values(sol)
@@ -335,6 +344,9 @@ end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector, continuity) where {deriv}
+    if isempty(idxs)
+        return map(_ -> eltype(eltype(sol.u))[], t)
+    end
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     getter = getu(sol, idxs)
