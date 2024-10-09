@@ -1,9 +1,10 @@
 using SciMLBase, Tables, Test
 using OrdinaryDiffEq, DataFrames, SymbolicIndexingInterface
 
-@test Tables.isrowtable(ODESolution)
-@test Tables.isrowtable(RODESolution)
-@test Tables.isrowtable(DAESolution)
+# https://github.com/SciML/SciMLBase.jl/pull/813#issuecomment-2401803039
+@test !Tables.isrowtable(ODESolution)
+@test !Tables.isrowtable(RODESolution)
+@test !Tables.isrowtable(DAESolution)
 @test !Tables.isrowtable(SciMLBase.NonlinearSolution)
 @test !Tables.isrowtable(SciMLBase.LinearSolution)
 @test !Tables.isrowtable(SciMLBase.QuadratureSolution)
