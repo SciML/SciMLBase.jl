@@ -301,7 +301,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
        any(isequal(NotSymbolic()), symbolic_type.(idxs))
         error("Incorrect specification of `idxs`")
     end
-    if isempty(idxs)
+    if symbolic_type(idxs) == NotSymbolic() && isempty(idxs)
         return eltype(eltype(sol.u))[]
     end
     error_if_observed_derivative(sol, idxs, deriv)
@@ -344,7 +344,7 @@ end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector, continuity) where {deriv}
-    if isempty(idxs)
+    if symbolic_type(idxs) == NotSymbolic() && isempty(idxs)
         return map(_ -> eltype(eltype(sol.u))[], t)
     end
     error_if_observed_derivative(sol, idxs, deriv)
