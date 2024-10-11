@@ -2650,7 +2650,7 @@ function NonlinearFunction{iip}(f::ODEFunction) where {iip}
 end
 
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
-        vjp, jac_prototype, W__prototype, sparsity, Wfact, Wfact_t, paramjac,
+        vjp, jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec, sys, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap)
     f1 = ODEFunction(f1)
