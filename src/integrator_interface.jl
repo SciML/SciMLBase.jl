@@ -599,7 +599,7 @@ function check_error(integrator::DEIntegrator)
             end
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat &&
-               abs(integrator.dt) <= abs(eps(integrator.t))
+               integrator.dt == integrator.t+integrator.dt
             if verbose
                 if isdefined(integrator, :EEst)
                     EEst = ", and step error estimate = $(integrator.EEst)"
