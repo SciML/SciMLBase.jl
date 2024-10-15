@@ -2559,7 +2559,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.sys), typeof(f.initializeprob), typeof(f.update_initializeprob!),
             typeof(f.initializeprobmap),
             typeof(f.initializeprobpmap),
-            typof(f.nlfunc)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            typeof(f.nlfunc)}(newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
             f.observed, f.colorvec, f.sys, f.initializeprob, f.update_initializeprob!,
