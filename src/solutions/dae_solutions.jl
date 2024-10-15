@@ -27,7 +27,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S, rateType} <:
+struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S, rateType, V} <:
        AbstractDAESolution{T, N, uType}
     u::uType
     du::duType
@@ -42,6 +42,31 @@ struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S, rateT
     tslocation::Int
     stats::S
     retcode::ReturnCode.T
+    saved_subsystem::V
+end
+
+function DAESolution{T, N}(u, du, u_analytic, errors, t, k, prob, alg, interp, dense,
+        tslocation, stats, retcode, saved_subsystem) where {T, N}
+    return DAESolution{T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
+        typeof(t), typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k),
+        typeof(saved_subsystem)}(
+        u, du, u_analytic, errors, t, k, prob, alg, interp, dense, tslocation, stats,
+        retcode, saved_subsystem
+    )
+end
+
+function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: DAESolution{T, N}}
+    DAESolution{T, N}
+end
+
+function ConstructionBase.setproperties(sol::DAESolution, patch::NamedTuple)
+    u = get(patch, :u, sol.u)
+    N = u === nothing ? 2 : ndims(eltype(u)) + 1
+    T = eltype(eltype(u))
+    patch = merge(getproperties(sol), patch)
+    return DAESolution{T, N}(patch.u, patch.du, patch.u_analytic, patch.errors, patch.t,
+        patch.k, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation,
+        patch.stats, patch.retcode, patch.saved_subsystem)
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Symbol)
@@ -65,13 +90,14 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         retcode = ReturnCode.Default,
         destats = missing,
         stats = nothing,
+        saved_subsystem = nothing,
         kwargs...)
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
         N = 2
     else
-        N = length((size(prob.u0)..., length(u)))
+        N = ndims(eltype(u)) + 1
     end
 
     if !ismissing(destats)
@@ -88,7 +114,8 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         errors = Dict{Symbol, real(eltype(prob.u0))}()
 
         sol = DAESolution{T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
-            typeof(t), typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k)}(
+            typeof(t), typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k),
+            typeof(saved_subsystem)}(
             u,
             du,
             u_analytic,
@@ -101,7 +128,8 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
             dense,
             0,
             stats,
-            retcode)
+            retcode,
+            saved_subsystem)
 
         if calculate_error
             calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
@@ -110,7 +138,8 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         sol
     else
         DAESolution{T, N, typeof(u), typeof(du), Nothing, Nothing, typeof(t),
-            typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k)}(
+            typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k),
+            typeof(saved_subsystem)}(
             u, du,
             nothing,
             nothing, t, k,
@@ -118,7 +147,8 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
             interp,
             dense, 0,
             stats,
-            retcode)
+            retcode,
+            saved_subsystem)
     end
 end
 
@@ -161,76 +191,23 @@ function calculate_solution_errors!(sol::AbstractDAESolution;
 end
 
 function build_solution(sol::AbstractDAESolution{T, N}, u_analytic, errors) where {T, N}
-    DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(u_analytic), typeof(errors),
-        typeof(sol.t), typeof(sol.prob), typeof(sol.alg), typeof(sol.interp),
-        typeof(sol.stats), typeof(sol.k)}(sol.u,
-        sol.du,
-        u_analytic,
-        errors,
-        sol.t,
-        sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        sol.dense,
-        sol.tslocation,
-        sol.stats,
-        sol.retcode)
+    @reset sol.u_analytic = u_analytic
+    return @set sol.errors = errors
 end
 
 function solution_new_retcode(sol::AbstractDAESolution{T, N}, retcode) where {T, N}
-    DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
-        typeof(sol.errors), typeof(sol.t), typeof(sol.prob), typeof(sol.alg),
-        typeof(sol.interp), typeof(sol.stats), typeof(sol.k)}(sol.u,
-        sol.du,
-        sol.u_analytic,
-        sol.errors,
-        sol.t,
-        sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        sol.dense,
-        sol.tslocation,
-        sol.stats,
-        retcode)
+    return @set sol.retcode = retcode
 end
 
 function solution_new_tslocation(sol::AbstractDAESolution{T, N}, tslocation) where {T, N}
-    DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
-        typeof(sol.errors), typeof(sol.t), typeof(sol.prob), typeof(sol.alg),
-        typeof(sol.interp), typeof(sol.stats), typeof(k)}(sol.u,
-        sol.du,
-        sol.u_analytic,
-        sol.errors,
-        sol.t,
-        sol.k,
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        sol.dense,
-        tslocation,
-        sol.stats,
-        sol.retcode)
+    return @set sol.tslocation = tslocation
 end
 
 function solution_slice(sol::AbstractDAESolution{T, N}, I) where {T, N}
-    DAESolution{T, N, typeof(sol.u), typeof(sol.du), typeof(sol.u_analytic),
-        typeof(sol.errors), typeof(sol.t), typeof(sol.prob), typeof(sol.alg),
-        typeof(sol.interp), typeof(sol.stats), typeof(sol.k)}(sol.u[I],
-        sol.du[I],
-        sol.u_analytic ===
-        nothing ?
-        nothing :
-        sol.u_analytic[I],
-        sol.errors,
-        sol.t[I],
-        sol.k[I],
-        sol.prob,
-        sol.alg,
-        sol.interp,
-        false,
-        sol.tslocation,
-        sol.stats,
-        sol.retcode)
+    @reset sol.u = sol.u[I]
+    @reset sol.du = sol.du[I]
+    @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
+    @reset sol.t = sol.t[I]
+    @reset sol.k = sol.dense ? sol.k[I] : sol.k
+    return @set sol.dense = false
 end
