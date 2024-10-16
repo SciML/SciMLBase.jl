@@ -615,7 +615,7 @@ function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
     @reset sol.t = sol.t[I]
     @reset sol.k = sol.dense ? sol.k[I] : sol.k
-    return @set sol.alg = false
+    return @set sol.dense = false
 end
 
 mask_discretes(::Nothing, _, _...) = nothing
