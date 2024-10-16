@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
+using StochasticDiffEq
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using Plots: Plots, plot
@@ -173,7 +174,7 @@ sol10 = sol(0.1, idxs = 2)
 end
 
 @testset "Saved subsystem" begin
-    @testset "Pure ODE" begin
+    @testset "Purely continuous ODE/DAE/SDE-solutions" begin
         @variables x(t) y(t)
         @parameters p
         @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t)
@@ -190,21 +191,44 @@ end
             ss1.state_map == ss2.state_map
         end
 
-        sol = solve(prob, Tsit5(); save_idxs = xidx)
+        ode_sol = solve(prob, Tsit5(); save_idxs = xidx)
         subsys = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
-        xvals = sol[x]
         # FIXME: hack for save_idxs
-        SciMLBase.@reset sol.saved_subsystem = subsys
-        @test sol[x] == xvals
-        @test is_parameter(sol, p)
-        @test parameter_index(sol, p) == parameter_index(sys, p)
-        @test isequal(only(parameter_symbols(sol)), p)
-        @test is_independent_variable(sol, t)
+        SciMLBase.@reset ode_sol.saved_subsystem = subsys
 
-        tmp = copy(prob.u0)
-        tmp[xidx] = xvals[2]
-        @test state_values(sol, 2) == tmp
-        @test state_values(sol) == [state_values(sol, i) for i in 1:length(sol)]
+        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, 1 ~ sin(y) + cos(x)], t)
+        xidx = variable_index(sys, x)
+        prob = DAEProblem(sys, [D(x) => x + p * y, D(y) => 1 / sqrt(1 - (1 - cos(x))^2)],
+            [x => 1.0, y => asin(1 - cos(x))], (0.0, 1.0), [p => 2.0])
+        dae_sol = solve(prob, DFBDF(); save_idxs = xidx)
+        subsys = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
+        # FIXME: hack for save_idxs
+        SciMLBase.@reset dae_sol.saved_subsystem = subsys
+
+        @brownian a b
+        @mtkbuild sys = System([D(x) ~ x + p * y + x * a, D(y) ~ 2p + x^2 + y * b], t)
+        xidx = variable_index(sys, x)
+        prob = SDEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0), [p => 2.0])
+        sde_sol = solve(prob, SOSRI(); save_idxs = xidx)
+        subsys = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
+        # FIXME: hack for save_idxs
+        SciMLBase.@reset sde_sol.saved_subsystem = subsys
+
+        for sol in [ode_sol, dae_sol, sde_sol]
+            prob = sol.prob
+            subsys = sol.saved_subsystem
+            xvals = sol[x]
+            @test sol[x] == xvals
+            @test is_parameter(sol, p)
+            @test parameter_index(sol, p) == parameter_index(sys, p)
+            @test isequal(only(parameter_symbols(sol)), p)
+            @test is_independent_variable(sol, t)
+
+            tmp = copy(prob.u0)
+            tmp[xidx] = xvals[2]
+            @test state_values(sol, 2) == tmp
+            @test state_values(sol) == [state_values(sol, i) for i in 1:length(sol)]
+        end
     end
 
     @testset "ODE with callbacks" begin
