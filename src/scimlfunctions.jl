@@ -2687,8 +2687,8 @@ function SplitFunction{iip, specialize}(f1, f2;
                         f1.jac_prototype :
                         nothing,
         W_prototype = __has_W_prototype(f1) ?
-                        f1.W_prototype :
-                        nothing,
+                      f1.W_prototype :
+                      nothing,
         sparsity = __has_sparsity(f1) ? f1.sparsity :
                    jac_prototype,
         Wfact = __has_Wfact(f1) ? f1.Wfact : nothing,
