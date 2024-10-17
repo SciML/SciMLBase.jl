@@ -27,6 +27,8 @@ jobs:
       matrix:
         version:
           - "1"
+          - "lts"
+          - "pre"
         group:
           - "Core"
           - "Downstream"
@@ -34,7 +36,7 @@ jobs:
           - "Python"
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
     with:
-      julia-runtest-depwarn: "yes"
       group: "${{ matrix.group }}"
       julia-version: "${{ matrix.version }}"
+      julia-runtest-depwarn: "yes"
     secrets: "inherit"
