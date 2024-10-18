@@ -3086,7 +3086,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
 
 @add_kwonly function SplitSDEFunction(f1, f2, g, mass_matrix, cache, analytic, tgrad, jac,
         jvp, vjp,
-        jac_prototype, W_prototype Wfact, Wfact_t, paramjac, observed,
+        jac_prototype, W_prototype, Wfact, Wfact_t, paramjac, observed,
         colorvec, sys)
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
