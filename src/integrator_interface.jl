@@ -339,7 +339,7 @@ Otherwise the integrator is allowed to skip recalculating the interpolation.
   used for the DAE should be performed post-callback.
 """
 function reeval_internals_due_to_modification!(
-        integrator::DEIntegrator, continuous_modification::Bool;
+        integrator::DEIntegrator, continuous_modification;
         callback_initializealg = nothing)
     reeval_internals_due_to_modification!(integrator::DEIntegrator)
 end
