@@ -485,7 +485,7 @@ the usage of the `SplitFunction`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `jac_prototype`: a prototype matrix matching the type that matches the W matrix. For example,
+- `W_prototype`: a prototype matrix matching the type that matches the W matrix. For example,
   if the Jacobian is tridiagonal, and the mass_matrix is diagonal, then an appropriately sized `Tridiagonal`
   matrix can be used as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the W matrix.
