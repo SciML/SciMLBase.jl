@@ -2676,7 +2676,7 @@ end
         typeof(initializeprobpmap)}(
         f1, f2, mass_matrix,
         cache, analytic, tgrad, jac, jvp, vjp,
-        jac_prototype, W__prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
+        jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
         initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
 end
 function SplitFunction{iip, specialize}(f1, f2;
