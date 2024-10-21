@@ -2509,7 +2509,8 @@ function ODEFunction{iip, specialize}(f;
             analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initializeprob, initializeprobmap, nlfunc)
+            observed, _colorvec, sys, initializeprob, update_initializeprob!,
+            initializeprobmap, initializeprobpmap, nlfunc)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
