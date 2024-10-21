@@ -2666,7 +2666,7 @@ end
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec, sys, initializeprob, update_initializeprob!,
-        initializeprobmap, initializeprobpmap)
+        initializeprobmap, initializeprobpmap, nlfunc)
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -2681,11 +2681,11 @@ end
         typeof(vjp), typeof(jac_prototype), typeof(W_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
         typeof(sys), typeof(initializeprob), typeof(update_initializeprob!), typeof(initializeprobmap),
-        typeof(initializeprobpmap)}(
+        typeof(initializeprobpmap), typeof(nlfunc)}(
         f1, f2, mass_matrix,
         cache, analytic, tgrad, jac, jvp, vjp,
         jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-        initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
+        initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap, nlfunc)
 end
 function SplitFunction{iip, specialize}(f1, f2;
         mass_matrix = __has_mass_matrix(f1) ?
@@ -2721,7 +2721,8 @@ function SplitFunction{iip, specialize}(f1, f2;
         update_initializeprob! = __has_update_initializeprob!(f1) ?
                                  f1.update_initializeprob! : nothing,
         initializeprobmap = __has_initializeprobmap(f1) ? f1.initializeprobmap : nothing,
-        initializeprobpmap = __has_initializeprobpmap(f1) ? f1.initializeprobpmap : nothing
+        initializeprobpmap = __has_initializeprobpmap(f1) ? f1.initializeprobpmap : nothing,
+        nlfunc = __has_nlfunc(f1) ? f1.nlfunc : nothing
 ) where {iip,
         specialize
 }
@@ -2732,12 +2733,12 @@ function SplitFunction{iip, specialize}(f1, f2;
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
+            Any, Any, Any, Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac,
             observed, colorvec, sys, initializeprob.update_initializeprob!, initializeprobmap,
-            initializeprobpmap, initializeprobpmap)
+            initializeprobpmap, initializeprobpmap, nlfunc)
     else
         SplitFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
             typeof(_func_cache), typeof(analytic),
@@ -2747,11 +2748,11 @@ function SplitFunction{iip, specialize}(f1, f2;
             typeof(colorvec),
             typeof(sys), typeof(initializeprob), typeof(update_initializeprob!),
             typeof(initializeprobmap),
-            typeof(initializeprobpmap)}(f1, f2,
+            typeof(initializeprobpmap), typeof(nlfunc)}(f1, f2,
             mass_matrix, _func_cache, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-            initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
+            initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap, nlfunc)
     end
 end
 
@@ -3094,7 +3095,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
 
 @add_kwonly function SplitSDEFunction(f1, f2, g, mass_matrix, cache, analytic, tgrad, jac,
         jvp, vjp,
-        jac_prototype, W_prototype, Wfact, Wfact_t, paramjac, observed,
+        jac_prototype, Wfact, Wfact_t, paramjac, observed,
         colorvec, sys)
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
     f2 = SDEFunction(f2)
@@ -3105,7 +3106,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys)}(f1, f2, mass_matrix, cache, analytic, tgrad, jac,
-        jac_prototype, W_prototype, Wfact, Wfact_t, paramjac, observed, colorvec, sys)
+        jac_prototype, Wfact, Wfact_t, paramjac, observed, colorvec, sys)
 end
 
 function SplitSDEFunction{iip, specialize}(f1, f2, g;
