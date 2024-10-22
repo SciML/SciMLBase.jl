@@ -289,7 +289,10 @@ the usage of `f`. These include:
   based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
-- `nlfunc`: a `NonlinearFunction`
+- `nlfunc`: a `NonlinearFunction` with signature `f(u, (u_tmp, _t, p)) = u_tmp`.
+  where `u` and `u_tmp` are of the same type as `u`, and `_t` is of the same type of t.
+  This will be used as the nonlinear function inside an implicit solver by specifying `u, u_tmp` and `_t`
+  such that solving this function produces a solution to the implicit step of your solver.
 
 ## iip: In-Place vs Out-Of-Place
 
