@@ -478,8 +478,8 @@ the usage of the `SplitFunction`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df_1}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df_1}{du}^\ast v``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df_1}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df_1}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -563,8 +563,10 @@ M \frac{du}{dt} = f(u,p,t)
 as a partitioned ODE:
 
 ```math
-M_1 \frac{du}{dt} = f_1(u,p,t)
+\begin{align}
+M_1 \frac{du}{dt} = f_1(u,p,t) \\
 M_2 \frac{du}{dt} = f_2(u,p,t)
+\end{align}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -598,7 +600,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -606,8 +608,8 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -707,8 +709,8 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -767,8 +769,10 @@ M \frac{du}{dt} = f(u,h,p,t)
 as a partitioned ODE:
 
 ```math
-M_1 \frac{du}{dt} = f_1(u,h,p,t)
+\begin{align}
+M_1 \frac{du}{dt} = f_1(u,h,p,t) \\
 M_2 \frac{du}{dt} = f_2(u,h,p,t)
+\end{align}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -812,8 +816,8 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,h,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,h,p,t)` or `J=jac(u,h,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,h,p,t)` or `Jv=jvp(v,u,h,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,h,p,t)` or `Jv=vjp(v,u,h,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,u,h,p,t)` or `Jv=jvp(v,u,h,p,t)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,u,h,p,t)` or `Jv=vjp(v,u,h,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -1022,8 +1026,8 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
   ``\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
@@ -1193,8 +1197,10 @@ M du = f(u,p,t) dt + g(u,p,t) dW_t
 as a partitioned ODE:
 
 ```math
-M_1 du = f_1(u,p,t) dt + g(u,p,t) dW_t
+\begin{align}
+M_1 du = f_1(u,p,t) dt + g(u,p,t) dW_t \\
 M_2 du = f_2(u,p,t) dt + g(u,p,t) dW_t
+\end{align}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1349,8 +1355,8 @@ the usage of `f`. These include:
   with the corresponding expected solution at `sol.W.t` or `sol.t`.
 - `tgrad(dT,u,p,t,W)` or dT=tgrad(u,p,t,W): returns ``\frac{\partial f(u,p,t,W)}{\partial t}``
 - `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t,W)` or `Jv=vjp(v,u,p,t,W)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t,W)` or `Jv=vjp(v,u,p,t,W)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -1592,8 +1598,8 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -1684,8 +1690,8 @@ the usage of `f`. These include:
 - `analytic(u0,p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `jac(J,u,p)` or `J=jac(u,p)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p)` or `Jv=jvp(v,u,p)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p)` or `Jv=vjp(v,u,p)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,u,p)` or `Jv=jvp(v,u,p)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,u,p)` or `Jv=vjp(v,u,p)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -2036,11 +2042,11 @@ the usage of `f` and `bc`. These include:
   solution of the BVP. Generally only used for testing and development of the solvers.
 - `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
 - `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\frac{df}{du}``
-- `bcjac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: erturns ``\frac{dbc}{du}``
+- `bcjac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\frac{dbc}{du}``
 - `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
-  derivative``\frac{df}{du} v``
+  derivative ``\frac{df}{du} v``
 - `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
-  derivative``\frac{df}{du}^\ast v``
+  derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -2162,8 +2168,8 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `tgrad(dT,du,u,p,t)` or dT=tgrad(du,u,p,t): returns ``\frac{\partial f(du,u,p,t)}{\partial t}``
 - `jac(J,du,u,p,t)` or `J=jac(du,u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
