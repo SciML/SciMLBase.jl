@@ -76,3 +76,12 @@ function LinearProblem(A, b, args...; kwargs...)
         LinearProblem{isinplace(A, 4)}(A, b, args...; kwargs...)
     end
 end
+
+struct LinearAliases <: AbstractAliasSpecifier
+    alias_A::Union{Bool,Nothing}
+    alias_b::Union{Bool,Nothing}
+end
+
+function LinearAliases(;alias_A = nothing, alias_b = nothing)
+    LinearAliases(alias_A, alias_b)
+end
