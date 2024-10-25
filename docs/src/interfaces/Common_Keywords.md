@@ -102,7 +102,8 @@ Note that if a method does not have adaptivity, the following rules apply:
 ## Memory Optimizations
 
   - `alias`: an `ODEAliases` object that holds the field `alias_u0`, which allows the solver to alias the 
-    initial condition array that is contained in the problem struct. Defaults to false.
+    initial condition array that is contained in the problem struct. For example, tell the solver to alias `u0`,
+    `solve(prob,alias = ODEAliases(alias_u0 = true))`. Defaults to `ODEAliases(alias_u0 = false)`.
   - `cache`: pass a solver cache to decrease the construction time. This is not implemented
     for any of the problem interfaces at this moment.
 
