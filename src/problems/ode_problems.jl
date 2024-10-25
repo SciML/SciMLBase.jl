@@ -512,11 +512,22 @@ function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
 
+@doc doc"""
 
+Holds information on what variables to alias
+when solving an ODE. The field `alias_u0` determines whether the initial condition
+will be aliased when the ODE is solved. 
+"""
 struct ODEAliases <: AbstractAliasSpecifier
     alias_u0::Union{Bool,Nothing}
 end
 
+"""
+    ODEAliases(;alias_u0 = nothing)
+
+Creates an `ODEAliases`, with a default `alias_u0` value of `nothing`.
+When `alias_u0` is `nothing`, the solvers default to not aliasing `u0`.
+"""
 function ODEAliases(;alias_u0 = nothing)
     ODEAliases(alias_u0)
 end
