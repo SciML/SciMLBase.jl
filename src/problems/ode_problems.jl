@@ -511,3 +511,12 @@ function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
         p = NullParameters(); kwargs...) where {iip}
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
+
+
+struct ODEAliases <: AbstractAliasSpecifier
+    u0::Union{Bool,Nothing}
+end
+
+function ODEAliases(;u0 = nothing)
+    ODEAliases(u0)
+end
