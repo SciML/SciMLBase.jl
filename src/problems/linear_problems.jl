@@ -77,11 +77,22 @@ function LinearProblem(A, b, args...; kwargs...)
     end
 end
 
+@doc doc"""
+
+Holds `alias_A` and `alias_b` which determine whether 
+to alias `A` and `b` when solving a `LinearProblem`. 
+"""
 struct LinearAliases <: AbstractAliasSpecifier
     alias_A::Union{Bool,Nothing}
     alias_b::Union{Bool,Nothing}
 end
 
+"""
+    LinearAliases(;alias_A = nothing, alias_b = nothing)
+
+Creates a `LinearAliases` where `alias_A` and `alias_b` default to `nothing`.
+When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
+"""
 function LinearAliases(;alias_A = nothing, alias_b = nothing)
     LinearAliases(alias_A, alias_b)
 end
