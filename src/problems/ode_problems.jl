@@ -514,9 +514,9 @@ end
 
 
 struct ODEAliases <: AbstractAliasSpecifier
-    u0::Union{Bool,Nothing}
+    alias_u0::Union{Bool,Nothing}
 end
 
-function ODEAliases(;u0 = nothing)
-    ODEAliases(u0)
+function ODEAliases(;alias_u0 = nothing)
+    ODEAliases(alias_u0)
 end
