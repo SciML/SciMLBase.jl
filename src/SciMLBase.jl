@@ -642,6 +642,13 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
+Used to specify which elements can be aliased in a solve.
+"""
+abstract type AbstractAliasSpecifier end
+
+"""
+$(TYPEDEF)
+
 Internal. Used for signifying the AD context comes from a ChainRules.jl definition.
 """
 struct ChainRulesOriginator <: ADOriginator end
