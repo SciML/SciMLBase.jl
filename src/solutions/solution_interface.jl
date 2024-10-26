@@ -39,8 +39,8 @@ Base.@propagate_inbounds function Base.getproperty(A::AbstractSolution, sym::Sym
     end
 end
 
-SymbolicIndexingInterface.symbolic_container(A::AbstractSolution) = A.prob.f
-SymbolicIndexingInterface.parameter_values(A::AbstractSolution) = A.prob.p
+SymbolicIndexingInterface.symbolic_container(A::AbstractSolution) = A.prob
+SymbolicIndexingInterface.parameter_values(A::AbstractSolution) = parameter_values(A.prob)
 function SymbolicIndexingInterface.parameter_values(A::AbstractSolution, i)
     parameter_values(parameter_values(A), i)
 end
