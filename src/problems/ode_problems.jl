@@ -518,8 +518,12 @@ Holds information on what variables to alias
 when solving an ODE. The field `alias_u0` determines whether the initial condition
 will be aliased when the ODE is solved. 
 """
-struct ODEAliases <: AbstractAliasSpecifier
+struct ODEAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool,Nothing}
     alias_u0::Union{Bool,Nothing}
+    alias_du0::Union{Bool,Nothing}
+    alias_tstops::Union{Bool,Nothing}
 end
 
 """
@@ -528,6 +532,12 @@ end
 Creates an `ODEAliases`, with a default `alias_u0` value of `nothing`.
 When `alias_u0` is `nothing`, the solvers default to not aliasing `u0`.
 """
-function ODEAliases(;alias_u0 = nothing)
-    ODEAliases(alias_u0)
+function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = nothing, alias = nothing)
+    if alias == true
+        ODEAliasSpecifier(true,true,true,true,true)
+    elseif alias == false
+        ODEAliasSpecifier(false, false, false, false, false)
+    elseif isnothing(alias)
+        ODEAliasSpecifier(alias_p,alias_f,alias_u0,alias_du0,alias_tstops)
+    end
 end
