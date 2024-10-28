@@ -193,6 +193,8 @@ end
 
         ode_sol = solve(prob, Tsit5(); save_idxs = xidx)
         subsys = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
+        @test SciMLBase.get_saved_state_idxs(subsys) == [xidx]
+
         # FIXME: hack for save_idxs
         SciMLBase.@reset ode_sol.saved_subsystem = subsys
 
@@ -257,6 +259,7 @@ end
         sol = solve(prob; save_idxs = xidx)
         xvals = sol[x]
         subsys = SciMLBase.SavedSubsystem(sys, prob.p, [x, q, r])
+        @test SciMLBase.get_saved_state_idxs(subsys) == [xidx]
         qvals = sol.ps[q]
         rvals = sol.ps[r]
         # FIXME: hack for save_idxs
@@ -290,6 +293,7 @@ end
         prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
             [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
         ss = SciMLBase.SavedSubsystem(sys, prob.p, [x, q, s, r])
+        @test SciMLBase.get_saved_state_idxs(ss) == [xidx]
         sswf = SciMLBase.SavedSubsystemWithFallback(ss, sys)
         xidx = variable_index(sys, x)
         qidx = parameter_index(sys, q)
