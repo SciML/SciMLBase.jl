@@ -44,6 +44,13 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
+function is_empty_indp(indp)
+    isempty(variable_symbols(indp)) && isempty(parameter_symbols(indp)) &&
+        isempty(independent_variable_symbols(indp))
+end
+
+# Everything from this point on is public API
+
 """
     $(TYPEDSIGNATURES)
 
@@ -101,6 +108,12 @@ end
 function SavedSubsystem(indp, pobj, saved_idxs)
     # nothing saved
     if saved_idxs === nothing || isempty(saved_idxs)
+        return nothing
+    end
+
+    # this is required because problems with no system have an empty `SymbolCache`
+    # as their symbolic container.
+    if is_empty_indp(indp)
         return nothing
     end
 
@@ -224,6 +237,20 @@ function SavedSubsystem(indp, pobj, saved_idxs)
     return SavedSubsystem(
         state_map, parammap, timeseries_idx_to_param_idx, identitypartitions,
         timeseries_partition_templates, indexes_in_partition, ts_idx_to_count)
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Given a `SavedSubsystem`, return the subset of state indexes of the original system that are
+saved, in the order they are saved.
+"""
+function get_saved_state_idxs(ss::SavedSubsystem)
+    idxs = Vector{valtype(ss.state_map)}(undef, length(ss.state_map))
+    for (k, v) in ss.state_map
+        idxs[v] = k
+    end
+    return idxs
 end
 
 """
