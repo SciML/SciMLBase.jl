@@ -44,6 +44,11 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
+function is_empty_indp(indp)
+    isempty(variable_symbols(indp)) && isempty(parameter_symbols(indp)) &&
+        isempty(independent_variable_symbols(indp))
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -101,6 +106,12 @@ end
 function SavedSubsystem(indp, pobj, saved_idxs)
     # nothing saved
     if saved_idxs === nothing || isempty(saved_idxs)
+        return nothing
+    end
+
+    # this is required because problems with no system have an empty `SymbolCache`
+    # as their symbolic container.
+    if is_empty_indp(indp)
         return nothing
     end
 
