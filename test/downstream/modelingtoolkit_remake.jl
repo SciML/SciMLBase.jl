@@ -219,3 +219,13 @@ end
     @test newoprob.ps[k] == [2.0, 3.0, 4.0, 5.0]
     @test newoprob[V] == [1.5, 2.5]
 end
+
+@testset "remake with parameter dependent on observed" begin
+    @variables x(t) y(t)
+    @parameters p = x + y
+    @mtkbuild sys = ODESystem([D(x) ~ x, p ~ x + y], t)
+    prob = ODEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0))
+    @test prob.ps[p] ≈ 3.0
+    prob2 = remake(prob; u0 = [y => 3.0], p = Dict())
+    @test prob2.ps[p] ≈ 4.0
+end
