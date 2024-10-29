@@ -713,6 +713,9 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
     end
 
     varmap = merge(u0, p)
+    if is_time_dependent(prob)
+        varmap[only(independent_variable_symbols(prob))] = t0
+    end
     for (k, v) in u0
         u0[k] = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
     end

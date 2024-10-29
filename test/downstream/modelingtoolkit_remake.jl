@@ -239,3 +239,12 @@ end
     prob2 = remake(prob; u0 = [x => p], p = [:p => 2.0])
     @test prob2[x] ≈ 2.0
 end
+
+@testset "remake dependent on indepvar" begin
+    @variables x(t)
+    @parameters p
+    @mtkbuild sys = ODESystem([D(x) ~ x * p], t)
+    prob = ODEProblem(sys, [x => 1.0], (0.0, 1.0), [p => 1.0])
+    prob2 = remake(prob; u0 = [x => t + 3.0])
+    @test prob2[x] ≈ 3.0
+end
