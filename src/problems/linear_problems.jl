@@ -82,17 +82,25 @@ end
 Holds `alias_A` and `alias_b` which determine whether 
 to alias `A` and `b` when solving a `LinearProblem`. 
 """
-struct LinearAliases <: AbstractAliasSpecifier
+struct LinearAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool,Nothing}
     alias_A::Union{Bool,Nothing}
     alias_b::Union{Bool,Nothing}
 end
 
 """
-    LinearAliases(;alias_A = nothing, alias_b = nothing)
+    LinearAliasSpecifier(;alias_A = nothing, alias_b = nothing)
 
-Creates a `LinearAliases` where `alias_A` and `alias_b` default to `nothing`.
+Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
 """
-function LinearAliases(;alias_A = nothing, alias_b = nothing)
-    LinearAliases(alias_A, alias_b)
+function LinearAliasSpecifier(;alias_A = nothing, alias_b = nothing, alias_p = nothing, alias_f = nothing, alias = nothing)
+    if alias == true 
+        LinearAliasSpecifier(true,true,true,true)
+    elseif alias == false
+        LinearAliasSpecifier(false,false,false,false)
+    elseif isnothing(alias)
+        LinearAliasSpecifier(alias_p, alias_f, alias_A, alias_b)
+    end
 end
