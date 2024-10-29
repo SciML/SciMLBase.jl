@@ -297,8 +297,36 @@ a = Remake_Test1(p = 1)
 @test @inferred remake(a, kwargs = (; a = 1)) == Remake_Test1(p = 1, a = 1)
 
 @testset "fill_u0 and fill_p ignore identical variables with different names" begin
-    sys = SymbolCache(Dict(:x => 1, :x2 => 1, :y => 2), Dict(:a => 1, :a2 => 1, :b => 2),
-        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4))
+    struct SCWrapper{S}
+        sc::S
+    end
+    SymbolicIndexingInterface.symbolic_container(s::SCWrapper) = s.sc
+    function SymbolicIndexingInterface.is_variable(s::SCWrapper, i::Symbol)
+        if i == :x2
+            return is_variable(s.sc, :x)
+        end
+        is_variable(s.sc, i)
+    end
+    function SymbolicIndexingInterface.variable_index(s::SCWrapper, i::Symbol)
+        if i == :x2
+            return variable_index(s.sc, :x)
+        end
+        variable_index(s.sc, i)
+    end
+    function SymbolicIndexingInterface.is_parameter(s::SCWrapper, i::Symbol)
+        if i == :a2
+            return is_parameter(s.sc, :a)
+        end
+        is_parameter(s.sc, i)
+    end
+    function SymbolicIndexingInterface.parameter_index(s::SCWrapper, i::Symbol)
+        if i == :a2
+            return parameter_index(s.sc, :a)
+        end
+        parameter_index(s.sc, i)
+    end
+    sys = SCWrapper(SymbolCache(Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
+        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4)))
     function foo(du, u, p, t)
         du .= u .* p
     end
@@ -306,17 +334,17 @@ a = Remake_Test1(p = 1)
     u0 = Dict(:x2 => 2)
     newu0 = SciMLBase.fill_u0(prob, u0; defs = default_values(sys))
     @test length(newu0) == 2
-    @test get(newu0, :x2, 0) == 2
+    @test get(newu0, :x, 0) == 2
     @test get(newu0, :y, 0) == 2.5
     p = Dict(:a2 => 3)
     newp = SciMLBase.fill_p(prob, p; defs = default_values(sys))
     @test length(newp) == 2
-    @test get(newp, :a2, 0) == 3
+    @test get(newp, :a, 0) == 3
     @test get(newp, :b, 0) == 4.5
 end
 
 @testset "value of `nothing` is ignored" begin
-    sys = SymbolCache(Dict(:x => 1, :x2 => 1, :y => 2), Dict(:a => 1, :a2 => 1, :b => 2),
+    sys = SymbolCache(Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
         :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4))
     function foo(du, u, p, t)
         du .= u .* p
