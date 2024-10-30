@@ -348,6 +348,11 @@ $(TYPEDEF)
 """
 struct CheckInit <: DAEInitializationAlgorithm end
 
+"""
+$(TYPEDEF)
+"""
+struct OverrideInit <: DAEInitializationAlgorithm end
+
 # PDE Discretizations
 
 """
@@ -654,7 +659,6 @@ Internal. Used for signifying the AD context comes from a Tracker.jl context.
 struct TrackerOriginator <: ADOriginator end
 
 include("utils.jl")
-include("initialization.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
@@ -740,6 +744,7 @@ include("ensemble/ensemble_problems.jl")
 include("ensemble/basic_ensemble_solve.jl")
 include("ensemble/ensemble_analysis.jl")
 
+include("initialization.jl")
 include("solve.jl")
 include("interpolation.jl")
 include("integrator_interface.jl")
