@@ -527,12 +527,12 @@ struct ODEAliasSpecifier <: AbstractAliasSpecifier
 end
 
 """
-    ODEAliases(;alias_u0 = nothing)
+    ODEAliasSpecifier(;alias_u0 = nothing)
 
 Creates an `ODEAliases`, with a default `alias_u0` value of `nothing`.
 When `alias_u0` is `nothing`, the solvers default to not aliasing `u0`.
 """
-function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = nothing, alias = nothing)
+function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
     if alias == true
         ODEAliasSpecifier(true,true,true,true,true)
     elseif alias == false

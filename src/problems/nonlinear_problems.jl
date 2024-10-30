@@ -549,3 +549,9 @@ function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val
         set_parameter!(scc, val, idx)
     end
 end
+
+
+struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
+    alias_p
+    alias_f
+end

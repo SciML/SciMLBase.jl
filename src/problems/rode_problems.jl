@@ -90,3 +90,9 @@ end
 function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
 end
+
+
+struct RODEAliasSpecifier <: AbstractAliasSpecifier
+    alias_p
+    alias_f
+end
