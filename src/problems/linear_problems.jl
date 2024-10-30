@@ -77,11 +77,6 @@ function LinearProblem(A, b, args...; kwargs...)
     end
 end
 
-@doc doc"""
-
-Holds `alias_A` and `alias_b` which determine whether 
-to alias `A` and `b` when solving a `LinearProblem`. 
-"""
 struct LinearAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool,Nothing}
     alias_f::Union{Bool,Nothing}
@@ -89,8 +84,16 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
     alias_b::Union{Bool,Nothing}
 end
 
-"""
-    LinearAliasSpecifier(;alias_A = nothing, alias_b = nothing)
+@doc doc"""
+    Holds information on what variables to alias when solving a `LinearProblem`
+
+### Keywords
+
+* `alias_p::Bool`
+* `alias_f::Bool`
+* `alias_A::Bool`: alias the `A` array.
+* `alias_b::Bool`: alias the `b` array. 
+* `alias::Bool`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
 
 Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
