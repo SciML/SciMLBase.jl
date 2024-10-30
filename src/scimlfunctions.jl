@@ -547,8 +547,8 @@ struct SplitFunction{
     observed::O
     colorvec::TCV
     sys::SYS
-    initialization_data::ID
     nlprob::NLP
+    initialization_data::ID
 end
 
 @doc doc"""
@@ -2518,7 +2518,8 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initdata), typeof(nlprob)}(_f, mass_matrix, analytic, tgrad,
+            typeof(sys), typeof(initdata), typeof(nlprob)}(
+            _f, mass_matrix, analytic, tgrad,
             jac, jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initdata, nlprob)
@@ -2686,7 +2687,7 @@ end
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec, sys, initializeprob = nothing, update_initializeprob! = nothing,
-        initializeprobmap = nothing, initializeprobpmap = nothing, initialization_data = nothing, nlprob)
+        initializeprobmap = nothing, initializeprobpmap = nothing, nlprob = nothing, initialization_data = nothing)
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -4608,12 +4609,13 @@ end
 SymbolicIndexingInterface.constant_structure(::AbstractSciMLFunction) = true
 
 function Base.getproperty(x::Union{ODEFunction, SplitFunction, DAEFunction}, sym::Symbol)
-  if sym == :initializeprob || sym == :update_initializeprob! || sym == :initializeprobmap || sym == :initializeprobpmap
-    if x.initialization_data === nothing
-      return nothing
-    else
-      return getproperty(x.initialization_data, sym)
+    if sym == :initializeprob || sym == :update_initializeprob! ||
+       sym == :initializeprobmap || sym == :initializeprobpmap
+        if x.initialization_data === nothing
+            return nothing
+        else
+            return getproperty(x.initialization_data, sym)
+        end
     end
-  end
-  return getfield(x, sym)
+    return getfield(x, sym)
 end
