@@ -552,6 +552,17 @@ end
 
 
 struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_p
-    alias_f
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool,Nothing}
+    alias_u0::Union{Bool,Nothing}
+end
+
+function NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    if isnothing(alias)
+        NonlinearAliasSpecifier(alias_p, alias_f, alias_u0)
+    elseif alias
+        NonlinearAliasSpecifier(true, true, true)
+    elseif !alias
+        NonlinearAliasSpecifier(false, false, false)
+    end
 end
