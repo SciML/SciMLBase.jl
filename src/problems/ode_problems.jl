@@ -512,12 +512,7 @@ function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
 
-@doc doc"""
 
-Holds information on what variables to alias
-when solving an ODE. The field `alias_u0` determines whether the initial condition
-will be aliased when the ODE is solved. 
-"""
 struct ODEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool,Nothing}
     alias_f::Union{Bool,Nothing}
@@ -526,13 +521,22 @@ struct ODEAliasSpecifier <: AbstractAliasSpecifier
     alias_tstops::Union{Bool,Nothing}
 end
 
-"""
-    ODEAliasSpecifier(;alias_u0 = nothing)
+@doc doc"""
 
-Creates an `ODEAliases`, with a default `alias_u0` value of `nothing`.
-When `alias_u0` is `nothing`, the solvers default to not aliasing `u0`.
+Holds information on what variables to alias
+when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
+    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+
+### Keywords 
+* `alias_p::Bool`
+* `alias_f::Bool`
+* `alias_u0::Bool = false`: alias the u0 array
+* `alias_du0::Bool = false`: alias the du0 array for DAEs
+* `alias_tstops::Bool = false`: alias the tstops array
+* `alias::Bool`: sets all fields to `alias`
+
 """
-function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
     if alias == true
         ODEAliasSpecifier(true,true,true,true,true)
     elseif alias == false
