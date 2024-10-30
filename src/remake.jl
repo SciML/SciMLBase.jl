@@ -567,6 +567,7 @@ end
 
 function fill_u0(prob, u0; defs = nothing, use_defaults = false)
     vsyms = variable_symbols(prob)
+    idx_to_vsym = anydict(variable_index(prob, sym) => sym for sym in vsyms)
     sym_to_idx = anydict()
     idx_to_sym = anydict()
     idx_to_val = anydict()
@@ -580,6 +581,8 @@ function fill_u0(prob, u0; defs = nothing, use_defaults = false)
             v = (v,)
         end
         for (kk, vv, ii) in zip(k, v, idx)
+            sym_to_idx[kk] = ii
+            kk = idx_to_vsym[ii]
             sym_to_idx[kk] = ii
             idx_to_sym[ii] = kk
             idx_to_val[ii] = vv
@@ -612,6 +615,7 @@ end
 
 function fill_p(prob, p; defs = nothing, use_defaults = false)
     psyms = parameter_symbols(prob)
+    idx_to_psym = anydict(parameter_index(prob, sym) => sym for sym in psyms)
     sym_to_idx = anydict()
     idx_to_sym = anydict()
     idx_to_val = anydict()
@@ -625,6 +629,8 @@ function fill_p(prob, p; defs = nothing, use_defaults = false)
             v = (v,)
         end
         for (kk, vv, ii) in zip(k, v, idx)
+            sym_to_idx[kk] = ii
+            kk = idx_to_psym[ii]
             sym_to_idx[kk] = ii
             idx_to_sym[ii] = kk
             idx_to_val[ii] = vv
@@ -707,6 +713,9 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
     end
 
     varmap = merge(u0, p)
+    if is_time_dependent(prob)
+        varmap[only(independent_variable_symbols(prob))] = t0
+    end
     for (k, v) in u0
         u0[k] = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
     end

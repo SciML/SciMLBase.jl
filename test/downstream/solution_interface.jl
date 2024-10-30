@@ -293,7 +293,7 @@ end
         prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
             [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
         ss = SciMLBase.SavedSubsystem(sys, prob.p, [x, q, s, r])
-        @test SciMLBase.get_saved_state_idxs(ss) == [xidx]
+        @test SciMLBase.get_saved_state_idxs(ss) == [variable_index(sys, x)]
         sswf = SciMLBase.SavedSubsystemWithFallback(ss, sys)
         xidx = variable_index(sys, x)
         qidx = parameter_index(sys, q)
