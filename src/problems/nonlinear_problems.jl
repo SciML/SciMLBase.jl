@@ -321,3 +321,9 @@ end
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
     return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
+
+
+struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
+    alias_p
+    alias_f
+end

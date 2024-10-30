@@ -157,3 +157,8 @@ end
 function SDDEProblem(f::AbstractSDDEFunction, args...; kwargs...)
     SDDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
+
+struct SDDEAliasSpecifier
+    alias_p
+    alias_f
+end
