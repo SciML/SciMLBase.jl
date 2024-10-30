@@ -2483,9 +2483,6 @@ function ODEFunction{iip, specialize}(f;
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap)
 
-    @assert typeof(initdata.initializeprob) <:
-            Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
-
     if specialize === NoSpecialize
         ODEFunction{iip, specialize,
             Any, Any, Any, Any,
@@ -2756,8 +2753,6 @@ function SplitFunction{iip, specialize}(f1, f2;
     initdata = reconstruct_initialization_data(
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap)
-    @assert typeof(initdata.initializeprob) <:
-            Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
 
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
@@ -3444,9 +3439,6 @@ function DAEFunction{iip, specialize}(f;
     initdata = reconstruct_initialization_data(
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap)
-
-    @assert typeof(initdata.initializeprob) <:
-            Union{Nothing, NonlinearProblem, NonlinearLeastSquaresProblem}
 
     if specialize === NoSpecialize
         DAEFunction{iip, specialize, Any, Any, Any,
@@ -4455,7 +4447,7 @@ end
 function has_initializeprobpmap(f::AbstractSciMLFunction)
     __has_initializeprobpmap(f) && f.initialization_data.initializeprobpmap !== nothing
 end
-function has_initialization_data(f::AbstractSciMLFunction)
+function has_initialization_data(f)
     __has_initialization_data(f) && f.initialization_data !== nothing
 end
 
