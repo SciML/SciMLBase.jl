@@ -642,7 +642,8 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
-Used to specify which elements can be aliased in a solve.
+Used to specify which elements can be aliased in a solve. 
+Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`. 
 """
 abstract type AbstractAliasSpecifier end
 
