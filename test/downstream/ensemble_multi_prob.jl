@@ -17,8 +17,8 @@ prob3 = ODEProblem(sys3, [3.0, 3.0], (0.0, 1.0))
 ensemble_prob = EnsembleProblem([prob1, prob2, prob3])
 sol = solve(ensemble_prob, Tsit5(), EnsembleThreads())
 for i in 1:3
-    @test sol[1,:,i] == sol.u[i][x]
-    @test sol[2,:,i] == sol.u[i][y]
+    @test sol[1, :, i] == sol.u[i][x]
+    @test sol[2, :, i] == sol.u[i][y]
 end
 # Ensemble is a recursive array
 @test only.(sol(0.0, idxs = [x])) == sol[1, 1, :]
