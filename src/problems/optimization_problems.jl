@@ -154,3 +154,9 @@ end
 
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
+
+struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
+    alias_p
+    alias_f
+    
+end

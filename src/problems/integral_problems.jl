@@ -167,3 +167,8 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
         new{typeof(y), typeof(x), typeof(kwargs)}(y, x, dim, kwargs)
     end
 end
+
+struct IntegralAliasSpecifier <: AbstractAliasSpecifier
+    alias_p
+    alias_f
+end

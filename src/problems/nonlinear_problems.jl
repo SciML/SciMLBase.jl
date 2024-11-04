@@ -321,3 +321,31 @@ end
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
     return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
+
+
+struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool,Nothing}
+    alias_u0::Union{Bool,Nothing}
+end
+
+@doc doc"""
+    Holds information on what variables to alias when solving a `NonlinearProblem`.
+
+### Keywords
+
+* `alias_p::Bool`
+* `alias_f::Bool`
+* `alias_A::Bool`: alias the `A` array.
+* `alias_b::Bool`: alias the `b` array. 
+* `alias::Bool`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
+"""
+function NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    if isnothing(alias)
+        NonlinearAliasSpecifier(alias_p, alias_f, alias_u0)
+    elseif alias
+        NonlinearAliasSpecifier(true, true, true)
+    elseif !alias
+        NonlinearAliasSpecifier(false, false, false)
+    end
+end

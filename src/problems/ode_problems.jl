@@ -511,3 +511,37 @@ function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
         p = NullParameters(); kwargs...) where {iip}
     ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
+
+
+struct ODEAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool,Nothing}
+    alias_u0::Union{Bool,Nothing}
+    alias_du0::Union{Bool,Nothing}
+    alias_tstops::Union{Bool,Nothing}
+end
+
+@doc doc"""
+
+Holds information on what variables to alias
+when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
+    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+
+### Keywords 
+* `alias_p::Bool`
+* `alias_f::Bool`
+* `alias_u0::Bool`: alias the u0 array. Defaults to false .
+* `alias_du0::Bool`: alias the du0 array for DAEs. Defaults to false.
+* `alias_tstops::Bool`: alias the tstops array
+* `alias::Bool`: sets all fields of the `ODEAliasSpecifier` to `alias`
+
+"""
+function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+    if alias == true
+        ODEAliasSpecifier(true,true,true,true,true)
+    elseif alias == false
+        ODEAliasSpecifier(false, false, false, false, false)
+    elseif isnothing(alias)
+        ODEAliasSpecifier(alias_p,alias_f,alias_u0,alias_du0,alias_tstops)
+    end
+end
