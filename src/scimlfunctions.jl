@@ -298,6 +298,8 @@ the usage of `f`. These include:
   Here `z` is the stage solution vector, `p` is the parameter vector of the ODE problem, `t` is
   the time, `dt` the respective time increment`, `γ` is some scaling factor and the temporary
   variables are some compatible vectors set by the specific solver.
+  Note that other implicit techniques, like for example some fully-implicit Runge-Kutta methods,
+  need to solve different nonlinear systems.
 
 ## iip: In-Place vs Out-Of-Place
 
