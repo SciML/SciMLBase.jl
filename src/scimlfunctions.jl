@@ -300,6 +300,11 @@ the usage of `f`. These include:
   variables are some compatible vectors set by the specific solver.
   Note that other implicit techniques, like for example some fully-implicit Runge-Kutta methods,
   need to solve different nonlinear systems.
+  Generally the inner nonlinear function of the nonlinear problem is in general of the form `g(z,p') = 0`
+  where `p'` is a struct with all information about the specific nonlinear problem at hand to solve
+  for a specific time discretization. For example, for the nonlinear problem stated in the first
+  paragraph in this docstring, `p'` would hold `(dt, γ, inner_tmp, outer_tmp, t, p)`, such that 
+  `g(z,p') = dt⋅f(γ⋅z+inner_tmp,p,t) + outer_tmp - z = 0`.
 
 ## iip: In-Place vs Out-Of-Place
 
