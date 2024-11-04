@@ -125,10 +125,10 @@ function remake(prob::ODEProblem; f = missing,
 
     if f === missing
         if build_initializeprob
-            initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap = remake_initializeprob(
+            initialization_data = remake_initialization_data(
                 prob.f.sys, prob.f, u0, tspan[1], p)
         else
-            initializeprob = update_initializeprob! = initializeprobmap = initializeprobpmap = nothing
+            initialization_data = nothing
         end
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
@@ -137,45 +137,21 @@ function remake(prob::ODEProblem; f = missing,
                     wrapfun_iip(
                         unwrapped_f(prob.f.f),
                         (newu0, newu0, newp,
-                            ptspan[1]));
-                    initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
+                            ptspan[1])); initialization_data)
             else
                 _f = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_oop(
                         unwrapped_f(prob.f.f),
                         (newu0, newp,
-                            ptspan[1]));
-                    initializeprob, update_initializeprob!, initializeprobmap, initializeprobpmap)
+                            ptspan[1])); initialization_data)
             end
         else
             _f = prob.f
-            if __has_initializeprob(_f)
+            if __has_initialization_data(_f)
                 props = getproperties(_f)
-                @reset props.initializeprob = initializeprob
+                @reset props.initialization_data = initialization_data
                 props = values(props)
-                _f = parameterless_type(_f){
-                    iip, specialization(_f), map(typeof, props)...}(props...)
-            end
-            if __has_update_initializeprob!(_f)
-                props = getproperties(_f)
-                @reset props.update_initializeprob! = update_initializeprob!
-                props = values(props)
-                _f = parameterless_type(_f){
-                    iip, specialization(_f), map(typeof, props)...}(props...)
-            end
-            if __has_initializeprobmap(_f)
-                props = getproperties(_f)
-                @reset props.initializeprobmap = initializeprobmap
-                props = values(props)
-                _f = parameterless_type(_f){
-                    iip, specialization(_f), map(typeof, props)...}(props...)
-            end
-            if __has_initializeprobpmap(_f)
-                props = getproperties(_f)
-                @reset props.initializeprobpmap = initializeprobpmap
-                props = values(props)
-                _f = parameterless_type(_f){
-                    iip, specialization(_f), map(typeof, props)...}(props...)
+                _f = parameterless_type(_f){iip, specialization(_f), map(typeof, props)...}(props...)
             end
         end
     elseif f isa AbstractODEFunction
@@ -206,6 +182,9 @@ end
 """
     remake_initializeprob(sys, scimlfn, u0, t0, p)
 
+!! WARN
+This method is deprecated. Please see `remake_initialization_data`
+
 Re-create the initialization problem present in the function `scimlfn`, using the
 associated system `sys`, and the user-provided new values of `u0`, initial time `t0` and
 `p`. By default, returns `nothing, nothing, nothing, nothing` if `scimlfn` does not have an
@@ -221,6 +200,21 @@ function remake_initializeprob(sys, scimlfn, u0, t0, p)
     end
     return scimlfn.initializeprob,
     scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
+end
+
+"""
+    remake_initialization_data(sys, scimlfn, u0, t0, p)
+
+Re-create the initialization data present in the function `scimlfn`, using the
+associated system `sys` and the user provided new values of `u0`, initial time `t0` and
+`p`. By default, this calls `remake_initializeprob` for backward compatibility and
+attempts to construct an `OverrideInitData` from the result.
+
+Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
+"""
+function remake_initialization_data(sys, scimlfn, u0, t0, p)
+    return reconstruct_initialization_data(
+        nothing, remake_initializeprob(sys, scimlfn, u0, t0, p)...)
 end
 
 """
