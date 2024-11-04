@@ -654,6 +654,7 @@ Internal. Used for signifying the AD context comes from a Tracker.jl context.
 struct TrackerOriginator <: ADOriginator end
 
 include("utils.jl")
+include("initialization.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
