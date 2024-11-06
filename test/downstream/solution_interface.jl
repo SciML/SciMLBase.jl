@@ -327,4 +327,35 @@ end
             parameter_values(ptc), rpidx.timeseries_idx => vals)
         @test newp[ridx] == 2prob.ps[r]
     end
+
+    @testset "get_save_idxs_and_saved_subsystem" begin
+        @variables x(t) y(t)
+        @parameters p q(t) r(t) s(t) u(t)
+        evs = [0.1 => [q ~ q + 1, s ~ s - 1], 0.3 => [r ~ 2r, u ~ u / 2]]
+        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
+            [p, q, r, s, u], discrete_events = evs)
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
+            [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
+
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, nothing)
+        @test _idxs === _ss === nothing
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, 1)
+        @test _idxs == 1
+        @test _ss isa SciMLBase.SavedSubsystem
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [1])
+        @test _idxs == [1]
+        @test _ss isa SciMLBase.SavedSubsystem
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, x)
+        @test _idxs == 1
+        @test _ss isa SciMLBase.SavedSubsystem
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [x])
+        @test _idxs == [1]
+        @test _ss isa SciMLBase.SavedSubsystem
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [x, q])
+        @test _idxs == [1]
+        @test _ss isa SciMLBase.SavedSubsystem
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [q])
+        @test _idxs == Int[]
+        @test _ss isa SciMLBase.SavedSubsystem
+    end
 end

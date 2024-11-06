@@ -347,3 +347,40 @@ function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
 
     return ps
 end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Given a SciMLProblem `prob` and (possibly symbolic) `save_idxs`, return the `save_idxs`
+corresponding to the state variables and a `SavedSubsystem` to pass to `build_solution`.
+
+The second return value (corresponding to the `SavedSubsystem`) may be `nothing` in case
+one is not required. `save_idxs` may be a scalar or `nothing`.
+"""
+function get_save_idxs_and_saved_subsystem(prob, save_idxs)
+    if save_idxs === nothing
+        saved_subsystem = nothing
+    else
+        if !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
+            _save_idxs = [save_idxs]
+        else
+            _save_idxs = save_idxs
+        end
+        saved_subsystem = SavedSubsystem(prob, parameter_values(prob), _save_idxs)
+        if saved_subsystem !== nothing
+            _save_idxs = get_saved_state_idxs(saved_subsystem)
+            if isempty(_save_idxs)
+                # no states to save
+                save_idxs = Int[]
+            elseif !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
+                # only a single state to save, and save it as a scalar timeseries instead of
+                # single-element array
+                save_idxs = only(_save_idxs)
+            else
+                save_idxs = _save_idxs
+            end
+        end
+    end
+
+    return save_idxs, saved_subsystem
+end
