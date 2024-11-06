@@ -372,7 +372,8 @@ function get_save_idxs_and_saved_subsystem(prob, save_idxs)
             if isempty(_save_idxs)
                 # no states to save
                 save_idxs = Int[]
-            elseif !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
+            elseif !(save_idxs isa AbstractArray) ||
+                   symbolic_type(save_idxs) != NotSymbolic()
                 # only a single state to save, and save it as a scalar timeseries instead of
                 # single-element array
                 save_idxs = only(_save_idxs)
