@@ -209,7 +209,8 @@ indices that can be plotted as continuous variables. This is useful for systems
 that store auxiliary variables in the state vector which are not meant to be
 used for plotting.
 """
-plottable_indices(x) = 1:length(x)
+plottable_indices(x:: AbstractArray) = 1:length(x)
+plottable_indices(x::Number) = 1
 
 @recipe function f(sol::AbstractTimeseriesSolution;
         plot_analytic = false,
