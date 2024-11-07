@@ -201,6 +201,16 @@ function isdenseplot(sol)
           sol.interp isa SensitivityInterpolation)
 end
 
+"""
+    $(TYPEDSIGNATURES)
+
+Given the first element in a timeseries solution, return an `AbstractArray` of
+indices that can be plotted as continuous variables. This is useful for systems
+that store auxiliary variables in the state vector which are not meant to be
+used for plotting.
+"""
+plottable_indices(x::AbstractArray) = 1:length(x)
+
 @recipe function f(sol::AbstractTimeseriesSolution;
         plot_analytic = false,
         denseplot = isdenseplot(sol),
@@ -225,7 +235,7 @@ end
         throw(ArgumentError("No analytic solution was found but `plot_analytic` was set to `true`."))
     end
 
-    idxs = idxs === nothing ? (1:length(sol.u[1])) : idxs
+    idxs = idxs === nothing ? plottable_indices(sol.u[1]) : idxs
     if !(idxs isa Union{Tuple, AbstractArray})
         vars = interpret_vars([idxs], sol)
     else
