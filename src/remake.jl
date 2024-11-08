@@ -509,6 +509,21 @@ function varmap_get(varmap, var, default = nothing)
     return default
 end
 
+"""
+    $(TYPEDSIGNATURES)
+
+Check if `varmap::Dict{Any, Any}` contains cyclic values for any symbolic variables in
+`syms`. Falls back on the basis of `symbolic_container(indp)`. Returns `false` by default.
+"""
+function detect_cycles(indp, varmap, syms)
+    if hasmethod(symbolic_container, Tuple{typeof(indp)}) &&
+       (sc = symbolic_container(indp)) != indp
+        return detect_cycles(sc, varmap, syms)
+    else
+        return false
+    end
+end
+
 anydict(d::Dict{Any, Any}) = d
 anydict(d) = Dict{Any, Any}(d)
 anydict() = Dict{Any, Any}()
@@ -571,7 +586,7 @@ end
 
 function fill_vars(
         prob, varmap; defs = nothing, use_defaults = false, allsyms, index_function)
-    idx_to_vsym = anydict(variable_index(prob, sym) => sym for sym in allsyms)
+    idx_to_vsym = anydict(index_function(prob, sym) => sym for sym in allsyms)
     sym_to_idx = anydict()
     idx_to_sym = anydict()
     idx_to_val = anydict()
@@ -617,10 +632,26 @@ function fill_vars(
     return newvals
 end
 
+struct CyclicDependencyError <: Exception
+    varmap::Dict{Any, Any}
+    vars::Any
+end
+
+function Base.showerror(io::IO, err::CyclicDependencyError)
+    println(io, "Detected cyclic dependency in initial values:")
+    for (k, v) in err.varmap
+        println(io, k, " => ", "v")
+    end
+    println(io, "While trying to solve for variables: ", err.vars)
+end
+
 function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in u0)
     isdep || return remake_buffer(prob, state_values(prob), keys(u0), values(u0)), p
 
+    if detect_cycles(prob, u0, variable_symbols(prob))
+        throw(CyclicDependencyError(u0, variable_symbols(prob)))
+    end
     for (k, v) in u0
         u0[k] = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, u0)
     end
@@ -642,6 +673,9 @@ function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true}, t0)
     isdep = any(symbolic_type(v) !== NotSymbolic() for (_, v) in p)
     isdep || return u0, remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 
+    if detect_cycles(prob, p, parameter_symbols(prob))
+        throw(CyclicDependencyError(p, parameter_symbols(prob)))
+    end
     for (k, v) in p
         p[k] = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, p)
     end
@@ -669,6 +703,10 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
     end
 
     varmap = merge(u0, p)
+    allsyms = [variable_symbols(prob); parameter_symbols(prob)]
+    if detect_cycles(prob, varmap, allsyms)
+        throw(CyclicDependencyError(varmap, allsyms))
+    end
     if is_time_dependent(prob)
         varmap[only(independent_variable_symbols(prob))] = t0
     end
