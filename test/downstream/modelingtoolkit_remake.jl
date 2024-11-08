@@ -248,3 +248,29 @@ end
     prob2 = remake(prob; u0 = [x => t + 3.0])
     @test prob2[x] ≈ 3.0
 end
+
+@static if length(methods(SciMLBase.detect_cycles)) == 1
+    function SciMLBase.detect_cycles(
+            ::ModelingToolkit.AbstractSystem, varmap::Dict{Any, Any}, vars)
+        for sym in vars
+            if symbolic_type(ModelingToolkit.fixpoint_sub(sym, varmap; maxiters = 10)) !=
+               NotSymbolic()
+                return true
+            end
+        end
+        return false
+    end
+end
+
+@testset "Cycle detection" begin
+    @variables x(t) y(t)
+    @parameters p q
+    @mtkbuild sys = ODESystem([D(x) ~ x * p, D(y) ~ y * q], t)
+
+    prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 1.0), [p => 1.0, q => 1.0])
+    @test_throws SciMLBase.CyclicDependencyError remake(
+        prob; u0 = [x => 2y + 3, y => 2x + 1])
+    @test_throws SciMLBase.CyclicDependencyError remake(prob; p = [p => 2q + 1, q => p + 3])
+    @test_throws SciMLBase.CyclicDependencyError remake(
+        prob; u0 = [x => 2y + p, y => q + 3], p = [p => x + y, q => p + 3])
+end
