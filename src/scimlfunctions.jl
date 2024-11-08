@@ -2853,7 +2853,7 @@ function DynamicalODEFunction{iip, specialize}(f1, f2;
         colorvec = __has_colorvec(f1) ? f1.colorvec :
                    nothing,
         sys = __has_sys(f1) ? f1.sys : nothing,
-        initialization_data = __has_initialization_data(f) ? f.initialization_data :
+        initialization_data = __has_initialization_data(f1) ? f1.initialization_data :
                               nothing) where {
         iip,
         specialize
@@ -3195,7 +3195,7 @@ function SplitSDEFunction{iip, specialize}(f1, f2, g;
         colorvec = __has_colorvec(f1) ? f1.colorvec :
                    nothing,
         sys = __has_sys(f1) ? f1.sys : nothing,
-        initialization_data = __has_initialization_data(f) ? f.initialization_data :
+        initialization_data = __has_initialization_data(f1) ? f1.initialization_data :
                               nothing) where {
         iip,
         specialize
@@ -3282,7 +3282,7 @@ function DynamicalSDEFunction{iip, specialize}(f1, f2, g;
         colorvec = __has_colorvec(f1) ? f1.colorvec :
                    nothing,
         sys = __has_sys(f1) ? f1.sys : nothing,
-        initialization_data = __has_initialization_data(f) ? f.initialization_data :
+        initialization_data = __has_initialization_data(f1) ? f1.initialization_data :
                               nothing
 ) where {
         iip,

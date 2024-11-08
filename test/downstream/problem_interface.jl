@@ -286,7 +286,8 @@ prob = SteadyStateProblem(osys, u0, ps)
 @test prob[X2] == prob[osys.X2] == prob[:X2] == 0.2
 @test prob[[X, X2]] == prob[[osys.X, osys.X2]] == prob[[:X, :X2]] == [0.1, 0.2]
 @test getsym(prob, X)(prob) == getsym(prob, osys.X)(prob) == getsym(prob, :X)(prob) == 0.1
-@test getsym(prob, X2)(prob) == getsym(prob, osys.X2)(prob) == getsym(prob, :X2)(prob) == 0.2
+@test getsym(prob, X2)(prob) == getsym(prob, osys.X2)(prob) == getsym(prob, :X2)(prob) ==
+      0.2
 @test getsym(prob, [X, X2])(prob) == getsym(prob, [osys.X, osys.X2])(prob) ==
       getsym(prob, [:X, :X2])(prob) == [0.1, 0.2]
 @test getsym(prob, (X, X2))(prob) == getsym(prob, (osys.X, osys.X2))(prob) ==
