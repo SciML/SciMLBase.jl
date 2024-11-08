@@ -560,14 +560,24 @@ function _updated_u0_p_internal(
 end
 
 function fill_u0(prob, u0; defs = nothing, use_defaults = false)
-    vsyms = variable_symbols(prob)
-    idx_to_vsym = anydict(variable_index(prob, sym) => sym for sym in vsyms)
+    fill_vars(prob, u0; defs, use_defaults, allsyms = variable_symbols(prob),
+        index_function = variable_index)
+end
+
+function fill_p(prob, p; defs = nothing, use_defaults = false)
+    fill_vars(prob, p; defs, use_defaults, allsyms = parameter_symbols(prob),
+        index_function = parameter_index)
+end
+
+function fill_vars(
+        prob, varmap; defs = nothing, use_defaults = false, allsyms, index_function)
+    idx_to_vsym = anydict(variable_index(prob, sym) => sym for sym in allsyms)
     sym_to_idx = anydict()
     idx_to_sym = anydict()
     idx_to_val = anydict()
-    for (k, v) in u0
+    for (k, v) in varmap
         v === nothing && continue
-        idx = variable_index(prob, k)
+        idx = index_function(prob, k)
         idx === nothing && continue
         if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
             idx = (idx,)
@@ -582,9 +592,9 @@ function fill_u0(prob, u0; defs = nothing, use_defaults = false)
             idx_to_val[ii] = vv
         end
     end
-    for sym in vsyms
+    for sym in allsyms
         haskey(sym_to_idx, sym) && continue
-        idx = variable_index(prob, sym)
+        idx = index_function(prob, sym)
         haskey(idx_to_val, idx) && continue
         sym_to_idx[sym] = idx
         idx_to_sym[idx] = sym
@@ -593,62 +603,14 @@ function fill_u0(prob, u0; defs = nothing, use_defaults = false)
                              (symbolic_type(defval) != NotSymbolic() || use_defaults)
             defval
         else
-            getu(prob, sym)(prob)
+            getsym(prob, sym)(prob)
         end
     end
     newvals = anydict()
     for (idx, val) in idx_to_val
         newvals[idx_to_sym[idx]] = val
     end
-    for (k, v) in u0
-        haskey(sym_to_idx, k) && continue
-        newvals[k] = v
-    end
-    return newvals
-end
-
-function fill_p(prob, p; defs = nothing, use_defaults = false)
-    psyms = parameter_symbols(prob)
-    idx_to_psym = anydict(parameter_index(prob, sym) => sym for sym in psyms)
-    sym_to_idx = anydict()
-    idx_to_sym = anydict()
-    idx_to_val = anydict()
-    for (k, v) in p
-        v === nothing && continue
-        idx = parameter_index(prob, k)
-        idx === nothing && continue
-        if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
-            idx = (idx,)
-            k = (k,)
-            v = (v,)
-        end
-        for (kk, vv, ii) in zip(k, v, idx)
-            sym_to_idx[kk] = ii
-            kk = idx_to_psym[ii]
-            sym_to_idx[kk] = ii
-            idx_to_sym[ii] = kk
-            idx_to_val[ii] = vv
-        end
-    end
-    for sym in psyms
-        haskey(sym_to_idx, sym) && continue
-        idx = parameter_index(prob, sym)
-        haskey(idx_to_val, idx) && continue
-        sym_to_idx[sym] = idx
-        idx_to_sym[idx] = sym
-        idx_to_val[idx] = if defs !== nothing &&
-                             (defval = varmap_get(defs, sym)) !== nothing &&
-                             (symbolic_type(defval) != NotSymbolic() || use_defaults)
-            defval
-        else
-            getp(prob, sym)(prob)
-        end
-    end
-    newvals = anydict()
-    for (idx, val) in idx_to_val
-        newvals[idx_to_sym[idx]] = val
-    end
-    for (k, v) in p
+    for (k, v) in varmap
         haskey(sym_to_idx, k) && continue
         newvals[k] = v
     end
