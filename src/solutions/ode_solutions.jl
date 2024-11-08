@@ -296,7 +296,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
         end
     end
     state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
-    return getu(sol, idxs)(state)
+    return getsym(sol, idxs)(state)
 end
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
@@ -321,7 +321,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
         end
     end
     state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
-    return getu(sol, idxs)(state)
+    return getsym(sol, idxs)(state)
 end
 
 function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
@@ -329,7 +329,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    getter = getu(sol, idxs)
+    getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
         return DiffEqArray(getter(interp_sol), t, p, sol)
@@ -353,7 +353,7 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     end
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    getter = getu(sol, idxs)
+    getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
         return DiffEqArray(getter(interp_sol), t, p, sol)

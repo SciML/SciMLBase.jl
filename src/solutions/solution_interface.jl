@@ -114,7 +114,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
     if is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `sol.ps[$sym]` for parameter indexing.")
     end
-    return getu(A, sym)(A)
+    return getsym(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
@@ -123,7 +123,7 @@ Base.@propagate_inbounds function Base.getindex(
        is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `sol.ps[$sym]` for parameter indexing.")
     end
-    return getu(A, sym)(A)
+    return getsym(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
@@ -359,7 +359,7 @@ plottable_indices(x::Number) = 1
             xvar = only(independent_variable_symbols(sol))
         end
         xvals = sol(ts; idxs = xvar).u
-        # xvals = getu(sol, xvar)(sol, tstart:tend)
+        # xvals = getsym(sol, xvar)(sol, tstart:tend)
         yvals = getp(sol, yvar)(sol, tstart:tend)
         tmpvals = map(func, xvals, yvals)
         xvals = getindex.(tmpvals, 1)

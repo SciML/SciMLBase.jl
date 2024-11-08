@@ -330,21 +330,21 @@ integrator = init(prob, Tsit5(), save_everystep = false)
 @test integrator[x] isa Vector{Float64}
 @test integrator[@nonamespace sys.x] isa Vector{Float64}
 
-getx = getu(integrator, x)
-gety = getu(integrator, :y)
-get_arr = getu(integrator, [x, y])
-get_tuple = getu(integrator, (x, y))
-get_obs = getu(integrator, x[1] / p[1])
+getx = getsym(integrator, x)
+gety = getsym(integrator, :y)
+get_arr = getsym(integrator, [x, y])
+get_tuple = getsym(integrator, (x, y))
+get_obs = getsym(integrator, x[1] / p[1])
 @test getx(integrator) == [1.0, 2.0, 3.0]
 @test gety(integrator) == 1.0
 @test get_arr(integrator) == [[1.0, 2.0, 3.0], 1.0]
 @test get_tuple(integrator) == ([1.0, 2.0, 3.0], 1.0)
 @test get_obs(integrator) == 1.0
 
-setx! = setu(integrator, x)
-sety! = setu(integrator, :y)
-set_arr! = setu(integrator, [x, y])
-set_tuple! = setu(integrator, (x, y))
+setx! = setsym(integrator, x)
+sety! = setsym(integrator, :y)
+set_arr! = setsym(integrator, [x, y])
+set_tuple! = setsym(integrator, (x, y))
 
 setx!(integrator, [4.0, 5.0, 6.0])
 @test getx(integrator) == [4.0, 5.0, 6.0]

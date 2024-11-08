@@ -492,7 +492,7 @@ Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
     if is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `integrator.ps[$sym]` for parameter indexing.")
     end
-    return getu(A, sym)(A)
+    return getsym(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
@@ -501,7 +501,7 @@ Base.@propagate_inbounds function Base.getindex(
        is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `integrator.ps[$sym]` for parameter indexing.")
     end
-    return getu(A, sym)(A)
+    return getsym(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
@@ -522,7 +522,7 @@ function Base.setindex!(A::DEIntegrator, val, sym)
     if is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `integrator.ps[$sym] = $val` for parameter indexing.")
     end
-    setu(A, sym)(A, val)
+    setsym(A, sym)(A, val)
 end
 
 function Base.setindex!(A::DEIntegrator, val, sym::Union{AbstractArray, Tuple})
@@ -530,7 +530,7 @@ function Base.setindex!(A::DEIntegrator, val, sym::Union{AbstractArray, Tuple})
        is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `integrator.ps[$sym] = $val` for parameter indexing.")
     end
-    setu(A, sym)(A, val)
+    setsym(A, sym)(A, val)
 end
 
 ### Integrator traits

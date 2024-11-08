@@ -593,7 +593,7 @@ function fill_u0(prob, u0; defs = nothing, use_defaults = false)
                              (symbolic_type(defval) != NotSymbolic() || use_defaults)
             defval
         else
-            getu(prob, sym)(prob)
+            getsym(prob, sym)(prob)
         end
     end
     newvals = anydict()
@@ -671,7 +671,7 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     # used, since any state symbols in the expression were substituted out earlier.
     temp_state = ProblemState(; u = state_values(prob), p = p, t = t0)
     for (k, v) in u0
-        u0[k] = symbolic_type(v) === NotSymbolic() ? v : getu(prob, v)(temp_state)
+        u0[k] = symbolic_type(v) === NotSymbolic() ? v : getsym(prob, v)(temp_state)
     end
     return remake_buffer(prob, state_values(prob), keys(u0), values(u0)), p
 end
@@ -692,7 +692,7 @@ function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true}, t0)
     # used, since any parameter symbols in the expression were substituted out earlier.
     temp_state = ProblemState(; u = u0, p = parameter_values(prob), t = t0)
     for (k, v) in p
-        p[k] = symbolic_type(v) === NotSymbolic() ? v : getu(prob, v)(temp_state)
+        p[k] = symbolic_type(v) === NotSymbolic() ? v : getsym(prob, v)(temp_state)
     end
     return u0, remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 end

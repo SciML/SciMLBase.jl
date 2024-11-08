@@ -119,8 +119,8 @@ timeseries_systems = [osys, ssys, jsys]
                                    ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
                                    ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
                                    (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))]
-            get = getu(indp, sym)
-            set! = setu(indp, sym)
+            get = getsym(indp, sym)
+            set! = setsym(indp, sym)
             @inferred get(valp)
             @test get(valp) == val
             if valp isa JumpProblem && sym isa Union{Tuple, AbstractArray}
@@ -153,12 +153,12 @@ timeseries_systems = [osys, ssys, jsys]
                            ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
                            ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
                            (X * Y, prod(u))]
-            get = getu(indp, sym)
+            get = getsym(indp, sym)
             @test get(valp) == val
         end
     end
 
-    getter = getu(indp, [])
+    getter = getsym(indp, [])
     @test getter(valp) == []
 
     p = getindex.((Dict(p_vals),), [kp, kd, k1, k2])
@@ -264,7 +264,7 @@ end
                                                                 true)
                                                             (X * Y, xvals .* yvals,
                                                                 false, true)]
-            get = getu(indp, sym)
+            get = getsym(indp, sym)
             if check_inference
                 @inferred get(valp)
             end
@@ -416,9 +416,9 @@ end
                 [[i, [k, j], (k, j)] for (i, j, k) in zip(x_val, y_val, obs_val)], false)
         ]
             if check_inference
-                @inferred getu(prob, sym)(sol)
+                @inferred getsym(prob, sym)(sol)
             end
-            @test getu(prob, sym)(sol) == val
+            @test getsym(prob, sym)(sol) == val
         end
     end
 
@@ -454,8 +454,8 @@ end
             ((x[1:2], (y_idx, x[3])), (x_probval[1:2], (y_probval, x_probval[3])),
                 (x_newval[1:2], (y_newval, x_newval[3])), false)
         ]
-            getter = getu(prob, sym)
-            setter! = setu(prob, sym)
+            getter = getsym(prob, sym)
+            setter! = setsym(prob, sym)
             if check_inference
                 @inferred getter(prob)
             end
@@ -818,7 +818,7 @@ end
         ([kp, 2ud1], true, vcat.(kpval, 2 .* ud1val), false),
         ((kp, 2ud1), true, tuple.(kpval, 2 .* ud1val), false)
     ]
-        getter = getu(sys, sym)
+        getter = getsym(sys, sym)
         if check_inference
             @inferred getter(sol)
         end
@@ -853,7 +853,7 @@ end
         ([2x, 3xd1], [2_xval, 3_xd1val], true),
         ((2x, 3xd2), (2_xval, 3_xd2val), true)
     ]
-        getter = getu(sys, sym)
+        getter = getsym(sys, sym)
         @test_throws Exception getter(sol)
         for subidx in [1, CartesianIndex(1), :, rand(Bool, 4), rand(1:4, 3), 1:2]
             @test_throws Exception getter(sol, subidx)

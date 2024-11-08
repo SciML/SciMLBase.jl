@@ -80,21 +80,21 @@ oprob[sys.y] = 10.0
 oprob[:z] = 1.0
 @test oprob[z] == oprob[sys.z] == oprob[:z] == 1.0
 
-getx = getu(oprob, x)
-gety = getu(oprob, :y)
-get_arr = getu(oprob, [x, y])
-get_tuple = getu(oprob, (y, z))
-get_obs = getu(oprob, sys.x + sys.z + t + σ)
+getx = getsym(oprob, x)
+gety = getsym(oprob, :y)
+get_arr = getsym(oprob, [x, y])
+get_tuple = getsym(oprob, (y, z))
+get_obs = getsym(oprob, sys.x + sys.z + t + σ)
 @test getx(oprob) == 10.0
 @test gety(oprob) == 10.0
 @test get_arr(oprob) == [10.0, 10.0]
 @test get_tuple(oprob) == (10.0, 1.0)
 @test get_obs(oprob) == 22.0
 
-setx! = setu(oprob, x)
-sety! = setu(oprob, :y)
-set_arr! = setu(oprob, [x, y])
-set_tuple! = setu(oprob, (y, z))
+setx! = setsym(oprob, x)
+sety! = setsym(oprob, :y)
+set_arr! = setsym(oprob, [x, y])
+set_tuple! = setsym(oprob, (y, z))
 
 setx!(oprob, 11.0)
 @test getx(oprob) == 11.0
@@ -168,21 +168,21 @@ sprob[noise_sys.y] = 10.0
 sprob[:z] = 1.0
 @test sprob[z] == sprob[noise_sys.z] == sprob[:z] == 1.0
 
-getx = getu(sprob, x)
-gety = getu(sprob, :y)
-get_arr = getu(sprob, [x, y])
-get_tuple = getu(sprob, (y, z))
-get_obs = getu(sprob, sys.x + sys.z + t + σ)
+getx = getsym(sprob, x)
+gety = getsym(sprob, :y)
+get_arr = getsym(sprob, [x, y])
+get_tuple = getsym(sprob, (y, z))
+get_obs = getsym(sprob, sys.x + sys.z + t + σ)
 @test getx(sprob) == 10.0
 @test gety(sprob) == 10.0
 @test get_arr(sprob) == [10.0, 10.0]
 @test get_tuple(sprob) == (10.0, 1.0)
 @test get_obs(sprob) == 22.0
 
-setx! = setu(sprob, x)
-sety! = setu(sprob, :y)
-set_arr! = setu(sprob, [x, y])
-set_tuple! = setu(sprob, (y, z))
+setx! = setsym(sprob, x)
+sety! = setsym(sprob, :y)
+set_arr! = setsym(sprob, [x, y])
+set_tuple! = setsym(sprob, (y, z))
 
 setx!(sprob, 11.0)
 @test getx(sprob) == 11.0
@@ -228,9 +228,9 @@ eprob = EnsembleProblem(oprob)
 @test eprob.ps[p] == 1.0
 @test eprob.ps[:p] == 1.0
 @test eprob.ps[osys.p] == 1.0
-@test getu(eprob, X)(eprob) == 0.1
-@test getu(eprob, :X)(eprob) == 0.1
-@test getu(eprob, osys.X)(eprob) == 0.1
+@test getsym(eprob, X)(eprob) == 0.1
+@test getsym(eprob, :X)(eprob) == 0.1
+@test getsym(eprob, osys.X)(eprob) == 0.1
 @test getp(eprob, p)(eprob) == 1.0
 @test getp(eprob, :p)(eprob) == 1.0
 @test getp(eprob, osys.p)(eprob) == 1.0
@@ -247,11 +247,11 @@ eprob = EnsembleProblem(oprob)
 @test eprob.ps[:p] == 0.1
 @test_nowarn eprob.ps[osys.p] = 0.0
 @test eprob.ps[osys.p] == 0.0
-@test_nowarn setu(eprob, X)(eprob, 0.1)
+@test_nowarn setsym(eprob, X)(eprob, 0.1)
 @test eprob[X] == 0.1
-@test_nowarn setu(eprob, :X)(eprob, 0.0)
+@test_nowarn setsym(eprob, :X)(eprob, 0.0)
 @test eprob[:X] == 0.0
-@test_nowarn setu(eprob, osys.X)(eprob, 0.1)
+@test_nowarn setsym(eprob, osys.X)(eprob, 0.1)
 @test eprob[osys.X] == 0.1
 @test_nowarn setp(eprob, p)(eprob, 0.1)
 @test eprob.ps[p] == 0.1
@@ -285,9 +285,9 @@ prob = SteadyStateProblem(osys, u0, ps)
 @test prob[X] == prob[osys.X] == prob[:X] == 0.1
 @test prob[X2] == prob[osys.X2] == prob[:X2] == 0.2
 @test prob[[X, X2]] == prob[[osys.X, osys.X2]] == prob[[:X, :X2]] == [0.1, 0.2]
-@test getu(prob, X)(prob) == getu(prob, osys.X)(prob) == getu(prob, :X)(prob) == 0.1
-@test getu(prob, X2)(prob) == getu(prob, osys.X2)(prob) == getu(prob, :X2)(prob) == 0.2
-@test getu(prob, [X, X2])(prob) == getu(prob, [osys.X, osys.X2])(prob) ==
-      getu(prob, [:X, :X2])(prob) == [0.1, 0.2]
-@test getu(prob, (X, X2))(prob) == getu(prob, (osys.X, osys.X2))(prob) ==
-      getu(prob, (:X, :X2))(prob) == (0.1, 0.2)
+@test getsym(prob, X)(prob) == getsym(prob, osys.X)(prob) == getsym(prob, :X)(prob) == 0.1
+@test getsym(prob, X2)(prob) == getsym(prob, osys.X2)(prob) == getsym(prob, :X2)(prob) == 0.2
+@test getsym(prob, [X, X2])(prob) == getsym(prob, [osys.X, osys.X2])(prob) ==
+      getsym(prob, [:X, :X2])(prob) == [0.1, 0.2]
+@test getsym(prob, (X, X2))(prob) == getsym(prob, (osys.X, osys.X2))(prob) ==
+      getsym(prob, (:X, :X2))(prob) == (0.1, 0.2)

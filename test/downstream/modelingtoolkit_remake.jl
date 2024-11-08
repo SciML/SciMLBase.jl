@@ -79,7 +79,7 @@ for (sys, prob) in zip(syss, probs)
     @inferred typeof(prob) remake(prob)
 
     baseType = Base.typename(typeof(prob)).wrapper
-    ugetter = getu(prob, [x, y, z])
+    ugetter = getsym(prob, [x, y, z])
     prob2 = @inferred baseType remake(prob; u0 = [x => 2.0, y => 3.0, z => 4.0])
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
     prob2 = @inferred baseType remake(prob; u0 = [sys.x => 2.0, sys.y => 3.0, sys.z => 4.0])
