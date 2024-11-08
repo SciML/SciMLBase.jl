@@ -42,7 +42,7 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractSciMLProblem, sym)
     if is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `prob.ps[$sym]` for parameter indexing.")
     end
-    return getu(A, sym)(A)
+    return getsym(A, sym)(A)
 end
 
 Base.@propagate_inbounds function Base.getindex(
@@ -51,7 +51,7 @@ Base.@propagate_inbounds function Base.getindex(
        is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `prob.ps[$sym]` for parameter indexing.")
     end
-    return getu(A, sym)(A)
+    return getsym(A, sym)(A)
 end
 
 function Base.setindex!(prob::AbstractSciMLProblem, args...; kwargs...)
@@ -62,7 +62,7 @@ function ___internal_setindex!(A::AbstractSciMLProblem, val, sym)
     if is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `prob.ps[$sym] = $val` for parameter indexing.")
     end
-    return setu(A, sym)(A, val)
+    return setsym(A, sym)(A, val)
 end
 
 function ___internal_setindex!(
@@ -71,5 +71,5 @@ function ___internal_setindex!(
        is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `prob.ps[$sym] = $val` for parameter indexing.")
     end
-    return setu(A, sym)(A, val)
+    return setsym(A, sym)(A, val)
 end

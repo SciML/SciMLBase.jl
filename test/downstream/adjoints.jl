@@ -80,7 +80,7 @@ sys2 = complete(sys2)
 prob2 = ODEProblem(sys2, [], (0.0, 10.0))
 
 bi = BatchedInterface((sys1, [x, y, z]), (sys2, [x, y, w]))
-getter = getu(bi)
+getter = getsym(bi)
 
 p1grad, p2grad = Zygote.gradient(prob1, prob2) do prob1, prob2
     sum(getter(prob1, prob2))
