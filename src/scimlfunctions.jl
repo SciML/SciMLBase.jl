@@ -2881,7 +2881,7 @@ function DynamicalODEFunction{iip, specialize}(f1, f2;
             f1, f2, mass_matrix, analytic, tgrad, jac, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
-            colorvec, sys)
+            colorvec, sys, initialization_data)
     end
 end
 
