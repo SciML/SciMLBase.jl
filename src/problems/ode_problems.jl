@@ -198,7 +198,12 @@ function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
     _u0 = prepare_initial_state(u0)
     _tspan = promote_tspan(tspan)
-    _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
+    _f = if iip
+        out = copy(u0) # TODO: do this properly
+        ODEFunction{iip, FullSpecialize}(DUMB_WRAPPER(out, u0, p, first(_tspan), ODE_F_WRAPPER(f)))
+    else
+        _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
+    end
     ODEProblem(_f, _u0, _tspan, p; kwargs...)
 end
 
