@@ -160,7 +160,7 @@ argument, failing which this function will throw an error. The success value ret
 depends on the success of the nonlinear solve.
 """
 function get_initial_values(prob, valp, f, alg::OverrideInit,
-        isinplace::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, kwargs...)
+        iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, kwargs...)
     u0 = state_values(valp)
     p = parameter_values(valp)
 
@@ -171,7 +171,8 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     initdata::OverrideInitData = f.initialization_data
     initprob = initdata.initializeprob
 
-    if nlsolve_alg === nothing
+    nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
+    if nlsolve_alg === nothing && state_values(initprob) !== nothing
         throw(OverrideInitMissingAlgorithm())
     end
 
@@ -179,7 +180,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         initdata.update_initializeprob!(initprob, valp)
     end
 
-    nlsol = solve(initprob, nlsolve_alg)
+    nlsol = solve(initprob, nlsolve_alg; abstol = alg.abstol)
 
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing

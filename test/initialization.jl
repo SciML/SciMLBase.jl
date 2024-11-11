@@ -101,15 +101,43 @@ end
     end
 
     @testset "Solves" begin
-        u0, p, success = SciMLBase.get_initial_values(
-            prob, integ, fn, SciMLBase.OverrideInit(),
-            Val(false); nlsolve_alg = NewtonRaphson())
+        @testset "with explicit alg" begin
+            u0, p, success = SciMLBase.get_initial_values(
+                prob, integ, fn, SciMLBase.OverrideInit(),
+                Val(false); nlsolve_alg = NewtonRaphson())
 
-        @test u0 ≈ [2.0, 2.0]
-        @test p ≈ 1.0
-        @test success
+            @test u0 ≈ [2.0, 2.0]
+            @test p ≈ 1.0
+            @test success
 
-        initprob.p[1] = 1.0
+            initprob.p[1] = 1.0
+        end
+        @testset "with alg in `OverrideInit`" begin
+            u0, p, success = SciMLBase.get_initial_values(
+                prob, integ, fn, SciMLBase.OverrideInit(nlsolve = NewtonRaphson()),
+                Val(false))
+
+            @test u0 ≈ [2.0, 2.0]
+            @test p ≈ 1.0
+            @test success
+
+            initprob.p[1] = 1.0
+        end
+        @testset "with trivial problem and no alg" begin
+            iprob = NonlinearProblem((u, p) -> 0.0, nothing, 1.0)
+            iprobmap = (_) -> [1.0, 1.0]
+            initdata = SciMLBase.OverrideInitData(iprob, nothing, iprobmap, nothing)
+            _fn = ODEFunction(rhs2; initialization_data = initdata)
+            _prob = ODEProblem(_fn, [2.0, 0.0], (0.0, 1.0), 1.0)
+            _integ = init(_prob; initializealg = NoInit())
+
+            u0, p, success = SciMLBase.get_initial_values(
+                _prob, _integ, _fn, SciMLBase.OverrideInit(), Val(false))
+
+            @test u0 ≈ [1.0, 1.0]
+            @test p ≈ 1.0
+            @test success
+        end
     end
 
     @testset "Solves with non-integrator value provider" begin
