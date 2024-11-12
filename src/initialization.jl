@@ -182,7 +182,11 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         initdata.update_initializeprob!(initprob, valp)
     end
 
-    nlsol = solve(initprob, nlsolve_alg; abstol = alg.abstol)
+    if alg.abstol !== nothing
+        nlsol = solve(initprob, nlsolve_alg; abstol = alg.abstol)
+    else
+        nlsol = solve(initprob, nlsolve_alg)
+    end
 
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing
