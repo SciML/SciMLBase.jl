@@ -17,13 +17,15 @@ using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterfac
             prob = ODEProblem(f, [1.0, 1.0], (0.0, 1.0))
             integ = init(prob)
             u0, _, success = SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
             @test success
             @test u0 == prob.u0
 
             integ.u[2] = 2.0
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
         end
     end
 
@@ -43,18 +45,21 @@ using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterfac
             prob = DAEProblem(f, [1.0, 0.0], [1.0, 1.0], (0.0, 1.0), 1.0)
             integ = init(prob, DImplicitEuler())
             u0, _, success = SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
             @test success
             @test u0 == prob.u0
 
             integ.u[2] = 2.0
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
 
             integ.u[2] = 1.0
             integ.du[1] = 2.0
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
         end
     end
 
@@ -86,13 +91,15 @@ using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterfac
             prob = SDEProblem(f, [1.0, 1.0, -1.0], (0.0, 1.0))
             integ = init(prob, ImplicitEM())
             u0, _, success = SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
             @test success
             @test u0 == prob.u0
 
             integ.u[2] = 2.0
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
-                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(SciMLBase.isinplace(f)); abstol = 1e-10)
         end
     end
 end
@@ -138,11 +145,13 @@ end
             prob, integ, fn, SciMLBase.OverrideInit(), Val(false))
     end
 
+    abstol = 1e-10
+    reltol = 1e-10
     @testset "Solves" begin
         @testset "with explicit alg" begin
             u0, p, success = SciMLBase.get_initial_values(
                 prob, integ, fn, SciMLBase.OverrideInit(),
-                Val(false); nlsolve_alg = NewtonRaphson())
+                Val(false); nlsolve_alg = NewtonRaphson(), abstol, reltol)
 
             @test u0 ≈ [2.0, 2.0]
             @test p ≈ 1.0
@@ -152,7 +161,8 @@ end
         end
         @testset "with alg in `OverrideInit`" begin
             u0, p, success = SciMLBase.get_initial_values(
-                prob, integ, fn, SciMLBase.OverrideInit(nlsolve = NewtonRaphson()),
+                prob, integ, fn,
+                SciMLBase.OverrideInit(; nlsolve = NewtonRaphson(), abstol, reltol),
                 Val(false))
 
             @test u0 ≈ [2.0, 2.0]
@@ -170,7 +180,7 @@ end
             _integ = init(_prob; initializealg = NoInit())
 
             u0, p, success = SciMLBase.get_initial_values(
-                _prob, _integ, _fn, SciMLBase.OverrideInit(), Val(false))
+                _prob, _integ, _fn, SciMLBase.OverrideInit(), Val(false); abstol, reltol)
 
             @test u0 ≈ [1.0, 1.0]
             @test p ≈ 1.0
@@ -182,7 +192,7 @@ end
         _integ = ProblemState(; u = integ.u, p = parameter_values(integ), t = integ.t)
         u0, p, success = SciMLBase.get_initial_values(
             prob, _integ, fn, SciMLBase.OverrideInit(),
-            Val(false); nlsolve_alg = NewtonRaphson())
+            Val(false); nlsolve_alg = NewtonRaphson(), abstol, reltol)
 
         @test u0 ≈ [2.0, 2.0]
         @test p ≈ 1.0
@@ -199,7 +209,7 @@ end
 
         u0, p, success = SciMLBase.get_initial_values(
             prob, integ, fn, SciMLBase.OverrideInit(),
-            Val(false); nlsolve_alg = NewtonRaphson())
+            Val(false); nlsolve_alg = NewtonRaphson(), abstol, reltol)
         @test u0 ≈ [1.0, 1.0]
         @test p ≈ 1.0
         @test success
@@ -213,7 +223,7 @@ end
 
         u0, p, success = SciMLBase.get_initial_values(
             prob, integ, fn, SciMLBase.OverrideInit(),
-            Val(false); nlsolve_alg = NewtonRaphson())
+            Val(false); nlsolve_alg = NewtonRaphson(), abstol, reltol)
 
         @test u0 ≈ [2.0, 2.0]
         @test p ≈ 0.0
