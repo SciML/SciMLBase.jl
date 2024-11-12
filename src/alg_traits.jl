@@ -285,3 +285,13 @@ For more information, see https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.ht
 function alg_interpretation(alg::AbstractSciMLAlgorithm)
     error("Algorithm interpretation is not defined for this algorithm. It can be either `AlgorithmInterpretation.Ito` or `AlgorithmInterpretation.Stratonovich`")
 end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Trait declaration for whether an algorithm supports specifying `tstops` as a function `tstops(p, tspan)` to be called after
+initialization.
+
+Defaults to false.
+"""
+allows_late_binding_tstops(alg::AbstractODEAlgorithm) = false
