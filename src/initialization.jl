@@ -115,7 +115,8 @@ function get_initial_values(
     tmp = _evaluate_f_ode(integrator, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
-    normresid = integrator.opts.internalnorm(tmp, t)
+    normresid = isdefined(integrator.opts, :internalnorm) ?
+                integrator.opts.internalnorm(tmp, t) : norm(tmp)
     if normresid > integrator.opts.abstol
         throw(CheckInitFailureError(normresid, integrator.opts.abstol))
     end
@@ -144,7 +145,8 @@ function get_initial_values(
     t = current_time(integrator)
 
     resid = _evaluate_f_dae(integrator, f, isinplace, integrator.du, u0, p, t)
-    normresid = integrator.opts.internalnorm(resid, t)
+    normresid = isdefined(integrator.opts, :internalnorm) ?
+                integrator.opts.internalnorm(resid, t) : norm(resid)
     if normresid > integrator.opts.abstol
         throw(CheckInitFailureError(normresid, integrator.opts.abstol))
     end
