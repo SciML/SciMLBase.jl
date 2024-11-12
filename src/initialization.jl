@@ -100,7 +100,8 @@ Check if the algebraic constraints are satisfied, and error if they aren't. Retu
 the `u0` and `p` as-is, and is always successful if it returns. Valid only for
 `ODEProblem` and `DAEProblem`. Requires a `DEIntegrator` as its second argument.
 """
-function get_initial_values(prob::AbstractODEProblem, integrator, f, alg::CheckInit,
+function get_initial_values(
+        prob::AbstractDEProblem, integrator::DEIntegrator, f, alg::CheckInit,
         isinplace::Union{Val{true}, Val{false}}; kwargs...)
     u0 = state_values(integrator)
     p = parameter_values(integrator)
@@ -109,7 +110,7 @@ function get_initial_values(prob::AbstractODEProblem, integrator, f, alg::CheckI
 
     algebraic_vars = [all(iszero, x) for x in eachcol(M)]
     algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
-    (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return
+    (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
     update_coefficients!(M, u0, p, t)
     tmp = _evaluate_f_ode(integrator, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
@@ -135,7 +136,8 @@ function _evaluate_f_dae(integrator, f, isinplace::Val{false}, args...)
     return f(args...)
 end
 
-function get_initial_values(prob::AbstractDAEProblem, integrator, f, alg::CheckInit,
+function get_initial_values(
+        prob::AbstractDAEProblem, integrator::DEIntegrator, f, alg::CheckInit,
         isinplace::Union{Val{true}, Val{false}}; kwargs...)
     u0 = state_values(integrator)
     p = parameter_values(integrator)

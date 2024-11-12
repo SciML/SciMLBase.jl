@@ -1,4 +1,4 @@
-using OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterface, Test
+using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterface, Test
 
 @testset "CheckInit" begin
     @testset "ODEProblem" begin
@@ -53,6 +53,44 @@ using OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterface, Test
 
             integ.u[2] = 1.0
             integ.du[1] = 2.0
+            @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+        end
+    end
+
+    @testset "SDEProblem" begin
+        mm_A = [1 0 0; 0 1 0; 0 0 0]
+        function sdef!(du, u, p, t)
+            du[1] = u[1]
+            du[2] = u[2]
+            du[3] = u[1] + u[2] + u[3] - 1
+        end
+        function sdef(u, p, t)
+            du = similar(u)
+            sdef!(du, u, p, t)
+            du
+        end
+
+        function g!(du, u, p, t)
+            @. du = 0.1
+        end
+        function g(u, p, t)
+            du = similar(u)
+            g!(du, u, p, t)
+            du
+        end
+        iipfn = SDEFunction{true}(sdef!, g!; mass_matrix = mm_A)
+        oopfn = SDEFunction{false}(sdef, g; mass_matrix = mm_A)
+
+        @testset "Inplace = $(SciMLBase.isinplace(f))" for f in [oopfn, iipfn]
+            prob = SDEProblem(f, [1.0, 1.0, -1.0], (0.0, 1.0))
+            integ = init(prob, ImplicitEM())
+            u0, _, success = SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
+            @test success
+            @test u0 == prob.u0
+
+            integ.u[2] = 2.0
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
                 prob, integ, f, SciMLBase.CheckInit(), Val(SciMLBase.isinplace(f)))
         end
