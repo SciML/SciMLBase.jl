@@ -351,13 +351,14 @@ struct CheckInit <: DAEInitializationAlgorithm end
 """
 $(TYPEDEF)
 """
-struct OverrideInit{T, F} <: DAEInitializationAlgorithm
-    abstol::T
+struct OverrideInit{T1, T2, F} <: DAEInitializationAlgorithm
+    abstol::T1
+    reltol::T2
     nlsolve::F
 end
 
-function OverrideInit(; abstol = 1e-10, nlsolve = nothing)
-    OverrideInit(abstol, nlsolve)
+function OverrideInit(; abstol = nothing, reltol = nothing, nlsolve = nothing)
+    OverrideInit(abstol, reltol, nlsolve)
 end
 OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
 
