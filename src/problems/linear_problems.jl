@@ -78,8 +78,6 @@ function LinearProblem(A, b, args...; kwargs...)
 end
 
 struct LinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool,Nothing}
-    alias_f::Union{Bool,Nothing}
     alias_A::Union{Bool,Nothing}
     alias_b::Union{Bool,Nothing}
 end
