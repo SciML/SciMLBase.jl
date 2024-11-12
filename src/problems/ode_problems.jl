@@ -200,7 +200,7 @@ function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     _tspan = promote_tspan(tspan)
     _f = if iip
         out = copy(u0) # TODO: do this properly
-        ODEFunction{iip, FullSpecialize}(DUMB_WRAPPER(out, u0, p, first(_tspan), ODE_F_WRAPPER(f)))
+        ODEFunction{iip, FullSpecialize}(DUMB_WRAPPER(p, first(_tspan), ODE_F_WRAPPER(f)))
     else
         _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
     end
