@@ -256,6 +256,7 @@ ODEFunction{iip,specialize}(f;
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+                           nlprob = __has_nlprob(f) ? f.nlprob : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
 
@@ -289,10 +290,21 @@ the usage of `f`. These include:
   based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
-- `nlprob`: a `NonlinearProblem` that solves `f(u, t, p) = u_tmp`
-  where the nonlinear parameters are the tuple `(t, u_tmp, p)`.
-  This will be used as the nonlinear problem inside an implicit solver by specifying `u, u_tmp` and `t`
-  such that solving this function produces a solution to the implicit step of your solver.
+- `nlprob`: some `AbstractNonlinearProblem` to define custom nonlinear problems to be used for
+  implicit time discretizations. This allows to use extra structure of the ODE function (e.g.
+  multi-level structure). The rationale here is essentially that implicit ODE integration algorithms
+  need do solve the a nonlinear problems, usually of the form `dt⋅f(γ⋅z+inner_tmp,p,t) + outer_tmp = z`,
+  during time integration, where users want to use extra structure of f during the nonlinear solve.
+  Here `z` is the stage solution vector, `p` is the parameter vector of the ODE problem, `t` is
+  the time, `dt` the respective time increment`, `γ` is some scaling factor and the temporary
+  variables are some compatible vectors set by the specific solver.
+  Note that other implicit techniques, like for example some fully-implicit Runge-Kutta methods,
+  need to solve different nonlinear systems.
+  The inner nonlinear function of the nonlinear problem is in general of the form `g(z,p') = 0`
+  where `p'` is a struct with all information about the specific nonlinear problem at hand to solve
+  for a specific time discretization. For example, for the nonlinear problem stated in the first
+  paragraph in this docstring, `p'` would hold `(dt, γ, inner_tmp, outer_tmp, t, p)`, such that 
+  `g(z,p') = dt⋅f(γ⋅z+inner_tmp,p,t) + outer_tmp - z = 0`.
 
 ## iip: In-Place vs Out-Of-Place
 
