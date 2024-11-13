@@ -745,6 +745,7 @@ include("ensemble/basic_ensemble_solve.jl")
 include("ensemble/ensemble_analysis.jl")
 
 include("initialization.jl")
+include("ODE_nlsolve.jl")
 include("solve.jl")
 include("interpolation.jl")
 include("integrator_interface.jl")
