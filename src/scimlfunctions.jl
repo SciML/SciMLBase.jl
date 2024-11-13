@@ -289,11 +289,6 @@ the usage of `f`. These include:
   based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
-- `nlprob`: a `NonlinearProblem` that solves `f(u, t, p) = u_tmp`
-  where the nonlinear parameters are the tuple `(t, u_tmp, p)`.
-  This will be used as the nonlinear problem inside an implicit solver by specifying `u, u_tmp` and `t`
-  such that solving this function produces a solution to the implicit step of your solver.
-
 ## iip: In-Place vs Out-Of-Place
 
 `iip` is the optional boolean for determining whether a given function is written to
@@ -424,7 +419,7 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     colorvec::TCV
     sys::SYS
     initialization_data::ID
-    nlprob::NLP
+    nlprob_data::NLP
 end
 
 @doc doc"""
@@ -547,8 +542,8 @@ struct SplitFunction{
     observed::O
     colorvec::TCV
     sys::SYS
-    nlprob::NLP
     initialization_data::ID
+    nlprob_data::NLP
 end
 
 @doc doc"""
@@ -2446,9 +2441,9 @@ function ODEFunction{iip, specialize}(f;
                                  f.update_initializeprob! : nothing,
         initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
         initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing,
-        nlprob = __has_nlprob(f) ? f.nlprob : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing
+        nlprob_data = __has_nlprob_data(f) ? f.nlprob_data : nothing,
 ) where {iip,
         specialize
 }
@@ -2509,7 +2504,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(sys), Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initdata, nlprob)
+            observed, _colorvec, sys, initdata, nlprob_data)
     elseif specialize === false
         ODEFunction{iip, FunctionWrapperSpecialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2518,11 +2513,11 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initdata), typeof(nlprob)}(_f, mass_matrix,
+            typeof(sys), typeof(initdata), typeof(nlprob_data)}(_f, mass_matrix,
             analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initdata, nlprob)
+            observed, _colorvec, sys, initdata, nlprob_data)
     else
         ODEFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -2531,11 +2526,11 @@ function ODEFunction{iip, specialize}(f;
             typeof(paramjac),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initdata), typeof(nlprob)}(
+            typeof(sys), typeof(initdata), typeof(nlprob_data)}(
             _f, mass_matrix, analytic, tgrad,
             jac, jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
-            observed, _colorvec, sys, initdata, nlprob)
+            observed, _colorvec, sys, initdata, nlprob_data)
     end
 end
 
@@ -2556,7 +2551,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys, f.initialization_data, f.nlprob)
+            f.observed, f.colorvec, f.sys, f.initialization_data, f.nlprob_data)
     else
         ODEFunction{isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
@@ -2564,11 +2559,11 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
             typeof(f.paramjac),
             typeof(f.observed), typeof(f.colorvec),
-            typeof(f.sys), typeof(f.initialization_data), typeof(f.nlprob)}(
+            typeof(f.sys), typeof(f.initialization_data), typeof(f.nlprob_data)}(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
-            f.observed, f.colorvec, f.sys, f.initialization_data, f.nlprob)
+            f.observed, f.colorvec, f.sys, f.initialization_data, f.nlprob_data)
     end
 end
 
@@ -2703,7 +2698,7 @@ end
 @add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec, sys, initializeprob = nothing, update_initializeprob! = nothing,
-        initializeprobmap = nothing, initializeprobpmap = nothing, nlprob = nothing, initialization_data = nothing)
+        initializeprobmap = nothing, initializeprobpmap = nothing, initialization_data = nothing, nlprob_data = nothing)
     f1 = ODEFunction(f1)
     f2 = ODEFunction(f2)
 
@@ -2721,11 +2716,11 @@ end
         typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(W_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
-        typeof(sys), typeof(initdata), typeof(nlprob)}(
+        typeof(sys), typeof(initdata), typeof(nlprob_data)}(
         f1, f2, mass_matrix,
         cache, analytic, tgrad, jac, jvp, vjp,
         jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-        initdata, nlprob)
+        initdata, nlprob_data)
 end
 function SplitFunction{iip, specialize}(f1, f2;
         mass_matrix = __has_mass_matrix(f1) ?
@@ -2762,7 +2757,7 @@ function SplitFunction{iip, specialize}(f1, f2;
                                  f1.update_initializeprob! : nothing,
         initializeprobmap = __has_initializeprobmap(f1) ? f1.initializeprobmap : nothing,
         initializeprobpmap = __has_initializeprobpmap(f1) ? f1.initializeprobpmap : nothing,
-        nlprob = __has_nlprob(f1) ? f1.nlprob : nothing,
+        nlprob_data = __has_nlprob_data(f1) ? f1.nlprob_data : nothing,
         initialization_data = __has_initialization_data(f1) ? f1.initialization_data :
                               nothing
 ) where {iip,
@@ -2780,7 +2775,7 @@ function SplitFunction{iip, specialize}(f1, f2;
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac,
-            observed, colorvec, sys, initdata, nlprob)
+            observed, colorvec, sys, initdata, nlprob_data)
     else
         SplitFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
             typeof(_func_cache), typeof(analytic),
@@ -2788,11 +2783,11 @@ function SplitFunction{iip, specialize}(f1, f2;
             typeof(jac_prototype), typeof(W_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(colorvec),
-            typeof(sys), typeof(initdata), typeof(nlprob)}(f1, f2,
+            typeof(sys), typeof(initdata), typeof(nlprob_data)}(f1, f2,
             mass_matrix, _func_cache, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-            initdata, nlprob)
+            initdata, nlprob_data)
     end
 end
 
@@ -4488,7 +4483,7 @@ __has_colorvec(f) = isdefined(f, :colorvec)
 __has_sys(f) = isdefined(f, :sys)
 __has_analytic_full(f) = isdefined(f, :analytic_full)
 __has_resid_prototype(f) = isdefined(f, :resid_prototype)
-__has_nlprob(f) = isdefined(f, :nlprob)
+__has_nlprob_data(f) = isdefined(f, :nlprob_data)
 function __has_initializeprob(f)
     has_initialization_data(f) && isdefined(f.initialization_data, :initializeprob)
 end
