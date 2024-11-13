@@ -2442,7 +2442,7 @@ function ODEFunction{iip, specialize}(f;
         initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
         initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
-                              nothing
+                              nothing,
         nlprob_data = __has_nlprob_data(f) ? f.nlprob_data : nothing,
 ) where {iip,
         specialize
