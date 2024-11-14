@@ -401,7 +401,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV,
-    SYS, ID, NLP} <: AbstractODEFunction{iip}
+    SYS, ID<:OverrideInitData, NLP<:ODE_NLProbData} <: AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -523,7 +523,7 @@ information on generating the SplitFunction from this symbolic engine.
 struct SplitFunction{
     iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, WP, SP, TW, TWt,
     TPJ, O,
-    TCV, SYS, ID, NLP} <: AbstractODEFunction{iip}
+    TCV, SYS, ID<:OverrideInitData, NLP<:ODE_NLProbData} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
