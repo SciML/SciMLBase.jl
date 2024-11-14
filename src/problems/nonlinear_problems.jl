@@ -323,53 +323,146 @@ function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
 end
 
 @doc doc"""
+    SCCNonlinearProblem(probs, explicitfuns!)
 
-Defines a nonlinear system problem.
-Documentation Page: [https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/](https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/)
+Defines an SCC-split nonlinear system to be solved iteratively.
 
-## Mathematical Specification of a Nonlinear Problem
+## Mathematical Specification of an SCC-Split Nonlinear Problem
 
-To define a Nonlinear Problem, you simply need to give the function ``f``
-which defines the nonlinear system:
+An SCC-Split Nonlinear Problem is a system of nonlinear equations
 
 ```math
 f(u,p) = 0
 ```
 
-and an initial guess ``u₀`` of where `f(u, p) = 0`. `f` should be specified as `f(u, p)`
-(or in-place as `f(du, u, p)`), and `u₀` should be an AbstractArray (or number)
-whose geometry matches the desired geometry of `u`. Note that we are not limited
-to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary
-matrices / higher-dimension tensors as well.
+with the special property that its Jacobian is in block-lower-triangular
+form. In this form, the nonlinear problem can be decomposed into a system
+of nonlinear systems. 
+
+```math
+f_1(u_1,p) = 0
+f_2(u_2,u_1,p) = 0
+f_3(u_3,u_2,u_1,p) = 0
+\vdots
+f_n(u_n,\ldots,u_3,u_2,u_1,p) = 0
+```
+
+Splitting the system in this form can have multiple advantages, including:
+
+* Improved numerical stability and robustness of the solving process
+* Improved performance due to using smaller Jacobians
+
+The SCC-Split Nonlinear Problem is the ordered collection of nonlinear systems 
+to solve in order solve the system in the optimized split form.
+
+## Representation
+
+The representation of the SCCNonlinearProblem is via an ordered collection
+of `NonlinearProblem`s, `probs`, with an attached explicit function for pre-processing
+a cache. This can be interpreted as follows:
+
+```math
+p_1 = g_1(u,p)
+f_1(u_1,p_1) = 0
+p_2 = g_2(u,p)
+f_2(u_2,u_1,p_2) = 0
+p_3 = g_3(u,p)
+f_3(u_3,u_2,u_1,p_3) = 0
+\vdots
+p_n = g_n(u,p)
+f_n(u_n,\ldots,u_3,u_2,u_1,p_n) = 0
+```
+
+where ``g_i`` is `explicitfuns![i]`. In a computational sense, `explictfuns!`
+is instead a mutating function `explictfuns![i](prob.probs[i],sols)` which
+updates the values of prob.probs[i] using the previous solutions `sols[i-1]`
+and below.
+
+!!! warn
+    For the purposes of differentiation, it's assumed that `explictfuns!` does
+    not modify tunable parameters!
+
+!!! warn
+    While `explictfuns![i]` could in theory use `sols[i+1]` in its computation,
+    these values will not be updated. It is thus the contract of the interface
+    to not use those values except for as caches to be overriden.
+
+!!! note
+    prob.probs[i].p can be aliased with each other as a performance / memory
+    optimization. If they are aliased before the construction of the `probs`
+    the runtime guarantees the aliasing behavior is kept.
+
+## Example
+
+For the following nonlinear problem:
+
+```julia
+function f(du,u,p)
+	du[1] = cos(u[2]) - u[1]
+	du[2] = sin(u[1] + u[2]) + u[2]
+	du[3] = 2u[4] + u[3] + 1.0
+	du[4] = u[5]^2 + u[4]
+	du[5] = u[3]^2 + u[5]
+	du[6] = u[1] + u[2] + u[3] + u[4] + u[5]    + 2.0u[6] + 2.5u[7] + 1.5u[8]
+	du[7] = u[1] + u[2] + u[3] + 2.0u[4] + u[5] + 4.0u[6] - 1.5u[7] + 1.5u[8]
+	du[8] = u[1] + 2.0u[2] + 3.0u[3] + 5.0u[4] + 6.0u[5] + u[6] - u[7] - u[8]
+end
+prob = NonlinearProblem(f, zeros(8))
+sol = solve(prob)
+```
+
+The split SCC form is:
+
+```julia
+cache = zeros(3)
+
+function f1(du,u,cache)
+	du[1] = cos(u[2]) - u[1]
+	du[2] = sin(u[1] + u[2]) + u[2]
+end
+explicitfun1(cache,sols) = nothing
+prob1 = NonlinearProblem(NonlinearFunction{true, SciMLBase.NoSpecialize}(f1), zeros(2), cache)
+sol1 = solve(prob1, NewtonRaphson())
+
+function f2(du,u,cache)
+	du[1] = 2u[2] + u[1] + 1.0
+	du[2] = u[3]^2 + u[2]
+	du[3] = u[1]^2 + u[3]
+end
+explicitfun2(cache,sols) = nothing
+prob2 = NonlinearProblem(NonlinearFunction{true, SciMLBase.NoSpecialize}(f2), zeros(3), cache)
+sol2 = solve(prob2, NewtonRaphson())
+
+function f3(du,u,cache)
+	du[1] = cache[1] + 2.0u[1] + 2.5u[2] + 1.5u[3]
+	du[2] = cache[2] + 4.0u[1] - 1.5u[2] + 1.5u[3]
+	du[3] = cache[3] + + u[1] - u[2] - u[3]
+end
+prob3 = NonlinearProblem(NonlinearFunction{true, SciMLBase.NoSpecialize}(f3), zeros(3), cache)
+function explicitfun3(cache,sols)
+	cache[1] = sols[1][1] + sols[1][2] + sols[2][1] + sols[2][2] + sols[2][3]
+	cache[2] = sols[1][1] + sols[1][2] + sols[2][1] + 2.0sols[2][2] + sols[2][3]
+	cache[3] = sols[1][1] + 2.0sols[1][2] + 3.0sols[2][1] + 5.0sols[2][2] + 6.0sols[2][3]
+end
+explicitfun3(cache,[sol1,sol2])
+sol3 = solve(prob3, NewtonRaphson())
+manualscc = [sol1; sol2; sol3]
+
+sccprob = SciMLBase.SCCNonlinearProblem([prob1,prob2,prob3], SciMLBase.Void{Any}.([explicitfun1,explicitfun2,explicitfun3]))
+```
+
+Note that this example aliases the parameters together for a memory-reduced representation.
 
 ## Problem Type
 
 ### Constructors
 
-```julia
-NonlinearProblem(f::NonlinearFunction, u0, p = NullParameters(); kwargs...)
-NonlinearProblem{isinplace}(f, u0, p = NullParameters(); kwargs...)
-```
-
-`isinplace` optionally sets whether the function is in-place or not. This is
-determined automatically, but not inferred.
-
-Parameters are optional, and if not given, then a `NullParameters()` singleton
-will be used, which will throw nice errors if you try to index non-existent
-parameters. Any extra keyword arguments are passed on to the solvers. For example,
-if you set a `callback` in the problem, then that `callback` will be added in
-every solve call.
-
-For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
-
 ### Fields
 
-* `f`: The function in the problem.
-* `u0`: The initial guess for the root.
-* `p`: The parameters for the problem. Defaults to `NullParameters`.
-* `kwargs`: The keyword arguments passed on to the solvers.
+* `probs`: the collection of problems to solve
+* `explictfuns!`: the explicit functions for mutating the parameter set
 """
-mutable struct SCCNonlinearProblem{P}
+mutable struct SCCNonlinearProblem{P,E}
     probs::P
+    explictfuns!::E
 end
