@@ -2500,7 +2500,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,
             typeof(_colorvec),
-            typeof(sys), Any, Any}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(_f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initdata, nlprob_data)
@@ -2546,7 +2546,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any,
             Any, typeof(f.colorvec),
-            typeof(f.sys), Any, Any}(
+            typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
@@ -2770,7 +2770,7 @@ function SplitFunction{iip, specialize}(f1, f2;
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any}(f1, f2, mass_matrix, _func_cache,
+            Any, Any, Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(f1, f2, mass_matrix, _func_cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac,
@@ -3076,7 +3076,7 @@ function SDEFunction{iip, specialize}(f, g;
             typeof(sys), typeof(initialization_data)}(
             _f, _g, mass_matrix,
             analytic, tgrad, jac,
-            jvp, vjp,
+            jvp, vjp,initialization_data
             jac_prototype,
             sparsity, Wfact,
             Wfact_t,
