@@ -42,10 +42,5 @@ struct ODE_NLProb{NLProb, UNLProb, NLProbMap, NLProbPmap}
     solved will be returned as-is.
     """
     nlprobpmap::NLProbPmap
-
-    function ODE_NLProb(nlprob::I, update_nlprob!::J, nlprobmap::K,
-            nlprobpmap::L) where {I, J, K, L}
-        return new{I, J, K, L}(nlprob, update_nlprob!, nlprobmap, nlprobpmap)
-    end
 end
 
