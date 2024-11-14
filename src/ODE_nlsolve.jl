@@ -3,7 +3,7 @@
 
 A collection of all the data required for custom ODE Nonlinear problem solving
 """
-struct ODE_NLProb{NLProb, UNLProb, NLProbMap, NLProbPmap}
+struct ODE_NLProbData{NLProb, UNLProb, NLProbMap, NLProbPmap}
     """
     The `AbstractNonlinearProblem` to define custom nonlinear problems to be used for
     implicit time discretizations. This allows to use extra structure of the ODE function (e.g.
