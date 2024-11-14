@@ -3076,7 +3076,7 @@ function SDEFunction{iip, specialize}(f, g;
             typeof(sys), typeof(initialization_data)}(
             _f, _g, mass_matrix,
             analytic, tgrad, jac,
-            jvp, vjp,initialization_data
+            jvp, vjp,
             jac_prototype,
             sparsity, Wfact,
             Wfact_t,
