@@ -791,9 +791,10 @@ export isinplace
 
 export solve, solve!, init, discretize, symbolic_discretize
 
-export LinearProblem, NonlinearProblem, IntervalNonlinearProblem,
-       IntegralProblem, SampledIntegralProblem, OptimizationProblem,
-       NonlinearLeastSquaresProblem
+export LinearProblem, IntervalNonlinearProblem,
+       IntegralProblem, SampledIntegralProblem, OptimizationProblem
+
+export NonlinearProblem, SCCNonlinearProblem, NonlinearLeastSquaresProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
