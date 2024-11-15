@@ -462,7 +462,7 @@ Note that this example aliases the parameters together for a memory-reduced repr
 * `probs`: the collection of problems to solve
 * `explictfuns!`: the explicit functions for mutating the parameter set
 """
-mutable struct SCCNonlinearProblem{P,E}
+mutable struct SCCNonlinearProblem{P, E}
     probs::P
     explictfuns!::E
 end
