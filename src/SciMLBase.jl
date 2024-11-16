@@ -658,6 +658,8 @@ Internal. Used for signifying the AD context comes from a Tracker.jl context.
 """
 struct TrackerOriginator <: ADOriginator end
 
+include("initialization.jl")
+include("ODE_nlsolve.jl")
 include("utils.jl")
 include("function_wrappers.jl")
 include("scimlfunctions.jl")
@@ -744,7 +746,6 @@ include("ensemble/ensemble_problems.jl")
 include("ensemble/basic_ensemble_solve.jl")
 include("ensemble/ensemble_analysis.jl")
 
-include("initialization.jl")
 include("solve.jl")
 include("interpolation.jl")
 include("integrator_interface.jl")
