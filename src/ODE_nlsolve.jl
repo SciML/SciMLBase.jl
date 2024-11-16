@@ -43,4 +43,3 @@ struct ODE_NLProbData{NLProb, UNLProb, NLProbMap, NLProbPmap}
     """
     nlprobpmap::NLProbPmap
 end
-
