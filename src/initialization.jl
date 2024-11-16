@@ -78,16 +78,16 @@ function Base.showerror(io::IO, e::OverrideInitNoTolerance)
 end
 
 """
-Utility function to evaluate the RHS of the ODE, using the integrator's `tmp_cache` if
+Utility function to evaluate the RHS, using the integrator's `tmp_cache` if
 it is in-place or simply calling the function if not.
 """
-function _evaluate_f_ode(integrator, f, isinplace::Val{true}, args...)
+function _evaluate_f(integrator, f, isinplace::Val{true}, args...)
     tmp = first(get_tmp_cache(integrator))
     f(tmp, args...)
     return tmp
 end
 
-function _evaluate_f_ode(integrator, f, isinplace::Val{false}, args...)
+function _evaluate_f(integrator, f, isinplace::Val{false}, args...)
     return f(args...)
 end
 
@@ -126,7 +126,7 @@ function get_initial_values(
     algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
     (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
     update_coefficients!(M, u0, p, t)
-    tmp = _evaluate_f_ode(integrator, f, isinplace, u0, p, t)
+    tmp = _evaluate_f(integrator, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
     normresid = isdefined(integrator.opts, :internalnorm) ?
@@ -137,34 +137,17 @@ function get_initial_values(
     return u0, p, true
 end
 
-"""
-Utility function to evaluate the RHS of the DAE, using the integrator's `tmp_cache` if
-it is in-place or simply calling the function if not.
-"""
-function _evaluate_f_dae(integrator, f, isinplace::Val{true}, args...)
-    tmp = get_tmp_cache(integrator)[2]
-    f(tmp, args...)
-    return tmp
-end
-
-function _evaluate_f_dae(integrator, f, isinplace::Val{false}, args...)
-    return f(args...)
-end
-
 function get_initial_values(
         prob::AbstractDAEProblem, integrator::DEIntegrator, f, alg::CheckInit,
-        isinplace::Union{Val{true}, Val{false}}; abstol = nothing, kwargs...)
+        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...)
     u0 = state_values(integrator)
     p = parameter_values(integrator)
     t = current_time(integrator)
 
-    resid = _evaluate_f_dae(integrator, f, isinplace, integrator.du, u0, p, t)
+    resid = _evaluate_f(integrator, f, isinplace, integrator.du, u0, p, t)
     normresid = isdefined(integrator.opts, :internalnorm) ?
                 integrator.opts.internalnorm(resid, t) : norm(resid)
 
-    if abstol === nothing
-        abstol = cache_get_abstol(integrator)
-    end
     if normresid > abstol
         throw(CheckInitFailureError(normresid, abstol))
     end
