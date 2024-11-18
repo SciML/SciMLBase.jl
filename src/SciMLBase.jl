@@ -21,7 +21,7 @@ import CommonSolve: solve, init, step!, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
-import ADTypes: AbstractADType
+import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset
 using Expronicon.ADT: @match
 
@@ -351,7 +351,16 @@ struct CheckInit <: DAEInitializationAlgorithm end
 """
 $(TYPEDEF)
 """
-struct OverrideInit <: DAEInitializationAlgorithm end
+struct OverrideInit{T1, T2, F} <: DAEInitializationAlgorithm
+    abstol::T1
+    reltol::T2
+    nlsolve::F
+end
+
+function OverrideInit(; abstol = nothing, reltol = nothing, nlsolve = nothing)
+    OverrideInit(abstol, reltol, nlsolve)
+end
+OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
 
 # PDE Discretizations
 

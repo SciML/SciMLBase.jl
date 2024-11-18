@@ -121,6 +121,9 @@ end
         @time @safetestset "Tables interface with MTK" begin
             include("downstream/tables.jl")
         end
+        @time @safetestset "Initialization" begin
+            include("downstream/initialization.jl")
+        end
     end
 
     if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")

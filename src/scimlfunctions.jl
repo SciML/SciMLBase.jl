@@ -401,7 +401,8 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV,
-    SYS, ID<:Union{Nothing, OverrideInitData}, NLP<:Union{Nothing, ODE_NLProbData}} <: AbstractODEFunction{iip}
+    SYS, ID <: Union{Nothing, OverrideInitData}, NLP <: Union{Nothing, ODE_NLProbData}} <:
+       AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -522,7 +523,8 @@ information on generating the SplitFunction from this symbolic engine.
 """
 struct SplitFunction{
     iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, WP, SP, TW, TWt,
-    TPJ, O, TCV, SYS, ID<:Union{Nothing, OverrideInitData}, NLP<:Union{Nothing, ODE_NLProbData}} <: AbstractODEFunction{iip}
+    TPJ, O, TCV, SYS, ID <: Union{Nothing, OverrideInitData},
+    NLP <: Union{Nothing, ODE_NLProbData}} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -2442,7 +2444,7 @@ function ODEFunction{iip, specialize}(f;
         initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing,
-        nlprob_data = __has_nlprob_data(f) ? f.nlprob_data : nothing,
+        nlprob_data = __has_nlprob_data(f) ? f.nlprob_data : nothing
 ) where {iip,
         specialize
 }
@@ -2500,7 +2502,8 @@ function ODEFunction{iip, specialize}(f;
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,
             typeof(_colorvec),
-            typeof(sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(_f, mass_matrix, analytic, tgrad, jac,
+            typeof(sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
+            _f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initdata, nlprob_data)
@@ -2770,7 +2773,8 @@ function SplitFunction{iip, specialize}(f1, f2;
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(f1, f2, mass_matrix, _func_cache,
+            Any, Any, Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
+            f1, f2, mass_matrix, _func_cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac,

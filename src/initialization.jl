@@ -68,17 +68,26 @@ function Base.showerror(io::IO, e::OverrideInitMissingAlgorithm)
         "OverrideInit specified but no NonlinearSolve.jl algorithm provided. Provide an algorithm via the `nlsolve_alg` keyword argument to `get_initial_values`.")
 end
 
+struct OverrideInitNoTolerance <: Exception
+    tolerance::Symbol
+end
+
+function Base.showerror(io::IO, e::OverrideInitNoTolerance)
+    print(io,
+        "Tolerances were not provided to `OverrideInit`. `$(e.tolerance)` must be provided as a keyword argument to `get_initial_values` or as a keyword argument to the `OverrideInit` constructor.")
+end
+
 """
-Utility function to evaluate the RHS of the ODE, using the integrator's `tmp_cache` if
+Utility function to evaluate the RHS, using the integrator's `tmp_cache` if
 it is in-place or simply calling the function if not.
 """
-function _evaluate_f_ode(integrator, f, isinplace::Val{true}, args...)
+function _evaluate_f(integrator, f, isinplace::Val{true}, args...)
     tmp = first(get_tmp_cache(integrator))
     f(tmp, args...)
     return tmp
 end
 
-function _evaluate_f_ode(integrator, f, isinplace::Val{false}, args...)
+function _evaluate_f(integrator, f, isinplace::Val{false}, args...)
     return f(args...)
 end
 
@@ -98,10 +107,16 @@ _vec(v::AbstractVector) = v
 
 Check if the algebraic constraints are satisfied, and error if they aren't. Returns
 the `u0` and `p` as-is, and is always successful if it returns. Valid only for
-`ODEProblem` and `DAEProblem`. Requires a `DEIntegrator` as its second argument.
+`AbstractDEProblem` and `AbstractDAEProblem`. Requires a `DEIntegrator` as its second argument.
+
+Keyword arguments:
+- `abstol`: The absolute value below which the norm of the residual of algebraic equations
+  should lie. The norm function used is `integrator.opts.internalnorm` if present, and
+  `LinearAlgebra.norm` if not.
 """
-function get_initial_values(prob::AbstractODEProblem, integrator, f, alg::CheckInit,
-        isinplace::Union{Val{true}, Val{false}}; kwargs...)
+function get_initial_values(
+        prob::AbstractDEProblem, integrator::DEIntegrator, f, alg::CheckInit,
+        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...)
     u0 = state_values(integrator)
     p = parameter_values(integrator)
     t = current_time(integrator)
@@ -109,42 +124,32 @@ function get_initial_values(prob::AbstractODEProblem, integrator, f, alg::CheckI
 
     algebraic_vars = [all(iszero, x) for x in eachcol(M)]
     algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
-    (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return
+    (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
     update_coefficients!(M, u0, p, t)
-    tmp = _evaluate_f_ode(integrator, f, isinplace, u0, p, t)
+    tmp = _evaluate_f(integrator, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
-    normresid = integrator.opts.internalnorm(tmp, t)
-    if normresid > integrator.opts.abstol
-        throw(CheckInitFailureError(normresid, integrator.opts.abstol))
+    normresid = isdefined(integrator.opts, :internalnorm) ?
+                integrator.opts.internalnorm(tmp, t) : norm(tmp)
+    if normresid > abstol
+        throw(CheckInitFailureError(normresid, abstol))
     end
     return u0, p, true
 end
 
-"""
-Utility function to evaluate the RHS of the DAE, using the integrator's `tmp_cache` if
-it is in-place or simply calling the function if not.
-"""
-function _evaluate_f_dae(integrator, f, isinplace::Val{true}, args...)
-    tmp = get_tmp_cache(integrator)[2]
-    f(tmp, args...)
-    return tmp
-end
-
-function _evaluate_f_dae(integrator, f, isinplace::Val{false}, args...)
-    return f(args...)
-end
-
-function get_initial_values(prob::AbstractDAEProblem, integrator, f, alg::CheckInit,
-        isinplace::Union{Val{true}, Val{false}}; kwargs...)
+function get_initial_values(
+        prob::AbstractDAEProblem, integrator::DEIntegrator, f, alg::CheckInit,
+        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...)
     u0 = state_values(integrator)
     p = parameter_values(integrator)
     t = current_time(integrator)
 
-    resid = _evaluate_f_dae(integrator, f, isinplace, integrator.du, u0, p, t)
-    normresid = integrator.opts.internalnorm(resid, t)
-    if normresid > integrator.opts.abstol
-        throw(CheckInitFailureError(normresid, integrator.opts.abstol))
+    resid = _evaluate_f(integrator, f, isinplace, integrator.du, u0, p, t)
+    normresid = isdefined(integrator.opts, :internalnorm) ?
+                integrator.opts.internalnorm(resid, t) : norm(resid)
+
+    if normresid > abstol
+        throw(CheckInitFailureError(normresid, abstol))
     end
     return u0, p, true
 end
@@ -155,12 +160,19 @@ end
 Solve a `NonlinearProblem`/`NonlinearLeastSquaresProblem` to obtain the initial `u0` and
 `p`. Requires that `f` have the field `initialization_data` which is an `OverrideInitData`.
 If the field is absent or the value is `nothing`, return `u0` and `p` successfully as-is.
-The NonlinearSolve.jl algorithm to use must be specified through the `nlsolve_alg` keyword
-argument, failing which this function will throw an error. The success value returned
-depends on the success of the nonlinear solve.
+
+The success value returned depends on the success of the nonlinear solve.
+
+Keyword arguments:
+- `nlsolve_alg`: The NonlinearSolve.jl algorithm to use. If not provided, this function will
+  throw an error.
+- `abstol`, `reltol`: The `abstol` (`reltol`) to use for the nonlinear solve. The value
+  provided to the `OverrideInit` constructor takes priority over this keyword argument.
+  If the former is `nothing`, this keyword argument will be used. If it is also not provided,
+  an error will be thrown.
 """
 function get_initial_values(prob, valp, f, alg::OverrideInit,
-        isinplace::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, kwargs...)
+        iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...)
     u0 = state_values(valp)
     p = parameter_values(valp)
 
@@ -171,7 +183,8 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     initdata::OverrideInitData = f.initialization_data
     initprob = initdata.initializeprob
 
-    if nlsolve_alg === nothing
+    nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
+    if nlsolve_alg === nothing && state_values(initprob) !== nothing
         throw(OverrideInitMissingAlgorithm())
     end
 
@@ -179,7 +192,21 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         initdata.update_initializeprob!(initprob, valp)
     end
 
-    nlsol = solve(initprob, nlsolve_alg)
+    if alg.abstol !== nothing
+        _abstol = alg.abstol
+    elseif abstol !== nothing
+        _abstol = abstol
+    else
+        throw(OverrideInitNoTolerance(:abstol))
+    end
+    if alg.reltol !== nothing
+        _reltol = alg.reltol
+    elseif reltol !== nothing
+        _reltol = reltol
+    else
+        throw(OverrideInitNoTolerance(:reltol))
+    end
+    nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol)
 
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing
