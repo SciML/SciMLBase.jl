@@ -112,3 +112,10 @@ end
 function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
     DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
 end
+
+function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}
+    function ctor(f, du0, u0, tspan, p, kw, dv)
+        iip = isinplace(f)
+        return DAEProblem{iip}(f, du0, u0, tspan, p; differential_vars = dv, kw...)
+    end
+end
