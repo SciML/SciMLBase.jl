@@ -23,7 +23,7 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
     """
     initializeprobmap::IProbMap
     """
-    A function which takes the solution of `initializeprob` and returns
+    A function which takes `value_provider` and the solution of `initializeprob` and returns
     the parameter object of the original problem. If absent (`nothing`),
     this will not be called and the parameters of the problem being
     initialized will be returned as-is.
@@ -210,7 +210,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
 
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing
-        p = initdata.initializeprobpmap(nlsol)
+        p = initdata.initializeprobpmap(valp, nlsol)
     end
 
     return u0, p, SciMLBase.successful_retcode(nlsol)
