@@ -131,7 +131,7 @@ end
     initprobmap = function (nlsol)
         return [parameter_values(nlsol)[1], nlsol.u[1]]
     end
-    initprobpmap = function (nlsol)
+    initprobpmap = function (_, nlsol)
         return nlsol.u[2]
     end
     initialization_data = SciMLBase.OverrideInitData(
