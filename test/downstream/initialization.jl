@@ -1,4 +1,5 @@
 using ModelingToolkit, NonlinearSolve, OrdinaryDiffEq, Sundials, SciMLBase, Test
+using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 @testset "CheckInit" begin
