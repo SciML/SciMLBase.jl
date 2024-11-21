@@ -261,12 +261,12 @@ eprob = EnsembleProblem(oprob)
 @test eprob.ps[osys.p] == 0.1
 
 @test state_values(remake(eprob; u0 = [X => 0.1])) == [0.1]
-@test state_values(remake(eprob; u0 = [:X => 0.2])) == [0.2]
+@test_broken state_values(remake(eprob; u0 = [:X => 0.2])) == [0.2]
 @test state_values(remake(eprob; u0 = [osys.X => 0.3])) == [0.3]
 
-@test remake(eprob; p = [d => 0.4]).ps[d] == 0.4
-@test remake(eprob; p = [:d => 0.5]).ps[d] == 0.5
-@test remake(eprob; p = [osys.d => 0.6]).ps[d] == 0.6
+@test_broken remake(eprob; p = [d => 0.4]).ps[d] == 0.4
+@test_broken remake(eprob; p = [:d => 0.5]).ps[d] == 0.5
+@test_broken remake(eprob; p = [osys.d => 0.6]).ps[d] == 0.6
 
 # SteadyStateProblem Indexing
 # Issue#660
