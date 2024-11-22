@@ -125,7 +125,7 @@ function remake(prob::ODEProblem; f = missing,
 
     if f === missing
         if build_initializeprob
-            initialization_data = remake_initialization_data(
+            initialization_data = remake_initialization_data_compat_wrapper(
                 prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
         else
             initialization_data = nothing
@@ -200,6 +200,21 @@ function remake_initializeprob(sys, scimlfn, u0, t0, p)
     end
     return scimlfn.initializeprob,
     scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Wrapper around `remake_initialization_data` for backward compatibility when `newu0` and
+`newp` were not arguments.
+"""
+function remake_initialization_data_compat_wrapper(sys, scimlfn, u0, t0, p, newu0, newp)
+    if hasmethod(remake_initialization_data,
+        Tuple{typeof(sys), typeof(scimlfn), typeof(u0), typeof(t0), typeof(p)})
+        remake_initialization_data(sys, scimlfn, u0, t0, p)
+    else
+        remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
+    end
 end
 
 """
