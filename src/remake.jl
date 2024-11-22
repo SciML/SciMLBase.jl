@@ -126,7 +126,7 @@ function remake(prob::ODEProblem; f = missing,
     if f === missing
         if build_initializeprob
             initialization_data = remake_initialization_data(
-                prob.f.sys, prob.f, u0, tspan[1], p)
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
         else
             initialization_data = nothing
         end
@@ -203,16 +203,17 @@ function remake_initializeprob(sys, scimlfn, u0, t0, p)
 end
 
 """
-    remake_initialization_data(sys, scimlfn, u0, t0, p)
+    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
 
 Re-create the initialization data present in the function `scimlfn`, using the
-associated system `sys` and the user provided new values of `u0`, initial time `t0` and
-`p`. By default, this calls `remake_initializeprob` for backward compatibility and
-attempts to construct an `OverrideInitData` from the result.
+associated system `sys`, the user provided new values of `u0`, initial time `t0`,
+user-provided `p`, new u0 vector `newu0` and new parameter object `newp`. By default,
+this calls `remake_initializeprob` for backward compatibility and attempts to construct
+an `OverrideInitData` from the result.
 
 Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
-function remake_initialization_data(sys, scimlfn, u0, t0, p)
+function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
     return reconstruct_initialization_data(
         nothing, remake_initializeprob(sys, scimlfn, u0, t0, p)...)
 end
