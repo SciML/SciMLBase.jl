@@ -81,6 +81,7 @@ SciMLBase.ReturnCode.Success
 SciMLBase.ReturnCode.Terminated
 SciMLBase.ReturnCode.DtNaN
 SciMLBase.ReturnCode.MaxIters
+SciMLBase.ReturnCode.MaxNumSub
 SciMLBase.ReturnCode.DtLessThanMin
 SciMLBase.ReturnCode.Unstable
 SciMLBase.ReturnCode.InitialFailure
