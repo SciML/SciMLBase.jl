@@ -68,7 +68,7 @@ gs_ts, = Zygote.gradient(sol) do sol
     sum(sum.(sol[[lorenz1.x, lorenz2.x], :]))
 end
 
-@test_broken all(map(x -> x == true_grad_vecsym, gs_ts))
+@test all(map(x -> x == true_grad_vecsym, gs_ts))
 
 # BatchedInterface AD
 @variables x(t)=1.0 y(t)=1.0 z(t)=1.0 w(t)=1.0
