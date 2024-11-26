@@ -472,7 +472,8 @@ mutable struct SCCNonlinearProblem{uType, iip, P, E, I, Par} <:
 
     function SCCNonlinearProblem{P, E, I, Par}(
             probs::P, funs::E, indp::I, pobj::Par, alias::Bool) where {P, E, I, Par}
-        u0 = mapreduce(state_values, vcat, probs)
+        u0 = mapreduce(
+            state_values, vcat, probs; init = similar(state_values(first(probs)), 0))
         uType = typeof(u0)
         new{uType, false, P, E, I, Par}(probs, funs, indp, pobj, alias)
     end
@@ -501,7 +502,8 @@ function SymbolicIndexingInterface.parameter_values(prob::SCCNonlinearProblem)
     prob.parameter_object
 end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
-    mapreduce(state_values, vcat, prob.probs)
+    mapreduce(
+        state_values, vcat, prob.probs; init = similar(state_values(first(prob.probs)), 0))
 end
 
 function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, idx)
