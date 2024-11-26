@@ -60,7 +60,7 @@ function Base.show(io::IO, mime::MIME"text/plain", A::AbstractNonlinearProblem)
     summary(io, A)
     println(io)
     print(io, "u0: ")
-    show(io, mime, A.u0)
+    show(io, mime, state_values(A))
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", A::IntervalNonlinearProblem)
