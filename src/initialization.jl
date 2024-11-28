@@ -123,6 +123,7 @@ function get_initial_values(
     t = current_time(integrator)
     M = f.mass_matrix
 
+    M == I && return u0, p, true
     algebraic_vars = [all(iszero, x) for x in eachcol(M)]
     algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
     (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true

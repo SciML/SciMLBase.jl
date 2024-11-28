@@ -1,4 +1,5 @@
-using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterface, Test
+using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterface,
+      LinearAlgebra, Test
 
 @testset "CheckInit" begin
     @testset "ODEProblem" begin
@@ -26,6 +27,20 @@ using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterfac
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
                 prob, integ, f, SciMLBase.CheckInit(),
                 Val(SciMLBase.isinplace(f)); abstol = 1e-10)
+        end
+
+        @testset "With I mass matrix" begin
+            function rhs(u, p, t)
+                return u
+            end
+            prob = ODEProblem(ODEFunction(rhs; mass_matrix = I), ones(2), (0.0, 1.0))
+            integ = init(prob)
+            u0, _, success = SciMLBase.get_initial_values(
+                prob, integ, prob.f, SciMLBase.CheckInit(),
+                Val(false); abstol = 1e-10
+            )
+            @test success
+            @test u0 == prob.u0
         end
     end
 
