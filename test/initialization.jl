@@ -244,4 +244,30 @@ end
         @test p ≈ 0.0
         @test success
     end
+
+    @testset "Trivial initialization" begin
+        initprob = NonlinearProblem(Returns(nothing), nothing, [1.0])
+        update_initializeprob! = function (iprob, integ)
+            iprob.p[1] = integ.u[1]
+        end
+        initprobmap = function (nlsol)
+            u1 = parameter_values(nlsol)[1]
+            return [u1, u1]
+        end
+        initprobpmap = function (_, nlsol)
+            return 0.0
+        end
+        initialization_data = SciMLBase.OverrideInitData(
+            initprob, update_initializeprob!, initprobmap, initprobpmap)
+        fn = ODEFunction(rhs2; initialization_data)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        integ = init(prob; initializealg = NoInit())
+
+        u0, p, success = SciMLBase.get_initial_values(
+            prob, integ, fn, SciMLBase.OverrideInit(), Val(false)
+        )
+        @test u0 ≈ [2.0, 2.0]
+        @test p ≈ 0.0
+        @test success
+    end
 end

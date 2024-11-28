@@ -188,6 +188,9 @@ Keyword arguments:
   provided to the `OverrideInit` constructor takes priority over this keyword argument.
   If the former is `nothing`, this keyword argument will be used. If it is also not provided,
   an error will be thrown.
+
+In case the initialization problem is trivial, `nlsolve_alg`, `abstol` and `reltol` are
+not required.
 """
 function get_initial_values(prob, valp, f, alg::OverrideInit,
         iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...)
@@ -201,35 +204,40 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     initdata::OverrideInitData = f.initialization_data
     initprob = initdata.initializeprob
 
-    nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
-    if nlsolve_alg === nothing && state_values(initprob) !== nothing
-        throw(OverrideInitMissingAlgorithm())
-    end
-
     if initdata.update_initializeprob! !== nothing
         initdata.update_initializeprob!(initprob, valp)
     end
 
-    if alg.abstol !== nothing
-        _abstol = alg.abstol
-    elseif abstol !== nothing
-        _abstol = abstol
+    if state_values(initprob) === nothing
+        nlsol = initprob
+        success = true
     else
-        throw(OverrideInitNoTolerance(:abstol))
+        nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
+        if nlsolve_alg === nothing && state_values(initprob) !== nothing
+            throw(OverrideInitMissingAlgorithm())
+        end
+        if alg.abstol !== nothing
+            _abstol = alg.abstol
+        elseif abstol !== nothing
+            _abstol = abstol
+        else
+            throw(OverrideInitNoTolerance(:abstol))
+        end
+        if alg.reltol !== nothing
+            _reltol = alg.reltol
+        elseif reltol !== nothing
+            _reltol = reltol
+        else
+            throw(OverrideInitNoTolerance(:reltol))
+        end
+        nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol)
+        success = SciMLBase.successful_retcode(nlsol)
     end
-    if alg.reltol !== nothing
-        _reltol = alg.reltol
-    elseif reltol !== nothing
-        _reltol = reltol
-    else
-        throw(OverrideInitNoTolerance(:reltol))
-    end
-    nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol)
 
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing
         p = initdata.initializeprobpmap(valp, nlsol)
     end
 
-    return u0, p, SciMLBase.successful_retcode(nlsol)
+    return u0, p, success
 end
