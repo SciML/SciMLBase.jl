@@ -336,3 +336,12 @@ end
     @test sccprob4.p !== sccprob4.probs[1].p
     @test sccprob4.p !== sccprob4.probs[2].p
 end
+
+@testset "Lazy initialization" begin
+    @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
+    @parameters p=missing [guess = 1.0]
+    @mtkbuild sys = ODESystem([D(x) ~ x, x + y ~ p], t)
+    prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 1.0))
+    prob2 = remake(prob; u0 = [x => 2.0])
+    @test prob2.ps[p] ≈ 3.0
+end

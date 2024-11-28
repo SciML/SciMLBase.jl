@@ -241,3 +241,15 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
 
     return u0, p, success
 end
+
+function is_trivial_initialization(initdata::OverrideInitData)
+    state_values(initdata.initializeprob) === nothing
+end
+
+function is_trivial_initialization(f::AbstractSciMLFunction)
+    has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
+end
+
+function is_trivial_initialization(prob::AbstractSciMLProblem)
+    is_trivial_initialization(prob.f)
+end

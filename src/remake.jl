@@ -114,6 +114,7 @@ function remake(prob::ODEProblem; f = missing,
         interpret_symbolicmap = true,
         build_initializeprob = true,
         use_defaults = false,
+        lazy_initialization = nothing,
         _kwargs...)
     if tspan === missing
         tspan = prob.tspan
@@ -122,6 +123,8 @@ function remake(prob::ODEProblem; f = missing,
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
     iip = isinplace(prob)
+
+    initialization_data = prob.f.initialization_data
 
     if f === missing
         if build_initializeprob
@@ -170,13 +173,25 @@ function remake(prob::ODEProblem; f = missing,
         _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
     end
 
-    if kwargs === missing
+    prob = if kwargs === missing
         ODEProblem{isinplace(prob)}(
             _f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
             _kwargs...)
     else
         ODEProblem{isinplace(prob)}(_f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
+
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
 end
 
 """
