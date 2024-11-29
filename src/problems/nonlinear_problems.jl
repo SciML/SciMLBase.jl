@@ -385,7 +385,7 @@ and below.
 !!! warn
     While `explictfuns![i]` could in theory use `sols[i+1]` in its computation,
     these values will not be updated. It is thus the contract of the interface
-    to not use those values except for as caches to be overriden.
+    to not use those values except for as caches to be overridden.
 
 !!! note
     prob.probs[i].p can be aliased with each other as a performance / memory
