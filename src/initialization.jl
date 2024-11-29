@@ -208,7 +208,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         initdata.update_initializeprob!(initprob, valp)
     end
 
-    if state_values(initprob) === nothing
+    if is_trivial_initialization(initdata)
         nlsol = initprob
         success = true
     else
@@ -243,7 +243,8 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
 end
 
 function is_trivial_initialization(initdata::OverrideInitData)
-    state_values(initdata.initializeprob) === nothing
+    !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
+        state_values(initdata.initializeprob) === nothing
 end
 
 function is_trivial_initialization(f::AbstractSciMLFunction)
