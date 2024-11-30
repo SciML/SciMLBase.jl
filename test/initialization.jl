@@ -244,4 +244,66 @@ end
         @test p ≈ 0.0
         @test success
     end
+
+    @testset "DAEProblem" begin
+        function daerhs(du, u, p, t)
+            return [u[1] * t + p, u[1]^2 - u[2]^2]
+        end
+        # unknowns are u[2], p, D(u[1]), D(u[2]). Parameters are u[1], t
+        initprob = NonlinearProblem([1.0, 1.0, 1.0, 1.0], [1.0, 0.0]) do x, _p
+            u2, p, du1, du2 = x
+            u1, t = _p
+            return [u1^3 - u2^3, p^2 - 2p + 1, du1 - u1 * t - p, 2u1 * du1 - 2u2 * du2]
+        end
+
+        update_initializeprob! = function (iprob, integ)
+            iprob.p[1] = integ.u[1]
+            iprob.p[2] = integ.t
+        end
+        initprobmap = function (nlsol)
+            return [parameter_values(nlsol)[1], nlsol.u[1]]
+        end
+        initprobpmap = function (_, nlsol)
+            return nlsol.u[2]
+        end
+        initprob_du0map = function (nlsol)
+            return nlsol.u[3:4]
+        end
+        initialization_data = SciMLBase.OverrideInitData(
+            initprob, update_initializeprob!, initprobmap, initprobpmap, initprob_du0map)
+        fn = DAEFunction(daerhs; initialization_data)
+        prob = DAEProblem(fn, [0.0, 0.0], [2.0, 0.0], (0.0, 1.0), 0.0)
+        integ = init(prob, DImplicitEuler(); initializealg = NoInit())
+
+        initialization_data2 = SciMLBase.OverrideInitData(
+            initprob, update_initializeprob!, initprobmap, initprobpmap)
+        fn2 = DAEFunction(daerhs; initialization_data = initialization_data2)
+        prob2 = DAEProblem(fn2, [0.0, 0.0], [2.0, 0.0], (0.0, 1.0), 0.0)
+        integ2 = init(prob2, DImplicitEuler(); initializealg = NoInit())
+
+        nlsolve_alg = FastShortcutNonlinearPolyalg()
+        @testset "Doesn't return `du0` by default" begin
+            @test length(SciMLBase.get_initial_values(
+                prob, integ, fn, SciMLBase.OverrideInit(),
+                Val(false); nlsolve_alg, abstol, reltol)) == 3
+        end
+        @testset "`du0 === nothing` if missing `du0map`" begin
+            du0, u0, p, success = SciMLBase.get_initial_values(
+                prob2, integ2, fn2, SciMLBase.OverrideInit(), Val(false);
+                nlsolve_alg, abstol, reltol, return_du0 = true)
+            @test du0 === nothing
+            @test u0 ≈ [2.0, 2.0]
+            @test p ≈ 1.0
+            @test success
+        end
+        @testset "With `return_du0 = true`" begin
+            du0, u0, p, success = SciMLBase.get_initial_values(
+                prob, integ, fn, SciMLBase.OverrideInit(), Val(false);
+                nlsolve_alg, abstol, reltol, return_du0 = true)
+            @test du0 ≈ [1.0, 1.0]
+            @test u0 ≈ [2.0, 2.0]
+            @test p ≈ 1.0
+            @test success
+        end
+    end
 end

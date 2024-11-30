@@ -3,7 +3,7 @@
 
 A collection of all the data required for `OverrideInit`.
 """
-struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
+struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap, IProbDu0Map}
     """
     The `AbstractNonlinearProblem` to solve for initialization.
     """
@@ -29,12 +29,18 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
     initialized will be returned as-is.
     """
     initializeprobpmap::IProbPmap
+    """
+    A function which takes the solution of `initializeprob` and returns the
+    `du0` vector of the original problem.
+    """
+    initializeprob_du0map::IProbDu0Map
 
     function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
-            initprobpmap::L) where {I, J, K, L}
+            initprobpmap::L, initprob_du0map::M = nothing) where {I, J, K, L, M}
         @assert initprob isa
                 Union{SCCNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
-        return new{I, J, K, L}(initprob, update_initprob!, initprobmap, initprobpmap)
+        return new{I, J, K, L, M}(
+            initprob, update_initprob!, initprobmap, initprobpmap, initprob_du0map)
     end
 end
 
@@ -172,9 +178,12 @@ Keyword arguments:
   provided to the `OverrideInit` constructor takes priority over this keyword argument.
   If the former is `nothing`, this keyword argument will be used. If it is also not provided,
   an error will be thrown.
+- `return_du0`: Whether to use `initializeprob_du0map` (if present) and return
+  `du0, u0, p, success`.
 """
 function get_initial_values(prob, valp, f, alg::OverrideInit,
-        iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...)
+        iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing,
+        reltol = nothing, return_du0 = false, kwargs...)
     u0 = state_values(valp)
     p = parameter_values(valp)
 
@@ -213,6 +222,11 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing
         p = initdata.initializeprobpmap(valp, nlsol)
+    end
+
+    if return_du0
+        du0 = initdata.initializeprob_du0map === nothing ? nothing : initdata.initializeprob_du0map(nlsol)
+        return du0, u0, p, SciMLBase.successful_retcode(nlsol)
     end
 
     return u0, p, SciMLBase.successful_retcode(nlsol)
