@@ -4095,15 +4095,15 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
 
     if bcjac_prototype !== nothing && bccolorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(bcjac_prototype)
-        _bccolorvec = ArrayInterfaceCore.matrix_colors(bcjac_prototype)
+       ArrayInterface.fast_matrix_colors(bcjac_prototype)
+        _bccolorvec = ArrayInterface.matrix_colors(bcjac_prototype)
     else
         _bccolorvec = bccolorvec
     end
@@ -4268,15 +4268,15 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
     end
 
     if jac_prototype !== nothing && colorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(jac_prototype)
-        _colorvec = ArrayInterfaceCore.matrix_colors(jac_prototype)
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
     end
 
     if bcjac_prototype !== nothing && bccolorvec === nothing &&
-       ArrayInterfaceCore.fast_matrix_colors(bcjac_prototype)
-        _bccolorvec = ArrayInterfaceCore.matrix_colors(bcjac_prototype)
+       ArrayInterface.fast_matrix_colors(bcjac_prototype)
+        _bccolorvec = ArrayInterface.matrix_colors(bcjac_prototype)
     else
         _bccolorvec = bccolorvec
     end
