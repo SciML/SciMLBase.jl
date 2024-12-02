@@ -508,6 +508,52 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     end
 end
 
+"""
+    remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing)
+
+Remake the given `SCCNonlinearProblem`. `u0` is the state vector for the entire problem,
+which will be chunked appropriately and used to `remake` the individual subproblems. `p`
+is the parameter object for `prob`. If `parameters_alias`, the same parameter object will be
+used to `remake` the individual subproblems. Otherwise if `p !== missing`, this function will
+error and require that `probs` be specified. `probs` is the collection of subproblems. Even if
+`probs` is explicitly specified, the value of `u0` provided to `remake` will be used to
+override the values in `probs`. `sys` is the index provider for the full system.
+"""
+function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        parameters_alias = prob.parameters_alias, sys = missing,
+        interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing)
+    if p !== missing && !parameters_alias && probs === missing
+        throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
+    end
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults,
+        indp = sys === missing ? prob.full_index_provider : sys)
+    if probs === missing
+        probs = prob.probs
+    end
+    offset = 0
+    if u0 !== missing || p !== missing && parameters_alias
+        probs = map(probs) do subprob
+            subprob = if parameters_alias
+                remake(subprob;
+                    u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))],
+                    p = newp)
+            else
+                remake(subprob;
+                    u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))])
+            end
+            offset += length(state_values(subprob))
+            return subprob
+        end
+    end
+    if sys === missing
+        sys = prob.full_index_provider
+    end
+    return SCCNonlinearProblem{
+        typeof(probs), typeof(explicitfuns!), typeof(sys), typeof(newp)}(
+        probs, explicitfuns!, sys, newp, parameters_alias)
+end
+
 function varmap_has_var(varmap, var)
     haskey(varmap, var) || hasname(var) && haskey(varmap, getname(var))
 end
@@ -737,11 +783,12 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
 end
 
 function updated_u0_p(
-        prob, u0, p, t0 = nothing; interpret_symbolicmap = true, use_defaults = false)
+        prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
+        use_defaults = false, indp = has_sys(prob.f) ? prob.f.sys : nothing)
     if u0 === missing && p === missing
         return state_values(prob), parameter_values(prob)
     end
-    if !has_sys(prob.f)
+    if indp === nothing
         if interpret_symbolicmap && eltype(p) !== Union{} && eltype(p) <: Pair
             throw(ArgumentError("This problem does not support symbolic maps with " *
                                 "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
