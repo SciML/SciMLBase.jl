@@ -835,6 +835,8 @@ export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, D
 
 export OptimizationFunction, MultiObjectiveOptimizationFunction
 
+export CheckInit
+
 export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
 
 export EnsembleAnalysis, EnsembleSummary
