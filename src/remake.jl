@@ -526,8 +526,7 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     if p !== missing && !parameters_alias && probs === missing
         throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
     end
-    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults,
-        indp = sys === missing ? prob.full_index_provider : sys)
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
     if probs === missing
         probs = prob.probs
     end
@@ -547,11 +546,10 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
         end
     end
     if sys === missing
-        sys = prob.full_index_provider
+        sys = prob.f.sys
     end
-    return SCCNonlinearProblem{
-        typeof(probs), typeof(explicitfuns!), typeof(sys), typeof(newp)}(
-        probs, explicitfuns!, sys, newp, parameters_alias)
+    return SCCNonlinearProblem(
+        probs, explicitfuns!, newp, parameters_alias; sys)
 end
 
 function varmap_has_var(varmap, var)
@@ -784,11 +782,11 @@ end
 
 function updated_u0_p(
         prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
-        use_defaults = false, indp = has_sys(prob.f) ? prob.f.sys : nothing)
+        use_defaults = false)
     if u0 === missing && p === missing
         return state_values(prob), parameter_values(prob)
     end
-    if indp === nothing
+    if prob.f.sys === nothing
         if interpret_symbolicmap && eltype(p) !== Union{} && eltype(p) <: Pair
             throw(ArgumentError("This problem does not support symbolic maps with " *
                                 "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *

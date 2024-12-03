@@ -367,7 +367,7 @@ prob = SteadyStateProblem(osys, u0, ps)
     prob = NonlinearProblem(model, [])
     sccprob = SciMLBase.SCCNonlinearProblem([prob1, prob2, prob3],
         SciMLBase.Void{Any}.([explicitfun1, explicitfun2, explicitfun3]),
-        model, copy(cache))
+        copy(cache); sys = model)
 
     for sym in [u, u..., u[2] + u[3], p * u[1] + u[2]]
         @test prob[sym] ≈ sccprob[sym]
@@ -384,7 +384,7 @@ prob = SteadyStateProblem(osys, u0, ps)
     end
     sccprob.ps[p] = 2.5
     @test sccprob.ps[p] ≈ 2.5
-    @test sccprob.parameter_object[1] ≈ 2.5
+    @test sccprob.p[1] ≈ 2.5
     for scc in sccprob.probs
         @test parameter_values(scc)[1] ≈ 2.5
     end

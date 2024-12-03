@@ -87,7 +87,7 @@ fullsys = complete(fullsys)
 prob1 = NonlinearProblem(sys1, u0, p)
 prob2 = NonlinearProblem(sys2, u0, prob1.p)
 sccprob = SCCNonlinearProblem(
-    [prob1, prob2], [Returns(nothing), Returns(nothing)], fullsys, prob1.p, true)
+    [prob1, prob2], [Returns(nothing), Returns(nothing)], prob1.p, true; sys = fullsys)
 push!(syss, fullsys)
 push!(probs, sccprob)
 
@@ -315,7 +315,7 @@ end
     prob1 = NonlinearProblem(sys1, u0, p)
     prob2 = NonlinearProblem(sys2, u0, prob1.p)
     sccprob = SCCNonlinearProblem(
-        [prob1, prob2], [Returns(nothing), Returns(nothing)], fullsys, prob1.p, true)
+        [prob1, prob2], [Returns(nothing), Returns(nothing)], prob1.p, true; sys = fullsys)
 
     sccprob2 = remake(sccprob; u0 = 2ones(3))
     @test state_values(sccprob2) ≈ 2ones(3)
@@ -323,8 +323,8 @@ end
     @test sccprob2.probs[2].u0 ≈ 2ones(1)
 
     sccprob3 = remake(sccprob; p = [σ => 2.0])
-    @test sccprob3.parameter_object === sccprob3.probs[1].p
-    @test sccprob3.parameter_object === sccprob3.probs[2].p
+    @test sccprob3.p === sccprob3.probs[1].p
+    @test sccprob3.p === sccprob3.probs[2].p
 
     @test_throws ["parameters_alias", "SCCNonlinearProblem"] remake(
         sccprob; parameters_alias = false, p = [σ => 2.0])
@@ -333,6 +333,6 @@ end
     sccprob4 = remake(sccprob; parameters_alias = false, p = newp,
         probs = [remake(prob1; p = [σ => 3.0]), prob2])
     @test !sccprob4.parameters_alias
-    @test sccprob4.parameter_object !== sccprob4.probs[1].p
-    @test sccprob4.parameter_object !== sccprob4.probs[2].p
+    @test sccprob4.p !== sccprob4.probs[1].p
+    @test sccprob4.p !== sccprob4.probs[2].p
 end
