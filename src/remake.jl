@@ -354,13 +354,13 @@ function remake(prob::SDEProblem;
         if prob.f isa SDEFunction
             f = remake(prob.f; g = g)
         else
-            f = SDEFunction(prob.f, g)
+            f = SDEFunction(prob.f, g; sys = prob.f.sys)
         end
     else
         if f isa SDEFunction
             f = remake(f; g = g)
         else
-            f = SDEFunction(f, g)
+            f = SDEFunction(f, g; sys = prob.f.sys)
         end
     end
 
@@ -387,11 +387,12 @@ end
 
 Remake the given `SDEFunction`.
 """
-function remake(func::SDEFunction;
+function remake(func::Union{SDEFunction, SDDEFunction};
         f = missing,
         g = missing,
         mass_matrix = missing,
         analytic = missing,
+        sys = missing,
         kwargs...)
     if f === missing
         f = func.f
@@ -409,7 +410,12 @@ function remake(func::SDEFunction;
         analytic = func.analytic
     end
 
-    return SDEFunction(f, g; mass_matrix, analytic, kwargs...)
+    if sys === missing
+        sys = func.sys
+    end
+
+    T = func isa SDEFunction ? SDEFunction : SDDEFunction
+    return T(f, g; mass_matrix, analytic, sys, kwargs...)
 end
 
 """
