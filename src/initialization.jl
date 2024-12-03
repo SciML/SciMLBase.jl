@@ -242,6 +242,8 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     return u0, p, success
 end
 
+is_trivial_initialization(::Nothing) = true
+
 function is_trivial_initialization(initdata::OverrideInitData)
     !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
         state_values(initdata.initializeprob) === nothing
