@@ -157,3 +157,17 @@ end
 function SDDEProblem(f::AbstractSDDEFunction, args...; kwargs...)
     SDDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
+
+function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
+    function ctor(f, g, u0, h, tspan, p, noise, constant_lags, dependent_lags, kw,
+            noise_rate_prototype, seed, neutral, order_discontinuity_t0)
+        if f isa AbstractSDDEFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 5)
+        end
+        return SDDEProblem{iip}(
+            f, g, u0, h, tspan, p; kw..., noise, constant_lags, dependent_lags,
+            noise_rate_prototype, seed, neutral, order_discontinuity_t0)
+    end
+end
