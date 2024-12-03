@@ -385,7 +385,7 @@ and below.
 !!! warn
     While `explictfuns![i]` could in theory use `sols[i+1]` in its computation,
     these values will not be updated. It is thus the contract of the interface
-    to not use those values except for as caches to be overriden.
+    to not use those values except for as caches to be overridden.
 
 !!! note
     prob.probs[i].p can be aliased with each other as a performance / memory
@@ -462,7 +462,66 @@ Note that this example aliases the parameters together for a memory-reduced repr
 * `probs`: the collection of problems to solve
 * `explictfuns!`: the explicit functions for mutating the parameter set
 """
-mutable struct SCCNonlinearProblem{P, E}
+mutable struct SCCNonlinearProblem{uType, iip, P, E, I, Par} <:
+               AbstractNonlinearProblem{uType, iip}
     probs::P
-    explictfuns!::E
+    explicitfuns!::E
+    full_index_provider::I
+    parameter_object::Par
+    parameters_alias::Bool
+
+    function SCCNonlinearProblem{P, E, I, Par}(
+            probs::P, funs::E, indp::I, pobj::Par, alias::Bool) where {P, E, I, Par}
+        u0 = mapreduce(
+            state_values, vcat, probs; init = similar(state_values(first(probs)), 0))
+        uType = typeof(u0)
+        new{uType, false, P, E, I, Par}(probs, funs, indp, pobj, alias)
+    end
+end
+
+function SCCNonlinearProblem(probs, explicitfuns!, full_index_provider = nothing,
+        parameter_object = nothing, parameters_alias = false)
+    return SCCNonlinearProblem{typeof(probs), typeof(explicitfuns!),
+        typeof(full_index_provider), typeof(parameter_object)}(
+        probs, explicitfuns!, full_index_provider, parameter_object, parameters_alias)
+end
+
+function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
+    if name == :explictfuns!
+        return getfield(prob, :explicitfuns!)
+    elseif name == :ps
+        return ParameterIndexingProxy(prob)
+    end
+    return getfield(prob, name)
+end
+
+function SymbolicIndexingInterface.symbolic_container(prob::SCCNonlinearProblem)
+    prob.full_index_provider
+end
+function SymbolicIndexingInterface.parameter_values(prob::SCCNonlinearProblem)
+    prob.parameter_object
+end
+function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
+    mapreduce(
+        state_values, vcat, prob.probs; init = similar(state_values(first(prob.probs)), 0))
+end
+
+function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, idx)
+    for scc in prob.probs
+        svals = state_values(scc)
+        checkbounds(Bool, svals, idx) && return set_state!(scc, val, idx)
+        idx -= length(svals)
+    end
+    throw(BoundsError(state_values(prob), idx))
+end
+
+function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val, idx)
+    if prob.parameter_object !== nothing
+        set_parameter!(prob.parameter_object, val, idx)
+        prob.parameters_alias && return
+    end
+    for scc in prob.probs
+        is_parameter(scc, idx) || continue
+        set_parameter!(scc, val, idx)
+    end
 end

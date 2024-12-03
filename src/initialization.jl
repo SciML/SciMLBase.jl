@@ -32,7 +32,8 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
 
     function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
             initprobpmap::L) where {I, J, K, L}
-        @assert initprob isa Union{NonlinearProblem, NonlinearLeastSquaresProblem}
+        @assert initprob isa
+                Union{SCCNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
         return new{I, J, K, L}(initprob, update_initprob!, initprobmap, initprobpmap)
     end
 end
@@ -122,6 +123,7 @@ function get_initial_values(
     t = current_time(integrator)
     M = f.mass_matrix
 
+    M == I && return u0, p, true
     algebraic_vars = [all(iszero, x) for x in eachcol(M)]
     algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
     (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
