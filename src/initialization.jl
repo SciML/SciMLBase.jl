@@ -64,12 +64,12 @@ function Base.showerror(io::IO, e::CheckInitFailureError)
         normresid = $(e.normresid) > abstol = $(e.abstol)."
     )
 
-    if isdae
+    if e.isdae
         print(io, " If you wish for the system to 
             automatically change the algebraic variables to satisfy the algebraic constraints, 
             please pass `initializealg = BrownBasicInit()` to solve (this option will require 
             `using OrdinaryDiffEqNonlinearSolve`). If you wish to perform an initialization on the
-            complete u0, please pass initializealg = ShampineCollocationInit() to solve. Note that 
+            complete u0, please pass `initializealg = ShampineCollocationInit()` to solve. Note that 
             initialization can be a very difficult process for DAEs and in many cases can be 
             numerically intractable without symbolic manipulation of the system. For an automated 
             system that will generate numerically stable initializations, see ModelingToolkit.jl 
