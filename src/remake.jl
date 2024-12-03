@@ -326,12 +326,20 @@ function remake(prob::SDEProblem;
         use_defaults = false,
         seed = missing,
         kwargs = missing,
+        build_initializeprob = true,
         _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
 
-    u0, p = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        initialization_data = remake_initialization_data(
+            prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+    else
+        initialization_data = nothing
+    end
 
     if noise === missing
         noise = prob.noise
@@ -363,21 +371,21 @@ function remake(prob::SDEProblem;
             f = SDEFunction(f, g; sys = prob.f.sys)
         end
     end
-
+    f = remake(f; initialization_data)
     iip = isinplace(prob)
 
     if kwargs === missing
         SDEProblem{iip}(f,
-            u0,
+            newu0,
             tspan,
-            p;
+            newp;
             noise,
             noise_rate_prototype,
             seed,
             prob.kwargs...,
             _kwargs...)
     else
-        SDEProblem{iip}(f, u0, tspan, p; noise, noise_rate_prototype, seed, kwargs...)
+        SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
     end
 end
 
