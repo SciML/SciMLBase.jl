@@ -171,3 +171,5 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
             noise_rate_prototype, seed, neutral, order_discontinuity_t0)
     end
 end
+
+SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
