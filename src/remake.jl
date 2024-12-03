@@ -425,6 +425,79 @@ function remake(func::Union{SDEFunction, SDDEFunction};
     return T{isinplace(func)}(f, g; props..., kwargs...)
 end
 
+function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
+        tspan = missing, p = missing, constant_lags = missing,
+        dependent_lags = missing, order_discontinuity_t0 = missing,
+        neutral = missing, kwargs = missing, interpret_symbolicmap = true,
+        use_defaults = false, build_initializeprob = true, _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        initialization_data = remake_initialization_data(
+            prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+    else
+        initialization_data = nothing
+    end
+
+    if f === missing
+        f = prob.f
+    elseif !(f isa DDEFunction)
+        f = remake(prob.f; f = f)
+    end
+    f = remake(f; initialization_data)
+
+    h = coalesce(h, prob.h)
+    constant_lags = coalesce(constant_lags, prob.constant_lags)
+    dependent_lags = coalesce(dependent_lags, prob.dependent_lags)
+    order_discontinuity_t0 = coalesce(order_discontinuity_t0, prob.order_discontinuity_t0)
+    neutral = coalesce(neutral, prob.neutral)
+
+    iip = isinplace(prob)
+
+    if kwargs === missing
+        DDEProblem{iip}(f,
+            newu0,
+            h,
+            tspan,
+            newp;
+            constant_lags,
+            dependent_lags,
+            order_discontinuity_t0,
+            neutral,
+            prob.kwargs...,
+            _kwargs...)
+    else
+        DDEProblem{iip}(f, newu0, h, tspan, newp; constant_lags, dependent_lags,
+            order_discontinuity_t0, neutral, kwargs...)
+    end
+end
+
+function remake(func::DDEFunction;
+        f = missing,
+        mass_matrix = missing,
+        analytic = missing,
+        sys = missing,
+        kwargs...)
+    props = getproperties(func)
+    props = @delete props.f
+    @reset props.mass_matrix = coalesce(mass_matrix, func.mass_matrix)
+    @reset props.analytic = coalesce(analytic, func.analytic)
+    @reset props.sys = coalesce(sys, func.sys)
+
+    if f === missing
+        f = func.f
+    end
+    if f isa AbstractSciMLFunction
+        f = f.f
+    end
+
+    return DDEFunction{isinplace(func)}(f; props..., kwargs...)
+end
+
 """
     remake(prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
