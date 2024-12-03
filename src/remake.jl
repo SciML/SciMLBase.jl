@@ -498,6 +498,100 @@ function remake(func::DDEFunction;
     return DDEFunction{isinplace(func)}(f; props..., kwargs...)
 end
 
+function remake(prob::SDDEProblem;
+        f = missing,
+        g = missing,
+        h = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        constant_lags = missing,
+        dependent_lags = missing,
+        order_discontinuity_t0 = missing,
+        neutral = missing,
+        noise = missing,
+        noise_rate_prototype = missing,
+        interpret_symbolicmap = true,
+        use_defaults = false,
+        seed = missing,
+        kwargs = missing,
+        build_initializeprob = true,
+        _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        initialization_data = remake_initialization_data(
+            prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+    else
+        initialization_data = nothing
+    end
+
+    if noise === missing
+        noise = prob.noise
+    end
+
+    if noise_rate_prototype === missing
+        noise_rate_prototype = prob.noise_rate_prototype
+    end
+
+    if seed === missing
+        seed = prob.seed
+    end
+
+    if f === missing && g === missing
+        f = prob.f
+        g = prob.g
+    elseif f !== missing && g === missing
+        g = prob.g
+    elseif f === missing && g !== missing
+        if prob.f isa SDEFunction
+            f = remake(prob.f; g = g)
+        else
+            f = SDEFunction(prob.f, g; sys = prob.f.sys)
+        end
+    else
+        if f isa SDEFunction
+            f = remake(f; g = g)
+        else
+            f = SDEFunction(f, g; sys = prob.f.sys)
+        end
+    end
+    f = remake(f; initialization_data)
+    iip = isinplace(prob)
+
+    h = coalesce(h, prob.h)
+    constant_lags = coalesce(constant_lags, prob.constant_lags)
+    dependent_lags = coalesce(dependent_lags, prob.dependent_lags)
+    order_discontinuity_t0 = coalesce(order_discontinuity_t0, prob.order_discontinuity_t0)
+    neutral = coalesce(neutral, prob.neutral)
+
+    if kwargs === missing
+        SDDEProblem{iip}(f,
+            g,
+            newu0,
+            h,
+            tspan,
+            newp;
+            noise,
+            noise_rate_prototype,
+            seed,
+            constant_lags,
+            dependent_lags,
+            order_discontinuity_t0,
+            neutral,
+            prob.kwargs...,
+            _kwargs...)
+    else
+        SDDEProblem{iip}(
+            f, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
+            dependent_lags, order_discontinuity_t0, neutral, kwargs...)
+    end
+end
+
 """
     remake(prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
