@@ -187,6 +187,9 @@ function remake(prob::ODEProblem; f = missing,
     if !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
         @reset prob.u0 = u0
         @reset prob.p = p
     end
