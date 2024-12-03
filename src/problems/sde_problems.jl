@@ -125,6 +125,17 @@ function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
     SDEProblem{iip}(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
 end
 
+function ConstructionBase.constructorof(::Type{P}) where {P <: SDEProblem}
+    function ctor(f, g, u0, tspan, p, noise, kw, noise_rate_prototype, seed)
+        if f isa AbstractSDEFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return SDEProblem{iip}(f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
+    end
+end
+
 """
 $(TYPEDEF)
 """
