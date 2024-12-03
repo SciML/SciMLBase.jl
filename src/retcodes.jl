@@ -150,6 +150,26 @@ EnumX.@enumx ReturnCode begin
     MaxIters
 
     """
+        ReturnCode.MaxNumSub
+
+    A failure exit state of the solver. If this return code is given, then the
+    solving process was unsuccessful and exited early because during the solver's
+    adaptivity, mesh length exceeded the `max_num_subintervals` either set by default or specified
+    by users in the solver.
+
+    ## Common Reasons for Seeing this Return Code
+
+      - This commonly occurs in BVP solving if the original mesh are too coarse or
+        the tolerance are too stringent. It is recommended that in such cases, one tries to increase the default `max_num_subintervals`
+        in solvers, or decrease the tolerance.
+
+    ## Properties
+
+      - `successful_retcode` = `false`
+    """
+    MaxNumSub
+
+    """
         ReturnCode.DtLessThanMin
 
     A failure exit state of the solver. If this return code is given, then the
@@ -417,6 +437,8 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
         ReturnCode.Terminated
     elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
         ReturnCode.MaxIters
+    elseif retcode == :MaxNumSub
+        ReturnCode.MaxNumSub
     elseif retcode == :MaxTime || retcode == :TIME_LIMIT
         ReturnCode.MaxTime
     elseif retcode == :DtLessThanMin
