@@ -920,7 +920,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     # FIXME: need to provide `u` since the observed function expects it.
     # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
     # used, since any state symbols in the expression were substituted out earlier.
-    temp_state = ProblemState(; u = state_values(prob), p = p, t = t0)
+    temp_state = ProblemState(; u = state_values(prob), p = p, t = t0,
+        h = is_markovian(prob) ? nothing : get_history_function(prob))
     for (k, v) in u0
         u0[k] = symbolic_type(v) === NotSymbolic() ? v : getsym(prob, v)(temp_state)
     end
@@ -944,7 +945,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true}, t0)
     # FIXME: need to provide `p` since the observed function expects an `MTKParameters`
     # this is sort of an implicit dependency on MTK. The values of `p` won't actually be
     # used, since any parameter symbols in the expression were substituted out earlier.
-    temp_state = ProblemState(; u = u0, p = parameter_values(prob), t = t0)
+    temp_state = ProblemState(; u = u0, p = parameter_values(prob), t = t0,
+        h = is_markovian(prob) ? nothing : get_history_function(prob))
     for (k, v) in p
         p[k] = symbolic_type(v) === NotSymbolic() ? v : getsym(prob, v)(temp_state)
     end
