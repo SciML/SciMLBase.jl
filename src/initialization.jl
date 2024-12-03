@@ -64,7 +64,7 @@ function Base.showerror(io::IO, e::CheckInitFailureError)
         normresid = $(e.normresid) > abstol = $(e.abstol)."
     )
 
-    if isdae
+    if e.isdae
         print(io, " If you wish for the system to 
             automatically change the algebraic variables to satisfy the algebraic constraints, 
             please pass `initializealg = BrownBasicInit()` to solve (this option will require 
