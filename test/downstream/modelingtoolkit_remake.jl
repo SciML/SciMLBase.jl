@@ -73,6 +73,24 @@ discu0 = Dict([u0..., x(k - 1) => 0.0, y(k - 1) => 0.0, z(k - 1) => 0.0])
 push!(syss, discsys)
 push!(probs, DiscreteProblem(fn, getindex.((discu0,), unknowns(discsys)), (0, 10), ps))
 
+# TODO: Rewrite this example when the MTK codegen is merged
+@named sys1 = NonlinearSystem(
+    [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2], [x, y], [σ, β, ρ])
+sys1 = complete(sys1)
+@named sys2 = NonlinearSystem([0 ~ z^2 - 4z + 4], [z], [])
+sys2 = complete(sys2)
+@named fullsys = NonlinearSystem(
+    [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
+    [x, y, z], [σ, β, ρ])
+fullsys = complete(fullsys)
+
+prob1 = NonlinearProblem(sys1, u0, p)
+prob2 = NonlinearProblem(sys2, u0, prob1.p)
+sccprob = SCCNonlinearProblem(
+    [prob1, prob2], [Returns(nothing), Returns(nothing)], fullsys, prob1.p, true)
+push!(syss, fullsys)
+push!(probs, sccprob)
+
 for (sys, prob) in zip(syss, probs)
     @test parameter_values(prob) isa ModelingToolkit.MTKParameters
 
@@ -273,4 +291,48 @@ end
     @test_throws SciMLBase.CyclicDependencyError remake(prob; p = [p => 2q + 1, q => p + 3])
     @test_throws SciMLBase.CyclicDependencyError remake(
         prob; u0 = [x => 2y + p, y => q + 3], p = [p => x + y, q => p + 3])
+end
+
+@testset "SCCNonlinearProblem" begin
+    @named sys1 = NonlinearSystem(
+        [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2], [x, y], [σ, β, ρ])
+    sys1 = complete(sys1)
+    @named sys2 = NonlinearSystem([0 ~ z^2 - 4z + 4], [z], [])
+    sys2 = complete(sys2)
+    @named fullsys = NonlinearSystem(
+        [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
+        [x, y, z], [σ, β, ρ])
+    fullsys = complete(fullsys)
+
+    u0 = [x => 1.0,
+        y => 0.0,
+        z => 0.0]
+
+    p = [σ => 28.0,
+        ρ => 10.0,
+        β => 8 / 3]
+
+    prob1 = NonlinearProblem(sys1, u0, p)
+    prob2 = NonlinearProblem(sys2, u0, prob1.p)
+    sccprob = SCCNonlinearProblem(
+        [prob1, prob2], [Returns(nothing), Returns(nothing)], fullsys, prob1.p, true)
+
+    sccprob2 = remake(sccprob; u0 = 2ones(3))
+    @test state_values(sccprob2) ≈ 2ones(3)
+    @test sccprob2.probs[1].u0 ≈ 2ones(2)
+    @test sccprob2.probs[2].u0 ≈ 2ones(1)
+
+    sccprob3 = remake(sccprob; p = [σ => 2.0])
+    @test sccprob3.parameter_object === sccprob3.probs[1].p
+    @test sccprob3.parameter_object === sccprob3.probs[2].p
+
+    @test_throws ["parameters_alias", "SCCNonlinearProblem"] remake(
+        sccprob; parameters_alias = false, p = [σ => 2.0])
+
+    newp = remake_buffer(sys1, prob1.p, [σ], [3.0])
+    sccprob4 = remake(sccprob; parameters_alias = false, p = newp,
+        probs = [remake(prob1; p = [σ => 3.0]), prob2])
+    @test !sccprob4.parameters_alias
+    @test sccprob4.parameter_object !== sccprob4.probs[1].p
+    @test sccprob4.parameter_object !== sccprob4.probs[2].p
 end
