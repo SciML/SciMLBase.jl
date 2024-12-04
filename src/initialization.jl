@@ -60,21 +60,24 @@ end
 
 function Base.showerror(io::IO, e::CheckInitFailureError)
     print(io,
-        "DAE initialization failed: your u0 did not satisfy the initialization requirements, 
-        normresid = $(e.normresid) > abstol = $(e.abstol)."
-    )
+        """
+        DAE initialization failed: your u0 did not satisfy the initialization requirements, \
+        normresid = $(e.normresid) > abstol = $(e.abstol).
+        """)
 
     if e.isdae
-        print(io, " If you wish for the system to 
-            automatically change the algebraic variables to satisfy the algebraic constraints, 
-            please pass `initializealg = BrownBasicInit()` to solve (this option will require 
-            `using OrdinaryDiffEqNonlinearSolve`). If you wish to perform an initialization on the
-            complete u0, please pass `initializealg = ShampineCollocationInit()` to solve. Note that 
-            initialization can be a very difficult process for DAEs and in many cases can be 
-            numerically intractable without symbolic manipulation of the system. For an automated 
-            system that will generate numerically stable initializations, see ModelingToolkit.jl 
-            structural simplification for more details."
-        )
+        print(io,
+            """
+            If you wish for the system to automatically change the algebraic variables to \
+            satisfy the algebraic constraints, please pass `initializealg = BrownBasicInit()` \
+            to solve (this option will require `using OrdinaryDiffEqNonlinearSolve`). If you \
+            wish to perform an initialization on the complete u0, please pass \
+            `initializealg = ShampineCollocationInit()` to `solve`. Note that initialization \
+            can be a very difficult process for DAEs and in many cases can be numerically \
+            intractable without symbolic manipulation of the system. For an automated \
+            system that will generate numerically stable initializations, see \
+            ModelingToolkit.jl structural simplification for more details.
+            """)
     end
 end
 
