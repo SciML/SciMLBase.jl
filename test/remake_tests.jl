@@ -20,6 +20,21 @@ for T in containerTypes
     push!(probs, ODEProblem(fn, u0, tspan, T(p)))
 end
 
+function ddelorenz!(du, u, h, p, t)
+    du[1] = p[1] * (u[2] - u[1])
+    du[2] = u[1] * (p[2] - u[3]) - u[2]
+    du[3] = u[1] * u[2] - p[3] * u[3]
+end
+
+function history(p, t)
+    return u0 .- t
+end
+
+fn = DDEFunction(ddelorenz!; sys)
+for T in containerTypes
+    push!(probs, DDEProblem(fn, u0, history, tspan, T(p)))
+end
+
 function residual!(resid, u, p, t)
     resid[1] = u[1] - 0.5
     resid[2] = u[2] - 0.5
@@ -36,6 +51,11 @@ end
 fn = SDEFunction(lorenz!, noise!; sys)
 for T in containerTypes
     push!(probs, SDEProblem(fn, u0, tspan, T(p)))
+end
+
+fn = SDDEFunction(ddelorenz!, noise!; sys)
+for T in containerTypes
+    push!(probs, SDDEProblem(fn, noise!, u0, history, tspan, T(p)))
 end
 
 function loss(x, p)
