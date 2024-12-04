@@ -213,11 +213,12 @@ if it does.
 Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
 function remake_initializeprob(sys, scimlfn, u0, t0, p)
-    if !has_initializeprob(scimlfn)
+    if !has_initialization_data(scimlfn)
         return nothing, nothing, nothing, nothing
     end
-    return scimlfn.initializeprob,
-    scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
+    initdata = scimlfn.initialization_data
+    return initdata.initializeprob, initdata.update_initializeprob!,
+    initdata.initializeprobmap, initdata.initializeprobpmap
 end
 
 """
