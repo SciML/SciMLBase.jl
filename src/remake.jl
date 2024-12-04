@@ -352,26 +352,9 @@ function remake(prob::SDEProblem;
     if seed === missing
         seed = prob.seed
     end
-
-    if f === missing && g === missing
-        f = prob.f
-        g = prob.g
-    elseif f !== missing && g === missing
-        g = prob.g
-    elseif f === missing && g !== missing
-        if prob.f isa SDEFunction
-            f = remake(prob.f; g = g)
-        else
-            f = SDEFunction(prob.f, g; sys = prob.f.sys)
-        end
-    else
-        if f isa SDEFunction
-            f = remake(f; g = g)
-        else
-            f = SDEFunction(f, g; sys = prob.f.sys)
-        end
-    end
-    f = remake(f; initialization_data)
+    f = coalesce(f, prob.f)
+    g = coalesce(g, prob.g)
+    f = remake(prob.f; f, g, initialization_data)
     iip = isinplace(prob)
 
     if kwargs === missing
@@ -443,12 +426,8 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
         initialization_data = nothing
     end
 
-    if f === missing
-        f = prob.f
-    elseif !(f isa DDEFunction)
-        f = remake(prob.f; f = f)
-    end
-    f = remake(f; initialization_data)
+    f = coalesce(f, prob.f)
+    f = remake(prob.f; f, initialization_data)
 
     h = coalesce(h, prob.h)
     constant_lags = coalesce(constant_lags, prob.constant_lags)
@@ -542,25 +521,9 @@ function remake(prob::SDDEProblem;
         seed = prob.seed
     end
 
-    if f === missing && g === missing
-        f = prob.f
-        g = prob.g
-    elseif f !== missing && g === missing
-        g = prob.g
-    elseif f === missing && g !== missing
-        if prob.f isa SDEFunction
-            f = remake(prob.f; g = g)
-        else
-            f = SDEFunction(prob.f, g; sys = prob.f.sys)
-        end
-    else
-        if f isa SDEFunction
-            f = remake(f; g = g)
-        else
-            f = SDEFunction(f, g; sys = prob.f.sys)
-        end
-    end
-    f = remake(f; initialization_data)
+    f = coalesce(f, prob.f)
+    g = coalesce(g, prob.g)
+    f = remake(prob.f; f, g, initialization_data)
     iip = isinplace(prob)
 
     h = coalesce(h, prob.h)
@@ -587,7 +550,7 @@ function remake(prob::SDDEProblem;
             _kwargs...)
     else
         SDDEProblem{iip}(
-            f, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
+            f, g, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
             dependent_lags, order_discontinuity_t0, neutral, kwargs...)
     end
 end
