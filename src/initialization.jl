@@ -60,21 +60,24 @@ end
 
 function Base.showerror(io::IO, e::CheckInitFailureError)
     print(io,
-        "DAE initialization failed: your u0 did not satisfy the initialization requirements, 
-        normresid = $(e.normresid) > abstol = $(e.abstol)."
-    )
+        """
+        DAE initialization failed: your u0 did not satisfy the initialization requirements, \
+        normresid = $(e.normresid) > abstol = $(e.abstol).
+        """)
 
     if e.isdae
-        print(io, " If you wish for the system to 
-            automatically change the algebraic variables to satisfy the algebraic constraints, 
-            please pass `initializealg = BrownBasicInit()` to solve (this option will require 
-            `using OrdinaryDiffEqNonlinearSolve`). If you wish to perform an initialization on the
-            complete u0, please pass `initializealg = ShampineCollocationInit()` to solve. Note that 
-            initialization can be a very difficult process for DAEs and in many cases can be 
-            numerically intractable without symbolic manipulation of the system. For an automated 
-            system that will generate numerically stable initializations, see ModelingToolkit.jl 
-            structural simplification for more details."
-        )
+        print(io,
+            """
+            If you wish for the system to automatically change the algebraic variables to \
+            satisfy the algebraic constraints, please pass `initializealg = BrownBasicInit()` \
+            to solve (this option will require `using OrdinaryDiffEqNonlinearSolve`). If you \
+            wish to perform an initialization on the complete u0, please pass \
+            `initializealg = ShampineCollocationInit()` to `solve`. Note that initialization \
+            can be a very difficult process for DAEs and in many cases can be numerically \
+            intractable without symbolic manipulation of the system. For an automated \
+            system that will generate numerically stable initializations, see \
+            ModelingToolkit.jl structural simplification for more details.
+            """)
     end
 end
 
@@ -188,6 +191,9 @@ Keyword arguments:
   provided to the `OverrideInit` constructor takes priority over this keyword argument.
   If the former is `nothing`, this keyword argument will be used. If it is also not provided,
   an error will be thrown.
+
+In case the initialization problem is trivial, `nlsolve_alg`, `abstol` and `reltol` are
+not required.
 """
 function get_initial_values(prob, valp, f, alg::OverrideInit,
         iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...)
@@ -201,35 +207,55 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     initdata::OverrideInitData = f.initialization_data
     initprob = initdata.initializeprob
 
-    nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
-    if nlsolve_alg === nothing && state_values(initprob) !== nothing
-        throw(OverrideInitMissingAlgorithm())
-    end
-
     if initdata.update_initializeprob! !== nothing
         initdata.update_initializeprob!(initprob, valp)
     end
 
-    if alg.abstol !== nothing
-        _abstol = alg.abstol
-    elseif abstol !== nothing
-        _abstol = abstol
+    if is_trivial_initialization(initdata)
+        nlsol = initprob
+        success = true
     else
-        throw(OverrideInitNoTolerance(:abstol))
+        nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
+        if nlsolve_alg === nothing && state_values(initprob) !== nothing
+            throw(OverrideInitMissingAlgorithm())
+        end
+        if alg.abstol !== nothing
+            _abstol = alg.abstol
+        elseif abstol !== nothing
+            _abstol = abstol
+        else
+            throw(OverrideInitNoTolerance(:abstol))
+        end
+        if alg.reltol !== nothing
+            _reltol = alg.reltol
+        elseif reltol !== nothing
+            _reltol = reltol
+        else
+            throw(OverrideInitNoTolerance(:reltol))
+        end
+        nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol)
+        success = SciMLBase.successful_retcode(nlsol)
     end
-    if alg.reltol !== nothing
-        _reltol = alg.reltol
-    elseif reltol !== nothing
-        _reltol = reltol
-    else
-        throw(OverrideInitNoTolerance(:reltol))
-    end
-    nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol)
 
     u0 = initdata.initializeprobmap(nlsol)
     if initdata.initializeprobpmap !== nothing
         p = initdata.initializeprobpmap(valp, nlsol)
     end
 
-    return u0, p, SciMLBase.successful_retcode(nlsol)
+    return u0, p, success
+end
+
+is_trivial_initialization(::Nothing) = true
+
+function is_trivial_initialization(initdata::OverrideInitData)
+    !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
+        state_values(initdata.initializeprob) === nothing
+end
+
+function is_trivial_initialization(f::AbstractSciMLFunction)
+    has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
+end
+
+function is_trivial_initialization(prob::AbstractSciMLProblem)
+    is_trivial_initialization(prob.f)
 end
