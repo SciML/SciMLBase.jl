@@ -1,7 +1,7 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
       OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
       SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
-      DiffEqCallbacks, Test, Plots
+      DiffEqCallbacks, StochasticDelayDiffEq, Test, Plots
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -950,5 +950,36 @@ end
     step!(integ, 10.0, true)
     @test integ[sym] ≈ SciMLBase.get_sol(integ)(integ.t - integ.ps[delay]; idxs = original)
     sol = solve(prob, MethodOfSteps(Tsit5()))
+    @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
+end
+
+@testset "SDDEs" begin
+    function oscillator(; name, k = 1.0, τ = 0.01)
+        @parameters k=k τ=τ
+        @brownian a
+        @variables x(..)=0.1 + t y(t)=0.1 + t jcn(t)=0.0 + t delx(t)
+        eqs = [D(x(t)) ~ y + a,
+            D(y) ~ -k * x(t - τ) + jcn,
+            delx ~ x(t - τ)]
+        return System(eqs, t; name = name)
+    end
+    systems = @named begin
+        osc1 = oscillator(k = 1.0, τ = 0.01)
+        osc2 = oscillator(k = 2.0, τ = 0.04)
+    end
+    eqs = [osc1.jcn ~ osc2.delx,
+        osc2.jcn ~ osc1.delx]
+    @named coupledOsc = System(eqs, t)
+    @named coupledOsc = compose(coupledOsc, systems)
+    sys = structural_simplify(coupledOsc)
+    prob = SDDEProblem(sys, [], (0.0, 10.0); constant_lags = [sys.osc1.τ, sys.osc2.τ])
+    sym = sys.osc1.delx
+    delay = sys.osc1.τ
+    original = sys.osc1.x
+    @test prob[sym] ≈ prob[original] .+ (prob.tspan[1] - prob.ps[delay])
+    integ = init(prob, ImplicitEM())
+    step!(integ, 10.0, true)
+    @test integ[sym] ≈ SciMLBase.get_sol(integ)(integ.t - integ.ps[delay]; idxs = original)
+    sol = solve(prob, ImplicitEM())
     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
 end
