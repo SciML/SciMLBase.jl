@@ -926,7 +926,7 @@ end
 @testset "DDEs" begin
     function oscillator(; name, k = 1.0, τ = 0.01)
         @parameters k=k τ=τ
-        @variables x(..)=0.1 y(t)=0.1 jcn(t)=0.0 delx(t)
+        @variables x(..)=0.1 + t y(t)=0.1 + t jcn(t)=0.0 + t delx(t)
         eqs = [D(x(t)) ~ y,
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ)]
@@ -942,32 +942,13 @@ end
     @named coupledOsc = compose(coupledOsc, systems)
     sys = structural_simplify(coupledOsc)
     prob = DDEProblem(sys, [], (0.0, 10.0); constant_lags = [sys.osc1.τ, sys.osc2.τ])
-    # TODO: Remove this hack once MTK can generate appropriate observed functions
-    fn = prob.f
-    function fake_observed(_)
-        return function obsfn(u, h, p, t)
-            return u + h(p, t - 0.1)
-        end
-    end
-
-    struct NonMarkovianWrapper{S}
-        sys::S
-    end
-    SymbolicIndexingInterface.symbolic_container(x::NonMarkovianWrapper) = x.sys
-    SymbolicIndexingInterface.is_markovian(::NonMarkovianWrapper) = false
-    fn = DDEFunction(fn.f; observed = fake_observed, sys = NonMarkovianWrapper(fn.sys))
-    function fake_hist(p, t)
-        return ones(length(prob.u0)) .* t
-    end
-    prob = DDEProblem(
-        fn, prob.u0, fake_hist, prob.tspan, prob.p; constant_lags = prob.constant_lags)
     sym = sys.osc1.delx
-    @test prob[sym] ≈ prob.u0 .+ (prob.tspan[1] - 0.1)
+    delay = sys.osc1.τ
+    original = sys.osc1.x
+    @test prob[sym] ≈ prob[original] .+ (prob.tspan[1] - prob.ps[delay])
     integ = init(prob, MethodOfSteps(Tsit5()))
     step!(integ, 10.0, true)
-    # DelayDiffEq wraps `integ.f` and that doesn't contain `.observed`
-    # so the hack above doesn't work. `@reset` also doesn't work.
-    @test_broken integ[sym] ≈ integ.u + SciMLBase.get_sol(integ)(9.9)
+    @test integ[sym] ≈ SciMLBase.get_sol(integ)(integ.t - integ.ps[delay]; idxs = original)
     sol = solve(prob, MethodOfSteps(Tsit5()))
-    @test sol[sym] ≈ sol.u .+ sol(sol.t .- 0.1).u
+    @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
 end
