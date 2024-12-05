@@ -327,6 +327,7 @@ function remake(prob::SDEProblem;
         use_defaults = false,
         seed = missing,
         kwargs = missing,
+        lazy_initialization = nothing,
         build_initializeprob = true,
         _kwargs...)
     if tspan === missing
@@ -358,7 +359,7 @@ function remake(prob::SDEProblem;
     f = remake(prob.f; f, g, initialization_data)
     iip = isinplace(prob)
 
-    if kwargs === missing
+    prob = if kwargs === missing
         SDEProblem{iip}(f,
             newu0,
             tspan,
@@ -371,6 +372,20 @@ function remake(prob::SDEProblem;
     else
         SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
     end
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
 end
 
 """
@@ -413,7 +428,8 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
         tspan = missing, p = missing, constant_lags = missing,
         dependent_lags = missing, order_discontinuity_t0 = missing,
         neutral = missing, kwargs = missing, interpret_symbolicmap = true,
-        use_defaults = false, build_initializeprob = true, _kwargs...)
+        use_defaults = false, lazy_initialization = nothing, build_initializeprob = true,
+        _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
@@ -438,7 +454,7 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
 
     iip = isinplace(prob)
 
-    if kwargs === missing
+    prob = if kwargs === missing
         DDEProblem{iip}(f,
             newu0,
             h,
@@ -454,6 +470,20 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
         DDEProblem{iip}(f, newu0, h, tspan, newp; constant_lags, dependent_lags,
             order_discontinuity_t0, neutral, kwargs...)
     end
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
 end
 
 function remake(func::DDEFunction;
@@ -495,6 +525,7 @@ function remake(prob::SDDEProblem;
         use_defaults = false,
         seed = missing,
         kwargs = missing,
+        lazy_initialization = nothing,
         build_initializeprob = true,
         _kwargs...)
     if tspan === missing
@@ -533,7 +564,7 @@ function remake(prob::SDDEProblem;
     order_discontinuity_t0 = coalesce(order_discontinuity_t0, prob.order_discontinuity_t0)
     neutral = coalesce(neutral, prob.neutral)
 
-    if kwargs === missing
+    prob = if kwargs === missing
         SDDEProblem{iip}(f,
             g,
             newu0,
@@ -554,6 +585,21 @@ function remake(prob::SDDEProblem;
             f, g, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
             dependent_lags, order_discontinuity_t0, neutral, kwargs...)
     end
+
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
 end
 
 """
