@@ -792,7 +792,7 @@ error and require that `probs` be specified. `probs` is the collection of subpro
 override the values in `probs`. `sys` is the index provider for the full system.
 """
 function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
-        parameters_alias = prob.parameters_alias, sys = missing,
+        parameters_alias = prob.parameters_alias, f = missing, sys = missing,
         interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing)
     if p !== missing && !parameters_alias && probs === missing
         throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
@@ -816,11 +816,13 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
             return subprob
         end
     end
-    if sys === missing
-        sys = prob.f.sys
-    end
+    f = coalesce(f, prob.f)
+    f = remake(f; sys)
+    props = getproperties(f)
+    props = @delete props.f
+
     return SCCNonlinearProblem(
-        probs, explicitfuns!, newp, parameters_alias; sys)
+        probs, explicitfuns!, newp, parameters_alias; props...)
 end
 
 function varmap_has_var(varmap, var)
