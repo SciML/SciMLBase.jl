@@ -804,7 +804,7 @@ function updated_u0_p(
     if u0 === missing && p === missing
         return state_values(prob), parameter_values(prob)
     end
-    if prob.f.sys === nothing
+    if has_sys(prob.f) && prob.f.sys === nothing
         if interpret_symbolicmap && eltype(p) !== Union{} && eltype(p) <: Pair
             throw(ArgumentError("This problem does not support symbolic maps with " *
                                 "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
