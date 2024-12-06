@@ -492,23 +492,20 @@ function remake(func::DDEFunction;
         analytic = missing,
         sys = missing,
         kwargs...)
+    props = getproperties(func)
+    props = @delete props.f
+    @reset props.mass_matrix = coalesce(mass_matrix, func.mass_matrix)
+    @reset props.analytic = coalesce(analytic, func.analytic)
+    @reset props.sys = coalesce(sys, func.sys)
+
     if f === missing
         f = func.f
     end
-
-    if mass_matrix === missing
-        mass_matrix = func.mass_matrix
+    if f isa AbstractSciMLFunction
+        f = f.f
     end
 
-    if analytic === missing
-        analytic = func.analytic
-    end
-
-    if sys === missing
-        sys = func.sys
-    end
-
-    return DDEFunction(f; mass_matrix, analytic, sys, kwargs...)
+    return DDEFunction(f; props..., kwargs...)
 end
 
 function remake(prob::SDDEProblem;
