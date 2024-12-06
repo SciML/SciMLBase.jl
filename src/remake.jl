@@ -675,23 +675,63 @@ function remake(prob::NonlinearProblem;
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
+        lazy_initialization = nothing,
+        build_initializeprob = true,
         _kwargs...)
-    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
-    if f === missing
-        f = prob.f
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        initialization_data = remake_initialization_data(
+            prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+    else
+        initialization_data = nothing
     end
+
+    f = remake(prob.f; f, initialization_data)
+
     if problem_type === missing
         problem_type = prob.problem_type
     end
 
-    if kwargs === missing
-        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
+    prob = if kwargs === missing
+        NonlinearProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp,
             problem_type = problem_type; prob.kwargs...,
             _kwargs...)
     else
-        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
+        NonlinearProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp,
             problem_type = problem_type; kwargs...)
     end
+
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
+end
+
+function remake(func::NonlinearFunction;
+        f = missing,
+        kwargs...)
+    props = getproperties(func)
+    props = @delete props.f
+
+    if f === missing
+        f = func.f
+    end
+    if f isa AbstractSciMLFunction
+        f = f.f
+    end
+
+    return NonlinearFunction{isinplace(func)}(f; props..., kwargs...)
 end
 
 """
@@ -701,19 +741,42 @@ end
 Remake the given `NonlinearLeastSquaresProblem`.
 """
 function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
-        interpret_symbolicmap = true, use_defaults = false, kwargs = missing, _kwargs...)
-    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+        interpret_symbolicmap = true, use_defaults = false, kwargs = missing,
+        lazy_initialization = nothing, build_initializeprob = true, _kwargs...)
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
-    if f === missing
-        f = prob.f
+    if build_initializeprob
+        initialization_data = remake_initialization_data(
+            prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+    else
+        initialization_data = nothing
     end
 
-    if kwargs === missing
-        return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, prob.kwargs...,
+    f = remake(prob.f; f, initialization_data)
+
+    prob = if kwargs === missing
+        return NonlinearLeastSquaresProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, prob.kwargs...,
             _kwargs...)
     else
-        return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, kwargs...)
+        return NonlinearLeastSquaresProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, kwargs...)
     end
+
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
 end
 
 """
