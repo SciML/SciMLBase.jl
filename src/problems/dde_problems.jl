@@ -253,6 +253,19 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     end
 end
 
+function ConstructionBase.constructorof(::Type{P}) where {P <: DDEProblem}
+    function ctor(f, u0, h, tspan, p, constant_lags, dependent_lags,
+            kw, neutral, order_discontinuity_t0, problem_type)
+        if f isa AbstractDDEFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 5)
+        end
+        return DDEProblem{iip}(f, u0, h, tspan, p; kw..., constant_lags, dependent_lags,
+            neutral, order_discontinuity_t0, problem_type)
+    end
+end
+
 DDEProblem(f, args...; kwargs...) = DDEProblem(DDEFunction(f), args...; kwargs...)
 
 function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)

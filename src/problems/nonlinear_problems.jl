@@ -222,6 +222,17 @@ function NonlinearProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwar
     NonlinearProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
+function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearProblem}
+    function ctor(f, u0, p, pt, kw)
+        if f isa AbstractNonlinearFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return NonlinearProblem{iip}(f, u0, p, pt; kw...)
+    end
+end
+
 """
 $(SIGNATURES)
 
@@ -320,6 +331,17 @@ end
 
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
     return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
+end
+
+function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearLeastSquaresProblem}
+    function ctor(f, u0, p, kw)
+        if f isa AbstractNonlinearFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return NonlinearProblem{iip}(f, u0, p; kw...)
+    end
 end
 
 @doc doc"""
