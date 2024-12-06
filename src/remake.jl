@@ -355,6 +355,7 @@ function remake(prob::SDEProblem;
         seed = prob.seed
     end
     f = coalesce(f, prob.f)
+    g = coalesce(g, prob.g)
     f = remake(prob.f; f, g, initialization_data)
     iip = isinplace(prob)
 
@@ -557,6 +558,7 @@ function remake(prob::SDDEProblem;
     end
 
     f = coalesce(f, prob.f)
+    g = coalesce(g, prob.g)
     f = remake(prob.f; f, g, initialization_data)
     iip = isinplace(prob)
 
@@ -584,7 +586,7 @@ function remake(prob::SDDEProblem;
             _kwargs...)
     else
         SDDEProblem{iip}(
-            f, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
+            f, g, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
             dependent_lags, order_discontinuity_t0, neutral, kwargs...)
     end
 
