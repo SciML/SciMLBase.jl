@@ -22,7 +22,7 @@ import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: ADTypes, AbstractADType
-import Accessors: @set, @reset
+import Accessors: @set, @reset, @delete
 using Expronicon.ADT: @match
 
 using Reexport
