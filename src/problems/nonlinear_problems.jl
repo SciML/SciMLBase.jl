@@ -104,6 +104,9 @@ function IntervalNonlinearProblem(f, tspan, p = NullParameters(); kwargs...)
     IntervalNonlinearProblem(IntervalNonlinearFunction(f), tspan, p; kwargs...)
 end
 
+
+_default_nl_specialize(p) = sizeof(p)==0 || ismutable(p) ? AutoSpecialize : FullSpecialize
+
 @doc doc"""
 
 Defines a nonlinear system problem.
@@ -183,7 +186,7 @@ mutable struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
     This is determined automatically, but not inferred.
     """
     function NonlinearProblem{iip}(f, u0, p = NullParameters(); kwargs...) where {iip}
-        NonlinearProblem{iip}(NonlinearFunction{iip}(f), u0, p; kwargs...)
+        NonlinearProblem{iip}(NonlinearFunction{iip, _default_nl_specialize(p)}(f), u0, p; kwargs...)
     end
 end
 
@@ -198,7 +201,9 @@ function NonlinearProblem(f::AbstractNonlinearFunction, u0, p = NullParameters()
 end
 
 function NonlinearProblem(f, u0, p = NullParameters(); kwargs...)
-    NonlinearProblem(NonlinearFunction(f), u0, p; kwargs...)
+    iip = isinplace(f, 3)
+
+    NonlinearProblem(NonlinearFunction{iip, _default_nl_specialize(p)}(f), u0, p; kwargs...)
 end
 
 """
