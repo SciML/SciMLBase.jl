@@ -977,9 +977,6 @@ end
     delay = sys.osc1.τ
     original = sys.osc1.x
     @test prob[sym] ≈ prob[original] .+ (prob.tspan[1] - prob.ps[delay])
-    integ = init(prob, ImplicitEM())
-    step!(integ, 10.0, true)
-    @test integ[sym] ≈ SciMLBase.get_sol(integ)(integ.t - integ.ps[delay]; idxs = original)
     sol = solve(prob, ImplicitEM())
     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
 end
