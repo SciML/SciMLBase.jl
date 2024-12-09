@@ -124,15 +124,18 @@ function remake(prob::ODEProblem; f = missing,
 
     iip = isinplace(prob)
 
-    initialization_data = prob.f.initialization_data
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
 
     if f === missing
-        if build_initializeprob
-            initialization_data = remake_initialization_data_compat_wrapper(
-                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
-        else
-            initialization_data = nothing
-        end
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
@@ -184,7 +187,7 @@ function remake(prob::ODEProblem; f = missing,
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
@@ -213,11 +216,12 @@ if it does.
 Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
 function remake_initializeprob(sys, scimlfn, u0, t0, p)
-    if !has_initializeprob(scimlfn)
+    if !has_initialization_data(scimlfn)
         return nothing, nothing, nothing, nothing
     end
-    return scimlfn.initializeprob,
-    scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap
+    initdata = scimlfn.initialization_data
+    return initdata.initializeprob, initdata.update_initializeprob!,
+    initdata.initializeprobmap, initdata.initializeprobpmap
 end
 
 """
@@ -326,12 +330,231 @@ function remake(prob::SDEProblem;
         use_defaults = false,
         seed = missing,
         kwargs = missing,
+        lazy_initialization = nothing,
+        build_initializeprob = true,
         _kwargs...)
     if tspan === missing
         tspan = prob.tspan
     end
 
-    u0, p = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
+
+    if noise === missing
+        noise = prob.noise
+    end
+
+    if noise_rate_prototype === missing
+        noise_rate_prototype = prob.noise_rate_prototype
+    end
+
+    if seed === missing
+        seed = prob.seed
+    end
+    f = coalesce(f, prob.f)
+    g = coalesce(g, prob.g)
+    f = remake(prob.f; f, g, initialization_data)
+    iip = isinplace(prob)
+
+    prob = if kwargs === missing
+        SDEProblem{iip}(f,
+            newu0,
+            tspan,
+            newp;
+            noise,
+            noise_rate_prototype,
+            seed,
+            prob.kwargs...,
+            _kwargs...)
+    else
+        SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
+    end
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if initialization_data !== nothing && !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
+end
+
+"""
+    remake(func::SDEFunction; f = missing, g = missing,
+           mass_matrix = missing, analytic = missing, kwargs...)
+
+Remake the given `SDEFunction`.
+"""
+function remake(func::Union{SDEFunction, SDDEFunction};
+        f = missing,
+        g = missing,
+        mass_matrix = missing,
+        analytic = missing,
+        sys = missing,
+        kwargs...)
+    props = getproperties(func)
+    props = @delete props.f
+    props = @delete props.g
+    @reset props.mass_matrix = coalesce(mass_matrix, func.mass_matrix)
+    @reset props.analytic = coalesce(analytic, func.analytic)
+    @reset props.sys = coalesce(sys, func.sys)
+
+    if f === missing
+        f = func.f
+    end
+
+    if g === missing
+        g = func.g
+    end
+
+    if f isa AbstractSciMLFunction
+        f = f.f
+    end
+
+    T = func isa SDEFunction ? SDEFunction : SDDEFunction
+    return T{isinplace(func)}(f, g; props..., kwargs...)
+end
+
+function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
+        tspan = missing, p = missing, constant_lags = missing,
+        dependent_lags = missing, order_discontinuity_t0 = missing,
+        neutral = missing, kwargs = missing, interpret_symbolicmap = true,
+        use_defaults = false, lazy_initialization = nothing, build_initializeprob = true,
+        _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
+
+    f = coalesce(f, prob.f)
+    f = remake(prob.f; f, initialization_data)
+
+    h = coalesce(h, prob.h)
+    constant_lags = coalesce(constant_lags, prob.constant_lags)
+    dependent_lags = coalesce(dependent_lags, prob.dependent_lags)
+    order_discontinuity_t0 = coalesce(order_discontinuity_t0, prob.order_discontinuity_t0)
+    neutral = coalesce(neutral, prob.neutral)
+
+    iip = isinplace(prob)
+
+    prob = if kwargs === missing
+        DDEProblem{iip}(f,
+            newu0,
+            h,
+            tspan,
+            newp;
+            constant_lags,
+            dependent_lags,
+            order_discontinuity_t0,
+            neutral,
+            prob.kwargs...,
+            _kwargs...)
+    else
+        DDEProblem{iip}(f, newu0, h, tspan, newp; constant_lags, dependent_lags,
+            order_discontinuity_t0, neutral, kwargs...)
+    end
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if initialization_data !== nothing && !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
+end
+
+function remake(func::DDEFunction;
+        f = missing,
+        mass_matrix = missing,
+        analytic = missing,
+        sys = missing,
+        kwargs...)
+    props = getproperties(func)
+    props = @delete props.f
+    @reset props.mass_matrix = coalesce(mass_matrix, func.mass_matrix)
+    @reset props.analytic = coalesce(analytic, func.analytic)
+    @reset props.sys = coalesce(sys, func.sys)
+
+    if f === missing
+        f = func.f
+    end
+    if f isa AbstractSciMLFunction
+        f = f.f
+    end
+
+    return DDEFunction{isinplace(func)}(f; props..., kwargs...)
+end
+
+function remake(prob::SDDEProblem;
+        f = missing,
+        g = missing,
+        h = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        constant_lags = missing,
+        dependent_lags = missing,
+        order_discontinuity_t0 = missing,
+        neutral = missing,
+        noise = missing,
+        noise_rate_prototype = missing,
+        interpret_symbolicmap = true,
+        use_defaults = false,
+        seed = missing,
+        kwargs = missing,
+        lazy_initialization = nothing,
+        build_initializeprob = true,
+        _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
 
     if noise === missing
         noise = prob.noise
@@ -345,71 +568,53 @@ function remake(prob::SDEProblem;
         seed = prob.seed
     end
 
-    if f === missing && g === missing
-        f = prob.f
-        g = prob.g
-    elseif f !== missing && g === missing
-        g = prob.g
-    elseif f === missing && g !== missing
-        if prob.f isa SDEFunction
-            f = remake(prob.f; g = g)
-        else
-            f = SDEFunction(prob.f, g)
-        end
-    else
-        if f isa SDEFunction
-            f = remake(f; g = g)
-        else
-            f = SDEFunction(f, g)
-        end
-    end
-
+    f = coalesce(f, prob.f)
+    g = coalesce(g, prob.g)
+    f = remake(prob.f; f, g, initialization_data)
     iip = isinplace(prob)
 
-    if kwargs === missing
-        SDEProblem{iip}(f,
-            u0,
+    h = coalesce(h, prob.h)
+    constant_lags = coalesce(constant_lags, prob.constant_lags)
+    dependent_lags = coalesce(dependent_lags, prob.dependent_lags)
+    order_discontinuity_t0 = coalesce(order_discontinuity_t0, prob.order_discontinuity_t0)
+    neutral = coalesce(neutral, prob.neutral)
+
+    prob = if kwargs === missing
+        SDDEProblem{iip}(f,
+            g,
+            newu0,
+            h,
             tspan,
-            p;
+            newp;
             noise,
             noise_rate_prototype,
             seed,
+            constant_lags,
+            dependent_lags,
+            order_discontinuity_t0,
+            neutral,
             prob.kwargs...,
             _kwargs...)
     else
-        SDEProblem{iip}(f, u0, tspan, p; noise, noise_rate_prototype, seed, kwargs...)
-    end
-end
-
-"""
-    remake(func::SDEFunction; f = missing, g = missing,
-           mass_matrix = missing, analytic = missing, kwargs...)
-
-Remake the given `SDEFunction`.
-"""
-function remake(func::SDEFunction;
-        f = missing,
-        g = missing,
-        mass_matrix = missing,
-        analytic = missing,
-        kwargs...)
-    if f === missing
-        f = func.f
+        SDDEProblem{iip}(
+            f, g, newu0, tspan, newp; noise, noise_rate_prototype, seed, constant_lags,
+            dependent_lags, order_discontinuity_t0, neutral, kwargs...)
     end
 
-    if g === missing
-        g = func.g
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if initialization_data !== nothing && !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
     end
 
-    if mass_matrix === missing
-        mass_matrix = func.mass_matrix
-    end
-
-    if analytic === missing
-        analytic = func.analytic
-    end
-
-    return SDEFunction(f, g; mass_matrix, analytic, kwargs...)
+    return prob
 end
 
 """
@@ -485,23 +690,67 @@ function remake(prob::NonlinearProblem;
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
+        lazy_initialization = nothing,
+        build_initializeprob = true,
         _kwargs...)
-    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
-    if f === missing
-        f = prob.f
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
     end
+
+    f = remake(prob.f; f, initialization_data)
+
     if problem_type === missing
         problem_type = prob.problem_type
     end
 
-    if kwargs === missing
-        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
+    prob = if kwargs === missing
+        NonlinearProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp,
             problem_type = problem_type; prob.kwargs...,
             _kwargs...)
     else
-        NonlinearProblem{isinplace(prob)}(f = f, u0 = u0, p = p,
+        NonlinearProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp,
             problem_type = problem_type; kwargs...)
     end
+
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if initialization_data !== nothing && !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
+end
+
+function remake(func::NonlinearFunction;
+        f = missing,
+        kwargs...)
+    props = getproperties(func)
+    props = @delete props.f
+
+    if f === missing
+        f = func.f
+    end
+    if f isa AbstractSciMLFunction
+        f = f.f
+    end
+
+    return NonlinearFunction{isinplace(func)}(f; props..., kwargs...)
 end
 
 """
@@ -511,19 +760,46 @@ end
 Remake the given `NonlinearLeastSquaresProblem`.
 """
 function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
-        interpret_symbolicmap = true, use_defaults = false, kwargs = missing, _kwargs...)
-    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+        interpret_symbolicmap = true, use_defaults = false, kwargs = missing,
+        lazy_initialization = nothing, build_initializeprob = true, _kwargs...)
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
-    if f === missing
-        f = prob.f
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
     end
 
-    if kwargs === missing
-        return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, prob.kwargs...,
+    f = remake(prob.f; f, initialization_data)
+
+    prob = if kwargs === missing
+        prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, prob.kwargs...,
             _kwargs...)
     else
-        return NonlinearLeastSquaresProblem{isinplace(prob)}(; f, u0, p, kwargs...)
+        prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, kwargs...)
     end
+
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if initialization_data !== nothing && !lazy_initialization
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
+
+    return prob
 end
 
 """
@@ -539,7 +815,7 @@ error and require that `probs` be specified. `probs` is the collection of subpro
 override the values in `probs`. `sys` is the index provider for the full system.
 """
 function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
-        parameters_alias = prob.parameters_alias, sys = missing,
+        parameters_alias = prob.parameters_alias, f = missing, sys = missing,
         interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing)
     if p !== missing && !parameters_alias && probs === missing
         throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
@@ -563,11 +839,13 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
             return subprob
         end
     end
-    if sys === missing
-        sys = prob.f.sys
-    end
+    f = coalesce(f, prob.f)
+    f = remake(f; sys)
+    props = getproperties(f)
+    props = @delete props.f
+
     return SCCNonlinearProblem(
-        probs, explicitfuns!, newp, parameters_alias; sys)
+        probs, explicitfuns!, newp, parameters_alias; props...)
 end
 
 function varmap_has_var(varmap, var)
@@ -740,7 +1018,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     # FIXME: need to provide `u` since the observed function expects it.
     # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
     # used, since any state symbols in the expression were substituted out earlier.
-    temp_state = ProblemState(; u = state_values(prob), p = p, t = t0)
+    temp_state = ProblemState(; u = state_values(prob), p = p, t = t0,
+        h = is_markovian(prob) ? nothing : get_history_function(prob))
     for (k, v) in u0
         u0[k] = symbolic_type(v) === NotSymbolic() ? v : getsym(prob, v)(temp_state)
     end
@@ -764,7 +1043,8 @@ function _updated_u0_p_symmap(prob, u0, ::Val{false}, p, ::Val{true}, t0)
     # FIXME: need to provide `p` since the observed function expects an `MTKParameters`
     # this is sort of an implicit dependency on MTK. The values of `p` won't actually be
     # used, since any parameter symbols in the expression were substituted out earlier.
-    temp_state = ProblemState(; u = u0, p = parameter_values(prob), t = t0)
+    temp_state = ProblemState(; u = u0, p = parameter_values(prob), t = t0,
+        h = is_markovian(prob) ? nothing : get_history_function(prob))
     for (k, v) in p
         p[k] = symbolic_type(v) === NotSymbolic() ? v : getsym(prob, v)(temp_state)
     end

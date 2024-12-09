@@ -4678,9 +4678,10 @@ end
 
 SymbolicIndexingInterface.constant_structure(::AbstractSciMLFunction) = true
 
-function Base.getproperty(x::Union{ODEFunction, SplitFunction, DAEFunction}, sym::Symbol)
-    if sym == :initializeprob || sym == :update_initializeprob! ||
-       sym == :initializeprobmap || sym == :initializeprobpmap
+function Base.getproperty(x::AbstractSciMLFunction, sym::Symbol)
+    if __has_initialization_data(x) &&
+       (sym == :initializeprob || sym == :update_initializeprob! ||
+        sym == :initializeprobmap || sym == :initializeprobpmap)
         if x.initialization_data === nothing
             return nothing
         else

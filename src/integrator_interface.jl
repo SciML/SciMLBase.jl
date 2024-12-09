@@ -925,6 +925,7 @@ function isadaptive(integrator::DEIntegrator)
     isdefined(integrator.opts, :adaptive) ? integrator.opts.adaptive : false
 end
 
-function SymbolicIndexingInterface.get_history_function(integ::AbstractDDEIntegrator)
+function SymbolicIndexingInterface.get_history_function(integ::Union{
+        AbstractDDEIntegrator, AbstractSDDEIntegrator})
     DDESolutionHistoryWrapper(get_sol(integ))
 end
