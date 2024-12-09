@@ -187,7 +187,7 @@ function remake(prob::ODEProblem; f = missing,
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
@@ -382,7 +382,7 @@ function remake(prob::SDEProblem;
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
@@ -484,7 +484,7 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
@@ -604,7 +604,7 @@ function remake(prob::SDDEProblem;
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
@@ -724,7 +724,7 @@ function remake(prob::NonlinearProblem;
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
@@ -789,7 +789,7 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if !lazy_initialization
+    if initialization_data !== nothing && !lazy_initialization
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
