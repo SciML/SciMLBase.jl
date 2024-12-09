@@ -124,15 +124,18 @@ function remake(prob::ODEProblem; f = missing,
 
     iip = isinplace(prob)
 
-    initialization_data = prob.f.initialization_data
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
 
     if f === missing
-        if build_initializeprob
-            initialization_data = remake_initialization_data_compat_wrapper(
-                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
-        else
-            initialization_data = nothing
-        end
         if specialization(prob.f) === FunctionWrapperSpecialize
             ptspan = promote_tspan(tspan)
             if iip
@@ -337,8 +340,12 @@ function remake(prob::SDEProblem;
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
     if build_initializeprob
-        initialization_data = remake_initialization_data(
-            prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
     else
         initialization_data = nothing
     end
@@ -437,8 +444,12 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
     if build_initializeprob
-        initialization_data = remake_initialization_data(
-            prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
     else
         initialization_data = nothing
     end
@@ -535,8 +546,12 @@ function remake(prob::SDDEProblem;
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
     if build_initializeprob
-        initialization_data = remake_initialization_data(
-            prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
     else
         initialization_data = nothing
     end
@@ -681,8 +696,12 @@ function remake(prob::NonlinearProblem;
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
     if build_initializeprob
-        initialization_data = remake_initialization_data(
-            prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        end
     else
         initialization_data = nothing
     end
@@ -746,8 +765,12 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
     if build_initializeprob
-        initialization_data = remake_initialization_data(
-            prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        if f !== missing && has_initialization_data(f)
+            initialization_data = f.initialization_data
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        end
     else
         initialization_data = nothing
     end
@@ -755,11 +778,11 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     f = remake(prob.f; f, initialization_data)
 
     prob = if kwargs === missing
-        return NonlinearLeastSquaresProblem{isinplace(prob)}(;
+        prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
             f, u0 = newu0, p = newp, prob.kwargs...,
             _kwargs...)
     else
-        return NonlinearLeastSquaresProblem{isinplace(prob)}(;
+        prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
             f, u0 = newu0, p = newp, kwargs...)
     end
 
