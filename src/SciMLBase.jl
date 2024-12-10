@@ -642,6 +642,14 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
+Used to specify which variables can be aliased in a solve. 
+Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`. 
+"""
+abstract type AbstractAliasSpecifier end
+
+"""
+$(TYPEDEF)
+
 Internal. Used for signifying the AD context comes from a ChainRules.jl definition.
 """
 struct ChainRulesOriginator <: ADOriginator end
@@ -862,5 +870,7 @@ export step!, deleteat!, addat!, get_tmp_cache,
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
 export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
+
+export ODEAliasSpecifier, LinearAliasSpecifier
 
 end

@@ -173,3 +173,8 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
 end
 
 SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
+
+struct SDDEAliasSpecifier
+    alias_p
+    alias_f
+end

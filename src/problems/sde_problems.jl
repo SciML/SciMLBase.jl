@@ -215,3 +215,8 @@ function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, v0, u0, tspan,
     end
     SDEProblem(_f, ArrayPartition(v0, u0), tspan, p; kwargs...)
 end
+
+struct SDEAliasSpecifier <: AbstractAliasSpecifier
+    alias_p
+    alias_f
+end
