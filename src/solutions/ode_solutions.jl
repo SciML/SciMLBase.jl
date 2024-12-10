@@ -388,7 +388,7 @@ function (w::DDESolutionHistoryWrapper)(
     w.sol(out, t, deriv; idxs)
 end
 
-function SymbolicIndexingInterface.get_history_function(sol::ODESolution)
+function SymbolicIndexingInterface.get_history_function(sol::AbstractODESolution)
     DDESolutionHistoryWrapper(sol)
 end
 

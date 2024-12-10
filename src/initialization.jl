@@ -112,6 +112,27 @@ function _evaluate_f(integrator, f, isinplace::Val{false}, args...)
 end
 
 """
+Utility function to evaluate the RHS, adding extra arguments (such as history function for
+DDEs) wherever necessary.
+"""
+function evaluate_f(integrator::DEIntegrator, prob, f, isinplace, u, p, t)
+    return _evaluate_f(integrator, f, isinplace, u, p, t)
+end
+
+function evaluate_f(
+        integrator::DEIntegrator, prob::AbstractDAEProblem, f, isinplace, u, p, t)
+    return _evaluate_f(integrator, f, isinplace, integrator.du, u, p, t)
+end
+
+function evaluate_f(integrator::AbstractDDEIntegrator, prob::AbstractDDEProblem, f, isinplace, u, p, t)
+    return _evaluate_f(integrator, f, isinplace, u, get_history_function(integrator), p, t)
+end
+
+function evaluate_f(integrator::AbstractSDDEIntegrator, prob::AbstractSDDEProblem, f, isinplace, u, p, t)
+    return _evaluate_f(integrator, f, isinplace, u, get_history_function(integrator), p, t)
+end
+
+"""
     $(TYPEDSIGNATURES)
 
 A utility function equivalent to `Base.vec` but also handles `Number` and
@@ -147,7 +168,7 @@ function get_initial_values(
     algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
     (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
     update_coefficients!(M, u0, p, t)
-    tmp = _evaluate_f(integrator, f, isinplace, u0, p, t)
+    tmp = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
     normresid = isdefined(integrator.opts, :internalnorm) ?
@@ -165,7 +186,7 @@ function get_initial_values(
     p = parameter_values(integrator)
     t = current_time(integrator)
 
-    resid = _evaluate_f(integrator, f, isinplace, integrator.du, u0, p, t)
+    resid = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
     normresid = isdefined(integrator.opts, :internalnorm) ?
                 integrator.opts.internalnorm(resid, t) : norm(resid)
 
