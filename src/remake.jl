@@ -451,42 +451,6 @@ function remake(prob::SDEProblem;
     return prob
 end
 
-"""
-    remake(func::SDEFunction; f = missing, g = missing,
-           mass_matrix = missing, analytic = missing, kwargs...)
-
-Remake the given `SDEFunction`.
-"""
-function remake(func::Union{SDEFunction, SDDEFunction};
-        f = missing,
-        g = missing,
-        mass_matrix = missing,
-        analytic = missing,
-        sys = missing,
-        kwargs...)
-    props = getproperties(func)
-    props = @delete props.f
-    props = @delete props.g
-    @reset props.mass_matrix = coalesce(mass_matrix, func.mass_matrix)
-    @reset props.analytic = coalesce(analytic, func.analytic)
-    @reset props.sys = coalesce(sys, func.sys)
-
-    if f === missing
-        f = func.f
-    end
-
-    if g === missing
-        g = func.g
-    end
-
-    if f isa AbstractSciMLFunction
-        f = f.f
-    end
-
-    T = func isa SDEFunction ? SDEFunction : SDDEFunction
-    return T{isinplace(func)}(f, g; props..., kwargs...)
-end
-
 function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
         tspan = missing, p = missing, constant_lags = missing,
         dependent_lags = missing, order_discontinuity_t0 = missing,
