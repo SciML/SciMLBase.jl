@@ -704,6 +704,7 @@ function remake(prob::NonlinearProblem;
         initialization_data = nothing
     end
 
+    f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
     if problem_type === missing
@@ -735,22 +736,6 @@ function remake(prob::NonlinearProblem;
     return prob
 end
 
-function remake(func::NonlinearFunction;
-        f = missing,
-        kwargs...)
-    props = getproperties(func)
-    props = @delete props.f
-
-    if f === missing
-        f = func.f
-    end
-    if f isa AbstractSciMLFunction
-        f = f.f
-    end
-
-    return NonlinearFunction{isinplace(func)}(f; props..., kwargs...)
-end
-
 """
     remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
         kwargs = missing, _kwargs...)
@@ -773,6 +758,7 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
         initialization_data = nothing
     end
 
+    f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
     prob = if kwargs === missing
