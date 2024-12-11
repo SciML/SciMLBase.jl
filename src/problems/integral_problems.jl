@@ -172,3 +172,13 @@ struct IntegralAliasSpecifier <: AbstractAliasSpecifier
     alias_p
     alias_f
 end
+
+function IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
+    if alias == true
+        IntegralAliasSpecifier(true, true)
+    elseif alias == false
+        IntegralAliasSpecifier(false, false)
+    elseif isnothing(alias)
+        IntegralAliasSpecifier(alias_p, alias_f)
+    end
+end
