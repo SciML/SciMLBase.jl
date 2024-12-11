@@ -161,11 +161,25 @@ struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
     alias_u0
 end
 
+
+@doc doc"""
+
+Holds information on what variables to alias
+when solving an OptimizationProblem. Conforms to the AbstractAliasSpecifier interface. 
+    OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias = nothing)
+
+### Keywords 
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
+* `alias::Union{Bool, Nothing}`: sets all fields of the `OptimizationAliasSpecifier` to `alias`
+
+"""
 function OptimizationAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
     if alias == true
-        OptimizationAliasSpecifier(true, true, true, true, true)
+        OptimizationAliasSpecifier(true, true, true)
     elseif alias == false
-        OptimizationAliasSpecifier(false, false, false, false, false)
+        OptimizationAliasSpecifier(false, false, false)
     elseif isnothing(alias)
         OptimizationAliasSpecifier(alias_p, alias_f, alias_u0, alias_tstops)
     end

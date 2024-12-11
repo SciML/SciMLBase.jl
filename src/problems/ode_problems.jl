@@ -528,12 +528,12 @@ when solving an ODE. Conforms to the AbstractAliasSpecifier interface.
     ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
 
 ### Keywords 
-* `alias_p::Bool`
-* `alias_f::Bool`
-* `alias_u0::Bool`: alias the u0 array. Defaults to false .
-* `alias_du0::Bool`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Bool`: alias the tstops array
-* `alias::Bool`: sets all fields of the `ODEAliasSpecifier` to `alias`
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
+* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
+* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
+* `alias::Union{Bool, Nothing}`: sets all fields of the `ODEAliasSpecifier` to `alias`
 
 """
 function ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)

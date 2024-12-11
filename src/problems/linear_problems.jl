@@ -83,15 +83,16 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
 end
 
 @doc doc"""
-    Holds information on what variables to alias when solving a `LinearProblem`
+   Holds information on what variables to alias
+when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
 
 ### Keywords
 
-* `alias_p::Bool`
-* `alias_f::Bool`
-* `alias_A::Bool`: alias the `A` array.
-* `alias_b::Bool`: alias the `b` array. 
-* `alias::Bool`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_A::Union{Bool, Nothing}`: alias the `A` array.
+* `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
+* `alias::Union{Bool, Nothing}`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
 
 Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.

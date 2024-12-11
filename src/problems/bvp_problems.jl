@@ -438,3 +438,39 @@ function TwoPointSecondOrderBVProblem(
     u0 = [initialGuess(i) for i in tspan]
     return TwoPointSecondOrderBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
+
+
+struct BVPAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+    alias_du0::Union{Bool, Nothing}
+    alias_tstops::Union{Bool, Nothing}
+end
+
+
+@doc doc"""
+
+Holds information on what variables to alias
+when solving an BVP. Conforms to the AbstractAliasSpecifier interface. 
+    BVPAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+
+### Keywords 
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
+* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
+* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
+* `alias::Union{Bool, Nothing}`: sets all fields of the `BVPAliasSpecifier` to `alias`
+
+"""
+function BVPAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+    if alias == true
+        BVPAliasSpecifier(true, true, true, true, true)
+    elseif alias == false
+        BVPAliasSpecifier(false, false, false, false, false)
+    elseif isnothing(alias)
+        BVPAliasSpecifier(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+    end
+end

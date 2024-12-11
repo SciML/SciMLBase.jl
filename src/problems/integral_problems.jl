@@ -173,6 +173,18 @@ struct IntegralAliasSpecifier <: AbstractAliasSpecifier
     alias_f
 end
 
+@doc doc"""
+
+Holds information on what variables to alias
+when solving an IntegralProblem. Conforms to the AbstractAliasSpecifier interface. 
+    IntegralAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+
+### Keywords 
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias::Union{Bool, Nothing}`: sets all fields of the `IntegralAliasSpecifier` to `alias`
+
+"""
 function IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
     if alias == true
         IntegralAliasSpecifier(true, true)

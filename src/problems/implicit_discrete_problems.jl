@@ -119,3 +119,34 @@ function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
     iip = isinplace(f, 6)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
+
+
+struct ImplicitDiscreteAliasSpecifier
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+end
+
+@doc doc"""
+
+Holds information on what variables to alias
+when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
+    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+
+### Keywords 
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
+* `alias::Union{Bool, Nothing}`: sets all fields of the `ImplicitDiscreteAliasSpecifier` to `alias`
+
+"""
+function ImplicitDiscreteAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias = nothing)
+    if alias == true
+        ImplicitDiscreteAliasSpecifier(true, true, true, true, true)
+    elseif alias == false
+        ImplicitDiscreteAliasAliasSpecifier(false, false, false, false, false)
+    elseif isnothing(alias)
+        ImplicitDiscreteAliasSpecifier(alias_p, alias_f, alias_u0)
+    end
+end
