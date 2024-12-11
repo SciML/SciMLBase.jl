@@ -372,3 +372,14 @@ end
     prob = ODEProblem(ODEFunction(foo; sys), [1.5, 2.5], (0.0, 1.0), [3.5, 4.5])
     @test_nowarn remake(prob; u0 = [:x => nothing], p = [:a => nothing])
 end
+
+@testset "retain properties of `SciMLFunction` passed to `remake`" begin
+    u0 = [1.0; 2.0; 3.0]
+    p = [10.0, 20.0, 30.0]
+    sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t)
+    fn = NonlinearFunction(nllorenz!; sys, resid_prototype = zeros(Float64, 3))
+    prob = NonlinearProblem(fn, u0, p)
+    fn2 = NonlinearFunction(nllorenz!; resid_prototype = zeros(Float32, 3))
+    prob2 = remake(prob; f = fn2)
+    @test prob2.f.resid_prototype isa Vector{Float32}
+end
