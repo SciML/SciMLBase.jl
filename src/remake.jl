@@ -216,53 +216,28 @@ function remake(prob::ODEProblem; f = missing,
         initialization_data = nothing
     end
 
-    if f === missing
-        if specialization(prob.f) === FunctionWrapperSpecialize
-            ptspan = promote_tspan(tspan)
-            if iip
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(
-                    wrapfun_iip(
-                        unwrapped_f(prob.f.f),
-                        (newu0, newu0, newp,
-                            ptspan[1])); initialization_data)
-            else
-                _f = ODEFunction{iip, FunctionWrapperSpecialize}(
-                    wrapfun_oop(
-                        unwrapped_f(prob.f.f),
-                        (newu0, newp,
-                            ptspan[1])); initialization_data)
-            end
-        else
-            _f = prob.f
-            if __has_initialization_data(_f)
-                props = getproperties(_f)
-                @reset props.initialization_data = initialization_data
-                props = values(props)
-                _f = parameterless_type(_f){iip, specialization(_f), map(typeof, props)...}(props...)
-            end
-        end
-    elseif f isa AbstractODEFunction
-        _f = f
-    elseif specialization(prob.f) === FunctionWrapperSpecialize
+    f = coalesce(f, prob.f)
+    f = remake(prob.f; f, initialization_data)
+
+    if specialization(f) === FunctionWrapperSpecialize
         ptspan = promote_tspan(tspan)
         if iip
-            _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                (newu0, newu0, newp,
-                    ptspan[1])))
+            f = remake(
+                f; f = wrapfun_iip(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1])))
         else
-            _f = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                (newu0, newp, ptspan[1])))
+            f = remake(
+                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1])))
         end
     else
-        _f = ODEFunction{isinplace(prob), specialization(prob.f)}(f)
+        _f = f
     end
 
     prob = if kwargs === missing
-        ODEProblem{isinplace(prob)}(
+        ODEProblem{iip}(
             _f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
             _kwargs...)
     else
-        ODEProblem{isinplace(prob)}(_f, newu0, tspan, newp, prob.problem_type; kwargs...)
+        ODEProblem{iip}(_f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
 
     if lazy_initialization === nothing
