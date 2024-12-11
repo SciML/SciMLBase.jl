@@ -100,6 +100,87 @@ function remake(
 end
 
 """
+    $(TYPEDSIGNATURES)
+
+A utility function which merges two `NamedTuple`s `a` and `b`, assuming that the
+keys of `a` are a subset of those of `b`. Values in `b` take priority over those
+in `a`, except if they are `nothing`. Keys not present in `a` are assumed to have
+a value of `nothing`.
+"""
+function _similar_namedtuple_merge_ignore_nothing(a::NamedTuple, b::NamedTuple)
+    ks = fieldnames(typeof(b))
+    return NamedTuple{ks}(ntuple(Val(length(ks))) do i
+        something(get(b, ks[i], nothing), get(a, ks[i], nothing), Some(nothing))
+    end)
+end
+
+"""
+    remake(func::AbstractSciMLFunction; f = missing, g = missing, f2 = missing, kwargs...)
+
+`remake` the given `func`. Return an `AbstractSciMLFunction` of the same kind, `isinplace` and
+`specialization` as `func`. Retain the properties of `func`, except those that are overridden
+by keyword arguments. For stochastic functions (e.g. `SDEFunction`) the `g` keyword argument
+is used to override `func.g`. For split functions (e.g. `SplitFunction`) the `f2` keyword
+argument is used to override `func.f2`, and `f` is used for `func.f1`. If
+`f isa AbstractSciMLFunction`, properties of `f` will override those of `func` (but not ones
+provided via keyword arguments). Properties of `f` that are `nothing` will fall back to those
+in `func` (unless provided via keyword arguments). If `f` is a different type of
+`AbstractSciMLFunction` from `func`, the returned function will be of the kind of `f`.
+"""
+function remake(func::AbstractSciMLFunction; f = missing, g = missing, f2 = missing, kwargs...)
+    # retain iip and spec of original function
+    iip = isinplace(func)
+    spec = specialization(func)
+    # retain properties of original function
+    props = getproperties(func)
+
+    if f === missing
+        # if no `f` is provided, create the same type of SciMLFunction
+        T = parameterless_type(func)
+        f = func.f
+    elseif f isa AbstractSciMLFunction
+        # if `f` is a SciMLFunction, create that type
+        T = parameterless_type(f)
+        # properties of `f` take priority over those in the existing `func`
+        # ignore properties of `f` which are `nothing` but present in `func`
+        props = _similar_namedtuple_merge_ignore_nothing(props, getproperties(f))
+        f = f.f
+    else
+        # if `f` is provided but not a SciMLFunction, create the same type
+        T = parameterless_type(func)
+    end
+
+    # minor hack to avoid breaking MTK, since prior to ~9.57 in `remake_initialization_data`
+    # it creates a `NonlinearFunction` inside a `NonlinearFunction`. Just recursively unwrap
+    # in this case and forget about properties.
+    while f isa AbstractSciMLFunction
+        f = f.f
+    end
+
+    props = @delete props.f
+
+    if isdefined(func, :g)
+        # For SDEs/SDDEs where `g` is not a keyword
+        g = coalesce(g, func.g)
+
+        props = @delete props.g
+        T{iip, spec}(f, g; props..., kwargs...)
+    elseif isdefined(func, :f2)
+        # For SplitFunction
+        # we don't do the same thing as `g`, because for SDEs `g` is
+        # stored in the problem as well, whereas for Split ODEs etc
+        # f2 is a part of the function. Thus, if the user provides
+        # a SciMLFunction for `f` which contains `f2` we use that.
+        f2 = coalesce(f2, get(props, :f2, missing), func.f2)
+
+        props = @delete props.f2
+        T{iip, spec}(f, f2; props..., kwargs...)
+    else
+        T{iip, spec}(f; props..., kwargs...)
+    end
+end
+
+"""
     remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
            p = missing, kwargs = missing, _kwargs...)
 
