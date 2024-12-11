@@ -158,5 +158,15 @@ isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
     alias_p
     alias_f
-    
+    alias_u0
+end
+
+function OptimizationAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    if alias == true
+        OptimizationAliasSpecifier(true, true, true, true, true)
+    elseif alias == false
+        OptimizationAliasSpecifier(false, false, false, false, false)
+    elseif isnothing(alias)
+        OptimizationAliasSpecifier(alias_p, alias_f, alias_u0, alias_tstops)
+    end
 end
