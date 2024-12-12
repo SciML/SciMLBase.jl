@@ -137,14 +137,14 @@ function remake(func::AbstractSciMLFunction; f = missing, g = missing, f2 = miss
     if f === missing
         # if no `f` is provided, create the same type of SciMLFunction
         T = parameterless_type(func)
-        f = func.f
+        f = isdefined(func, :f) ? func.f : func.f1
     elseif f isa AbstractSciMLFunction
         # if `f` is a SciMLFunction, create that type
         T = parameterless_type(f)
         # properties of `f` take priority over those in the existing `func`
         # ignore properties of `f` which are `nothing` but present in `func`
         props = _similar_namedtuple_merge_ignore_nothing(props, getproperties(f))
-        f = f.f
+        f = isdefined(f, :f) ? f.f : f.f1
     else
         # if `f` is provided but not a SciMLFunction, create the same type
         T = parameterless_type(func)
@@ -154,10 +154,11 @@ function remake(func::AbstractSciMLFunction; f = missing, g = missing, f2 = miss
     # it creates a `NonlinearFunction` inside a `NonlinearFunction`. Just recursively unwrap
     # in this case and forget about properties.
     while f isa AbstractSciMLFunction
-        f = f.f
+        f = isdefined(f, :f) ? f.f : f.f1
     end
 
     props = @delete props.f
+    props = @delete props.f1
 
     if isdefined(func, :g)
         # For SDEs/SDDEs where `g` is not a keyword
