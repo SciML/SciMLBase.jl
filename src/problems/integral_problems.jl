@@ -168,11 +168,6 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     end
 end
 
-struct IntegralAliasSpecifier <: AbstractAliasSpecifier
-    alias_p
-    alias_f
-end
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -187,12 +182,19 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias::Union{Bool, Nothing}`: sets all fields of the `IntegralAliasSpecifier` to `alias`
 
 """
-function IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
-    if alias == true
-        IntegralAliasSpecifier(true, true)
-    elseif alias == false
-        IntegralAliasSpecifier(false, false)
-    elseif isnothing(alias)
-        IntegralAliasSpecifier(alias_p, alias_f)
+struct IntegralAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+
+    function IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
+        if alias == true
+            new(true, true)
+        elseif alias == false
+            new(false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f)
+        end
     end
 end
+
+

@@ -29,13 +29,6 @@ end
 
 export AnalyticalProblem, AbstractAnalyticalProblem
 
-struct AnalyticalAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-    alias_du0::Union{Bool, Nothing}
-    alias_tstops::Union{Bool, Nothing}
-end
 
 @doc doc"""
 
@@ -54,13 +47,24 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias::Union{Bool, Nothing}`: sets all fields of the `AnalyticalAliasSpecifier` to `alias`
 
 """
-function AnalyticalAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-        alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-    if alias == true
-        AnalyticalAliasSpecifier(true, true, true, true, true)
-    elseif alias == false
-        AnalyticalAliasSpecifier(false, false, false, false, false)
-    elseif isnothing(alias)
-        AnalyticalAliasSpecifier(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+struct AnalyticalAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+    alias_du0::Union{Bool, Nothing}
+    alias_tstops::Union{Bool, Nothing}
+
+    function AnalyticalAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+        end
     end
 end
+
+

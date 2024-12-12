@@ -77,11 +77,6 @@ function LinearProblem(A, b, args...; kwargs...)
     end
 end
 
-struct LinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_A::Union{Bool,Nothing}
-    alias_b::Union{Bool,Nothing}
-end
-
 @doc doc"""
 Holds information on what variables to alias
 when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
@@ -100,12 +95,20 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
 """
-function LinearAliasSpecifier(;alias_A = nothing, alias_b = nothing, alias_p = nothing, alias_f = nothing, alias = nothing)
-    if alias == true 
-        LinearAliasSpecifier(true,true,true,true)
-    elseif alias == false
-        LinearAliasSpecifier(false,false,false,false)
-    elseif isnothing(alias)
-        LinearAliasSpecifier(alias_p, alias_f, alias_A, alias_b)
+struct LinearAliasSpecifier <: AbstractAliasSpecifier
+    alias_A::Union{Bool,Nothing}
+    alias_b::Union{Bool,Nothing}
+
+    function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing,
+            alias_p = nothing, alias_f = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_A, alias_b)
+        end
     end
 end
+
+

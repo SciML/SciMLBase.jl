@@ -154,13 +154,6 @@ function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan::Tuple,
     DiscreteProblem(f, u0, tspan, p; kwargs...)
 end
 
-struct DiscreteAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-end
-
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -176,13 +169,23 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias::Union{Bool, Nothing}`: sets all fields of the `DiscreteAliasSpecifier` to `alias`
 
 """
-function DiscreteAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-        alias_du0 = nothing, alias = nothing)
-    if alias == true
-        DiscreteAliasSpecifier(true, true, true, true, true)
-    elseif alias == false
-        DiscreteAliasAliasSpecifier(false, false, false, false, false)
-    elseif isnothing(alias)
-        DiscreteAliasSpecifier(alias_p, alias_f, alias_u0)
+struct DiscreteAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+
+    function DiscreteAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0)
+        end
     end
 end
+
+
+

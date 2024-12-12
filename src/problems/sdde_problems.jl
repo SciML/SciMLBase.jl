@@ -174,14 +174,6 @@ end
 
 SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
 
-struct SDDEAliasSpecifier
-    alias_p
-    alias_f
-    alias_u0
-    alias_tstops
-end
-
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -197,16 +189,24 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
 * `alias::Union{Bool, Nothing}`: sets all fields of the `SDDEAliasSpecifier` to `alias`
 
-
-
 """
-function SDDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-        alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-    if alias == true
-        SDDEAliasSpecifier(true, true, true, true)
-    elseif alias == false
-        SDDEAliasSpecifier(false, false, false, false)
-    elseif isnothing(alias)
-        SDDEAliasSpecifier(alias_p, alias_f, alias_u0, alias_tstops)
+struct SDDEAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+    alias_tstops::Union{Bool, Nothing}
+
+    function SDDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0, alias_tstops)
+        end
     end
 end
+
+
+

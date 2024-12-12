@@ -439,16 +439,6 @@ function TwoPointSecondOrderBVProblem(
     return TwoPointSecondOrderBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
 
-
-struct BVPAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-    alias_du0::Union{Bool, Nothing}
-    alias_tstops::Union{Bool, Nothing}
-end
-
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -466,13 +456,24 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias::Union{Bool, Nothing}`: sets all fields of the `BVPAliasSpecifier` to `alias`
 
 """
-function BVPAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-        alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-    if alias == true
-        BVPAliasSpecifier(true, true, true, true, true)
-    elseif alias == false
-        BVPAliasSpecifier(false, false, false, false, false)
-    elseif isnothing(alias)
-        BVPAliasSpecifier(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+struct BVPAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+    alias_du0::Union{Bool, Nothing}
+    alias_tstops::Union{Bool, Nothing}
+
+    function BVPAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+        end
     end
 end
+
+
+

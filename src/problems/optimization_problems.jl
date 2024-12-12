@@ -155,13 +155,6 @@ end
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
-struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
-    alias_p
-    alias_f
-    alias_u0
-end
-
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -175,12 +168,22 @@ when solving an OptimizationProblem. Conforms to the AbstractAliasSpecifier inte
 * `alias::Union{Bool, Nothing}`: sets all fields of the `OptimizationAliasSpecifier` to `alias`
 
 """
-function OptimizationAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
-    if alias == true
-        OptimizationAliasSpecifier(true, true, true)
-    elseif alias == false
-        OptimizationAliasSpecifier(false, false, false)
-    elseif isnothing(alias)
-        OptimizationAliasSpecifier(alias_p, alias_f, alias_u0, alias_tstops)
+struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+
+    function OptimizationAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true)
+        elseif alias == false
+            new(false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0, alias_tstops)
+        end
     end
 end
+
+
+

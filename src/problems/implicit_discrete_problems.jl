@@ -120,13 +120,6 @@ function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
-
-struct ImplicitDiscreteAliasSpecifier
-    alias_p::Union{Bool,Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-end
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -142,13 +135,22 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias::Union{Bool, Nothing}`: sets all fields of the `ImplicitDiscreteAliasSpecifier` to `alias`
 
 """
-function ImplicitDiscreteAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-        alias_du0 = nothing, alias = nothing)
-    if alias == true
-        ImplicitDiscreteAliasSpecifier(true, true, true, true, true)
-    elseif alias == false
-        ImplicitDiscreteAliasAliasSpecifier(false, false, false, false, false)
-    elseif isnothing(alias)
-        ImplicitDiscreteAliasSpecifier(alias_p, alias_f, alias_u0)
+struct ImplicitDiscreteAliasSpecifier
+    alias_p::Union{Bool,Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+
+    function ImplicitDiscreteAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0)
+        end
     end
 end
+
+
