@@ -83,8 +83,11 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
 end
 
 @doc doc"""
-   Holds information on what variables to alias
+Holds information on what variables to alias
 when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
+    `LinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_A = nothing, alias_b = nothing, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords
 

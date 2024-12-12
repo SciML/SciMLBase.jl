@@ -131,7 +131,9 @@ end
 
 Holds information on what variables to alias
 when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
-    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    `DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
 * `alias_p::Union{Bool, Nothing}`

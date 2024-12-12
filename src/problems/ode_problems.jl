@@ -525,7 +525,9 @@ end
 
 Holds information on what variables to alias
 when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
-    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+    `ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
 * `alias_p::Union{Bool, Nothing}`

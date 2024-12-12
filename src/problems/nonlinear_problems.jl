@@ -558,15 +558,17 @@ struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
 end
 
 @doc doc"""
-    Holds information on what variables to alias when solving a `NonlinearProblem`. 
+Holds information on what variables to alias when solving a `NonlinearProblem`. 
 Conforms to the AbstractAliasSpecifier interface. 
+    `NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords
 
 * `alias_p::Union{Bool, Nothing}`
 * `alias_f::Union{Bool, Nothing}`
-* `alias_A::Union{Bool, Nothing}`: alias the `A` array.
-* `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
 * `alias::Union{Bool, Nothing}`: sets all fields of the `NonlinearAliasSpecifier` to `alias`. 
 """
 function NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)

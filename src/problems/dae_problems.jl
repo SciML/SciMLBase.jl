@@ -134,7 +134,9 @@ end
 
 Holds information on what variables to alias
 when solving a DAE. Conforms to the AbstractAliasSpecifier interface. 
-    DAEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+    `DAEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
 * `alias_p::Union{Bool, Nothing}`

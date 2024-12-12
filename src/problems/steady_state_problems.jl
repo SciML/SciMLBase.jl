@@ -134,7 +134,9 @@ end
 
 Holds information on what variables to alias
 when solving a SteadyStateProblem. Conforms to the AbstractAliasSpecifier interface. 
-    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+    `SteadyStateAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
 * `alias_p::Union{Bool, Nothing}`
