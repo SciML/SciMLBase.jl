@@ -90,3 +90,43 @@ end
 function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
 end
+
+
+@doc doc"""
+
+Holds information on what variables to alias
+when solving an RODEProblem. Conforms to the AbstractAliasSpecifier interface. 
+    `RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
+
+### Keywords 
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
+* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
+* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
+* `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
+
+"""
+
+struct RODEAliasSpecifier <: AbstractAliasSpecifier
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+    alias_du0::Union{Bool, Nothing}
+    alias_tstops::Union{Bool, Nothing}
+
+    function RODEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+        end
+    end
+end
+
+

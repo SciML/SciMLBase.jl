@@ -76,3 +76,39 @@ function LinearProblem(A, b, args...; kwargs...)
         LinearProblem{isinplace(A, 4)}(A, b, args...; kwargs...)
     end
 end
+
+@doc doc"""
+Holds information on what variables to alias
+when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
+    `LinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_A = nothing, alias_b = nothing, alias = nothing)`
+
+When a keyword argument is `nothing`, the default behaviour of the solver is used.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`
+* `alias_f::Union{Bool, Nothing}`
+* `alias_A::Union{Bool, Nothing}`: alias the `A` array.
+* `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
+* `alias::Union{Bool, Nothing}`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
+
+Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
+When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
+"""
+struct LinearAliasSpecifier <: AbstractAliasSpecifier
+    alias_A::Union{Bool,Nothing}
+    alias_b::Union{Bool,Nothing}
+
+    function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing,
+            alias_p = nothing, alias_f = nothing, alias = nothing)
+        if alias == true
+            new(true, true, true, true)
+        elseif alias == false
+            new(false, false, false, false)
+        elseif isnothing(alias)
+            new(alias_p, alias_f, alias_A, alias_b)
+        end
+    end
+end
+
+
