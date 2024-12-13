@@ -240,16 +240,14 @@ function remake(prob::ODEProblem; f = missing,
             f = remake(
                 f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1])))
         end
-    else
-        _f = f
     end
 
     prob = if kwargs === missing
         ODEProblem{iip}(
-            _f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
+            f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
             _kwargs...)
     else
-        ODEProblem{iip}(_f, newu0, tspan, newp, prob.problem_type; kwargs...)
+        ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
 
     if lazy_initialization === nothing
