@@ -1025,9 +1025,9 @@ version = "1.11.0"
 
 [[deps.ModelingToolkit]]
 deps = ["AbstractTrees", "ArrayInterface", "BlockArrays", "Combinatorics", "CommonSolve", "Compat", "ConstructionBase", "DataStructures", "DiffEqBase", "DiffEqCallbacks", "DiffEqNoiseProcess", "DiffRules", "Distributed", "Distributions", "DocStringExtensions", "DomainSets", "DynamicQuantities", "EnumX", "ExprTools", "Expronicon", "FindFirstFunctions", "ForwardDiff", "FunctionWrappers", "FunctionWrappersWrappers", "Graphs", "InteractiveUtils", "JuliaFormatter", "JumpProcesses", "Latexify", "Libdl", "LinearAlgebra", "MLStyle", "NaNMath", "NonlinearSolve", "OffsetArrays", "OrderedCollections", "PrecompileTools", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SCCNonlinearSolve", "SciMLBase", "SciMLStructures", "Serialization", "Setfield", "SimpleNonlinearSolve", "SparseArrays", "SpecialFunctions", "StaticArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics", "URIs", "UnPack", "Unitful"]
-git-tree-sha1 = "afb3f4346dda57caf44cdf3ff8faf9e1afc7f1fd"
+git-tree-sha1 = "d3fd8c745a20d1548652c3cdb1e2f0f03541cde0"
 uuid = "961ee093-0014-501f-94e3-6117800e7a78"
-version = "9.57.0"
+version = "9.58.0"
 
     [deps.ModelingToolkit.extensions]
     MTKBifurcationKitExt = "BifurcationKit"
@@ -1558,9 +1558,9 @@ version = "0.3.9"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
-git-tree-sha1 = "2f5d4697f21388cbe1ff299430dd169ef97d7e14"
+git-tree-sha1 = "64cca0c26b4f31ba18f13f6c12af7c85f478cfde"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "2.4.0"
+version = "2.5.0"
 weakdeps = ["ChainRulesCore"]
 
     [deps.SpecialFunctions.extensions]
