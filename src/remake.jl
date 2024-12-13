@@ -164,22 +164,28 @@ function remake(
     props = @delete props.f
     props = @delete props.f1
 
-    # for DynamicalSDEFunction and SplitFunction
-    props = @delete props.cache
-
-    if is_split_function(T)
-        f = f isa AbstractSciMLOperator ? f : split_function_f_wrapper(T){iip, spec}(f)
-    end
-
     args = (f,)
     if is_split_function(T)
+        # for DynamicalSDEFunction and SplitFunction
+        if isdefined(props, :cache)
+            props = @insert props._func_cache = props.cache
+            props = @delete props.cache
+        end
+
+        # `f1` and `f2` are wrapped in another SciMLFunction, unless they're
+        # already wrapped in the appropriate type or are an `AbstractSciMLOperator`
+        if !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+            f = split_function_f_wrapper(T){iip, spec}(f)
+        end
         # For SplitFunction
         # we don't do the same thing as `g`, because for SDEs `g` is
         # stored in the problem as well, whereas for Split ODEs etc
         # f2 is a part of the function. Thus, if the user provides
         # a SciMLFunction for `f` which contains `f2` we use that.
         f2 = coalesce(f2, get(props, :f2, missing), func.f2)
-        f2 = split_function_f_wrapper(T){iip, spec}(f2)
+        if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+            f2 = split_function_f_wrapper(T){iip, spec}(f2)
+        end
         props = @delete props.f2
         args = (args..., f2)
     end
