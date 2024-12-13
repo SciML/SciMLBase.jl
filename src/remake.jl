@@ -164,6 +164,9 @@ function remake(
     props = @delete props.f
     props = @delete props.f1
 
+    # for DynamicalSDEFunction and SplitFunction
+    props = @delete props.cache
+
     if is_split_function(T)
         f = f isa AbstractSciMLOperator ? f : split_function_f_wrapper(T){iip, spec}(f)
     end
