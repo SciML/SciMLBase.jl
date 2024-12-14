@@ -936,9 +936,9 @@ version = "2.38.0"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "a2d09619db4e765091ee5c6ffe8872849de0feea"
+git-tree-sha1 = "13ca9e2586b89836fd20cccf56e57e2b9ae7f38f"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.28"
+version = "0.3.29"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
