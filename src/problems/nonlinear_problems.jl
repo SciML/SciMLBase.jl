@@ -340,7 +340,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearLeastSqu
         else
             iip = isinplace(f, 4)
         end
-        return NonlinearProblem{iip}(f, u0, p; kw...)
+        return NonlinearLeastSquaresProblem{iip}(f, u0, p; kw...)
     end
 end
 
