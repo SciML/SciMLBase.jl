@@ -4601,6 +4601,20 @@ has_Wfact_t(f::JacobianWrapper) = has_Wfact_t(f.f)
 has_paramjac(f::JacobianWrapper) = has_paramjac(f.f)
 has_colorvec(f::JacobianWrapper) = has_colorvec(f.f)
 
+is_split_function(x) = is_split_function(typeof(x))
+is_split_function(::Type) = false
+function is_split_function(::Type{T}) where {T <: Union{
+        SplitFunction, SplitSDEFunction, DynamicalODEFunction,
+        DynamicalDDEFunction, DynamicalSDEFunction}}
+    true
+end
+
+split_function_f_wrapper(::Type{<:SplitFunction}) = ODEFunction
+split_function_f_wrapper(::Type{<:SplitSDEFunction}) = SDEFunction
+split_function_f_wrapper(::Type{<:DynamicalODEFunction}) = ODEFunction
+split_function_f_wrapper(::Type{<:DynamicalDDEFunction}) = DDEFunction
+split_function_f_wrapper(::Type{<:DynamicalSDEFunction}) = DDEFunction
+
 ######### Additional traits
 
 islinear(::AbstractDiffEqFunction) = false

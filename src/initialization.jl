@@ -124,11 +124,13 @@ function evaluate_f(
     return _evaluate_f(integrator, f, isinplace, integrator.du, u, p, t)
 end
 
-function evaluate_f(integrator::AbstractDDEIntegrator, prob::AbstractDDEProblem, f, isinplace, u, p, t)
+function evaluate_f(
+        integrator::AbstractDDEIntegrator, prob::AbstractDDEProblem, f, isinplace, u, p, t)
     return _evaluate_f(integrator, f, isinplace, u, get_history_function(integrator), p, t)
 end
 
-function evaluate_f(integrator::AbstractSDDEIntegrator, prob::AbstractSDDEProblem, f, isinplace, u, p, t)
+function evaluate_f(integrator::AbstractSDDEIntegrator,
+        prob::AbstractSDDEProblem, f, isinplace, u, p, t)
     return _evaluate_f(integrator, f, isinplace, u, get_history_function(integrator), p, t)
 end
 
