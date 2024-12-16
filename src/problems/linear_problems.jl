@@ -80,14 +80,12 @@ end
 @doc doc"""
 Holds information on what variables to alias
 when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `LinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_A = nothing, alias_b = nothing, alias = nothing)`
+    `LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)`
 
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords
 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
 * `alias_A::Union{Bool, Nothing}`: alias the `A` array.
 * `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
 * `alias::Union{Bool, Nothing}`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
@@ -99,14 +97,13 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
     alias_A::Union{Bool,Nothing}
     alias_b::Union{Bool,Nothing}
 
-    function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing,
-            alias_p = nothing, alias_f = nothing, alias = nothing)
+    function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
         if alias == true
-            new(true, true, true, true)
+            new(true, true)
         elseif alias == false
-            new(false, false, false, false)
+            new(false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_A, alias_b)
+            new(alias_A, alias_b)
         end
     end
 end
