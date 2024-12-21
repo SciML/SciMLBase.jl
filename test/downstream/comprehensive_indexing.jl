@@ -62,10 +62,11 @@ begin
     dprob = DiscreteProblem(jsys, u0_vals, tspan, p_vals)
     jprob = JumpProblem(jsys, deepcopy(dprob), Direct(); rng)
     nprob = NonlinearProblem(nsys, u0_vals, p_vals)
+    hcprob = NonlinearProblem(HomotopyNonlinearFunction(nprob.f), nprob.u0, nprob.p)
     ssprob = SteadyStateProblem(osys, u0_vals, p_vals)
     optprob = OptimizationProblem(optsys, u0_vals, p_vals, grad = true, hess = true)
-    problems = [oprob, sprob, dprob, jprob, nprob, ssprob, optprob]
-    systems = [osys, ssys, jsys, jsys, nsys, osys, optsys]
+    problems = [oprob, sprob, dprob, jprob, nprob, hcprob, ssprob, optprob]
+    systems = [osys, ssys, jsys, jsys, nsys, nsys, osys, optsys]
 
     # Creates an `EnsembleProblem` for each problem.
     eoprob = EnsembleProblem(oprob)
