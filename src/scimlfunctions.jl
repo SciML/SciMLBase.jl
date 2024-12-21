@@ -177,6 +177,14 @@ function DEFAULT_OBSERVED_NO_TIME(sym, u, p)
     error("Indexing symbol $sym is unknown.")
 end
 
+function DEFAULT_POLYNOMIALIZE(u, p)
+    return u
+end
+
+function DEFAULT_UNPOLYNOMIALIZE(u, p)
+    return (u,)
+end
+
 function Base.summary(io::IO, prob::AbstractSciMLFunction)
     type_color, no_color = get_colorizers(io)
     print(io,
@@ -1739,6 +1747,108 @@ struct NonlinearFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, 
     sys::SYS
     resid_prototype::RP
     initialization_data::ID
+end
+
+"""
+  $(TYPEDEF)
+
+A representation of a polynomial nonlinear system of equations given by
+
+```math
+0 = f(polynomialize(u, p), p)
+```
+
+Designed to be used for solving with HomotopyContinuation.
+
+## Constructor
+
+  $(TYPEDSIGNATURES)
+
+Note that only the function `f` is required. This function should be given as `f!(du,u,p)`
+or `du = f(u,p)`. See the section on `iip` for more details on in-place vs out-of-place
+handling.
+
+To provide the Jacobian function etc, `f` must be a [`NonlinearFunction`](@ref) with the
+required fields populated.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## specialize: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+
+The fields of the `HomotopyNonlinearFunction` type directly match the names of the inputs.
+
+$(FIELDS)
+"""
+struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
+       SciMLBase.AbstractSciMLFunction{iip}
+    """
+    The polynomial function `f`. Stored as a `NonlinearFunction{iip, specialize}`. If not
+    provided to the constructor as a `NonlinearFunction`, it will be appropriately wrapped.
+    """
+    f::F
+    """
+    The nonlinear system may be a polynomial of non-polynomial functions. For example,
+    ```math
+    sin^2(x^2) + 2sin(x^2) + 1 = 0
+    log(x + y) ^ 3 = 0.5
+    ```
+
+    is a polynomial in `[sin(x^2), log(x + y)]`. To allow for such systems, `polynomialize`
+    converts the state vector of the original system (termed as an "original space" vector)
+    to the state vector of the polynomial system (termed as a "polynomial space" vector).
+    In the above example, it will be the function:
+
+    ```julia
+    functon polynomialize(u, p)
+      x, y = u
+      return [sin(x^2), log(x + y)]
+    end
+    ```
+
+    We refer to `[x, y]` as being in "original space" and `[sin(x^2), log(x + y)]` as being
+    in "polynomial space".
+
+    This defaults to a function which returns `u` as-is.
+    """
+    polynomialize::P
+    """
+    The inverse operation of `polynomialize`.
+
+    This function takes as input a vector `u′` in "polynomial space" and returns a collection of
+    vectors `uᵢ ∀ i ∈ {1..n}` in "original space" such that `polynomialize(uᵢ, p) == u′ ∀ i`.
+    A collection is returned since the mapping may not be bijective. For periodic functions
+    which have infinite such vectors `uᵢ`, it is up to the user to choose which ones to return.
+
+    In the aforementioned example in `polynomialize`, this function will be:
+
+    ```julia
+    function unpolynomialize(u, p)
+      a, b = u
+      return [
+        [sqrt(asin(a)), exp(b) - sqrt(asin(a))],
+        [-sqrt(asin(a)), exp(b) + sqrt(asin(a))],
+      ]
+    end
+    ```
+
+    There are of course an infinite number of such functions due to the presence of `sin`. 
+    This example chooses to return the roots in the interval `[-π/2, π/2]`.
+    """
+    unpolynomialize::Q
+    """
+    A function of the form `denominator(u, p) -> denoms` where `denoms` is an array of
+    denominator terms which cannot be zero. This is useful when `f` represents the
+    numerator of a rational function. Roots of `f` which cause any of the values in
+    `denoms` to be below a threshold will be excluded. Note that here `u` must be in
+    "polynomial space".
+    """
+    denominator::D
 end
 
 """
@@ -3899,6 +4009,33 @@ function NonlinearFunction(f; kwargs...)
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 
+function HomotopyNonlinearFunction{iip, specialize}(f;
+        polynomialize = __has_polynomialize(f) ? f.polynomialize : DEFAULT_POLYNOMIALIZE,
+        unpolynomialize = __has_unpolynomialize(f) ? f.unpolynomialize :
+                          DEFAULT_UNPOLYNOMIALIZE,
+        denominator = __has_denominator(f) ? f.denominator : Returns(())
+) where {iip, specialize}
+    f = f isa NonlinearFunction ? f : NonlinearFunction{iip, specialize}(f)
+
+    if specialize === NoSpecialize
+        HomotopyNonlinearFunction{iip, specialize, Any, Any, Any, Any}(
+            f, polynomialize, unpolynomialize, denominator)
+    else
+        HomotopyNonlinearFunction{iip, specialize, typeof(f), typeof(polynomialize),
+            typeof(unpolynomialize), typeof(denominator)}(
+            f, polynomialize, unpolynomialize, denominator)
+    end
+end
+
+function HomotopyNonlinearFunction{iip}(f; kwargs...) where {iip}
+    HomotopyNonlinearFunction{iip, FullSpecialize}(f; kwargs...)
+end
+HomotopyNonlinearFunction{iip}(f::HomotopyNonlinearFunction; kwargs...) where {iip} = f
+function HomotopyNonlinearFunction(f; kwargs...)
+    HomotopyNonlinearFunction{isinplace(f, 3), FullSpecialize}(f; kwargs...)
+end
+HomotopyNonlinearFunction(f::HomotopyNonlinearFunction; kwargs...) = f
+
 function IntervalNonlinearFunction{iip, specialize}(f;
         analytic = __has_analytic(f) ?
                    f.analytic :
@@ -4500,6 +4637,9 @@ function __has_initializeprobpmap(f)
     has_initialization_data(f) && isdefined(f.initialization_data, :initializeprobpmap)
 end
 __has_initialization_data(f) = isdefined(f, :initialization_data)
+__has_polynomialize(f) = isdefined(f, :polynomialize)
+__has_unpolynomialize(f) = isdefined(f, :unpolynomialize)
+__has_denominator(f) = isdefined(f, :denominator)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
@@ -4528,6 +4668,9 @@ end
 function has_initialization_data(f)
     __has_initialization_data(f) && f.initialization_data !== nothing
 end
+has_polynomialize(f) = __has_polynomialize(f) && f.polynomialize !== nothing
+has_unpolynomialize(f) = __has_unpolynomialize(f) && f.unpolynomialize !== nothing
+has_denominator(f) = __has_denominator(f) && f.denominator !== nothing
 
 function has_syms(f::AbstractSciMLFunction)
     if __has_syms(f)
@@ -4600,6 +4743,13 @@ has_Wfact(f::JacobianWrapper) = has_Wfact(f.f)
 has_Wfact_t(f::JacobianWrapper) = has_Wfact_t(f.f)
 has_paramjac(f::JacobianWrapper) = has_paramjac(f.f)
 has_colorvec(f::JacobianWrapper) = has_colorvec(f.f)
+
+for _fieldname in fieldnames(NonlinearFunction)
+    fnname = Symbol(:has_, _fieldname)
+    @eval function $(fnname)(f::HomotopyNonlinearFunction)
+        $(fnname)(f.f)
+    end
+end
 
 is_split_function(x) = is_split_function(typeof(x))
 is_split_function(::Type) = false
@@ -4691,6 +4841,17 @@ function SymbolicIndexingInterface.observed(fn::AbstractSciMLFunction, sym::Symb
 end
 
 SymbolicIndexingInterface.constant_structure(::AbstractSciMLFunction) = true
+
+SymbolicIndexingInterface.symbolic_container(fn::HomotopyNonlinearFunction) = fn.f
+function SymbolicIndexingInterface.is_observed(fn::HomotopyNonlinearFunction, sym)
+    is_observed(symbolic_container(fn), sym)
+end
+function SymbolicIndexingInterface.observed(fn::HomotopyNonlinearFunction, sym)
+    SymbolicIndexingInterface.observed(symbolic_container(fn), sym)
+end
+function SymbolicIndexingInterface.observed(fn::HomotopyNonlinearFunction, sym::Symbol)
+    SymbolicIndexingInterface.observed(symbolic_container(fn), sym)
+end
 
 function Base.getproperty(x::AbstractSciMLFunction, sym::Symbol)
     if __has_initialization_data(x) &&
