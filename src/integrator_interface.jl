@@ -169,6 +169,13 @@ function set_proposed_dt!(i::DEIntegrator, dt)
 end
 
 """
+    get_tdir(i::DEIntegrator)
+
+Get the time direction of the integrator. Should return 1 or -1 with the same type as the time type of the integrator.
+"""
+get_tdir(i::DEIntegrator) = i.tdir
+
+"""
     savevalues!(integrator::DEIntegrator,
       force_save=false) -> Tuple{Bool, Bool}
 
@@ -406,6 +413,15 @@ function get_sol(integrator::DEIntegrator)
     return integrator.sol
 end
 
+"""
+    get_retcode(integrator::DEIntegrator)
+
+Get the return code of the integrator.
+"""
+function get_retcode(integrator::DEIntegrator)
+    return integrator.sol.retcode
+end
+
 ### Addat isn't a real thing. Let's make it a real thing Gretchen
 
 function addat!(a::AbstractArray, idxs, val = nothing)
@@ -564,6 +580,15 @@ end
 
 last_step_failed(integrator::DEIntegrator) = false
 
+# Standard error message for classical PID type controllers
+function controller_message_on_dtmin_error(integrator::DEIntegrator)
+    if isdefined(integrator, :EEst)
+       return ", and step error estimate = $(integrator.EEst)"
+    else
+        return ""
+    end
+end
+
 """
     check_error(integrator)
 
@@ -571,11 +596,11 @@ Check state of `integrator` and return one of the
 [Return Codes](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/#retcodes)
 """
 function check_error(integrator::DEIntegrator)
-    if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
-        return integrator.sol.retcode
+    if get_retcode(integrator) ∉ (ReturnCode.Success, ReturnCode.Default)
+        return get_retcode(integrator)
     end
     opts = integrator.opts
-    verbose = opts.verbose
+    verbose = hasproperty(opts, :verbose) && opts.verbose
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
     if isnan(integrator.dt)
@@ -584,7 +609,7 @@ function check_error(integrator::DEIntegrator)
         end
         return ReturnCode.DtNaN
     end
-    if integrator.iter > opts.maxiters
+    if hasproperty(opts, :maxiters) && integrator.iter > opts.maxiters
         if verbose
             @warn("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).")
         end
@@ -597,42 +622,35 @@ function check_error(integrator::DEIntegrator)
     # We also exit if the ODE is unstable according to a user chosen callback
     # but only if we accepted the step to prevent from bailing out as unstable
     # when we just took way too big a step)
-    step_accepted = !hasproperty(integrator, :accept_step) || integrator.accept_step
-    if !opts.force_dtmin && opts.adaptive
-        if abs(integrator.dt) <= abs(opts.dtmin) &&
-           (!step_accepted || (hasproperty(opts, :tstops) ?
-             integrator.t + integrator.dt < integrator.tdir * first(opts.tstops) :
-             true))
+    step_rejected = last_step_failed(integrator)
+    step_accepted = !step_rejected # For better readability
+    force_dtmin   = hasproperty(integrator, :force_dtmin) && integrator.force_dtmin
+    if !force_dtmin && isadaptive(integrator)
+        dt_below_min      = abs(integrator.dt) ≤ abs(opts.dtmin)
+        before_next_tstop = has_tstop(integrator) ? integrator.t + integrator.dt < get_tdir(integrator) * first_tstop(integrator) : true
+        if dt_below_min && (step_rejected || before_next_tstop)
             if verbose
-                if isdefined(integrator, :EEst)
-                    EEst = ", and step error estimate = $(integrator.EEst)"
-                else
-                    EEst = ""
-                end
-                @warn("dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.")
+                controller_string = controller_message_on_dtmin_error(integrator)
+                @warn("dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$(controller_string). Aborting. There is either an error in your model specification or the true solution is unstable.")
             end
             return ReturnCode.DtLessThanMin
-        elseif !step_accepted && integrator.t isa AbstractFloat &&
-               abs(integrator.dt) <= abs(eps(integrator.t))
+        elseif step_rejected && integrator.t isa AbstractFloat &&
+               abs(integrator.dt) <= abs(eps(integrator.t)) # = DiffEqBase.timedepentdtmin(integrator)
             if verbose
-                if isdefined(integrator, :EEst)
-                    EEst = ", and step error estimate = $(integrator.EEst)"
-                else
-                    EEst = ""
-                end
-                @warn("At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u))).")
+                controller_string = controller_message_on_dtmin_error(integrator)
+                @warn("At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$(controller_string). Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u))).")
             end
             return ReturnCode.Unstable
         end
     end
-    if step_accepted &&
+    if step_accepted && hasproperty(opts, :unstable_check) && 
        opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
         if verbose
             @warn("Instability detected. Aborting")
         end
         return ReturnCode.Unstable
     end
-    if last_step_failed(integrator)
+    if last_step_failed(integrator) && !isadaptive(integrator)
         if verbose
             @warn("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.")
         end
@@ -873,7 +891,7 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
         end
     end
 
-    xflip --> integrator.tdir < 0
+    xflip --> get_tdir(integrator) < 0
 
     if denseplot
         seriestype --> :path
@@ -904,11 +922,11 @@ Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 end
 
 function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
-    (dt * integ.tdir) < 0 * oneunit(dt) && error("Cannot step backward.")
+    (dt * get_tdir(integ)) < 0 * oneunit(dt) && error("Cannot step backward.")
     t = integ.t
     next_t = t + dt
     stop_at_tdt && add_tstop!(integ, next_t)
-    while integ.t * integ.tdir < next_t * integ.tdir
+    while integ.t * get_tdir(integ) < next_t * get_tdir(integ)
         step!(integ)
         integ.sol.retcode in (ReturnCode.Default, ReturnCode.Success) || break
     end
