@@ -173,7 +173,12 @@ end
 
 Get the time direction of the integrator. Should return 1 or -1 with the same type as the time type of the integrator.
 """
-get_tdir(i::DEIntegrator) = i.tdir
+function get_tdir(i::DEIntegrator)
+    if hasproperty(i, :tdir)
+        i.tdir
+    else
+        error("get_tdir: method has not been implemented for the integrator")
+    end
 
 """
     savevalues!(integrator::DEIntegrator,
