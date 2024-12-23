@@ -632,7 +632,7 @@ function check_error(integrator::DEIntegrator)
         end
         return ReturnCode.Unstable
     end
-    if last_step_failed(integrator)
+    if last_step_failed(integrator) && !isadaptive(integrator)
         if verbose
             @warn("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.")
         end
