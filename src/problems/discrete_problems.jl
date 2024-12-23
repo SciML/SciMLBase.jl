@@ -178,9 +178,9 @@ struct DiscreteAliasSpecifier
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias = nothing)
         if alias == true
-            new(true, true, true, true, true)
+            new(true, true, true)
         elseif alias == false
-            new(false, false, false, false, false)
+            new(false, false, false)
         elseif isnothing(alias)
             new(alias_p, alias_f, alias_u0)
         end

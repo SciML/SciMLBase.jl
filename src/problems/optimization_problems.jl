@@ -180,7 +180,7 @@ struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
         elseif alias == false
             new(false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_tstops)
+            new(alias_p, alias_f, alias_u0)
         end
     end
 end
