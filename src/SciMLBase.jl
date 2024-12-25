@@ -838,7 +838,8 @@ export remake
 
 export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, DAEFunction,
        DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
-       IncrementingODEFunction, NonlinearFunction, IntervalNonlinearFunction, BVPFunction,
+       IncrementingODEFunction, NonlinearFunction, HomotopyNonlinearFunction,
+       IntervalNonlinearFunction, BVPFunction,
        DynamicalBVPFunction, IntegralFunction, BatchIntegralFunction
 
 export OptimizationFunction, MultiObjectiveOptimizationFunction
