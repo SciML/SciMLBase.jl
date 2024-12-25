@@ -424,11 +424,11 @@ struct DDEAliasSpecifier
     function DDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
         if alias == true
-            new(true, true, true, true, true)
+            new(true, true, true, true)
         elseif alias == false
-            new(false, false, false, false, false)
+            new(false, false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+            new(alias_p, alias_f, alias_u0, alias_tstops)
         end
     end
 end
