@@ -1786,7 +1786,7 @@ The fields of the `HomotopyNonlinearFunction` type directly match the names of t
 $(FIELDS)
 """
 struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
-       SciMLBase.AbstractSciMLFunction{iip}
+       SciMLBase.AbstractNonlinearFunction{iip}
     """
     The polynomial function `f`. Stored as a `NonlinearFunction{iip, specialize}`. If not
     provided to the constructor as a `NonlinearFunction`, it will be appropriately wrapped.
@@ -2467,6 +2467,7 @@ end
 
 (f::ODEFunction)(args...) = f.f(args...)
 (f::NonlinearFunction)(args...) = f.f(args...)
+(f::HomotopyNonlinearFunction)(args...) = f.f(args...)
 (f::IntervalNonlinearFunction)(args...) = f.f(args...)
 (f::IntegralFunction)(args...) = f.f(args...)
 (f::BatchIntegralFunction)(args...) = f.f(args...)
@@ -4013,9 +4014,10 @@ function HomotopyNonlinearFunction{iip, specialize}(f;
         polynomialize = __has_polynomialize(f) ? f.polynomialize : DEFAULT_POLYNOMIALIZE,
         unpolynomialize = __has_unpolynomialize(f) ? f.unpolynomialize :
                           DEFAULT_UNPOLYNOMIALIZE,
-        denominator = __has_denominator(f) ? f.denominator : Returns(())
+        denominator = __has_denominator(f) ? f.denominator : Returns(()),
+        kwargs...
 ) where {iip, specialize}
-    f = f isa NonlinearFunction ? f : NonlinearFunction{iip, specialize}(f)
+    f = f isa NonlinearFunction ? f : NonlinearFunction{iip, specialize}(f; kwargs...)
 
     if specialize === NoSpecialize
         HomotopyNonlinearFunction{iip, specialize, Any, Any, Any, Any}(
@@ -4851,6 +4853,22 @@ function SymbolicIndexingInterface.observed(fn::HomotopyNonlinearFunction, sym)
 end
 function SymbolicIndexingInterface.observed(fn::HomotopyNonlinearFunction, sym::Symbol)
     SymbolicIndexingInterface.observed(symbolic_container(fn), sym)
+end
+
+function Base.getproperty(x::HomotopyNonlinearFunction, sym::Symbol)
+  if hasfield(HomotopyNonlinearFunction, sym)
+    return getfield(x, sym)
+  elseif hasfield(NonlinearFunction, sym)
+    return getfield(getfield(x, :f), sym)
+  elseif (sym == :initializeprob || sym == :update_initializeprob! ||
+        sym == :initializeprobmap || sym == :initializeprobpmap)
+    f = getfield(x, :f)
+    if f.initialization_data === nothing
+      return nothing
+    else
+      return getproperty(f.initialization_data, sym)
+    end
+  end
 end
 
 function Base.getproperty(x::AbstractSciMLFunction, sym::Symbol)
