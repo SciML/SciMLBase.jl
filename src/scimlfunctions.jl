@@ -2467,6 +2467,7 @@ end
 
 (f::ODEFunction)(args...) = f.f(args...)
 (f::NonlinearFunction)(args...) = f.f(args...)
+(f::HomotopyNonlinearFunction)(args...) = f.f(args...)
 (f::IntervalNonlinearFunction)(args...) = f.f(args...)
 (f::IntegralFunction)(args...) = f.f(args...)
 (f::BatchIntegralFunction)(args...) = f.f(args...)
