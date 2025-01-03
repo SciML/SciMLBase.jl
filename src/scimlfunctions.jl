@@ -4014,9 +4014,10 @@ function HomotopyNonlinearFunction{iip, specialize}(f;
         polynomialize = __has_polynomialize(f) ? f.polynomialize : DEFAULT_POLYNOMIALIZE,
         unpolynomialize = __has_unpolynomialize(f) ? f.unpolynomialize :
                           DEFAULT_UNPOLYNOMIALIZE,
-        denominator = __has_denominator(f) ? f.denominator : Returns(())
+        denominator = __has_denominator(f) ? f.denominator : Returns(()),
+        kwargs...
 ) where {iip, specialize}
-    f = f isa NonlinearFunction ? f : NonlinearFunction{iip, specialize}(f)
+    f = f isa NonlinearFunction ? f : NonlinearFunction{iip, specialize}(f; kwargs...)
 
     if specialize === NoSpecialize
         HomotopyNonlinearFunction{iip, specialize, Any, Any, Any, Any}(
