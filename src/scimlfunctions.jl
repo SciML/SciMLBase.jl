@@ -1786,7 +1786,7 @@ The fields of the `HomotopyNonlinearFunction` type directly match the names of t
 $(FIELDS)
 """
 struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
-       SciMLBase.AbstractSciMLFunction{iip}
+       SciMLBase.AbstractNonlinearFunction{iip}
     """
     The polynomial function `f`. Stored as a `NonlinearFunction{iip, specialize}`. If not
     provided to the constructor as a `NonlinearFunction`, it will be appropriately wrapped.
