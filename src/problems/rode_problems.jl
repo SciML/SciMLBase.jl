@@ -107,6 +107,7 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
 * `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
 * `alias_noise::Union{Bool,Nothing}`: alias the noise process
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
 * `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
 
 """

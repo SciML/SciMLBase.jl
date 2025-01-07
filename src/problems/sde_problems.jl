@@ -229,6 +229,7 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias_f::Union{Bool, Nothing}`
 * `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
 * `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
 * `alias::Union{Bool, Nothing}`: sets all fields of the `SDEAliasSpecifier` to `alias`
 
 """
