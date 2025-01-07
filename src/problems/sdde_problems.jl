@@ -195,15 +195,16 @@ struct SDDEAliasSpecifier
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
+    alias_jumps::Union{Bool, Nothing}
 
     function SDDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
         if alias == true
-            new(true, true, true, true)
+            new(true, true, true, true, true)
         elseif alias == false
-            new(false, false, false, false)
+            new(false, false, false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_tstops)
+            new(alias_p, alias_f, alias_u0, alias_tstops, alias_jumps)
         end
     end
 end
