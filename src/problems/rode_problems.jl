@@ -106,6 +106,8 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
 * `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
 * `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
+* `alias_noise::Union{Bool,Nothing}`: alias the noise process
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
 * `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
 
 """
@@ -116,15 +118,17 @@ struct RODEAliasSpecifier <: AbstractAliasSpecifier
     alias_u0::Union{Bool, Nothing}
     alias_du0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
+    alias_noise::Union{Bool, Nothing}
+    alias_jumps::Union{Bool, Nothing}
 
     function RODEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+            alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing, alias_jumps = nothing, alias = nothing)
         if alias == true
-            new(true, true, true, true, true)
+            new(true, true, true, true, true, true, true)
         elseif alias == false
-            new(false, false, false, false, false)
+            new(false, false, false, false, false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
+            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops, alias_noise, alias_jumps)
         end
     end
 end
