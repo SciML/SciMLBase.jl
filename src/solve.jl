@@ -32,27 +32,28 @@ keyword arguments for the `local_method` of a global optimizer are passed as a
 
 Over time, we hope to cover more of these keyword arguments under the common interface.
 
-If a common argument is not implemented for a optimizer, a warning will be shown.
+A warning will be shown if a common argument is not implemented for an optimizer.
 
 ## Callback Functions
 
-The callback function `callback` is a function which is called after every optimizer
+The callback function `callback` is a function that is called after every optimizer
 step. Its signature is:
 
 ```julia
 callback = (state, loss_val) -> false
 ```
 
-where `state` is a `OptimizationState` and stores information for the current
+where `state` is an `OptimizationState` and stores information for the current
 iteration of the solver and `loss_val` is loss/objective value. For more
 information about the fields of the `state` look at the `OptimizationState`
 documentation. The callback should return a Boolean value, and the default
-should be `false`, such that the optimization gets stopped if it returns `true`.
+should be `false`, so the optimization stops if it returns `true`.
 
 ### Callback Example
 
-Here we show an example a callback function that plots the prediction at the current value of the optimization variables.
-The loss function here returns the loss and the prediction i.e. the solution of the `ODEProblem` `prob`, so we can use the prediction in the callback.
+Here we show an example of a callback function that plots the prediction at the current value of the optimization variables.
+For a visualization callback, we would need the prediction at the current parameters i.e. the solution of the `ODEProblem` `prob`. 
+So we call the `predict` function within the callback again.
 
 ```julia
 function predict(u)
@@ -61,7 +62,7 @@ end
 
 function loss(u, p)
     pred = predict(u)
-    sum(abs2, batch .- pred), pred
+    sum(abs2, batch .- pred)
 end
 
 callback = function (state, l; doplot = false) #callback function to observe training
