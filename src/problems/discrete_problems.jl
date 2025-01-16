@@ -122,6 +122,17 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     end
 end
 
+function ConstructionBase.constructorof(::Type{P}) where {P <: DiscreteProblem}
+    function ctor(f, u0, tspan, p, kw)
+        if f isa AbstractDiscreteFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return DiscreteProblem{iip}(f, u0, tspan, p; kw...)
+    end
+end
+
 """
     DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
 
