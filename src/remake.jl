@@ -1072,10 +1072,20 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
         varmap[only(independent_variable_symbols(prob))] = t0
     end
     for (k, v) in u0
-        u0[k] = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
+        v = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
+        # if `symbolic_evaluate` can't get us a concrete value,
+        # use the old one from `prob`.
+        if symbolic_type(v) != NotSymbolic()
+            v = getu(prob, k)(prob)
+        end
+        u0[k] = v
     end
     for (k, v) in p
-        p[k] = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
+        v = symbolic_type(v) === NotSymbolic() ? v : symbolic_evaluate(v, varmap)
+        if symbolic_type(v) != NotSymbolic()
+            v = getu(prob, k)(prob)
+        end
+        p[k] = v
     end
     return remake_buffer(prob, state_values(prob), keys(u0), values(u0)),
     remake_buffer(prob, parameter_values(prob), keys(p), values(p))
