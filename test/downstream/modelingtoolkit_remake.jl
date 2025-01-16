@@ -380,3 +380,20 @@ end
         @test prob2.ps[p] ≈ 3.0
     end
 end
+
+# https://github.com/SciML/ModelingToolkit.jl/issues/3326
+@testset "Remake with non-substitute-able values" begin
+    @variables x1(t) x2(t) y(t)
+    @parameters k2 p Gamma y0 d k1
+    @mtkbuild sys = ODESystem([D(y) ~ p - d * y, D(x1) ~ -k1 * x1 + k2 * (Gamma - x1), x2 ~ Gamma - x1], t; defaults = Dict(y => y0, Gamma => x1 + x2))
+    u0 = [x1 => 1.0, x2 => 2.0]
+    p0 = [p => 10.0, d => 5.0, y0 => 3.0, k1 => 1.0, k2 => 2.0]
+    prob = ODEProblem(sys, u0, (0.0, 1.0), p0)
+    u0_new = [x1 => 0.1]
+    ps_new = [y0 => 0.3, p => 100.0]
+    prob2 = remake(prob; u0 = u0_new, p = ps_new)
+    @test prob2[x1] ≈ 0.1
+    @test prob2[y] ≈ 0.3
+    # old value retained
+    @test prob2.ps[Gamma] ≈ 3.0
+end
