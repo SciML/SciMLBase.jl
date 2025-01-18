@@ -257,18 +257,9 @@ function remake(prob::ODEProblem; f = missing,
         ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
 
-    if lazy_initialization === nothing
-        lazy_initialization = !is_trivial_initialization(initialization_data)
-    end
-    if initialization_data !== nothing && !lazy_initialization
-        u0, p, _ = get_initial_values(
-            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-            u0 = nothing
-        end
-        @reset prob.u0 = u0
-        @reset prob.p = p
-    end
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
 
     return prob
 end
@@ -453,18 +444,10 @@ function remake(prob::SDEProblem;
     else
         SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
     end
-    if lazy_initialization === nothing
-        lazy_initialization = !is_trivial_initialization(initialization_data)
-    end
-    if initialization_data !== nothing && !lazy_initialization
-        u0, p, _ = get_initial_values(
-            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-            u0 = nothing
-        end
-        @reset prob.u0 = u0
-        @reset prob.p = p
-    end
+
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
 
     return prob
 end
@@ -520,18 +503,10 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
         DDEProblem{iip}(f, newu0, h, tspan, newp; constant_lags, dependent_lags,
             order_discontinuity_t0, neutral, kwargs...)
     end
-    if lazy_initialization === nothing
-        lazy_initialization = !is_trivial_initialization(initialization_data)
-    end
-    if initialization_data !== nothing && !lazy_initialization
-        u0, p, _ = get_initial_values(
-            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-            u0 = nothing
-        end
-        @reset prob.u0 = u0
-        @reset prob.p = p
-    end
+
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
 
     return prob
 end
@@ -619,18 +594,9 @@ function remake(prob::SDDEProblem;
             dependent_lags, order_discontinuity_t0, neutral, kwargs...)
     end
 
-    if lazy_initialization === nothing
-        lazy_initialization = !is_trivial_initialization(initialization_data)
-    end
-    if initialization_data !== nothing && !lazy_initialization
-        u0, p, _ = get_initial_values(
-            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-            u0 = nothing
-        end
-        @reset prob.u0 = u0
-        @reset prob.p = p
-    end
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
 
     return prob
 end
@@ -741,18 +707,9 @@ function remake(prob::NonlinearProblem;
             problem_type = problem_type; kwargs...)
     end
 
-    if lazy_initialization === nothing
-        lazy_initialization = !is_trivial_initialization(initialization_data)
-    end
-    if initialization_data !== nothing && !lazy_initialization
-        u0, p, _ = get_initial_values(
-            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-            u0 = nothing
-        end
-        @reset prob.u0 = u0
-        @reset prob.p = p
-    end
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
 
     return prob
 end
@@ -792,18 +749,9 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
             f, u0 = newu0, p = newp, kwargs...)
     end
 
-    if lazy_initialization === nothing
-        lazy_initialization = !is_trivial_initialization(initialization_data)
-    end
-    if initialization_data !== nothing && !lazy_initialization
-        u0, p, _ = get_initial_values(
-            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-            u0 = nothing
-        end
-        @reset prob.u0 = u0
-        @reset prob.p = p
-    end
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
 
     return prob
 end
@@ -1132,6 +1080,23 @@ function process_p_u0_symbolic(prob, p, u0)
     else
         throw(ArgumentError("Symbolic remake for $(typeof(prob)) is currently not supported, consider opening an issue."))
     end
+end
+
+function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initialization_data, lazy_initialization::Union{Nothing, Bool})
+    if lazy_initialization === nothing
+        lazy_initialization = !is_trivial_initialization(initialization_data)
+    end
+    if initialization_data !== nothing && !lazy_initialization && (!is_time_dependent(prob) || current_time(prob) !== nothing)
+        u0, p, _ = get_initial_values(
+            prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
+    else
+        u0 = state_values(prob)
+        p = parameter_values(prob)
+    end
+    return u0, p
 end
 
 function remake(thing::AbstractJumpProblem; kwargs...)
