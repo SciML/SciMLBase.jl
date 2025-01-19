@@ -19,7 +19,8 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
     update_initializeprob!::UIProb
     """
     A function which takes the solution of `initializeprob` and returns
-    the state vector of the original problem.
+    the state vector of the original problem. If absent, the existing state vector
+    will be used.
     """
     initializeprobmap::IProbMap
     """
@@ -260,7 +261,9 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         success = SciMLBase.successful_retcode(nlsol)
     end
 
-    u0 = initdata.initializeprobmap(nlsol)
+    if initdata.initializeprobmap !== nothing
+        u0 = initdata.initializeprobmap(nlsol)
+    end
     if initdata.initializeprobpmap !== nothing
         p = initdata.initializeprobpmap(valp, nlsol)
     end

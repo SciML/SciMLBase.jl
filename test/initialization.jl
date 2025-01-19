@@ -230,6 +230,21 @@ end
         @test success
     end
 
+    @testset "Solves without `initializeprobmap`" begin
+        initdata = SciMLBase.@set initialization_data.initializeprobmap = nothing
+        fn = ODEFunction(rhs2; initialization_data = initdata)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        integ = init(prob; initializealg = NoInit())
+
+        u0, p, success = SciMLBase.get_initial_values(
+            prob, integ, fn, SciMLBase.OverrideInit(),
+            Val(false); nlsolve_alg = NewtonRaphson(), abstol, reltol)
+
+        @test u0 ≈ [2.0, 0.0]
+        @test p ≈ 1.0
+        @test success
+    end
+
     @testset "Solves without `initializeprobpmap`" begin
         initdata = SciMLBase.@set initialization_data.initializeprobpmap = nothing
         fn = ODEFunction(rhs2; initialization_data = initdata)
