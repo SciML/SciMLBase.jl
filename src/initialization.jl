@@ -271,6 +271,16 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     return u0, p, success
 end
 
+"""
+    $(TYPEDSIGNATURES)
+
+Do not run any initialization routine, and simply return the state and parameter values
+stored in `integrator` successfully.
+"""
+function get_initial_values(prob, integrator, f, ::NoInit, iip; kwargs...)
+    return state_values(integrator), parameter_values(integrator), true
+end
+
 is_trivial_initialization(::Nothing) = true
 
 function is_trivial_initialization(initdata::OverrideInitData)
