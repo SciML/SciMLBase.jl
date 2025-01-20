@@ -104,9 +104,6 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   successfully, whether it terminated early due to a user-defined callback, or whether it
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
-- `saved_subsystem`: a [`SciMLBase.SavedSubsystem`](@ref) representing the subset of variables saved
-  in this solution, or `nothing` if all variables are saved. Here "variables" refers to
-  both continuous-time state variables and timeseries parameters.
 """
 struct ODESolution{T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
     AC <: Union{Nothing, Vector{Int}}, R, O, V} <:
