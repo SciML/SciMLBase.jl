@@ -286,3 +286,13 @@ end
         @test success
     end
 end
+
+@testset "NoInit" begin
+    prob = ODEProblem(ones(2), (0.0, 1.0), ones(2)) do u, p, t
+        return u
+    end
+    u, p, success = SciMLBase.get_initial_values(prob, prob, prob.f, SciMLBase.NoInit(), Val(true))
+    @test u == ones(2)
+    @test p == ones(2)
+    @test success
+end
