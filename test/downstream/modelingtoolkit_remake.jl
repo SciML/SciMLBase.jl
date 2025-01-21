@@ -397,3 +397,12 @@ end
     # old value retained
     @test prob2.ps[Gamma] ≈ 3.0
 end
+
+@testset "`nothing` value for variable specified as `Symbol`" begin
+    @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
+    @parameters p [guess = 1.0] q [guess = 1.0]
+    @mtkbuild sys = ODESystem(
+        [D(x) ~ p * x + q * y, y ~ 2x], t; parameter_dependencies = [q ~ 2p])
+    prob = ODEProblem(sys, [:x => 1.0], (0.0, 1.0), [p => 1.0])
+    @test_nowarn remake(prob; u0 = [:y => 1.0, :x => nothing])
+end

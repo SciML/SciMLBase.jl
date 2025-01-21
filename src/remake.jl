@@ -986,6 +986,7 @@ function fill_vars(
     end
     for (k, v) in varmap
         haskey(sym_to_idx, k) && continue
+        v === nothing && continue
         newvals[k] = v
     end
     return newvals
