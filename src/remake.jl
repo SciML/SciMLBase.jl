@@ -833,6 +833,9 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     if explicitfuns! === missing
         explicitfuns! = prob.explictfuns!
     end
+    if sys === missing
+        sys = prob.f.sys
+    end
     offset = 0
     if u0 !== missing || p !== missing && parameters_alias
         probs = map(probs) do subprob

@@ -324,6 +324,7 @@ end
     @test sccprob2.probs[1].u0 ≈ 2ones(2)
     @test sccprob2.probs[2].u0 ≈ 2ones(1)
     @test sccprob2.explicitfuns! !== missing
+    @test sccprob2.f.sys !== missing
 
     sccprob3 = remake(sccprob; p = [σ => 2.0])
     @test sccprob3.p === sccprob3.probs[1].p
