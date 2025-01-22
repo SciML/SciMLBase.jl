@@ -5,9 +5,9 @@ manifest_format = "2.0"
 project_hash = "999c6a239b3806d41610a32b948066b80f4f67cf"
 
 [[deps.ADTypes]]
-git-tree-sha1 = "72af59f5b8f09faee36b4ec48e014a79210f2f4f"
+git-tree-sha1 = "ab3815fc06f9c171ee81277f00ecee19b47e0b91"
 uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
-version = "1.11.0"
+version = "1.12.0"
 weakdeps = ["ChainRulesCore", "ConstructionBase", "EnzymeCore"]
 
     [deps.ADTypes.extensions]
@@ -363,9 +363,9 @@ version = "1.15.1"
 
 [[deps.DifferentiationInterface]]
 deps = ["ADTypes", "LinearAlgebra"]
-git-tree-sha1 = "e7e4ce7787a74d2ec553e7afbeb1bf949caa90ab"
+git-tree-sha1 = "a1ebd42d036132d899d61e45fee4283b2a60c0ab"
 uuid = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
-version = "0.6.30"
+version = "0.6.31"
 
     [deps.DifferentiationInterface.extensions]
     DifferentiationInterfaceChainRulesCoreExt = "ChainRulesCore"
@@ -451,9 +451,9 @@ version = "1.8.0"
 
 [[deps.DomainSets]]
 deps = ["CompositeTypes", "IntervalSets", "LinearAlgebra", "Random", "StaticArrays"]
-git-tree-sha1 = "490392af2c7d63183bfa2c8aaa6ab981c5ba7561"
+git-tree-sha1 = "a7e9f13f33652c533d49868a534bfb2050d1365f"
 uuid = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
-version = "0.7.14"
+version = "0.7.15"
 
     [deps.DomainSets.extensions]
     DomainSetsMakieExt = "Makie"
