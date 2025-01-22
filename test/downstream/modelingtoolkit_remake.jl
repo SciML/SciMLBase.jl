@@ -4,6 +4,8 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 using OrdinaryDiffEq
 using Optimization
 using OptimizationOptimJL
+using ForwardDiff
+using SciMLStructures
 
 probs = []
 syss = []
@@ -405,4 +407,19 @@ end
         [D(x) ~ p * x + q * y, y ~ 2x], t; parameter_dependencies = [q ~ 2p])
     prob = ODEProblem(sys, [:x => 1.0], (0.0, 1.0), [p => 1.0])
     @test_nowarn remake(prob; u0 = [:y => 1.0, :x => nothing])
+end
+
+@testset "`initialization_data` u0 and p are promoted with explicit `f`" begin
+    @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
+    @parameters p q
+    @mtkbuild sys = ODESystem([D(x) ~ x, (x - p) ^ 2 + (y - q) ^ 3 ~ 0], t)
+    prob = ODEProblem(sys, [x => 1.0], (0.0, 1.0), [p => 1.0, q => 2.0])
+    @test prob.f.initialization_data !== nothing
+    buf, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), prob.p)
+    newps = repack(ForwardDiff.Dual.(buf))
+    prob2 = @test_nowarn remake(prob; f = prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps)
+    @test prob2.f.initialization_data !== nothing
+    initprob = prob2.f.initialization_data.initializeprob
+    @test eltype(initprob.u0) <: ForwardDiff.Dual
+    @test eltype(SciMLStructures.canonicalize(SciMLStructures.Tunable(), initprob.p)[1]) <: ForwardDiff.Dual
 end
