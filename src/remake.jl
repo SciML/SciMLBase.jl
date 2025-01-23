@@ -910,7 +910,10 @@ function fill_vars(
         v === nothing && continue
         idx = index_function(prob, k)
         idx === nothing && continue
-        if !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
+        # If `k` is an array symbolic, and `[:k => [1.0, 2.0]]` is provided
+        if idx isa AbstractArray && symbolic_type(k) == ScalarSymbolic()
+            k = [idx_to_vsym[i] for i in idx]
+        elseif !(idx isa AbstractArray) || symbolic_type(k) != ArraySymbolic()
             idx = (idx,)
             k = (k,)
             v = (v,)
