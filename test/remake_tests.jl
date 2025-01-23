@@ -15,6 +15,7 @@ u0 = [1.0; 2.0; 3.0]
 tspan = (0.0, 100.0)
 p = [10.0, 20.0, 30.0]
 sys = SymbolCache([:x, :y, :z], [:a, :b, :c], :t)
+indep_sys = SymbolCache([:x, :y, :z], [:a, :b, :c])
 fn = ODEFunction(lorenz!; sys)
 for T in containerTypes
     push!(probs, ODEProblem(fn, u0, tspan, T(p)))
@@ -64,7 +65,7 @@ function loss(x, p)
     return sum(du)
 end
 
-fn = OptimizationFunction(loss; sys)
+fn = OptimizationFunction(loss; sys = indep_sys)
 for T in containerTypes
     push!(probs, OptimizationProblem(fn, u0, T(p)))
 end
@@ -73,7 +74,7 @@ function nllorenz!(du, u, p)
     lorenz!(du, u, p, 0.0)
 end
 
-fn = NonlinearFunction(nllorenz!; sys)
+fn = NonlinearFunction(nllorenz!; sys = indep_sys)
 for T in containerTypes
     push!(probs, NonlinearProblem(fn, u0, T(p)))
 end

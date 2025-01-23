@@ -263,7 +263,10 @@ end
     @testset "Trivial initialization" begin
         initprob = NonlinearProblem(Returns(nothing), nothing, [1.0])
         update_initializeprob! = function (iprob, integ)
-            iprob.p[1] = integ.u[1]
+            # just to access the current time and use it as a number, so this errors
+            # if run on a problem with `current_time(prob) === nothing`
+            iprob.p[1] = current_time(integ) + 1 
+            iprob.p[1] = state_values(integ)[1]
         end
         initprobmap = function (nlsol)
             u1 = parameter_values(nlsol)[1]
@@ -284,6 +287,11 @@ end
         @test u0 ≈ [2.0, 2.0]
         @test p ≈ 0.0
         @test success
+
+        @testset "Doesn't run in `remake` if `tspan == (nothing, nothing)`" begin
+            prob = ODEProblem(fn, [2.0, 0.0], (nothing, nothing), 0.0)
+            @test_nowarn remake(prob)
+        end
     end
 end
 
