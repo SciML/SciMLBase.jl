@@ -13,6 +13,8 @@ using Expronicon.ADT: variant_type, @adt, @match
     SolverStepClock
 end
 
+(clock::TimeDomain)() = clock
+
 Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
 
 const DiscriminatorType = typeof(variant_type(Continuous))
