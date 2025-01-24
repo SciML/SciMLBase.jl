@@ -1805,7 +1805,7 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
     In the above example, it will be the function:
 
     ```julia
-    functon polynomialize(u, p)
+    function polynomialize(u, p)
       x, y = u
       return [sin(x^2), log(x + y)]
     end
@@ -1837,7 +1837,7 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
     end
     ```
 
-    There are of course an infinite number of such functions due to the presence of `sin`. 
+    There are of course an infinite number of such functions due to the presence of `sin`.
     This example chooses to return the roots in the interval `[-π/2, π/2]`.
     """
     unpolynomialize::Q
