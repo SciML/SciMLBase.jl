@@ -66,6 +66,9 @@ end
         @time @safetestset "Initialization" begin
             include("initialization.jl")
         end
+        @time @safetestset "Clocks" begin
+            include("clock.jl")
+        end
     end
 
     if !is_APPVEYOR &&
