@@ -424,3 +424,11 @@ end
     @test eltype(initprob.u0) <: ForwardDiff.Dual
     @test eltype(SciMLStructures.canonicalize(SciMLStructures.Tunable(), initprob.p)[1]) <: ForwardDiff.Dual
 end
+
+@testset "Array unknown specified as Symbol" begin
+    @variables x(t)[1:2]
+    @parameters k
+    @mtkbuild sys = ODESystem([D(x[1]) ~ k * x[1], D(x[2]) ~ - x[2]], t)
+    prob = ODEProblem(sys, [x => ones(2)], (0.0, 1.0), [k => 2.0])
+    prob2 = remake(prob; u0 = [:x => 2ones(2)])
+end
