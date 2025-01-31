@@ -384,3 +384,23 @@ end
     prob2 = remake(prob; f = fn2)
     @test prob2.f.resid_prototype isa Vector{Float32}
 end
+
+@testset "`remake(::HomotopyNonlinearFunction)`" begin
+    f! = function (du, u, p)
+        du[1] = u[1] * u[1] - p[1] * u[2] + u[2]^3 + 1
+        du[2] = u[2]^3 + 2 * p[2] * u[1] * u[2] + u[2]
+    end
+
+    fjac! = function (j, u, p)
+        j[1, 1] = 2u[1]
+        j[1, 2] = -p[1] + 3 * u[2]^2
+        j[2, 1] = 2 * p[2] * u[2]
+        j[2, 2] = 3 * u[2]^2 + 2 * p[2] * u[1] + 1
+    end
+    fn = NonlinearFunction(f!; jac = fjac!)
+    fn = HomotopyNonlinearFunction(fn)
+    prob = NonlinearProblem(fn, ones(2), ones(2))
+    @test prob.f.f.jac == fjac!
+    prob2 = remake(prob; u0 = zeros(2))
+    @test prob2.f.f.jac == fjac!
+end
