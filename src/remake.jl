@@ -177,17 +177,19 @@ function remake(
         if !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
             f = split_function_f_wrapper(T){iip, spec}(f)
         end
-        # For SplitFunction
-        # we don't do the same thing as `g`, because for SDEs `g` is
-        # stored in the problem as well, whereas for Split ODEs etc
-        # f2 is a part of the function. Thus, if the user provides
-        # a SciMLFunction for `f` which contains `f2` we use that.
-        f2 = coalesce(f2, get(props, :f2, missing), func.f2)
-        if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
-            f2 = split_function_f_wrapper(T){iip, spec}(f2)
+        if hasproperty(func, :f2)
+            # For SplitFunction
+            # we don't do the same thing as `g`, because for SDEs `g` is
+            # stored in the problem as well, whereas for Split ODEs etc
+            # f2 is a part of the function. Thus, if the user provides
+            # a SciMLFunction for `f` which contains `f2` we use that.
+            f2 = coalesce(f2, get(props, :f2, missing), func.f2)
+            if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+                f2 = split_function_f_wrapper(T){iip, spec}(f2)
+            end
+            props = @delete props.f2
+            args = (args..., f2)
         end
-        props = @delete props.f2
-        args = (args..., f2)
     end
     if isdefined(func, :g)
         # For SDEs/SDDEs where `g` is not a keyword

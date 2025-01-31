@@ -4757,7 +4757,7 @@ is_split_function(x) = is_split_function(typeof(x))
 is_split_function(::Type) = false
 function is_split_function(::Type{T}) where {T <: Union{
         SplitFunction, SplitSDEFunction, DynamicalODEFunction,
-        DynamicalDDEFunction, DynamicalSDEFunction}}
+        DynamicalDDEFunction, DynamicalSDEFunction, HomotopyNonlinearFunction}}
     true
 end
 
@@ -4766,6 +4766,7 @@ split_function_f_wrapper(::Type{<:SplitSDEFunction}) = SDEFunction
 split_function_f_wrapper(::Type{<:DynamicalODEFunction}) = ODEFunction
 split_function_f_wrapper(::Type{<:DynamicalDDEFunction}) = DDEFunction
 split_function_f_wrapper(::Type{<:DynamicalSDEFunction}) = DDEFunction
+split_function_f_wrapper(::Type{<:HomotopyNonlinearFunction}) = NonlinearFunction
 
 ######### Additional traits
 
