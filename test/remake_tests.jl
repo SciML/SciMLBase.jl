@@ -83,6 +83,11 @@ for T in containerTypes
     push!(probs, NonlinearLeastSquaresProblem(fn, u0, T(p)))
 end
 
+# temporary definition to test this functionality
+function SciMLBase.late_binding_update_u0_p(prob, u0, p::SciMLBase.NullParameters, t0, newu0, newp)
+    return newu0, ones(3)
+end
+
 for prob in deepcopy(probs)
     prob2 = @inferred remake(prob)
     @test prob2.u0 == u0
@@ -274,7 +279,14 @@ for prob in deepcopy(probs)
         end
         ForwardDiff.derivative(fakeloss!, 1.0)
     end
+
+    # test late_binding_update_u0_p
+    prob2 = remake(prob; p = SciMLBase.NullParameters())
+    @test prob2.p ≈ ones(3)
 end
+
+# delete the method defined here to prevent breaking other tests
+Base.delete_method(only(methods(SciMLBase.late_binding_update_u0_p, @__MODULE__)))
 
 # eltype(()) <: Pair, so ensure that this doesn't error
 function lorenz!(du, u, _, t)
