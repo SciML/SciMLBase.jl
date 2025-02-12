@@ -166,11 +166,11 @@ function SplitSDEProblem(f::SplitSDEFunction, u0, tspan, p = NullParameters(); k
 end
 
 function SplitSDEProblem{iip}(f::SplitSDEFunction, u0, tspan, p = NullParameters();
-        func_cache = nothing, kwargs...) where {iip}
-    if f.cache === nothing && iip
-        cache = similar(u0)
+        _func_cache = nothing, kwargs...) where {iip}
+    if f._func_cache === nothing && iip
+        _func_cache = similar(u0)
         _f = SplitSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-            _func_cache = cache, analytic = f.analytic)
+            _func_cache = _func_cache, analytic = f.analytic)
     else
         _f = f
     end
@@ -205,11 +205,11 @@ end
 
 function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, v0, u0, tspan,
         p = NullParameters();
-        func_cache = nothing, kwargs...) where {iip}
-    if f.cache === nothing && iip
-        cache = similar(u0)
+        _func_cache = nothing, kwargs...) where {iip}
+    if f._func_cache === nothing && iip
+        _func_cache = similar(u0)
         _f = DynamicalSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-            _func_cache = cache, analytic = f.analytic)
+            _func_cache = _func_cache, analytic = f.analytic)
     else
         _f = f
     end

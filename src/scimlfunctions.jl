@@ -536,7 +536,7 @@ struct SplitFunction{
     f1::F1
     f2::F2
     mass_matrix::TMM
-    cache::C
+    _func_cache::C
     analytic::Ta
     tgrad::Tt
     jac::TJ
@@ -1178,7 +1178,7 @@ struct SplitSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP
     f2::F2
     g::G
     mass_matrix::TMM
-    cache::C
+    _func_cache::C
     analytic::Ta
     tgrad::Tt
     jac::TJ
@@ -1291,7 +1291,7 @@ struct DynamicalSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP,
     f2::F2
     g::G
     mass_matrix::TMM
-    cache::C
+    _func_cache::C
     analytic::Ta
     tgrad::Tt
     jac::TJ
@@ -2482,9 +2482,9 @@ end
 
 (f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
 function (f::SplitFunction)(du, u, p, t)
-    f.f1(f.cache, u, p, t)
+    f.f1(f._func_cache, u, p, t)
     f.f2(du, u, p, t)
-    du .+= f.cache
+    du .+= f._func_cache
 end
 
 (f::DiscreteFunction)(args...) = f.f(args...)
@@ -2512,9 +2512,9 @@ end
 (f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
 
 function (f::SplitSDEFunction)(du, u, p, t)
-    f.f1(f.cache, u, p, t)
+    f.f1(f._func_cache, u, p, t)
     f.f2(du, u, p, t)
-    du .+= f.cache
+    du .+= f._func_cache
 end
 
 (f::RODEFunction)(args...) = f.f(args...)
@@ -2808,7 +2808,7 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
     end
 end
 
-@add_kwonly function SplitFunction(f1, f2, mass_matrix, cache, analytic, tgrad, jac, jvp,
+@add_kwonly function SplitFunction(f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec, sys, initializeprob = nothing, update_initializeprob! = nothing,
         initializeprobmap = nothing, initializeprobpmap = nothing, initialization_data = nothing, nlprob_data = nothing)
@@ -2826,12 +2826,12 @@ end
 
     SplitFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
         typeof(mass_matrix),
-        typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
+        typeof(_func_cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp), typeof(jac_prototype), typeof(W_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed), typeof(colorvec),
         typeof(sys), typeof(initdata), typeof(nlprob_data)}(
         f1, f2, mass_matrix,
-        cache, analytic, tgrad, jac, jvp, vjp,
+        _func_cache, analytic, tgrad, jac, jvp, vjp,
         jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
         initdata, nlprob_data)
 end
@@ -3259,7 +3259,7 @@ function SDEFunction(f, g; kwargs...)
 end
 SDEFunction(f::SDEFunction; kwargs...) = f
 
-@add_kwonly function SplitSDEFunction(f1, f2, g, mass_matrix, cache, analytic, tgrad, jac,
+@add_kwonly function SplitSDEFunction(f1, f2, g, mass_matrix, _func_cache, analytic, tgrad, jac,
         jvp, vjp,
         jac_prototype, Wfact, Wfact_t, paramjac, observed,
         colorvec, sys, initialization_data = nothing)
@@ -3267,12 +3267,12 @@ SDEFunction(f::SDEFunction; kwargs...) = f
     f2 = SDEFunction(f2)
 
     SplitFunction{isinplace(f2), typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
-        typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
+        typeof(_func_cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data)}(
-        f1, f2, mass_matrix, cache, analytic, tgrad, jac,
+        f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac,
         jac_prototype, Wfact, Wfact_t, paramjac, observed, colorvec, sys, initialization_data)
 end
 
@@ -3344,7 +3344,7 @@ function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
 end
 SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
 
-@add_kwonly function DynamicalSDEFunction(f1, f2, g, mass_matrix, cache, analytic, tgrad,
+@add_kwonly function DynamicalSDEFunction(f1, f2, g, mass_matrix, _func_cache, analytic, tgrad,
         jac, jvp, vjp,
         jac_prototype, Wfact, Wfact_t, paramjac,
         observed, colorvec,
@@ -3354,12 +3354,12 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
 
     DynamicalSDEFunction{isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
         typeof(mass_matrix),
-        typeof(cache), typeof(analytic), typeof(tgrad), typeof(jac),
+        typeof(_func_cache), typeof(analytic), typeof(tgrad), typeof(jac),
         typeof(jvp), typeof(vjp),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data)}(
-        f1, f2, g, mass_matrix, cache, analytic, tgrad,
+        f1, f2, g, mass_matrix, _func_cache, analytic, tgrad,
         jac, jac_prototype, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
         initialization_data)
 end
