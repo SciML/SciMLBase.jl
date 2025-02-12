@@ -167,9 +167,9 @@ function remake(
     args = (f,)
     if is_split_function(T)
         # for DynamicalSDEFunction and SplitFunction
-        if isdefined(props, :cache)
-            props = @insert props._func_cache = props.cache
-            props = @delete props.cache
+        if isdefined(props, :_func_cache)
+            props = @insert props._func_cache = props._func_cache
+            props = @delete props._func_cache
         end
 
         # `f1` and `f2` are wrapped in another SciMLFunction, unless they're

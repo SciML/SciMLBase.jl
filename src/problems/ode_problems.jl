@@ -473,10 +473,10 @@ function SplitODEProblem(f::SplitFunction, u0, tspan, p = NullParameters(); kwar
 end
 function SplitODEProblem{iip}(f::SplitFunction, u0, tspan, p = NullParameters();
         kwargs...) where {iip}
-    if f.cache === nothing && iip
-        cache = similar(u0)
+    if f._func_cache === nothing && iip
+        _func_cache = similar(u0)
         f = SplitFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-            _func_cache = cache, analytic = f.analytic)
+            _func_cache = _func_cache, analytic = f.analytic)
     end
     ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
