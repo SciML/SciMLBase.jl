@@ -238,7 +238,7 @@ struct SDEAliasSpecifier <: AbstractAliasSpecifier
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
-    alias_jumps::Union{Bool,Nothing}
+    alias_jumps::Union{Bool, Nothing}
 
     function SDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
@@ -251,5 +251,3 @@ struct SDEAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-
-

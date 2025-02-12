@@ -158,5 +158,3 @@ struct SteadyStateAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-
-

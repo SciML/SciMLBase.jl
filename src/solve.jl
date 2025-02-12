@@ -52,7 +52,7 @@ should be `false`, so the optimization stops if it returns `true`.
 ### Callback Example
 
 Here we show an example of a callback function that plots the prediction at the current value of the optimization variables.
-For a visualization callback, we would need the prediction at the current parameters i.e. the solution of the `ODEProblem` `prob`. 
+For a visualization callback, we would need the prediction at the current parameters i.e. the solution of the `ODEProblem` `prob`.
 So we call the `predict` function within the callback again.
 
 ```julia

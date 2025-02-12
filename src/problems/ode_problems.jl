@@ -530,11 +530,11 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 """
 struct ODEAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool,Nothing}
-    alias_f::Union{Bool,Nothing}
-    alias_u0::Union{Bool,Nothing}
-    alias_du0::Union{Bool,Nothing}
-    alias_tstops::Union{Bool,Nothing}
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
+    alias_du0::Union{Bool, Nothing}
+    alias_tstops::Union{Bool, Nothing}
 
     function ODEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
@@ -547,4 +547,3 @@ struct ODEAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-

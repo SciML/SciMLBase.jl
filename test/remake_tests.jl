@@ -84,7 +84,8 @@ for T in containerTypes
 end
 
 # temporary definition to test this functionality
-function SciMLBase.late_binding_update_u0_p(prob, u0, p::SciMLBase.NullParameters, t0, newu0, newp)
+function SciMLBase.late_binding_update_u0_p(
+        prob, u0, p::SciMLBase.NullParameters, t0, newu0, newp)
     return newu0, ones(3)
 end
 

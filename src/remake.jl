@@ -1075,7 +1075,8 @@ function updated_u0_p(
         return (u0 === missing ? state_values(prob) : u0),
         (p === missing ? parameter_values(prob) : p)
     end
-    newu0, newp = _updated_u0_p_internal(prob, u0, p, t0; interpret_symbolicmap, use_defaults)
+    newu0, newp = _updated_u0_p_internal(
+        prob, u0, p, t0; interpret_symbolicmap, use_defaults)
     return late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
 end
 
@@ -1099,7 +1100,8 @@ Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)` after 
 """
 function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
     root_indp = prob
-    while hasmethod(symbolic_container, Tuple{typeof(root_indp)}) && (sc = symbolic_container(root_indp)) !== root_indp
+    while hasmethod(symbolic_container, Tuple{typeof(root_indp)}) &&
+        (sc = symbolic_container(root_indp)) !== root_indp
         root_indp = sc
     end
     return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
@@ -1114,11 +1116,13 @@ function process_p_u0_symbolic(prob, p, u0)
     end
 end
 
-function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initialization_data, lazy_initialization::Union{Nothing, Bool})
+function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initialization_data,
+        lazy_initialization::Union{Nothing, Bool})
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if initialization_data !== nothing && !lazy_initialization && (!is_time_dependent(prob) || current_time(prob) !== nothing)
+    if initialization_data !== nothing && !lazy_initialization &&
+       (!is_time_dependent(prob) || current_time(prob) !== nothing)
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
