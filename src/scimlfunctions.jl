@@ -2838,7 +2838,7 @@ end
 function SplitFunction{iip, specialize}(f1, f2;
         mass_matrix = __has_mass_matrix(f1) ?
                       f1.mass_matrix : I,
-        _func_cache = nothing,
+        cache = nothing,
         analytic = __has_analytic(f1) ? f1.analytic :
                    nothing,
         tgrad = __has_tgrad(f1) ? f1.tgrad : nothing,
@@ -2885,20 +2885,20 @@ function SplitFunction{iip, specialize}(f1, f2;
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
-            f1, f2, mass_matrix, _func_cache,
+            f1, f2, mass_matrix, cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac,
             observed, colorvec, sys, initdata, nlprob_data)
     else
         SplitFunction{iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
-            typeof(_func_cache), typeof(analytic),
+            typeof(cache), typeof(analytic),
             typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
             typeof(jac_prototype), typeof(W_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(colorvec),
             typeof(sys), typeof(initdata), typeof(nlprob_data)}(f1, f2,
-            mass_matrix, _func_cache, analytic, tgrad, jac,
+            mass_matrix, cache, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, W_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
             initdata, nlprob_data)
