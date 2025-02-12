@@ -1075,7 +1075,34 @@ function updated_u0_p(
         return (u0 === missing ? state_values(prob) : u0),
         (p === missing ? parameter_values(prob) : p)
     end
-    return _updated_u0_p_internal(prob, u0, p, t0; interpret_symbolicmap, use_defaults)
+    newu0, newp = _updated_u0_p_internal(prob, u0, p, t0; interpret_symbolicmap, use_defaults)
+    return late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+A function to perform custom modifications to `newu0` and/or `newp` after they have been
+constructed in `remake`. `root_indp` is the innermost index provider found by recursively
+calling `SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns
+the updated `newu0` and `newp`.
+"""
+function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
+    return newu0, newp
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)` after finding
+`root_indp`.
+"""
+function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
+    root_indp = prob
+    while hasmethod(symbolic_container, Tuple{typeof(root_indp)}) && (sc = symbolic_container(root_indp)) !== root_indp
+        root_indp = sc
+    end
+    return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
 end
 
 # overloaded in MTK to intercept symbolic remake
