@@ -13,6 +13,7 @@ SciMLBase.jl is the core interface definition of the SciML ecosystem. It is a
 low dependency library made to be depended on by the downstream libraries to
 supply the common interface and allow for interexchange of mathematical problems.
 
+
 ## v2.0 Breaking Changes
 
 The breaking changes in v2.0 are:
