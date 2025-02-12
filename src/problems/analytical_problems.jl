@@ -29,7 +29,6 @@ end
 
 export AnalyticalProblem, AbstractAnalyticalProblem
 
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -66,5 +65,3 @@ struct AnalyticalAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-
-

@@ -136,7 +136,7 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 """
 struct ImplicitDiscreteAliasSpecifier
-    alias_p::Union{Bool,Nothing}
+    alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}
 
@@ -152,5 +152,3 @@ struct ImplicitDiscreteAliasSpecifier
         end
     end
 end
-
-

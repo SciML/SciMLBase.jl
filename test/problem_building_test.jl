@@ -91,7 +91,7 @@ let
     dprob4b = DiscreteProblem{true}(nothing, nothing)
     dprob5 = DiscreteProblem{true}(SciMLBase.DISCRETE_INPLACE_DEFAULT, u₀, tspan, p)
     dprob6 = DiscreteProblem{true}(SciMLBase.DISCRETE_INPLACE_DEFAULT, u₀, tspan)
-    dprob7 = DiscreteProblem{true}((du,u,p,t) -> du[1] = 0, u₀, tspan)
+    dprob7 = DiscreteProblem{true}((du, u, p, t) -> du[1] = 0, u₀, tspan)
     @test dprob7.u0 === u₀
     @test dprob7.tspan === tspan
     dprob8 = DiscreteProblem{true}(nothing, u₀, tspan)

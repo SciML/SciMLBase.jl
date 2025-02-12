@@ -4857,19 +4857,19 @@ function SymbolicIndexingInterface.observed(fn::HomotopyNonlinearFunction, sym::
 end
 
 function Base.getproperty(x::HomotopyNonlinearFunction, sym::Symbol)
-  if hasfield(HomotopyNonlinearFunction, sym)
-    return getfield(x, sym)
-  elseif hasfield(NonlinearFunction, sym)
-    return getfield(getfield(x, :f), sym)
-  elseif (sym == :initializeprob || sym == :update_initializeprob! ||
-        sym == :initializeprobmap || sym == :initializeprobpmap)
-    f = getfield(x, :f)
-    if f.initialization_data === nothing
-      return nothing
-    else
-      return getproperty(f.initialization_data, sym)
+    if hasfield(HomotopyNonlinearFunction, sym)
+        return getfield(x, sym)
+    elseif hasfield(NonlinearFunction, sym)
+        return getfield(getfield(x, :f), sym)
+    elseif (sym == :initializeprob || sym == :update_initializeprob! ||
+            sym == :initializeprobmap || sym == :initializeprobpmap)
+        f = getfield(x, :f)
+        if f.initialization_data === nothing
+            return nothing
+        else
+            return getproperty(f.initialization_data, sym)
+        end
     end
-  end
 end
 
 function Base.getproperty(x::AbstractSciMLFunction, sym::Symbol)

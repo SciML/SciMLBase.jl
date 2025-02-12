@@ -388,7 +388,9 @@ end
 @testset "Remake with non-substitute-able values" begin
     @variables x1(t) x2(t) y(t)
     @parameters k2 p Gamma y0 d k1
-    @mtkbuild sys = ODESystem([D(y) ~ p - d * y, D(x1) ~ -k1 * x1 + k2 * (Gamma - x1), x2 ~ Gamma - x1], t; defaults = Dict(y => y0, Gamma => x1 + x2))
+    @mtkbuild sys = ODESystem(
+        [D(y) ~ p - d * y, D(x1) ~ -k1 * x1 + k2 * (Gamma - x1), x2 ~ Gamma - x1],
+        t; defaults = Dict(y => y0, Gamma => x1 + x2))
     u0 = [x1 => 1.0, x2 => 2.0]
     p0 = [p => 10.0, d => 5.0, y0 => 3.0, k1 => 1.0, k2 => 2.0]
     prob = ODEProblem(sys, u0, (0.0, 1.0), p0)
@@ -413,22 +415,24 @@ end
 @testset "`initialization_data` u0 and p are promoted with explicit `f`" begin
     @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p q
-    @mtkbuild sys = ODESystem([D(x) ~ x, (x - p) ^ 2 + (y - q) ^ 3 ~ 0], t)
+    @mtkbuild sys = ODESystem([D(x) ~ x, (x - p)^2 + (y - q)^3 ~ 0], t)
     prob = ODEProblem(sys, [x => 1.0], (0.0, 1.0), [p => 1.0, q => 2.0])
     @test prob.f.initialization_data !== nothing
     buf, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), prob.p)
     newps = repack(ForwardDiff.Dual.(buf))
-    prob2 = @test_nowarn remake(prob; f = prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps)
+    prob2 = @test_nowarn remake(
+        prob; f = prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps)
     @test prob2.f.initialization_data !== nothing
     initprob = prob2.f.initialization_data.initializeprob
     @test eltype(initprob.u0) <: ForwardDiff.Dual
-    @test eltype(SciMLStructures.canonicalize(SciMLStructures.Tunable(), initprob.p)[1]) <: ForwardDiff.Dual
+    @test eltype(SciMLStructures.canonicalize(SciMLStructures.Tunable(), initprob.p)[1]) <:
+          ForwardDiff.Dual
 end
 
 @testset "Array unknown specified as Symbol" begin
     @variables x(t)[1:2]
     @parameters k
-    @mtkbuild sys = ODESystem([D(x[1]) ~ k * x[1], D(x[2]) ~ - x[2]], t)
+    @mtkbuild sys = ODESystem([D(x[1]) ~ k * x[1], D(x[2]) ~ -x[2]], t)
     prob = ODEProblem(sys, [x => ones(2)], (0.0, 1.0), [k => 2.0])
     prob2 = remake(prob; u0 = [:x => 2ones(2)])
 end

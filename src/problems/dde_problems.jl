@@ -397,7 +397,6 @@ function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
     end
 end
 
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -432,5 +431,3 @@ struct DDEAliasSpecifier
         end
     end
 end
-
-

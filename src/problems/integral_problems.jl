@@ -196,5 +196,3 @@ struct IntegralAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-
-
