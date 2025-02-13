@@ -166,12 +166,6 @@ function remake(
 
     args = (f,)
     if is_split_function(T)
-        # for DynamicalSDEFunction and SplitFunction
-        if isdefined(props, :_func_cache)
-            props = @insert props._func_cache = props._func_cache
-            props = @delete props._func_cache
-        end
-
         # `f1` and `f2` are wrapped in another SciMLFunction, unless they're
         # already wrapped in the appropriate type or are an `AbstractSciMLOperator`
         if !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
