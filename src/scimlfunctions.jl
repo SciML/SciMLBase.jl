@@ -2808,7 +2808,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
     end
 end
 
-@add_kwonly function SplitFunction(f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac, jvp,
+@add_kwonly function SplitFunction(
+        f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac, jvp,
         vjp, jac_prototype, W_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec, sys, initializeprob = nothing, update_initializeprob! = nothing,
         initializeprobmap = nothing, initializeprobpmap = nothing, initialization_data = nothing, nlprob_data = nothing)
@@ -3259,7 +3260,8 @@ function SDEFunction(f, g; kwargs...)
 end
 SDEFunction(f::SDEFunction; kwargs...) = f
 
-@add_kwonly function SplitSDEFunction(f1, f2, g, mass_matrix, _func_cache, analytic, tgrad, jac,
+@add_kwonly function SplitSDEFunction(
+        f1, f2, g, mass_matrix, _func_cache, analytic, tgrad, jac,
         jvp, vjp,
         jac_prototype, Wfact, Wfact_t, paramjac, observed,
         colorvec, sys, initialization_data = nothing)
@@ -3344,7 +3346,8 @@ function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
 end
 SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
 
-@add_kwonly function DynamicalSDEFunction(f1, f2, g, mass_matrix, _func_cache, analytic, tgrad,
+@add_kwonly function DynamicalSDEFunction(
+        f1, f2, g, mass_matrix, _func_cache, analytic, tgrad,
         jac, jvp, vjp,
         jac_prototype, Wfact, Wfact_t, paramjac,
         observed, colorvec,
