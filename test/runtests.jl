@@ -154,9 +154,6 @@ end
 
     if !is_APPVEYOR && GROUP == "Python"
         activate_python_env()
-        @time @safetestset "PyCall" begin
-            include("python/pycall.jl")
-        end
         @time @safetestset "PythonCall" begin
             include("python/pythoncall.jl")
         end

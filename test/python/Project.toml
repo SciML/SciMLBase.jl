@@ -1,13 +1,11 @@
 [deps]
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
-PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 
 [compat]
 DifferentialEquations = "7.11"
 OrdinaryDiffEq = "6.33"
-PyCall = "1.96"
 PythonCall = "0.9.14"
 SciMLBase = "2"
