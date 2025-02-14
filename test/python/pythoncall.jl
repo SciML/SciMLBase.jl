@@ -1,5 +1,12 @@
 using DifferentialEquations, PythonCall
 
+py""" # This is a mess because normal site-packages is not writeable in CI
+import subprocess, sys, site
+subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
+subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'diffeqpy'])
+sys.path.append(site.getusersitepackages())
+"""
+
 @testset "Use of DifferentialEquations through PythonCall with user code written in Python" begin
     pyexec("""
     from juliacall import Main
