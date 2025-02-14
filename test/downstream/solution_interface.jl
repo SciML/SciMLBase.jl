@@ -341,3 +341,12 @@ end
         @test _ss isa SciMLBase.SavedSubsystem
     end
 end
+
+@testset "Interpolation after final discrete save" begin
+    @variables x(t) y(t)
+    @parameters start
+    @mtkbuild sys=ODESystem([D(x) ~ y, y ~ ifelse(t < start, 1.0, 2.0)], t) additional_passes=[ModelingToolkit.IfLifting]
+    prob = ODEProblem(sys, [x => 0.0], (0.0, 1.0), [start => 0.5])
+    sol = solve(prob)
+    @test sol(0.6, idxs = y) ≈ 2.0
+end
