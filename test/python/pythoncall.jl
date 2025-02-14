@@ -1,8 +1,3 @@
-# PyCall and PythonCall must use the same Python interpreter. This environment variable
-# tells PythonCall to use the same Python interpreter as PyCall. See
-# https://github.com/JuliaPy/PythonCall.jl/blob/5f56a9b96b867a9f6742ab1d1e2361abd844e19f/docs/src/pycall.md#tips
-ENV["JULIA_PYTHONCALL_EXE"] = "@PyCall"
-
 using DifferentialEquations, PythonCall
 
 @testset "Use of DifferentialEquations through PythonCall with user code written in Python" begin
