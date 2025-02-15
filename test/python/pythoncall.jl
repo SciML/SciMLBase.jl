@@ -5,7 +5,7 @@ import subprocess, sys, site
 subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
 subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'diffeqpy'])
 sys.path.append(site.getusersitepackages())
-""")
+""", , @__MODULE__)
 
 @testset "Use of DifferentialEquations through PythonCall with user code written in Python" begin
     pyexec("""
