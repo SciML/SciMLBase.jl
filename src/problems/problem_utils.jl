@@ -28,11 +28,10 @@ function Base.summary(io::IO, prob::AbstractDEProblem)
          "Nothing" : typeof(prob.tspan[1])),
         no_color, 
         ". In-place: ", type_color, isinplace(prob), no_color) 
+    init = initialization_status(prob)
+    !isnothing(init) && print(io, "Initialization status: ", type_color, initialization_status(prob), no_color)
     println(io)
-    print(io, "Initialization status: ", type_color, initialization_status(prob), no_color)
-    println(io)
-    print(io, "Nontrivial mass matrix: ", type_color, !(prob.f.mass_matrix isa LinearAlgebra.UniformScaling{Bool}), no_color)
-    println(io)
+    print(io, "Non-trivial mass matrix: ", type_color, !(prob.f.mass_matrix isa LinearAlgebra.UniformScaling{Bool}), no_color)
 end
 
 function Base.summary(io::IO, prob::AbstractLinearProblem)
