@@ -58,3 +58,21 @@ end
     @test getp(sys, p)(pobj) ≈ 1.0
     @test getp(sys, q)(pobj) ≈ sqrt(2)
 end
+
+@testset "Initialization info printed" begin
+    @parameters g
+    @variables x(t) y(t) [state_priority = 10] λ(t)
+    eqs = [D(D(x)) ~ λ * x
+           D(D(y)) ~ λ * y - g
+           x^2 + y^2 ~ 1]
+    @mtkbuild pend = ODESystem(eqs, t)
+
+    prob = ODEProblem(pend, [x => 1, y => 0], (0.0, 1.5), [g => 1], guesses = [λ => 1])
+    @test occursin("Initialization status: FULLY_DETERMINED", sprint(summary, prob))
+
+    prob = ODEProblem(pend, [], (0.0, 1.5), [g => 1], guesses = [λ => 1, x => 1, y => 0])
+    @test occursin("Initialization status: UNDERDETERMINED", sprint(summary, prob))
+
+    prob = ODEProblem(pend, [x => 1, y => 0, λ => 2], (0.0, 1.5), [g => 1])
+    @test occursin("Initialization status: OVERDETERMINED", sprint(summary, prob))
+end
