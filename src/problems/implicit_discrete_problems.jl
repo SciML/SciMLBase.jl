@@ -89,7 +89,7 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan), isinplace(f, 6),
+        new{typeof(_u0), typeof(_tspan), isinplace(f, 5),
             typeof(p),
             typeof(f), typeof(kwargs)}(f,
             _u0,
@@ -111,12 +111,12 @@ Defines a discrete problem with the specified functions.
 """
 function ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan::Tuple,
         p = NullParameters(); kwargs...)
-    ImplicitDiscreteProblem{isinplace(f, 6)}(f, u0, tspan, p; kwargs...)
+    ImplicitDiscreteProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
 end
 
 function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
         kwargs...)
-    iip = isinplace(f, 6)
+    iip = isinplace(f, 5)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
@@ -152,5 +152,3 @@ struct ImplicitDiscreteAliasSpecifier
         end
     end
 end
-
-
