@@ -143,6 +143,8 @@ function remake(
         T = parameterless_type(func)
         f = isdefined(func, :f) ? func.f : func.f1
     elseif f isa AbstractSciMLFunction
+        iip = isinplace(f)
+        spec = specialization(f)
         # if `f` is a SciMLFunction, create that type
         T = parameterless_type(f)
         # properties of `f` take priority over those in the existing `func`
