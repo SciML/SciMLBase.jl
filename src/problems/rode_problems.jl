@@ -91,7 +91,6 @@ function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
 end
 
-
 @doc doc"""
 
 Holds information on what variables to alias
@@ -122,15 +121,15 @@ struct RODEAliasSpecifier <: AbstractAliasSpecifier
     alias_jumps::Union{Bool, Nothing}
 
     function RODEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing, alias_jumps = nothing, alias = nothing)
+            alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing,
+            alias_jumps = nothing, alias = nothing)
         if alias == true
             new(true, true, true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops, alias_noise, alias_jumps)
+            new(alias_p, alias_f, alias_u0, alias_du0,
+                alias_tstops, alias_noise, alias_jumps)
         end
     end
 end
-
-

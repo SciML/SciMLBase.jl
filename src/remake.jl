@@ -166,28 +166,24 @@ function remake(
 
     args = (f,)
     if is_split_function(T)
-        # for DynamicalSDEFunction and SplitFunction
-        if isdefined(props, :cache)
-            props = @insert props._func_cache = props.cache
-            props = @delete props.cache
-        end
-
         # `f1` and `f2` are wrapped in another SciMLFunction, unless they're
         # already wrapped in the appropriate type or are an `AbstractSciMLOperator`
         if !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
             f = split_function_f_wrapper(T){iip, spec}(f)
         end
-        # For SplitFunction
-        # we don't do the same thing as `g`, because for SDEs `g` is
-        # stored in the problem as well, whereas for Split ODEs etc
-        # f2 is a part of the function. Thus, if the user provides
-        # a SciMLFunction for `f` which contains `f2` we use that.
-        f2 = coalesce(f2, get(props, :f2, missing), func.f2)
-        if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
-            f2 = split_function_f_wrapper(T){iip, spec}(f2)
+        if hasproperty(func, :f2)
+            # For SplitFunction
+            # we don't do the same thing as `g`, because for SDEs `g` is
+            # stored in the problem as well, whereas for Split ODEs etc
+            # f2 is a part of the function. Thus, if the user provides
+            # a SciMLFunction for `f` which contains `f2` we use that.
+            f2 = coalesce(f2, get(props, :f2, missing), func.f2)
+            if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+                f2 = split_function_f_wrapper(T){iip, spec}(f2)
+            end
+            props = @delete props.f2
+            args = (args..., f2)
         end
-        props = @delete props.f2
-        args = (args..., f2)
     end
     if isdefined(func, :g)
         # For SDEs/SDDEs where `g` is not a keyword
@@ -1073,7 +1069,36 @@ function updated_u0_p(
         return (u0 === missing ? state_values(prob) : u0),
         (p === missing ? parameter_values(prob) : p)
     end
-    return _updated_u0_p_internal(prob, u0, p, t0; interpret_symbolicmap, use_defaults)
+    newu0, newp = _updated_u0_p_internal(
+        prob, u0, p, t0; interpret_symbolicmap, use_defaults)
+    return late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+A function to perform custom modifications to `newu0` and/or `newp` after they have been
+constructed in `remake`. `root_indp` is the innermost index provider found by recursively
+calling `SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns
+the updated `newu0` and `newp`.
+"""
+function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
+    return newu0, newp
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)` after finding
+`root_indp`.
+"""
+function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
+    root_indp = prob
+    while hasmethod(symbolic_container, Tuple{typeof(root_indp)}) &&
+        (sc = symbolic_container(root_indp)) !== root_indp
+        root_indp = sc
+    end
+    return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
 end
 
 # overloaded in MTK to intercept symbolic remake
@@ -1085,11 +1110,13 @@ function process_p_u0_symbolic(prob, p, u0)
     end
 end
 
-function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initialization_data, lazy_initialization::Union{Nothing, Bool})
+function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initialization_data,
+        lazy_initialization::Union{Nothing, Bool})
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    if initialization_data !== nothing && !lazy_initialization && (!is_time_dependent(prob) || current_time(prob) !== nothing)
+    if initialization_data !== nothing && !lazy_initialization &&
+       (!is_time_dependent(prob) || current_time(prob) !== nothing)
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)

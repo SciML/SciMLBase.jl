@@ -566,9 +566,9 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 """
 
 struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool,Nothing}
-    alias_f::Union{Bool,Nothing}
-    alias_u0::Union{Bool,Nothing}
+    alias_p::Union{Bool, Nothing}
+    alias_f::Union{Bool, Nothing}
+    alias_u0::Union{Bool, Nothing}
 
     function NonlinearAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
@@ -581,4 +581,3 @@ struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-

@@ -94,8 +94,8 @@ Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothi
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
 """
 struct LinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_A::Union{Bool,Nothing}
-    alias_b::Union{Bool,Nothing}
+    alias_A::Union{Bool, Nothing}
+    alias_b::Union{Bool, Nothing}
 
     function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
         if alias == true
@@ -107,5 +107,3 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
-
-

@@ -66,6 +66,9 @@ end
         @time @safetestset "Initialization" begin
             include("initialization.jl")
         end
+        @time @safetestset "Clocks" begin
+            include("clock.jl")
+        end
     end
 
     if !is_APPVEYOR &&
@@ -151,9 +154,6 @@ end
 
     if !is_APPVEYOR && GROUP == "Python"
         activate_python_env()
-        @time @safetestset "PyCall" begin
-            include("python/pycall.jl")
-        end
         @time @safetestset "PythonCall" begin
             include("python/pythoncall.jl")
         end

@@ -295,3 +295,23 @@ end
 function is_trivial_initialization(prob::AbstractSciMLProblem)
     is_trivial_initialization(prob.f)
 end
+
+@enum DETERMINED_STATUS OVERDETERMINED FULLY_DETERMINED UNDERDETERMINED
+
+function initialization_status(prob::AbstractSciMLProblem)
+    has_initialization_data(prob.f) || return nothing
+
+    sys = prob.f.initialization_data.initializeprob.f.sys
+    isnothing(sys) && return nothing
+
+    neqs = length(equations(sys))
+    nunknowns = length(unknowns(sys))
+
+    if neqs > nunknowns
+        return OVERDETERMINED
+    elseif neqs < nunknowns
+        return UNDERDETERMINED
+    else
+        return FULLY_DETERMINED
+    end
+end

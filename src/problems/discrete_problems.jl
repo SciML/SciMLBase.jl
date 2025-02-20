@@ -88,7 +88,7 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function DiscreteProblem{iip}(f::AbstractDiscreteFunction{iip},
-            u0, tspan::Tuple, p = NullParameters();
+            u0, tspan, p = NullParameters();
             kwargs...) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
@@ -138,12 +138,12 @@ end
 
 Defines a discrete problem with the specified functions.
 """
-function DiscreteProblem(f::AbstractDiscreteFunction, u0, tspan::Tuple,
+function DiscreteProblem(f::AbstractDiscreteFunction, u0, tspan,
         p = NullParameters(); kwargs...)
     DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function DiscreteProblem(f::Base.Callable, u0, tspan::Tuple, p = NullParameters();
+function DiscreteProblem(f::Base.Callable, u0, tspan, p = NullParameters();
         kwargs...)
     iip = isinplace(f, 4)
     DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
@@ -154,7 +154,7 @@ $(SIGNATURES)
 
 Define a discrete problem with the identity map.
 """
-function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan::Tuple,
+function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan,
         p = NullParameters(); kwargs...)
     iip = u0 isa AbstractArray
     if iip
@@ -197,6 +197,3 @@ struct DiscreteAliasSpecifier
         end
     end
 end
-
-
-

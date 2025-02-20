@@ -1,11 +1,5 @@
-module Clocks
-
-export TimeDomain
-
-using Expronicon.ADT: variant_type, @adt, @match
-
-@adt TimeDomain begin
-    Continuous
+@data Clocks begin
+    ContinuousClock
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
         phase::Float64 = 0.0
@@ -13,21 +7,13 @@ using Expronicon.ADT: variant_type, @adt, @match
     SolverStepClock
 end
 
+# for backwards compatibility
+const TimeDomain = Clocks.Type
+using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock
+const Continuous = ContinuousClock()
+(clock::TimeDomain)() = clock
+
 Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
-
-const DiscriminatorType = typeof(variant_type(Continuous))
-
-function Base.write(io::IO, x::DiscriminatorType)
-    write(io, Base.reinterpret(UInt32, x))
-end
-
-function Base.read(io::IO, ::Type{DiscriminatorType})
-    Base.reinterpret(DiscriminatorType, read(io, UInt32))
-end
-
-end
-
-using .Clocks
 
 """
     Clock(dt)
@@ -55,17 +41,17 @@ filters.
 """ SolverStepClock
 
 isclock(c) = @match c begin
-    PeriodicClock(_...) => true
+    PeriodicClock() => true
     _ => false
 end
 
 issolverstepclock(c) = @match c begin
-    &SolverStepClock => true
+    SolverStepClock() => true
     _ => false
 end
 
 iscontinuous(c) = @match c begin
-    &Continuous => true
+    ContinuousClock() => true
     _ => false
 end
 
@@ -73,9 +59,9 @@ is_discrete_time_domain(c) = !iscontinuous(c)
 
 function first_clock_tick_time(c, t0)
     @match c begin
-        PeriodicClock(dt, _...) => ceil(t0 / dt) * dt
-        &SolverStepClock => t0
-        &Continuous => error("Continuous is not a discrete clock")
+        PeriodicClock(dt) => ceil(t0 / dt) * dt
+        SolverStepClock() => t0
+        ContinuousClock() => error("ContinuousClock() is not a discrete clock")
     end
 end
 
@@ -90,13 +76,13 @@ function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSol
     c = ic.clock
 
     return @match c begin
-        PeriodicClock(dt, _...) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
-        &SolverStepClock => begin
+        PeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
+        SolverStepClock() => begin
             ssc_idx = findfirst(eachindex(sol.discretes)) do i
                 !isa(sol.discretes[i].t, AbstractRange)
             end
             sol.discretes[ssc_idx].t[ic.idx]
         end
-        &Continuous => sol.t[ic.idx]
+        ContinuousClock() => sol.t[ic.idx]
     end
 end

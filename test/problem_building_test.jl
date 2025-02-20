@@ -72,3 +72,29 @@ prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
         @test typeof(newprob) == typeof(prob)
     end
 end
+
+# test for tspan promotion in DiscreteProblem
+let
+    p = (0.1 / 1000, 0.01)
+    u₀ = [1.0]
+    tspan = (0.0, 1.0)
+    dprob = DiscreteProblem(u₀, tspan, p)
+    @test dprob.tspan === (0.0, 1.0)
+
+    dprob2 = DiscreteProblem(u₀, 1.0, p)
+    @test dprob.tspan === (0.0, 1.0)
+
+    dprob3 = DiscreteProblem(u₀, [0.0, 1.0], p)
+    @test dprob.tspan === (0.0, 1.0)
+
+    dprob4 = DiscreteProblem{true}(nothing, nothing, p)
+    dprob4b = DiscreteProblem{true}(nothing, nothing)
+    dprob5 = DiscreteProblem{true}(SciMLBase.DISCRETE_INPLACE_DEFAULT, u₀, tspan, p)
+    dprob6 = DiscreteProblem{true}(SciMLBase.DISCRETE_INPLACE_DEFAULT, u₀, tspan)
+    dprob7 = DiscreteProblem{true}((du, u, p, t) -> du[1] = 0, u₀, tspan)
+    @test dprob7.u0 === u₀
+    @test dprob7.tspan === tspan
+    dprob8 = DiscreteProblem{true}(nothing, u₀, tspan)
+    @test dprob8.u0 === u₀
+    @test dprob8.tspan === tspan
+end
