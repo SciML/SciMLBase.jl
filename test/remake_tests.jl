@@ -417,3 +417,11 @@ end
     prob2 = remake(prob; u0 = zeros(2))
     @test prob2.f.f.jac == fjac!
 end
+
+@testset "Issue#925: `remake` retains specialization of explicit `f`" begin
+    f = ODEFunction{false, SciMLBase.FullSpecialize}((u, p, t) -> u)
+    prob = ODEProblem(f, nothing, nothing)
+    @test SciMLBase.specialization(prob.f) == SciMLBase.FullSpecialize
+    prob2 = remake(ODEProblem((u, p, t) -> 2 .* u, nothing, nothing); f = f)
+    @test SciMLBase.specialization(prob2.f) == SciMLBase.FullSpecialize
+end
