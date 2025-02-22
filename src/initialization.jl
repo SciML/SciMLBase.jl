@@ -301,11 +301,11 @@ end
 function initialization_status(prob::AbstractSciMLProblem)
     has_initialization_data(prob.f) || return nothing
 
-    sys = prob.f.initialization_data.initializeprob.f.sys
-    isnothing(sys) && return nothing
+    iprob = prob.f.initialization_data.initializeprob
+    isnothing(prob) && return nothing
 
-    neqs = length(equations(sys))
-    nunknowns = length(unknowns(sys))
+    neqs = length(iprob.f(iprob.u0, iprob.p))
+    nunknowns = length(iprob.u0)
 
     if neqs > nunknowns
         return OVERDETERMINED
