@@ -287,8 +287,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
-            interp_val = ConstantInterpolation(partition.t, partition.u)(
-                t, nothing, deriv, nothing, continuity)
+            interp_val = _hold_discrete(partition.u, partition.t, t)
             ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
@@ -312,8 +311,7 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
-            interp_val = ConstantInterpolation(partition.t, partition.u)(
-                t, nothing, deriv, nothing, continuity)
+            interp_val = _hold_discrete(partition.u, partition.t, t)
             ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
