@@ -130,6 +130,29 @@ defaults `Dict(:a => :(2b), :c => 0.1)`. Then:
     `3.0` for `:a`, `:b` and `:c` respectively. Note how the explicitly specified value for
     `:a` overrides the dependent default.
 
+
+### Aliasing Specification
+`AbstractAliasSpecifier` object  holds fields specifying which variables to alias
+when solving. For example, to tell an ODE solver to alias the `u0` array, you can use an `ODEAliases` object,
+and the `alias_u0` keyword argument, e.g. `solve(prob,alias = ODEAliases(alias_u0 = true))`.
+For more information on what can be aliased for each problem type, see the documentation for the `AbstractAliasSpecifier`
+associated with that problem type. Set to `true` to alias every variable possible, or to `false` to disable aliasing.
+Defaults to an `AbstractAliasSpecifier` instance with `nothing` for all fields, which tells the solver to use the default behavior.
+
+```@docs
+SciMLBase.AbstractAliasSpecifier
+SciMLBase.LinearAliasSpecifier
+SciMLBase.NonlinearAliasSpecifier
+SciMLBase.ODEAliasSpecifier
+SciMLBase.SDEAliasSpecifier
+SciMLBase.DDEAliasSpecifier
+SciMLBase.SDDEAliasSpecifier
+SciMLBase.BVPAliasSpecifier
+SciMLBase.OptimizationAliasSpecifier
+SciMLBase.IntegralAliasSpecifier
+SciMLBase.DiscreteAliasSpecifier
+```
+
 ## Problem Traits
 
 ```@docs
