@@ -304,8 +304,12 @@ function initialization_status(prob::AbstractSciMLProblem)
     iprob = prob.f.initialization_data.initializeprob
     isnothing(prob) && return nothing
 
-    neqs = length(iprob.f(iprob.u0, iprob.p))
-    nunknowns = length(iprob.u0)
+    nunknowns = iprob.u0 === nothing ? 0 : length(iprob.u0)
+    neqs = if __has_resid_prototype(iprob.f) && iprob.f.resid_prototype !== nothing
+        length(iprob.f.resid_prototype)
+    else
+        nunknowns
+    end
 
     if neqs > nunknowns
         return OVERDETERMINED

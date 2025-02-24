@@ -126,6 +126,7 @@ end
 
     @testset "No-op without `initialization_data`" begin
         prob = ODEProblem(rhs2, [1.0, 2.0], (0.0, 1.0), 1.0)
+        @test SciMLBase.initialization_status(prob) === nothing
         integ = init(prob)
         integ.u[2] = 3.0
         u0, p, success = SciMLBase.get_initial_values(
@@ -153,6 +154,7 @@ end
         initprob, update_initializeprob!, initprobmap, initprobpmap)
     fn = ODEFunction(rhs2; initialization_data)
     prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+    @test SciMLBase.initialization_status(prob) == SciMLBase.FULLY_DETERMINED
     integ = init(prob; initializealg = NoInit())
 
     @testset "Errors without `nlsolve_alg`" begin
@@ -279,6 +281,7 @@ end
             initprob, update_initializeprob!, initprobmap, initprobpmap)
         fn = ODEFunction(rhs2; initialization_data)
         prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        @test SciMLBase.initialization_status(prob) == SciMLBase.FULLY_DETERMINED
         integ = init(prob; initializealg = NoInit())
 
         u0, p, success = SciMLBase.get_initial_values(
@@ -292,6 +295,30 @@ end
             prob = ODEProblem(fn, [2.0, 0.0], (nothing, nothing), 0.0)
             @test_nowarn remake(prob)
         end
+    end
+
+    @testset "Initialization status for overdetermined case" begin
+        initfn = NonlinearFunction(; resid_prototype = ones(3)) do u, p
+            return [u[1] - 1.0, u[2] - 1.0, u[1] * u[2] - 1.0]
+        end
+        initprob = NonlinearLeastSquaresProblem(initfn, ones(2))
+        initialization_data = SciMLBase.OverrideInitData(
+            initprob, nothing, nothing, nothing)
+        fn = ODEFunction(rhs2; initialization_data)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        @test SciMLBase.initialization_status(prob) == SciMLBase.OVERDETERMINED
+    end
+
+    @testset "Initialization status for underdetermined case" begin
+        initfn = NonlinearFunction(; resid_prototype = ones(1)) do u, p
+            return [u[1] - 1.0]
+        end
+        initprob = NonlinearLeastSquaresProblem(initfn, ones(2))
+        initialization_data = SciMLBase.OverrideInitData(
+            initprob, nothing, nothing, nothing)
+        fn = ODEFunction(rhs2; initialization_data)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        @test SciMLBase.initialization_status(prob) == SciMLBase.UNDERDETERMINED
     end
 end
 
