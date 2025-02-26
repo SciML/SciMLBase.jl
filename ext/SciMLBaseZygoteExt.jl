@@ -40,36 +40,6 @@ import SciMLStructures
     VA[i, j], ODESolution_getindex_pullback
 end
 
-@adjoint function Base.getindex(VA::ODESolution, sym, j::Int)
-    function ODESolution_getindex_pullback(Δ)
-        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
-        du, dprob = if i === nothing
-            getter = getobserved(VA)
-            grz = pullback(getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
-            du = [k == j ? grz[2] : zero(VA.u[1]) for k in 1:length(VA.u)]
-            dp = grz[3] # pullback for p
-            if dp === nothing
-                dp = parameter_values(VA)
-            end
-            dprob = remake(VA.prob, p = dp)
-            du, dprob
-        else
-            du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
-                  zero(VA.u[1]) for m in 1:length(VA.u)]
-            dp = zero(VA.prob.p)
-            dprob = remake(VA.prob, p = dp)
-            du, dprob
-        end
-        T = eltype(eltype(VA.u))
-        N = ndims(VA)
-        Δ′ = ODESolution{T, N}(du, nothing, nothing,
-            VA.t, VA.k, VA.discretes, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
-            VA.alg_choice, VA.retcode)
-        (Δ′, nothing, nothing)
-    end
-    VA[sym, j], ODESolution_getindex_pullback
-end
-
 @adjoint function EnsembleSolution(sim, time, converged, stats)
     out = EnsembleSolution(sim, time, converged, stats)
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
