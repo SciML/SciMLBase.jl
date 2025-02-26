@@ -129,10 +129,14 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDEProblem}
     function ctor(f, g, u0, tspan, p, noise, kw, noise_rate_prototype, seed)
         if f isa AbstractSDEFunction
             iip = isinplace(f)
+            if g !== f.g
+                f = remake(f; g)
+            end
+            return SDEProblem{iip}(f, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
         else
             iip = isinplace(f, 4)
+            return SDEProblem{iip}(f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
         end
-        return SDEProblem{iip}(f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
     end
 end
 
