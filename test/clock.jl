@@ -19,6 +19,7 @@ using MLStyle: @match
     @test isclock(PeriodicClock(; dt = 1.0))
     @test !isclock(Continuous())
     @test !isclock(SolverStepClock())
+    @test !isclock(nothing)
 
     @test !issolverstepclock(PeriodicClock(; dt = 1.0))
     @test !issolverstepclock(Continuous())

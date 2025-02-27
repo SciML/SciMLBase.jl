@@ -40,7 +40,7 @@ discrete-time systems that assume a fixed sample time, such as PID controllers a
 filters.
 """ SolverStepClock
 
-isclock(c) = @match c begin
+isclock(c) = isa(c, TimeDomain) && @match c begin
     PeriodicClock() => true
     _ => false
 end
