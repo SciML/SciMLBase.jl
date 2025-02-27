@@ -40,22 +40,28 @@ discrete-time systems that assume a fixed sample time, such as PID controllers a
 filters.
 """ SolverStepClock
 
-isclock(c) = isa(c, TimeDomain) && @match c begin
+isclock(c::TimeDomain) = @match c begin
     PeriodicClock() => true
     _ => false
 end
 
-issolverstepclock(c) = isa(c, TimeDomain) && @match c begin
+issolverstepclock(c::TimeDomain) = @match c begin
     SolverStepClock() => true
     _ => false
 end
 
-iscontinuous(c) = isa(c, TimeDomain) && @match c begin
+iscontinuous(c::TimeDomain) = @match c begin
     ContinuousClock() => true
     _ => false
 end
 
-is_discrete_time_domain(c) = !iscontinuous(c)
+is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
+
+# workaround for https://github.com/Roger-luo/Moshi.jl/issues/43
+isclock(::Any) = false
+issolverstepclock(::Any) = false
+iscontinuous(::Any) = false
+is_discrete_time_domain(::Any) = false
 
 function first_clock_tick_time(c, t0)
     @match c begin
