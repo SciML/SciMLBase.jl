@@ -25,8 +25,6 @@ function ChainRulesCore.rrule(
                 dp = zero_tangent(parameter_values(VA.prob))
             end
             dprob = remake(VA.prob, p = dp)
-            T = eltype(eltype(VA.u))
-            N = length(VA.prob.p)
             du, dprob
         else
             du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
@@ -35,6 +33,8 @@ function ChainRulesCore.rrule(
             dprob = remake(VA.prob, p = dp)
             du, dprob
         end
+        T = eltype(eltype(du))
+        N = ndims(eltype(du)) + 1
         Δ′ = ODESolution{T, N}(du, nothing, nothing, VA.t, VA.k, nothing, dprob,
             VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode)
         (NoTangent(), Δ′, NoTangent(), NoTangent())
