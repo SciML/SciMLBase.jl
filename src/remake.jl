@@ -958,7 +958,7 @@ end
 function Base.showerror(io::IO, err::CyclicDependencyError)
     println(io, "Detected cyclic dependency in initial values:")
     for (k, v) in err.varmap
-        println(io, k, " => ", "v")
+        println(io, k, " => ", v)
     end
     println(io, "While trying to solve for variables: ", err.vars)
 end
