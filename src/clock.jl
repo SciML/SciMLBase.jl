@@ -45,12 +45,12 @@ isclock(c) = isa(c, TimeDomain) && @match c begin
     _ => false
 end
 
-issolverstepclock(c) = @match c begin
+issolverstepclock(c) = isa(c, TimeDomain) && @match c begin
     SolverStepClock() => true
     _ => false
 end
 
-iscontinuous(c) = @match c begin
+iscontinuous(c) = isa(c, TimeDomain) && @match c begin
     ContinuousClock() => true
     _ => false
 end

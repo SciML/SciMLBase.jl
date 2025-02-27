@@ -24,10 +24,12 @@ using MLStyle: @match
     @test !issolverstepclock(PeriodicClock(; dt = 1.0))
     @test !issolverstepclock(Continuous())
     @test issolverstepclock(SolverStepClock())
+    @test !issolverstepclock(nothing)
 
     @test !iscontinuous(PeriodicClock(; dt = 1.0))
     @test iscontinuous(Continuous())
     @test !iscontinuous(SolverStepClock())
+    @test !iscontinuous(nothing)
 
     @test is_discrete_time_domain(PeriodicClock(; dt = 1.0))
     @test !is_discrete_time_domain(Continuous())
