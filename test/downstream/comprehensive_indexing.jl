@@ -124,11 +124,7 @@ timeseries_systems = [osys, ssys, jsys]
             set! = setsym(indp, sym)
             @inferred get(valp)
             @test get(valp) == val
-            if valp isa JumpProblem && sym isa Union{Tuple, AbstractArray}
-                @test_broken valp[sym]
-            else
-                @test valp[sym] == val
-            end
+            @test valp[sym] == val
 
             if !(valp isa SciMLBase.AbstractNoTimeSolution)
                 @inferred set!(valp, newval)
