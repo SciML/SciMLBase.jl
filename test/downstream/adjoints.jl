@@ -22,8 +22,7 @@ u0 = [lorenz1.x => 1.0,
     lorenz1.z => 0.0,
     lorenz2.x => 0.0,
     lorenz2.y => 1.0,
-    lorenz2.z => 0.0,
-    a => 2.0]
+    lorenz2.z => 0.0]
 
 p = [lorenz1.σ => 10.0,
     lorenz1.ρ => 28.0,
@@ -68,7 +67,7 @@ gs_ts, = Zygote.gradient(sol) do sol
     sum(sum.(sol[[lorenz1.x, lorenz2.x], :]))
 end
 
-@test all(map(x -> x == true_grad_vecsym, gs_ts))
+@test all(map(x -> x == true_grad_vecsym, gs_ts.u))
 
 # BatchedInterface AD
 @variables x(t)=1.0 y(t)=1.0 z(t)=1.0 w(t)=1.0
