@@ -44,9 +44,11 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
-function is_empty_indp(indp)
-    isempty(variable_symbols(indp)) && isempty(parameter_symbols(indp)) &&
-        isempty(independent_variable_symbols(indp))
+function get_root_indp(indp)
+    if hasmethod(symbolic_container, Tuple{typeof(indp)}) && (sc = symbolic_container(indp)) !== indp
+        return get_root_indp(sc)
+    end
+    return indp
 end
 
 # Everything from this point on is public API
@@ -107,28 +109,19 @@ end
 
 SavedSubsystem(indp, pobj, ::Nothing) = nothing
 
-function SavedSubsystem(indp, pobj, saved_idxs::Vector{Int})
-    isempty(saved_idxs) && return nothing
-    isempty(variable_symbols(indp)) && return nothing
-    state_map = Dict{Int, Int}(k => v for (k, v) in enumerate(saved_idxs))
-    return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
-end
-
 function SavedSubsystem(indp, pobj, idx::Int)
     state_map = Dict(1 => idx)
     return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
 end
 
-function SavedSubsystem(indp, pobj, saved_idxs)
-    # nothing saved
-    if saved_idxs === nothing || isempty(saved_idxs)
+function SavedSubsystem(indp, pobj, saved_idxs::Union{Array, Tuple})
+    _indp = get_root_indp(indp)
+    if indp === EMPTY_SYMBOLCACHE || indp === nothing
         return nothing
     end
-
-    # this is required because problems with no system have an empty `SymbolCache`
-    # as their symbolic container.
-    if is_empty_indp(indp)
-        return nothing
+    if eltype(saved_idxs) == Int
+        state_map = Dict{Int, Int}(k => v for (k, v) in enumerate(saved_idxs))
+        return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
     end
 
     # array state symbolics must be scalarized
@@ -380,7 +373,7 @@ function get_save_idxs_and_saved_subsystem(prob, save_idx::Int)
 end
 function get_save_idxs_and_saved_subsystem(prob, save_idxs)
     if !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
-        _save_idxs = [save_idxs]
+        _save_idxs = (save_idxs,)
     else
         _save_idxs = save_idxs
     end

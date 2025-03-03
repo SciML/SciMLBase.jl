@@ -4818,8 +4818,10 @@ for S in [:ODEFunction
     end
 end
 
+const EMPTY_SYMBOLCACHE = SymbolCache()
+
 function SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction)
-    has_sys(fn) ? fn.sys : SymbolCache()
+    has_sys(fn) ? fn.sys : EMPTY_SYMBOLCACHE
 end
 
 function SymbolicIndexingInterface.is_observed(fn::AbstractSciMLFunction, sym)

@@ -182,8 +182,7 @@ end
         xidx = variable_index(sys, x)
         prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0), [p => 0.5])
 
-        @test SciMLBase.SavedSubsystem(sys, prob.p, []) ===
-              SciMLBase.SavedSubsystem(sys, prob.p, nothing) === nothing
+        @test SciMLBase.SavedSubsystem(sys, prob.p, nothing) === nothing
         @test SciMLBase.SavedSubsystem(sys, prob.p, [x, y]) === nothing
         @test begin
             ss1 = SciMLBase.SavedSubsystem(sys, prob.p, [x])
@@ -319,12 +318,12 @@ end
         prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
             [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
 
-        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, nothing)
+        _idxs, _ss = @inferred SciMLBase.get_save_idxs_and_saved_subsystem(prob, nothing)
         @test _idxs === _ss === nothing
-        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, 1)
+        _idxs, _ss = @inferred SciMLBase.get_save_idxs_and_saved_subsystem(prob, 1)
         @test _idxs == 1
         @test _ss isa SciMLBase.SavedSubsystem
-        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [1])
+        _idxs, _ss = @inferred SciMLBase.get_save_idxs_and_saved_subsystem(prob, [1])
         @test _idxs == [1]
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, x)
