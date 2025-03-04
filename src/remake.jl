@@ -1085,10 +1085,6 @@ calling `SymbolicIndexingInterface.symbolic_container`, provided for dispatch. R
 the updated `newu0` and `newp`.
 """
 function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
-    if hasmethod(symbolic_container, Tuple{typeof(root_indp)}) &&
-       (sc = symbolic_container(root_indp)) !== root_indp
-        return late_binding_update_u0_p(prob, sc, u0, p, t0, newu0, newp)
-    end
     return newu0, newp
 end
 
@@ -1099,7 +1095,7 @@ Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)` after 
 `root_indp`.
 """
 function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
-    root_indp = prob
+    root_indp = get_root_indp(prob)
     return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
 end
 
