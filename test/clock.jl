@@ -34,6 +34,7 @@ using MLStyle: @match
     @test is_discrete_time_domain(PeriodicClock(; dt = 1.0))
     @test !is_discrete_time_domain(Continuous())
     @test is_discrete_time_domain(SolverStepClock())
+    @test !is_discrete_time_domain(nothing)
 
     @test first_clock_tick_time(PeriodicClock(; dt = 2.0), 5.0) === 6.0
     @test_throws ErrorException first_clock_tick_time(Continuous(), 5.0)
