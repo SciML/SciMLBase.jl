@@ -111,7 +111,7 @@ SavedSubsystem(indp, pobj, ::Nothing) = nothing
 
 function SavedSubsystem(indp, pobj, idx::Int)
     _indp = get_root_indp(indp)
-    if indp === EMPTY_SYMBOLCACHE || indp === nothing
+    if _indp === EMPTY_SYMBOLCACHE || _indp === nothing
         return nothing
     end
     state_map = Dict(1 => idx)
