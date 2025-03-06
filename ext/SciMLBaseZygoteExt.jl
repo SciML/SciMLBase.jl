@@ -3,6 +3,7 @@ module SciMLBaseZygoteExt
 using Zygote
 using Zygote: @adjoint, pullback
 import Zygote: literal_getproperty
+import ChainRulesCore
 using SciMLBase
 using SciMLBase: ODESolution, remake,
                  getobserved, build_solution, EnsembleSolution,
@@ -38,6 +39,12 @@ import SciMLStructures
         (Δ′, nothing, nothing)
     end
     VA[i, j], ODESolution_getindex_pullback
+end
+
+struct ZygoteConfig <: ChainRulesCore.RuleConfig{ChainRulesCore.HasReverseMode} end
+
+@adjoint function Base.getindex(VA::ODESolution, sym, j::Integer)
+    Zygote.ChainRulesCore.rrule(ZygoteConfig(), getindex, VA, sym, j)
 end
 
 @adjoint function EnsembleSolution(sim, time, converged, stats)
