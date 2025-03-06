@@ -41,10 +41,8 @@ import SciMLStructures
     VA[i, j], ODESolution_getindex_pullback
 end
 
-struct ZygoteConfig <: ChainRulesCore.RuleConfig{ChainRulesCore.HasReverseMode} end
-
 @adjoint function Base.getindex(VA::ODESolution, sym, j::Integer)
-    res, pullback = Zygote.ChainRulesCore.rrule(ZygoteConfig(), getindex, VA, sym, j)
+    res, pullback = ChainRulesCore.rrule(Zygote.ZygoteRuleConfig(), getindex, VA, sym, j)
     return res, Base.tail ∘ pullback
 end
 
