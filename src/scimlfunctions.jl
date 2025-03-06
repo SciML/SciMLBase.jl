@@ -1942,9 +1942,9 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
 ## Positional Arguments
 
 - `f(u,p)`: the function to optimize. `u` are the optimization variables and `p` are fixed parameters or data used in the objective,
-even if no such parameters are used in the objective it should be an argument in the function. For minibatching `p` can be used to pass in
-a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/) to see how to do it.
-This should return a scalar, the loss value, as the return output.
+  even if no such parameters are used in the objective it should be an argument in the function. For minibatching `p` can be used to pass in
+  a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/) to see how to do it.
+  This should return a scalar, the loss value, as the return output.
 - `adtype`: see the Defining Optimization Functions via AD section below.
 
 ## Keyword Arguments
