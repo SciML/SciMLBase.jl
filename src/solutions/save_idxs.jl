@@ -118,7 +118,7 @@ function SavedSubsystem(indp, pobj, idx::Int)
     return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
 end
 
-function SavedSubsystem(indp, pobj, saved_idxs::Union{Array, Tuple})
+function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     _indp = get_root_indp(indp)
     if _indp === EMPTY_SYMBOLCACHE || _indp === nothing
         return nothing
