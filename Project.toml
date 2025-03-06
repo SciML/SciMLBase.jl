@@ -50,7 +50,7 @@ SciMLBasePartialFunctionsExt = "PartialFunctions"
 SciMLBasePyCallExt = "PyCall"
 SciMLBasePythonCallExt = "PythonCall"
 SciMLBaseRCallExt = "RCall"
-SciMLBaseZygoteExt = "Zygote"
+SciMLBaseZygoteExt = ["Zygote", "ChainRulesCore"]
 
 [compat]
 ADTypes = "0.2.5,1.0.0"

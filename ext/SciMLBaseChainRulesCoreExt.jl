@@ -1,8 +1,9 @@
 module SciMLBaseChainRulesCoreExt
 
 using SciMLBase
+using SciMLBase: getobserved
 import ChainRulesCore
-import ChainRulesCore: NoTangent, @non_differentiable
+import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
 using SymbolicIndexingInterface
 
 function ChainRulesCore.rrule(
@@ -15,52 +16,28 @@ function ChainRulesCore.rrule(
         j::Integer)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
-        if i === nothing
+        du, dprob = if i === nothing
             getter = getobserved(VA)
             grz = rrule_via_ad(config, getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
-            du = [k == j ? grz[2] : zero(VA.u[1]) for k in 1:length(VA.u)]
-            dp = grz[3] # pullback for p
+            du = [k == j ? grz[3] : zero(VA.u[1]) for k in 1:length(VA.u)]
+            dp = grz[4] # pullback for p
+            if dp == NoTangent()
+                dp = zero_tangent(parameter_values(VA.prob))
+            end
             dprob = remake(VA.prob, p = dp)
-            T = eltype(eltype(VA.u))
-            N = length(VA.prob.p)
-            Δ′ = ODESolution{T, N, typeof(du), Nothing, Nothing, Nothing, Nothing,
-                typeof(dprob), Nothing, Nothing, Nothing, Nothing}(du, nothing,
-                nothing, nothing, nothing, dprob, nothing, nothing,
-                VA.dense, 0, nothing, nothing, VA.retcode)
-            (NoTangent(), Δ′, NoTangent(), NoTangent())
+            du, dprob
         else
             du = [m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
                   zero(VA.u[1]) for m in 1:length(VA.u)]
-            dp = zero(VA.prob.p)
+            dp = zero_tangent(VA.prob.p)
             dprob = remake(VA.prob, p = dp)
-            Δ′ = ODESolution{
-                T,
-                N,
-                typeof(du),
-                Nothing,
-                Nothing,
-                typeof(VA.t),
-                typeof(VA.k),
-                typeof(dprob),
-                typeof(VA.alg),
-                typeof(VA.interp),
-                typeof(VA.alg_choice),
-                typeof(VA.stats)
-            }(du,
-                nothing,
-                nothing,
-                VA.t,
-                VA.k,
-                dprob,
-                VA.alg,
-                VA.interp,
-                VA.dense,
-                0,
-                VA.stats,
-                VA.alg_choice,
-                VA.retcode)
-            (NoTangent(), Δ′, NoTangent(), NoTangent())
+            du, dprob
         end
+        T = eltype(eltype(du))
+        N = ndims(eltype(du)) + 1
+        Δ′ = ODESolution{T, N}(du, nothing, nothing, VA.t, VA.k, nothing, dprob,
+            VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode)
+        (NoTangent(), Δ′, NoTangent(), NoTangent())
     end
     VA[sym, j], ODESolution_getindex_pullback
 end

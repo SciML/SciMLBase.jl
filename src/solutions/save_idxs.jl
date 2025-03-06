@@ -44,9 +44,11 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
-function is_empty_indp(indp)
-    isempty(variable_symbols(indp)) && isempty(parameter_symbols(indp)) &&
-        isempty(independent_variable_symbols(indp))
+function get_root_indp(indp)
+    if hasmethod(symbolic_container, Tuple{typeof(indp)}) && (sc = symbolic_container(indp)) !== indp
+        return get_root_indp(sc)
+    end
+    return indp
 end
 
 # Everything from this point on is public API
@@ -105,16 +107,25 @@ struct SavedSubsystem{V, T, M, I, P, Q, C}
     partition_count::C
 end
 
-function SavedSubsystem(indp, pobj, saved_idxs)
-    # nothing saved
-    if saved_idxs === nothing || isempty(saved_idxs)
+SavedSubsystem(indp, pobj, ::Nothing) = nothing
+
+function SavedSubsystem(indp, pobj, idx::Int)
+    _indp = get_root_indp(indp)
+    if _indp === EMPTY_SYMBOLCACHE || _indp === nothing
         return nothing
     end
+    state_map = Dict(1 => idx)
+    return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
+end
 
-    # this is required because problems with no system have an empty `SymbolCache`
-    # as their symbolic container.
-    if is_empty_indp(indp)
+function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
+    _indp = get_root_indp(indp)
+    if _indp === EMPTY_SYMBOLCACHE || _indp === nothing
         return nothing
+    end
+    if eltype(saved_idxs) == Int
+        state_map = Dict{Int, Int}(v => k for (k, v) in enumerate(saved_idxs))
+        return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
     end
 
     # array state symbolics must be scalarized
@@ -357,29 +368,32 @@ corresponding to the state variables and a `SavedSubsystem` to pass to `build_so
 The second return value (corresponding to the `SavedSubsystem`) may be `nothing` in case
 one is not required. `save_idxs` may be a scalar or `nothing`.
 """
+get_save_idxs_and_saved_subsystem(prob, ::Nothing) = nothing, nothing
+function get_save_idxs_and_saved_subsystem(prob, save_idxs::Vector{Int})
+    save_idxs, SavedSubsystem(prob, parameter_values(prob), save_idxs)
+end
+function get_save_idxs_and_saved_subsystem(prob, save_idx::Int)
+    save_idx, SavedSubsystem(prob, parameter_values(prob), save_idx)
+end
 function get_save_idxs_and_saved_subsystem(prob, save_idxs)
-    if save_idxs === nothing
-        saved_subsystem = nothing
+    if !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
+        _save_idxs = (save_idxs,)
     else
-        if !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
-            _save_idxs = [save_idxs]
+        _save_idxs = save_idxs
+    end
+    saved_subsystem = SavedSubsystem(prob, parameter_values(prob), _save_idxs)
+    if saved_subsystem !== nothing
+        _save_idxs = get_saved_state_idxs(saved_subsystem)
+        if isempty(_save_idxs)
+            # no states to save
+            save_idxs = Int[]
+        elseif !(save_idxs isa AbstractArray) ||
+               symbolic_type(save_idxs) != NotSymbolic()
+            # only a single state to save, and save it as a scalar timeseries instead of
+            # single-element array
+            save_idxs = only(_save_idxs)
         else
-            _save_idxs = save_idxs
-        end
-        saved_subsystem = SavedSubsystem(prob, parameter_values(prob), _save_idxs)
-        if saved_subsystem !== nothing
-            _save_idxs = get_saved_state_idxs(saved_subsystem)
-            if isempty(_save_idxs)
-                # no states to save
-                save_idxs = Int[]
-            elseif !(save_idxs isa AbstractArray) ||
-                   symbolic_type(save_idxs) != NotSymbolic()
-                # only a single state to save, and save it as a scalar timeseries instead of
-                # single-element array
-                save_idxs = only(_save_idxs)
-            else
-                save_idxs = _save_idxs
-            end
+            save_idxs = _save_idxs
         end
     end
 

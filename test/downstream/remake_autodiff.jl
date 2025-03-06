@@ -1,4 +1,5 @@
 using OrdinaryDiffEq, ModelingToolkit, Zygote, SciMLSensitivity
+using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 @variables x(t) o(t)
@@ -17,8 +18,8 @@ end
 lotka_volterra_sys = structural_simplify(lotka_volterra_sys, split = false)
 prob = ODEProblem(lotka_volterra_sys, [], (0.0, 10.0), [])
 sol = solve(prob, Tsit5(), reltol = 1e-6, abstol = 1e-6)
-u0 = [1.0, 1.0]
-p = [1.5, 1.0, 1.0, 1.0]
+setter = setsym_oop(prob, [unknowns(lotka_volterra_sys); parameters(lotka_volterra_sys)])
+u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
 
 function sum_of_solution(u0, p)
     _prob = remake(prob, u0 = u0, p = p)

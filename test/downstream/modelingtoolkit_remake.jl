@@ -6,6 +6,7 @@ using Optimization
 using OptimizationOptimJL
 using ForwardDiff
 using SciMLStructures
+using Test
 
 probs = []
 syss = []
@@ -67,30 +68,21 @@ push!(probs, OptimizationProblem(optsys, u0, p))
 k = ShiftIndex(t)
 @mtkbuild discsys = DiscreteSystem(
     [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
-    t)
+    t; defaults = [x => 1.0, y => 1.0, z => 1.0])
 # Roundabout method to avoid having to specify values for previous timestep
-fn = DiscreteFunction(discsys)
-ps = ModelingToolkit.MTKParameters(discsys, p)
-discu0 = Dict([u0..., x(k - 1) => 0.0, y(k - 1) => 0.0, z(k - 1) => 0.0])
+discprob = DiscreteProblem(discsys, [], (0, 10), p)
+for (var, v) in u0
+    discprob[var] = v
+    discprob[var(k-1)] = 0.0
+end
 push!(syss, discsys)
-push!(probs, DiscreteProblem(fn, getindex.((discu0,), unknowns(discsys)), (0, 10), ps))
+push!(probs, discprob)
 
-# TODO: Rewrite this example when the MTK codegen is merged
-@named sys1 = NonlinearSystem(
-    [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2], [x, y], [σ, β, ρ])
-sys1 = complete(sys1)
-@named sys2 = NonlinearSystem([0 ~ z^2 - 4z + 4], [z], [])
-sys2 = complete(sys2)
-@named fullsys = NonlinearSystem(
+@mtkbuild sys = NonlinearSystem(
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
     [x, y, z], [σ, β, ρ])
-fullsys = complete(fullsys)
-
-prob1 = NonlinearProblem(sys1, u0, p)
-prob2 = NonlinearProblem(sys2, u0, prob1.p)
-sccprob = SCCNonlinearProblem(
-    [prob1, prob2], [Returns(nothing), Returns(nothing)], prob1.p, true; sys = fullsys)
-push!(syss, fullsys)
+sccprob = SCCNonlinearProblem(sys, u0, p)
+push!(syss, sys)
 push!(probs, sccprob)
 
 for (sys, prob) in zip(syss, probs)
@@ -273,7 +265,9 @@ end
     function SciMLBase.detect_cycles(
             ::ModelingToolkit.AbstractSystem, varmap::Dict{Any, Any}, vars)
         for sym in vars
-            if symbolic_type(ModelingToolkit.fixpoint_sub(sym, varmap; maxiters = 10)) !=
+            newval = ModelingToolkit.fixpoint_sub(sym, varmap; maxiters = 10)
+            vs = ModelingToolkit.vars(newval)
+            if !isempty(vars) && any(in(Set(vars)), vs)
                NotSymbolic()
                 return true
             end
@@ -296,15 +290,9 @@ end
 end
 
 @testset "SCCNonlinearProblem" begin
-    @named sys1 = NonlinearSystem(
-        [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2], [x, y], [σ, β, ρ])
-    sys1 = complete(sys1)
-    @named sys2 = NonlinearSystem([0 ~ z^2 - 4z + 4], [z], [])
-    sys2 = complete(sys2)
-    @named fullsys = NonlinearSystem(
+    @mtkbuild fullsys = NonlinearSystem(
         [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
         [x, y, z], [σ, β, ρ])
-    fullsys = complete(fullsys)
 
     u0 = [x => 1.0,
         y => 0.0,
@@ -314,15 +302,17 @@ end
         ρ => 10.0,
         β => 8 / 3]
 
-    prob1 = NonlinearProblem(sys1, u0, p)
-    prob2 = NonlinearProblem(sys2, u0, prob1.p)
-    sccprob = SCCNonlinearProblem(
-        [prob1, prob2], [Returns(nothing), Returns(nothing)], prob1.p, true; sys = fullsys)
+    sccprob = SCCNonlinearProblem(fullsys, u0, p)
 
     sccprob2 = remake(sccprob; u0 = 2ones(3))
     @test state_values(sccprob2) ≈ 2ones(3)
-    @test sccprob2.probs[1].u0 ≈ 2ones(2)
-    @test sccprob2.probs[2].u0 ≈ 2ones(1)
+    prob1, prob2 = if length(state_values(sccprob2.probs[1])) == 1
+        sccprob2.probs[2], sccprob2.probs[1]
+    else
+        sccprob2.probs[1], sccprob2.probs[2]
+    end
+    @test prob1.u0 ≈ 2ones(2)
+    @test prob2.u0 ≈ 2ones(1)
     @test sccprob2.explicitfuns! !== missing
     @test sccprob2.f.sys !== missing
 
@@ -333,9 +323,9 @@ end
     @test_throws ["parameters_alias", "SCCNonlinearProblem"] remake(
         sccprob; parameters_alias = false, p = [σ => 2.0])
 
-    newp = remake_buffer(sys1, prob1.p, [σ], [3.0])
+    newp = remake_buffer(sccprob.f.sys, sccprob.p, [σ], [3.0])
     sccprob4 = remake(sccprob; parameters_alias = false, p = newp,
-        probs = [remake(prob1; p = [σ => 3.0]), prob2])
+        probs = [remake(sccprob.probs[1]; p = [σ => 3.0]), sccprob.probs[2]])
     @test !sccprob4.parameters_alias
     @test sccprob4.p !== sccprob4.probs[1].p
     @test sccprob4.p !== sccprob4.probs[2].p

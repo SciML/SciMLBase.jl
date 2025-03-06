@@ -124,11 +124,7 @@ timeseries_systems = [osys, ssys, jsys]
             set! = setsym(indp, sym)
             @inferred get(valp)
             @test get(valp) == val
-            if valp isa JumpProblem && sym isa Union{Tuple, AbstractArray}
-                @test_broken valp[sym]
-            else
-                @test valp[sym] == val
-            end
+            @test valp[sym] == val
 
             if !(valp isa SciMLBase.AbstractNoTimeSolution)
                 @inferred set!(valp, newval)
@@ -872,7 +868,7 @@ end
     ud2interp = ud2val[2:4]
 
     c1 = SciMLBase.Clock(0.1)
-    c2 = SciMLBase.SolverStepClock
+    c2 = SciMLBase.SolverStepClock()
     for (sym, t, val) in [
         (x, c1[2], xinterp[1]),
         (x, c1[2:4], xinterp),
