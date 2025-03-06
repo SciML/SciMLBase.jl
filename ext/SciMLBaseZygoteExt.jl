@@ -44,7 +44,8 @@ end
 struct ZygoteConfig <: ChainRulesCore.RuleConfig{ChainRulesCore.HasReverseMode} end
 
 @adjoint function Base.getindex(VA::ODESolution, sym, j::Integer)
-    Zygote.ChainRulesCore.rrule(ZygoteConfig(), getindex, VA, sym, j)
+    res, pullback = Zygote.ChainRulesCore.rrule(ZygoteConfig(), getindex, VA, sym, j)
+    return res, Base.tail ∘ pullback
 end
 
 @adjoint function EnsembleSolution(sim, time, converged, stats)
