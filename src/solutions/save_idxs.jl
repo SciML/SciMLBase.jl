@@ -110,17 +110,21 @@ end
 SavedSubsystem(indp, pobj, ::Nothing) = nothing
 
 function SavedSubsystem(indp, pobj, idx::Int)
+    _indp = get_root_indp(indp)
+    if indp === EMPTY_SYMBOLCACHE || indp === nothing
+        return nothing
+    end
     state_map = Dict(1 => idx)
     return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
 end
 
 function SavedSubsystem(indp, pobj, saved_idxs::Union{Array, Tuple})
     _indp = get_root_indp(indp)
-    if indp === EMPTY_SYMBOLCACHE || indp === nothing
+    if _indp === EMPTY_SYMBOLCACHE || _indp === nothing
         return nothing
     end
     if eltype(saved_idxs) == Int
-        state_map = Dict{Int, Int}(k => v for (k, v) in enumerate(saved_idxs))
+        state_map = Dict{Int, Int}(v => k for (k, v) in enumerate(saved_idxs))
         return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
     end
 
