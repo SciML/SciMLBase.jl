@@ -132,10 +132,12 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDEProblem}
             if g !== f.g
                 f = remake(f; g)
             end
-            return SDEProblem{iip}(f, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
+            return SDEProblem{iip}(
+                f, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
         else
             iip = isinplace(f, 4)
-            return SDEProblem{iip}(f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
+            return SDEProblem{iip}(
+                f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
         end
     end
 end

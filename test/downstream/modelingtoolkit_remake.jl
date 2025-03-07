@@ -73,7 +73,7 @@ k = ShiftIndex(t)
 discprob = DiscreteProblem(discsys, [], (0, 10), p)
 for (var, v) in u0
     discprob[var] = v
-    discprob[var(k-1)] = 0.0
+    discprob[var(k - 1)] = 0.0
 end
 push!(syss, discsys)
 push!(probs, discprob)
@@ -268,7 +268,7 @@ end
             newval = ModelingToolkit.fixpoint_sub(sym, varmap; maxiters = 10)
             vs = ModelingToolkit.vars(newval)
             if !isempty(vars) && any(in(Set(vars)), vs)
-               NotSymbolic()
+                NotSymbolic()
                 return true
             end
         end
