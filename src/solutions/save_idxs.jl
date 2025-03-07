@@ -45,7 +45,8 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
 end
 
 function get_root_indp(indp)
-    if hasmethod(symbolic_container, Tuple{typeof(indp)}) && (sc = symbolic_container(indp)) !== indp
+    if hasmethod(symbolic_container, Tuple{typeof(indp)}) &&
+       (sc = symbolic_container(indp)) !== indp
         return get_root_indp(sc)
     end
     return indp
@@ -125,7 +126,8 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     end
     if eltype(saved_idxs) == Int
         state_map = Dict{Int, Int}(v => k for (k, v) in enumerate(saved_idxs))
-        return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
+        return SavedSubsystem(
+            state_map, nothing, nothing, nothing, nothing, nothing, nothing)
     end
 
     # array state symbolics must be scalarized
