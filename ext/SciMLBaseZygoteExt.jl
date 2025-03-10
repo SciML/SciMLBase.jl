@@ -260,6 +260,36 @@ function ∇responsible_map(cx, f, args...)
     end
 end
 
+
+@adjoint function Base.getindex(VA::SciMLBase.NonlinearSolution, sym)
+    function NonlinearSolution_getindex_pullback(Δ)
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
+        if is_observed(VA, sym)
+            f = SII.observed(VA, sym)
+            p = parameter_values(VA)
+            tunables, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
+            u = state_values(VA)
+            t = current_time(VA)
+            y, back = Zygote.pullback(u, tunables) do u, tunables
+                _p = repack(tunables)
+                # @show f.f_oop.(u, Ref(_p), t)
+                @show f.f_oop(_p, _p)
+            end
+            gs = back(Δ)
+            (gs[1], nothing)
+        elseif i === nothing
+            throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        else
+            VA = recursivecopy(VA)
+            recursivefill!(VA, zero(eltype(VA)))
+            v = view(VA, i, ntuple(_ -> :, ndims(VA) - 1)...)
+            copyto!(v, Δ)
+            (VA, nothing)
+        end
+    end
+    VA[sym], NonlinearSolution_getindex_pullback
+end
+
 @adjoint function SciMLBase.tmap(f, args::Union{AbstractArray, Tuple}...)
     ∇tmap(__context__, f, args...)
 end
