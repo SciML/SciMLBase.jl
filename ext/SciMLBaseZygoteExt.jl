@@ -174,7 +174,7 @@ end
             t = current_time(VA)
             y, back = Zygote.pullback(u, tunables) do u, tunables
                 _p = repack(tunables)
-                f.f_oop(_p, _p)
+                f.f_oop(u, _p)
             end
             gs = back(Δ)
             # (gs[1], nothing)
