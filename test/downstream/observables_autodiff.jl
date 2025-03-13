@@ -97,7 +97,7 @@ end
     @testset "DAE Initialization Observable function AD" begin
         iprob = prob.f.initialization_data.initializeprob
         isol = solve(iprob)
-        tunables, repack, _ = SS.canonicalize(SS.Tunable(), parameter_values(iprob))
+        tunables, repack, _ = SS.canonicalize(SS.Tunable(), SII.parameter_values(iprob))
         gs, = gradient(isol) do isol
             isol[sys.ampermeter.i]
         end
@@ -108,7 +108,7 @@ end
 
 @testset "Adjoints with DAE" begin
     gs_mtkp, gs_p_new = gradient(prob.p, prob.p.tunable) do p, new_tunables
-        new_p = SciMLStructures.replace(SciMLStructures.Tunable(), p, new_tunables)
+        new_p = SS.replace(SS.Tunable(), p, new_tunables)
         new_prob = remake(prob, p = new_p)
         sol = solve(new_prob, Rodas4())
         @show size(sol)
