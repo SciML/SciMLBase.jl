@@ -270,6 +270,15 @@ end
         @test success
     end
 
+    @testset "Initialization status for `SCCNonlinearProblem`" begin
+        initprob = SCCNonlinearProblem([initprob], [Returns(nothing)])
+        initialization_data = SciMLBase.OverrideInitData(
+            initprob, nothing, nothing, nothing)
+        fn = ODEFunction(rhs2; initialization_data)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        @test SciMLBase.initialization_status(prob) == SciMLBase.FULLY_DETERMINED
+    end
+
     @testset "Trivial initialization" begin
         initprob = NonlinearProblem(Returns(nothing), nothing, [1.0])
         update_initializeprob! = function (iprob, integ)
