@@ -304,7 +304,8 @@ function initialization_status(prob::AbstractSciMLProblem)
     iprob = prob.f.initialization_data.initializeprob
     isnothing(prob) && return nothing
 
-    nunknowns = iprob.u0 === nothing ? 0 : length(iprob.u0)
+    iu0 = state_values(iprob)
+    nunknowns = iu0 === nothing ? 0 : length(iu0)
     neqs = if __has_resid_prototype(iprob.f) && iprob.f.resid_prototype !== nothing
         length(iprob.f.resid_prototype)
     else
