@@ -203,6 +203,14 @@ end
             @test p ≈ 1.0
             @test success
         end
+        @testset "with kwargs provided to `get_initial_values`" begin
+            u0, p, success = SciMLBase.get_initial_values(
+                prob, integ, fn, SciMLBase.OverrideInit(),
+                Val(false); nlsolve_alg = NewtonRaphson(), abstol, reltol, u0 = [-1.0, 1.0])
+            @test u0 ≈ [2.0, -2.0]
+            @test p ≈ 1.0
+            @test success
+        end
     end
 
     @testset "Solves with non-integrator value provider" begin
@@ -260,6 +268,15 @@ end
         @test u0 ≈ [2.0, 2.0]
         @test p ≈ 0.0
         @test success
+    end
+
+    @testset "Initialization status for `SCCNonlinearProblem`" begin
+        initprob = SCCNonlinearProblem([initprob], [Returns(nothing)])
+        initialization_data = SciMLBase.OverrideInitData(
+            initprob, nothing, nothing, nothing)
+        fn = ODEFunction(rhs2; initialization_data)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        @test SciMLBase.initialization_status(prob) == SciMLBase.FULLY_DETERMINED
     end
 
     @testset "Trivial initialization" begin

@@ -216,8 +216,10 @@ Keyword arguments:
   If the former is `nothing`, this keyword argument will be used. If it is also not provided,
   an error will be thrown.
 
+All additional keyword arguments are forwarded to `solve`.
+
 In case the initialization problem is trivial, `nlsolve_alg`, `abstol` and `reltol` are
-not required.
+not required. `solve` is also not called.
 """
 function get_initial_values(prob, valp, f, alg::OverrideInit,
         iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...)
@@ -257,7 +259,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         else
             throw(OverrideInitNoTolerance(:reltol))
         end
-        nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol)
+        nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol, kwargs...)
         success = SciMLBase.successful_retcode(nlsol)
     end
 
@@ -304,7 +306,8 @@ function initialization_status(prob::AbstractSciMLProblem)
     iprob = prob.f.initialization_data.initializeprob
     isnothing(prob) && return nothing
 
-    nunknowns = iprob.u0 === nothing ? 0 : length(iprob.u0)
+    iu0 = state_values(iprob)
+    nunknowns = iu0 === nothing ? 0 : length(iu0)
     neqs = if __has_resid_prototype(iprob.f) && iprob.f.resid_prototype !== nothing
         length(iprob.f.resid_prototype)
     else
