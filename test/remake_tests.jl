@@ -21,7 +21,7 @@ for T in containerTypes
     push!(probs, ODEProblem(fn, u0, tspan, T(p)))
 end
 for T in containerTypes
-    push!(probs, SteadyStateProblem(fn, u0, tspan, T(p)))
+    push!(probs, SteadyStateProblem(fn, u0, T(p)))
 end
 
 function ddelorenz!(du, u, h, p, t)
