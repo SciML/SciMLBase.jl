@@ -82,6 +82,7 @@ push!(probs, discprob)
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
     [x, y, z], [σ, β, ρ])
 sccprob = SCCNonlinearProblem(sys, u0, p)
+@test_nowarn initialization_status(sccprob)
 push!(syss, sys)
 push!(probs, sccprob)
 
