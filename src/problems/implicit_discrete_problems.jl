@@ -122,12 +122,12 @@ end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteProblem}
     function ctor(f, u0, tspan, p, kw)
-        if f isa AbstractODEFunction
+        if f isa AbstractDiscreteFunction
             iip = isinplace(f)
         else
             iip = isinplace(f, 5)
         end
-        return ODEProblem{iip}(f, u0, tspan, p; kw...)
+        return ImplicitDiscreteProblem{iip}(f, u0, tspan, p; kw...)
     end
 end
 
