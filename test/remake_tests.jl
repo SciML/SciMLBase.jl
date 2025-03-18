@@ -20,6 +20,9 @@ fn = ODEFunction(lorenz!; sys)
 for T in containerTypes
     push!(probs, ODEProblem(fn, u0, tspan, T(p)))
 end
+for T in containerTypes
+    push!(probs, SteadyStateProblem(fn, u0, tspan, T(p)))
+end
 
 function ddelorenz!(du, u, h, p, t)
     du[1] = p[1] * (u[2] - u[1])

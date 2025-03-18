@@ -33,6 +33,9 @@ tspan = (0.0, 100.0)
 push!(syss, sys)
 push!(probs, ODEProblem(sys, u0, tspan, p, jac = true))
 
+push!(syss, sys)
+push!(probs, SteadyStateProblem(ODEProblem(sys, u0, tspan, p, jac = true)))
+
 noise_eqs = [0.1x, 0.1y, 0.1z]
 @named sdesys = SDESystem(sys, noise_eqs)
 sdesys = complete(sdesys)
