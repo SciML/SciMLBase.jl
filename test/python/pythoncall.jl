@@ -1,12 +1,6 @@
-using DifferentialEquations, PythonCall
+using DifferentialEquations, PythonCall, CondaPkg
 
-pyexec(
-    """ # This is a mess because normal site-packages is not writeable in CI
-import subprocess, sys, site
-subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'julia'])
-subprocess.run([sys.executable, '-m', 'pip', 'install', '--user', 'diffeqpy'])
-sys.path.append(site.getusersitepackages())
-""", @__MODULE__)
+CondaPkg.add_pip("diffeqpy")
 
 @testset "Use of DifferentialEquations through PythonCall with user code written in Python" begin
     pyexec("""
