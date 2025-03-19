@@ -574,23 +574,23 @@ $(TYPEDEF)
 """
 abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
-# Misc
-# TODO - deprecate AbstractDiffEqOperator family
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractDiffEqOperator{T} <: AbstractSciMLOperator{T} end
-
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractDiffEqLinearOperator{T} <: AbstractDiffEqOperator{T} end
-
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractDiffEqCompositeOperator{T} <: AbstractDiffEqLinearOperator{T} end
-
+# # Misc
+# # TODO - deprecate AbstractDiffEqOperator family
+# """
+# $(TYPEDEF)
+# """
+# abstract type AbstractDiffEqOperator{T} <: AbstractSciMLOperator{T} end
+#
+# """
+# $(TYPEDEF)
+# """
+# abstract type AbstractDiffEqLinearOperator{T} <: AbstractDiffEqOperator{T} end
+#
+# """
+# $(TYPEDEF)
+# """
+# abstract type AbstractDiffEqCompositeOperator{T} <: AbstractDiffEqLinearOperator{T} end
+#
 """
 $(TYPEDEF)
 
@@ -720,10 +720,10 @@ $(TYPEDEF)
 abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
 include("retcodes.jl")
-include("operators/operators.jl")
-include("operators/basic_operators.jl")
-include("operators/diffeq_operator.jl")
-include("operators/common_defaults.jl")
+# include("operators/operators.jl")
+# include("operators/basic_operators.jl")
+# include("operators/diffeq_operator.jl")
+# include("operators/common_defaults.jl")
 include("symbolic_utils.jl")
 include("performance_warnings.jl")
 
