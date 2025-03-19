@@ -92,7 +92,7 @@ function SciMLBase.late_binding_update_u0_p(
     return newu0, ones(3)
 end
 
-for prob in deepcopy(probs)
+@testset "$(SciMLBase.parameterless_type(prob)) - $(typeof(prob.p))" for prob in deepcopy(probs)
     prob2 = @inferred remake(prob)
     @test prob2.u0 == u0
     @test prob2.p == typeof(prob.p)(p)
