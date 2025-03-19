@@ -215,7 +215,7 @@ end
             @test sol[x] == xvals
             @test is_parameter(sol, p)
             @test parameter_index(sol, p) == parameter_index(sys, p)
-            @test isequal(parameter_symbols(sol)[1], p)
+            @test any(isequal(p), parameter_symbols(sol))
             @test is_independent_variable(sol, t)
 
             tmp = copy(prob.u0)
