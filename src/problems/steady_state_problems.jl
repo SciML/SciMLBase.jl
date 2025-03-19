@@ -133,6 +133,8 @@ function SteadyStateProblem(prob::AbstractODEProblem)
     SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
 end
 
+SymbolicIndexingInterface.is_time_dependent(::SteadyStateProblem) = true
+
 @doc doc"""
 
 Holds information on what variables to alias

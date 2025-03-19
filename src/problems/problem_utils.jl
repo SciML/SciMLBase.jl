@@ -194,4 +194,3 @@ Base.copy(p::SciMLBase.NullParameters) = p
 
 SymbolicIndexingInterface.is_time_dependent(::AbstractDEProblem) = true
 SymbolicIndexingInterface.is_time_dependent(::AbstractNonlinearProblem) = false
-SymbolicIndexingInterface.is_time_dependent(::AbstractSteadyStateProblem) = true
