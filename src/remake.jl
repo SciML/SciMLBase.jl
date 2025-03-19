@@ -712,6 +712,47 @@ function remake(prob::NonlinearProblem;
     return prob
 end
 
+function remake(prob::SteadyStateProblem;
+        f = missing,
+        u0 = missing,
+        p = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        use_defaults = false,
+        lazy_initialization = nothing,
+        build_initializeprob = true,
+        _kwargs...)
+    newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob
+        if f !== missing && has_initialization_data(f)
+            initialization_data = remake_initialization_data(
+                prob.f.sys, f, u0, nothing, p, newu0, newp)
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
+
+    f = coalesce(f, prob.f)
+    f = remake(prob.f; f, initialization_data)
+
+    prob = if kwargs === missing
+        SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; prob.kwargs...,
+            _kwargs...)
+    else
+        SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; kwargs...)
+    end
+
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
+
+    return prob
+end
+
 """
     remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
         kwargs = missing, _kwargs...)

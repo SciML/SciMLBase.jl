@@ -113,6 +113,17 @@ function SteadyStateProblem(f, u0, p = NullParameters(); kwargs...)
     SteadyStateProblem(ODEFunction(f), u0, p; kwargs...)
 end
 
+function ConstructionBase.constructorof(::Type{P}) where {P <: SteadyStateProblem}
+    function ctor(f, u0, p, kw)
+        if f isa AbstractODEFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return SteadyStateProblem{iip}(f, u0, p; kw...)
+    end
+end
+
 """
 $(SIGNATURES)
 
