@@ -116,6 +116,14 @@ function obs_grads(VA, sym, obs_idx, Δ)
     back(Δobs)
 end
 
+function obs_grads2(VA::SciMLBase.NonlinearSolution, sym, obs_idx, Δ)
+    y, back = Zygote.pullback(VA) do sol
+        getindex.(Ref(sol), sym[obs_idx])
+    end
+    Δobs = Δ[obs_idx, :]
+    back(Δobs)
+end
+
 function obs_grads(VA, sym, ::Nothing, Δ)
     Zygote.nt_nothing(VA)
 end
@@ -152,6 +160,37 @@ end
         (a, nothing)
     end
     VA[sym], ODESolution_getindex_pullback
+end
+
+@adjoint function Base.getindex(VA::SciMLBase.NonlinearSolution, sym)
+    function NonlinearSolution_getindex_pullback(Δ)
+        @show "in the getindwx"
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
+        if is_observed(VA, sym)
+            f = observed(VA, sym)
+            p = parameter_values(VA)
+            tunables, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
+            u = state_values(VA)
+            t = current_time(VA)
+            y, back = Zygote.pullback(u, tunables) do u, tunables
+                _p = repack(tunables)
+                f.f_oop(u, _p)
+            end
+            gs = back(Δ)
+            # @show gs[2]
+            # @show Δ
+            ((u = gs[1], prob = (p = (tunable = gs[2],),)), nothing)
+        elseif i === nothing
+            throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        else
+            VA = recursivecopy(VA)
+            recursivefill!(VA, zero(eltype(VA)))
+            v = view(VA, i, ntuple(_ -> :, ndims(VA) - 1)...)
+            copyto!(v, Δ)
+            (VA, nothing)
+        end
+    end
+    VA[sym], NonlinearSolution_getindex_pullback
 end
 
 @adjoint function ODESolution{
