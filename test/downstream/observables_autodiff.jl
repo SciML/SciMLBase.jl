@@ -52,7 +52,7 @@ end
 #     gs, = gradient(isol) do isol
 #         isol[w]
 #     end
-    
+
 # end
 
 # DAE

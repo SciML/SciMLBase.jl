@@ -164,6 +164,7 @@ end
 
 @adjoint function Base.getindex(VA::SciMLBase.NonlinearSolution, sym)
     function NonlinearSolution_getindex_pullback(Δ)
+        @show "in the getindwx"
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if is_observed(VA, sym)
             f = observed(VA, sym)
@@ -176,7 +177,9 @@ end
                 f.f_oop(u, _p)
             end
             gs = back(Δ)
-            ((u = gs[1], prob = (p = gs[2],)), nothing)
+            # @show gs[2]
+            # @show Δ
+            ((u = gs[1], prob = (p = (tunable = gs[2],),)), nothing)
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
