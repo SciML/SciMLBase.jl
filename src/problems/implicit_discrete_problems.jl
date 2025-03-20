@@ -78,7 +78,7 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
     tspan::tType
     """The parameter values of the function."""
     p::P
-    """ A callback to be applied to every solver which uses the problem."""
+    """A callback to be applied to every solver which uses the problem."""
     kwargs::K
     @add_kwonly function ImplicitDiscreteProblem{iip}(f::ImplicitDiscreteFunction{
                 iip,
@@ -118,6 +118,17 @@ function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
         kwargs...)
     iip = isinplace(f, 5)
     ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+end
+
+function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteProblem}
+    function ctor(f, u0, tspan, p, kw)
+        if f isa AbstractDiscreteFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 5)
+        end
+        return ImplicitDiscreteProblem{iip}(f, u0, tspan, p; kw...)
+    end
 end
 
 @doc doc"""
