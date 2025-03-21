@@ -727,10 +727,10 @@ function remake(prob::SteadyStateProblem;
     if build_initializeprob
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
-                prob.f.sys, f, u0, nothing, p, newu0, newp)
+                prob.f.sys, f, u0, Inf, p, newu0, newp)
         else
             initialization_data = remake_initialization_data(
-                prob.f.sys, prob.f, u0, nothing, p, newu0, newp)
+                prob.f.sys, prob.f, u0, Inf, p, newu0, newp)
         end
     else
         initialization_data = nothing
