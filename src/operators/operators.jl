@@ -3,10 +3,6 @@
 isconstant(::AbstractDiffEqLinearOperator) = true
 islinear(o::AbstractDiffEqLinearOperator) = isconstant(o)
 
-# fallbacks
-islinear(L) = false
-isconstant(L) = false
-
 # Other ones from LinearMaps.jl
 # Generic fallbacks
 LinearAlgebra.exp(L::AbstractDiffEqLinearOperator, t) = exp(t * L)
