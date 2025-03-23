@@ -329,7 +329,7 @@ end
 
     newp = remake_buffer(sccprob.f.sys, sccprob.p, [σ], [3.0])
     sccprob4 = remake(sccprob; parameters_alias = false, p = newp,
-        probs = [remake(sccprob.probs[1]; p = [σ => 3.0]), sccprob.probs[2]])
+        probs = [remake(sccprob.probs[1]; p = deepcopy(newp)), sccprob.probs[2]])
     @test !sccprob4.parameters_alias
     @test sccprob4.p !== sccprob4.probs[1].p
     @test sccprob4.p !== sccprob4.probs[2].p

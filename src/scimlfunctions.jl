@@ -4220,7 +4220,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
 
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip_f
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -4228,7 +4228,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         end
     end
 
-    if bcjac === nothing && isa(bcjac_prototype, AbstractDiffEqLinearOperator)
+    if bcjac === nothing && isa(bcjac_prototype, AbstractSciMLOperator)
         if iip_bc
             bcjac = update_coefficients! #(J,u,p,t)
         else
@@ -4393,7 +4393,7 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
         error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
 
-    if jac === nothing && isa(jac_prototype, AbstractDiffEqLinearOperator)
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip_f
             jac = update_coefficients! #(J,u,p,t)
         else
@@ -4401,7 +4401,7 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
         end
     end
 
-    if bcjac === nothing && isa(bcjac_prototype, AbstractDiffEqLinearOperator)
+    if bcjac === nothing && isa(bcjac_prototype, AbstractSciMLOperator)
         if iip_bc
             bcjac = update_coefficients! #(J,u,p,t)
         else
