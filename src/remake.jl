@@ -137,6 +137,7 @@ function remake(
     spec = specialization(func)
     # retain properties of original function
     props = getproperties(func)
+    forig = f
 
     if f === missing || is_split_function(func)
         # if no `f` is provided, create the same type of SciMLFunction
@@ -183,7 +184,14 @@ function remake(
             if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
                 f2 = split_function_f_wrapper(T){iip, spec}(f2)
             end
+
             props = @delete props.f2
+
+            if !ismissing(forig)
+                props = @delete props._func_cache
+                props = @insert props._func_cache = forig._func_cache
+            end
+            
             args = (args..., f2)
         end
     end
