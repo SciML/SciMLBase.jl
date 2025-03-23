@@ -187,7 +187,7 @@ function remake(
 
             props = @delete props.f2
 
-            if !ismissing(forig)
+            if !ismissing(forig) && hasproperty(forig, :_func_cache)
                 props = @delete props._func_cache
                 props = @insert props._func_cache = forig._func_cache
             end
