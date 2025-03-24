@@ -33,6 +33,9 @@ tspan = (0.0, 100.0)
 push!(syss, sys)
 push!(probs, ODEProblem(sys, u0, tspan, p, jac = true))
 
+push!(syss, sys)
+push!(probs, SteadyStateProblem(ODEProblem(sys, u0, tspan, p, jac = true)))
+
 noise_eqs = [0.1x, 0.1y, 0.1z]
 @named sdesys = SDESystem(sys, noise_eqs)
 sdesys = complete(sdesys)
@@ -82,6 +85,7 @@ push!(probs, discprob)
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
     [x, y, z], [σ, β, ρ])
 sccprob = SCCNonlinearProblem(sys, u0, p)
+@test_nowarn SciMLBase.initialization_status(sccprob)
 push!(syss, sys)
 push!(probs, sccprob)
 
@@ -325,7 +329,7 @@ end
 
     newp = remake_buffer(sccprob.f.sys, sccprob.p, [σ], [3.0])
     sccprob4 = remake(sccprob; parameters_alias = false, p = newp,
-        probs = [remake(sccprob.probs[1]; p = [σ => 3.0]), sccprob.probs[2]])
+        probs = [remake(sccprob.probs[1]; p = deepcopy(newp)), sccprob.probs[2]])
     @test !sccprob4.parameters_alias
     @test sccprob4.p !== sccprob4.probs[1].p
     @test sccprob4.p !== sccprob4.probs[2].p

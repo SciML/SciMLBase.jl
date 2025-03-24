@@ -20,6 +20,9 @@ fn = ODEFunction(lorenz!; sys)
 for T in containerTypes
     push!(probs, ODEProblem(fn, u0, tspan, T(p)))
 end
+for T in containerTypes
+    push!(probs, SteadyStateProblem(fn, u0, T(p)))
+end
 
 function ddelorenz!(du, u, h, p, t)
     du[1] = p[1] * (u[2] - u[1])
@@ -89,7 +92,7 @@ function SciMLBase.late_binding_update_u0_p(
     return newu0, ones(3)
 end
 
-for prob in deepcopy(probs)
+@testset "$(SciMLBase.parameterless_type(prob)) - $(typeof(prob.p))" for prob in deepcopy(probs)
     prob2 = @inferred remake(prob)
     @test prob2.u0 == u0
     @test prob2.p == typeof(prob.p)(p)
