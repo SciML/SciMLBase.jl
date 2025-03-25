@@ -3092,8 +3092,8 @@ function ImplicitDiscreteFunction{iip}(f; kwargs...) where {iip}
     ImplicitDiscreteFunction{iip, FullSpecialize}(f; kwargs...)
 end
 ImplicitDiscreteFunction{iip}(f::ImplicitDiscreteFunction; kwargs...) where {iip} = f
-function ImplicitDiscreteFunction(f; kwargs...)
-    ImplicitDiscreteFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
+function ImplicitDiscreteFunction(f; resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing, kwargs...)
+    ImplicitDiscreteFunction{isinplace(f, 5), FullSpecialize}(f; resid_prototype, kwargs...)
 end
 ImplicitDiscreteFunction(f::ImplicitDiscreteFunction; kwargs...) = f
 
@@ -3102,12 +3102,12 @@ function unwrapped_f(f::ImplicitDiscreteFunction, newf = unwrapped_f(f.f))
 
     if specialize === NoSpecialize
         ImplicitDiscreteFunction{isinplace(f, 6), specialize, Any, Any,
-            Any, Any, Any}(newf, f.analytic, f.observed, f.sys, f.initialization_data)
+            Any, Any, Any}(newf, f.analytic, f.observed, f.sys, f.resid_prototype, f.initialization_data)
     else
         ImplicitDiscreteFunction{isinplace(f, 6), specialize, typeof(newf),
             typeof(f.analytic),
             typeof(f.observed), typeof(f.sys), typeof(f.initialization_data)}(newf,
-            f.analytic, f.observed, f.sys, f.initialization_data)
+            f.analytic, f.observed, f.sys, f.resid_prototype, f.initialization_data)
     end
 end
 
