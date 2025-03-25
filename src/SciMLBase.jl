@@ -633,10 +633,17 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
-Used to specify which variables can be aliased in a solve.
-Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`.
+Base for types that specify which variables can be aliased in a solve. 
+Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`. 
 """
 abstract type AbstractAliasSpecifier end
+
+"""
+$(TYPEDEF)
+
+Base for types which specify what will be printed during a solve. 
+"""
+abstract type AbstractVerbositySpecifier end
 
 """
 $(TYPEDEF)
