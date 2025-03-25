@@ -973,12 +973,13 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the ImplicitDiscreteFunction type directly match the names of the inputs.
 """
-struct ImplicitDiscreteFunction{iip, specialize, F, Ta, O, SYS, ID} <:
+struct ImplicitDiscreteFunction{iip, specialize, F, Ta, O, SYS, RP, ID} <:
        AbstractDiscreteFunction{iip}
     f::F
     analytic::Ta
     observed::O
     sys::SYS
+    resid_prototype::RP
     initialization_data::ID
 end
 
