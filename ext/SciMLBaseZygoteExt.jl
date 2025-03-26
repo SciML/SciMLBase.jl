@@ -168,15 +168,12 @@ end
         if is_observed(VA, sym)
             f = observed(VA, sym)
             p = parameter_values(VA)
-            tunables, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)
             u = state_values(VA)
-            t = current_time(VA)
-            y, back = Zygote.pullback(u, tunables) do u, tunables
-                _p = repack(tunables)
-                f.f_oop(u, _p)
+            _, back = Zygote.pullback(u, p) do u, p
+                f.f_oop(u, p)
             end
             gs = back(Δ)
-            ((u = gs[1], prob = (p = (tunable = gs[2],),)), nothing)
+            ((u = gs[1], prob = (p = gs[2],),), nothing)
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
