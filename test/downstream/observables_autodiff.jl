@@ -101,7 +101,7 @@ end
         gs, = gradient(isol) do isol
             isol[sys.ampermeter.i]
         end
-        gt = gs.prob.p
+        gt = gs.prob.p.tunable
         @test length(findall(!iszero, gt)) == 1
     end
 end
