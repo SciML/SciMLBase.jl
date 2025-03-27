@@ -32,7 +32,7 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
   exited due to an error. For more details, see
   [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, S,
+struct RODESolution{T, N, uType, uType2, DType, tType, randType, discType, P, A, IType, S,
     AC <: Union{Nothing, Vector{Int}}, V} <:
        AbstractRODESolution{T, N, uType}
     u::uType
@@ -40,6 +40,7 @@ struct RODESolution{T, N, uType, uType2, DType, tType, randType, P, A, IType, S,
     errors::DType
     t::tType
     W::randType
+    discretes::discType
     prob::P
     alg::A
     interp::IType
@@ -63,9 +64,9 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
     patch = merge(getproperties(sol), patch)
     return RODESolution{
         T, N, typeof(patch.u), typeof(patch.u_analytic), typeof(patch.errors),
-        typeof(patch.t), typeof(patch.W), typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
+        typeof(patch.t), typeof(patch.W), typeof(patch.discretes), typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
         typeof(patch.stats), typeof(patch.alg_choice), typeof(patch.saved_subsystem)}(
-        patch.u, patch.u_analytic, patch.errors, patch.t, patch.W,
+        patch.u, patch.u_analytic, patch.errors, patch.t, patch.W, patch.discretes,
         patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
         patch.alg_choice, patch.retcode, patch.seed, patch.saved_subsystem)
 end
@@ -120,11 +121,23 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         Base.depwarn(msg, :build_solution)
     end
 
+    ps = parameter_values(prob)
+    if has_sys(prob.f)
+        sswf = if saved_subsystem === nothing
+            prob.f.sys
+        else
+            SavedSubsystemWithFallback(saved_subsystem, prob.f.sys)
+        end
+        discretes = create_parameter_timeseries_collection(sswf, ps, prob.tspan)
+    else
+        discretes = nothing
+    end
+    @show discretes
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
         sol = RODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-            typeof(W),
+                           typeof(W), typeof(discretes),
             typeof(prob), typeof(alg), typeof(interp), typeof(stats),
             typeof(alg_choice), typeof(saved_subsystem)}(u,
             u_analytic,
@@ -149,13 +162,35 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         return sol
     else
         return RODESolution{T, N, typeof(u), Nothing, Nothing, typeof(t),
-            typeof(W), typeof(prob), typeof(alg), typeof(interp),
+                            typeof(W), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
             typeof(stats), typeof(alg_choice), typeof(saved_subsystem)}(
-            u, nothing, nothing, t, W,
+            u, nothing, nothing, t, W, discretes,
             prob, alg, interp,
             dense, 0, stats,
             alg_choice, retcode, seed, saved_subsystem)
     end
+end
+
+function save_discretes!(sol::AbstractRODESolution, t, vals, timeseries_idx)
+    RecursiveArrayTools.has_discretes(sol) || return
+    disc = RecursiveArrayTools.get_discretes(sol)
+    _save_discretes_internal!(disc[timeseries_idx], t, vals)
+end
+
+function get_interpolated_discretes(sol::AbstractRODESolution, t, deriv, continuity)
+    is_parameter_timeseries(sol) == Timeseries() || return nothing
+
+    discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+    interp_discs = map(discs) do partition
+        hold_discrete(partition.u, partition.t, t)
+    end
+    return ParameterTimeseriesCollection(interp_discs, parameter_values(discs))
+end
+
+function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
+        T1, T2, T3, T4, T5, T6, T7,
+        S <: RODESolution{T1, T2, T3, T4, T5, T6, T7, <: ParameterTimeseriesCollection}}
+    Timeseries()
 end
 
 function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = true,
