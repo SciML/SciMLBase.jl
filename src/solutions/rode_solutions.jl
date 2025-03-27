@@ -64,7 +64,8 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
     patch = merge(getproperties(sol), patch)
     return RODESolution{
         T, N, typeof(patch.u), typeof(patch.u_analytic), typeof(patch.errors),
-        typeof(patch.t), typeof(patch.W), typeof(patch.discretes), typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
+        typeof(patch.t), typeof(patch.W), typeof(patch.discretes),
+        typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
         typeof(patch.stats), typeof(patch.alg_choice), typeof(patch.saved_subsystem)}(
         patch.u, patch.u_analytic, patch.errors, patch.t, patch.W, patch.discretes,
         patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
@@ -137,7 +138,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
         sol = RODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-                           typeof(W), typeof(discretes),
+            typeof(W), typeof(discretes),
             typeof(prob), typeof(alg), typeof(interp), typeof(stats),
             typeof(alg_choice), typeof(saved_subsystem)}(u,
             u_analytic,
@@ -162,7 +163,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         return sol
     else
         return RODESolution{T, N, typeof(u), Nothing, Nothing, typeof(t),
-                            typeof(W), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
+            typeof(W), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
             typeof(stats), typeof(alg_choice), typeof(saved_subsystem)}(
             u, nothing, nothing, t, W, discretes,
             prob, alg, interp,
@@ -189,7 +190,7 @@ end
 
 function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
         T1, T2, T3, T4, T5, T6, T7,
-        S <: RODESolution{T1, T2, T3, T4, T5, T6, T7, <: ParameterTimeseriesCollection}}
+        S <: RODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection}}
     Timeseries()
 end
 
