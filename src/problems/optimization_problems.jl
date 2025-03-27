@@ -184,3 +184,40 @@ struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `OptimizationProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+OptimizationVerbosity(verbose::Bool): sets all fields to `verbose`
+OptimizationVerbosity(; verbose = nothing): kwarg constructor
+OptimizationVerbosity(::Nothing): uses default options
+```
+"""
+struct OptimizationVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function OptimizationVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(OptimizationVerbosity))...)
+        else
+            new((false for _ in fieldnames(OptimizationVerbosity))...)
+        end
+    end
+
+    OptimizationVerbosity(verbose) = new(verbose)
+end
+
+function OptimizationVerbosity(; verbose = nothing)
+    OptimizationVerbosity(verbose)
+end
+
+function OptimziationVerbosity(::Nothing)
+    OptimziationVerbosity(verbose = true)
+end
