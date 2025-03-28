@@ -46,6 +46,15 @@ sol = solve(prob, Tsit5())
     @test du == gs
 end
 
+# @testset "AD Observable Functions for Initialization" begin
+#     iprob = prob.f.initialization_data.initalizeprob
+#     isol = solve(iprob)
+#     gs, = gradient(isol) do isol
+#         isol[w]
+#     end
+
+# end
+
 # DAE
 
 function create_model(; C₁ = 3e-5, C₂ = 1e-6)
@@ -84,18 +93,29 @@ end
     du_ = [0.2, 1.0]
     du = [du_ for _ in sol.u]
     @test gs == du
+
+    @testset "DAE Initialization Observable function AD" begin
+        iprob = prob.f.initialization_data.initializeprob
+        isol = solve(iprob)
+        tunables, repack, _ = SS.canonicalize(SS.Tunable(), SII.parameter_values(iprob))
+        gs, = gradient(isol) do isol
+            isol[sys.ampermeter.i]
+        end
+        gt = gs.prob.p.tunable
+        @test length(findall(!iszero, gt)) == 1
+    end
 end
 
 # @testset "Adjoints with DAE" begin
-#     gs_mtkp, gs_p_new = gradient(mtkparams, p_new) do p, new_tunables
-#         new_p = SciMLStructures.replace(SciMLStructures.Tunable(), p, new_tunables)
+#     gs_mtkp, gs_p_new = gradient(prob.p, prob.p.tunable) do p, new_tunables
+#         new_p = SS.replace(SS.Tunable(), p, new_tunables)
 #         new_prob = remake(prob, p = new_p)
 #         sol = solve(new_prob, Rodas4())
 #         @show size(sol)
 #         # mean(abs.(sol[sys.ampermeter.i] .- gt))
 #         sum(sol[sys.ampermeter.i])
 #     end
-#
+# 
 #     @test isnothing(gs_mtkp)
 #     @test length(gs_p_new) == length(p_new)
 # end
