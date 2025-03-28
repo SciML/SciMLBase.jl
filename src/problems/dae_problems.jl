@@ -155,3 +155,40 @@ struct DAEAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `DAEProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+DAEVerbosity(verbose::Bool): sets all fields to `verbose`
+DAEVerbosity(; verbose = nothing): kwarg constructor
+DAEVerbosity(::Nothing): uses default options
+```
+"""
+struct DAEVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function DAEVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(DAEVerbosity))...)
+        else
+            new((false for _ in fieldnames(DAEVerbosity))...)
+        end
+    end
+
+    DAEVerbosity(verbose) = new(verbose)
+end
+
+function DAEVerbosity(; verbose = nothing)
+    DAEVerbosity(verbose)
+end
+
+function DAEVerbosity(::Nothing)
+    DAEVerbosity(verbose = true)
+end

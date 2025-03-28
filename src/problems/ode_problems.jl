@@ -547,3 +547,40 @@ struct ODEAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `ODEProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+ODEVerbosity(verbose::Bool): sets all fields to `verbose`
+ODEVerbosity(; verbose = nothing): kwarg constructor
+ODEVerbosity(::Nothing): uses default options
+```
+"""
+struct ODEVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function ODEVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(ODEVerbosity))...)
+        else
+            new((false for _ in fieldnames(ODEVerbosity))...)
+        end
+    end
+
+    ODEVerbosity(verbose) = new(verbose)
+end
+
+function ODEVerbosity(; verbose = nothing)
+    ODEVerbosity(verbose)
+end
+
+function ODEVerbosity(::Nothing)
+    ODEVerbosity(verbose = true)
+end

@@ -257,3 +257,40 @@ struct SDEAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `SDEProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+SDEVerbosity(verbose::Bool): sets all fields to `verbose`
+SDEVerbosity(; verbose = nothing): kwarg constructor
+SDEVerbosity(::Nothing): uses default options
+```
+"""
+struct SDEVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function SDEVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(SDEVerbosity))...)
+        else
+            new((false for _ in fieldnames(SDEVerbosity))...)
+        end
+    end
+
+    SDEVerbosity(verbose) = new(verbose)
+end
+
+function SDEVerbosity(; verbose = nothing)
+    SDEVerbosity(verbose)
+end
+
+function SDEVerbosity(::Nothing)
+    SDEVerbosity(verbose = true)
+end
