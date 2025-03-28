@@ -3067,7 +3067,7 @@ function ImplicitDiscreteFunction{iip, specialize}(f;
                    f.observed :
                    DEFAULT_OBSERVED,
         resid_prototype = __has_resid_prototype(f) ?
-                          f.resid_prototype : 
+                          f.resid_prototype :
                           nothing,
         sys = __has_sys(f) ? f.sys : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
@@ -3083,11 +3083,12 @@ function ImplicitDiscreteFunction{iip, specialize}(f;
             analytic,
             observed,
             sys,
-            resid_prototype, 
+            resid_prototype,
             initialization_data)
     else
         ImplicitDiscreteFunction{
-                                 iip, specialize, typeof(_f), typeof(analytic), typeof(observed), typeof(sys), typeof(resid_prototype),
+            iip, specialize, typeof(_f), typeof(analytic),
+            typeof(observed), typeof(sys), typeof(resid_prototype),
             typeof(initialization_data)}(
             _f, analytic, observed, sys, resid_prototype, initialization_data)
     end
@@ -3097,7 +3098,9 @@ function ImplicitDiscreteFunction{iip}(f; kwargs...) where {iip}
     ImplicitDiscreteFunction{iip, FullSpecialize}(f; kwargs...)
 end
 ImplicitDiscreteFunction{iip}(f::ImplicitDiscreteFunction; kwargs...) where {iip} = f
-function ImplicitDiscreteFunction(f; resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing, kwargs...)
+function ImplicitDiscreteFunction(
+        f; resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing,
+        kwargs...)
     ImplicitDiscreteFunction{isinplace(f, 5), FullSpecialize}(f; resid_prototype, kwargs...)
 end
 ImplicitDiscreteFunction(f::ImplicitDiscreteFunction; kwargs...) = f
@@ -3107,11 +3110,13 @@ function unwrapped_f(f::ImplicitDiscreteFunction, newf = unwrapped_f(f.f))
 
     if specialize === NoSpecialize
         ImplicitDiscreteFunction{isinplace(f, 5), specialize, Any, Any, Any,
-            Any, Any, Any}(newf, f.analytic, f.observed, f.sys, f.resid_prototype, f.initialization_data)
+            Any, Any, Any}(
+            newf, f.analytic, f.observed, f.sys, f.resid_prototype, f.initialization_data)
     else
         ImplicitDiscreteFunction{isinplace(f, 5), specialize, typeof(newf),
             typeof(f.analytic),
-            typeof(f.observed), typeof(f.sys), typeof(resid_prototype), typeof(f.initialization_data)}(newf,
+            typeof(f.observed), typeof(f.sys), typeof(resid_prototype), typeof(f.initialization_data)}(
+            newf,
             f.analytic, f.observed, f.sys, f.resid_prototype, f.initialization_data)
     end
 end

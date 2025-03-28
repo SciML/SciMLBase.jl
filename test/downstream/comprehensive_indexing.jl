@@ -977,3 +977,19 @@ end
     sol = solve(prob, ImplicitEM())
     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
 end
+
+@testset "RODESolutions save discretes" begin
+    @parameters k(t)
+    @variables A(t)
+    function affect2!(integ, u, p, ctx)
+        integ.ps[p.k] += 1.0
+    end
+    db = 1.0 => (affect2!, [], [k], [k], nothing)
+
+    @named ssys = SDESystem(D(A) ~ k * A, [0.0], t, [A], [k], discrete_events = db)
+    ssys = complete(ssys)
+    prob = SDEProblem(ssys, [A => 1.0], (0.0, 4.0), [k => 1.0])
+    sol = solve(prob, RI5())
+    @test sol[k] isa AbstractVector
+    @test sol[k] == [1.0, 2.0, 3.0, 4.0]
+end
