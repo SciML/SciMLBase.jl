@@ -133,7 +133,6 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
     else
         discretes = nothing
     end
-    @show discretes
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
@@ -144,6 +143,7 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
             u_analytic,
             errors,
             t, W,
+            discretes,
             prob,
             alg,
             interp,
