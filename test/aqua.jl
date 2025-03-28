@@ -1,6 +1,14 @@
 using Test
 using SciMLBase
 using Aqua
+using Pkg
+
+# yes this is horrible, we'll fix it when Pkg or Base provides a decent API
+manifest = Pkg.Types.EnvCache().manifest
+# these are good sentinels to test whether someone has added a heavy SciML package to the test deps
+if haskey(manifest.deps, "NonlinearSolveBase") || haskey(manifest.deps, "DiffEqBase")
+    error("Don't put Downstream Packages in non Downstream CI")
+end
 
 # https://github.com/JuliaArrays/FillArrays.jl/pull/163
 @test isempty(detect_ambiguities(SciMLBase))
