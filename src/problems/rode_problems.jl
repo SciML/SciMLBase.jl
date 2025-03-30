@@ -110,7 +110,6 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
 
 """
-
 struct RODEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
