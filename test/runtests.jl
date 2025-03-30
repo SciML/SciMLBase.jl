@@ -39,9 +39,6 @@ end
         @time @safetestset "Integrator interface" begin
             include("integrator_tests.jl")
         end
-        @time @safetestset "Table Traits" begin
-            include("traits.jl")
-        end
         @time @safetestset "Ensemble functionality" begin
             include("ensemble_tests.jl")
         end
@@ -59,9 +56,6 @@ end
         end
         @time @safetestset "Serialization tests" begin
             include("serialization_tests.jl")
-        end
-        @time @safetestset "Initialization" begin
-            include("initialization.jl")
         end
         @time @safetestset "Clocks" begin
             include("clock.jl")
@@ -123,6 +117,9 @@ end
         end
         @time @safetestset "Initialization" begin
             include("downstream/initialization.jl")
+        end
+        @time @safetestset "Table Traits" begin
+            include("downstream/traits.jl")
         end
     end
 
