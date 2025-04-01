@@ -232,10 +232,10 @@ function remake(prob::ODEProblem; f = missing,
     if build_initializeprob
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
-                prob.f.sys, f, u0, tspan[1], p, newu0, newp)
+                prob.f.sys, f, u0, tspan[1], p, newu0, newp, _kwargs...)
         else
             initialization_data = remake_initialization_data(
-                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp, _kwargs...)
         end
     else
         initialization_data = nothing
