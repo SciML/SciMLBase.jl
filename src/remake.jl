@@ -191,7 +191,7 @@ function remake(
                 props = @delete props._func_cache
                 props = @insert props._func_cache = forig._func_cache
             end
-            
+
             args = (args..., f2)
         end
     end
