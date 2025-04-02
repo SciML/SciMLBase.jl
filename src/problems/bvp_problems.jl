@@ -474,3 +474,40 @@ struct BVPAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `BVProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+BVPVerbosity(verbose::Bool): sets all fields to `verbose`
+BVPVerbosity(; verbose = nothing): kwarg constructor
+BVPVerbosity(::Nothing): uses default options
+```
+"""
+struct BVPVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function BVPVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(BVPVerbosity))...)
+        else
+            new((false for _ in fieldnames(BVPVerbosity))...)
+        end
+    end
+
+    BVPVerbosity(verbose) = new(verbose)
+end
+
+function BVPVerbosity(; verbose = nothing)
+    BVPVerbosity(verbose)
+end
+
+function BVPVerbosity(::Nothing)
+    BVPVerbosity(verbose = true)
+end

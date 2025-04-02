@@ -65,3 +65,41 @@ struct AnalyticalAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving an `AnalyticalProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+AnalyticalVerbosity(verbose::Bool): sets all fields to `verbose`
+AnalyticalVerbosity(; verbose = nothing): kwarg constructor
+AnalyticalVerbosity(::Nothing): uses default options
+
+```
+"""
+struct AnalyticalVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function AnalyticalVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(AnalyticalVerbosity))...)
+        else
+            new((false for _ in fieldnames(AnalyticalVerbosity))...)
+        end
+    end
+
+    AnalyticalVerbosity(verbose) = new(verbose)
+end
+
+function AnalyticalVerbosity(; verbose = nothing)
+    AnalyticalVerbosity(verbose)
+end
+
+function AnalyticalVerbosity(::Nothing)
+    AnalyticalVerbosity(verbose = true)
+end

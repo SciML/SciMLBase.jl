@@ -581,3 +581,40 @@ struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `NonlinearProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+NonlinearVerbosity(verbose::Bool): sets all fields to `verbose`
+NonlinearVerbosity(; verbose = nothing): kwarg constructor
+NonlinearVerbosity(::Nothing): uses default options
+```
+"""
+struct NonlinearVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function NonlinearVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(NonlinearVerbosity))...)
+        else
+            new((false for _ in fieldnames(NonlinearVerbosity))...)
+        end
+    end
+
+    NonlinearVerbosity(verbose) = new(verbose)
+end
+
+function NonlinearVerbosity(; verbose = nothing)
+    NonlinearVerbosity(verbose)
+end
+
+function NonlinearVerbosity(::Nothing)
+    NonlinearVerbosity(verbose = true)
+end

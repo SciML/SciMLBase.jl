@@ -431,3 +431,40 @@ struct DDEAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `DDEProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+DDEVerbosity(verbose::Bool): sets all fields to `verbose`
+DDEVerbosity(; verbose = nothing): kwarg constructor
+DDEVerbosity(::Nothing): uses default options
+```
+"""
+struct DDEVerbosity <: AbstractAliasSpecifier
+    verbose::Any
+
+    function DDEVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(DDEVerbosity))...)
+        else
+            new((false for _ in fieldnames(DDEVerbosity))...)
+        end
+    end
+
+    DDEVerbosity(verbose) = new(verbose)
+end
+
+function DDEVerbosity(; verbose = nothing)
+    DDEVerbosity(verbose)
+end
+
+function DDEVerbosity(::Nothing)
+    DDEVerbosity(verbose = true)
+end

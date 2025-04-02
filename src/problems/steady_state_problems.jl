@@ -171,3 +171,40 @@ struct SteadyStateAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `SteadyStateProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+SteadyStateVerbosity(verbose::Bool): sets all fields to `verbose`
+SteadyStateVerbosity(; verbose = nothing): kwarg constructor
+SteadyStateVerbosity(::Nothing): uses default options
+```
+"""
+struct SteadyStateVerbosity <: AbstractVerbositySpecifier
+    verbosity::Any
+
+    function SteadyStateVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(SteadyStateVerbosity))...)
+        else
+            new((false for _ in fieldnames(SteadyStateVerbosity))...)
+        end
+    end
+
+    SteadyStateVerbosity(verbose) = new(verbose)
+end
+
+function SteadyStateVerbosity(; verbose = true)
+    SteadyStateVerbosity(verbose)
+end
+
+function SteadyStateVerbosity(::Nothing)
+    SteadyStateVerbosity(verbose = true)
+end
