@@ -477,7 +477,7 @@ end
 
 @doc doc"""
 
-Determines what is printed when solving a `BVPProblem`.
+Determines what is printed when solving a `BVProblem`.
 
 ### Fields
  * `verbosity`
