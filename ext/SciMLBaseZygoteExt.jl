@@ -93,7 +93,7 @@ end
                 f.(u, Ref(_p), t)
             end
             gs = back(Δ)
-            (gs[1], nothing)
+            ((u = gs[1], prob = (p = (tunable = gs[2],),)), nothing)
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
@@ -147,7 +147,7 @@ end
         gs_obs = obs_grads(VA, sym, isempty(obs_idx) ? nothing : obs_idx, Δ)
         gs_not_obs = not_obs_grads(VA, sym, not_obs_idx, i, Δ)
 
-        a = Zygote.accum(gs_obs[1], gs_not_obs)
+        a = Zygote.accum(gs_obs[1], (u = gs_not_obs,))
 
         (a, nothing)
     end
