@@ -1,5 +1,6 @@
 [deps]
 BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -30,6 +31,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 BoundaryValueDiffEq = "5"
+DataFrames = "1.6"
 DelayDiffEq = "5"
 DiffEqCallbacks = "3, 4"
 ForwardDiff = "0.10"
