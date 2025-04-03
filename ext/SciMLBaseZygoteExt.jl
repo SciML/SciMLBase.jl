@@ -162,7 +162,7 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
-@adjoint function Base.getindex(VA::SciMLBase.NonlinearSolution, sym)
+@adjoint function Base.getindex(VA::SciMLBase.AbstractNonlinearSolution, sym)
     function NonlinearSolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if is_observed(VA, sym)
