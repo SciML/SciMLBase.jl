@@ -176,6 +176,8 @@ end
             ((u = gs[1], prob = (p = gs[2],),), nothing)
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        elseif i isa Int && VA.u isa Number
+            (Δ, nothing)
         else
             VA = recursivecopy(VA)
             recursivefill!(VA, zero(eltype(VA)))
