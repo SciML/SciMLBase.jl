@@ -91,7 +91,7 @@ end
                 f.(u, Ref(p), t)
             end
             gs = back(Δ)
-            (u = gs[1], prob = (p = gs[2],),), nothing
+            (u = gs[1], prob = (p = gs[2],)), nothing
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
@@ -171,7 +171,7 @@ end
                 f.f_oop(u, p)
             end
             gs = back(Δ)
-            ((u = gs[1], prob = (p = gs[2],),), nothing)
+            ((u = gs[1], prob = (p = gs[2],)), nothing)
         elseif i === nothing
             throw(error("Zygote AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         else
