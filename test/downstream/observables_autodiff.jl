@@ -55,6 +55,15 @@ end
 
     @test gs isa NamedTuple
     @test isempty(setdiff(fieldnames(typeof(gs)), fieldnames(typeof(isol))))
+
+    # Compare gradient for parameters match from observed function
+    # to ensure parameter gradients are passed through the observed function
+    f = SII.observed(iprob.f.sys, w)
+    gu0, gp = gradient(SII.state_values(iprob), SII.parameter_values(iprob)) do u0, p
+        f(u0, p)
+    end
+
+    @test gs.prob.p == gp
 end
 
 # DAE
