@@ -26,7 +26,7 @@ p = [σ => 28.0,
     β => 8 / 3]
 
 tspan = (0.0, 100.0)
-prob = ODEProblem(sys, u0, tspan, p, jac = true)
+prob = ODEProblem(sys, u0, tspan, p)
 sol = solve(prob, Tsit5())
 
 @testset "AutoDiff Observable Functions" begin
@@ -35,7 +35,7 @@ sol = solve(prob, Tsit5())
     end
     du_ = [0.0, 1.0, 1.0, 1.0]
     du = [du_ for _ in sol.u]
-    @test du == gs
+    @test du == gs.u
 
     # Observable in a vector
     gs, = gradient(sol) do sol
@@ -43,17 +43,28 @@ sol = solve(prob, Tsit5())
     end
     du_ = [0.0, 1.0, 1.0, 2.0]
     du = [du_ for _ in sol.u]
-    @test du == gs
+    @test du == gs.u
 end
 
-# @testset "AD Observable Functions for Initialization" begin
-#     iprob = prob.f.initialization_data.initalizeprob
-#     isol = solve(iprob)
-#     gs, = gradient(isol) do isol
-#         isol[w]
-#     end
+@testset "AD Observable Functions for Initialization" begin
+    iprob = prob.f.initialization_data.initializeprob
+    isol = solve(iprob)
+    gs, = Zygote.gradient(isol) do isol
+        isol[w]
+    end
 
-# end
+    @test gs isa NamedTuple
+    @test isempty(setdiff(fieldnames(typeof(gs)), fieldnames(typeof(isol))))
+
+    # Compare gradient for parameters match from observed function
+    # to ensure parameter gradients are passed through the observed function
+    f = SII.observed(iprob.f.sys, w)
+    gu0, gp = gradient(SII.state_values(iprob), SII.parameter_values(iprob)) do u0, p
+        f(u0, p)
+    end
+
+    @test gs.prob.p == gp
+end
 
 # DAE
 
@@ -92,7 +103,7 @@ end
     end
     du_ = [0.2, 1.0]
     du = [du_ for _ in sol.u]
-    @test gs == du
+    @test gs.u == du
 
     @testset "DAE Initialization Observable function AD" begin
         iprob = prob.f.initialization_data.initializeprob
