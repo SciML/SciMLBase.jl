@@ -52,7 +52,7 @@ idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lor
 true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
 true_grad_vecsym[idx_vecsym] .= 1.0
 
-@test all(map(x -> x == true_grad_vecsym, gs_vec))
+@test all(map(x -> x == true_grad_vecsym, gs_vec.u))
 
 gs_tup, = Zygote.gradient(sol) do sol
     sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)])))
@@ -61,7 +61,7 @@ idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lor
 true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
 true_grad_tupsym[idx_tupsym] .= 1.0
 
-@test all(map(x -> x == true_grad_tupsym, gs_tup))
+@test all(map(x -> x == true_grad_tupsym, gs_tup.u))
 
 gs_ts, = Zygote.gradient(sol) do sol
     sum(sum.(sol[[lorenz1.x, lorenz2.x], :]))
