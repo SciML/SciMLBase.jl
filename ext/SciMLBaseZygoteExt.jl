@@ -5,13 +5,21 @@ using Zygote: @adjoint, pullback
 import Zygote: literal_getproperty
 import ChainRulesCore
 using SciMLBase
-using SciMLBase: ODESolution, remake,
+using SciMLBase: ODESolution, remake, ODEFunction,
                  getobserved, build_solution, EnsembleSolution,
                  NonlinearSolution, AbstractTimeseriesSolution
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
                                  observed, parameter_values, state_values, current_time
 using RecursiveArrayTools
 import SciMLStructures
+
+@adjoint function SciMLBase.remake(prob::ODEFunction; kw...)
+    y = remake(prob; kw...)
+    function odefunction_remake_back(Δ)
+        (Δ,)
+    end
+    y, odefunction_remake_back
+end
 
 # This method resolves the ambiguity with the pullback defined in
 # RecursiveArrayToolsZygoteExt
