@@ -163,3 +163,40 @@ struct ImplicitDiscreteAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `ImplicitDiscreteProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+ImplicitDiscreteVerbosity(verbose::Bool): sets all fields to `verbose`
+ImplicitDiscreteVerbosity(; verbose = nothing): kwarg constructor
+ImplicitDiscreteVerbosity(::Nothing): uses default options
+```
+"""
+struct ImplicitDiscreteVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function ImplicitDiscreteVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(ImplicitDiscreteVerbosity))...)
+        else
+            new((false for _ in fieldnames(ImplicitDiscreteVerbosity))...)
+        end
+    end
+
+    ImplicitDiscreteVerbosity(verbose) = new(verbose)
+end
+
+function ImplicitDiscreteVerbosity(; verbose = nothing)
+    ImplicitDiscreteVerbosity(verbose)
+end
+
+function ImplicitDiscreteVerbosity(::Nothing)
+    ImplicitDiscreteVerbosity(verbose = true)
+end

@@ -197,3 +197,40 @@ struct DiscreteAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `DiscreteProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+DiscreteVerbosity(verbose::Bool): sets all fields to `verbose`
+DiscreteVerbosity(; verbose = nothing): kwarg constructor
+AnalyticalVerbosity(::Nothing): uses default options
+```
+"""
+struct DiscreteVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function DiscreteVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(DiscreteVerbosity))...)
+        else
+            new((false for _ in fieldnames(DiscreteVerbosity))...)
+        end
+    end
+
+    DiscreteVerbosity(verbose) = new(verbose)
+end
+
+function DiscreteVerbosity(; verbose = nothing)
+    DiscreteVerbosity(verbose)
+end
+
+function DiscreteVerbosity(::Nothing)
+    DiscreteVerbosity(verbose = true)
+end

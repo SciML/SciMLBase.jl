@@ -132,3 +132,40 @@ struct RODEAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `RODEProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+RODEEVerbosity(verbose::Bool): sets all fields to `verbose`
+RODEVerbosity(; verbose = nothing): kwarg constructor
+RODEVerbosity(::Nothing): uses default options
+```
+"""
+struct RODEVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function RODEVerbosity(verbose::Bool)
+        if verbose
+            RODEVerbosity((true for _ in fieldnames(RODEVerbosity))...)
+        else
+            RODEVerbosity((false for _ in fieldnames(RODEVerbosity))...)
+        end
+    end
+
+    RODEVerbosity(verbose) = new(verbose)
+end
+
+function RODEVerbosity(; verbose = nothing)
+    RODEVerbosity(verbose)
+end
+
+function RODEVerbosity(::Nothing)
+    RODEVerbosity(verbose = true)
+end

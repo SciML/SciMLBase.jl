@@ -107,3 +107,40 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `LinearProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+LinearVerbosity(verbose::Bool): sets all fields to `verbose`
+LinearVerbosity(; verbose = nothing): kwarg constructor
+LinearVerbosity(::Nothing): uses default options
+```
+"""
+struct LinearVerbosity <: AbstractVerbositySpecifier
+    verbose::Any
+
+    function LinearVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(LinearVerbosity))...)
+        else
+            new((false for _ in fieldnames(LinearVerbosity))...)
+        end
+    end
+
+    LinearVerbosity(verbose) = new(verbose)
+end
+
+function LinearVerbosity(; verbose = nothing)
+    LinearVerbosity(verbose)
+end
+
+function LinearVerbosity(::Nothing)
+    LinearVerbosity(verbose = true)
+end

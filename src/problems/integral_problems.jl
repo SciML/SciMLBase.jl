@@ -196,3 +196,40 @@ struct IntegralAliasSpecifier <: AbstractAliasSpecifier
         end
     end
 end
+
+@doc doc"""
+
+Determines what is printed when solving a `IntegralProblem`.
+
+### Fields
+ * `verbosity`
+
+### Constructors
+
+```julia
+IntegralVerbosity(verbose::Bool): sets all fields to `verbose`
+IntegralVerbosity(; verbose = nothing): kwarg constructor
+IntegralVerbosity(::Nothing): uses default options
+```
+"""
+struct IntegralVerbosity #<: AbstractAliasSpecifier
+    verbose::Any
+
+    function IntegralVerbosity(verbose::Bool)
+        if verbose
+            new((true for _ in fieldnames(IntegralVerbosity))...)
+        else
+            new((false for _ in fieldnames(IntegralVerbosity))...)
+        end
+    end
+
+    IntegralVerbosity(verbose) = new(verbose)
+end
+
+function IntegralVerbosity(; verbose = nothing)
+    IntegralVerbosity(verbose)
+end
+
+function IntegralVerbosity(::Nothing)
+    IntegralVerbosity(verbose = true)
+end
