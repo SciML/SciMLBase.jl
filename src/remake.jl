@@ -229,7 +229,7 @@ function remake(prob::ODEProblem; f = missing,
 
     iip = isinplace(prob)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp)
@@ -409,7 +409,7 @@ function remake(prob::SDEProblem;
 
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp)
@@ -470,7 +470,7 @@ function remake(prob::DDEProblem; f = missing, h = missing, u0 = missing,
 
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp)
@@ -543,7 +543,7 @@ function remake(prob::SDDEProblem;
 
     newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp)
@@ -685,7 +685,7 @@ function remake(prob::NonlinearProblem;
         _kwargs...)
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, nothing, p, newu0, newp)
@@ -732,7 +732,7 @@ function remake(prob::SteadyStateProblem;
         _kwargs...)
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, Inf, p, newu0, newp)
@@ -772,7 +772,7 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
         lazy_initialization = nothing, build_initializeprob = Val{true}, _kwargs...)
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
 
-    if build_initializeprob <: Val{true} || build_initializeprob == true
+    if build_initializeprob == Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, nothing, p, newu0, newp)
