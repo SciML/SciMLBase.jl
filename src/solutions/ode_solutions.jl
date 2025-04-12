@@ -213,6 +213,7 @@ function is_discrete_expression(indp, expr)
     length(ts_idxs) > 1 || length(ts_idxs) == 1 && only(ts_idxs) != ContinuousTimeseries()
 end
 
+# These are the two main documented user-facing interpolation API functions (out-of-place and in-place versions)
 function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
         continuity = :left) where {deriv}
     if t isa IndexedClock
@@ -225,8 +226,11 @@ function (sol::AbstractODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing
     if t isa IndexedClock
         t = canonicalize_indexed_clock(t, sol)
     end
-    sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
+    sol(v, t, deriv, idxs, continuity)
 end
+
+# Below are many internal dispatches for different combinations of arguments to the main API
+# TODO: could use a clever rewrite, since a lot of reused code has accumulated
 
 function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Nothing,
         continuity) where {deriv}
@@ -363,6 +367,41 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
     return DiffEqArray(u, t, p, sol; discretes)
+end
+
+function (sol::AbstractODESolution)(v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
+    continuity) where {deriv}
+    symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
+    error_if_observed_derivative(sol, idxs, deriv)
+    p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+    getter = getsym(sol, idxs)
+    if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
+        u = zeros(eltype(sol), size(sol)[1])
+        v .= map(eachindex(t)) do ti
+            sol.interp(u, t[ti], nothing, deriv, p, continuity)
+            return getter(ProblemState(; u = u, p = p, t = t[ti]))
+        end
+        return v
+    end
+    error("In-place interpolation with discretes is not implemented.")
+end
+function (sol::AbstractODESolution)(v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv},
+    idxs::AbstractVector, continuity) where {deriv}
+    if symbolic_type(idxs) == NotSymbolic() && isempty(idxs)
+        return map(_ -> eltype(eltype(sol.u))[], t)
+    end
+    error_if_observed_derivative(sol, idxs, deriv)
+    p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
+    getter = getsym(sol, idxs)
+    if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
+        u = zeros(eltype(sol), size(sol)[1])
+        v .= map(eachindex(t)) do ti
+            sol.interp(u, t[ti], nothing, deriv, p, continuity)
+            return getter(ProblemState(; u = u, p = p, t = t[ti]))
+        end
+        return v
+    end
+    error("In-place interpolation with discretes is not implemented.")
 end
 
 struct DDESolutionHistoryWrapper{T}
