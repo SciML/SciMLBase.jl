@@ -349,3 +349,10 @@ end
     sol = solve(prob)
     @test sol(0.6, idxs = y) ≈ 2.0
 end
+
+@testset "Type stability of MTK workflow" begin
+    @variables x(t)
+    @mtkbuild sys = ODESystem([D(x) ~ 0.0], t; defaults = [x => 0.0])
+    prob = ODEProblem(sys, [], (0.0, 1.0))
+    @test_nowarn @inferred solve(prob, Tsit5())
+end

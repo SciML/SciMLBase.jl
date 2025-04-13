@@ -229,7 +229,7 @@ function remake(prob::ODEProblem; f = missing,
 
     iip = isinplace(prob)
 
-    if build_initializeprob == Val{true} || build_initializeprob == true
+    if build_initializeprob isa Val{true} || build_initializeprob == true
         if f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp)
