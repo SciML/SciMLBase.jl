@@ -355,4 +355,11 @@ end
     @mtkbuild sys = ODESystem([D(x) ~ 0.0], t; defaults = [x => 0.0])
     prob = ODEProblem(sys, [], (0.0, 1.0))
     @test_nowarn @inferred solve(prob, Tsit5())
+
+    @parameters α=1 β=1 γ=1 δ=1
+    @variables x(t)=1 y(t)=1
+    eqs = [D(x) ~ α * x - β * x * y, D(y) ~ -δ * y + γ * x * y]
+    @named sys = ODESystem(eqs, t)
+    prob = ODEProblem(complete(sys), [], (0.0, 1))
+    @test_nowarn @inferred remake(prob, u0 = prob.u0, p = prob.p) # was Any
 end
