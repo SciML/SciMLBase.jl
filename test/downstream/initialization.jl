@@ -78,7 +78,6 @@ end
     @test occursin("Initialization status: OVERDETERMINED", sprint(summary, prob))
 end
 
-
 @testset "CheckInit" begin
     @testset "ODEProblem" begin
         function rhs(u, p, t)
