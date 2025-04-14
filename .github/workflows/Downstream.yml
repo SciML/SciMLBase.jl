@@ -39,7 +39,14 @@ jobs:
           - {user: SciML, repo: Optimization.jl, group: All}
           - {user: SciML, repo: Integrals.jl, group: All}
           - {user: SciML, repo: BoundaryValueDiffEq.jl, group: All}
-          - {user: SciML, repo: ModelingToolkit.jl, group: All}
+          - {user: SciML, repo: ModelingToolkit.jl, group: InterfaceI}
+          - {user: SciML, repo: ModelingToolkit.jl, group: Initialization}
+          - {user: SciML, repo: ModelingToolkit.jl, group: InterfaceII}
+          - {user: SciML, repo: ModelingToolkit.jl, group: SymbolicIndexingInterface}
+          - {user: SciML, repo: ModelingToolkit.jl, group: Extended}
+          - {user: SciML, repo: ModelingToolkit.jl, group: Downstream}
+          - {user: SciML, repo: ModelingToolkit.jl, group: FMI}
+          - {user: SciML, repo: ModelingToolkit.jl, group: Extensions}
           - {user: SciML, repo: ModelingToolkitStandardLibrary.jl, group: Core}
           - {user: SciML, repo: StochasticDelayDiffEq.jl, group: All}
           - {user: SciML, repo: SimpleDiffEq.jl, group: All}
