@@ -3,7 +3,7 @@
 
 A collection of all the data required for `OverrideInit`.
 """
-struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
+struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap, M}
     """
     The `AbstractNonlinearProblem` to solve for initialization.
     """
@@ -30,13 +30,23 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap}
     initialized will be returned as-is.
     """
     initializeprobpmap::IProbPmap
+    """
+    Additional metadata required by the creator of the initialization.
+    """
+    metadata::M
 
     function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
-            initprobpmap::L) where {I, J, K, L}
+            initprobpmap::L, metadata::M) where {I, J, K, L, M}
         @assert initprob isa
                 Union{SCCNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
-        return new{I, J, K, L}(initprob, update_initprob!, initprobmap, initprobpmap)
+        return new{I, J, K, L, M}(
+            initprob, update_initprob!, initprobmap, initprobpmap, metadata)
     end
+end
+
+function OverrideInitData(
+        initprob, update_initprob!, initprobmap, initprobpmap; metadata = nothing)
+    OverrideInitData(initprob, update_initprob!, initprobmap, initprobpmap, metadata)
 end
 
 """
