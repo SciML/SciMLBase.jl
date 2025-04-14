@@ -36,12 +36,17 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap, M}
     metadata::M
 
     function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
-            initprobpmap::L; metadata::M = nothing) where {I, J, K, L, M}
+            initprobpmap::L, metadata::M) where {I, J, K, L, M}
         @assert initprob isa
                 Union{SCCNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
         return new{I, J, K, L, M}(
             initprob, update_initprob!, initprobmap, initprobpmap, metadata)
     end
+end
+
+function OverrideInitData(
+        initprob, update_initprob!, initprobmap, initprobpmap; metadata = nothing)
+    OverrideInitData(initprob, update_initprob!, initprobmap, initprobpmap, metadata)
 end
 
 """
