@@ -4833,12 +4833,12 @@ function ControlFunction{iip, specialize}(f;
     end
 end
 
-function ODEFunction{iip}(f; kwargs...) where {iip}
-    ODEFunction{iip, FullSpecialize}(f; kwargs...)
+function ControlFunction{iip}(f; kwargs...) where {iip}
+    ControlFunction{iip, FullSpecialize}(f; kwargs...)
 end
-ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
-ODEFunction(f::ODEFunction; kwargs...) = f
+ControlFunction{iip}(f::ControlFunction; kwargs...) where {iip} = f
+ControlFunction(f; kwargs...) = ControlFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
+ControlFunction(f::ControlFunction; kwargs...) = f
 
 ########## Utility functions
 
