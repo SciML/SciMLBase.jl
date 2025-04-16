@@ -619,27 +619,3 @@ strip_interpolation(id::AbstractDiffEqInterpolation) = id
 strip_interpolation(id::HermiteInterpolation) = id
 strip_interpolation(id::LinearInterpolation) = id
 strip_interpolation(id::ConstantInterpolation) = id
-
-"""
-Return the maximum value of a solution trajectory. Uses the interpolating polynomial
-to compute the maximum (i.e. is not simply the largest value in the sol.u array.)
-"""
-function maxsol(sol::AbstractODESolution)
-    
-end
-
-"""
-Return the minimum value of a solution trajectory. Uses the interpolating polynomial
-to compute the minimum (i.e. is not simply the smallest value in the sol.u array.)
-"""
-function minsol(sol::AbstractODESolution)
-    
-end
-
-"""
-
-"""
-function integralnorm(sol::AbstractODESolution)
-    
-end
-
