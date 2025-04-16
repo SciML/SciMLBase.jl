@@ -2097,6 +2097,109 @@ end
 """
 $(TYPEDEF)
 """
+abstract type AbstractControlFunction{iip} <: AbstractDiffEqFunction{iip} end
+
+@doc doc"""
+$(TYPEDEF)
+
+A representation of a optimal control function `f`, defined by:
+
+```math
+\frac{dx}{dt} = f(x, u, p, t)
+```
+where `x` are the states of the system and `u` are the inputs (or control variables).
+
+and all of its related functions, such as the Jacobian of `f`, its gradient
+with respect to time, and more. For all cases, `u0` is the initial condition,
+`p` are the parameters, and `t` is the independent variable.
+
+```julia
+ControlFunction{iip, specialize}(f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    control_jac = __has_controljac(f) ? f.controljac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    controljac_prototype = __has_controljac_prototype(f) ? f.controljac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    syms = nothing,
+    indepsym = nothing,
+    paramsyms = nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing)
+```
+
+`f` should be given as `f(x_out,x,u,p,t)` or `out = f(x,u,p,t)`. 
+See the section on `iip` for more details on in-place vs out-of-place handling.
+
+- `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
+  to determine that the equation is actually a BVP for differential algebraic equation (DAE)
+  if `M` is singular.
+- `jac(J,dx,x,p,gamma,t)` or `J=jac(dx,x,p,gamma,t)`: returns ``\frac{df}{dx}``
+- `control_jac(J,du,u,p,gamma,t)` or `J=control_jac(du,u,p,gamma,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
+  derivative ``\frac{df}{du} v``
+- `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
+  derivative ``\frac{df}{du}^\ast v``
+- `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `controljac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
+  if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
+  as the prototype and integrators will specialize on this structure where possible. Non-structured
+  sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
+  The default is `nothing`, which means a dense Jacobian.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
+  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
+  finite differences and automatic differentiation to be computed in an accelerated manner
+  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
+  internally computed on demand when required. The cost of this operation is highly dependent
+  on the sparsity pattern.
+
+## iip: In-Place vs Out-Of-Place
+
+For more details on this argument, see the ODEFunction documentation.
+
+## specialize: Controlling Compilation and Specialization
+
+For more details on this argument, see the ODEFunction documentation.
+
+## Fields
+#
+The fields of the ControlFunction type directly match the names of the inputs.
+"""
+struct ControlFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
+    JP, CJP, SP, TPJ, O, TCV, CTCV,
+    SYS, ID} <: AbstractControlFunction{iip}
+    f::F
+    mass_matrix::TMM
+    analytic::Ta
+    tgrad::Tt
+    jac::TJ
+    controljac::CTJ
+    jvp::JVP
+    vjp::VJP
+    jac_prototype::JP
+    controljac_prototype::CJP
+    sparsity::SP
+    paramjac::TPJ
+    observed::O
+    colorvec::TCV
+    controlcolorvec::CTCV
+    sys::SYS
+    initialization_data::ID
+end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
