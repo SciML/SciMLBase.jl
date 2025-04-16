@@ -4718,6 +4718,9 @@ function ControlFunction{iip, specialize}(f;
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+        syms = nothing,
+        indepsym = nothing,
+        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
                    DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
