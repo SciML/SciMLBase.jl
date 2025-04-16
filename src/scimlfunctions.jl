@@ -2173,7 +2173,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the ControlFunction type directly match the names of the inputs.
 """
 struct ControlFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
-    JP, CJP, SP, TW, TWt, WP, TPJ, O, TCV, CTCV,
+    JP, CJP, SP, TW, TWt, WP, TPJ, O, TCV,
     SYS, ID} <: AbstractControlFunction{iip}
     f::F
     mass_matrix::TMM
@@ -2595,6 +2595,7 @@ end
 (f::ImplicitDiscreteFunction)(args...) = f.f(args...)
 (f::DAEFunction)(args...) = f.f(args...)
 (f::DDEFunction)(args...) = f.f(args...)
+(f::ControlFunction)(args...) = f.f(args...)
 
 function (f::DynamicalDDEFunction)(u, h, p, t)
     ArrayPartition(f.f1(u.x[1], u.x[2], h, p, t), f.f2(u.x[1], u.x[2], h, p, t))
