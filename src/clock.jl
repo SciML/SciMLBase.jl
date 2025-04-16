@@ -1,4 +1,6 @@
-@data Clocks begin
+abstract type AbstractClock end
+
+@data Clocks<:AbstractClock begin
     ContinuousClock
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
@@ -63,6 +65,7 @@ issolverstepclock(::Any) = false
 iscontinuous(::Any) = false
 is_discrete_time_domain(::Any) = false
 
+# public
 function first_clock_tick_time(c, t0)
     @match c begin
         PeriodicClock(dt) => ceil(t0 / dt) * dt
@@ -71,13 +74,51 @@ function first_clock_tick_time(c, t0)
     end
 end
 
-struct IndexedClock{I}
-    clock::TimeDomain
+# public
+"""
+    $(TYPEDEF)
+
+A struct representing the operation of indexing a clock to obtain a subset of the time
+points at which it ticked. The actual list of time points depends on the time interval
+for which the clock was running, and can be obtained via `canonicalize_indexed_clock`
+by providing a timeseries solution object.
+
+For example, `IndexedClock(PeriodicClock(0.1), 3)` refers to the third time that
+`PeriodicClock(0.1)` ticked. If the simulation started at `t = 0`, then this would be
+`t = 0.2`. Similarly, `IndexedClock(PeriodicClock(0.1), [1, 5])` refers to `t = 0.0`
+and `t = 0.4` in this context.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
+struct IndexedClock{C <: AbstractClock, I}
+    """
+    The clock being indexed. A subtype of `SciMLBase.AbstractClock`
+    """
+    clock::C
+    """
+    The subset of indexes being referred to. This can be an integer, an array of integers,
+    a range or `Colon()` to refer to all the points that the clock ticked.
+    """
     idx::I
 end
 
-Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
+# public
+"""
+    $(TYPEDSIGNATURES)
 
+Return a `SciMLBase.IndexedClock` representing the subset of the time points that the clock
+ticked indicated by `idx`.
+"""
+Base.getindex(c::AbstractClock, idx) = IndexedClock(c, idx)
+
+# public
+"""
+    $(TYPEDSIGNATURES)
+
+Return the time points in the interval
+"""
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
 
