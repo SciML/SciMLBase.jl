@@ -2109,7 +2109,7 @@ A representation of a optimal control function `f`, defined by:
 ```
 where `x` are the states of the system and `u` are the inputs (or control variables).
 
-and all of its related functions, such as the Jacobian of `f`, its gradient
+Includes all of its related functions, such as the Jacobian of `f`, its gradient
 with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
@@ -2164,15 +2164,12 @@ See the section on `iip` for more details on in-place vs out-of-place handling.
   on the sparsity pattern.
 
 ## iip: In-Place vs Out-Of-Place
-
 For more details on this argument, see the ODEFunction documentation.
 
 ## specialize: Controlling Compilation and Specialization
-
 For more details on this argument, see the ODEFunction documentation.
 
 ## Fields
-#
 The fields of the ControlFunction type directly match the names of the inputs.
 """
 struct ControlFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
