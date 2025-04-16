@@ -2176,7 +2176,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the ControlFunction type directly match the names of the inputs.
 """
 struct ControlFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
-    JP, CJP, SP, TPJ, O, TCV, CTCV,
+    JP, CJP, SP, TW, TWt, WP, TPJ, O, TCV, CTCV,
     SYS, ID} <: AbstractControlFunction{iip}
     f::F
     mass_matrix::TMM
@@ -2189,10 +2189,12 @@ struct ControlFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
     jac_prototype::JP
     controljac_prototype::CJP
     sparsity::SP
+    Wfact::TW
+    Wfact_t::TWt
+    W_prototype::WP
     paramjac::TPJ
     observed::O
     colorvec::TCV
-    controlcolorvec::CTCV
     sys::SYS
     initialization_data::ID
 end
@@ -4698,6 +4700,146 @@ function BatchIntegralFunction(f, integrand_prototype; kwargs...)
     BatchIntegralFunction{calculated_iip}(f, integrand_prototype; kwargs...)
 end
 
+function ControlFunction{iip, specialize}(f;
+        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
+                      I,
+        analytic = __has_analytic(f) ? f.analytic : nothing,
+        tgrad = __has_tgrad(f) ? f.tgrad : nothing,
+        jac = __has_jac(f) ? f.jac : nothing,
+        controljac = __has_controljac(f) ? f.controljac : nothing,
+        jvp = __has_jvp(f) ? f.jvp : nothing,
+        vjp = __has_vjp(f) ? f.vjp : nothing,
+        jac_prototype = __has_jac_prototype(f) ?
+                        f.jac_prototype :
+                        nothing,
+        controljac_prototype = __has_controljac_prototype(f) ?
+                        f.controljac_prototype :
+                        nothing,
+        sparsity = __has_sparsity(f) ? f.sparsity :
+                   jac_prototype,
+        Wfact = __has_Wfact(f) ? f.Wfact : nothing,
+        Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
+        W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
+        paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+        observed = __has_observed(f) ? f.observed :
+                   DEFAULT_OBSERVED,
+        colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+        sys = __has_sys(f) ? f.sys : nothing,
+        initializeprob = __has_initializeprob(f) ? f.initializeprob : nothing,
+        update_initializeprob! = __has_update_initializeprob!(f) ?
+                                 f.update_initializeprob! : nothing,
+        initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
+        initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing,
+        initialization_data = __has_initialization_data(f) ? f.initialization_data :
+                              nothing,
+        nlprob_data = __has_nlprob_data(f) ? f.nlprob_data : nothing
+) where {iip,
+        specialize
+}
+    if mass_matrix === I && f isa Tuple
+        mass_matrix = ((I for i in 1:length(f))...,)
+    end
+
+    if (specialize === FunctionWrapperSpecialize) &&
+       !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+        error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
+    end
+
+    if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
+        if iip
+            jac = update_coefficients! #(J,u,p,t)
+        else
+            jac = (u, p, t) -> update_coefficients(deepcopy(jac_prototype), u, p, t)
+        end
+    end
+
+    if controljac === nothing && isa(controljac_prototype, AbstractSciMLOperator)
+        if iip_bc
+            controljac = update_coefficients! #(J,u,p,t)
+        else
+            controljac = (u, p, t) -> update_coefficients!(deepcopy(controljac_prototype), u, p, t)
+        end
+    end
+
+    if jac_prototype !== nothing && colorvec === nothing &&
+       ArrayInterface.fast_matrix_colors(jac_prototype)
+        _colorvec = ArrayInterface.matrix_colors(jac_prototype)
+    else
+        _colorvec = colorvec
+    end
+
+    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
+    controljaciip = controljac !== nothing ? isinplace(controljac, 4, "controljac", iip) : iip
+    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
+    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
+    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
+    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
+
+    nonconforming = (jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
+        paramjaciip) .!= iip
+    if any(nonconforming)
+        nonconforming = findall(nonconforming)
+        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
+        throw(NonconformingFunctionsError(functions))
+    end
+
+    _f = prepare_function(f)
+
+    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+    initdata = reconstruct_initialization_data(
+        initialization_data, initializeprob, update_initializeprob!,
+        initializeprobmap, initializeprobpmap)
+
+    if specialize === NoSpecialize
+        ControlFunction{iip, specialize,
+            Any, Any, Any, Any,
+            Any, Any, Any, Any, typeof(jac_prototype), typeof(controljac_prototype),
+            typeof(sparsity), Any, Any, typeof(W_prototype), Any,
+            Any,
+            typeof(_colorvec),
+            typeof(sys), Union{Nothing, OverrideInitData}}(
+            _f, mass_matrix, analytic, tgrad, jac, controljac,
+            jvp, vjp, jac_prototype, controljac_prototype, sparsity, Wfact,
+            Wfact_t, W_prototype, paramjac,
+            observed, _colorvec, sys, initdata)
+    elseif specialize === false
+        ControlFunction{iip, FunctionWrapperSpecialize,
+            typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+            typeof(jac), typeof(controljac), typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(controljac_prototype),
+            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
+            typeof(paramjac),
+            typeof(observed),
+            typeof(_colorvec),
+            typeof(sys), typeof(initdata)}(_f, mass_matrix,
+            analytic, tgrad, jac, controljac,
+            jvp, vjp, jac_prototype, controljac_prototype, sparsity, Wfact,
+            Wfact_t, W_prototype, paramjac,
+            observed, _colorvec, sys, initdata)
+    else
+        ControlFunction{iip, specialize,
+            typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
+            typeof(jac), typeof(controljac), typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(controljac_prototype),
+            typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
+            typeof(paramjac),
+            typeof(observed),
+            typeof(_colorvec),
+            typeof(sys), typeof(initdata)}(
+            _f, mass_matrix, analytic, tgrad,
+            jac, controljac, jvp, vjp, jac_prototype, controljac_prototype, sparsity, Wfact,
+            Wfact_t, W_prototype, paramjac,
+            observed, _colorvec, sys, initdata)
+    end
+end
+
+function ODEFunction{iip}(f; kwargs...) where {iip}
+    ODEFunction{iip, FullSpecialize}(f; kwargs...)
+end
+ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
+ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
+ODEFunction(f::ODEFunction; kwargs...) = f
+
 ########## Utility functions
 
 function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
@@ -4731,6 +4873,7 @@ __has_Wfact_t(f) = isdefined(f, :Wfact_t)
 __has_W_prototype(f) = isdefined(f, :W_prototype)
 __has_paramjac(f) = isdefined(f, :paramjac)
 __has_jac_prototype(f) = isdefined(f, :jac_prototype)
+__has_controljac_prototype(f) = isdefined(f, :controljac_prototype)
 __has_sparsity(f) = isdefined(f, :sparsity)
 __has_mass_matrix(f) = isdefined(f, :mass_matrix)
 __has_syms(f) = isdefined(f, :syms)
