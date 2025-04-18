@@ -27,7 +27,7 @@ dt: the time step
 
 ### Constructors
 
-- `ImplicitDiscreteProblem(f::ODEFunction,u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem(f::ImplicitDiscreteFunction,u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the specified functions.
 - `ImplicitDiscreteProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();kwargs...)` :
   Defines the discrete problem with the specified functions.
