@@ -2097,24 +2097,25 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractControlFunction{iip} <: AbstractDiffEqFunction{iip} end
+abstract type AbstractODEInputFunction{iip} <: AbstractDiffEqFunction{iip} end
 
 @doc doc"""
 $(TYPEDEF)
 
-A representation of a optimal control function `f`, defined by:
+A representation of a ODE function `f` with inputs, defined by:
 
 ```math
 \frac{dx}{dt} = f(x, u, p, t)
 ```
-where `x` are the states of the system and `u` are the inputs (or control variables).
+where `x` are the states of the system and `u` are the inputs (which may represent 
+different things in different contexts, such as control variables in optimal control).
 
 Includes all of its related functions, such as the Jacobian of `f`, its gradient
 with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-ControlFunction{iip, specialize}(f;
+ODEInputFunction{iip, specialize}(f;
     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2139,11 +2140,11 @@ See the section on `iip` for more details on in-place vs out-of-place handling.
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
   to determine that the equation is actually a BVP for differential algebraic equation (DAE)
   if `M` is singular.
-- `jac(J,dx,x,p,gamma,t)` or `J=jac(dx,x,p,gamma,t)`: returns ``\frac{df}{dx}``
-- `control_jac(J,du,u,p,gamma,t)` or `J=control_jac(du,u,p,gamma,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
+- `jac(J,dx,x,u,p,gamma,t)` or `J=jac(dx,x,u,p,gamma,t)`: returns ``\frac{df}{dx}``
+- `control_jac(J,du,x,u,p,gamma,t)` or `J=control_jac(du,x,u,p,gamma,t)`: returns ``\frac{df}{du}``
+- `jvp(Jv,v,du,x,u,p,gamma,t)` or `Jv=jvp(v,du,x,u,p,gamma,t)`: returns the directional
   derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
+- `vjp(Jv,v,du,x,u,p,gamma,t)` or `Jv=vjp(v,du,x,u,p,gamma,t)`: returns the adjoint
   derivative ``\frac{df}{du}^\ast v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
@@ -2155,7 +2156,7 @@ See the section on `iip` for more details on in-place vs out-of-place handling.
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,x,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -2170,11 +2171,11 @@ For more details on this argument, see the ODEFunction documentation.
 For more details on this argument, see the ODEFunction documentation.
 
 ## Fields
-The fields of the ControlFunction type directly match the names of the inputs.
+The fields of the ODEInputFunction type directly match the names of the inputs.
 """
-struct ControlFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
+struct ODEInputFunction{iip, specialize, F, TMM, Ta, Tt, TJ, CTJ, JVP, VJP,
     JP, CJP, SP, TW, TWt, WP, TPJ, O, TCV,
-    SYS, ID} <: AbstractControlFunction{iip}
+    SYS, ID} <: AbstractODEInputFunction{iip}
     f::F
     mass_matrix::TMM
     analytic::Ta
@@ -2595,7 +2596,7 @@ end
 (f::ImplicitDiscreteFunction)(args...) = f.f(args...)
 (f::DAEFunction)(args...) = f.f(args...)
 (f::DDEFunction)(args...) = f.f(args...)
-(f::ControlFunction)(args...) = f.f(args...)
+(f::ODEInputFunction)(args...) = f.f(args...)
 
 function (f::DynamicalDDEFunction)(u, h, p, t)
     ArrayPartition(f.f1(u.x[1], u.x[2], h, p, t), f.f2(u.x[1], u.x[2], h, p, t))
@@ -4698,7 +4699,7 @@ function BatchIntegralFunction(f, integrand_prototype; kwargs...)
     BatchIntegralFunction{calculated_iip}(f, integrand_prototype; kwargs...)
 end
 
-function ControlFunction{iip, specialize}(f;
+function ODEInputFunction{iip, specialize}(f;
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                       I,
         analytic = __has_analytic(f) ? f.analytic : nothing,
@@ -4748,17 +4749,17 @@ function ControlFunction{iip, specialize}(f;
 
     if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
         if iip
-            jac = update_coefficients! #(J,u,p,t)
+            jac = (J, x, u, p, t) -> update_coefficients!(J, x, p, t) #(J,x,u,p,t)
         else
-            jac = (u, p, t) -> update_coefficients(deepcopy(jac_prototype), u, p, t)
+            jac = (x, u, p, t) -> update_coefficients(deepcopy(jac_prototype), x, p, t)
         end
     end
 
     if controljac === nothing && isa(controljac_prototype, AbstractSciMLOperator)
         if iip_bc
-            controljac = update_coefficients! #(J,u,p,t)
+            controljac = (J, x, u, p, t) -> update_coefficients!(J, u, p, t) #(J,x,u,p,t)
         else
-            controljac = (u, p, t) -> update_coefficients!(deepcopy(controljac_prototype), u, p, t)
+            controljac = (x, u, p, t) -> update_coefficients(deepcopy(controljac_prototype), u, p, t)
         end
     end
 
@@ -4769,14 +4770,14 @@ function ControlFunction{iip, specialize}(f;
         _colorvec = colorvec
     end
 
-    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
-    controljaciip = controljac !== nothing ? isinplace(controljac, 4, "controljac", iip) : iip
-    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
-    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
-    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
-    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
+    jaciip = jac !== nothing ? isinplace(jac, 5, "jac", iip) : iip
+    controljaciip = controljac !== nothing ? isinplace(controljac, 5, "controljac", iip) : iip
+    tgradiip = tgrad !== nothing ? isinplace(tgrad, 5, "tgrad", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 6, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 6, "vjp", iip) : iip
+    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 6, "Wfact", iip) : iip
+    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 6, "Wfact_t", iip) : iip
+    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 5, "paramjac", iip) : iip
 
     nonconforming = (jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
         paramjaciip) .!= iip
@@ -4794,7 +4795,7 @@ function ControlFunction{iip, specialize}(f;
         initializeprobmap, initializeprobpmap)
 
     if specialize === NoSpecialize
-        ControlFunction{iip, specialize,
+        ODEInputFunction{iip, specialize,
             Any, Any, Any, Any,
             Any, Any, Any, Any, typeof(jac_prototype), typeof(controljac_prototype),
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
@@ -4806,7 +4807,7 @@ function ControlFunction{iip, specialize}(f;
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initdata)
     elseif specialize === false
-        ControlFunction{iip, FunctionWrapperSpecialize,
+        ODEInputFunction{iip, FunctionWrapperSpecialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(controljac), typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(controljac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
@@ -4819,7 +4820,7 @@ function ControlFunction{iip, specialize}(f;
             Wfact_t, W_prototype, paramjac,
             observed, _colorvec, sys, initdata)
     else
-        ControlFunction{iip, specialize,
+        ODEInputFunction{iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(controljac), typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(controljac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
@@ -4834,12 +4835,12 @@ function ControlFunction{iip, specialize}(f;
     end
 end
 
-function ControlFunction{iip}(f; kwargs...) where {iip}
-    ControlFunction{iip, FullSpecialize}(f; kwargs...)
+function ODEInputFunction{iip}(f; kwargs...) where {iip}
+    ODEInputFunction{iip, FullSpecialize}(f; kwargs...)
 end
-ControlFunction{iip}(f::ControlFunction; kwargs...) where {iip} = f
-ControlFunction(f; kwargs...) = ControlFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
-ControlFunction(f::ControlFunction; kwargs...) = f
+ODEInputFunction{iip}(f::ODEInputFunction; kwargs...) where {iip} = f
+ODEInputFunction(f; kwargs...) = ODEInputFunction{isinplace(f, 5), FullSpecialize}(f; kwargs...)
+ODEInputFunction(f::ODEInputFunction; kwargs...) = f
 
 ########## Utility functions
 
