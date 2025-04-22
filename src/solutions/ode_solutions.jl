@@ -369,6 +369,14 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     return DiffEqArray(u, t, p, sol; discretes)
 end
 
+function (sol::AbstractODESolution)(v::AbstractArray, t::Number, ::Type{deriv},
+    idxs::Union{Nothing, Integer, AbstractArray{<:Integer}}, continuity) where {deriv}
+    return sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
+end
+function (sol::AbstractODESolution)(v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv},
+    idxs::Union{Nothing, Integer, AbstractArray{<:Integer}}, continuity) where {deriv}
+    return sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
+end
 function (sol::AbstractODESolution)(v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
     continuity) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
