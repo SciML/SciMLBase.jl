@@ -1,7 +1,7 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
 using StochasticDiffEq
 using SymbolicIndexingInterface
-using ModelingToolkit: t_nounits as t, D_nounits as D
+using ModelingToolkit: observed, t_nounits as t, D_nounits as D
 using Plots: Plots, plot
 
 ### Tests on non-layered model (everything should work). ###
