@@ -228,7 +228,7 @@ end
         uType2
 }
     function NonlinearSolutionAdjoint(ȳ)
-        (ȳ, ntuple(_ -> nothing, length(args))...)
+        (ȳ.u, ntuple(_ -> nothing, length(args))...)
     end
     NonlinearSolution{T, N, uType, R, P, A, O, uType2}(u, args...), NonlinearSolutionAdjoint
 end
