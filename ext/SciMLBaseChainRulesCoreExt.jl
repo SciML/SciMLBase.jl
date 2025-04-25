@@ -116,4 +116,15 @@ function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged
     out, EnsembleSolution_adjoint
 end
 
+function ChainRulesCore.rrule(
+        ::Type{<:SciMLBase.NonlinearSolution{
+            T, N, uType, R, P, A, O, uType2, S, Tr}}, u,
+        args...) where {T, N, uType, R, P, A, O, uType2, S, Tr}
+    function NonlinearSolutionAdjoint(ȳ)
+        (NoTangent(), ȳ.u, ntuple(_ -> NoTangent(), length(args))...)
+    end
+    SciMLBase.NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr}(u, args...),
+    NonlinearSolutionAdjoint
+end
+
 end
