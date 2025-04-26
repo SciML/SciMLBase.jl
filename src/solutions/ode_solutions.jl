@@ -369,46 +369,37 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     return DiffEqArray(u, t, p, sol; discretes)
 end
 
-function (sol::AbstractODESolution)(v::AbstractArray, t::Number, ::Type{deriv},
+function (sol::AbstractODESolution)(
+        v, t::Union{Number, AbstractVector{<:Number}}, ::Type{deriv},
         idxs::Union{Nothing, Integer, AbstractArray{<:Integer}}, continuity) where {deriv}
     return sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 function (sol::AbstractODESolution)(
-        v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv},
-        idxs::Union{Nothing, Integer, AbstractArray{<:Integer}}, continuity) where {deriv}
-    return sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
-end
-function (sol::AbstractODESolution)(
-        v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
+        v, t::Union{Number, AbstractVector{<:Number}}, ::Type{deriv}, idxs,
         continuity) where {deriv}
-    symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
-    error_if_observed_derivative(sol, idxs, deriv)
-    p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    getter = getsym(sol, idxs)
-    if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
-        u = zeros(eltype(sol), size(sol)[1])
-        v .= map(eachindex(t)) do ti
-            sol.interp(u, t[ti], nothing, deriv, p, continuity)
-            return getter(ProblemState(; u = u, p = p, t = t[ti]))
-        end
-        return v
-    end
-    error("In-place interpolation with discretes is not implemented.")
-end
-function (sol::AbstractODESolution)(
-        v::AbstractArray, t::AbstractVector{<:Number}, ::Type{deriv},
-        idxs::AbstractVector, continuity) where {deriv}
-    if symbolic_type(idxs) == NotSymbolic() && isempty(idxs)
-        return map(_ -> eltype(eltype(sol.u))[], t)
+    if idxs isa AbstractArray && any(idx -> idx == NotSymbolic(), symbolic_type.(idxs)) ||
+       !(idxs isa AbstractArray) && symbolic_type(idxs) == NotSymbolic()
+        error("Incorrect specification of `idxs`")
     end
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    getter = getsym(sol, idxs)
+    getter = getsym(sol, idxs) # TODO: breaks type inference and allocates
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         u = zeros(eltype(sol), size(sol)[1])
-        v .= map(eachindex(t)) do ti
-            sol.interp(u, t[ti], nothing, deriv, p, continuity)
-            return getter(ProblemState(; u = u, p = p, t = t[ti]))
+        if t isa AbstractVector
+            for ti in eachindex(t)
+                sol.interp(u, t[ti], nothing, deriv, p, continuity)
+                state = ProblemState(; u = u, p = p, t = t[ti])
+                if eltype(v) <: Number
+                    v[ti] = getter(state)
+                else
+                    v[ti] .= getter(state)
+                end
+            end
+        else # t isa Number
+            sol.interp(u, t, nothing, deriv, p, continuity)
+            state = ProblemState(; u = u, p = p, t = t)
+            v .= getter(state)
         end
         return v
     end

@@ -169,6 +169,14 @@ out = [zeros(eltype(sol), size(idxs)) for _ in eachindex(ts)]
 @test (@allocated sol(out, ts; idxs)) < (@allocated sol(ts; idxs))
 @test_nowarn @inferred sol(out, ts; idxs)
 
+# same as above, but with one time value only
+@test sol(out[1], ts[1]; idxs) == sol(ts[1]; idxs)
+#@test (@allocated sol(out[1], ts[1]; idxs)) < (@allocated sol(ts[1]; idxs)) # TODO: reduce allocations and fix
+@test_nowarn @inferred sol(out[1], ts[1]; idxs)
+
+idxs = [unknowns(sys)[1], 1]
+@test_throws "Incorrect specification of `idxs`" sol(out, ts; idxs)
+
 @testset "Plot idxs" begin
     @variables x(t) y(t)
     @parameters p
