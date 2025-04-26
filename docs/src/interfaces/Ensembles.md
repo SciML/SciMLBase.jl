@@ -17,7 +17,7 @@ EnsembleProblem
 ### Solving the Problem
 
 ```@docs
-__solve(prob::AbstractEnsembleProblem, alg, ensemblealg::BasicEnsembleAlgorithm)
+solve(prob::AbstractEnsembleProblem, alg, ensemblealg::BasicEnsembleAlgorithm)
 ```
 
 ### EnsembleAlgorithms
