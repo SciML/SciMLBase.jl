@@ -154,9 +154,9 @@ The keyword arguments take in the arguments for the common solver interface and 
 pass them to the solver. The `ensemblealg` is optional, and will
 default to `EnsembleThreads()`. The special keyword arguments to note are:
 
-- `trajectories`: The number of simulations to run. This argument is required.
-- `batch_size` : The size of the batches on which the reductions are applies. Defaults to `trajectories`.
-- `pmap_batch_size`: The size of the `pmap` batches. Default is
+  - `trajectories`: The number of simulations to run. This argument is required.
+  - `batch_size` : The size of the batches on which the reductions are applies. Defaults to `trajectories`.
+  - `pmap_batch_size`: The size of the `pmap` batches. Default is
     `batch_size÷100 > 0 ? batch_size÷100 : 1`
 """
 function __solve(prob::AbstractEnsembleProblem,
