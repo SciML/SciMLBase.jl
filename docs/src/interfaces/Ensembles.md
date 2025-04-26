@@ -41,7 +41,7 @@ EnsembleSplitThreads
 | Intel            | OneAPI              | [OneAPI.jl](https://github.com/JuliaGPU/oneAPI.jl) | `oneAPI.oneAPIBackend()` |
 | Apple (M-Series) | Metal               | [Metal.jl](https://github.com/JuliaGPU/Metal.jl)   | `Metal.MetalBackend()`   |
 
-- `EnsembleGPUArray()` - Requires installing and `using DiffEqGPU`. This uses a GPU for computing the ensemble
+  - `EnsembleGPUArray()` - Requires installing and `using DiffEqGPU`. This uses a GPU for computing the ensemble
     with hyperparallelism. It will automatically recompile your Julia functions to the GPU. A standard GPU sees
     a 5x performance increase over a 16 core Xeon CPU. However, there are limitations on what functions can
     auto-compile in this fashion, please see [DiffEqGPU for more details](https://docs.sciml.ai/DiffEqGPU/stable/)
