@@ -1,6 +1,7 @@
 module EnsembleAnalysis
 
 using SciMLBase, Statistics, RecursiveArrayTools, StaticArraysCore
+using DocStringExtensions
 
 # Getters
 """
