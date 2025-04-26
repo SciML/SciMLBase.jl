@@ -12,6 +12,9 @@ makedocs(sitename = "SciMLBase.jl",
     warnonly = [:docs_block, :missing_docs],
     format = Documenter.HTML(assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/SciMLBase/stable"),
+    linkcheck_ignore = [
+        "https://www.sciencedirect.com/science/article/abs/pii/S0045782523007156"
+    ]
     pages = pages)
 
 deploydocs(repo = "github.com/SciML/SciMLBase.jl.git";
