@@ -17,7 +17,7 @@ EnsembleProblem
 ### Solving the Problem
 
 ```@docs
-solve(prob::SciMLBase.AbstractEnsembleProblem, alg, ensemblealg::SciMLBase.BasicEnsembleAlgorithm)
+SciMLBase.__solve(prob::SciMLBase.AbstractEnsembleProblem, alg, ensemblealg::SciMLBase.BasicEnsembleAlgorithm)
 ```
 
 ### EnsembleAlgorithms
@@ -128,6 +128,7 @@ SciMLBase.EnsembleAnalysis.timepoint_meanvar
 SciMLBase.EnsembleAnalysis.timepoint_meancov
 SciMLBase.EnsembleAnalysis.timepoint_meancor
 SciMLBase.EnsembleAnalysis.timepoint_weighted_meancov
+```
 
 #### Full Timeseries Statistics
 
