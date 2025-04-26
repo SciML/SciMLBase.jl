@@ -179,11 +179,11 @@ achieved with
 
 ```julia
 using Distributed
-using DifferentialEquations
+using OrdinaryDiffEq
 using Plots
 
 addprocs()
-@everywhere using DifferentialEquations
+@everywhere using OrdinaryDiffEq
 ```
 
 Now let's define the linear ODE, which is our base problem:
@@ -235,7 +235,7 @@ Because the memory is shared across the different threads, it is not necessary t
 use the `@everywhere` macro. Instead, the same problem can be implemented simply as:
 
 ```@example ensemble1_2
-using DifferentialEquations
+using OrdinaryDiffEq
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 function prob_func(prob, i, repeat)
     remake(prob, u0 = rand() * prob.u0)
@@ -293,7 +293,7 @@ end
 Now we build the SDE with these functions:
 
 ```@example ensemble2
-using DifferentialEquations
+using StochasticDiffEq
 p = [1.5, 1.0, 0.1, 0.1]
 prob = SDEProblem(f, g, [1.0, 1.0], (0.0, 10.0), p)
 ```
@@ -356,7 +356,7 @@ end
 Our `prob_func` will simply randomize the initial condition:
 
 ```@example ensemble3
-using DifferentialEquations
+using OrdinaryDiffEq
 # Linear ODE which starts at 0.5 and solves from t=0.0 to t=1.0
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 
@@ -427,7 +427,7 @@ function σ(du, u, p, t)
         du[i] = 0.87 * u[i]
     end
 end
-using DifferentialEquations
+using StochasticDiffEq
 prob = SDEProblem(f, σ, ones(4, 2) / 2, (0.0, 1.0)) #prob_sde_2Dlinear
 ```
 
