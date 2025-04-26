@@ -75,29 +75,31 @@ end
 function ChainRulesCore.rrule(
         ::Type{
             <:ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-            T11, T12, T13, T14
+            T11, T12, T13, T14, T15, T16
         }}, u,
         args...) where {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,
-        T12, T13, T14}
+        T12, T13, T14, T15, T16}
     function ODESolutionAdjoint(ȳ)
         (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14}(u, args...),
+    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16}(u, args...),
     ODESolutionAdjoint
 end
 
 function ChainRulesCore.rrule(
         ::Type{
-            <:RODESolution{uType, tType, isinplace, P, NP, F, G, K,
-            ND
+            <:RODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
+            T11, T12, T13, T14
         }}, u,
-        args...) where {uType, tType, isinplace, P, NP, F, G, K, ND}
+        args...) where {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
+        T11, T12, T13, T14}
     function RODESolutionAdjoint(ȳ)
         (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    RODESolution{uType, tType, isinplace, P, NP, F, G, K, ND}(u, args...),
+    RODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
+    T11, T12, T13, T14}(u, args...),
     RODESolutionAdjoint
 end
 
