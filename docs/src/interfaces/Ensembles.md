@@ -447,7 +447,7 @@ compatible with adaptive timestepping. Using adaptivity is usually more efficien
 We can compute the mean and the variance at the 3rd timestep using:
 
 ```@example ensemble4
-using DifferentialEquations.EnsembleAnalysis
+using SciMLBase.EnsembleAnalysis
 m, v = timestep_meanvar(sim, 3)
 ```
 
