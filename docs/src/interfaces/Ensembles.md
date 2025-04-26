@@ -45,12 +45,12 @@ EnsembleSplitThreads
     with hyperparallelism. It will automatically recompile your Julia functions to the GPU. A standard GPU sees
     a 5x performance increase over a 16 core Xeon CPU. However, there are limitations on what functions can
     auto-compile in this fashion, please see [DiffEqGPU for more details](https://docs.sciml.ai/DiffEqGPU/stable/)
-- `EnsembleGPUKernel()` - Requires installing and `using DiffEqGPU`. This uses a GPU for computing the ensemble
-   with hyperparallelism by building a custom GPU kernel. This can have drastically less overhead (for example,
-   achieving 15x accelerating against Jax and PyTorch, see
-   [this paper for more details](https://www.sciencedirect.com/science/article/abs/pii/S0045782523007156)) but
-   has limitations on what kinds of problems are compatible. See
-   [DiffEqGPU for more details](https://docs.sciml.ai/DiffEqGPU/stable/)
+  - `EnsembleGPUKernel()` - Requires installing and `using DiffEqGPU`. This uses a GPU for computing the ensemble
+    with hyperparallelism by building a custom GPU kernel. This can have drastically less overhead (for example,
+    achieving 15x accelerating against Jax and PyTorch, see
+    [this paper for more details](https://www.sciencedirect.com/science/article/abs/pii/S0045782523007156)) but
+    has limitations on what kinds of problems are compatible. See
+    [DiffEqGPU for more details](https://docs.sciml.ai/DiffEqGPU/stable/)
 
 ### Choosing an Ensembler
 
