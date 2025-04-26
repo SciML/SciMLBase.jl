@@ -5,23 +5,47 @@ abstract type BasicEnsembleAlgorithm <: EnsembleAlgorithm end
 
 """
 $(TYPEDEF)
+
+Basic ensemble solver which uses no parallelism and runs
+the problems in serial
+"""
+struct EnsembleSerial <: BasicEnsembleAlgorithm end
+
+"""
+$(TYPEDEF)
+
+The default. This uses multithreading. It's local (single computer, shared memory)
+parallelism only. Lowest parallelism overhead for small problems.
 """
 struct EnsembleThreads <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
+
+Uses `pmap` internally. It will use as many processors as you
+have Julia processes. To add more processes, use `addprocs(n)`. These processes
+can be placed onto multiple different machines in order to paralleize across
+an entire cluster via passwordless SSH. See Julia's
+documentation for more details.
+
+Recommended for the case when each trajectory calculation isn't “too quick” (at least about
+a millisecond each?), where the calculations of a given problem allocate memory, or when
+you have a very large ensemble. This can be true even on a single shared memory system
+because distributed process use separate garbage collectors and thus can be even faster
+than EnsembleThreads if the computation is complex enough.
 """
 struct EnsembleDistributed <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
+
+A mixture of distributed computing with threading. The optimal version of this is to have
+a process on each node of a computer and then multithread on each system. However, this
+ensembler will simply use the node setup provided by the Julia Distributed processes, and
+thus it is recommended that you setup the processes in this fashion before using this
+ensembler. See Julia's Distributed documentation for more information
 """
 struct EnsembleSplitThreads <: BasicEnsembleAlgorithm end
-
-"""
-$(TYPEDEF)
-"""
-struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
     st = Iterators.filter(
@@ -114,11 +138,27 @@ tighten_container_eltype(u) = u
 function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}},
         alg::Union{AbstractDEAlgorithm, Nothing},
         ensemblealg::BasicEnsembleAlgorithm; kwargs...)
-    # TODO: @invoke
+    warn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel
+    Ensembles Simulations Interface page for more details")
     invoke(__solve, Tuple{AbstractEnsembleProblem, typeof(alg), typeof(ensemblealg)},
         prob, alg, ensemblealg; trajectories = length(prob.prob), kwargs...)
 end
 
+"""
+    sim = solve(enprob, alg, ensemblealg = EnsembleThreads(), kwargs...)
+
+Solves the ensemble problem `enprob` with the algorithm `alg` using the ensembler
+`ensemblealg`.
+
+The keyword arguments take in the arguments for the common solver interface and will
+pass them to the solver. The `ensemblealg` is optional, and will
+default to `EnsembleThreads()`. The special keyword arguments to note are:
+
+  - `trajectories`: The number of simulations to run. This argument is required.
+  - `batch_size` : The size of the batches on which the reductions are applies. Defaults to `trajectories`.
+  - `pmap_batch_size`: The size of the `pmap` batches. Default is
+    `batch_size÷100 > 0 ? batch_size÷100 : 1`
+"""
 function __solve(prob::AbstractEnsembleProblem,
         alg::A,
         ensemblealg::BasicEnsembleAlgorithm;
