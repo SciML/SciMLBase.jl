@@ -128,8 +128,8 @@ end
 #since NonlinearProblem might want to use this dispatch as well
 function SciMLBase.EnsembleProblem(
         prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...) where {T}
-    warn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel
-    Ensembles Simulations Interface page for more details")
+    Base.depwarn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel
+    Ensembles Simulations Interface page for more details", :EnsebleProblem)
     prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[i])
     return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
 end
