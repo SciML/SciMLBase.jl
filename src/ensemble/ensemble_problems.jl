@@ -95,8 +95,8 @@ DEFAULT_OUTPUT_FUNC(sol, i) = (sol, false)
 DEFAULT_REDUCTION(u, data, I) = append!(u, data), false
 DEFAULT_VECTOR_PROB_FUNC(prob, i, repeat) = prob[i]
 function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...)
-    warn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel
-    Ensembles Simulations Interface page for more details")
+    Base.depwarn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel
+    Ensembles Simulations Interface page for more details", :EnsembleProblem)
     invoke(EnsembleProblem,
         Tuple{Any},
         prob;
