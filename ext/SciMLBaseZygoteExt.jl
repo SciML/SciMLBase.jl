@@ -70,6 +70,9 @@ end
     function EnsembleSolution_adjoint(p̄::EnsembleSolution)
         (p̄, nothing, nothing, nothing)
     end
+    function EnsembleSolution_adjoint(p̄::NamedTuple)
+        (p̄.u, nothing, nothing, nothing)
+    end
     out, EnsembleSolution_adjoint
 end
 
@@ -80,11 +83,6 @@ end
         (Δ′, nothing)
     end
     VA[:, i], ODESolution_getindex_pullback
-end
-
-@adjoint function Zygote.literal_getproperty(sim::EnsembleSolution,
-        ::Val{:u})
-    sim.u, p̄ -> (EnsembleSolution(p̄, 0.0, true, sim.stats),)
 end
 
 @adjoint function Base.getindex(VA::ODESolution, sym)
