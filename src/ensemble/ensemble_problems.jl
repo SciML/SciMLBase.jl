@@ -218,7 +218,7 @@ $(TYPEDEF)
 
 Defines a weighted version of an `EnsembleProblem`, where different simulations contribute unequally.
 
-## Fields
+## Arguments
 
 - `ensembleprob`: The base ensemble problem.
 - `weights`: A vector of weights corresponding to each simulation.
@@ -252,9 +252,6 @@ $(TYPEDEF)
 
 Constructor for `WeightedEnsembleProblem`. Ensures weights sum to 1 and matches problem count.
 
-## Keyword Arguments
-
-- `weights`: A vector of weights for each trajectory.
 """
 function WeightedEnsembleProblem(args...; weights, kwargs...)
     @assert sum(weights) ≈ 1
