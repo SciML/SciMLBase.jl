@@ -254,6 +254,7 @@ Constructor for `WeightedEnsembleProblem`. Ensures weights sum to 1 and matches 
 
 """
 function WeightedEnsembleProblem(args...; weights, kwargs...)
+    # TODO: allow skipping checks?
     @assert sum(weights) ≈ 1
     ep = EnsembleProblem(args...; kwargs...)
     @assert length(ep.prob) == length(weights)
