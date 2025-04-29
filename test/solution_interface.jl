@@ -15,7 +15,8 @@ end
     end
 
     int_vars = SciMLBase.interpret_vars(nothing, sol) # nothing = idxs
-    plot_vecs, labels = SciMLBase.diffeq_to_arrays(sol,
+    plot_vecs,
+    labels = SciMLBase.diffeq_to_arrays(sol,
         true, # plot_analytic
         true, # denseplot
         10, # plotdensity

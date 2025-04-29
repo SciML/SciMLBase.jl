@@ -16,7 +16,8 @@ function ChainRulesCore.rrule(
         j::Integer)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
-        du, dprob = if i === nothing
+        du,
+        dprob = if i === nothing
             getter = getobserved(VA)
             grz = rrule_via_ad(config, getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
             du = [k == j ? grz[3] : zero(VA.u[1]) for k in 1:length(VA.u)]
@@ -83,7 +84,8 @@ function ChainRulesCore.rrule(
         (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16}(u, args...),
+    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16}(
+        u, args...),
     ODESolutionAdjoint
 end
 
@@ -99,7 +101,7 @@ function ChainRulesCore.rrule(
     end
 
     RODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-    T11, T12, T13, T14}(u, args...),
+        T11, T12, T13, T14}(u, args...),
     RODESolutionAdjoint
 end
 

@@ -138,8 +138,10 @@ tighten_container_eltype(u) = u
 function __solve(prob::EnsembleProblem{<:AbstractVector{<:AbstractSciMLProblem}},
         alg::Union{AbstractDEAlgorithm, Nothing},
         ensemblealg::BasicEnsembleAlgorithm; kwargs...)
-    Base.depwarn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel
-    Ensembles Simulations Interface page for more details", :EnsembleProblemSolve)
+    Base.depwarn(
+        "This dispatch is deprecated for the standard ensemble syntax. See the Parallel
+Ensembles Simulations Interface page for more details",
+        :EnsembleProblemSolve)
     invoke(__solve, Tuple{AbstractEnsembleProblem, typeof(alg), typeof(ensemblealg)},
         prob, alg, ensemblealg; trajectories = length(prob.prob), kwargs...)
 end

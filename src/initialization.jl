@@ -164,9 +164,10 @@ the `u0` and `p` as-is, and is always successful if it returns. Valid only for
 `AbstractDEProblem` and `AbstractDAEProblem`. Requires a `DEIntegrator` as its second argument.
 
 Keyword arguments:
-- `abstol`: The absolute value below which the norm of the residual of algebraic equations
-  should lie. The norm function used is `integrator.opts.internalnorm` if present, and
-  `LinearAlgebra.norm` if not.
+
+  - `abstol`: The absolute value below which the norm of the residual of algebraic equations
+    should lie. The norm function used is `integrator.opts.internalnorm` if present, and
+    `LinearAlgebra.norm` if not.
 """
 function get_initial_values(
         prob::AbstractDEProblem, integrator::DEIntegrator, f, alg::CheckInit,
@@ -219,12 +220,13 @@ If the field is absent or the value is `nothing`, return `u0` and `p` successful
 The success value returned depends on the success of the nonlinear solve.
 
 Keyword arguments:
-- `nlsolve_alg`: The NonlinearSolve.jl algorithm to use. If not provided, this function will
-  throw an error.
-- `abstol`, `reltol`: The `abstol` (`reltol`) to use for the nonlinear solve. The value
-  provided to the `OverrideInit` constructor takes priority over this keyword argument.
-  If the former is `nothing`, this keyword argument will be used. If it is also not provided,
-  an error will be thrown.
+
+  - `nlsolve_alg`: The NonlinearSolve.jl algorithm to use. If not provided, this function will
+    throw an error.
+  - `abstol`, `reltol`: The `abstol` (`reltol`) to use for the nonlinear solve. The value
+    provided to the `OverrideInit` constructor takes priority over this keyword argument.
+    If the former is `nothing`, this keyword argument will be used. If it is also not provided,
+    an error will be thrown.
 
 All additional keyword arguments are forwarded to `solve`.
 
