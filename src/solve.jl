@@ -8,6 +8,40 @@ function Base.showerror(io::IO, e::IncompatibleOptimizerError)
     print(io, e.err)
 end
 
+const NONCONCRETE_ELTYPE_MESSAGE = """
+                                   Non-concrete element type inside of an `Array` detected.
+                                   Arrays with non-concrete element types, such as
+                                   `Array{Union{Float32,Float64}}`, are not supported by the
+                                   optimizers. Anyways, this is bad for
+                                   performance so you don't want to be doing this!
+
+                                   If this was a mistake, promote the element types to be
+                                   all the same. If this was intentional, for example,
+                                   using Unitful.jl with different unit values, then use
+                                   an array type which has fast broadcast support for
+                                   heterogeneous values such as the ArrayPartition
+                                   from RecursiveArrayTools.jl. For example:
+
+                                   ```julia
+                                   using RecursiveArrayTools
+                                   x = ArrayPartition([1.0,2.0],[1f0,2f0])
+                                   y = ArrayPartition([3.0,4.0],[3f0,4f0])
+                                   x .+ y # fast, stable, and usable as u0 in some optimizers
+                                   ```
+
+                                   Element type:
+                                   """
+
+struct NonConcreteEltypeError <: Exception
+    eltype::Any
+end
+
+function Base.showerror(io::IO, e::NonConcreteEltypeError)
+    print(io, NONCONCRETE_ELTYPE_MESSAGE)
+    print(io, e.eltype)
+end
+
+
 """
 ```julia
 solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm, args...; kwargs...)
@@ -94,6 +128,9 @@ function solve(prob::OptimizationProblem, alg, args...;
     if supports_opt_cache_interface(alg)
         solve!(init(prob, alg, args...; kwargs...))
     else
+        if prob.u0 !== nothing && !isconcretetype(eltype(prob.u0))
+                throw(NonConcreteEltypeError(eltype(prob.u0)))
+        end
         _check_opt_alg(prob, alg; kwargs...)
         __solve(prob, alg, args...; kwargs...)
     end
@@ -169,6 +206,9 @@ These arguments can be passed as `kwargs...` to `init`.
 See also [`solve(prob::OptimizationProblem, alg, args...; kwargs...)`](@ref)
 """
 function init(prob::OptimizationProblem, alg, args...; kwargs...)::AbstractOptimizationCache
+    if prob.u0 !== nothing && !isconcretetype(eltype(prob.u0))
+        throw(NonConcreteEltypeError(eltype(prob.u0)))
+    end
     _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     cache = __init(prob, alg, args...; prob.kwargs..., kwargs...)
     return cache
