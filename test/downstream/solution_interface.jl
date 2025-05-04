@@ -202,15 +202,13 @@ end
         @mtkbuild sys = System([D(x) ~ x + p * y + x * a, D(y) ~ 2p + x^2 + y * b], t)
         xidx = variable_index(sys, x)
         prob = SDEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0), [p => 2.0])
-        sde_sol = solve(prob, SOSRI(); save_idxs = xidx)
-        subsys = SciMLBase.SavedSubsystem(sys, prob.p, [xidx])
-        # FIXME: hack for save_idxs
-        SciMLBase.@reset sde_sol.saved_subsystem = subsys
+        sde_sol = solve(prob, SOSRI(); save_idxs = [x])
 
         for sol in [ode_sol, dae_sol, sde_sol]
             prob = sol.prob
             subsys = sol.saved_subsystem
             xvals = sol[x]
+            xidx = variable_index(prob, x)
             @test sol[x] == xvals
             @test is_parameter(sol, p)
             @test parameter_index(sol, p) == parameter_index(sys, p)
