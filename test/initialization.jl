@@ -240,6 +240,24 @@ end
         @test success
     end
 
+    @testset "`is_update_oop` flag" begin
+        initprob = remake(initprob; u0 = ones(2), p = ones(1))
+        update_initializeprob = function (initprob, valp)
+            return remake(initprob; p = [valp.u[1]])
+        end
+        initdata = SciMLBase.OverrideInitData(initprob, update_initializeprob, initprobmap,
+            initprobpmap; is_update_oop = Val{true})
+        fn = ODEFunction(rhs2; initialization_data = initdata)
+        prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
+        integ = init(prob; initializealg = NoInit())
+        u0, p, success = SciMLBase.get_initial_values(
+            prob, integ, fn, SciMLBase.OverrideInit(), Val(false);
+            nlsolve_alg = NewtonRaphson(), abstol, reltol)
+        @test u0 ≈ [2.0, 2.0]
+        @test p ≈ 1.0
+        @test success
+    end
+
     @testset "Solves without `initializeprobmap`" begin
         initdata = SciMLBase.@set initialization_data.initializeprobmap = nothing
         fn = ODEFunction(rhs2; initialization_data = initdata)
