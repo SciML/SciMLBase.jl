@@ -495,8 +495,14 @@ mutable struct SCCNonlinearProblem{uType, iip, P, E, F <: NonlinearFunction{iip}
 
     function SCCNonlinearProblem{P, E, F, Par}(probs::P, funs::E, f::F, pobj::Par,
             alias::Bool) where {P, E, F <: NonlinearFunction, Par}
+        init = state_values(first(probs))
+        if ArrayInterface.ismutable(init)
+            init = similar(init)
+        else
+            init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
+        end
         u0 = mapreduce(
-            state_values, vcat, probs; init = similar(state_values(first(probs)), 0))
+            state_values, vcat, probs; init = init)
         uType = typeof(u0)
         new{uType, false, P, E, F, Par}(probs, funs, f, pobj, alias)
     end
@@ -526,8 +532,13 @@ function SymbolicIndexingInterface.parameter_values(prob::SCCNonlinearProblem)
     prob.p
 end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
-    mapreduce(
-        state_values, vcat, prob.probs; init = similar(state_values(first(prob.probs)), 0))
+    init = state_values(first(prob.probs))
+    if ArrayInterface.ismutable(init)
+        init = similar(init)
+    else
+        init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
+    end
+    mapreduce(state_values, vcat, prob.probs; init)
 end
 
 function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, idx)

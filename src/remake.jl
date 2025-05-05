@@ -834,13 +834,16 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     offset = 0
     if u0 !== missing || p !== missing && parameters_alias
         probs = map(probs) do subprob
+            _u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))]
+            if !ArrayInterface.ismutable(newu0)
+                _u0 = StaticArraysCore.similar_type(
+                    newu0, StaticArraysCore.Size(length(_u0)))(_u0)
+            end
             subprob = if parameters_alias
-                remake(subprob;
-                    u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))],
-                    p = newp)
+                remake(subprob; u0 = _u0, p = newp)
             else
                 remake(subprob;
-                    u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))])
+                    u0 = _u0)
             end
             offset += length(state_values(subprob))
             return subprob
