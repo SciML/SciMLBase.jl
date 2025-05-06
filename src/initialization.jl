@@ -3,7 +3,8 @@
 
 A collection of all the data required for `OverrideInit`.
 """
-struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap, M}
+struct OverrideInitData{
+    IProb, UIProb, IProbMap, IProbPmap, M, OOP <: Union{Val{true}, Val{false}}}
     """
     The `AbstractNonlinearProblem` to solve for initialization.
     """
@@ -38,20 +39,20 @@ struct OverrideInitData{IProb, UIProb, IProbMap, IProbPmap, M}
     If this flag is `Val{true}`, `update_initializeprob!` is treated as an out-of-place
     function which returns the updated `initializeprob`.
     """
-    is_update_oop::Union{Type{Val{true}}, Type{Val{false}}}
+    is_update_oop::OOP
 
     function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
-            initprobpmap::L, metadata::M, is_update_oop) where {I, J, K, L, M}
+            initprobpmap::L, metadata::M, is_update_oop::O) where {I, J, K, L, M, O}
         @assert initprob isa
                 Union{SCCNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
-        return new{I, J, K, L, M}(
+        return new{I, J, K, L, M, O}(
             initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop)
     end
 end
 
 function OverrideInitData(
         initprob, update_initprob!, initprobmap, initprobpmap;
-        metadata = nothing, is_update_oop = Val{false})
+        metadata = nothing, is_update_oop = Val(false))
     OverrideInitData(
         initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop)
 end
@@ -251,7 +252,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     initprob = initdata.initializeprob
 
     if initdata.update_initializeprob! !== nothing
-        if initdata.is_update_oop == Val{true}
+        if initdata.is_update_oop === Val(true)
             initprob = initdata.update_initializeprob!(initprob, valp)
         else
             initdata.update_initializeprob!(initprob, valp)

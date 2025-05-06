@@ -246,7 +246,7 @@ end
             return remake(initprob; p = [valp.u[1]])
         end
         initdata = SciMLBase.OverrideInitData(initprob, update_initializeprob, initprobmap,
-            initprobpmap; is_update_oop = Val{true})
+            initprobpmap; is_update_oop = Val(true))
         fn = ODEFunction(rhs2; initialization_data = initdata)
         prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
         integ = init(prob; initializealg = NoInit())
