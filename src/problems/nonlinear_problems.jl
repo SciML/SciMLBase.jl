@@ -557,7 +557,7 @@ end
 function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val, idx)
     if prob.p !== nothing
         set_parameter!(prob.p, val, idx)
-        prob.parameters_alias && return
+        prob.parameters_alias === Val(true) && return
     end
     for scc in prob.probs
         is_parameter(scc, idx) || continue

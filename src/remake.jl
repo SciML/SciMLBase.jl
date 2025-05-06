@@ -861,7 +861,10 @@ override the values in `probs`. `sys` is the index provider for the full system.
 function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, f = missing, sys = missing,
         interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing)
-    if p !== missing && !parameters_alias && probs === missing
+    if parameters_alias isa Bool
+        parameters_alias = Val(parameters_alias)
+    end
+    if p !== missing && parameters_alias === Val(false) && probs === missing
         throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
     end
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
@@ -874,7 +877,7 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     if sys === missing
         sys = prob.f.sys
     end
-    if u0 !== missing || p !== missing && parameters_alias
+    if u0 !== missing || p !== missing && parameters_alias === Val(true)
         probs = scc_update_subproblems(probs, newu0, newp, parameters_alias)
     end
     f = coalesce(f, prob.f)
