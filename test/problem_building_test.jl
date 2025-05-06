@@ -130,14 +130,15 @@ end
     prob1 = NonlinearProblem(f1, SA[1.0], p)
     prob2 = NonlinearProblem(f2, SA[0.0], p)
     prob3 = NonlinearProblem(f3, SA[1.0], p)
-    sccprob = SCCNonlinearProblem([prob1, prob2, prob3], [explicit1, explicit2, explicit3], p, true)
+    sccprob = SCCNonlinearProblem(
+        [prob1, prob2, prob3], [explicit1, explicit2, explicit3], p, true)
 
     @test !SciMLBase.isinplace(sccprob)
     @test sccprob isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob) isa SVector{3, Float64}
     @test sccprob.p === prob1.p === prob2.p === prob3.p
 
-    sccprob2 = remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
+    sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}

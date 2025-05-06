@@ -803,6 +803,49 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     return prob
 end
 
+function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
+    offset = Ref(0)
+    return map(probs) do subprob
+        # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
+        N = length(state_values(subprob))
+        if ArrayInterface.ismutable(newu0)
+            _u0 = newu0[(offset[] + 1):(offset[] + N)]
+        else
+            _u0 = StaticArraysCore.similar_type(
+                newu0, StaticArraysCore.Size(N))(newu0[(offset[] + 1):(offset[] + N)])
+        end
+        subprob = if parameters_alias === Val(true)
+            remake(subprob; u0 = _u0, p = newp)
+        else
+            remake(subprob; u0 = _u0)
+        end
+        offset[] += length(state_values(subprob))
+        return subprob
+    end
+end
+
+function scc_update_subproblems(probs::Tuple, newu0, newp, parameters_alias)
+    offset = Ref(0)
+    return ntuple(Val(length(probs))) do i
+        subprob = probs[i]
+        # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
+        N = length(state_values(subprob))
+        if ArrayInterface.ismutable(newu0)
+            _u0 = newu0[(offset[] + 1):(offset[] + N)]
+        else
+            _u0 = StaticArraysCore.similar_type(
+                newu0, StaticArraysCore.Size(N))(newu0[(offset[] + 1):(offset[] + N)])
+        end
+        subprob = if parameters_alias === Val(true)
+            remake(subprob; u0 = _u0, p = newp)
+        else
+            remake(subprob; u0 = _u0)
+        end
+        offset[] += N
+        return subprob
+    end
+end
+
 """
     remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing)
@@ -831,23 +874,8 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     if sys === missing
         sys = prob.f.sys
     end
-    offset = 0
     if u0 !== missing || p !== missing && parameters_alias
-        probs = map(probs) do subprob
-            _u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))]
-            if !ArrayInterface.ismutable(newu0)
-                _u0 = StaticArraysCore.similar_type(
-                    newu0, StaticArraysCore.Size(length(_u0)))(_u0)
-            end
-            subprob = if parameters_alias
-                remake(subprob; u0 = _u0, p = newp)
-            else
-                remake(subprob;
-                    u0 = _u0)
-            end
-            offset += length(state_values(subprob))
-            return subprob
-        end
+        probs = scc_update_subproblems(probs, newu0, newp, parameters_alias)
     end
     f = coalesce(f, prob.f)
     f = remake(f; sys)

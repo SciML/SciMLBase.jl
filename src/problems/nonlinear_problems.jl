@@ -484,33 +484,37 @@ Note that this example aliases the parameters together for a memory-reduced repr
 * `probs`: the collection of problems to solve
 * `explictfuns!`: the explicit functions for mutating the parameter set
 """
-mutable struct SCCNonlinearProblem{uType, iip, P, E, F <: NonlinearFunction{iip}, Par} <:
+mutable struct SCCNonlinearProblem{uType, iip, P, E, F <: NonlinearFunction{iip},
+    Par, Palias <: Union{Val{true}, Val{false}}} <:
                AbstractNonlinearProblem{uType, iip}
     probs::P
     explicitfuns!::E
     # NonlinearFunction with `f = Returns(nothing)`
     f::F
     p::Par
-    parameters_alias::Bool
+    parameters_alias::Palias
 
     function SCCNonlinearProblem{P, E, F, Par}(probs::P, funs::E, f::F, pobj::Par,
-            alias::Bool) where {P, E, F <: NonlinearFunction, Par}
+            alias::Palias) where {P, E, F <: NonlinearFunction, Par, Palias}
         init = state_values(first(probs))
         if ArrayInterface.ismutable(init)
-            init = similar(init)
+            init = similar(init, 0)
         else
             init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
         end
         u0 = mapreduce(
             state_values, vcat, probs; init = init)
         uType = typeof(u0)
-        new{uType, false, P, E, F, Par}(probs, funs, f, pobj, alias)
+        new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
 
 function SCCNonlinearProblem(probs, explicitfuns!, parameter_object = nothing,
-        parameters_alias = false; kwargs...)
+        parameters_alias::Union{Bool, Val{true}, Val{false}} = Val(false); kwargs...)
     f = NonlinearFunction{false}(Returns(nothing); kwargs...)
+    if parameters_alias isa Bool
+        parameters_alias = Val(parameters_alias)
+    end
     return SCCNonlinearProblem{typeof(probs), typeof(explicitfuns!),
         typeof(f), typeof(parameter_object)}(
         probs, explicitfuns!, f, parameter_object, parameters_alias)
@@ -534,7 +538,7 @@ end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
     init = state_values(first(prob.probs))
     if ArrayInterface.ismutable(init)
-        init = similar(init)
+        init = similar(init, 0)
     else
         init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
     end
