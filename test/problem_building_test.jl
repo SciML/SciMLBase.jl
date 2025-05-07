@@ -131,7 +131,7 @@ end
     prob2 = NonlinearProblem(f2, SA[0.0], p)
     prob3 = NonlinearProblem(f3, SA[1.0], p)
     sccprob = SCCNonlinearProblem(
-        [prob1, prob2, prob3], [explicit1, explicit2, explicit3], p, true)
+        (prob1, prob2, prob3), (explicit1, explicit2, explicit3), p, true)
 
     @test !SciMLBase.isinplace(sccprob)
     @test sccprob isa SCCNonlinearProblem{SVector{3, Float64}}
