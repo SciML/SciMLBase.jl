@@ -1,4 +1,4 @@
-using Test, SciMLBase, SymbolicIndexingInterface, Accessors
+using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays
 
 function simplependulum!(du, u, p, t)
     θ = u[1]
@@ -97,4 +97,49 @@ let
     dprob8 = DiscreteProblem{true}(nothing, u₀, tspan)
     @test dprob8.u0 === u₀
     @test dprob8.tspan === tspan
+end
+
+@testset "SCCNonlinearProblem with static arrays" begin
+    function f1(u, p)
+        y = u[1]
+        x = p[1]
+        return SA[1 - y^2 - x^2]
+    end
+
+    function f2(u, p)
+        yt = u[1]
+        x, xt, y = p
+        return SA[-2y * yt - 2x * xt]
+    end
+
+    function f3(u, p)
+        lam = u[1]
+        x, xt, y, yt = p
+        return SA[-2xt^2 - 2yt^2 - 2y * (-1 + y * lam) - 2x^2 * lam]
+    end
+
+    explicit1 = Returns(nothing)
+    function explicit2(p, sols)
+        p[3] = sols[1].u[1]
+    end
+    function explicit3(p, sols)
+        p[4] = sols[2].u[1]
+    end
+
+    p = [1.0, 0.0, NaN, NaN]
+    prob1 = NonlinearProblem(f1, SA[1.0], p)
+    prob2 = NonlinearProblem(f2, SA[0.0], p)
+    prob3 = NonlinearProblem(f3, SA[1.0], p)
+    sccprob = SCCNonlinearProblem(
+        (prob1, prob2, prob3), (explicit1, explicit2, explicit3), p, true)
+
+    @test !SciMLBase.isinplace(sccprob)
+    @test sccprob isa SCCNonlinearProblem{SVector{3, Float64}}
+    @test state_values(sccprob) isa SVector{3, Float64}
+    @test sccprob.p === prob1.p === prob2.p === prob3.p
+
+    sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
+    @test !SciMLBase.isinplace(sccprob2)
+    @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
+    @test state_values(sccprob2) isa SVector{3, Float64}
 end

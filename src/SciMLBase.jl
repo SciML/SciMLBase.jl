@@ -25,6 +25,7 @@ import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert
 using Moshi.Data: @data
 using Moshi.Match: @match
+import StaticArraysCore
 
 using Reexport
 using SciMLOperators

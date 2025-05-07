@@ -803,6 +803,61 @@ function remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p
     return prob
 end
 
+function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
+    offset = Ref(0)
+    return map(probs) do subprob
+        # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
+        N = length(state_values(subprob))
+        if ArrayInterface.ismutable(newu0)
+            _u0 = newu0[(offset[] + 1):(offset[] + N)]
+        else
+            _u0 = StaticArraysCore.similar_type(
+                newu0, StaticArraysCore.Size(N))(newu0[(offset[] + 1):(offset[] + N)])
+        end
+        subprob = if parameters_alias === Val(true)
+            remake(subprob; u0 = _u0, p = newp)
+        else
+            remake(subprob; u0 = _u0)
+        end
+        offset[] += length(state_values(subprob))
+        return subprob
+    end
+end
+
+@generated function scc_update_subproblems(probs::Tuple, newu0, newp, parameters_alias)
+    function get_expr(i::Int)
+        subprob_name = Symbol(:subprob, i)
+        quote
+            $subprob_name = probs[$i]
+            # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
+            N = length(state_values($subprob_name))
+            if ArrayInterface.ismutable(newu0)
+                _u0 = newu0[(offset + 1):(offset + N)]
+            else
+                _u0 = StaticArraysCore.similar_type(
+                    newu0, StaticArraysCore.Size(N))(newu0[(offset + 1):(offset + N)])
+            end
+            $subprob_name = if parameters_alias === Val(true)
+                remake($subprob_name; u0 = _u0, p = newp)
+            else
+                remake($subprob_name; u0 = _u0)
+            end
+            offset += N
+        end, subprob_name
+    end
+    expr = quote
+        offset = 0
+    end
+    subprob_names = []
+    for i in 1:fieldcount(probs)
+        subexpr, spname = get_expr(i)
+        push!(expr.args, subexpr)
+        push!(subprob_names, spname)
+    end
+    push!(expr.args, Expr(:tuple, subprob_names...))
+    return expr
+end
+
 """
     remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing)
@@ -818,7 +873,10 @@ override the values in `probs`. `sys` is the index provider for the full system.
 function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, f = missing, sys = missing,
         interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing)
-    if p !== missing && !parameters_alias && probs === missing
+    if parameters_alias isa Bool
+        parameters_alias = Val(parameters_alias)
+    end
+    if p !== missing && parameters_alias === Val(false) && probs === missing
         throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
     end
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
@@ -831,28 +889,14 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     if sys === missing
         sys = prob.f.sys
     end
-    offset = 0
-    if u0 !== missing || p !== missing && parameters_alias
-        probs = map(probs) do subprob
-            subprob = if parameters_alias
-                remake(subprob;
-                    u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))],
-                    p = newp)
-            else
-                remake(subprob;
-                    u0 = newu0[(offset + 1):(offset + length(state_values(subprob)))])
-            end
-            offset += length(state_values(subprob))
-            return subprob
-        end
+    if u0 !== missing || p !== missing && parameters_alias === Val(true)
+        probs = scc_update_subproblems(probs, newu0, newp, parameters_alias)
     end
     f = coalesce(f, prob.f)
     f = remake(f; sys)
-    props = getproperties(f)
-    props = @delete props.f
 
-    return SCCNonlinearProblem(
-        probs, explicitfuns!, newp, parameters_alias; props...)
+    return SCCNonlinearProblem{typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp)}(
+        probs, explicitfuns!, f, newp, parameters_alias)
 end
 
 function varmap_has_var(varmap, var)
