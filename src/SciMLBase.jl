@@ -641,9 +641,9 @@ abstract type AbstractAliasSpecifier end
 """
 $(TYPEDEF)
 
-Base for types which specify what will be printed during a solve. 
+Base for types which specify which log messages are emitted at what level.
 """
-abstract type AbstractVerbositySpecifier end
+abstract type AbstractVerbositySpecifier{T} end
 
 """
 $(TYPEDEF)
@@ -769,6 +769,8 @@ include("interpolation.jl")
 include("integrator_interface.jl")
 include("remake.jl")
 include("callbacks.jl")
+
+include("verbosity.jl")
 
 include("adapt.jl")
 
