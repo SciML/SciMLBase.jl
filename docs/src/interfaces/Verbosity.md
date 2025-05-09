@@ -46,6 +46,8 @@ Similarly, all of the group objects have equally flexible constructors, but take
 ```julia
 ODENumericalVerbosity(Verbosity.None()) #logs nothing
 ODENumericalVerbosity(Verbosity.Warn()) #everything is logged as a warning
+
+ODEErrorControlVerbosity(init_dt = Verbosity.Warn(), dt_NaN = Verbosity.Error())
 ```
 
 # SciMLMessage Macro
