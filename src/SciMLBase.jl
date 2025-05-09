@@ -109,7 +109,8 @@ abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractDEProblem en
 abstract type AbstractIntervalNonlinearProblem{uType, isinplace} <:
               AbstractNonlinearProblem{uType,
     isinplace} end
-const AbstractSteadyStateProblem{uType, isinplace} = AbstractNonlinearProblem{uType,
+const AbstractSteadyStateProblem{
+    uType, isinplace} = AbstractNonlinearProblem{uType,
     isinplace}
 
 """
@@ -374,7 +375,6 @@ abstract type AbstractDiscretization <: AbstractSciMLAlgorithm end
 # Discretization metadata
 """
 $(TYPEDEF)
-
 """
 abstract type AbstractDiscretizationMetadata{hasTime} end
 
@@ -567,7 +567,10 @@ abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
 """
 $(TYPEDEF)
 """
-const AbstractPDESolution{T, N, S, D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D},
+const AbstractPDESolution{T,
+    N,
+    S,
+    D} = Union{AbstractPDETimeSeriesSolution{T, N, S, D},
     AbstractPDENoTimeSolution{T, N, S, D}}
 
 """
@@ -629,8 +632,8 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
-Used to specify which variables can be aliased in a solve. 
-Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`. 
+Used to specify which variables can be aliased in a solve.
+Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`.
 """
 abstract type AbstractAliasSpecifier end
 

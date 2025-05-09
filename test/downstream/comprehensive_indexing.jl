@@ -103,23 +103,24 @@ non_timeseries_systems = [systems; esystems; integsystems; nsys; osys; optsys]
 timeseries_objects = [osol, ssol, jsol]
 timeseries_systems = [osys, ssys, jsys]
 
-@testset "Non-timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
+@testset "Non-timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in
+                                                                             zip(
     deepcopy(non_timeseries_objects), non_timeseries_systems)
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     @testset "State indexing" begin
         for (sym, val, newval) in [(X, u[uidxs[1]], 4.0)
-                                   (indp.X, u[uidxs[1]], 4.0)
-                                   (:X, u[uidxs[1]], 4.0)
-                                   (uidxs[1], u[uidxs[1]], 4.0)
-                                   ([X, Y], u[uidxs], 4ones(2))
-                                   ([indp.X, indp.Y], u[uidxs], 4ones(2))
-                                   ([:X, :Y], u[uidxs], 4ones(2))
-                                   (uidxs, u[uidxs], 4ones(2))
-                                   ((X, Y), Tuple(u[uidxs]), (4.0, 4.0))
-                                   ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
-                                   ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
-                                   (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))]
+             (indp.X, u[uidxs[1]], 4.0)
+             (:X, u[uidxs[1]], 4.0)
+             (uidxs[1], u[uidxs[1]], 4.0)
+             ([X, Y], u[uidxs], 4ones(2))
+             ([indp.X, indp.Y], u[uidxs], 4ones(2))
+             ([:X, :Y], u[uidxs], 4ones(2))
+             (uidxs, u[uidxs], 4ones(2))
+             ((X, Y), Tuple(u[uidxs]), (4.0, 4.0))
+             ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
+             ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
+             (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))]
             get = getsym(indp, sym)
             set! = setsym(indp, sym)
             @inferred get(valp)
@@ -145,11 +146,11 @@ timeseries_systems = [osys, ssys, jsys]
     @testset "Observed" begin
         # Observed functions don't infer
         for (sym, val) in [(XY, sum(u))
-                           (indp.XY, sum(u))
-                           (:XY, sum(u))
-                           ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
-                           ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
-                           (X * Y, prod(u))]
+             (indp.XY, sum(u))
+             (:XY, sum(u))
+             ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
+             ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
+             (X * Y, prod(u))]
             get = getsym(indp, sym)
             @test get(valp) == val
         end
@@ -163,17 +164,17 @@ timeseries_systems = [osys, ssys, jsys]
     pidxs = parameter_index.((indp,), [kp, kd, k1, k2])
     @testset "Parameter indexing" begin
         for (sym, oldval, newval) in [(kp, p[1], newp[1])
-                                      (indp.kp, p[1], newp[1])
-                                      (:kp, p[1], newp[1])
-                                      (pidxs[1], p[1], newp[1])
-                                      ([kp, kd], p[1:2], newp[1:2])
-                                      ([indp.kp, indp.kd], p[1:2], newp[1:2])
-                                      ([:kp, :kd], p[1:2], newp[1:2])
-                                      (pidxs[1:2], p[1:2], newp[1:2])
-                                      ((kp, kd), Tuple(p[1:2]), Tuple(newp[1:2]))
-                                      ((indp.kp, indp.kd), Tuple(p[1:2]), Tuple(newp[1:2]))
-                                      ((:kp, :kd), Tuple(p[1:2]), Tuple(newp[1:2]))
-                                      (Tuple(pidxs[1:2]), Tuple(p[1:2]), Tuple(newp[1:2]))]
+             (indp.kp, p[1], newp[1])
+             (:kp, p[1], newp[1])
+             (pidxs[1], p[1], newp[1])
+             ([kp, kd], p[1:2], newp[1:2])
+             ([indp.kp, indp.kd], p[1:2], newp[1:2])
+             ([:kp, :kd], p[1:2], newp[1:2])
+             (pidxs[1:2], p[1:2], newp[1:2])
+             ((kp, kd), Tuple(p[1:2]), Tuple(newp[1:2]))
+             ((indp.kp, indp.kd), Tuple(p[1:2]), Tuple(newp[1:2]))
+             ((:kp, :kd), Tuple(p[1:2]), Tuple(newp[1:2]))
+             (Tuple(pidxs[1:2]), Tuple(p[1:2]), Tuple(newp[1:2]))]
             get = getp(indp, sym)
             set! = setp(indp, sym)
 
@@ -198,7 +199,8 @@ timeseries_systems = [osys, ssys, jsys]
     end
 end
 
-@testset "Timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in zip(
+@testset "Timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in
+                                                                         zip(
     timeseries_objects, timeseries_systems)
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
@@ -208,59 +210,59 @@ end
     tvals = valp.t
     @testset "State indexing and observed" begin
         for (sym, val, check_inference, check_getindex) in [(X, xvals, true, true)
-                                                            (indp.X, xvals, true, true)
-                                                            (:X, xvals, true, true)
-                                                            (uidxs[1], xvals, true, false)
-                                                            ([X, Y], vcat.(xvals, yvals),
-                                                                true, true)
-                                                            ([indp.X, indp.Y],
-                                                                vcat.(xvals, yvals),
-                                                                true, true)
-                                                            ([:X, :Y],
-                                                                vcat.(xvals, yvals),
-                                                                true, true)
-                                                            (uidxs, vcat.(xvals, yvals),
-                                                                true, false)
-                                                            ((Y, X),
-                                                                tuple.(yvals, xvals),
-                                                                true, true)
-                                                            ((indp.Y, indp.X),
-                                                                tuple.(yvals, xvals),
-                                                                true, true)
-                                                            ((:Y, :X),
-                                                                tuple.(yvals, xvals),
-                                                                true, true)
-                                                            (Tuple(reverse(uidxs)),
-                                                                tuple.(yvals, xvals),
-                                                                true, false)
-                                                            (t, tvals, true, true)
-                                                            (:t, tvals, true, true)
-                                                            ([X, t], vcat.(xvals, tvals),
-                                                                false, true)
-                                                            ((Y, t),
-                                                                tuple.(yvals, tvals),
-                                                                true, true)
-                                                            ([],
-                                                                [[]
-                                                                 for _ in 1:length(tvals)],
-                                                                false,
-                                                                false)
-                                                            (XY, xyvals, true, true)
-                                                            (indp.XY, xyvals, true, true)
-                                                            (:XY, xyvals, true, true)
-                                                            ([X, indp.Y, :XY, X * Y],
-                                                                vcat.(xvals, yvals, xyvals,
-                                                                    xvals .* yvals),
-                                                                false,
-                                                                true)
-                                                            ((X, indp.Y, :XY, X * Y),
-                                                                tuple.(
-                                                                    xvals, yvals, xyvals,
-                                                                    xvals .* yvals),
-                                                                false,
-                                                                true)
-                                                            (X * Y, xvals .* yvals,
-                                                                false, true)]
+             (indp.X, xvals, true, true)
+             (:X, xvals, true, true)
+             (uidxs[1], xvals, true, false)
+             ([X, Y], vcat.(xvals, yvals),
+                 true, true)
+             ([indp.X, indp.Y],
+                 vcat.(xvals, yvals),
+                 true, true)
+             ([:X, :Y],
+                 vcat.(xvals, yvals),
+                 true, true)
+             (uidxs, vcat.(xvals, yvals),
+                 true, false)
+             ((Y, X),
+                 tuple.(yvals, xvals),
+                 true, true)
+             ((indp.Y, indp.X),
+                 tuple.(yvals, xvals),
+                 true, true)
+             ((:Y, :X),
+                 tuple.(yvals, xvals),
+                 true, true)
+             (Tuple(reverse(uidxs)),
+                 tuple.(yvals, xvals),
+                 true, false)
+             (t, tvals, true, true)
+             (:t, tvals, true, true)
+             ([X, t], vcat.(xvals, tvals),
+                 false, true)
+             ((Y, t),
+                 tuple.(yvals, tvals),
+                 true, true)
+             ([],
+                 [[]
+                  for _ in 1:length(tvals)],
+                 false,
+                 false)
+             (XY, xyvals, true, true)
+             (indp.XY, xyvals, true, true)
+             (:XY, xyvals, true, true)
+             ([X, indp.Y, :XY, X * Y],
+                 vcat.(xvals, yvals, xyvals,
+                     xvals .* yvals),
+                 false,
+                 true)
+             ((X, indp.Y, :XY, X * Y),
+                 tuple.(
+                     xvals, yvals, xyvals,
+                     xvals .* yvals),
+                 false,
+                 true)
+             (X * Y, xvals .* yvals,
+                 false, true)]
             get = getsym(indp, sym)
             if check_inference
                 @inferred get(valp)
@@ -287,17 +289,17 @@ end
 
     @testset "Parameter indexing" begin
         for (sym, oldval) in [(kp, p[1])
-                              (indp.kp, p[1])
-                              (:kp, p[1])
-                              (pidxs[1], p[1])
-                              ([kp, kd], p[1:2])
-                              ([indp.kp, indp.kd], p[1:2])
-                              ([:kp, :kd], p[1:2])
-                              (pidxs[1:2], p[1:2])
-                              ((kp, kd), Tuple(p[1:2]))
-                              ((indp.kp, indp.kd), Tuple(p[1:2]))
-                              ((:kp, :kd), Tuple(p[1:2]))
-                              (Tuple(pidxs[1:2]), Tuple(p[1:2]))]
+             (indp.kp, p[1])
+             (:kp, p[1])
+             (pidxs[1], p[1])
+             ([kp, kd], p[1:2])
+             ([indp.kp, indp.kd], p[1:2])
+             ([:kp, :kd], p[1:2])
+             (pidxs[1:2], p[1:2])
+             ((kp, kd), Tuple(p[1:2]))
+             ((indp.kp, indp.kd), Tuple(p[1:2]))
+             ((:kp, :kd), Tuple(p[1:2]))
+             (Tuple(pidxs[1:2]), Tuple(p[1:2]))]
             get = getp(indp, sym)
 
             @inferred get(valp)
@@ -670,64 +672,64 @@ end
     xd2val = getindex.(sol.discretes.collection[2].u, 2)
 
     for (sym, timeseries_index, val, buffer, isobs, check_inference) in [(ud1,
-                                                                             1,
-                                                                             ud1val,
-                                                                             zeros(length(ud1val)),
-                                                                             false,
-                                                                             true)
-                                                                         ([ud1, xd1],
-                                                                             1,
-                                                                             vcat.(ud1val,
-                                                                                 xd1val),
-                                                                             map(
-                                                                                 _ -> zeros(2),
-                                                                                 ud1val),
-                                                                             false,
-                                                                             true)
-                                                                         ((ud2, xd2),
-                                                                             2,
-                                                                             tuple.(ud2val,
-                                                                                 xd2val),
-                                                                             map(
-                                                                                 _ -> zeros(2),
-                                                                                 ud2val),
-                                                                             false,
-                                                                             true)
-                                                                         (ud2 + xd2,
-                                                                             2,
-                                                                             ud2val .+
-                                                                             xd2val,
-                                                                             zeros(length(ud2val)),
-                                                                             true,
-                                                                             true)
-                                                                         (
-                                                                             [ud2 + xd2,
-                                                                                 ud2 * xd2],
-                                                                             2,
-                                                                             vcat.(
-                                                                                 ud2val .+
-                                                                                 xd2val,
-                                                                                 ud2val .*
-                                                                                 xd2val),
-                                                                             map(
-                                                                                 _ -> zeros(2),
-                                                                                 ud2val),
-                                                                             true,
-                                                                             true)
-                                                                         (
-                                                                             (ud1 + xd1,
-                                                                                 ud1 * xd1),
-                                                                             1,
-                                                                             tuple.(
-                                                                                 ud1val .+
-                                                                                 xd1val,
-                                                                                 ud1val .*
-                                                                                 xd1val),
-                                                                             map(
-                                                                                 _ -> zeros(2),
-                                                                                 ud1val),
-                                                                             true,
-                                                                             true)]
+             1,
+             ud1val,
+             zeros(length(ud1val)),
+             false,
+             true)
+         ([ud1, xd1],
+             1,
+             vcat.(ud1val,
+                 xd1val),
+             map(
+                 _ -> zeros(2),
+                 ud1val),
+             false,
+             true)
+         ((ud2, xd2),
+             2,
+             tuple.(ud2val,
+                 xd2val),
+             map(
+                 _ -> zeros(2),
+                 ud2val),
+             false,
+             true)
+         (ud2 + xd2,
+             2,
+             ud2val .+
+             xd2val,
+             zeros(length(ud2val)),
+             true,
+             true)
+         (
+             [ud2 + xd2,
+                 ud2 * xd2],
+             2,
+             vcat.(
+                 ud2val .+
+                 xd2val,
+                 ud2val .*
+                 xd2val),
+             map(
+                 _ -> zeros(2),
+                 ud2val),
+             true,
+             true)
+         (
+             (ud1 + xd1,
+                 ud1 * xd1),
+             1,
+             tuple.(
+                 ud1val .+
+                 xd1val,
+                 ud1val .*
+                 xd1val),
+             map(
+                 _ -> zeros(2),
+                 ud1val),
+             true,
+             true)]
         getter = getp(sys, sym)
         if check_inference
             @inferred getter(sol)
@@ -923,7 +925,7 @@ end
 @testset "DDEs" begin
     function oscillator(; name, k = 1.0, τ = 0.01)
         @parameters k=k τ=τ
-        @variables x(..)=0.1 + t y(t)=0.1 + t jcn(t)=0.0 + t delx(t)
+        @variables x(..)=0.1+t y(t)=0.1+t jcn(t)=0.0+t delx(t)
         eqs = [D(x(t)) ~ y,
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ)]
@@ -954,7 +956,7 @@ end
     function oscillator(; name, k = 1.0, τ = 0.01)
         @parameters k=k τ=τ
         @brownian a
-        @variables x(..)=0.1 + t y(t)=0.1 + t jcn(t)=0.0 + t delx(t)
+        @variables x(..)=0.1+t y(t)=0.1+t jcn(t)=0.0+t delx(t)
         eqs = [D(x(t)) ~ y + a,
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ)]
