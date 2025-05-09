@@ -18,11 +18,13 @@ end
 
 function LinearErrorControlVerbosity(verbose::Verbosity.Type)
     @match verbose begin
-        Verbosity.None() => LinearErrorControlVerbosity(fill(Verbosity.None(), nfields(LinearErrorControlVerbosity))...)
+        Verbosity.None() => LinearErrorControlVerbosity(fill(Verbosity.None(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
-        Verbosity.Warn() => LinearErrorControlVerbosity(fill(Verbosity.Warn(), nfields(LinearErrorControlVerbosity))...)
+        Verbosity.Info() => LinearErrorControlVerbosity(fill(Verbosity.Info(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
-        Verbosity.Error() => LinearErrorControlVerbosity(fill(Verbosity.Error(), nfields(LinearErrorControlVerbosity))...)
+        Verbosity.Warn() => LinearErrorControlVerbosity(fill(Verbosity.Warn(), length(fieldnames(LinearErrorControlVerbosity)))...)
+
+        Verbosity.Error() => LinearErrorControlVerbosity(fill(Verbosity.Error(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
         Verbosity.Default() => LinearErrorControlVerbosity()
 
@@ -44,13 +46,16 @@ end
 function LinearPerformanceVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => LinearPerformanceVerbosity(fill(
-            Verbosity.None(), nfields(LinearPerformanceVerbosity))...)
+            Verbosity.None(), length(fieldnames(LinearPerformanceVerbosity)))...)
+
+        Verbosity.Info() => LinearPerformanceVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
         Verbosity.Warn() => LinearPerformanceVerbosity(fill(
-            Verbosity.Warn(), nfields(LinearPerformanceVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
         Verbosity.Error() => LinearPerformanceVerbosity(fill(
-            Verbosity.Error(), nfields(LinearPerformanceVerbosity))...)
+            Verbosity.Error(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
         Verbosity.Default() => LinearPerformanceVerbosity()
 
@@ -62,7 +67,7 @@ end
 
 mutable struct LinearNumericalVerbosity
     @add_kwonly function LinearNumericalVerbosity()
-        LinearNumericalVerbosity()
+        new()
     end
 
 end
@@ -71,13 +76,16 @@ end
 function LinearNumericalVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => LinearNumericalVerbosity(fill(
-            Verbosity.None(), nfields(LinearNumericalVerbosity))...)
+            Verbosity.None(), length(fieldnames(LinearNumericalVerbosity)))...)
+
+        Verbosity.Info() => LinearNumericalVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(LinearNumericalVerbosity)))...)
 
         Verbosity.Warn() => LinearNumericalVerbosity(fill(
-            Verbosity.Warn(), nfields(LinearNumericalVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(LinearNumericalVerbosity)))...)
 
         Verbosity.Error() => LinearNumericalVerbosity(fill(
-            Verbosity.Error(), nfields(LinearNumericalVerbosity))...)
+            Verbosity.Error(), length(fieldnames(LinearNumericalVerbosity)))...)
 
         Verbosity.Default() => LinearNumericalVerbosity()
 
@@ -87,7 +95,7 @@ function LinearNumericalVerbosity(verbose::Verbosity.Type)
     end
 end
 
-struct LinearVerbosity{T} 
+struct LinearVerbosity{T} <: AbstractVerbositySpecifier{T}
     error_control::LinearErrorControlVerbosity
     performance::LinearPerformanceVerbosity
     numerical::LinearNumericalVerbosity
@@ -106,10 +114,10 @@ function LinearVerbosity(verbose::Verbosity.Type)
             LinearPerformanceVerbosity(Verbosity.None()),
             LinearNumericalVerbosity(Verbosity.None()))
 
-        Verbosity.All() => ODEVerbosity{true}(
-            LinearErrorControlVerbosity(Verbosity.All()),
-            LinearPerformanceVerbosity(Verbosity.All()),
-            LinearNumericalVerbosity(Verbosity.All())
+        Verbosity.All() => LinearVerbosity{true}(
+            LinearErrorControlVerbosity(Verbosity.Info()),
+            LinearPerformanceVerbosity(Verbosity.Info()),
+            LinearNumericalVerbosity(Verbosity.Info())
         )
 
         _ => @error "Not a valid choice for verbosity."
@@ -120,7 +128,7 @@ end
 
 mutable struct NonlinearErrorControlVerbosity
     @add_kwonly function NonlinearErrorControlVerbosity()
-        NonlinearErrorControlVerbosity()
+        new()
     end
 end
 
@@ -129,13 +137,16 @@ end
 function NonlinearErrorControlVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => NonlinearErrorControlVerbosity(fill(
-            Verbosity.None(), nfields(NonlinearErrorControlVerbosity))...)
+            Verbosity.None(), length(fieldnames(NonlinearErrorControlVerbosity)))...)
+
+        Verbosity.Info() => NonlinearErrorControlVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(NonlinearErrorControlVerbosity)))...)
 
         Verbosity.Warn() => NonlinearErrorControlVerbosity(fill(
-            Verbosity.Warn(), nfields(NonlinearErrorControlVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(NonlinearErrorControlVerbosity)))...)
 
         Verbosity.Error() => NonlinearNumericalVerbosity(fill(
-            Verbosity.Error(), nfields(NonlinearErrorControlVerbosity))...)
+            Verbosity.Error(), length(fieldnames(NonlinearErrorControlVerbosity)))...)
 
         Verbosity.Default() => NonlinearErrorControlVerbosity()
 
@@ -156,13 +167,16 @@ end
 function NonlinearPerformanceVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => NonlinearPerformanceVerbosity(fill(
-            Verbosity.None(), nfields(NonlinearPerformanceVerbosity))...)
+            Verbosity.None(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
+
+        Verbosity.Info() => NonlinearPerformanceVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
 
         Verbosity.Warn() => NonlinPerformanceVerbosity(fill(
-            Verbosity.Warn(), nfields(NonlinearPerformanceVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
 
         Verbosity.Error() => NonlinearPerformanceVerbosity(fill(
-            Verbosity.Error(), nfields(NonlinearPerformanceVerbosity))...)
+            Verbosity.Error(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
 
         Verbosity.Default() => NonlinearPerformanceVerbosity()
 
@@ -182,13 +196,16 @@ end
 function NonlinearNumericalVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => NonlinearNumericalVerbosity(fill(
-            Verbosity.None(), nfields(NonlinearPerformanceVerbosity))...)
+            Verbosity.None(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
+
+        Verbosity.Info() => NonlinearNumericalVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
 
         Verbosity.Warn() => NonlinearNumericalVerbosity(fill(
-            Verbosity.Warn(), nfields(NonlinearPerformanceVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
 
         Verbosity.Error() => NonlinearNumericalVerbosity(fill(
-            Verbosity.Error(), nfields(NonlinearPerformanceVerbosity))...)
+            Verbosity.Error(), length(fieldnames(NonlinearPerformanceVerbosity)))...)
 
         Verbosity.Default() => NonlinearNumericalVerbosity()
 
@@ -198,7 +215,7 @@ function NonlinearNumericalVerbosity(verbose::Verbosity.Type)
     end
 end
 
-struct NonlinearVerbosity{T}
+struct NonlinearVerbosity{T} <: AbstractVerbositySpecifier{T}
     linear_verbosity::LinearVerbosity 
 
     error_control::NonlinearErrorControlVerbosity
@@ -221,11 +238,11 @@ function NonlinearVerbosity(verbose::Verbosity.Type)
             NonlinearPerformanceVerbosity(Verbosity.None()), 
             NonlinearNumericalVerbosity(Verbosity.None()))
 
-        Verbosity.All() => ODEVerbosity{true}(
+        Verbosity.All() => NonlinearVerbosity{true}(
             LinearVerbosity(Verbosity.All()),
-            NonlinearErrorControlVerbosity(Verbosity.All()),
-            NonlinearPerformanceVerbosity(Verbosity.All()),
-            NonlinearNumericalVerbosity(Verbosity.All())
+            NonlinearErrorControlVerbosity(Verbosity.Info()),
+            NonlinearPerformanceVerbosity(Verbosity.Info()),
+            NonlinearNumericalVerbosity(Verbosity.Info())
         )
 
         _ => @error "Not a valid choice for verbosity."
@@ -248,13 +265,16 @@ end
 function ODEErrorControlVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => ODEErrorControlVerbosity(fill(
-            Verbosity.None(), nfields(ODEErrorControlVerbosity))...)
+            Verbosity.None(), length(fieldnames(ODEErrorControlVerbosity)))...)
+
+        Verbosity.Info() => ODEErrorControlVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(ODEErrorControlVerbosity)))...)
 
         Verbosity.Warn() => ODEErrorControlVerbosity(fill(
-            Verbosity.Warn(), nfields(ODEErrorControlVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(ODEErrorControlVerbosity)))...)
 
         Verbosity.Error() => ODEErrorControlVerbosity(fill(
-            Verbosity.Error(), nfields(ODEErrorControlVerbosity))...)
+            Verbosity.Error(), length(fieldnames(ODEErrorControlVerbosity)))...)
 
         Verbosity.Default() => ODEErrorControlVerbosity(Verbosity.Info(), Verbosity.Error())
 
@@ -265,8 +285,8 @@ function ODEErrorControlVerbosity(verbose::Verbosity.Type)
 end
 
 mutable struct ODEPerformanceVerbosity
-    @add_kwonly function ODEPerformanceVerbosity(dt_NaN, init_NaN)
-        new(dt_NaN, init_NaN)
+    @add_kwonly function ODEPerformanceVerbosity()
+        new()
     end
 end
 
@@ -275,13 +295,16 @@ end
 function ODEPerformanceVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => ODEPerformanceVerbosity(fill(
-            Verbosity.None(), nfields(ODEPerformanceVerbosity))...)
+            Verbosity.None(), length(fieldnames(ODEPerformanceVerbosity)))...)
+
+        Verbosity.Info() => ODEPerformanceVerbosity(fill(
+            Verbosity.Info(), length(fieldnames(ODEPerformanceVerbosity)))...)
 
         Verbosity.Warn() => ODEPerformanceVerbosity(fill(
-            Verbosity.Warn(), nfields(ODEPerformanceVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(ODEPerformanceVerbosity)))...)
 
         Verbosity.Error() => ODEPerformanceVerbosity(fill(
-            Verbosity.Error(), nfields(ODEPerformanceVerbosity))...)
+            Verbosity.Error(), length(fieldnames(ODEPerformanceVerbosity)))...)
 
         Verbosity.Default() => ODEPerformanceVerbosity()
 
@@ -290,8 +313,8 @@ function ODEPerformanceVerbosity(verbose::Verbosity.Type)
 end
 
 mutable struct ODENumericalVerbosity
-    @add_kwonly function ODENumericalVerbosity(dt_NaN, init_NaN)
-        new(dt_NaN, init_NaN)
+    @add_kwonly function ODENumericalVerbosity()
+        new()
     end
 end
 
@@ -300,13 +323,16 @@ end
 function ODENumericalVerbosity(verbose::Verbosity.Type)
     @match verbose begin
         Verbosity.None() => ODENumericalVerbosity(fill(
-            Verbosity.None(), nfields(ODENumericalVerbosity))...)
+            Verbosity.None(), length(fieldnames(ODENumericalVerbosity)))...)
+
+        Verbosity.Info() => ODENumericalVerbosity(fill(
+            Verbosity.None(), length(fieldnames(ODENumericalVerbosity)))...)
 
         Verbosity.Warn() => ODENumericalVerbosity(fill(
-            Verbosity.Warn(), nfields(ODENumericalVerbosity))...)
+            Verbosity.Warn(), length(fieldnames(ODENumericalVerbosity)))...)
 
         Verbosity.Error() => ODENumericalVerbosity(fill(
-            Verbosity.Error(), nfields(ODENumericalVerbosity))...)
+            Verbosity.Error(), length(fieldnames(ODENumericalVerbosity)))...)
 
         Verbosity.Default() => ODENumericalVerbosity()
 
@@ -314,9 +340,9 @@ function ODENumericalVerbosity(verbose::Verbosity.Type)
     end
 end
 
-struct ODEVerbosity{T}
-    nonlinear_verbosity::NonlinearVerbosity
+struct ODEVerbosity{T} <: AbstractVerbositySpecifier{T}
     linear_verbosity::LinearVerbosity
+    nonlinear_verbosity::NonlinearVerbosity
 
     error_control::ODEErrorControlVerbosity
     performance::ODEPerformanceVerbosity
@@ -344,9 +370,9 @@ function ODEVerbosity(verbose::Verbosity.Type)
         Verbosity.All() => ODEVerbosity{true}(
             LinearVerbosity(Verbosity.All()),
             NonlinearVerbosity(Verbosity.All()),
-            ODEErrorControlVerbosity(Verbosity.All()),
-            ODEPerformanceVerbosity(Verbosity.All()),
-            ODENumericalVerbosity(Verbosity.All())
+            ODEErrorControlVerbosity(Verbosity.Info()),
+            ODEPerformanceVerbosity(Verbosity.Info()),
+            ODENumericalVerbosity(Verbosity.Info())
         )
 
         _ => @error "Not a valid choice for verbosity."
@@ -385,7 +411,7 @@ function ODEVerbosity(; error_control = Verbosity.Default(), performance = Verbo
         nonlinear = nonlinear_verbosity
     end
 
-    ODEVerbosity(nonlinear, linear, error_control_verbosity, performance_verbosity, numerical_verbosity)
+    ODEVerbosity{true}(linear, nonlinear, error_control_verbosity, performance_verbosity, numerical_verbosity)
 end
 
 
@@ -405,17 +431,18 @@ function message_level(verbose::AbstractVerbositySpecifier{true}, option, group)
 end
 
 function emit_message(
-        f::Function, verbose::AbstractVerbositySpecifier{true}, option, group, file, line, _module)
-    level = message_level(verbose, option, group)
+    f::Function, verbose::V, option, group, file, line, _module) where {V<:AbstractVerbositySpecifier{true}}
 
+    level = message_level(
+        verbose, option, group) 
     if !isnothing(level)
         message = f()
         Base.@logmsg level message _file=file _line=line _module=_module
     end
 end
 
-function emit_message(message::String, verbose::AbstractVerbositySpecifier{true},
-        option, group, file, line, _module)
+function emit_message(message::String, verbose::V,
+        option, group, file, line, _module) where {V<:AbstractVerbositySpecifier{true}}
     level = message_level(verbose, option, group)
 
     if !isnothing(level)
@@ -454,5 +481,5 @@ macro SciMLMessage(f_or_message, verb, option, group)
     file = string(__source__.file)
     _module = __module__
     return :(emit_message(
-        $(esc(f_or_message)), $(esc(verb)), $toggle, $group, $file, $line, $_module))
+        $(esc(f_or_message)), $(esc(verb)), $option, $group, $file, $line, $_module))
 end
