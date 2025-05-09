@@ -1,78 +1,14 @@
 @data Verbosity begin
     None
-    Edge
     Info
     Warn
     Error
+    Level(Int)
+    Edge
     All
     Default
-    Level(Int)
+
 end
-
-
-function message_level(verbose::AbstractVerbositySpecifier{true}, option, group)
-    group = getproperty(verbose, group)
-    opt_level = getproperty(group, option)
-
-    @match opt_level begin
-        Verbosity.None() => nothing
-        Verbosity.Info() => Logging.Info
-        Verbosity.Warn() => Logging.Warn
-        Verbosity.Error() => Logging.Error
-        Verbosity.Level(i) => Logging.LogLevel(i)
-    end
-end
-
-function emit_message(
-        f::Function, verbose::AbstractVerbositySpecifier{true}, option, group, file, line, _module)
-    level = message_level(verbose, option, group)
-
-    if !isnothing(level)
-        message = f()
-        Base.@logmsg level message _file=file _line=line _module=_module
-    end
-end
-
-function emit_message(message::String, verbose::AbstractVerbositySpecifier{true}, option, group, file, line, _module)
-    level = message_level(verbose, option, group)
-
-    if !isnothing(level)
-        Base.@logmsg level message _file=file _line=line _module=_module
-    end
-end
-
-function emit_message(f, verbose::AbstractVerbositySpecifier{false}, option, group, file, line, _module)
-end
-
-@doc doc"""
-A macro that emits a log message based on the log level specified in the `option` and `group` of the `AbstractVerbositySpecifier` supplied. 
-    
-`f_or_message` may be a message String, or a 0-argument function that returns a String. 
-
-## Usage
-To emit a simple string, `@SciMLMessage("message", verbosity, :option, :group)` will emit a log message with the LogLevel specified in `verbosity`, at the appropriate `option` and `group`. 
-
-`@SciMLMessage` can also be used to emit a log message coming from the evaluation of a 0-argument function. This function is resolved in the environment of the macro call.
-Therefore it can use variables from the surrounding evironment. This may be useful if the log message writer wishes to carry out some calculations using existing variables
-and use them.
-
-```julia
-x = 10
-y = 20
-
-@SciMLMessage(verbosity, :option, :group) do 
-    z = x + y
-    "Message is: x + y = \$z"
-end
-```
-"""
-macro SciMLMessage(f_or_message, verb, option, group)
-    line = __source__.line
-    file = string(__source__.file)
-    _module = __module__
-    return :(emit_message($(esc(f_or_message)), $(esc(verb)), $toggle, $group, $file, $line, $_module))
-end
-
 
 # Linear Verbosity
 
@@ -88,9 +24,9 @@ function LinearErrorControlVerbosity(verbose::Verbosity.Type)
 
         Verbosity.Error() => LinearErrorControlVerbosity(fill(Verbosity.Error(), nfields(LinearErrorControlVerbosity))...)
 
-        Verbosity.Default() => LinearErrorControlVerbosity(Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => LinearErrorControlVerbosity()
 
-        Verbosity.Edge() => LinearErrorControlVerbosity(Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => LinearErrorControlVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -116,10 +52,9 @@ function LinearPerformanceVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => LinearPerformanceVerbosity(fill(
             Verbosity.Error(), nfields(LinearPerformanceVerbosity))...)
 
-        Verbosity.Default() => LinearPerformanceVerbosity(
-            Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => LinearPerformanceVerbosity()
 
-        Verbosity.Edge() => LinearPerformanceVerbosity(Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => LinearPerformanceVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -144,10 +79,9 @@ function LinearNumericalVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => LinearNumericalVerbosity(fill(
             Verbosity.Error(), nfields(LinearNumericalVerbosity))...)
 
-        Verbosity.Default() => LinearNumericalVerbosity(
-            Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => LinearNumericalVerbosity()
 
-        Verbosity.Edge() => LinearNumericalVerbosity(Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => LinearNumericalVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -203,10 +137,9 @@ function NonlinearErrorControlVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => NonlinearNumericalVerbosity(fill(
             Verbosity.Error(), nfields(NonlinearErrorControlVerbosity))...)
 
-        Verbosity.Default() => NonlinearErrorControlVerbosity(
-            Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => NonlinearErrorControlVerbosity()
 
-        Verbosity.Edge() => NonlinearErrorControlVerbosity(Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => NonlinearErrorControlVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -214,7 +147,7 @@ end
 
 mutable struct NonlinearPerformanceVerbosity
     @add_kwonly function NonlinearPerformanceVerbosity()
-        NonlinearPerformanceVerbosity()
+        new()
     end
 
 end
@@ -231,11 +164,9 @@ function NonlinearPerformanceVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => NonlinearPerformanceVerbosity(fill(
             Verbosity.Error(), nfields(NonlinearPerformanceVerbosity))...)
 
-        Verbosity.Default() => NonlinearPerformanceVerbosity(
-            Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => NonlinearPerformanceVerbosity()
 
-        Verbosity.Edge() => NonlinearPerformanceVerbosity(
-            Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => NonlinearPerformanceVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -244,7 +175,7 @@ end
 
 mutable struct NonlinearNumericalVerbosity
     @add_kwonly function NonlinearNumericalVerbosity()
-        NonlinearNumericalVerbosity()
+        new()
     end
 end
 
@@ -259,11 +190,9 @@ function NonlinearNumericalVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => NonlinearNumericalVerbosity(fill(
             Verbosity.Error(), nfields(NonlinearPerformanceVerbosity))...)
 
-        Verbosity.Default() => NonlinearNumericalVerbosity(
-            Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => NonlinearNumericalVerbosity()
 
-        Verbosity.Edge() => NonlinearNumericalVerbosity(
-            Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => NonlinearNumericalVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -310,7 +239,7 @@ mutable struct ODEErrorControlVerbosity
     init_NaN::Verbosity.Type
 
     @add_kwonly function ODEErrorControlVerbosity(dt_NaN, init_NaN)
-        ODEErrorControlVerbosity(dt_NaN, init_NaN)
+        new(dt_NaN, init_NaN)
     end
 end
 
@@ -337,7 +266,7 @@ end
 
 mutable struct ODEPerformanceVerbosity
     @add_kwonly function ODEPerformanceVerbosity(dt_NaN, init_NaN)
-        ODEPerformanceVerbosity(dt_NaN, init_NaN)
+        new(dt_NaN, init_NaN)
     end
 end
 
@@ -354,7 +283,7 @@ function ODEPerformanceVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => ODEPerformanceVerbosity(fill(
             Verbosity.Error(), nfields(ODEPerformanceVerbosity))...)
 
-        Verbosity.Default() => ODEPerformanceVerbosity(Verbosity.Warn(), Verbosity.Error())
+        Verbosity.Default() => ODEPerformanceVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -362,7 +291,7 @@ end
 
 mutable struct ODENumericalVerbosity
     @add_kwonly function ODENumericalVerbosity(dt_NaN, init_NaN)
-        ODEErrorControlVerbosity(dt_NaN, init_NaN)
+        new(dt_NaN, init_NaN)
     end
 end
 
@@ -379,7 +308,7 @@ function ODENumericalVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => ODENumericalVerbosity(fill(
             Verbosity.Error(), nfields(ODENumericalVerbosity))...)
 
-        Verbosity.Default() => ODENumericalVerbosity(Verbosity.Warn(), Verbosity.Error())
+        Verbosity.Default() => ODENumericalVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -457,4 +386,73 @@ function ODEVerbosity(; error_control = Verbosity.Default(), performance = Verbo
     end
 
     ODEVerbosity(nonlinear, linear, error_control_verbosity, performance_verbosity, numerical_verbosity)
+end
+
+
+# Utilities 
+
+function message_level(verbose::AbstractVerbositySpecifier{true}, option, group)
+    group = getproperty(verbose, group)
+    opt_level = getproperty(group, option)
+
+    @match opt_level begin
+        Verbosity.None() => nothing
+        Verbosity.Info() => Logging.Info
+        Verbosity.Warn() => Logging.Warn
+        Verbosity.Error() => Logging.Error
+        Verbosity.Level(i) => Logging.LogLevel(i)
+    end
+end
+
+function emit_message(
+        f::Function, verbose::AbstractVerbositySpecifier{true}, option, group, file, line, _module)
+    level = message_level(verbose, option, group)
+
+    if !isnothing(level)
+        message = f()
+        Base.@logmsg level message _file=file _line=line _module=_module
+    end
+end
+
+function emit_message(message::String, verbose::AbstractVerbositySpecifier{true},
+        option, group, file, line, _module)
+    level = message_level(verbose, option, group)
+
+    if !isnothing(level)
+        Base.@logmsg level message _file=file _line=line _module=_module
+    end
+end
+
+function emit_message(
+        f, verbose::AbstractVerbositySpecifier{false}, option, group, file, line, _module)
+end
+
+@doc doc"""
+A macro that emits a log message based on the log level specified in the `option` and `group` of the `AbstractVerbositySpecifier` supplied. 
+    
+`f_or_message` may be a message String, or a 0-argument function that returns a String. 
+
+## Usage
+To emit a simple string, `@SciMLMessage("message", verbosity, :option, :group)` will emit a log message with the LogLevel specified in `verbosity`, at the appropriate `option` and `group`. 
+
+`@SciMLMessage` can also be used to emit a log message coming from the evaluation of a 0-argument function. This function is resolved in the environment of the macro call.
+Therefore it can use variables from the surrounding environment. This may be useful if the log message writer wishes to carry out some calculations using existing variables
+and use them in the log message.
+
+```julia
+x = 10
+y = 20
+
+@SciMLMessage(verbosity, :option, :group) do 
+    z = x + y
+    "Message is: x + y = \$z"
+end
+```
+"""
+macro SciMLMessage(f_or_message, verb, option, group)
+    line = __source__.line
+    file = string(__source__.file)
+    _module = __module__
+    return :(emit_message(
+        $(esc(f_or_message)), $(esc(verb)), $toggle, $group, $file, $line, $_module))
 end
