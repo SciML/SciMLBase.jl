@@ -45,12 +45,11 @@ end
 """
 $(TYPEDEF)
 
-Representation of the solution to a non-linear optimization defined by an OptimizationProblem
+Representation of the solution to a non-linear optimization defined by an OptimizationProblem.
 
 ## Fields
 
 - `u`: the representation of the optimization's solution.
-- `cache::AbstractOptimizationCache`: the optimization cache` that was solved.
 - `alg`: the algorithm type used by the solver.
 - `objective`: Objective value of the solution
 - `retcode`: the return code from the solver. Used to determine whether the solver solved
@@ -59,6 +58,16 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 - `original`: if the solver is wrapped from a external solver, e.g.
   Optim.jl, then this is the original return from said solver library.
 - `stats`: statistics of the solver, such as the number of function evaluations required.
+
+## Internal Fields
+
+- `cache::AbstractOptimizationCache`: the optimization cache that was solved.
+
+## Interface
+
+`OptimizationSolution` is a `SciMLBase.AbstractNoTimeSolution`. For more information on the SciML
+solution interfaces, check out the 
+[SciML Solution Interface documentation page](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/)
 """
 struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST} <:
        AbstractOptimizationSolution{T, N}
