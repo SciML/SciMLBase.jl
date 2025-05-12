@@ -948,7 +948,7 @@ dt: the time step
 
 ```julia
 ImplicitDiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing, 
+                                analytic = __has_analytic(f) ? f.analytic : nothing,
                                 resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing)
 ```
 
@@ -2107,7 +2107,7 @@ A representation of a ODE function `f` with inputs, defined by:
 ```math
 \frac{dx}{dt} = f(x, u, p, t)
 ```
-where `x` are the states of the system and `u` are the inputs (which may represent 
+where `x` are the states of the system and `u` are the inputs (which may represent
 different things in different contexts, such as control variables in optimal control).
 
 Includes all of its related functions, such as the Jacobian of `f`, its gradient
@@ -2134,7 +2134,7 @@ ODEInputFunction{iip, specialize}(f;
     sys = __has_sys(f) ? f.sys : nothing)
 ```
 
-`f` should be given as `f(x_out,x,u,p,t)` or `out = f(x,u,p,t)`. 
+`f` should be given as `f(x_out,x,u,p,t)` or `out = f(x,u,p,t)`.
 See the section on `iip` for more details on in-place vs out-of-place handling.
 
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
@@ -4255,7 +4255,7 @@ end
 
 # Convenience constructor
 function MultiObjectiveOptimizationFunction(f, args...; kwargs...)
-    isinplace(f, 2, outofplace_param_number=2)
+    isinplace(f, 3)
     MultiObjectiveOptimizationFunction{true}(f, args...; kwargs...)
 end
 
