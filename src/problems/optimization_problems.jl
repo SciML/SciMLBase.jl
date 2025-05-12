@@ -131,8 +131,7 @@ function OptimizationProblem(
     OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
 end
 function OptimizationProblem(f, args...; kwargs...)
-    isinplace(f, 2, has_two_dispatches = false)
-    OptimizationProblem{true}(OptimizationFunction{true}(f), args...; kwargs...)
+    OptimizationProblem(OptimizationFunction(f), args...; kwargs...)
 end
 
 function OptimizationFunction(

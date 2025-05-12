@@ -4199,7 +4199,10 @@ IntervalNonlinearFunction(f::IntervalNonlinearFunction; kwargs...) = f
 struct NoAD <: AbstractADType end
 
 (f::OptimizationFunction)(args...) = f.f(args...)
-OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
+function OptimizationFunction(f, args...; kwargs...)
+    isinplace(f, 2, outofplace_param_number=2)
+    OptimizationFunction{true}(f, args...; kwargs...)
+end
 
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
@@ -4251,8 +4254,9 @@ end
 (f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
 
 # Convenience constructor
-function MultiObjectiveOptimizationFunction(args...; kwargs...)
-    MultiObjectiveOptimizationFunction{true}(args...; kwargs...)
+function MultiObjectiveOptimizationFunction(f, args...; kwargs...)
+    isinplace(f, 2, outofplace_param_number=2)
+    MultiObjectiveOptimizationFunction{true}(f, args...; kwargs...)
 end
 
 # Constructor with keyword arguments
@@ -4339,7 +4343,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         if iip_f
             jac = update_coefficients! #(J,u,p,t)
         else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+            jac_prototype_copy = deepcopy(jac_prototype)
+            jac = (u, p, t) -> update_coefficients!(jac_prototype_copy, u, p, t)
         end
     end
 
@@ -4347,7 +4352,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         if iip_bc
             bcjac = update_coefficients! #(J,u,p,t)
         else
-            bcjac = (u, p, t) -> update_coefficients!(deepcopy(bcjac_prototype), u, p, t)
+            bcjac_prototype_copy = deepcopy(bcjac_prototype)
+            bcjac = (u, p, t) -> update_coefficients!(bcjac_prototype_copy, u, p, t)
         end
     end
 
@@ -4512,7 +4518,8 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
         if iip_f
             jac = update_coefficients! #(J,u,p,t)
         else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+            jac_prototype_copy = deepcopy(jac_prototype)
+            jac = (u, p, t) -> update_coefficients!(jac_prototype_copy, u, p, t)
         end
     end
 
@@ -4520,7 +4527,8 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
         if iip_bc
             bcjac = update_coefficients! #(J,u,p,t)
         else
-            bcjac = (u, p, t) -> update_coefficients!(deepcopy(bcjac_prototype), u, p, t)
+            bcjac_prototype_copy = deepcopy(jac_prototype)
+            bcjac = (u, p, t) -> update_coefficients!(bcjac_prototype_copy, u, p, t)
         end
     end
 
