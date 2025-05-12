@@ -29,7 +29,7 @@ end
     # for method_ambiguity in ambs
     #     @show method_ambiguity
     # end
-    @warn "Number of method ambiguities: $(length(ambs))"
+    !isempty(ambs) &&@warn "Number of method ambiguities: $(length(ambs))"
     @test length(ambs) ≤ 8
 end
 
