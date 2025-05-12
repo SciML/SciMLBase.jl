@@ -58,7 +58,7 @@ ODEFunction(ofboth)
 @inferred ODEFunction{false}(ofboth)
 
 jac(u, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, jac = jac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, jac = jac)
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, jac = jac)
 jac(u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, jac = jac)
@@ -832,8 +832,8 @@ itoo(y, u, p, a) = y .= u * p
 
 @test_throws SciMLBase.IntegrandMismatchFunctionError IntegralFunction(iiip)
 @test_throws SciMLBase.TooFewArgumentsError IntegralFunction(i1)
-@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(itoo)
-@test_throws SciMLBase.TooFewArgumentsError IntegralFunction(itoo, Float64[])
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo)
+@test_throws SciMLBase.TooManyArgumentsError IntegralFunction(itoo, Float64[])
 
 # BatchIntegralFunction
 
@@ -851,5 +851,5 @@ bitoo(y, u, p, a) = y .= p .* u
 
 @test_throws SciMLBase.IntegrandMismatchFunctionError BatchIntegralFunction(biip)
 @test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1)
-@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bitoo)
-@test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bitoo, Float64[])
+@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo)
+@test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[])
