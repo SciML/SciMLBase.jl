@@ -4199,7 +4199,7 @@ IntervalNonlinearFunction(f::IntervalNonlinearFunction; kwargs...) = f
 struct NoAD <: AbstractADType end
 
 (f::OptimizationFunction)(args...) = f.f(args...)
-OptimizationFunction(args...; kwargs...) = OptimizationFunction{true}(args...; kwargs...)
+OptimizationFunction(f, args...; kwargs...) = OptimizationFunction{isinplace(f, 3)}(f, args...; kwargs...)
 
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
@@ -4251,8 +4251,8 @@ end
 (f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
 
 # Convenience constructor
-function MultiObjectiveOptimizationFunction(args...; kwargs...)
-    MultiObjectiveOptimizationFunction{true}(args...; kwargs...)
+function MultiObjectiveOptimizationFunction(f, args...; kwargs...)
+    MultiObjectiveOptimizationFunction{isinplace(f, 3)}(f, args...; kwargs...)
 end
 
 # Constructor with keyword arguments
