@@ -54,8 +54,8 @@ ofboth(u, p, t) = u
 ofboth(du, u, p, t) = du .= u
 
 ODEFunction(ofboth)
-ODEFunction{true}(ofboth)
-ODEFunction{false}(ofboth)
+@inferred ODEFunction{true}(ofboth)
+@inferred ODEFunction{false}(ofboth)
 
 jac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, jac = jac)
@@ -428,8 +428,8 @@ nfboth(u, p) = u
 nfboth(du, u, p) = du .= u
 
 NonlinearFunction(nfboth)
-NonlinearFunction{true}(nfboth)
-NonlinearFunction{false}(nfboth)
+@inferred NonlinearFunction{true}(nfboth)
+@inferred NonlinearFunction{false}(nfboth)
 
 njac(u) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError NonlinearFunction(nfiip, jac = njac)
@@ -520,8 +520,8 @@ bcfboth(u, p, t) = u
 bcfboth(du, u, p, t) = du .= u
 
 BVPFunction(bfboth, bcfboth)
-BVPFunction{true}(bfboth, bcfboth)
-BVPFunction{false}(bfboth, bcfboth)
+@inferred BVPFunction{true}(bfboth, bcfboth)
+@inferred BVPFunction{false}(bfboth, bcfboth)
 
 bjac(u, t) = [1.0]
 bcjac(u, t) = [1.0]
@@ -663,8 +663,8 @@ dbcfboth(du, u, p, t) = u
 dbcfboth(res, du, u, p, t) = res .= du .- u
 
 DynamicalBVPFunction(dbfboth, dbcfboth)
-DynamicalBVPFunction{true}(dbfboth, dbcfboth)
-DynamicalBVPFunction{false}(dbfboth, dbcfboth)
+@inferred DynamicalBVPFunction{true}(dbfboth, dbcfboth)
+@inferred DynamicalBVPFunction{false}(dbfboth, dbcfboth)
 
 dbjac(du, u, t) = [1.0]
 dbcjac(du, u, t) = [1.0]
