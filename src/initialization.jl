@@ -282,7 +282,17 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
             throw(OverrideInitNoTolerance(:reltol))
         end
         nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol, kwargs...)
-        success = SciMLBase.successful_retcode(nlsol)
+
+        success = if initprob isa NonlinearLeastSquaresProblem
+            # Do not accept StalledSuccess as a solution
+            # A good local minima is not a success 
+            resid = nlsol.resid
+            normresid = isdefined(integrator.opts, :internalnorm) ?
+            integrator.opts.internalnorm(resid, t) : norm(resid)
+            SciMLBase.successful_retcode(nlsol) && normresid <= abstol
+        else
+            SciMLBase.successful_retcode(nlsol)
+        end
     end
 
     if initdata.initializeprobmap !== nothing

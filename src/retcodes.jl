@@ -392,14 +392,35 @@ EnumX.@enumx ReturnCode begin
         ReturnCode.Stalled
 
     The solution has stalled. This is only returned by algorithms for which stalling is a
-    failure mode. Certain solvers like Nonlinear Least Squares solvers are considered
-    successful if the solution has stalled, in those cases `ReturnCode.Success` is returned.
+    failure mode, such as on a NonlinearProblem where the found solution is larger than
+    the accepted tolerance.
 
     ## Properties
 
       - `successful_retcode` = `false`
     """
     Stalled
+
+    """
+      ReturnCode.StalledSuccess
+
+    The solution process has stalled, but the stall is not considered a failure of the solver.
+    For example, a nonlinear optimizer may have stalled, that is its steps went to zero, which
+    is a valid local minima. 
+
+    ## Common Reasons for Seeing this Return Code
+
+      - For nonlinear least squares optimizations, this is given for local minima which exceed 
+        the chosen tolerance, i.e. `f(x)=resid` where `||resid||>tol` so it's not considered 
+        ReturnCode.Success but it is still considered a sucessful return of the solver since
+        it's a valid local minima (and there no minima which achieves the tolerance).
+
+    ## Properties
+
+      - `successful_retcode` = `true`
+
+    """
+    StalledSuccess
 
     """
         ReturnCode.InternalLinearSolveFailed
@@ -510,6 +531,7 @@ function successful_retcode(retcode::ReturnCode.T)
     retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
         retcode == ReturnCode.ExactSolutionLeft ||
         retcode == ReturnCode.ExactSolutionRight ||
-        retcode == ReturnCode.FloatingPointLimit
+        retcode == ReturnCode.FloatingPointLimit ||
+        retcode == ReturnCode.StalledSuccess
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)

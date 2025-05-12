@@ -82,14 +82,21 @@ SciMLBase.ReturnCode.Terminated
 SciMLBase.ReturnCode.DtNaN
 SciMLBase.ReturnCode.MaxIters
 SciMLBase.ReturnCode.MaxNumSub
+SciMLBase.ReturnCode.MaxTime
 SciMLBase.ReturnCode.DtLessThanMin
 SciMLBase.ReturnCode.Unstable
 SciMLBase.ReturnCode.InitialFailure
 SciMLBase.ReturnCode.ConvergenceFailure
 SciMLBase.ReturnCode.Failure
+SciMLBase.ReturnCode.Infeasible
 SciMLBase.ReturnCode.ExactSolutionLeft
 SciMLBase.ReturnCode.ExactSolutionRight
 SciMLBase.ReturnCode.FloatingPointLimit
+SciMLBase.ReturnCode.InternalLineSearchFailed
+SciMLBase.ReturnCode.InternalLinearSolveFailed
+SciMLBase.ReturnCode.ShrinkThresholdExceeded
+SciMLBase.ReturnCode.Stalled
+SciMLBase.ReturnCode.SuccessfulStall
 ```
 
 ## Solution Traits
