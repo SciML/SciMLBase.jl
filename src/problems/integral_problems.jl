@@ -79,7 +79,7 @@ end
 function IntegralProblem{iip}(
         f, args...; nout = nothing, batch = nothing, kwargs...) where {iip}
     if nout !== nothing || batch !== nothing
-        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. See the updated Integrals.jl documentation for details."
+        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. Instead of using `nout` to define sizes, the new interface requires giving an `integrand_prototype` which is a vector of the form to write to. For example, define an `IntegralFunction` where `integrand_prototype = zero(nout)` (or appropriate vector type), or for batched `integrand_prototype = zero(nout, nbatch)`. See the updated Integrals.jl documentation for details."
     end
 
     g = if iip
