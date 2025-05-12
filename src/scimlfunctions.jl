@@ -4339,7 +4339,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         if iip_f
             jac = update_coefficients! #(J,u,p,t)
         else
-            jac = (u, p, t) -> update_coefficients!(deepcopy(jac_prototype), u, p, t)
+            jac_prototype_copy = deepcopy(jac_prototype)
+            jac = (u, p, t) -> update_coefficients!(jac_prototype_copy, u, p, t)
         end
     end
 
@@ -4347,7 +4348,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         if iip_bc
             bcjac = update_coefficients! #(J,u,p,t)
         else
-            bcjac = (u, p, t) -> update_coefficients!(deepcopy(bcjac_prototype), u, p, t)
+            bcjac_prototype_copy = deepcopy(bcjac_prototype)
+            bcjac = (u, p, t) -> update_coefficients!(bcjac_prototype_copy, u, p, t)
         end
     end
 
