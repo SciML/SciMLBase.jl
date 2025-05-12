@@ -287,8 +287,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
             # Do not accept StalledSuccess as a solution
             # A good local minima is not a success 
             resid = nlsol.resid
-            normresid = isdefined(integrator.opts, :internalnorm) ?
-            integrator.opts.internalnorm(resid, t) : norm(resid)
+            normresid = norm(resid)
             SciMLBase.successful_retcode(nlsol) && normresid <= abstol
         else
             SciMLBase.successful_retcode(nlsol)
