@@ -118,12 +118,12 @@ end
 
 function ChainRulesCore.rrule(
         ::Type{<:SciMLBase.NonlinearSolution{
-            T, N, uType, R, P, A, O, uType2, S, Tr}}, u,
+            T, N, uType, R, P, A, O, uType2, S, Tr}}, u, resid, prob,
         args...) where {T, N, uType, R, P, A, O, uType2, S, Tr}
     function NonlinearSolutionAdjoint(ȳ)
-        (NoTangent(), ȳ.u, ntuple(_ -> NoTangent(), length(args))...)
+        (NoTangent(), ȳ.u, NoTangent(), ŷ.prob, ntuple(_ -> NoTangent(), length(args))...)
     end
-    SciMLBase.NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr}(u, args...),
+    SciMLBase.NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr}(u, resid, prob, args...),
     NonlinearSolutionAdjoint
 end
 
