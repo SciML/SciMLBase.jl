@@ -550,3 +550,6 @@ Strips a SciMLSolution object and its interpolation of their functions to better
 function strip_solution(sol::AbstractSciMLSolution)
     sol
 end
+
+choose_branch(x::OverrideInitData) = x.initializeprob
+choose_branch(sol::AbstractSciMLSolution) = sol

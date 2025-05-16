@@ -248,7 +248,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         return u0, p, true
     end
 
-    initdata::OverrideInitData = ChainRulesCore.@ignore_derivatives f.initialization_data
+    initdata::OverrideInitData = f.initialization_data
     initprob = initdata.initializeprob
 
     if initdata.update_initializeprob! !== nothing
@@ -260,7 +260,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     end
     
     if is_trivial_initialization(initdata)
-        nlsol = initprob
+        nlsol = initdata
         success = true
     else
         nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
@@ -294,11 +294,11 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         end
     end
 
-    u0 = if initdata.initializeprobmap !== nothing
-        initdata.initializeprobmap(nlsol)
+    if initdata.initializeprobmap !== nothing
+        u0 = initdata.initializeprobmap(choose_branch(nlsol))
     end
-    p = if initdata.initializeprobpmap !== nothing
-        initdata.initializeprobpmap(valp, nlsol)
+    if initdata.initializeprobpmap !== nothing
+        p = initdata.initializeprobpmap(valp, choose_branch(nlsol))
     end
 
     return u0, p, success
