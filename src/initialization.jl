@@ -258,7 +258,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
             initdata.update_initializeprob!(initprob, valp)
         end
     end
-    
+
     if is_trivial_initialization(initdata)
         nlsol = initdata
         success = true
