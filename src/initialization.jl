@@ -248,7 +248,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         return u0, p, true
     end
 
-    initdata::OverrideInitData = f.initialization_data
+    initdata::OverrideInitData = ChainRulesCore.@ignore_derivatives f.initialization_data
     initprob = initdata.initializeprob
 
     if initdata.update_initializeprob! !== nothing
@@ -258,7 +258,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
             initdata.update_initializeprob!(initprob, valp)
         end
     end
-
+    
     if is_trivial_initialization(initdata)
         nlsol = initprob
         success = true
@@ -294,19 +294,14 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         end
     end
 
-    if initdata.initializeprobmap !== nothing
-        u02 = initdata.initializeprobmap(nlsol)
+    u0 = if initdata.initializeprobmap !== nothing
+        initdata.initializeprobmap(nlsol)
     end
-    if initdata.initializeprobpmap !== nothing
-        p2 = initdata.initializeprobpmap(valp, nlsol)
+    p = if initdata.initializeprobpmap !== nothing
+        initdata.initializeprobpmap(valp, nlsol)
     end
 
-    # specifically needs to be written this way for Zygote
-    # See https://github.com/SciML/ModelingToolkit.jl/pull/3585#issuecomment-2883919162
-    u03 = isnothing(initdata.initializeprobmap) ? u0 : u02
-    p3 = isnothing(initdata.initializeprobpmap) ? p : p2
-
-    return u03, p3, success
+    return u0, p, success
 end
 
 """
