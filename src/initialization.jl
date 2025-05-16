@@ -260,7 +260,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     end
 
     if is_trivial_initialization(initdata)
-        nlsol = initprob
+        nlsol = initdata
         success = true
     else
         nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
@@ -295,18 +295,13 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     end
 
     if initdata.initializeprobmap !== nothing
-        u02 = initdata.initializeprobmap(nlsol)
+        u0 = initdata.initializeprobmap(choose_branch(nlsol))
     end
     if initdata.initializeprobpmap !== nothing
-        p2 = initdata.initializeprobpmap(valp, nlsol)
+        p = initdata.initializeprobpmap(valp, choose_branch(nlsol))
     end
 
-    # specifically needs to be written this way for Zygote
-    # See https://github.com/SciML/ModelingToolkit.jl/pull/3585#issuecomment-2883919162
-    u03 = isnothing(initdata.initializeprobmap) ? u0 : u02
-    p3 = isnothing(initdata.initializeprobpmap) ? p : p2
-
-    return u03, p3, success
+    return u0, p, success
 end
 
 """
