@@ -5,8 +5,9 @@ Representation of the solution to an linear system Ax=b defined by a LinearProbl
 
 ## Fields
 
-- `u`: the representation of the optimization's solution.
-- `resid`: the residual of the solver, if the method is an iterative method.
+- `u`: the representation of the linear solve's solution.
+- `resid`: the residual of the solver, if the method is an iterative method. Returns a mutable
+  type, thus if scalar it is wrapped in a `Ref`.
 - `alg`: the algorithm type used by the solver.
 - `iters`: the number of iterations used to solve the equation, if the method is an iterative
   method.
