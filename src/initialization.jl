@@ -259,40 +259,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         end
     end
 
-    if is_trivial_initialization(initdata)
-        nlsol = initdata
-        success = true
-    else
-        nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
-        if nlsolve_alg === nothing && state_values(initprob) !== nothing
-            throw(OverrideInitMissingAlgorithm())
-        end
-        if alg.abstol !== nothing
-            _abstol = alg.abstol
-        elseif abstol !== nothing
-            _abstol = abstol
-        else
-            throw(OverrideInitNoTolerance(:abstol))
-        end
-        if alg.reltol !== nothing
-            _reltol = alg.reltol
-        elseif reltol !== nothing
-            _reltol = reltol
-        else
-            throw(OverrideInitNoTolerance(:reltol))
-        end
-        nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol, kwargs...)
-
-        success = if initprob isa NonlinearLeastSquaresProblem
-            # Do not accept StalledSuccess as a solution
-            # A good local minima is not a success 
-            resid = nlsol.resid
-            normresid = norm(resid)
-            SciMLBase.successful_retcode(nlsol) && normresid <= abstol
-        else
-            SciMLBase.successful_retcode(nlsol)
-        end
-    end
+    nlsol, success = solve_initialization(initdata, initprob, alg, Val{is_trivial_initialization(initdata)}(); abstol, reltol, nlsolve_alg)
 
     if initdata.initializeprobmap !== nothing
         u0 = initdata.initializeprobmap(choose_branch(nlsol))
@@ -302,6 +269,45 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     end
 
     return u0, p, success
+end
+
+function solve_initialization(initdata, initprob, alg, ::Val{true}; kwargs...)
+    nlsol = @set initdata.initializeprob = initprob
+    success = true
+    return nlsol, success
+end
+
+function solve_initialization(initdata, initprob, alg, ::Val{false}; reltol, abstol, nlsolve_alg)
+    nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
+    if nlsolve_alg === nothing && state_values(initprob) !== nothing
+        throw(OverrideInitMissingAlgorithm())
+    end
+    if alg.abstol !== nothing
+        _abstol = alg.abstol
+    elseif abstol !== nothing
+        _abstol = abstol
+    else
+        throw(OverrideInitNoTolerance(:abstol))
+    end
+    if alg.reltol !== nothing
+        _reltol = alg.reltol
+    elseif reltol !== nothing
+        _reltol = reltol
+    else
+        throw(OverrideInitNoTolerance(:reltol))
+    end
+    nlsol = solve(initprob, nlsolve_alg; abstol = _abstol, reltol = _reltol, kwargs...)
+
+    success = if initprob isa NonlinearLeastSquaresProblem
+        # Do not accept StalledSuccess as a solution
+        # A good local minima is not a success 
+        resid = nlsol.resid
+        normresid = norm(resid)
+        SciMLBase.successful_retcode(nlsol) && normresid <= abstol
+    else
+        SciMLBase.successful_retcode(nlsol)
+    end
+    return nlsol, success
 end
 
 """
@@ -316,10 +322,11 @@ end
 
 is_trivial_initialization(::Nothing) = true
 
-function is_trivial_initialization(initdata::OverrideInitData)
-    !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
-        state_values(initdata.initializeprob) === nothing
-end
+is_trivial_initialization(::OverrideInitData{<:NonlinearLeastSquaresProblem}) = false
+
+is_trivial_initialization(::OverrideInitData{<:NonlinearProblem{Nothing}}) = true
+
+is_trivial_initialization(::OverrideInitData) = false
 
 function is_trivial_initialization(f::AbstractSciMLFunction)
     has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
