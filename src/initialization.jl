@@ -44,7 +44,7 @@ struct OverrideInitData{
     function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
             initprobpmap::L, metadata::M, is_update_oop::O) where {I, J, K, L, M, O}
         @assert initprob isa
-                Union{SCCNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
+                Union{SCCNonlinearProblem, ImmutableNonlinearProblem, NonlinearProblem, NonlinearLeastSquaresProblem}
         return new{I, J, K, L, M, O}(
             initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop)
     end
