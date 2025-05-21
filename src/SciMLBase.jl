@@ -26,6 +26,7 @@ import Accessors: @set, @reset, @delete, @insert
 using Moshi.Data: @data
 using Moshi.Match: @match
 import StaticArraysCore
+import Adapt: adapt_structure, adapt
 
 using Reexport
 using SciMLOperators
@@ -751,6 +752,8 @@ include("interpolation.jl")
 include("integrator_interface.jl")
 include("remake.jl")
 include("callbacks.jl")
+
+include("adapt.jl")
 
 include("deprecated.jl")
 
