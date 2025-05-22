@@ -258,26 +258,28 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
             initdata.update_initializeprob!(initprob, valp)
         end
     end
+    nlsol, success = solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg )
 
-    nlsol, success = solve_initialization(initdata, initprob, alg, Val{is_trivial_initialization(initdata)}(); abstol, reltol, nlsolve_alg)
-
+    nlsol2 = prob.f.initialization_data.initializeprob
     if initdata.initializeprobmap !== nothing
-        u0 = initdata.initializeprobmap(choose_branch(nlsol))
+        u02 = initdata.initializeprobmap(nlsol2)
     end
     if initdata.initializeprobpmap !== nothing
-        p = initdata.initializeprobpmap(valp, choose_branch(nlsol))
+        p2 = initdata.initializeprobpmap(valp, nlsol)
     end
 
-    return u0, p, success
+    u03 = isnothing(initdata.initializeprobmap) ? u0 : u02
+    p3 = isnothing(initdata.initializeprobpmap) ? p : p2
+    return u03, p3, success
 end
 
-function solve_initialization(initdata, initprob, alg, ::Val{true}; kwargs...)
-    nlsol = @set initdata.initializeprob = initprob
+function solve_initialization(initdata::OverrideInitData{<:AbstractNonlinearProblem{Nothing}}, initprob, alg; kwargs...)
+    nlsol = initprob
     success = true
     return nlsol, success
 end
 
-function solve_initialization(initdata, initprob, alg, ::Val{false}; reltol, abstol, nlsolve_alg)
+function solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg)
     nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
     if nlsolve_alg === nothing && state_values(initprob) !== nothing
         throw(OverrideInitMissingAlgorithm())
@@ -318,22 +320,6 @@ stored in `integrator` successfully.
 """
 function get_initial_values(prob, integrator, f, ::NoInit, iip; kwargs...)
     return state_values(integrator), parameter_values(integrator), true
-end
-
-is_trivial_initialization(::Nothing) = true
-
-is_trivial_initialization(::OverrideInitData{<:NonlinearLeastSquaresProblem}) = false
-
-is_trivial_initialization(::OverrideInitData{<:NonlinearProblem{Nothing}}) = true
-
-is_trivial_initialization(::OverrideInitData) = false
-
-function is_trivial_initialization(f::AbstractSciMLFunction)
-    has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
-end
-
-function is_trivial_initialization(prob::AbstractSciMLProblem)
-    is_trivial_initialization(prob.f)
 end
 
 @enum DETERMINED_STATUS OVERDETERMINED FULLY_DETERMINED UNDERDETERMINED

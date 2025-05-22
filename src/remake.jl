@@ -1229,3 +1229,20 @@ function remake(thing::AbstractEnsembleProblem; kwargs...)
     en_kwargs = [k for k in kwargs if first(k) ∈ fieldnames(T)]
     T(remake(thing.prob; setdiff(kwargs, en_kwargs)...); en_kwargs...)
 end
+
+is_trivial_initialization(::Nothing) = true
+
+is_trivial_initialization(::OverrideInitData{<:NonlinearLeastSquaresProblem}) = false
+
+is_trivial_initialization(::OverrideInitData{<:NonlinearProblem{Nothing}}) = true
+
+is_trivial_initialization(::OverrideInitData) = false
+
+function is_trivial_initialization(f::AbstractSciMLFunction)
+    # has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
+    is_trivial_initialization(f.initialization_data)
+end
+
+function is_trivial_initialization(prob::AbstractSciMLProblem)
+    is_trivial_initialization(prob.f)
+end
