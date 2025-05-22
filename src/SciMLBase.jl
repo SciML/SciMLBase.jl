@@ -630,10 +630,17 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
-Used to specify which variables can be aliased in a solve. 
+Base for types that specify which variables can be aliased in a solve. 
 Every concrete AbstractAliasSpecifier should have at least the fields `alias_p` and `alias_f`. 
 """
 abstract type AbstractAliasSpecifier end
+
+"""
+$(TYPEDEF)
+
+Base for types which specify which log messages are emitted at what level.
+"""
+abstract type AbstractVerbositySpecifier{T} end
 
 """
 $(TYPEDEF)
@@ -752,6 +759,8 @@ include("interpolation.jl")
 include("integrator_interface.jl")
 include("remake.jl")
 include("callbacks.jl")
+
+include("verbosity.jl")
 
 include("adapt.jl")
 
