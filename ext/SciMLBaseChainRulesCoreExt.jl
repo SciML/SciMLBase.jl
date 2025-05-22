@@ -121,7 +121,7 @@ function ChainRulesCore.rrule(::Type{IntervalNonlinearProblem}, args...; kwargs.
         (NoTangent(), ȳ.f, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
     end
 
-    IntervalNonlinearProblem(args...; kwargs...), IntervalNonlinearProblemAdjoint
+    SciMLBase.IntervalNonlinearProblem(args...; kwargs...), IntervalNonlinearProblemAdjoint
 end
 
 end
