@@ -285,8 +285,10 @@ function ODEErrorControlVerbosity(verbose::Verbosity.Type)
 end
 
 mutable struct ODEPerformanceVerbosity
+    alg_switch
+
     @add_kwonly function ODEPerformanceVerbosity()
-        new()
+        new(alg_switch)
     end
 end
 
