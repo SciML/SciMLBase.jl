@@ -116,4 +116,12 @@ function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged
     out, EnsembleSolution_adjoint
 end
 
+function ChainRulesCore.rrule(::Type{SciMLBase.IntervalNonlinearProblem}, args...; kwargs...)
+    function IntervalNonlinearProblemAdjoint(ȳ)
+        (NoTangent(), ȳ.f, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
+    end
+
+    SciMLBase.IntervalNonlinearProblem(args...; kwargs...), IntervalNonlinearProblemAdjoint
+end
+
 end
