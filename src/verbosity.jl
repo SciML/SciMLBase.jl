@@ -287,7 +287,7 @@ end
 mutable struct ODEPerformanceVerbosity
     alg_switch
 
-    @add_kwonly function ODEPerformanceVerbosity()
+    @add_kwonly function ODEPerformanceVerbosity(alg_switch)
         new(alg_switch)
     end
 end
@@ -308,7 +308,7 @@ function ODEPerformanceVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => ODEPerformanceVerbosity(fill(
             Verbosity.Error(), length(fieldnames(ODEPerformanceVerbosity)))...)
 
-        Verbosity.Default() => ODEPerformanceVerbosity()
+        Verbosity.Default() => ODEPerformanceVerbosity(alg_switch = Verbosity.None())
 
         _ => @error "Not a valid choice for verbosity."
     end
