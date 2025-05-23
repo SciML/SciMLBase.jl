@@ -1,13 +1,14 @@
 module SciMLBaseZygoteExt
 
 using Zygote
-using Zygote: @adjoint, pullback
-import Zygote: literal_getproperty
+using Zygote: @adjoint, pullback, @_adjoint_keepthunks, _project, pair
+import Zygote: literal_getproperty, literal_getfield
 import ChainRulesCore
 using SciMLBase
 using SciMLBase: ODESolution, remake, ODEFunction,
                  getobserved, build_solution, EnsembleSolution,
-                 NonlinearSolution, AbstractTimeseriesSolution
+                 NonlinearSolution, AbstractTimeseriesSolution,
+                 ODEProblem
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
                                  observed, parameter_values, state_values, current_time
 using RecursiveArrayTools
@@ -297,6 +298,22 @@ end
         args::Union{AbstractArray, Tuple
         }...)
     ∇responsible_map(__context__, f, args...)
+end
+
+@_adjoint_keepthunks function Zygote.literal_getfield(x::ODEProblem, ::Val{f}) where f
+  val = getfield(x, f)
+  function back(Δ)
+    Zygote.accum_param(__context__, val, Δ) === nothing && return
+    if isimmutable(x)
+      dx = (; Zygote.nt_nothing(x)..., pair(Val(f), Δ, x)...)
+      (_project(x, dx), nothing)
+    else
+      dx = Zygote.grad_mut(__context__, x)
+      dx[] = (; dx[]..., pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
+      return (dx[],nothing)
+    end
+  end
+  Zygote.unwrap(val), back
 end
 
 end
