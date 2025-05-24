@@ -843,7 +843,8 @@ end
                 remake($subprob_name; u0 = _u0)
             end
             offset += N
-        end, subprob_name
+        end,
+        subprob_name
     end
     expr = quote
         offset = 0
@@ -895,7 +896,8 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
     f = coalesce(f, prob.f)
     f = remake(f; sys)
 
-    return SCCNonlinearProblem{typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp)}(
+    return SCCNonlinearProblem{
+        typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp)}(
         probs, explicitfuns!, f, newp, parameters_alias)
 end
 
@@ -1164,7 +1166,8 @@ function updated_u0_p(
         return (u0 === missing ? state_values(prob) : u0),
         (p === missing ? parameter_values(prob) : p)
     end
-    newu0, newp = _updated_u0_p_internal(
+    newu0,
+    newp = _updated_u0_p_internal(
         prob, u0, p, t0; interpret_symbolicmap, use_defaults)
     return late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
 end
@@ -1208,7 +1211,8 @@ function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initializati
     end
     if initialization_data !== nothing && !lazy_initialization &&
        (!is_time_dependent(prob) || current_time(prob) !== nothing)
-        u0, p, _ = get_initial_values(
+        u0, p,
+        _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
         if u0 !== nothing && eltype(u0) == Any && isempty(u0)
             u0 = nothing

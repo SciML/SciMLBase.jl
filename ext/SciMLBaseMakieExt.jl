@@ -105,7 +105,8 @@ function Makie.convert_arguments(PT::Type{<:Plot},
     @assert tscale isa Symbol "`tscale` if passed in to `Makie.plot` must be a Symbol, got a $(typeof(tscale))"
 
     # Convert the solution to arrays - this is the hard part!
-    plot_vecs, labels = SciMLBase.diffeq_to_arrays(sol, plot_analytic, denseplot,
+    plot_vecs,
+    labels = SciMLBase.diffeq_to_arrays(sol, plot_analytic, denseplot,
         plotdensity, tspan, vars, tscale, plotat)
 
     # We must convert from plot Type to symbol here, for plotspec use

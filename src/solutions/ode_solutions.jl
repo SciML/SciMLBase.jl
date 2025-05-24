@@ -5,24 +5,24 @@ Statistics from the differential equation solver about the solution process.
 
 ## Fields
 
-- nf: Number of function evaluations. If the differential equation is a split function,
-  such as a `SplitFunction` for implicit-explicit (IMEX) integration, then `nf` is the
-  number of function evaluations for the first function (the implicit function)
-- nf2: If the differential equation is a split function, such as a `SplitFunction`
-  for implicit-explicit (IMEX) integration, then `nf2` is the number of function
-  evaluations for the second function, i.e. the function treated explicitly. Otherwise
-  it is zero.
-- nw: The number of W=I-gamma*J (or W=I/gamma-J) matrices constructed during the solving
-  process.
-- nsolve: The number of linear solves `W\b` required for the integration.
-- njacs: Number of Jacobians calculated during the integration.
-- nnonliniter: Total number of iterations for the nonlinear solvers.
-- nnonlinconvfail: Number of nonlinear solver convergence failures.
-- ncondition: Number of calls to the condition function for callbacks.
-- naccept: Number of accepted steps.
-- nreject: Number of rejected steps.
-- maxeig: Maximum eigenvalue over the solution. This is only computed if the
-  method is an auto-switching algorithm.
+  - nf: Number of function evaluations. If the differential equation is a split function,
+    such as a `SplitFunction` for implicit-explicit (IMEX) integration, then `nf` is the
+    number of function evaluations for the first function (the implicit function)
+  - nf2: If the differential equation is a split function, such as a `SplitFunction`
+    for implicit-explicit (IMEX) integration, then `nf2` is the number of function
+    evaluations for the second function, i.e. the function treated explicitly. Otherwise
+    it is zero.
+  - nw: The number of W=I-gamma*J (or W=I/gamma-J) matrices constructed during the solving
+    process.
+  - nsolve: The number of linear solves `W\b` required for the integration.
+  - njacs: Number of Jacobians calculated during the integration.
+  - nnonliniter: Total number of iterations for the nonlinear solvers.
+  - nnonlinconvfail: Number of nonlinear solver convergence failures.
+  - ncondition: Number of calls to the condition function for callbacks.
+  - naccept: Number of accepted steps.
+  - nreject: Number of rejected steps.
+  - maxeig: Maximum eigenvalue over the solution. This is only computed if the
+    method is an auto-switching algorithm.
 """
 mutable struct DEStats
     nf::Int
@@ -91,19 +91,19 @@ https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
 
 ## Fields
 
-- `u`: the representation of the ODE solution. Given as an array of solutions, where `u[i]`
-  corresponds to the solution at time `t[i]`. It is recommended in most cases one does not
-  access `sol.u` directly and instead use the array interface described in the Solution
-  Handling page of the DifferentialEquations.jl documentation.
-- `t`: the time points corresponding to the saved values of the ODE solution.
-- `prob`: the original ODEProblem that was solved.
-- `alg`: the algorithm type used by the solver.
-- `stats`: statistics of the solver, such as the number of function evaluations required,
-  number of Jacobians computed, and more.
-- `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully, whether it terminated early due to a user-defined callback, or whether it
-  exited due to an error. For more details, see
-  [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `u`: the representation of the ODE solution. Given as an array of solutions, where `u[i]`
+    corresponds to the solution at time `t[i]`. It is recommended in most cases one does not
+    access `sol.u` directly and instead use the array interface described in the Solution
+    Handling page of the DifferentialEquations.jl documentation.
+  - `t`: the time points corresponding to the saved values of the ODE solution.
+  - `prob`: the original ODEProblem that was solved.
+  - `alg`: the algorithm type used by the solver.
+  - `stats`: statistics of the solver, such as the number of function evaluations required,
+    number of Jacobians computed, and more.
+  - `retcode`: the return code from the solver. Used to determine whether the solver solved
+    successfully, whether it terminated early due to a user-defined callback, or whether it
+    exited due to an error. For more details, see
+    [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct ODESolution{T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
     AC <: Union{Nothing, Vector{Int}}, R, O, V} <:

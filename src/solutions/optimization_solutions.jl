@@ -1,18 +1,19 @@
 """
 $(TYPEDEF)
 
-Stores the optimization run's statistics that is returned 
-in the `stats` field of the `OptimizationResult`. 
+Stores the optimization run's statistics that is returned
+in the `stats` field of the `OptimizationResult`.
 
 ## Fields
-- `iterations`: number of iterations
-- `time`: time taken to run the solver
-- `fevals`: number of function evaluations
-- `gevals`: number of gradient evaluations
-- `hevals`: number of hessian evaluations
 
-Default values for all the field are set to 0 and hence even when 
-you might expect non-zero values due to unavilability of the information 
+  - `iterations`: number of iterations
+  - `time`: time taken to run the solver
+  - `fevals`: number of function evaluations
+  - `gevals`: number of gradient evaluations
+  - `hevals`: number of hessian evaluations
+
+Default values for all the field are set to 0 and hence even when
+you might expect non-zero values due to unavilability of the information
 from the solver it would be 0.
 """
 struct OptimizationStats
@@ -49,24 +50,24 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 
 ## Fields
 
-- `u`: the representation of the optimization's solution.
-- `alg`: the algorithm type used by the solver.
-- `objective`: Objective value of the solution
-- `retcode`: the return code from the solver. Used to determine whether the solver solved
-  successfully or whether it exited due to an error. For more details, see
-  [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
-- `original`: if the solver is wrapped from a external solver, e.g.
-  Optim.jl, then this is the original return from said solver library.
-- `stats`: statistics of the solver, such as the number of function evaluations required.
+  - `u`: the representation of the optimization's solution.
+  - `alg`: the algorithm type used by the solver.
+  - `objective`: Objective value of the solution
+  - `retcode`: the return code from the solver. Used to determine whether the solver solved
+    successfully or whether it exited due to an error. For more details, see
+    [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `original`: if the solver is wrapped from a external solver, e.g.
+    Optim.jl, then this is the original return from said solver library.
+  - `stats`: statistics of the solver, such as the number of function evaluations required.
 
 ## Internal Fields
 
-- `cache::AbstractOptimizationCache`: the optimization cache that was solved.
+  - `cache::AbstractOptimizationCache`: the optimization cache that was solved.
 
 ## Interface
 
 `OptimizationSolution` is a `SciMLBase.AbstractNoTimeSolution`. For more information on the SciML
-solution interfaces, check out the 
+solution interfaces, check out the
 [SciML Solution Interface documentation page](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/)
 """
 struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST} <:
