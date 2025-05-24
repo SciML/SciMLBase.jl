@@ -41,7 +41,6 @@ function Base.showerror(io::IO, e::NonConcreteEltypeError)
     print(io, e.eltype)
 end
 
-
 """
 ```julia
 solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm, args...; kwargs...)
@@ -129,7 +128,7 @@ function solve(prob::OptimizationProblem, alg, args...;
         solve!(init(prob, alg, args...; kwargs...))
     else
         if prob.u0 !== nothing && !isconcretetype(eltype(prob.u0))
-                throw(NonConcreteEltypeError(eltype(prob.u0)))
+            throw(NonConcreteEltypeError(eltype(prob.u0)))
         end
         _check_opt_alg(prob, alg; kwargs...)
         __solve(prob, alg, args...; kwargs...)

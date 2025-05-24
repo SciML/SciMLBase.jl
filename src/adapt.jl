@@ -1,11 +1,14 @@
-function adapt_structure(to, prob::Union{NonlinearProblem{<:Any, <:Any, iip}, ImmutableNonlinearProblem{<:Any, <:Any, iip}}) where {iip}
+function adapt_structure(to,
+        prob::Union{NonlinearProblem{<:Any, <:Any, iip},
+            ImmutableNonlinearProblem{<:Any, <:Any, iip}}) where {iip}
     ImmutableNonlinearProblem{iip}(NonlinearFunction{iip}(adapt(to, prob.f.f)),
         adapt(to, prob.u0),
         adapt(to, prob.p);
         adapt(to, prob.kwargs)...)
 end
 
-function adapt_structure(to, prob::Union{ODEProblem{<:Any, <:Any, iip}, ImmutableODEProblem{<:Any, <:Any, iip}}) where {iip}
+function adapt_structure(to,
+        prob::Union{ODEProblem{<:Any, <:Any, iip}, ImmutableODEProblem{<:Any, <:Any, iip}}) where {iip}
     ImmutableODEProblem{iip, FullSpecialize}(adapt(to, prob.f),
         adapt(to, prob.u0),
         adapt(to, prob.tspan),

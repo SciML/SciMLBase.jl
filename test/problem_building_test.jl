@@ -103,7 +103,7 @@ end
     function f1(u, p)
         y = u[1]
         x = p[1]
-        return SA[1 - y^2 - x^2]
+        return SA[1 - y ^ 2 - x ^ 2]
     end
 
     function f2(u, p)
@@ -115,7 +115,7 @@ end
     function f3(u, p)
         lam = u[1]
         x, xt, y, yt = p
-        return SA[-2xt^2 - 2yt^2 - 2y * (-1 + y * lam) - 2x^2 * lam]
+        return SA[-2xt ^ 2 - 2yt ^ 2 - 2y * (-1 + y * lam) - 2x ^ 2 * lam]
     end
 
     explicit1 = Returns(nothing)
