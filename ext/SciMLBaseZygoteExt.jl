@@ -303,17 +303,20 @@ end
 @_adjoint_keepthunks function Zygote.literal_getfield(x::ODEProblem, ::Val{f}) where f
   val = getfield(x, f)
   function back(Δ)
+    # error()
     Zygote.accum_param(__context__, val, Δ) === nothing && return
     if isimmutable(x)
+      error()
       dx = (; Zygote.nt_nothing(x)..., pair(Val(f), Δ, x)...)
       (_project(x, dx), nothing)
     else
       dx = Zygote.grad_mut(__context__, x)
       dx[] = (; dx[]..., pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
-      return (dx[],nothing)
+      return (dx,nothing)
     end
   end
   Zygote.unwrap(val), back
 end
+Zygote.accum(::Tuple{}, ::NamedTuple{}) = ()
 
 end
