@@ -262,7 +262,6 @@ function remake(prob::ODEProblem; f = missing,
     else
         ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
-    @show typeof(prob)
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
     @reset prob.u0 = u0
