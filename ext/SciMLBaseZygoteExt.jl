@@ -304,14 +304,8 @@ end
   val = getfield(x, f)
   function back(Δ)
     Zygote.accum_param(__context__, val, Δ) === nothing && return
-    if isimmutable(x)
-      dx = (; Zygote.nt_nothing(x)..., pair(Val(f), Δ, x)...)
-      (_project(x, dx), nothing)
-    else
-      dx = Zygote.grad_mut(__context__, x)
-      dx[] = (; dx[]..., pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
-      return (dx[],nothing)
-    end
+    dx = (; Zygote.nt_nothing(x)..., pair(Val(f), Δ, x)...)
+    (_project(x, dx), nothing)
   end
   Zygote.unwrap(val), back
 end
