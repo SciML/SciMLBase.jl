@@ -26,6 +26,7 @@ import Accessors: @set, @reset, @delete, @insert
 using Moshi.Data: @data
 using Moshi.Match: @match
 import StaticArraysCore
+import Adapt: adapt_structure, adapt
 
 using Reexport
 using SciMLOperators
@@ -662,6 +663,13 @@ Internal. Used for signifying the AD context comes from a Tracker.jl context.
 """
 struct TrackerOriginator <: ADOriginator end
 
+"""
+$(TYPEDEF)
+
+Internal. Used for signifying the AD context comes from a Mooncake.jl context.
+"""
+struct MooncakeOriginator <: ADOriginator end
+
 include("initialization.jl")
 include("ODE_nlsolve.jl")
 include("utils.jl")
@@ -751,6 +759,8 @@ include("interpolation.jl")
 include("integrator_interface.jl")
 include("remake.jl")
 include("callbacks.jl")
+
+include("adapt.jl")
 
 include("deprecated.jl")
 
