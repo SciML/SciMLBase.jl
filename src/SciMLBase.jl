@@ -44,8 +44,6 @@ import SciMLOperators:
 
 @reexport using SciMLOperators
 
-using Zygote
-
 function __solve end
 function __init end
 

@@ -262,6 +262,7 @@ function remake(prob::ODEProblem; f = missing,
     else
         ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
+    @show typeof(prob)
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
     @reset prob.u0 = u0
@@ -703,8 +704,6 @@ function remake(prob::NonlinearProblem;
     if problem_type === missing
         problem_type = prob.problem_type
     end
-    # error()
-    # @show f
 
     prob = if kwargs === missing
         NonlinearProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp,
@@ -1208,25 +1207,18 @@ function maybe_eager_initialize_problem(prob::AbstractSciMLProblem, initializati
     if lazy_initialization === nothing
         lazy_initialization = !is_trivial_initialization(initialization_data)
     end
-    cond = initialization_data !== nothing && !lazy_initialization &&
-            (!is_time_dependent(prob) || current_time(prob) !== nothing)
-    @show cond
-    if cond
-    #    @show "in maybe_eager_initialize_problem"
+    if initialization_data !== nothing && !lazy_initialization &&
+        (!is_time_dependent(prob) || current_time(prob) !== nothing)
         u0, p, _ = get_initial_values(
             prob, prob, prob.f, OverrideInit(), Val(isinplace(prob)))
-        # if u0 !== nothing && eltype(u0) == Any && isempty(u0)
-        #     u0 = nothing
-        # end
+        if u0 !== nothing && eltype(u0) == Any && isempty(u0)
+            u0 = nothing
+        end
     else
-        u02 = state_values(prob)
-        p2 = parameter_values(prob)
+        u0 = state_values(prob)
+        p = parameter_values(prob)
     end
-    # @show p
-
-    u03 = cond ? u0 : u02
-    p3 = cond ? p : p2
-    return u03, p3
+    return u0, p
 end
 
 function remake(thing::AbstractJumpProblem; kwargs...)

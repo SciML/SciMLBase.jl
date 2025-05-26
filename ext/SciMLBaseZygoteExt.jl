@@ -305,7 +305,6 @@ end
   function back(Δ)
     Zygote.accum_param(__context__, val, Δ) === nothing && return
     if isimmutable(x)
-      error()
       dx = (; Zygote.nt_nothing(x)..., pair(Val(f), Δ, x)...)
       (_project(x, dx), nothing)
     else
