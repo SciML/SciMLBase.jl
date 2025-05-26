@@ -22,7 +22,7 @@ are specified via the `AbstractSciMLOperator` interface. For more details, see
 the [SciMLBase Documentation](https://docs.sciml.ai/SciMLBase/stable/).
 
 Note that matrix-free versions of LinearProblem definitions are not compatible
-with all solvers. To check a solver for compatibility, use the function xxxxx.
+with all solvers. To check a solver for compatibility, use the function `needs_concrete_A(alg::AbstractLinearAlgorithm)`.
 
 ## Problem Type
 

@@ -412,7 +412,7 @@ EnumX.@enumx ReturnCode begin
 
       - For nonlinear least squares optimizations, this is given for local minima which exceed 
         the chosen tolerance, i.e. `f(x)=resid` where `||resid||>tol` so it's not considered 
-        ReturnCode.Success but it is still considered a sucessful return of the solver since
+        ReturnCode.Success but it is still considered a successful return of the solver since
         it's a valid local minima (and there no minima which achieves the tolerance).
 
     ## Properties
