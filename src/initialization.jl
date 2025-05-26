@@ -260,9 +260,8 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
     end
     nlsol, success = solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg )
 
-    nlsol2 = prob.f.initialization_data.initializeprob
     if initdata.initializeprobmap !== nothing
-        u02 = initdata.initializeprobmap(nlsol2)
+        u02 = initdata.initializeprobmap(nlsol)
     end
     if initdata.initializeprobpmap !== nothing
         p2 = initdata.initializeprobpmap(valp, nlsol)

@@ -58,6 +58,7 @@ end
 
 function ChainRulesCore.rrule(::Type{ODEProblem}, args...; kwargs...)
     function ODEProblemAdjoint(ȳ)
+        @show "some con"
         (NoTangent(), ȳ.f, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
     end
 

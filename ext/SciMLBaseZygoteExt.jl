@@ -300,7 +300,7 @@ end
     ∇responsible_map(__context__, f, args...)
 end
 
-@_adjoint_keepthunks function Zygote.literal_getfield(x::ODEProblem, ::Val{f}) where f
+@_adjoint_keepthunks function Zygote.literal_getfield(x::SciMLBase.AbstractSciMLProblem, ::Val{f}) where f
   val = getfield(x, f)
   function back(Δ)
     Zygote.accum_param(__context__, val, Δ) === nothing && return
@@ -311,7 +311,7 @@ end
     else
       dx = Zygote.grad_mut(__context__, x)
       dx[] = (; dx[]..., pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
-      return (dx,nothing)
+      return (dx[],nothing)
     end
   end
   Zygote.unwrap(val), back
