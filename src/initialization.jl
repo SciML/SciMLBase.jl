@@ -258,7 +258,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
             initdata.update_initializeprob!(initprob, valp)
         end
     end
-    nlsol, success = solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg )
+    nlsol, success = solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg, kwargs...)
 
     if initdata.initializeprobmap !== nothing
         u02 = initdata.initializeprobmap(nlsol)
@@ -278,7 +278,7 @@ function solve_initialization(initdata::OverrideInitData{<:AbstractNonlinearProb
     return nlsol, success
 end
 
-function solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg)
+function solve_initialization(initdata, initprob, alg; reltol, abstol, nlsolve_alg, kwargs...)
     nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
     if nlsolve_alg === nothing && state_values(initprob) !== nothing
         throw(OverrideInitMissingAlgorithm())
