@@ -303,7 +303,6 @@ end
 @_adjoint_keepthunks function Zygote.literal_getfield(x::ODEProblem, ::Val{f}) where f
   val = getfield(x, f)
   function back(Δ)
-    # error()
     Zygote.accum_param(__context__, val, Δ) === nothing && return
     if isimmutable(x)
       error()
