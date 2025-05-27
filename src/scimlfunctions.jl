@@ -2780,10 +2780,11 @@ ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwar
 ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
+    Main.@infiltrate
     if specialization(f) === NoSpecialize
         ODEFunction{isinplace(f), specialization(f), Any, Any, Any,
             Any, Any, Any, Any, typeof(f.jac_prototype),
-            typeof(f.sparsity), Any, Any, Any,
+            typeof(f.sparsity), Any, Any, Any, Any,
             Any, typeof(f.colorvec),
             typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
