@@ -77,7 +77,7 @@ function LinearPerformanceVerbosity(verbose::Verbosity.Type)
 end
 
 mutable struct LinearNumericalVerbosity
-    @add_kwonly function LinearNumericalVerbosity()
+    function LinearNumericalVerbosity()
         new()
     end
 
@@ -138,7 +138,7 @@ end
 # Nonlinear Verbosity
 
 mutable struct NonlinearErrorControlVerbosity
-    @add_kwonly function NonlinearErrorControlVerbosity()
+    function NonlinearErrorControlVerbosity()
         new()
     end
 end
@@ -166,7 +166,7 @@ function NonlinearErrorControlVerbosity(verbose::Verbosity.Type)
 end
 
 mutable struct NonlinearPerformanceVerbosity
-    @add_kwonly function NonlinearPerformanceVerbosity()
+    function NonlinearPerformanceVerbosity()
         new()
     end
 
@@ -197,7 +197,7 @@ end
 
 
 mutable struct NonlinearNumericalVerbosity
-    @add_kwonly function NonlinearNumericalVerbosity()
+    function NonlinearNumericalVerbosity()
         new()
     end
 end
@@ -414,11 +414,15 @@ function ODEVerbosity(; error_control = Verbosity.Default(), performance = Verbo
 
     if linear_verbosity isa Verbosity.Type 
         linear = LinearVerbosity(linear_verbosity)
+    elseif linear_verbosity isa NamedTuple
+        linear = LinearVerbosity(linear)
     else
         linear = linear_verbosity
     end
 
     if nonlinear_verbosity isa Verbosity.Type
+        nonlinear = NonlinearVerbosity(nonlinear_verbosity)
+    elseif nonlinear_verbosity isa NamedTuple
         nonlinear = NonlinearVerbosity(nonlinear_verbosity)
     else
         nonlinear = nonlinear_verbosity
