@@ -7,8 +7,20 @@
     Edge
     All
     Default
-
 end
+
+# Defaults
+
+defaults = 
+    Dict(
+        :dt_NaN => Verbosity.Warn(),
+        :init_NaN => Verbosity.Warn(),
+        :rosenbrock_no_differential_states => Verbosity.Warn(),
+        :dense_output_saveat => Verbosity.Warn(),
+        :alg_switch => Verbosity.Warn(),
+        :mismatched_input_output_type => Verbosity.Warn()
+    )
+
 
 # Linear Verbosity
 
@@ -35,7 +47,6 @@ function LinearErrorControlVerbosity(verbose::Verbosity.Type)
 end
 
 mutable struct LinearPerformanceVerbosity
-
     @add_kwonly function LinearPerformanceVerbosity()
         new()
     end
@@ -131,8 +142,6 @@ mutable struct NonlinearErrorControlVerbosity
         new()
     end
 end
-
-
 
 function NonlinearErrorControlVerbosity(verbose::Verbosity.Type)
     @match verbose begin
@@ -254,9 +263,12 @@ end
 mutable struct ODEErrorControlVerbosity
     dt_NaN::Verbosity.Type
     init_NaN::Verbosity.Type
+    rosenbrock_no_differential_states::Verbosity.Type
+    dense_output_saveat::Verbosity.Type
 
-    @add_kwonly function ODEErrorControlVerbosity(dt_NaN, init_NaN)
-        new(dt_NaN, init_NaN)
+    function ODEErrorControlVerbosity(dt_NaN = defaults[:dt_NaN], init_NaN = defaults[:init_NaN], 
+        rosenbrock_no_differential_states = defaults[:rosenbrock_no_differential_states], dense_output_saveat = defaults[:dense_output_saveat])
+        new(dt_NaN, init_NaN, rosenbrock_no_differential_states, dense_output_saveat)
     end
 end
 
@@ -276,23 +288,22 @@ function ODEErrorControlVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => ODEErrorControlVerbosity(fill(
             Verbosity.Error(), length(fieldnames(ODEErrorControlVerbosity)))...)
 
-        Verbosity.Default() => ODEErrorControlVerbosity(Verbosity.Info(), Verbosity.Error())
+        Verbosity.Default() => ODEErrorControlVerbosity()
 
-        Verbosity.Edge() => ODEErrorControlVerbosity(Verbosity.Info(), Verbosity.Warn())
+        Verbosity.Edge() => ODEErrorControlVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
 end
 
 mutable struct ODEPerformanceVerbosity
-    alg_switch
+    alg_switch::Verbosity.Type
+    mismatched_input_output_type::Verbosity.Type
 
-    @add_kwonly function ODEPerformanceVerbosity(alg_switch)
-        new(alg_switch)
+    function ODEPerformanceVerbosity(;alg_switch = defaults[:alg_switch], mismatched_input_output_type = defaults[:mismatched_input_output_type])
+        new(alg_switch, mismatched_input_output_type)
     end
 end
-
-
 
 function ODEPerformanceVerbosity(verbose::Verbosity.Type)
     @match verbose begin
@@ -308,7 +319,7 @@ function ODEPerformanceVerbosity(verbose::Verbosity.Type)
         Verbosity.Error() => ODEPerformanceVerbosity(fill(
             Verbosity.Error(), length(fieldnames(ODEPerformanceVerbosity)))...)
 
-        Verbosity.Default() => ODEPerformanceVerbosity(alg_switch = Verbosity.None())
+        Verbosity.Default() => ODEPerformanceVerbosity()
 
         _ => @error "Not a valid choice for verbosity."
     end
@@ -381,7 +392,7 @@ function ODEVerbosity(verbose::Verbosity.Type)
     end
 end
 
-function ODEVerbosity(; error_control = Verbosity.Default(), performance = Verbosity.Default(), numerical = Verbosity.Default(), linear_verbosity = Verbosity.Default(), nonlinear_verbosity = Verbosity.Default())
+function ODEVerbosity(; error_control = Verbosity.Default(), performance = Verbosity.Default(), numerical = Verbosity.Default(), linear_verbosity = Verbosity.Default(), nonlinear_verbosity = Verbosity.Default(), kwargs...)
 
     if error_control isa Verbosity.Type 
         error_control_verbosity = ODEErrorControlVerbosity(error_control)
@@ -411,6 +422,20 @@ function ODEVerbosity(; error_control = Verbosity.Default(), performance = Verbo
         nonlinear = NonlinearVerbosity(nonlinear_verbosity)
     else
         nonlinear = nonlinear_verbosity
+    end
+
+    if !isempty(kwargs)
+        for (key, value) in pairs(kwargs)
+            if hasfield(ODEErrorControlVerbosity, key)
+                setproperty!(error_control_verbosity, key, value)
+            elseif hasfield(ODEPerformanceVerbosity, key)
+                setproperty!(performance_verbosity, key, value)
+            elseif hasfield(ODENumericalVerbosity, key)
+                setproperty!(numerical_verbosity, key, value)
+            else
+                error("$key is not a recognized verbosity toggle.")
+            end
+        end
     end
 
     ODEVerbosity{true}(linear, nonlinear, error_control_verbosity, performance_verbosity, numerical_verbosity)
@@ -485,3 +510,4 @@ macro SciMLMessage(f_or_message, verb, option, group)
     return :(emit_message(
         $(esc(f_or_message)), $(esc(verb)), $option, $group, $file, $line, $_module))
 end
+
