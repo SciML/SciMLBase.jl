@@ -2571,19 +2571,23 @@ end
 ######### Backwards Compatibility Overloads
 
 (f::ODEFunction)(args...) = f.f(args...)
-function (f::ODEFunction)(du, u, p, t)
-    if f.f isa AbstractSciMLOperator
-        f.f(du, u, u, p, t)
-    else
-        f.f(du, u, p, t)
-    end
-end
-function (f::ODEFunction)(u, p, t)
-    if f.f isa AbstractSciMLOperator
-        f.f(u, u, p, t)
-    else
-        f.f(u, p, t)
-    end
+
+@static if isdefined(SciMLOperators, :isv1)
+  function (f::ODEFunction)(du, u, p, t) 
+      if f.f isa AbstractSciMLOperator
+          f.f(du, u, u, p, t)
+      else
+          f.f(du, u, p, t)
+      end
+  end
+
+  function (f::ODEFunction)(u, p, t) 
+      if f.f isa AbstractSciMLOperator
+          f.f(u, u, p, t)
+      else
+          f.f(u, p, t)
+      end
+  end
 end
 
 (f::NonlinearFunction)(args...) = f.f(args...)
@@ -2779,7 +2783,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
     if specialization(f) === NoSpecialize
         ODEFunction{isinplace(f), specialization(f), Any, Any, Any,
             Any, Any, Any, Any, typeof(f.jac_prototype),
-            typeof(f.sparsity), Any, Any, Any,
+            typeof(f.sparsity), Any, Any, Any, Any,
             Any, typeof(f.colorvec),
             typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
