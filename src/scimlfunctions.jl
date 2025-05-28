@@ -2573,21 +2573,21 @@ end
 (f::ODEFunction)(args...) = f.f(args...)
 
 @static if isdefined(SciMLOperators, :isv1)
-  function (f::ODEFunction)(du, u, p, t) 
-      if f.f isa AbstractSciMLOperator
-          f.f(du, u, u, p, t)
-      else
-          f.f(du, u, p, t)
-      end
-  end
+    function (f::ODEFunction)(du, u, p, t)
+        if f.f isa AbstractSciMLOperator
+            f.f(du, u, u, p, t)
+        else
+            f.f(du, u, p, t)
+        end
+    end
 
-  function (f::ODEFunction)(u, p, t) 
-      if f.f isa AbstractSciMLOperator
-          f.f(u, u, p, t)
-      else
-          f.f(u, p, t)
-      end
-  end
+    function (f::ODEFunction)(u, p, t)
+        if f.f isa AbstractSciMLOperator
+            f.f(u, u, p, t)
+        else
+            f.f(u, p, t)
+        end
+    end
 end
 
 (f::NonlinearFunction)(args...) = f.f(args...)
