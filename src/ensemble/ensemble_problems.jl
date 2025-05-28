@@ -102,6 +102,7 @@ Defines a structure to manage an ensemble (batch) of problems.
 Each field controls how the ensemble behaves during simulation.
 
 ## Arguments
+
     - `prob`: The original base problem to replicate or modify.
     - `prob_func`: A function that defines how to generate each subproblem.
     - `output_func`: A function to post-process each individual simulation result.
@@ -144,11 +145,14 @@ $(TYPEDEF)
 Constructor for deprecated usage where a vector of problems is passed directly.
 
 !!! warning
+
     This constructor is deprecated. Use the standard ensemble syntax with `prob_func` instead.
 """
 function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...)
-    Base.depwarn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
-    Ensembles Simulations Interface page for more details", :EnsembleProblem)
+    Base.depwarn(
+        "This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
+Ensembles Simulations Interface page for more details",
+        :EnsembleProblem)
     invoke(EnsembleProblem,
         Tuple{Any},
         prob;
@@ -163,12 +167,12 @@ Main constructor for `EnsembleProblem`.
 
 ## Keyword Arguments
 
-- `prob`: The base problem.
-- `prob_func`: Function to modify the base problem per trajectory.
-- `output_func`: Function to extract output from a solution.
-- `reduction`: Function to aggregate results.
-- `u_init`: Initial value for aggregation.
-- `safetycopy`: Whether to deepcopy the problem before modifying.
+  - `prob`: The base problem.
+  - `prob_func`: Function to modify the base problem per trajectory.
+  - `output_func`: Function to extract output from a solution.
+  - `reduction`: Function to aggregate results.
+  - `u_init`: Initial value for aggregation.
+  - `safetycopy`: Whether to deepcopy the problem before modifying.
 """
 function EnsembleProblem(prob;
         prob_func = DEFAULT_PROB_FUNC,
@@ -203,12 +207,15 @@ $(TYPEDEF)
 Constructor that is used for NOnlinearProblem.
 
 !!! warning
+
     This dispatch is deprecated. See the Parallel Ensembles Simulations Interface page.
 """
 function SciMLBase.EnsembleProblem(
         prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...) where {T}
-    Base.depwarn("This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
-    Ensembles Simulations Interface page for more details", :EnsembleProblem)
+    Base.depwarn(
+        "This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
+Ensembles Simulations Interface page for more details",
+        :EnsembleProblem)
     prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[i])
     return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
 end
@@ -220,8 +227,8 @@ Defines a weighted version of an `EnsembleProblem`, where different simulations 
 
 ## Arguments
 
-- `ensembleprob`: The base ensemble problem.
-- `weights`: A vector of weights corresponding to each simulation.
+  - `ensembleprob`: The base ensemble problem.
+  - `weights`: A vector of weights corresponding to each simulation.
 """
 struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
        AbstractEnsembleProblem
@@ -251,7 +258,6 @@ end
 $(TYPEDEF)
 
 Constructor for `WeightedEnsembleProblem`. Ensures weights sum to 1 and matches problem count.
-
 """
 function WeightedEnsembleProblem(args...; weights, kwargs...)
     # TODO: allow skipping checks?
@@ -260,4 +266,3 @@ function WeightedEnsembleProblem(args...; weights, kwargs...)
     @assert length(ep.prob) == length(weights)
     WeightedEnsembleProblem(ep, weights)
 end
-

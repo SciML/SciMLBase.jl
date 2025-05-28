@@ -484,7 +484,9 @@ for (f, kws, iip) in (
         (IntegralFunction(intf, 1.0), (;), false),
         (intfiip, (; nout = 3), true),
         (IntegralFunction(intfiip, zeros(3)), (;), true)
-    ), domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0]))
+    ),
+    domain in (((0.0, 1.0),), (([0.0], [1.0]),), (0.0, 1.0), ([0.0], [1.0]))
+
     IntegralProblem(f, domain...; kws...)
     IntegralProblem(f, domain..., p; kws...)
     IntegralProblem{iip}(f, domain...; kws...)

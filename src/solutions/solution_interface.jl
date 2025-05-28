@@ -265,7 +265,8 @@ plottable_indices(x::Number) = 1
             ([], [])
         else
             tscale = get(plotattributes, :xscale, :identity)
-            plot_vecs, labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
+            plot_vecs,
+            labels = diffeq_to_arrays(sol, plot_analytic, denseplot,
                 plotdensity, tspan, vars, tscale, plotat)
 
             # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
@@ -455,7 +456,8 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
         @assert length(var) - 1 == dims
     end
     # Should check that all have the same dims!
-    plot_vecs, labels = solplot_vecs_and_labels(dims, vars, plott, sol,
+    plot_vecs,
+    labels = solplot_vecs_and_labels(dims, vars, plott, sol,
         plot_analytic, plot_analytic_timeseries)
 end
 

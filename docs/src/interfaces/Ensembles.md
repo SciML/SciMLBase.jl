@@ -476,7 +476,7 @@ compute covariance matrices similarly:
 
 ```@example ensemble4
 timeseries_steps_meancov(sim) # Use the time steps, assume fixed dt
-timeseries_point_meancov(sim, 0:(1 // 2^(3)):1, 0:(1 // 2^(3)):1) # Use time points, interpolate
+timeseries_point_meancov(sim, 0:(1 // 2 ^ (3)):1, 0:(1 // 2 ^ (3)):1) # Use time points, interpolate
 ```
 
 For general analysis, we can build a `EnsembleSummary` type.

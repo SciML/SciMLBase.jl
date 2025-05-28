@@ -402,23 +402,22 @@ EnumX.@enumx ReturnCode begin
     Stalled
 
     """
-      ReturnCode.StalledSuccess
+    ReturnCode.StalledSuccess
 
     The solution process has stalled, but the stall is not considered a failure of the solver.
     For example, a nonlinear optimizer may have stalled, that is its steps went to zero, which
-    is a valid local minima. 
+    is a valid local minima.
 
     ## Common Reasons for Seeing this Return Code
 
-      - For nonlinear least squares optimizations, this is given for local minima which exceed 
-        the chosen tolerance, i.e. `f(x)=resid` where `||resid||>tol` so it's not considered 
+      - For nonlinear least squares optimizations, this is given for local minima which exceed
+        the chosen tolerance, i.e. `f(x)=resid` where `||resid||>tol` so it's not considered
         ReturnCode.Success but it is still considered a successful return of the solver since
         it's a valid local minima (and there no minima which achieves the tolerance).
 
     ## Properties
 
       - `successful_retcode` = `true`
-
     """
     StalledSuccess
 
