@@ -64,6 +64,15 @@ function ChainRulesCore.rrule(::Type{ODEProblem}, args...; kwargs...)
     ODEProblem(args...; kwargs...), ODEProblemAdjoint
 end
 
+function ChainRulesCore.rrule(::Type{
+    <:ODEProblem{iip, T}}, args...; kwargs...) where {iip, T}
+    function ODEProblemAdjoint(ȳ)
+        (NoTangent(), ȳ.f, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
+    end
+
+    ODEProblem(args...; kwargs...), ODEProblemAdjoint
+end
+
 function ChainRulesCore.rrule(::Type{SDEProblem}, args...; kwargs...)
     function SDEProblemAdjoint(ȳ)
         (NoTangent(), ȳ.f, ȳ.g, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
