@@ -8,7 +8,7 @@ StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 
 [compat]
 Documenter = "1"
-ModelingToolkit = "8.35, 9"
+ModelingToolkit = "8.35, 9, 10"
 OrdinaryDiffEq = "6"
 Plots = "1"
 SciMLBase = "1.74, 2"
