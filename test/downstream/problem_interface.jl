@@ -9,7 +9,7 @@ eqs = [D(D(x)) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@mtkbuild sys = ODESystem(eqs, t)
+@mtkcompile sys = System(eqs, t)
 
 u0 = [D(x) => 2.0,
     x => 1.0,
@@ -23,7 +23,7 @@ p = [σ => 28.0,
 tspan = (0.0, 100.0)
 
 # ODEProblem.
-oprob = ODEProblem(sys, u0, tspan, p, jac = true)
+oprob = ODEProblem(sys, [u0; p], tspan, jac = true)
 
 @test_throws Exception oprob[σ]
 @test_throws Exception oprob[sys.σ]
@@ -113,7 +113,7 @@ noiseeqs = [
     0.1 * z]
 @named noise_sys = SDESystem(sys, noiseeqs)
 noise_sys = complete(noise_sys)
-sprob = SDEProblem(noise_sys, u0, (0.0, 100.0), p)
+sprob = SDEProblem(noise_sys, [u0; p], (0.0, 100.0))
 u0
 
 getσ1 = getp(noise_sys, σ)
@@ -198,7 +198,7 @@ sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
-@mtkbuild sys = ODESystem(eqs, t, [sts...;], [ps...;])
+@mtkcompile sys = System(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 @test getp(sys, p)(prob) == prob.ps[p] == [1, 2, 3]
 setp(sys, p)(prob, [4, 5, 6])
@@ -214,7 +214,7 @@ eqs = [
     D(X) ~ p - d * X,
     X2 ~ 2 * X
 ]
-@mtkbuild osys = ODESystem(eqs, t)
+@mtkpile osys = System(eqs, t)
 
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
@@ -276,11 +276,11 @@ eqs = [
     D(X) ~ p - d * X,
     X2 ~ 2 * X
 ]
-@mtkbuild osys = ODESystem(eqs, t)
+@mtkbuild osys = System(eqs, t)
 
 u0 = [X => 0.1]
 ps = [p => 1.0, d => 0.2]
-prob = SteadyStateProblem(osys, u0, ps)
+prob = SteadyStateProblem(osys, [u0; ps])
 
 @test prob[X] == prob[osys.X] == prob[:X] == 0.1
 @test prob[X2] == prob[osys.X2] == prob[:X2] == 0.2
@@ -309,7 +309,7 @@ prob = SteadyStateProblem(osys, u0, ps)
     @parameters p = 1.0
     eqs = Any[0 for _ in 1:8]
     fullf!(eqs, u, [p])
-    @mtkbuild model = NonlinearSystem(0 .~ eqs, [u...], [p])
+    @mtkcompile model = System(0 .~ eqs, [u...], [p])
 
     prob = NonlinearProblem(model, [])
     sccprob = SCCNonlinearProblem(model, [])
