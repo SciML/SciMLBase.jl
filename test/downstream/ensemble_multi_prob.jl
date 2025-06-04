@@ -2,11 +2,11 @@ using ModelingToolkit, OrdinaryDiffEq, Test
 using ModelingToolkit: t_nounits as t, D_nounits as D
 @variables x(t), y(t)
 
-@mtkbuild sys1 = ODESystem([D(x) ~ x,
+@mtkcompile sys1 = System([D(x) ~ x,
         D(y) ~ -y], t)
-@mtkbuild sys2 = ODESystem([D(x) ~ 2x,
+@mtkcompile sys2 = System([D(x) ~ 2x,
         D(y) ~ -2y], t)
-@mtkbuild sys3 = ODESystem([D(x) ~ 3x,
+@mtkcompile sys3 = System([D(x) ~ 3x,
         D(y) ~ -3y], t)
 
 prob1 = ODEProblem(sys1, [1.0, 1.0], (0.0, 1.0))

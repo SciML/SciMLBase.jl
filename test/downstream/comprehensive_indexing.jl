@@ -40,11 +40,11 @@ begin
     loss = kd * (k1 - X)^2 + k2 * (kp * Y - X^2)^2
 
     # Create systems (without structural_simplify, since that might modify systems to affect intended tests).
-    osys = complete(ODESystem(diff_eqs, t; observed, name = :osys))
-    ssys = complete(SDESystem(
-        diff_eqs, noise_eqs, t, [X, Y], [kp, kd, k1, k2]; observed, name = :ssys))
+    osys = complete(System(diff_eqs, t; observed, name = :osys))
+    ssys = complete(System(
+        diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed, name = :ssys))
     jsys = complete(JumpSystem(jumps, t, [X, Y], [kp, kd, k1, k2]; observed, name = :jsys))
-    nsys = complete(NonlinearSystem(alg_eqs; observed, name = :nsys))
+    nsys = complete(System(alg_eqs; observed, name = :nsys))
     optsys = complete(OptimizationSystem(
         loss, [X, Y], [kp, kd, k1, k2]; observed, name = :optsys))
 end
@@ -57,14 +57,14 @@ begin
     p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
 
     # Creates problems.
-    oprob = ODEProblem(osys, u0_vals, tspan, p_vals)
-    sprob = SDEProblem(ssys, u0_vals, tspan, p_vals)
-    dprob = DiscreteProblem(jsys, u0_vals, tspan, p_vals)
-    jprob = JumpProblem(jsys, deepcopy(dprob), Direct(); rng)
-    nprob = NonlinearProblem(nsys, u0_vals, p_vals)
+    oprob = ODEProblem(osys, [u0_vals; p_vals], tspan)
+    sprob = SDEProblem(ssys, [u0_vals; p_vals], tspan)
+    dprob = DiscreteProblem(jsys, )
+    jprob = JumpProblem(jsys, [u0_vals; p_vals], tspan; aggregator = Direct(), rng)
+    nprob = NonlinearProblem(nsys, [u0_vals; p_vals])
     hcprob = NonlinearProblem(HomotopyNonlinearFunction(nprob.f), nprob.u0, nprob.p)
-    ssprob = SteadyStateProblem(osys, u0_vals, p_vals)
-    optprob = OptimizationProblem(optsys, u0_vals, p_vals, grad = true, hess = true)
+    ssprob = SteadyStateProblem(osys, [u0_vals; p_vals])
+    optprob = OptimizationProblem(optsys, [u0_vals; p_vals], grad = true, hess = true)
     problems = [oprob, sprob, dprob, jprob, nprob, hcprob, ssprob, optprob]
     systems = [osys, ssys, jsys, jsys, nsys, nsys, osys, optsys]
 
@@ -358,7 +358,7 @@ end
     ps = @parameters p[1:3] = [1, 2, 3]
     eqs = [collect(D.(x) .~ x)
            D(y) ~ norm(x) * y - x[1]]
-    @named sys = ODESystem(eqs, t, [sts...;], ps)
+    @named sys = System(eqs, t, [sts...;], ps)
     sys = complete(sys)
     prob = ODEProblem(sys, [], (0, 1.0))
     sol = solve(prob, Tsit5())
@@ -510,9 +510,9 @@ end
 # Issue https://github.com/SciML/ModelingToolkit.jl/issues/2697
 @testset "Interpolation of derivative of observed variables" begin
     @variables x(t) y(t) z(t) w(t)[1:2]
-    @named sys = ODESystem(
+    @named sys = System(
         [D(x) ~ 1, y ~ x^2, z ~ 2y^2 + 3x, w[1] ~ x + y + z, w[2] ~ z * x * y], t)
-    sys = structural_simplify(sys)
+    sys = mtkcompile(sys)
     prob = ODEProblem(sys, [x => 0.0], (0.0, 1.0))
     sol = solve(prob, Tsit5())
     @test_throws ErrorException sol(1.0, Val{1}, idxs = y)
@@ -912,9 +912,9 @@ end
 @testset "Continuous interpolation before discrete save" begin
     @variables x(t)
     @parameters c(t)
-    @mtkbuild sys = ODESystem(
-        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [1.0 => [c ~ c + 1]])
-    prob = ODEProblem(sys, [x => 0.0], (0.0, 2pi), [c => 1.0])
+    @mtkcompile sys = System(
+        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [1.0 => [c ~ Pre(c) + 1]])
+    prob = ODEProblem(sys, [x => 0.0, c => 1.0], (0.0, 2pi))
     sol = solve(prob, Tsit5())
     @test_nowarn sol(-0.1; idxs = sys.x)
     @test_nowarn sol(-0.1; idxs = [sys.x, 2sys.x])
@@ -939,7 +939,7 @@ end
         osc2.jcn ~ osc1.delx]
     @named coupledOsc = System(eqs, t)
     @named coupledOsc = compose(coupledOsc, systems)
-    sys = structural_simplify(coupledOsc)
+    sys = mtkcompile(coupledOsc)
     prob = DDEProblem(sys, [], (0.0, 10.0); constant_lags = [sys.osc1.τ, sys.osc2.τ])
     sym = sys.osc1.delx
     delay = sys.osc1.τ
@@ -970,7 +970,7 @@ end
         osc2.jcn ~ osc1.delx]
     @named coupledOsc = System(eqs, t)
     @named coupledOsc = compose(coupledOsc, systems)
-    sys = structural_simplify(coupledOsc)
+    sys = mtkcompile(coupledOsc)
     prob = SDDEProblem(sys, [], (0.0, 10.0); constant_lags = [sys.osc1.τ, sys.osc2.τ])
     sym = sys.osc1.delx
     delay = sys.osc1.τ
@@ -983,14 +983,14 @@ end
 @testset "RODESolutions save discretes" begin
     @parameters k(t)
     @variables A(t)
-    function affect2!(integ, u, p, ctx)
-        integ.ps[p.k] += 1.0
+    function affect2!(m, o, ctx, integ)
+        return (; k = m.k + 1.0)
     end
-    db = 1.0 => (affect2!, [], [k], [k], nothing)
+    db = 1.0 => ModelingToolkit.ImperativeAffect(affect2!; modified = (; k))
 
-    @named ssys = SDESystem(D(A) ~ k * A, [0.0], t, [A], [k], discrete_events = db)
+    @named ssys = System(D(A) ~ k * A, t, [A], [k]; noise_eqs = [0.0] discrete_events = db)
     ssys = complete(ssys)
-    prob = SDEProblem(ssys, [A => 1.0], (0.0, 4.0), [k => 1.0])
+    prob = SDEProblem(ssys, [A => 1.0, k => 1.0], (0.0, 4.0))
     sol = solve(prob, RI5())
     @test sol[k] isa AbstractVector
     @test sol[k] == [1.0, 2.0, 3.0, 4.0]

@@ -11,12 +11,12 @@ function lotka_volterra(; name = name)
         D(y) ~ -p3 * y + p4 * x * y,
         o ~ x * y
     ]
-    return ODESystem(eqs, t, unknowns, params; name = name)
+    return System(eqs, t, unknowns, params; name = name)
 end
 
 @named lotka_volterra_sys = lotka_volterra()
-lotka_volterra_sys = structural_simplify(lotka_volterra_sys, split = false)
-prob = ODEProblem(lotka_volterra_sys, [], (0.0, 10.0), [])
+lotka_volterra_sys = mtkcompile(lotka_volterra_sys, split = false)
+prob = ODEProblem(lotka_volterra_sys, [], (0.0, 10.0))
 sol = solve(prob, Tsit5(), reltol = 1e-6, abstol = 1e-6)
 setter = setsym_oop(prob, [unknowns(lotka_volterra_sys); parameters(lotka_volterra_sys)])
 u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])

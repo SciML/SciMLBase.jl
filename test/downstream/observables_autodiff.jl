@@ -14,7 +14,7 @@ eqs = [D(D(x)) ~ σ * (y - x),
     D(z) ~ x * y - β * z,
     w ~ x + y + z + 2 * β]
 
-@mtkbuild sys = ODESystem(eqs, t)
+@mtkcompile sys = System(eqs, t)
 
 u0 = [D(x) => 2.0,
     x => 1.0,
@@ -26,7 +26,7 @@ p = [σ => 28.0,
     β => 8 / 3]
 
 tspan = (0.0, 100.0)
-prob = ODEProblem(sys, u0, tspan, p)
+prob = ODEProblem(sys, [u0; p], tspan)
 sol = solve(prob, Tsit5())
 
 @testset "AutoDiff Observable Functions" begin
@@ -84,7 +84,7 @@ function create_model(; C₁ = 3e-5, C₂ = 1e-6)
            connect(resistor1.n, capacitor1.p, ampermeter.n)
            connect(resistor2.n, capacitor2.p, ampermeter.p)]
 
-    @named circuit_model = ODESystem(eqs, t,
+    @named circuit_model = System(eqs, t,
         systems = [
             resistor1, resistor2, capacitor1, capacitor2,
             source, input_signal, ground, ampermeter
@@ -93,7 +93,7 @@ end
 
 @testset "DAE Observable function AD" begin
     model = create_model()
-    sys = structural_simplify(model)
+    sys = mtkcompile(model)
 
     prob = ODEProblem(sys, [], (0.0, 1.0))
     sol = solve(prob, Rodas4())

@@ -18,7 +18,7 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named sys = ODESystem(eqs, t; parameter_dependencies = [q => 3β])
+@named sys = System(eqs, t; parameter_dependencies = [q => 3β])
 sys = complete(sys)
 u0 = [x => 1.0,
     y => 0.0,
@@ -31,23 +31,23 @@ p = [σ => 28.0,
 tspan = (0.0, 100.0)
 
 push!(syss, sys)
-push!(probs, ODEProblem(sys, u0, tspan, p, jac = true))
+push!(probs, ODEProblem(sys, [u0; p], tspan, jac = true))
 
 push!(syss, sys)
-push!(probs, SteadyStateProblem(ODEProblem(sys, u0, tspan, p, jac = true)))
+push!(probs, SteadyStateProblem(ODEProblem(sys, [u0; p], tspan, jac = true)))
 
 noise_eqs = [0.1x, 0.1y, 0.1z]
 @named sdesys = SDESystem(sys, noise_eqs)
 sdesys = complete(sdesys)
 
 push!(syss, sdesys)
-push!(probs, SDEProblem(sdesys, u0, tspan, p, jac = true))
+push!(probs, SDEProblem(sdesys, [u0; p], tspan, jac = true))
 
-@named nsys = NonlinearSystem([0 ~ eq.rhs for eq in eqs], [x, y, z], [σ, β, ρ])
+@named nsys = System([0 ~ eq.rhs for eq in eqs], [x, y, z], [σ, β, ρ])
 nsys = complete(nsys)
 
 push!(syss, nsys)
-push!(probs, NonlinearProblem(nsys, u0, p, jac = true))
+push!(probs, NonlinearProblem(nsys, [u0; p], jac = true))
 
 rate₁ = β * x * y
 affect₁ = [x ~ x - σ, y ~ y + σ]
@@ -58,10 +58,9 @@ j₂ = ConstantRateJump(rate₂, affect₂)
 j₃ = MassActionJump(2 * β + ρ, [z => 1], [x => 1, z => -1])
 @named js = JumpSystem([j₁, j₂, j₃], t, [x, y, z], [σ, β, ρ])
 js = complete(js)
-jump_dprob = DiscreteProblem(js, u0, tspan, p)
 
 push!(syss, js)
-push!(probs, JumpProblem(js, jump_dprob, Direct()))
+push!(probs, JumpProblem(js, [u0; p], tspan; aggregator = Direct()))
 
 @named optsys = OptimizationSystem(sum(eq.lhs for eq in eqs), [x, y, z], [σ, ρ, β])
 optsys = complete(optsys)
@@ -69,11 +68,11 @@ push!(syss, optsys)
 push!(probs, OptimizationProblem(optsys, u0, p))
 
 k = ShiftIndex(t)
-@mtkbuild discsys = DiscreteSystem(
+@mtkcompile discsys = System(
     [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
     t; defaults = [x => 1.0, y => 1.0, z => 1.0])
 # Roundabout method to avoid having to specify values for previous timestep
-discprob = DiscreteProblem(discsys, [], (0, 10), p)
+discprob = DiscreteProblem(discsys, p, (0, 10))
 for (var, v) in u0
     discprob[var] = v
     discprob[var(k - 1)] = 0.0
@@ -81,10 +80,10 @@ end
 push!(syss, discsys)
 push!(probs, discprob)
 
-@mtkbuild sys = NonlinearSystem(
+@mtkcompile sys = System(
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
     [x, y, z], [σ, β, ρ])
-sccprob = SCCNonlinearProblem(sys, u0, p)
+sccprob = SCCNonlinearProblem(sys, [u0; p])
 @test_nowarn SciMLBase.initialization_status(sccprob)
 push!(syss, sys)
 push!(probs, sccprob)
@@ -170,8 +169,8 @@ end
 
 # Optimization
 @parameters p
-@mtkbuild sys = ODESystem([D(x) ~ -p * x], t)
-odeprob = ODEProblem(sys, [x => 1.0], (0.0, 10.0), [p => 0.5])
+@mtkcompile sys = System([D(x) ~ -p * x], t)
+odeprob = ODEProblem(sys, [x => 1.0, p => 0.5], (0.0, 10.0))
 
 ts = 0.0:0.5:10.0
 data = exp.(-2.5 .* ts)
@@ -197,7 +196,7 @@ sol = solve(prob, BFGS())
     @parameters P
 
     for sign in [+1.0, -1.0]
-        @named sys = ODESystem([D(x) ~ P], t, [x], [P]; defaults = [P => sign * x]) # set P from initial condition of x
+        @named sys = System([D(x) ~ P], t, [x], [P]; defaults = [P => sign * x]) # set P from initial condition of x
         sys = complete(sys)
 
         prob1 = ODEProblem(sys, [x => 1.0], (0.0, 1.0))
@@ -239,7 +238,7 @@ end
 @testset "remake with parameter dependent on observed" begin
     @variables x(t) y(t)
     @parameters p = x + y
-    @mtkbuild sys = ODESystem([D(x) ~ x, p ~ x + y], t)
+    @mtkcompile sys = System([D(x) ~ x, p ~ x + y], t)
     prob = ODEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0))
     @test prob.ps[p] ≈ 3.0
     prob2 = remake(prob; u0 = [y => 3.0], p = Dict())
@@ -249,8 +248,8 @@ end
 @testset "u0 dependent on parameter given as Symbol" begin
     @variables x(t)
     @parameters p
-    @mtkbuild sys = ODESystem([D(x) ~ x * p], t)
-    prob = ODEProblem(sys, [x => 1.0], (0.0, 1.0), [p => 1.0])
+    @mtkcompile sys = System([D(x) ~ x * p], t)
+    prob = ODEProblem(sys, [x => 1.0, p => 1.0], (0.0, 1.0))
     @test prob.ps[p] ≈ 1.0
     prob2 = remake(prob; u0 = [x => p], p = [:p => 2.0])
     @test prob2[x] ≈ 2.0
@@ -259,8 +258,8 @@ end
 @testset "remake dependent on indepvar" begin
     @variables x(t)
     @parameters p
-    @mtkbuild sys = ODESystem([D(x) ~ x * p], t)
-    prob = ODEProblem(sys, [x => 1.0], (0.0, 1.0), [p => 1.0])
+    @mtkcompile sys = System([D(x) ~ x * p], t)
+    prob = ODEProblem(sys, [x => 1.0, p => 1.0], (0.0, 1.0))
     prob2 = remake(prob; u0 = [x => t + 3.0])
     @test prob2[x] ≈ 3.0
 end
@@ -283,9 +282,9 @@ end
 @testset "Cycle detection" begin
     @variables x(t) y(t)
     @parameters p q
-    @mtkbuild sys = ODESystem([D(x) ~ x * p, D(y) ~ y * q], t)
+    @mtkcompile sys = System([D(x) ~ x * p, D(y) ~ y * q], t)
 
-    prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 1.0), [p => 1.0, q => 1.0])
+    prob = ODEProblem(sys, [x => 1.0, y => 1.0, p => 1.0, q => 1.0], (0.0, 1.0))
     @test_throws SciMLBase.CyclicDependencyError remake(
         prob; u0 = [x => 2y + 3, y => 2x + 1])
     @test_throws SciMLBase.CyclicDependencyError remake(prob; p = [p => 2q + 1, q => p + 3])
@@ -294,7 +293,7 @@ end
 end
 
 @testset "SCCNonlinearProblem" begin
-    @mtkbuild fullsys = NonlinearSystem(
+    @mtkbuild fullsys = System(
         [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
         [x, y, z], [σ, β, ρ])
 
@@ -306,7 +305,7 @@ end
         ρ => 10.0,
         β => 8 / 3]
 
-    sccprob = SCCNonlinearProblem(fullsys, u0, p)
+    sccprob = SCCNonlinearProblem(fullsys, [u0; p])
 
     sccprob2 = remake(sccprob; u0 = 2ones(3))
     @test state_values(sccprob2) ≈ 2ones(3)
@@ -354,20 +353,20 @@ end
     initdata = SciMLBase.OverrideInitData(initprob, nothing, iprobmap, iprobpmap)
     @test SciMLBase.is_trivial_initialization(initdata)
 
-    @testset "$Problem" for (SystemT, rhss, Problem, Func) in [
-        (ODESystem, 0.0, ODEProblem, ODEFunction),
-        (System, a, SDEProblem, SDEFunction),
-        (ODESystem, _x(t - 0.1), DDEProblem, DDEFunction),
-        (System, _x(t - 0.1) + a, SDDEProblem, SDDEFunction),
-        (NonlinearSystem, y + 2, NonlinearProblem, NonlinearFunction),
-        (NonlinearSystem, y + 2, NonlinearLeastSquaresProblem, NonlinearFunction)
+    @testset "$Problem" for (rhss, Problem, Func) in [
+        (0.0, ODEProblem, ODEFunction),
+        (a, SDEProblem, SDEFunction),
+        (_x(t - 0.1), DDEProblem, DDEFunction),
+        (_x(t - 0.1) + a, SDDEProblem, SDDEFunction),
+        (y + 2, NonlinearProblem, NonlinearFunction),
+        (y + 2, NonlinearLeastSquaresProblem, NonlinearFunction)
     ]
-        is_nlsolve = SystemT == NonlinearSystem
+        is_nlsolve = Func == NonlinearFunction
         D = is_nlsolve ? (v) -> v^3 : Differential(t)
         sys_args = is_nlsolve ? () : (t,)
         prob_args = is_nlsolve ? () : ((0.0, 1.0),)
 
-        @mtkbuild sys = SystemT([D(x) ~ x + rhss, x + y ~ p], sys_args...)
+        @mtkcompile sys = System([D(x) ~ x + rhss, x + y ~ p], sys_args...)
         prob = Problem(sys, [x => 1.0, y => 1.0], prob_args...)
         func_args = isdefined(prob.f, :g) ? (prob.f.g,) : ()
         func = Func{true, SciMLBase.FullSpecialize}(
@@ -382,12 +381,12 @@ end
 @testset "Remake with non-substitute-able values" begin
     @variables x1(t) x2(t) y(t)
     @parameters k2 p Gamma y0 d k1
-    @mtkbuild sys = ODESystem(
+    @mtkcompile sys = System(
         [D(y) ~ p - d * y, D(x1) ~ -k1 * x1 + k2 * (Gamma - x1), x2 ~ Gamma - x1],
         t; defaults = Dict(y => y0, Gamma => x1 + x2))
     u0 = [x1 => 1.0, x2 => 2.0]
     p0 = [p => 10.0, d => 5.0, y0 => 3.0, k1 => 1.0, k2 => 2.0]
-    prob = ODEProblem(sys, u0, (0.0, 1.0), p0)
+    prob = ODEProblem(sys, [u0; p0], (0.0, 1.0))
     u0_new = [x1 => 0.1]
     ps_new = [y0 => 0.3, p => 100.0]
     prob2 = remake(prob; u0 = u0_new, p = ps_new)
@@ -400,17 +399,17 @@ end
 @testset "`nothing` value for variable specified as `Symbol`" begin
     @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p [guess = 1.0] q [guess = 1.0]
-    @mtkbuild sys = ODESystem(
+    @mtkcompile sys = System(
         [D(x) ~ p * x + q * y, y ~ 2x], t; parameter_dependencies = [q ~ 2p])
-    prob = ODEProblem(sys, [:x => 1.0], (0.0, 1.0), [p => 1.0])
+    prob = ODEProblem(sys, [:x => 1.0, p => 1.0], (0.0, 1.0))
     @test_nowarn remake(prob; u0 = [:y => 1.0, :x => nothing])
 end
 
 @testset "`initialization_data` u0 and p are promoted with explicit `f`" begin
     @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p q
-    @mtkbuild sys = ODESystem([D(x) ~ x, (x - p)^2 + (y - q)^3 ~ 0], t)
-    prob = ODEProblem(sys, [x => 1.0], (0.0, 1.0), [p => 1.0, q => 2.0])
+    @mtkcompile sys = System([D(x) ~ x, (x - p)^2 + (y - q)^3 ~ 0], t)
+    prob = ODEProblem(sys, [x => 1.0, p => 1.0, q => 2.0], (0.0, 1.0))
     @test prob.f.initialization_data !== nothing
     buf, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), prob.p)
     newps = repack(ForwardDiff.Dual.(buf))
@@ -426,7 +425,7 @@ end
 @testset "Array unknown specified as Symbol" begin
     @variables x(t)[1:2]
     @parameters k
-    @mtkbuild sys = ODESystem([D(x[1]) ~ k * x[1], D(x[2]) ~ -x[2]], t)
-    prob = ODEProblem(sys, [x => ones(2)], (0.0, 1.0), [k => 2.0])
+    @mtkcompile sys = System([D(x[1]) ~ k * x[1], D(x[2]) ~ -x[2]], t)
+    prob = ODEProblem(sys, [x => ones(2), k => 2.0], (0.0, 1.0))
     prob2 = remake(prob; u0 = [:x => 2ones(2)])
 end

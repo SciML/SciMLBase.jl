@@ -44,10 +44,10 @@ end
 
     @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p=missing [guess=1.0] q=missing [guess=1.0]
-    @mtkbuild sys = ODESystem([D(x) ~ p * y + q * t, D(y) ~ 5x + q], t;
+    @mtkcompile sys = System([D(x) ~ p * y + q * t, D(y) ~ 5x + q], t;
         initialization_eqs = [p^2 + q^2 ~ 3, x^3 + y^3 ~ 5])
     prob = ODEProblem(
-        sys, [x => 1.0], (0.0, 1.0), [p => 1.0]; initializealg = SciMLBase.NoInit())
+        sys, [x => 1.0, p => 1.0], (0.0, 1.0); initializealg = SciMLBase.NoInit())
 
     @test prob.f.initialization_data isa SciMLBase.OverrideInitData
     integ = init(prob, Tsit5())
@@ -68,15 +68,15 @@ end
     eqs = [D(D(x)) ~ λ * x
            D(D(y)) ~ λ * y - g
            x^2 + y^2 ~ 1]
-    @mtkbuild pend = ODESystem(eqs, t)
+    @mtkcompile pend = System(eqs, t)
 
-    prob = ODEProblem(pend, [x => 1, y => 0], (0.0, 1.5), [g => 1], guesses = [λ => 1])
+    prob = ODEProblem(pend, [x => 1, y => 0, g => 1], (0.0, 1.5), guesses = [λ => 1])
     @test occursin("Initialization status: FULLY_DETERMINED", sprint(summary, prob))
 
-    prob = ODEProblem(pend, [], (0.0, 1.5), [g => 1], guesses = [λ => 1, x => 1, y => 0])
+    prob = ODEProblem(pend, [g => 1], (0.0, 1.5), guesses = [λ => 1, x => 1, y => 0])
     @test occursin("Initialization status: UNDERDETERMINED", sprint(summary, prob))
 
-    prob = ODEProblem(pend, [x => 1, y => 0, λ => 2], (0.0, 1.5), [g => 1])
+    prob = ODEProblem(pend, [x => 1, y => 0, λ => 2, g => 1], (0.0, 1.5))
     @test occursin("Initialization status: OVERDETERMINED", sprint(summary, prob))
 end
 

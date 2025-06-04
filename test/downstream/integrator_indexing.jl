@@ -10,13 +10,13 @@ using SciMLStructures: canonicalize, Tunable
 eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
     D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
-@named pop_model = ODESystem(eqs, t)
+@named pop_model = System(eqs, t)
 population_model = complete(pop_model)
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]
 p = [a => 2.0, b => 1.0, c => 1.0, d => 1.0]
 tspan = (0.0, 1000000.0)
-oprob = ODEProblem(population_model, u0, tspan, p)
+oprob = ODEProblem(population_model, [u0; p], tspan)
 integrator = init(oprob, Rodas4())
 
 @test_throws Exception integrator[a]
@@ -84,7 +84,7 @@ noiseeqs = [0.1 * s1,
     0.1 * s2]
 @named noisy_population_model = SDESystem(pop_model, noiseeqs)
 noisy_population_model = complete(noisy_population_model)
-sprob = SDEProblem(noisy_population_model, u0, (0.0, 100.0), p)
+sprob = SDEProblem(noisy_population_model, [u0; p], (0.0, 100.0))
 integrator = init(sprob, ImplicitEM())
 
 step!(integrator, 100.0, true)
@@ -127,14 +127,14 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs, t)
-@named lorenz2 = ODESystem(eqs, t)
+@named lorenz1 = System(eqs, t)
+@named lorenz2 = System(eqs, t)
 
 @parameters γ
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ]
-@mtkbuild sys = ODESystem(
+@mtkbuild sys = System(
     connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
 
 u0 = [lorenz1.x => 1.0,
@@ -154,7 +154,7 @@ p = [lorenz1.σ => 10.0,
     γ => 2.0]
 
 tspan = (0.0, 100.0)
-prob = ODEProblem(sys, u0, tspan, p)
+prob = ODEProblem(sys, [u0; p], tspan)
 integrator = init(prob, Rodas4())
 sol = solve(prob, Rodas4())
 step!(integrator, 100.0, true)
@@ -185,8 +185,8 @@ step!(integrator, 100.0, true)
 @variables q(t)[1:2] = [1.0, 2.0]
 eqs = [D(q[1]) ~ 2q[1]
        D(q[2]) ~ 2.0]
-@named sys2 = ODESystem(eqs, t, [q...], [])
-sys2_simplified = structural_simplify(sys2)
+@named sys2 = System(eqs, t, [q...], [])
+sys2_simplified = mtkcompile(sys2)
 prob2 = ODEProblem(sys2_simplified, [], (0.0, 5.0))
 integrator2 = init(prob2, Tsit5())
 
@@ -199,7 +199,7 @@ integrator2 = init(prob2, Tsit5())
     @variables u(t)
     eqs = [D(u) ~ u]
 
-    @mtkbuild sys2 = ODESystem(eqs, t)
+    @mtkcompile sys2 = System(eqs, t)
 
     tspan = (0.0, 5.0)
 
@@ -324,7 +324,7 @@ sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
 ps = @parameters p[1:3] = [1, 2, 3]
 eqs = [collect(D.(x) .~ x)
        D(y) ~ norm(x) * y - x[1]]
-@mtkbuild sys = ODESystem(eqs, t, [sts...;], [ps...;])
+@mtkcompile sys = System(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 integrator = init(prob, Tsit5(), save_everystep = false)
 @test integrator[x] isa Vector{Float64}
@@ -365,5 +365,5 @@ integrator.ps[p] = [7, 8, 9]
 @variables X(t)
 
 eq = D(X) ~ p - X
-@mtkbuild osys = ODESystem([eq], t)
-oprob = ODEProblem(osys, [X => 0.1], (0.0, 1.0), [p => 1.0])
+@mtkcompile osys = System([eq], t)
+oprob = ODEProblem(osys, [X => 0.1, p => 1.0], (0.0, 1.0))

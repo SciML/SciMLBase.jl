@@ -12,13 +12,13 @@ using Plots: Plots, plot
 eqs = [D(s1) ~ a * s1 / (1 + s1 + s2) - b * s1,
     D(s2) ~ +c * s2 / (1 + s1 + s2) - d * s2]
 
-@mtkbuild population_model = ODESystem(eqs, t)
+@mtkcompile population_model = System(eqs, t)
 
 # Tests on ODEProblem.
 u0 = [s1 => 2.0, s2 => 1.0]
 p = [a => 2.0, b => 1.0, c => 1.0, d => 1.0]
 tspan = (0.0, 1000000.0)
-oprob = ODEProblem(population_model, u0, tspan, p)
+oprob = ODEProblem(population_model, [u0; p], tspan)
 sol = solve(oprob, Rodas4())
 
 @test sol[s1] == sol[population_model.s1] == sol[:s1]
@@ -56,7 +56,7 @@ noiseeqs = [0.1 * s1,
     0.1 * s2]
 @named noisy_population_model = SDESystem(population_model, noiseeqs)
 noisy_population_model = complete(noisy_population_model)
-sprob = SDEProblem(noisy_population_model, u0, (0.0, 100.0), p)
+sprob = SDEProblem(noisy_population_model, [u0; p], (0.0, 100.0))
 sol = solve(sprob, ImplicitEM())
 
 @test sol[s1] == sol[noisy_population_model.s1] == sol[:s1]
@@ -74,14 +74,14 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named lorenz1 = ODESystem(eqs, t)
-@named lorenz2 = ODESystem(eqs, t)
+@named lorenz1 = System(eqs, t)
+@named lorenz2 = System(eqs, t)
 
 @parameters γ
 @variables a(t) α(t)
 connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ]
-@mtkbuild sys = ODESystem(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
+@mtkcompile sys = System(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
 
 u0 = [lorenz1.x => 1.0,
     lorenz1.y => 0.0,
@@ -99,7 +99,7 @@ p = [lorenz1.σ => 10.0,
     γ => 2.0]
 
 tspan = (0.0, 100.0)
-prob = ODEProblem(sys, u0, tspan, p)
+prob = ODEProblem(sys, [u0; p], tspan)
 sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
@@ -151,8 +151,8 @@ sol10 = sol(0.1, idxs = 2)
 @testset "Plot idxs" begin
     @variables x(t) y(t)
     @parameters p
-    @mtkbuild sys = ODESystem([D(x) ~ x * t, D(y) ~ y - p * x], t)
-    prob = ODEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0), [p => 1.0])
+    @mtkcompile sys = System([D(x) ~ x * t, D(y) ~ y - p * x], t)
+    prob = ODEProblem(sys, [x => 1.0, y => 2.0, p => 1.0], (0.0, 1.0))
     sol = solve(prob, Tsit5())
 
     plotfn(t, u) = (t, 2u)
@@ -177,10 +177,10 @@ end
     @testset "Purely continuous ODE/DAE/SDE-solutions" begin
         @variables x(t) y(t)
         @parameters p
-        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t)
+        @mtkcompile sys = System([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t)
         @test length(unknowns(sys)) == 2
         xidx = variable_index(sys, x)
-        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0), [p => 0.5])
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0, p => 0.5], (0.0, 5.0))
 
         @test SciMLBase.SavedSubsystem(sys, prob.p, nothing) === nothing
         @test SciMLBase.SavedSubsystem(sys, prob.p, [x, y]) === nothing
@@ -192,16 +192,16 @@ end
 
         ode_sol = solve(prob, Tsit5(); save_idxs = [x])
 
-        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, 1 ~ sin(y) + cos(x)], t)
+        @mtkcompile sys = System([D(x) ~ x + p * y, 1 ~ sin(y) + cos(x)], t)
         xidx = variable_index(sys, x)
-        prob = DAEProblem(sys, [D(x) => x + p * y, D(y) => 1 / sqrt(1 - (1 - cos(x))^2)],
-            [x => 1.0, y => asin(1 - cos(x))], (0.0, 1.0), [p => 2.0]; build_initializeprob = false)
+        prob = DAEProblem(sys, [D(x) => x + p * y, D(y) => 1 / sqrt(1 - (1 - cos(x))^2), x => 1.0, y => asin(1 - cos(x)), p => 2.0],
+            (0.0, 1.0); build_initializeprob = false)
         dae_sol = solve(prob, DFBDF(); save_idxs = [x])
 
         @brownian a b
-        @mtkbuild sys = System([D(x) ~ x + p * y + x * a, D(y) ~ 2p + x^2 + y * b], t)
+        @mtkcompile sys = System([D(x) ~ x + p * y + x * a, D(y) ~ 2p + x^2 + y * b], t)
         xidx = variable_index(sys, x)
-        prob = SDEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0), [p => 2.0])
+        prob = SDEProblem(sys, [x => 1.0, y => 2.0, p => 2.0], (0.0, 1.0))
         sde_sol = solve(prob, SOSRI(); save_idxs = [x])
 
         for sol in [ode_sol, dae_sol, sde_sol]
@@ -225,8 +225,11 @@ end
     @testset "ODE with callbacks" begin
         @variables x(t) y(t)
         @parameters p q(t) r(t) s(t) u(t)
-        evs = [0.1 => [q ~ q + 1, s ~ s - 1], 0.3 => [r ~ 2r, u ~ u / 2]]
-        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x], t, [x, y],
+        evs = [
+            ModelingToolkit.SymbolicDiscreteCallback(0.1, [q ~ Pre(q) + 1, s ~ Pre(s) - 1]; discrete_parameters = [q, s], iv = t)
+            ModelingToolkit.SymbolicDiscreteCallback(0.1, [r ~ 2Pre(r), u ~ Pre(u) / 2]; discrete_parameters = [r, u], iv = t)
+        ]
+        @mtkcompile sys = System([D(x) ~ x + p * y, D(y) ~ 2p + x], t, [x, y],
             [p, q, r, s, u], discrete_events = evs)
         @test length(unknowns(sys)) == 2
         @test length(parameters(sys)) == 5
@@ -240,8 +243,7 @@ end
         sidx = parameter_index(sys, s)
         uidx = parameter_index(sys, u)
 
-        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
-            [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0, p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0], (0.0, 5.0))
 
         @test SciMLBase.SavedSubsystem(sys, prob.p, [x, y, q, r, s, u]) === nothing
 
@@ -266,11 +268,13 @@ end
     @testset "SavedSubsystemWithFallback" begin
         @variables x(t) y(t)
         @parameters p q(t) r(t) s(t) u(t)
-        evs = [0.1 => [q ~ q + 1, s ~ s - 1], 0.3 => [r ~ 2r, u ~ u / 2]]
-        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
+        evs = [
+            ModelingToolkit.SymbolicDiscreteCallback(0.1, [q ~ Pre(q) + 1, s ~ Pre(s) - 1]; discrete_parameters = [q, s], iv = t)
+            ModelingToolkit.SymbolicDiscreteCallback(0.1, [r ~ 2Pre(r), u ~ Pre(u) / 2]; discrete_parameters = [r, u], iv = t)
+        ]
+        @mtkcompile sys = System([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
             [p, q, r, s, u], discrete_events = evs)
-        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
-            [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0, p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0], (0.0, 5.0))
         ss = SciMLBase.SavedSubsystem(sys, prob.p, [x, q, s, r])
         @test SciMLBase.get_saved_state_idxs(ss) == [variable_index(sys, x)]
         sswf = SciMLBase.SavedSubsystemWithFallback(ss, sys)
@@ -310,11 +314,13 @@ end
     @testset "get_save_idxs_and_saved_subsystem" begin
         @variables x(t) y(t)
         @parameters p q(t) r(t) s(t) u(t)
-        evs = [0.1 => [q ~ q + 1, s ~ s - 1], 0.3 => [r ~ 2r, u ~ u / 2]]
-        @mtkbuild sys = ODESystem([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
+        evs = [
+            ModelingToolkit.SymbolicDiscreteCallback(0.1, [q ~ Pre(q) + 1, s ~ Pre(s) - 1]; discrete_parameters = [q, s], iv = t)
+            ModelingToolkit.SymbolicDiscreteCallback(0.1, [r ~ 2Pre(r), u ~ Pre(u) / 2]; discrete_parameters = [r, u], iv = t)
+        ]
+        @mtkcompile sys = System([D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
             [p, q, r, s, u], discrete_events = evs)
-        prob = ODEProblem(sys, [x => 1.0, y => 1.0], (0.0, 5.0),
-            [p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0])
+        prob = ODEProblem(sys, [x => 1.0, y => 1.0, p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0], (0.0, 5.0))
 
         _idxs, _ss = @inferred SciMLBase.get_save_idxs_and_saved_subsystem(prob, nothing)
         @test _idxs === _ss === nothing
@@ -342,8 +348,8 @@ end
 @testset "Interpolation after final discrete save" begin
     @variables x(t) y(t)
     @parameters start
-    @mtkbuild sys=ODESystem([D(x)~y, y~ifelse(t<start, 1.0, 2.0)], t) additional_passes=[ModelingToolkit.IfLifting]
-    prob = ODEProblem(sys, [x => 0.0], (0.0, 1.0), [start => 0.5])
+    @mtkcompile sys=System([D(x)~y, y~ifelse(t<start, 1.0, 2.0)], t) additional_passes=[ModelingToolkit.IfLifting]
+    prob = ODEProblem(sys, [x => 0.0, start => 0.5], (0.0, 1.0))
     sol = solve(prob)
     @test sol(0.6, idxs = y) ≈ 2.0
 end
