@@ -117,16 +117,15 @@ end
     end
 end
 
-# @testset "Adjoints with DAE" begin
-#     gs_mtkp, gs_p_new = gradient(prob.p, prob.p.tunable) do p, new_tunables
-#         new_p = SS.replace(SS.Tunable(), p, new_tunables)
-#         new_prob = remake(prob, p = new_p)
-#         sol = solve(new_prob, Rodas4())
-#         @show size(sol)
-#         # mean(abs.(sol[sys.ampermeter.i] .- gt))
-#         sum(sol[sys.ampermeter.i])
-#     end
-# 
-#     @test isnothing(gs_mtkp)
-#     @test length(gs_p_new) == length(p_new)
-# end
+@testset "Adjoints with DAE" begin
+    gs_mtkp, gs_p_new = gradient(prob.p, prob.p.tunable) do p, new_tunables
+        new_p = SS.replace(SS.Tunable(), p, new_tunables)
+        new_prob = remake(prob, p = new_p)
+        sol = solve(new_prob, Rodas4())
+        mean(abs.(sol[sys.ampermeter.i] .- gt))
+        sum(sol[sys.ampermeter.i])
+    end
+
+    @test isnothing(gs_mtkp)
+    @test length(gs_p_new) == length(p_new)
+end
