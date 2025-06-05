@@ -103,7 +103,7 @@ prob = ODEProblem(sys, [u0; p], tspan)
 sol = solve(prob, Rodas4())
 
 @test_throws ArgumentError sol[x]
-@test in(sol[lorenz1.x], [getindex.(sol.u, 1) for i in 1:length(unknowns(sol.prob.f.sys))])
+@test in(sol[lorenz1.x], [getindex.(sol.u, i) for i in 1:length(unknowns(sol.prob.f.sys))])
 @test_throws KeyError sol[:x]
 
 ### Non-symbolic indexing tests
@@ -331,13 +331,14 @@ end
         @test _idxs == [1]
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, x)
-        @test _idxs == 1
+        xidx = variable_index(prob, x)
+        @test _idxs == xdx
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [x])
-        @test _idxs == [1]
+        @test _idxs == [xidx]
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [x, q])
-        @test _idxs == [1]
+        @test _idxs == [xidx]
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [q])
         @test _idxs == Int[]
