@@ -11,10 +11,14 @@ end
 
 # Linear Verbosity
 
-linear_defaults = Dict(
-    :default_lu_fallback => Verbosity.Warn()
-:using_iterative_solvers => Verbosity.Warn()
-)
+# linear_defaults = Dict(
+#     :default_lu_fallback => Verbosity.Warn()
+#     :no_right_preconditioning => Verbosity.Warn()
+#     :using_iterative_solvers => Verbosity.Warn()
+#     :using_IterativeSolvers => Verbosity.Warn()
+#     :IterativeSolvers_iterations => Verbosity.Warn()
+#     :KrylovKit_verbosity => Verbosity.Warn()
+# )
 mutable struct LinearErrorControlVerbosity
     default_lu_fallback::Verbosity.Type
 
