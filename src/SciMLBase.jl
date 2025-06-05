@@ -763,6 +763,8 @@ include("integrator_interface.jl")
 include("remake.jl")
 include("callbacks.jl")
 
+include("verbosity.jl")
+
 include("adapt.jl")
 
 include("deprecated.jl")
