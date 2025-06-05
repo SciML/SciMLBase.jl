@@ -11,14 +11,14 @@ end
 
 # Linear Verbosity
 
-# linear_defaults = Dict(
-#     :default_lu_fallback => Verbosity.Warn()
-#     :no_right_preconditioning => Verbosity.Warn()
-#     :using_iterative_solvers => Verbosity.Warn()
-#     :using_IterativeSolvers => Verbosity.Warn()
-#     :IterativeSolvers_iterations => Verbosity.Warn()
-#     :KrylovKit_verbosity => Verbosity.Warn()
-# )
+linear_defaults = Dict(
+    :default_lu_fallback => Verbosity.Warn(),
+    :no_right_preconditioning => Verbosity.Warn(),
+    :using_iterative_solvers => Verbosity.Warn(),
+    :using_IterativeSolvers => Verbosity.Warn(),
+    :IterativeSolvers_iterations => Verbosity.Warn(),
+    :KrylovKit_verbosity => Verbosity.Warn()
+)
 mutable struct LinearErrorControlVerbosity
     default_lu_fallback::Verbosity.Type
 
@@ -26,58 +26,61 @@ mutable struct LinearErrorControlVerbosity
             default_lu_fallback = linear_defaults[:default_lu_fallback])
         new(default_lu_fallback)
     end
-end
 
-function LinearErrorControlVerbosity(verbose::Verbosity.Type)
-    @match verbose begin
-        Verbosity.None() => LinearErrorControlVerbosity(fill(
-            Verbosity.None(), length(fieldnames(LinearErrorControlVerbosity)))...)
+    function LinearErrorControlVerbosity(verbose::Verbosity.Type)
+        @match verbose begin
+            Verbosity.None() => new(fill(
+                Verbosity.None(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
-        Verbosity.Info() => LinearErrorControlVerbosity(fill(
-            Verbosity.Info(), length(fieldnames(LinearErrorControlVerbosity)))...)
+            Verbosity.Info() => new(fill(
+                Verbosity.Info(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
-        Verbosity.Warn() => LinearErrorControlVerbosity(fill(
-            Verbosity.Warn(), length(fieldnames(LinearErrorControlVerbosity)))...)
+            Verbosity.Warn() => new(fill(
+                Verbosity.Warn(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
-        Verbosity.Error() => LinearErrorControlVerbosity(fill(
-            Verbosity.Error(), length(fieldnames(LinearErrorControlVerbosity)))...)
+            Verbosity.Error() => new(fill(
+                Verbosity.Error(), length(fieldnames(LinearErrorControlVerbosity)))...)
 
-        Verbosity.Default() => LinearErrorControlVerbosity()
+            Verbosity.Default() => LinearErrorControlVerbosity()
 
-        Verbosity.Edge() => LinearErrorControlVerbosity()
+            Verbosity.Edge() => LinearErrorControlVerbosity()
 
-        _ => @error "Not a valid choice for verbosity."
+            _ => @error "Not a valid choice for verbosity."
+        end
     end
 end
 
+
 mutable struct LinearPerformanceVerbosity
     no_right_preconditioning::Verbosity.Type
+
     function LinearPerformanceVerbosity(;
             no_right_preconditioning = linear_defaults[:no_right_preconditioning])
         new(no_right_preconditioning)
     end
-end
 
-function LinearPerformanceVerbosity(verbose::Verbosity.Type)
-    @match verbose begin
-        Verbosity.None() => LinearPerformanceVerbosity(fill(
-            Verbosity.None(), length(fieldnames(LinearPerformanceVerbosity)))...)
+    function LinearPerformanceVerbosity(verbose::Verbosity.Type)
+        @match verbose begin
+            Verbosity.None() => new(fill(
+                Verbosity.None(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
-        Verbosity.Info() => LinearPerformanceVerbosity(fill(
-            Verbosity.Info(), length(fieldnames(LinearPerformanceVerbosity)))...)
+            Verbosity.Info() => new(fill(
+                Verbosity.Info(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
-        Verbosity.Warn() => LinearPerformanceVerbosity(fill(
-            Verbosity.Warn(), length(fieldnames(LinearPerformanceVerbosity)))...)
+            Verbosity.Warn() => new(fill(
+                Verbosity.Warn(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
-        Verbosity.Error() => LinearPerformanceVerbosity(fill(
-            Verbosity.Error(), length(fieldnames(LinearPerformanceVerbosity)))...)
+            Verbosity.Error() => new(fill(
+                Verbosity.Error(), length(fieldnames(LinearPerformanceVerbosity)))...)
 
-        Verbosity.Default() => LinearPerformanceVerbosity()
+            Verbosity.Default() => LinearPerformanceVerbosity()
 
-        Verbosity.Edge() => LinearPerformanceVerbosity()
+            Verbosity.Edge() => LinearPerformanceVerbosity()
 
-        _ => @error "Not a valid choice for verbosity."
+            _ => @error "Not a valid choice for verbosity."
+        end
     end
+
 end
 
 mutable struct LinearNumericalVerbosity
@@ -91,29 +94,31 @@ mutable struct LinearNumericalVerbosity
             KrylovKit_verbosity = linear_defaults[:KrylovKit_verbosity])
         new(using_IterativeSolvers, IterativeSolvers_iterations, KrylovKit_verbosity)
     end
-end
 
-function LinearNumericalVerbosity(verbose::Verbosity.Type)
-    @match verbose begin
-        Verbosity.None() => LinearNumericalVerbosity(fill(
-            Verbosity.None(), length(fieldnames(LinearNumericalVerbosity)))...)
+    function LinearNumericalVerbosity(verbose::Verbosity.Type)
+        @match verbose begin
+            Verbosity.None() => new(fill(
+                Verbosity.None(), length(fieldnames(LinearNumericalVerbosity)))...)
 
-        Verbosity.Info() => LinearNumericalVerbosity(fill(
-            Verbosity.Info(), length(fieldnames(LinearNumericalVerbosity)))...)
+            Verbosity.Info() => new(fill(
+                Verbosity.Info(), length(fieldnames(LinearNumericalVerbosity)))...)
 
-        Verbosity.Warn() => LinearNumericalVerbosity(fill(
-            Verbosity.Warn(), length(fieldnames(LinearNumericalVerbosity)))...)
+            Verbosity.Warn() => new(fill(
+                Verbosity.Warn(), length(fieldnames(LinearNumericalVerbosity)))...)
 
-        Verbosity.Error() => LinearNumericalVerbosity(fill(
-            Verbosity.Error(), length(fieldnames(LinearNumericalVerbosity)))...)
+            Verbosity.Error() => new(fill(
+                Verbosity.Error(), length(fieldnames(LinearNumericalVerbosity)))...)
 
-        Verbosity.Default() => LinearNumericalVerbosity()
+            Verbosity.Default() => LinearNumericalVerbosity()
 
-        Verbosity.Edge() => LinearNumericalVerbosity()
+            Verbosity.Edge() => LinearNumericalVerbosity()
 
-        _ => @error "Not a valid choice for verbosity."
+            _ => @error "Not a valid choice for verbosity."
+        end
     end
 end
+
+
 
 struct LinearVerbosity{T} <: AbstractVerbositySpecifier{T}
     error_control::LinearErrorControlVerbosity
