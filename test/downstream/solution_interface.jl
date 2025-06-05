@@ -332,7 +332,7 @@ end
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, x)
         xidx = variable_index(prob, x)
-        @test _idxs == xdx
+        @test _idxs == xidx
         @test _ss isa SciMLBase.SavedSubsystem
         _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, [x])
         @test _idxs == [xidx]
