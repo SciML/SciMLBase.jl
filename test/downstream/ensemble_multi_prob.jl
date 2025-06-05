@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, Test
+using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 @variables x(t), y(t)
 
@@ -16,10 +17,12 @@ prob3 = ODEProblem(sys3, [3.0, 3.0], (0.0, 1.0))
 # test that when passing a vector of problems, trajectories and the prob_func are chosen appropriately
 ensemble_prob = EnsembleProblem([prob1, prob2, prob3])
 sol = solve(ensemble_prob, Tsit5(), EnsembleThreads())
+xidx = variable_index(sys1, x)
+yidx = variable_index(sys1, y)
 for i in 1:3
-    @test sol[1, :, i] == sol.u[i][x]
-    @test sol[2, :, i] == sol.u[i][y]
+    @test sol[xidx, :, i] == sol.u[i][x]
+    @test sol[yidx, :, i] == sol.u[i][y]
 end
 # Ensemble is a recursive array
-@test only.(sol(0.0, idxs = [x])) == sol[1, 1, :]
-@test only.(sol(1.0, idxs = [x])) ≈ [sol[i][1, end] for i in 1:3]
+@test only.(sol(0.0, idxs = [x])) == sol[xidx, 1, :]
+@test only.(sol(1.0, idxs = [x])) ≈ [sol[i][xidx, end] for i in 1:3]
