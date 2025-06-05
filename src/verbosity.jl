@@ -145,7 +145,7 @@ function LinearVerbosity(verbose::Verbosity.Type)
             LinearNumericalVerbosity(Verbosity.Info())
         )
 
-        _ => @error "Not a valid choice for verbosity."
+        _ => @error "Not a valid choice for LinearVerbosity. Available choices are `Default`, `None`, and `All`."
     end
 end
 
