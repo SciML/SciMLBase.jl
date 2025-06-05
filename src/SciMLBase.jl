@@ -641,6 +641,13 @@ abstract type AbstractAliasSpecifier end
 """
 $(TYPEDEF)
 
+Base for types which specify which log messages are emitted at what level.
+"""
+abstract type AbstractVerbositySpecifier{T} end
+
+"""
+$(TYPEDEF)
+
 Internal. Used for signifying the AD context comes from a ChainRules.jl definition.
 """
 struct ChainRulesOriginator <: ADOriginator end
