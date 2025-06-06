@@ -332,3 +332,48 @@ prob = SteadyStateProblem(osys, [u0; ps])
         @test scc.ps[p] ≈ 2.5
     end
 end
+
+@testset "LinearProblem" begin
+    # TODO update when MTK codegen exists
+    sys = SymbolCache([:x, :y, :z], [:p, :q, :r])
+    update_A! = function (A, p)
+        A[1, 1] = p[1]
+        A[2, 2] = p[2]
+        A[3, 3] = p[3]
+    end
+    update_b! = function (b, p)
+        b[1] = p[3]
+        b[2] = -8p[2] - p[1]
+    end
+    f = SciMLBase.SymbolicLinearInterface(update_A!, update_b!, sys, nothing)
+    A = Float64[1 1 1; 6 -4 5; 5 2 2]
+    b = Float64[2, 31, 13]
+    p = Float64[1, -4, 2]
+    u0 = Float64[1, 2, 3]
+    prob = LinearProblem(A, b, p; u0, f)
+    @test prob[:x] ≈ 1.0
+    @test prob[:y] ≈ 2.0
+    @test prob[:z] ≈ 3.0
+    @test prob.ps[:p] ≈ 1.0
+    @test prob.ps[:q] ≈ -4.0
+    @test prob.ps[:r] ≈ 2.0
+    prob.ps[:p] = 2.0
+    @test prob.ps[:p] ≈ 2.0
+    @test prob.A[1, 1] ≈ 2.0
+    @test prob.b[2] ≈ 30.0
+
+    prob2 = remake(prob; u0 = 2u0)
+    @test prob2.u0 ≈ 2u0
+    prob2 = remake(prob; p = 2p)
+    @test prob2.p ≈ 2p
+    prob2 = remake(prob; u0 = [:x => 3.0], p = [:q => 1.5])
+    @test prob2.u0[1] ≈ 3.0
+    @test prob2.p[2] ≈ 1.5
+
+    # no u0
+    prob = LinearProblem(A, b, p; f)
+    prob2 = remake(prob; p = 2p)
+    @test prob2.p ≈ 2p
+    prob2 = remake(prob; p = [:q => 1.5])
+    @test prob2.p[2] ≈ 1.5
+end
