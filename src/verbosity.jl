@@ -219,7 +219,7 @@ function emit_message(message::String, verbose::V,
     level = message_level(verbose, option, group)
 
     if !isnothing(level)
-        Base.@logmsg level message _file=file _line=line _module=_module
+        Base.@logmsg level message _file=file _line=line _module=_module _group = group
     end
 end
 
@@ -257,3 +257,39 @@ macro SciMLMessage(f_or_message, verb, option, group)
         $(esc(f_or_message)), $(esc(verb)), $option, $group, $file, $line, $_module))
 end
 
+function SciMLLogger(; info_repl = true, warn_repl = true, error_repl = true,
+        info_file = nothing, warn_file = nothing, error_file = nothing)
+    info_sink = isnothing(info_file) ? NullLogger() : FileLogger(info_file)
+    warn_sink = isnothing(warn_file) ? NullLogger() : FileLogger(warn_file)
+    error_sink = isnothing(error_file) ? NullLogger() : FileLogger(error_file)
+
+    repl_filter = EarlyFilteredLogger(current_logger()) do log
+        if log.level == Logging.Info && info_repl
+            return true
+        end
+
+        if log.level == Logging.Warn && warn_repl
+            return true
+        end
+
+        if log.level == Logging.Error && error_repl
+            return true
+        end
+
+        return false
+    end
+
+    info_filter = EarlyFilteredLogger(info_sink) do log
+        log.level == Logging.Info
+    end
+
+    warn_filter = EarlyFilteredLogger(warn_sink) do log
+        log.level == Logging.Warn
+    end
+
+    error_filter = EarlyFilteredLogger(error_sink) do log
+        log.level == Logging.Error
+    end
+
+    TeeLogger(repl_filter, info_filter, warn_filter, error_filter)
+end
