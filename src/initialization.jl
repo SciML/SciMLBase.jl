@@ -89,7 +89,7 @@ function Base.showerror(io::IO, e::CheckInitFailureError)
         print(io,
             """
             If you wish for the system to automatically change the algebraic variables to \
-            satisfy the algebraic constraints, please pass `initializealg = BrownBasicInit()` \
+            satisfy the algebraic constraints, please pass `initializealg = BrownFullBasicInit()` \
             to solve (this option will require `using OrdinaryDiffEqNonlinearSolve`). If you \
             wish to perform an initialization on the complete u0, please pass \
             `initializealg = ShampineCollocationInit()` to `solve`. Note that initialization \
