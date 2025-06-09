@@ -102,7 +102,7 @@ Contains a single callback whose `condition` is a continuous function. The callb
     The effect of using a callback with a DAE needs to be done with care because the solution
     `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
     a consistent initialization calculation must be run after running the callback. If the
-    chosen initialization alg is `BrownBasicInit()` (the default for `solve`), then the initialization
+    chosen initialization alg is `BrownFullBasicInit()` (the default for `solve`), then the initialization
     will change the algebraic variables to satisfy the conditions. Thus if `x` is an algebraic
     variable and the callback performs `x+=1`, the initialization may "revert" the change to
     satisfy the constraints. This behavior can be removed by setting `initializealg = CheckInit()`,
@@ -331,7 +331,7 @@ DiscreteCallback(condition, affect!;
     The effect of using a callback with a DAE needs to be done with care because the solution
     `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
     a consistent initialization calculation must be run after running the callback. If the
-    chosen initialization alg is `BrownBasicInit()` (the default for `solve`), then the initialization
+    chosen initialization alg is `BrownFullBasicInit()` (the default for `solve`), then the initialization
     will change the algebraic variables to satisfy the conditions. Thus if `x` is an algebraic
     variable and the callback performs `x+=1`, the initialization may "revert" the change to
     satisfy the constraints. This behavior can be removed by setting `initializealg = CheckInit()`,
