@@ -7,7 +7,7 @@ A utility struct stored inside `LinearProblem` to enable a symbolic interface.
 
 $(TYPEDFIELDS)
 """
-struct SymbolicLinearInterface{F1, F2, S, M}
+struct SymbolicLinearInterface{F1, F2, S, O, M}
     """
     A function which takes `A` and the parameter object `p` and updates `A` in-place.
     """
@@ -21,6 +21,11 @@ struct SymbolicLinearInterface{F1, F2, S, M}
     """
     sys::S
     """
+    A function which when given a symbolic expression returns a function `(u, p)`
+    that computes the expression.
+    """
+    observed::O
+    """
     Arbitrary metadata useful for the symbolic backend.
     """
     metadata::M
@@ -30,6 +35,17 @@ __has_sys(::SymbolicLinearInterface) = true
 has_sys(::SymbolicLinearInterface) = true
 
 SymbolicIndexingInterface.symbolic_container(sli::SymbolicLinearInterface) = sli.sys
+
+function SymbolicIndexingInterface.observed(fn::SymbolicLinearInterface, sym)
+    if fn.observed !== nothing
+        fn.observed(sym)
+    elseif fn.sys !== nothing
+        SymbolicIndexingInterface.observed(fn.sys, sym)
+    else
+        error("This `LinearProblem` does not support computing observed quantities.")
+    end
+end
+
 
 @doc doc"""
 
