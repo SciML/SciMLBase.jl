@@ -42,7 +42,7 @@ sol = solve(prob, Tsit5())
         sum(sum.(sol[[sys.w, sys.x]]))
     end
     du_ = [1.0, 1.0, 2.0, 0.0]
-    du = [du_ for _ in sol.u]
+    du = [du_ for _ in sol[[D(x), x, y, z]]
     @test du == gs.u
 end
 
