@@ -17,7 +17,8 @@ linear_defaults = Dict(
     :using_iterative_solvers => Verbosity.Warn(),
     :using_IterativeSolvers => Verbosity.Warn(),
     :IterativeSolvers_iterations => Verbosity.Warn(),
-    :KrylovKit_verbosity => Verbosity.Warn()
+    :KrylovKit_verbosity => Verbosity.Warn(),
+    :KrylovJL_verbosity => Verbosity.None()
 )
 mutable struct LinearErrorControlVerbosity
     default_lu_fallback::Verbosity.Type
@@ -87,12 +88,14 @@ mutable struct LinearNumericalVerbosity
     using_IterativeSolvers::Verbosity.Type
     IterativeSolvers_iterations::Verbosity.Type
     KrylovKit_verbosity::Verbosity.Type
+    KrylovJL_verbosity::Verbosity.Type
 
     function LinearNumericalVerbosity(;
             using_IterativeSolvers = linear_defaults[:using_IterativeSolvers],
             IterativeSolvers_iterations = linear_defaults[:IterativeSolvers_iterations],
-            KrylovKit_verbosity = linear_defaults[:KrylovKit_verbosity])
-        new(using_IterativeSolvers, IterativeSolvers_iterations, KrylovKit_verbosity)
+            KrylovKit_verbosity = linear_defaults[:KrylovKit_verbosity],
+            KrylovJL_verbosity = linear_defaults[:KrylovJL_verbosity])
+        new(using_IterativeSolvers, IterativeSolvers_iterations, KrylovKit_verbosity, KrylovJL_verbosity)
     end
 
     function LinearNumericalVerbosity(verbose::Verbosity.Type)
