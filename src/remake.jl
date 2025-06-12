@@ -901,6 +901,49 @@ function remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = mi
         probs, explicitfuns!, f, newp, parameters_alias)
 end
 
+function remake(prob::LinearProblem; u0 = missing, p = missing, A = missing, b = missing,
+        f = missing, interpret_symbolicmap = true, use_defaults = false, kwargs = missing,
+        _kwargs...)
+    u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
+    f = coalesce(f, prob.f)
+    # We want to copy to avoid aliasing, but don't want to unnecessarily copy
+    A = @coalesce(A, copy(prob.A))
+    b = @coalesce(b, copy(prob.b))
+
+    A, b = _get_new_A_b(f, p, A, b)
+
+    if kwargs === missing
+        return LinearProblem{isinplace(prob)}(A, b, p; u0, f, prob.kwargs..., _kwargs...)
+    else
+        return LinearProblem{isinplace(prob)}(A, b, p; u0, f, kwargs...)
+    end
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+A helper function to call `get_new_A_b` if `f isa SymbolicLinearInterface`.
+"""
+_get_new_A_b(f, p, A, b; kw...) = A, b
+
+function _get_new_A_b(f::SymbolicLinearInterface, p, A, b; kw...)
+    get_new_A_b(f.sys, f, p, A, b; kw...)
+end
+
+# public API
+"""
+    $(TYPEDSIGNATURES)
+
+A function to return the updated `A` and `b` matrices for a `LinearProblem` after `remake`.
+`root_indp` is the innermost index provider found by recursively, calling
+`SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns the new `A`
+`b` matrices. Mutation of `A` and `b` is permitted.
+
+All implementations must accept arbitrary keyword arguments in case they are added in the
+future.
+"""
+get_new_A_b(root_indp, f, p, A, b; kw...) = A, b
+
 function varmap_has_var(varmap, var)
     haskey(varmap, var) || hasname(var) && haskey(varmap, getname(var))
 end
@@ -1151,7 +1194,7 @@ function updated_u0_p(
     if u0 === missing && p === missing
         return state_values(prob), parameter_values(prob)
     end
-    if has_sys(prob.f) && prob.f.sys === nothing
+    if prob.f !== nothing && has_sys(prob.f) && prob.f.sys === nothing
         if interpret_symbolicmap && eltype(p) !== Union{} && eltype(p) <: Pair
             throw(ArgumentError("This problem does not support symbolic maps with " *
                                 "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *

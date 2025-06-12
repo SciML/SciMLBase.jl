@@ -86,6 +86,20 @@ for T in containerTypes
     push!(probs, NonlinearLeastSquaresProblem(fn, u0, T(p)))
 end
 
+update_A! = function (A, p)
+    A[1, 1] = p[1]
+    A[2, 2] = p[2]
+    A[3, 3] = p[3]
+end
+update_b! = function (b, p)
+    b[1] = p[3]
+    b[2] = -8p[2] - p[1]
+end
+f = SciMLBase.SymbolicLinearInterface(update_A!, update_b!, indep_sys, nothing, nothing)
+for T in containerTypes
+    push!(probs, LinearProblem(rand(3, 3), rand(3), T(p); u0, f))
+end
+
 # temporary definition to test this functionality
 function SciMLBase.late_binding_update_u0_p(
         prob, u0, p::SciMLBase.NullParameters, t0, newu0, newp)
@@ -428,4 +442,21 @@ end
     @test SciMLBase.specialization(prob.f) == SciMLBase.FullSpecialize
     prob2 = remake(ODEProblem((u, p, t) -> 2 .* u, nothing, nothing); f = f)
     @test SciMLBase.specialization(prob2.f) == SciMLBase.FullSpecialize
+end
+
+@testset "`remake(::LinearProblem)` without a system" begin
+    prob = LinearProblem{true}(rand(3, 3), rand(3))
+    @inferred remake(prob)
+    base_allocs = @allocations remake(prob)
+    A = ones(3, 3)
+    b = ones(3)
+    u0 = ones(3)
+    p = "P"
+    @inferred remake(prob; A, b, u0, p)
+    @test (@allocations remake(prob; A, b, u0, p)) <= base_allocs
+
+    prob2 = remake(prob; u0)
+    @test prob2.u0 === u0
+    prob2 = remake(prob; A = SMatrix{3, 3}(A))
+    @test prob2.A  isa SMatrix{3, 3}
 end

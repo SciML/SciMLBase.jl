@@ -1,7 +1,8 @@
 """
     $(TYPEDEF)
 
-A utility struct stored inside `LinearProblem` to enable a symbolic interface.
+A utility struct stored inside `LinearProblem` to enable a symbolic interface. Intended for
+use by ModelingToolkit.jl.
 
 # Fields
 
