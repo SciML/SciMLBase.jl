@@ -1,7 +1,7 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
 using StochasticDiffEq
 using SymbolicIndexingInterface
-using ModelingToolkit: t_nounits as t, D_nounits as D
+using ModelingToolkit: observed, t_nounits as t, D_nounits as D
 using Plots: Plots, plot
 
 ### Tests on non-layered model (everything should work). ###
@@ -147,6 +147,35 @@ sol9 = sol(0.0:1.0:10.0, idxs = 2)
 
 sol10 = sol(0.1, idxs = 2)
 @test sol10 isa Real
+
+# in-place interpolation with single (unknown) symbolic index
+ts = 0.0:0.1:10.0
+out = zeros(eltype(sol), size(ts))
+idxs = unknowns(sys)[1]
+@test sol(out, ts; idxs) == sol(ts; idxs)
+@test (@allocated sol(out, ts; idxs)) < (@allocated sol(ts; idxs))
+@test_nowarn @inferred sol(out, ts; idxs)
+
+# in-place interpolation with single (observed) symbolic index
+idxs = observed(sys)[1].lhs
+@test sol(out, ts; idxs) == sol(ts; idxs)
+@test (@allocated sol(out, ts; idxs)) < (@allocated sol(ts; idxs))
+@test_nowarn @inferred sol(out, ts; idxs)
+
+# in-place interpolation with multiple (unknown+observed) symbolic indices
+idxs = [unknowns(sys)[1], observed(sys)[1].lhs]
+out = [zeros(eltype(sol), size(idxs)) for _ in eachindex(ts)]
+@test sol(out, ts; idxs) == sol(ts; idxs).u
+@test (@allocated sol(out, ts; idxs)) < (@allocated sol(ts; idxs))
+@test_nowarn @inferred sol(out, ts; idxs)
+
+# same as above, but with one time value only
+@test sol(out[1], ts[1]; idxs) == sol(ts[1]; idxs)
+#@test (@allocated sol(out[1], ts[1]; idxs)) < (@allocated sol(ts[1]; idxs)) # TODO: reduce allocations and fix
+@test_nowarn @inferred sol(out[1], ts[1]; idxs)
+
+idxs = [unknowns(sys)[1], 1]
+@test_throws "Incorrect specification of `idxs`" sol(out, ts; idxs)
 
 @testset "Plot idxs" begin
     @variables x(t) y(t)
