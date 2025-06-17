@@ -70,7 +70,7 @@ push!(probs, OptimizationProblem(optsys, u0, p))
 k = ShiftIndex(t)
 @mtkcompile discsys = System(
     [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
-    t; defaults = [x => 1.0, y => 1.0, z => 1.0])
+    t; defaults = [x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
 # Roundabout method to avoid having to specify values for previous timestep
 discprob = DiscreteProblem(discsys, p, (0, 10))
 for (var, v) in u0
