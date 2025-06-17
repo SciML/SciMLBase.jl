@@ -18,7 +18,7 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named sys = System(eqs, t; parameter_dependencies = [q => 3β])
+@named sys = System(eqs, t; parameter_dependencies = [q ~ 3β])
 sys = complete(sys)
 u0 = [x => 1.0,
     y => 0.0,
