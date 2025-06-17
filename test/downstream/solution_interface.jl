@@ -202,7 +202,7 @@ end
             (0.0, 1.0); build_initializeprob = false)
         dae_sol = solve(prob, DFBDF(); save_idxs = [x])
 
-        @brownian a b
+        @brownians a b
         @mtkcompile sys = System([D(x) ~ x + p * y + x * a, D(y) ~ 2p + x^2 + y * b], t)
         xidx = variable_index(sys, x)
         prob = SDEProblem(sys, [x => 1.0, y => 2.0, p => 2.0], (0.0, 1.0))
