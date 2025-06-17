@@ -28,9 +28,7 @@ using Plots: Plots, plot
     @test_throws Exception sol[a]
     @test_throws Exception sol[population_model.a]
     @test_throws Exception sol[:a]
-end
 
-@testset "plot ODE solution" begin
     Plots.unicodeplots()
     f = ODEFunction((u, p, t) -> -u, analytic = (u0, p, t) -> u0 * exp(-t))
 
@@ -51,9 +49,7 @@ end
     sol = solve(ode, Tsit5())
     @test_nowarn plot(sol)
     @test_nowarn plot(sol; plot_analytic = true)
-end
 
-@testset "Symbolic Indexing" begin
     # Tests on SDEProblem
     noiseeqs = [0.1 * s1,
         0.1 * s2]
