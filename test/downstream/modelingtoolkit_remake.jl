@@ -338,7 +338,7 @@ end
 @testset "Lazy initialization" begin
     @variables _x(..) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p=1.0 [guess = 1.0]
-    @brownian a
+    @brownians a
     x = _x(t)
 
     initprob = NonlinearProblem(nothing) do args...
