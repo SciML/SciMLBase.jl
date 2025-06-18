@@ -123,7 +123,7 @@ end
         end
     end
 
-    if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")
+    if !is_APPVEYOR && GROUP == "SymbolicIndexingInterface"
         if GROUP != "Downstream"
             activate_downstream_env()
         end
