@@ -123,26 +123,24 @@ end
         end
     end
 
-    if !is_APPVEYOR && (GROUP == "Downstream" || GROUP == "SymbolicIndexingInterface")
+    if !is_APPVEYOR && GROUP == "SymbolicIndexingInterface"
         if GROUP != "Downstream"
             activate_downstream_env()
-        end
-        @time @safetestset "ModelingToolkit Remake" begin
-            include("downstream/modelingtoolkit_remake.jl")
         end
         @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
             include("downstream/comprehensive_indexing.jl")
         end
-        if VERSION >= v"1.8"
-            @time @safetestset "Symbol and integer based indexing of integrators" begin
-                include("downstream/integrator_indexing.jl")
-            end
-            @time @safetestset "Problem Indexing" begin
-                include("downstream/problem_interface.jl")
-            end
+        @time @safetestset "Symbol and integer based indexing of integrators" begin
+            include("downstream/integrator_indexing.jl")
+        end
+        @time @safetestset "Problem Indexing" begin
+            include("downstream/problem_interface.jl")
         end
         @time @safetestset "Adjoints" begin
             include("downstream/adjoints.jl")
+        end
+        @time @safetestset "ModelingToolkit Remake" begin
+            include("downstream/modelingtoolkit_remake.jl")
         end
     end
 

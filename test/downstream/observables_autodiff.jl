@@ -33,16 +33,16 @@ sol = solve(prob, Tsit5())
     gs, = gradient(sol) do sol
         sum(sol[sys.w])
     end
-    du_ = [0.0, 1.0, 1.0, 1.0]
-    du = [du_ for _ in sol.u]
+    du_ = [1.0, 1.0, 1.0, 0.0]
+    du = [du_ for _ in sol[[D(x), x, y, z]]]
     @test du == gs.u
 
     # Observable in a vector
     gs, = gradient(sol) do sol
         sum(sum.(sol[[sys.w, sys.x]]))
     end
-    du_ = [0.0, 1.0, 1.0, 2.0]
-    du = [du_ for _ in sol.u]
+    du_ = [1.0, 1.0, 2.0, 0.0]
+    du = [du_ for _ in sol[[D(x), x, y, z]]]
     @test du == gs.u
 end
 
@@ -118,14 +118,19 @@ end
 end
 
 @testset "Adjoints with DAE" begin
-    gs_mtkp, gs_p_new = gradient(prob.p, prob.p.tunable) do p, new_tunables
+    model = create_model()
+    sys = mtkcompile(model)
+    prob = ODEProblem(sys, [], (0.0, 1.0))
+    tunables, _, _ = SS.canonicalize(SS.Tunable(), prob.p)
+
+    gs_mtkp, gs_p_new = gradient(prob.p, tunables) do p, new_tunables
         new_p = SS.replace(SS.Tunable(), p, new_tunables)
         new_prob = remake(prob, p = new_p)
         sol = solve(new_prob, Rodas4())
-        mean(abs.(sol[sys.ampermeter.i] .- gt))
         sum(sol[sys.ampermeter.i])
     end
 
     @test isnothing(gs_mtkp)
-    @test length(gs_p_new) == length(p_new)
+    @test !isnothing(gs_p_new)
+    @test length(gs_p_new) == length(tunables)
 end

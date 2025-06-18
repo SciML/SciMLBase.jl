@@ -18,7 +18,7 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named sys = System(eqs, t; parameter_dependencies = [q => 3β])
+@named sys = System(eqs, t; parameter_dependencies = [q ~ 3β])
 sys = complete(sys)
 u0 = [x => 1.0,
     y => 0.0,
@@ -70,7 +70,7 @@ push!(probs, OptimizationProblem(optsys, u0, p))
 k = ShiftIndex(t)
 @mtkcompile discsys = System(
     [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
-    t; defaults = [x => 1.0, y => 1.0, z => 1.0])
+    t; defaults = [x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
 # Roundabout method to avoid having to specify values for previous timestep
 discprob = DiscreteProblem(discsys, p, (0, 10))
 for (var, v) in u0
@@ -338,7 +338,7 @@ end
 @testset "Lazy initialization" begin
     @variables _x(..) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p=1.0 [guess = 1.0]
-    @brownian a
+    @brownians a
     x = _x(t)
 
     initprob = NonlinearProblem(nothing) do args...

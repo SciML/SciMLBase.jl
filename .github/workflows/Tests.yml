@@ -32,6 +32,7 @@ jobs:
         group:
           - "Core"
           - "Downstream"
+          - "SymbolicIndexingInterface"
           - "QA"
           - "Python"
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
