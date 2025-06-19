@@ -29,24 +29,24 @@ begin
         sqrt(k1 + Y)
     ]
     jumps = [
-        ConstantRateJump(kp, [X ~ X + 1]),
-        ConstantRateJump(kd * X, [X ~ X - 1]),
-        ConstantRateJump(k1 * X, [X ~ X - 1, Y ~ Y + 1]),
-        ConstantRateJump(k2 * Y, [X ~ X + 1, Y ~ Y - 1]),
-        ConstantRateJump(1, [Y ~ Y + 1]),
-        ConstantRateJump(Y, [Y ~ Y - 1])
+        ConstantRateJump(kp, [X ~ Pre(X) + 1]),
+        ConstantRateJump(kd * X, [X ~ Pre(X) - 1]),
+        ConstantRateJump(k1 * X, [X ~ Pre(X) - 1, Y ~ Pre(Y) + 1]),
+        ConstantRateJump(k2 * Y, [X ~ Pre(X) + 1, Y ~ Pre(Y) - 1]),
+        ConstantRateJump(1, [Y ~ Pre(Y) + 1]),
+        ConstantRateJump(Y, [Y ~ Pre(Y) - 1])
     ]
-    observed = [XY ~ X + Y]
+    obs = [XY ~ X + Y]
     loss = kd * (k1 - X)^2 + k2 * (kp * Y - X^2)^2
 
     # Create systems (without structural_simplify, since that might modify systems to affect intended tests).
-    osys = complete(System(diff_eqs, t; observed, name = :osys))
+    osys = complete(System(diff_eqs, t; observed = obs, name = :osys))
     ssys = complete(System(
-        diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed, name = :ssys))
-    jsys = complete(JumpSystem(jumps, t, [X, Y], [kp, kd, k1, k2]; observed, name = :jsys))
-    nsys = complete(System(alg_eqs; observed, name = :nsys))
+        diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed = obs, name = :ssys))
+    jsys = complete(JumpSystem(jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys))
+    nsys = complete(System(alg_eqs; observed = obs, name = :nsys))
     optsys = complete(OptimizationSystem(
-        loss, [X, Y], [kp, kd, k1, k2]; observed, name = :optsys))
+        loss, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :optsys))
 end
 
 # Prepares problems, integrators, and solutions.
@@ -59,25 +59,23 @@ begin
     # Creates problems.
     oprob = ODEProblem(osys, [u0_vals; p_vals], tspan)
     sprob = SDEProblem(ssys, [u0_vals; p_vals], tspan)
-    dprob = DiscreteProblem(jsys, )
     jprob = JumpProblem(jsys, [u0_vals; p_vals], tspan; aggregator = Direct(), rng)
     nprob = NonlinearProblem(nsys, [u0_vals; p_vals])
     hcprob = NonlinearProblem(HomotopyNonlinearFunction(nprob.f), nprob.u0, nprob.p)
     ssprob = SteadyStateProblem(osys, [u0_vals; p_vals])
     optprob = OptimizationProblem(optsys, [u0_vals; p_vals], grad = true, hess = true)
-    problems = [oprob, sprob, dprob, jprob, nprob, hcprob, ssprob, optprob]
-    systems = [osys, ssys, jsys, jsys, nsys, nsys, osys, optsys]
+    problems = [oprob, sprob, jprob, nprob, hcprob, ssprob, optprob]
+    systems = [osys, ssys, jsys, nsys, nsys, osys, optsys]
 
     # Creates an `EnsembleProblem` for each problem.
     eoprob = EnsembleProblem(oprob)
     esprob = EnsembleProblem(sprob)
-    edprob = EnsembleProblem(dprob)
     ejprob = EnsembleProblem(jprob)
     enprob = EnsembleProblem(nprob)
     essprob = EnsembleProblem(ssprob)
     eoptprob = EnsembleProblem(optprob)
-    eproblems = [eoprob, esprob, edprob, ejprob, enprob, essprob, optprob]
-    esystems = [osys, ssys, jsys, jsys, nsys, osys, optsys]
+    eproblems = [eoprob, esprob, ejprob, enprob, essprob, optprob]
+    esystems = [osys, ssys, jsys, nsys, osys, optsys]
 
     # Creates integrators.
     oint = init(oprob, Tsit5(); save_everystep = false)
@@ -912,8 +910,9 @@ end
 @testset "Continuous interpolation before discrete save" begin
     @variables x(t)
     @parameters c(t)
+    devt = ModelingToolkit.SymbolicDiscreteCallback(1.0, [c ~ Pre(c) + 1]; discrete_parameters = [c], iv = t)
     @mtkcompile sys = System(
-        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [1.0 => [c ~ Pre(c) + 1]])
+        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [devt])
     prob = ODEProblem(sys, [x => 0.0, c => 1.0], (0.0, 2pi))
     sol = solve(prob, Tsit5())
     @test_nowarn sol(-0.1; idxs = sys.x)
@@ -925,7 +924,7 @@ end
 @testset "DDEs" begin
     function oscillator(; name, k = 1.0, τ = 0.01)
         @parameters k=k τ=τ
-        @variables x(..)=0.1+t y(t)=0.1+t jcn(t)=0.0+t delx(t)
+        @variables x(..)=0.1+t y(t)=0.1+t jcn(t) delx(t)
         eqs = [D(x(t)) ~ y,
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ)]
@@ -956,7 +955,7 @@ end
     function oscillator(; name, k = 1.0, τ = 0.01)
         @parameters k=k τ=τ
         @brownian a
-        @variables x(..)=0.1+t y(t)=0.1+t jcn(t)=0.0+t delx(t)
+        @variables x(..)=0.1+t y(t)=0.1+t jcn(t) delx(t)
         eqs = [D(x(t)) ~ y + a,
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ)]
@@ -988,7 +987,7 @@ end
     end
     db = 1.0 => ModelingToolkit.ImperativeAffect(affect2!; modified = (; k))
 
-    @named ssys = System(D(A) ~ k * A, t, [A], [k]; noise_eqs = [0.0] discrete_events = db)
+    @named ssys = System(D(A) ~ k * A, t, [A], [k]; noise_eqs = [0.0], discrete_events = db)
     ssys = complete(ssys)
     prob = SDEProblem(ssys, [A => 1.0, k => 1.0], (0.0, 4.0))
     sol = solve(prob, RI5())

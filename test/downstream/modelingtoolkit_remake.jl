@@ -18,7 +18,7 @@ eqs = [D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z]
 
-@named sys = System(eqs, t; parameter_dependencies = [q ~ 3β])
+@named sys = System([eqs; q ~ 3β], t)
 sys = complete(sys)
 u0 = [x => 1.0,
     y => 0.0,
@@ -65,20 +65,7 @@ push!(probs, JumpProblem(js, [u0; p], tspan; aggregator = Direct()))
 @named optsys = OptimizationSystem(sum(eq.lhs for eq in eqs), [x, y, z], [σ, ρ, β])
 optsys = complete(optsys)
 push!(syss, optsys)
-push!(probs, OptimizationProblem(optsys, u0, p))
-
-k = ShiftIndex(t)
-@mtkcompile discsys = System(
-    [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
-    t; defaults = [x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
-# Roundabout method to avoid having to specify values for previous timestep
-discprob = DiscreteProblem(discsys, p, (0, 10))
-for (var, v) in u0
-    discprob[var] = v
-    discprob[var(k - 1)] = 0.0
-end
-push!(syss, discsys)
-push!(probs, discprob)
+push!(probs, OptimizationProblem(optsys, [u0; p]))
 
 @mtkcompile sys = System(
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
@@ -164,6 +151,94 @@ for (sys, prob) in zip(syss, probs)
         prob; u0 = [sys.x => 0.5σ + 1], p = [sys.β => 0.5x + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test pgetter(prob2) ≈ [28.0, 8.5, 10.0]
+    # Not testing `Symbol => expr` since nested substitution doesn't work with that
+end
+
+@testset "DiscreteProblem" begin
+    k = ShiftIndex(t)
+    @mtkcompile discsys = System(
+        [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
+        t; defaults = [x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
+    prob = DiscreteProblem(discsys, p, (0, 10))
+    prob[x(k-1)] = 1.0
+    prob[y(k-1)] = prob[z(k-1)] = 0.0
+
+    @test parameter_values(prob) isa ModelingToolkit.MTKParameters
+    @inferred typeof(prob) remake(prob)
+
+    baseType = Base.typename(typeof(prob)).wrapper
+    ugetter = getsym(prob, [x(k-1), y(k-1), z(k-1)])
+    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 2.0, y(k-1) => 3.0, z(k-1) => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k-1) => 2.0, sys.y(k-1) => 3.0, sys.z(k-1) => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 2.0, :yₜ₋₁ => 3.0, :zₜ₋₁ => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 2.0, sys.y(k-1) => 3.0, :zₜ₋₁ => 4.0])
+    @test ugetter(prob2) == [2.0, 3.0, 4.0]
+
+    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 12.0])
+    @test ugetter(prob2) == [12.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k-1) => 12.0])
+    @test ugetter(prob2) == [12.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 12.0])
+    @test ugetter(prob2) == [12.0, 0.0, 0.0]
+
+    pgetter = getp(prob, [σ, β, ρ])
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.1, β => 0.2, ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+    prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.1, sys.β => 0.2, sys.ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+    prob2 = @inferred baseType remake(prob; p = [:σ => 0.1, :β => 0.2, :ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.1, sys.β => 0.2, :ρ => 0.3])
+    @test pgetter(prob2) == [0.1, 0.2, 0.3]
+    if prob isa ODEProblem
+        @test prob2.ps[q] ≈ 0.6
+    end
+
+    prob2 = @inferred baseType remake(prob; p = [σ => 0.5])
+    @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+    prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.5])
+    @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+    prob2 = @inferred baseType remake(prob; p = [:σ => 0.5])
+    @test pgetter(prob2) == [0.5, 8 / 3, 10.0]
+
+    # Test p dependent on u0
+    @test_broken begin
+        prob2 = @inferred baseType remake(prob; p = [σ => 0.5x(k-1) + 1])
+        @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
+        prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.5x(k-1) + 1])
+        @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
+        prob2 = @inferred baseType remake(prob; p = [:σ => 0.5x(k-1) + 1])
+        @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
+    end
+
+    # Test u0 dependent on p
+    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 0.5σ + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k-1) => 0.5σ + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 0.5σ + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+
+    # Test u0 dependent on p and p dependent on u0
+    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 0.5σ + 1], p = [β => 0.5x(k-1) + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    @test_broken pgetter(prob2) ≈ [28.0, 8.5, 10.0]
+    prob2 = @inferred baseType remake(
+        prob; u0 = [sys.x(k-1) => 0.5σ + 1], p = [sys.β => 0.5x(k-1) + 1])
+    @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
+    @test_broken pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     # Not testing `Symbol => expr` since nested substitution doesn't work with that
 end
 
