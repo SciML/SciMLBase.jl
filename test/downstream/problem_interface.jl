@@ -214,12 +214,12 @@ eqs = [
     D(X) ~ p - d * X,
     X2 ~ 2 * X
 ]
-@mtkpile osys = System(eqs, t)
+@mtkcompile osys = System(eqs, t)
 
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
 ps = [p => 1.0, d => 0.2]
-oprob = ODEProblem(osys, u0, tspan, ps)
+oprob = ODEProblem(osys, [u0; ps], tspan)
 eprob = EnsembleProblem(oprob)
 
 @test eprob[X] == 0.1
@@ -345,7 +345,7 @@ end
         b[1] = p[3]
         b[2] = -8p[2] - p[1]
     end
-    f = SciMLBase.SymbolicLinearInterface(update_A!, update_b!, sys, nothing)
+    f = SciMLBase.SymbolicLinearInterface(update_A!, update_b!, sys, nothing, nothing)
     A = Float64[1 1 1; 6 -4 5; 5 2 2]
     b = Float64[2, 31, 13]
     p = Float64[1, -4, 2]
