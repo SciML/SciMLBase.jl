@@ -7,11 +7,14 @@ abstract type AbstractClock end
         phase::Float64 = 0.0
     end
     SolverStepClock
+    struct EventClock
+        id::Symbol
+    end
 end
 
 # for backwards compatibility
 const TimeDomain = Clocks.Type
-using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock
+using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
 
@@ -57,12 +60,18 @@ iscontinuous(c::TimeDomain) = @match c begin
     _ => false
 end
 
+iseventclock(c::TimeDomain) = @match c begin
+    EventClock() => true
+    _ => false
+end
+
 is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
 
 # workaround for https://github.com/Roger-luo/Moshi.jl/issues/43
 isclock(::Any) = false
 issolverstepclock(::Any) = false
 iscontinuous(::Any) = false
+iseventclock(::Any) = false
 is_discrete_time_domain(::Any) = false
 
 # public
@@ -71,6 +80,8 @@ function first_clock_tick_time(c, t0)
         PeriodicClock(dt) => ceil(t0 / dt) * dt
         SolverStepClock() => t0
         ContinuousClock() => error("ContinuousClock() is not a discrete clock")
+        EventClock() => error("Event clocks do not have a defined first tick time.")
+        _ => error("Unimplemented for clock $c")
     end
 end
 
