@@ -475,8 +475,7 @@ function SplitODEProblem{iip}(f::SplitFunction, u0, tspan, p = NullParameters();
         kwargs...) where {iip}
     if f._func_cache === nothing && iip
         _func_cache = similar(u0)
-        f = SplitFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-            _func_cache = _func_cache, analytic = f.analytic)
+        f = remake(f; _func_cache)
     end
     ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
