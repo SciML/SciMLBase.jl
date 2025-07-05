@@ -247,7 +247,7 @@ plottable_indices(x::Number) = 1
     for var in vars
         tsidxs = union(get_all_timeseries_indexes(sol, var[2]),
             get_all_timeseries_indexes(sol, var[3]))
-        if ContinuousTimeseries() in tsidxs
+        if ContinuousTimeseries() in tsidxs || isempty(tsidxs)
             push!(cont_vars, var)
         else
             push!(disc_vars, (var..., only(tsidxs)))
