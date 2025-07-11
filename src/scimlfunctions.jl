@@ -2310,11 +2310,12 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the BVPFunction type directly match the names of the inputs.
 """
-struct BVPFunction{iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+struct BVPFunction{iip, specialize, twopoint, F, BF, C, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
     JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
     SYS, ID} <: AbstractBVPFunction{iip, twopoint}
     f::F
     bc::BF
+    cost::C
     mass_matrix::TMM
     analytic::Ta
     tgrad::Tt
@@ -4326,6 +4327,7 @@ function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoA
 end
 
 function BVPFunction{iip, specialize, twopoint}(f, bc;
+        cost = (x, p) -> zero(x),
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -4464,7 +4466,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     if specialize === NoSpecialize
-        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any,
+        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any,
             Any, typeof(_colorvec), typeof(_bccolorvec), Any, Any}(
@@ -4474,14 +4476,14 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
             sparsity, Wfact, Wfact_t, paramjac, observed,
             _colorvec, _bccolorvec, sys, initialization_data)
     else
-        BVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc),
+        BVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc), typeof(cost),
             typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
             typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys),
             typeof(initialization_data)}(
-            _f, bc, mass_matrix, analytic,
+            _f, bc, cost, mass_matrix, analytic,
             tgrad, jac, bcjac, jvp, vjp,
             jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
             Wfact, Wfact_t, paramjac,
