@@ -15,7 +15,7 @@ end
 @derive Clocks[Show, Hash, Eq]
 
 # for backwards compatibility
-const TimeDomain = Clocks.Type
+const TimeDomain = AbstractClock
 using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
