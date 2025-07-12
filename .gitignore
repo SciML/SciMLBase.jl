@@ -1,5 +1,6 @@
 Manifest.toml
 .*.swp
+.DS_Store
 
 # vscode stuff
 .vscode
