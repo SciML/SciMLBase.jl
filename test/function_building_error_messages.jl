@@ -654,10 +654,10 @@ BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0)
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, cost = x -> 0.0)
 equality(u, p) = u
 inequality(u, p) = u
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0, equality_constraints = equality, inequality_constraints = inequality)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality)
 equality(res, u, p) = (res .= u)
 inequality(res, u, p) = (res .= u)
-BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0, equality_constraints = equality, inequality_constraints = inequality)
+BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality)
 
 # DynamicalBVPFunction
 
