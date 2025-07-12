@@ -2230,6 +2230,9 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 BVPFunction{iip, specialize}(f, bc;
+    cost = __has_cost(f) ? f.cost : nothing,
+    equality = __has_equality(f) ? f.equality : nothing,
+    inequality = __has_inequality(f) ? f.inequality : nothing,
     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2257,6 +2260,11 @@ See the section on `iip` for more details on in-place vs out-of-place handling.
 All of the remaining functions are optional for improving or accelerating
 the usage of `f` and `bc`. These include:
 
+- `cost(u, p)`: the target to be minimized, similar with the `cost` function
+  in [`OptimizationFunction`](@ref). This is used to define the objective function
+  of the BVP, which can be minimized by optimization solvers.
+- `equality(res, u, t)`: equality constraints functions for the BVP.
+- `inequality(res, u, t)`: inequality contraints functions for the BVP.
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
   to determine that the equation is actually a BVP for differential algebraic equation (DAE)
   if `M` is singular.
@@ -2310,12 +2318,14 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the BVPFunction type directly match the names of the inputs.
 """
-struct BVPFunction{iip, specialize, twopoint, F, BF, C, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+struct BVPFunction{iip, specialize, twopoint, F, BF, C, EC, IC, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
     JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
     SYS, ID} <: AbstractBVPFunction{iip, twopoint}
     f::F
     bc::BF
     cost::C
+    equality::EC
+    inequality::IC
     mass_matrix::TMM
     analytic::Ta
     tgrad::Tt
@@ -4327,7 +4337,9 @@ function MultiObjectiveOptimizationFunction{iip}(f, adtype::AbstractADType = NoA
 end
 
 function BVPFunction{iip, specialize, twopoint}(f, bc;
-        cost = (x, p) -> zero(x),
+        cost = __has_cost(f) ? f.cost : nothing,
+        equality = __has_equality(f) ? f.equality : nothing,
+        inequality = __has_inequality(f) ? f.inequality : nothing,
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -4428,14 +4440,17 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
     Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
     paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
+    costiip = cost !== nothing ? isinplace(cost, 2, "cost", iip) : iip
+    equalityiip = equality !== nothing ? isinplace(equality, 3, "equality", iip) : iip
+    inequalityiip = inequality !== nothing ? isinplace(inequality, 3, "inequality", iip) : iip
 
     nonconforming = (bciip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
-        paramjaciip) .!= iip
+        paramjaciip, costiip, equalityiip, inequalityiip) .!= iip
     bc_nonconforming = bcjaciip .!= bciip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
-        functions = ["bc", "jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t",
-            "paramjac"][nonconforming]
+        functions = ["bc", "jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t",
+            "paramjac", "cost", "equality", "inequality"][nonconforming]
         throw(NonconformingFunctionsError(functions))
     end
 
@@ -4466,24 +4481,25 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     if specialize === NoSpecialize
-        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any, Any,
+        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any,
             Any, typeof(_colorvec), typeof(_bccolorvec), Any, Any}(
-            _f, bc, mass_matrix,
+            _f, bc, cost, equality, inequality, mass_matrix,
             analytic, tgrad, jac, bcjac, jvp, vjp, jac_prototype,
             bcjac_prototype, bcresid_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed,
             _colorvec, _bccolorvec, sys, initialization_data)
     else
         BVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc), typeof(cost),
+            typeof(equality), typeof(inequality),
             typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
             typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys),
             typeof(initialization_data)}(
-            _f, bc, cost, mass_matrix, analytic,
+            _f, bc, cost, equality, inequality, mass_matrix, analytic,
             tgrad, jac, bcjac, jvp, vjp,
             jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
             Wfact, Wfact_t, paramjac,
@@ -4939,6 +4955,9 @@ __has_initialization_data(f) = isdefined(f, :initialization_data)
 __has_polynomialize(f) = isdefined(f, :polynomialize)
 __has_unpolynomialize(f) = isdefined(f, :unpolynomialize)
 __has_denominator(f) = isdefined(f, :denominator)
+__has_cost(f) = isdefined(f, :cost)
+__has_equality(f) = isdefined(f, :equality)
+__has_inequality(f) = isdefined(f, :inequality)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
