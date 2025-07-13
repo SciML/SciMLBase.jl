@@ -113,17 +113,19 @@ every solve call.
   doesn't store array size as part of type information. If we can't reliably infer this,
   we set it to `Nothing`. Downstreams solvers must be setup to deal with this case.
 """
-struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
+struct BVProblem{uType, tType, isinplace, nlls, P, F, LC, UC, PT, K} <:
        AbstractBVProblem{uType, tType, isinplace, nlls}
     f::F
     u0::uType
     tspan::tType
     p::P
+    lcons::LC
+    ucons::UC
     problem_type::PT
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
-            p = NullParameters(); problem_type = nothing, nlls = nothing,
+            p = NullParameters(); lcons = nothing, ucons = nothing, problem_type = nothing, nlls = nothing,
             kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
@@ -172,8 +174,8 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
             _nlls = _unwrap_val(nlls)
         end
 
-        return new{typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p), typeof(f),
-            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
+        return new{typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p), typeof(f), typeof(lcons), typeof(ucons),
+            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, lcons, ucons, problem_type, kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
