@@ -137,4 +137,21 @@ function ChainRulesCore.rrule(
     SciMLBase.IntervalNonlinearProblem(args...; kwargs...), IntervalNonlinearProblemAdjoint
 end
 
+# This is a workaround for the fact `NonlinearProblem` is a mutable struct. In SciMLSensitivity, we call
+# `back` explicitly while already in a reverse pass causing a nested gradient call. The mutable struct
+# causes accumulation anytime `getfield/property` is called, accumulating multiple times. This tries to treat
+# AbstractDEProblem as immutable for the purposes of reverse mode AD.
+function ChainRulesCore.rrule(::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode}, ::typeof(Base.getproperty), x::NonlinearProblem, f::Symbol)
+    val = getfield(x, f)
+    function back(der)
+        dx = if der === nothing
+            ChainRulesCore.zero_tangent(x)
+        else
+            NamedTuple{(f,)}((der,))
+        end
+        return (ChainRulesCore.NoTangent(), ChainRulesCore.ProjectTo(x)(dx), ChainRulesCore.NoTangent())
+    end
+    return val, back
+end
+
 end
