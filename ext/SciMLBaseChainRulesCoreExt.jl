@@ -137,4 +137,17 @@ function ChainRulesCore.rrule(
     SciMLBase.IntervalNonlinearProblem(args...; kwargs...), IntervalNonlinearProblemAdjoint
 end
 
+function ChainRulesCore.rrule(::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode}, ::typeof(Base.getproperty), x::NonlinearProblem, f::Symbol)
+    val = getfield(x, f)
+    function back(der)
+        dx = if der === nothing
+            ChainRulesCore.zero_tangent(x)
+        else
+            NamedTuple{(f,)}((der,))
+        end
+        return (ChainRulesCore.NoTangent(), ChainRulesCore.ProjectTo(x)(dx), ChainRulesCore.NoTangent())
+    end
+    return val, back
+end
+
 end
