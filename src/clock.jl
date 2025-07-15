@@ -12,6 +12,8 @@ abstract type AbstractClock end
     end
 end
 
+@derive Clocks[Show]
+
 # for backwards compatibility
 const TimeDomain = Clocks.Type
 using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock, EventClock
