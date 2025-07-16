@@ -12,7 +12,7 @@ abstract type AbstractClock end
     end
 end
 
-@derive Clocks[Show]
+@derive Clocks[Show, Hash, Eq]
 
 # for backwards compatibility
 const TimeDomain = Clocks.Type
