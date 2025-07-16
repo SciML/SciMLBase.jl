@@ -47,25 +47,29 @@ discrete-time systems that assume a fixed sample time, such as PID controllers a
 filters.
 """ SolverStepClock
 
-isclock(c::TimeDomain) = @match c begin
+isclock(c::Clocks.Type) = @match c begin
     PeriodicClock() => true
     _ => false
 end
+isclock(::TimeDomain) = false
 
-issolverstepclock(c::TimeDomain) = @match c begin
+issolverstepclock(c::Clocks.Type) = @match c begin
     SolverStepClock() => true
     _ => false
 end
+issolverstepclock(::TimeDomain) = false
 
-iscontinuous(c::TimeDomain) = @match c begin
+iscontinuous(c::Clocks.Type) = @match c begin
     ContinuousClock() => true
     _ => false
 end
+iscontinuous(::TimeDomain) = false
 
-iseventclock(c::TimeDomain) = @match c begin
+iseventclock(c::Clocks.Type) = @match c begin
     EventClock() => true
     _ => false
 end
+iseventclock(::TimeDomain) = false
 
 is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
 
@@ -77,7 +81,7 @@ iseventclock(::Any) = false
 is_discrete_time_domain(::Any) = false
 
 # public
-function first_clock_tick_time(c, t0)
+function first_clock_tick_time(c::Clocks.Type, t0)
     @match c begin
         PeriodicClock(dt) => ceil(t0 / dt) * dt
         SolverStepClock() => t0
@@ -85,6 +89,10 @@ function first_clock_tick_time(c, t0)
         EventClock() => error("Event clocks do not have a defined first tick time.")
         _ => error("Unimplemented for clock $c")
     end
+end
+
+function first_clock_tick_time(c::TimeDomain, _)
+    error("Unimplemented for clock $c")
 end
 
 # public
