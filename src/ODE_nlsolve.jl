@@ -3,7 +3,7 @@
 
 A collection of all the data required for custom ODE Nonlinear problem solving
 """
-struct ODE_NLProbData{NLProb, UNLProb, NLProbMap, NLProbPmap}
+struct ODE_NLProbData{NLProb, UNLProb, SetGammaC, SetOuterTmp, SetInnerTmp, NLProbMap}
     """
     The `AbstractNonlinearProblem` to define custom nonlinear problems to be used for
     implicit time discretizations. This allows to use extra structure of the ODE function (e.g.
@@ -30,16 +30,12 @@ struct ODE_NLProbData{NLProb, UNLProb, NLProbMap, NLProbPmap}
     Usually this will refer to a problem or integrator.
     """
     update_nlprob!::UNLProb
+    set_γ_c::SetGammaC
+    set_outer_tmp::SetOuterTmp
+    set_inner_tmp::SetInnerTmp
     """
     A function which takes the solution of `nlprob` and returns
     the state vector of the original problem.
     """
     nlprobmap::NLProbMap
-    """
-    A function which takes the solution of `nlprob` and returns
-    the parameter object of the original problem. If absent (`nothing`),
-    this will not be called and the parameters of the problem being
-    solved will be returned as-is.
-    """
-    nlprobpmap::NLProbPmap
 end
