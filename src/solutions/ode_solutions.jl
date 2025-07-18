@@ -51,8 +51,8 @@ function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     @printf io "%-50s %-d\n" "Number of Jacobians created:" s.njacs
     @printf io "%-50s %-d\n" "Number of nonlinear solver iterations:" s.nnonliniter
     @printf io "%-50s %-d\n" "Number of nonlinear solver convergence failures:" s.nnonlinconvfail
-    @printf io "%-60s %-d\n" "Number of fixed-point solver iterations:" s.nfpiter
-    @printf io "%-60s %-d\n" "Number of fixed-point solver convergence failures:" s.nfpconvfail
+    @printf io "%-50s %-d\n" "Number of fixed-point solver iterations:" s.nfpiter
+    @printf io "%-50s %-d\n" "Number of fixed-point solver convergence failures:" s.nfpconvfail
     @printf io "%-50s %-d\n" "Number of rootfind condition calls:" s.ncondition
     @printf io "%-50s %-d\n" "Number of accepted steps:" s.naccept
     @printf io "%-50s %-d" "Number of rejected steps:" s.nreject
