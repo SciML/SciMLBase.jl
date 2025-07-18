@@ -3,7 +3,7 @@
 
 A collection of all the data required for custom ODE Nonlinear problem solving
 """
-struct ODENLStepData{NLProb, UNLProb, SetGammaC, SetOuterTmp, SetInnerTmp, NLProbMap}
+struct ODENLStepData{NLProb, SetU0, SetGammaC, SetOuterTmp, SetInnerTmp, NLProbMap}
     """
     The `AbstractNonlinearProblem` to define custom nonlinear problems to be used for
     implicit time discretizations. This allows to use extra structure of the ODE function (e.g.
@@ -17,6 +17,7 @@ struct ODENLStepData{NLProb, UNLProb, SetGammaC, SetOuterTmp, SetInnerTmp, NLPro
     `g(z,p') = γ₁⋅f(γ₂⋅z+inner_tmp,p,t_c) + outer_tmp - M*z = 0`.
     """
     nlprob::NLProb
+    u0perm::SetU0
     set_γ_c::SetGammaC
     set_outer_tmp::SetOuterTmp
     set_inner_tmp::SetInnerTmp
