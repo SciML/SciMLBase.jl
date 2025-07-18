@@ -409,7 +409,7 @@ numerically-defined functions.
 """
 struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
     O, TCV,
-    SYS, ID <: Union{Nothing, OverrideInitData}, NLP <: Union{Nothing, ODE_NLProbData}} <:
+    SYS, ID <: Union{Nothing, OverrideInitData}, NLP <: Union{Nothing, ODENLStepData}} <:
        AbstractODEFunction{iip}
     f::F
     mass_matrix::TMM
@@ -532,7 +532,7 @@ information on generating the SplitFunction from this symbolic engine.
 struct SplitFunction{
     iip, specialize, F1, F2, TMM, C, Ta, Tt, TJ, JVP, VJP, JP, WP, SP, TW, TWt,
     TPJ, O, TCV, SYS, ID <: Union{Nothing, OverrideInitData},
-    NLP <: Union{Nothing, ODE_NLProbData}} <: AbstractODEFunction{iip}
+    NLP <: Union{Nothing, ODENLStepData}} <: AbstractODEFunction{iip}
     f1::F1
     f2::F2
     mass_matrix::TMM
@@ -2749,7 +2749,7 @@ function ODEFunction{iip, specialize}(f;
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,
             typeof(_colorvec),
-            typeof(sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
+            typeof(sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData}}(
             _f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
             Wfact_t, W_prototype, paramjac,
@@ -2796,7 +2796,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any, Any,
             Any, typeof(f.colorvec),
-            typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
+            typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData}}(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
             f.Wfact_t, f.W_prototype, f.paramjac,
@@ -3021,7 +3021,7 @@ function SplitFunction{iip, specialize}(f1, f2;
     if specialize === NoSpecialize
         SplitFunction{iip, specialize, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Union{Nothing, OverrideInitData}, Union{Nothing, ODE_NLProbData}}(
+            Any, Any, Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData}}(
             f1, f2, mass_matrix, _func_cache,
             analytic,
             tgrad, jac, jvp, vjp, jac_prototype, W_prototype,
