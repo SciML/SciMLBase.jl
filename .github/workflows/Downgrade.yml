@@ -15,15 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['min']
+        downgrade_mode: ['deps', 'alldeps']
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
         with:
-          version: ${{ matrix.version }}
-      - uses: julia-actions/julia-downgrade-compat@v1
-#        if: ${{ matrix.version == '1.6' }}
-        with:
-          skip: Pkg,TOML
+          version: '1.11'
+      - name: Clone Stefan's Resolver
+        run: git clone https://github.com/StefanKarpinski/Resolver.jl.git /tmp/resolver
+      - name: Install resolver dependencies
+        run: julia --project=/tmp/resolver/bin -e "using Pkg; Pkg.instantiate()"
+      - name: Run downgrade resolution
+        run: |
+          cd ${{ github.workspace }}
+          julia --project=/tmp/resolver/bin /tmp/resolver/bin/resolve.jl . --min=@${{ matrix.downgrade_mode }}
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
