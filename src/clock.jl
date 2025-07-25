@@ -1,15 +1,22 @@
-@data Clocks begin
+abstract type AbstractClock end
+
+@data Clocks<:AbstractClock begin
     ContinuousClock
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
         phase::Float64 = 0.0
     end
     SolverStepClock
+    struct EventClock
+        id::Symbol
+    end
 end
 
+@derive Clocks[Show, Hash, Eq]
+
 # for backwards compatibility
-const TimeDomain = Clocks.Type
-using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock
+const TimeDomain = AbstractClock
+using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
 
@@ -40,20 +47,29 @@ discrete-time systems that assume a fixed sample time, such as PID controllers a
 filters.
 """ SolverStepClock
 
-isclock(c::TimeDomain) = @match c begin
+isclock(c::Clocks.Type) = @match c begin
     PeriodicClock() => true
     _ => false
 end
+isclock(::TimeDomain) = false
 
-issolverstepclock(c::TimeDomain) = @match c begin
+issolverstepclock(c::Clocks.Type) = @match c begin
     SolverStepClock() => true
     _ => false
 end
+issolverstepclock(::TimeDomain) = false
 
-iscontinuous(c::TimeDomain) = @match c begin
+iscontinuous(c::Clocks.Type) = @match c begin
     ContinuousClock() => true
     _ => false
 end
+iscontinuous(::TimeDomain) = false
+
+iseventclock(c::Clocks.Type) = @match c begin
+    EventClock() => true
+    _ => false
+end
+iseventclock(::TimeDomain) = false
 
 is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
 
@@ -61,23 +77,69 @@ is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
 isclock(::Any) = false
 issolverstepclock(::Any) = false
 iscontinuous(::Any) = false
+iseventclock(::Any) = false
 is_discrete_time_domain(::Any) = false
 
-function first_clock_tick_time(c, t0)
+# public
+function first_clock_tick_time(c::Clocks.Type, t0)
     @match c begin
         PeriodicClock(dt) => ceil(t0 / dt) * dt
         SolverStepClock() => t0
         ContinuousClock() => error("ContinuousClock() is not a discrete clock")
+        EventClock() => error("Event clocks do not have a defined first tick time.")
+        _ => error("Unimplemented for clock $c")
     end
 end
 
-struct IndexedClock{I}
-    clock::TimeDomain
+function first_clock_tick_time(c::TimeDomain, _)
+    error("Unimplemented for clock $c")
+end
+
+# public
+"""
+    $(TYPEDEF)
+
+A struct representing the operation of indexing a clock to obtain a subset of the time
+points at which it ticked. The actual list of time points depends on the tick instances 
+on which the clock was ticking, and can be obtained via `canonicalize_indexed_clock`
+by providing a timeseries solution object.
+
+For example, `IndexedClock(PeriodicClock(0.1), 3)` refers to the third time that
+`PeriodicClock(0.1)` ticked. If the simulation started at `t = 0`, then this would be
+`t = 0.2`. Similarly, `IndexedClock(PeriodicClock(0.1), [1, 5])` refers to `t = 0.0`
+and `t = 0.4` in this context.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
+struct IndexedClock{C <: AbstractClock, I}
+    """
+    The clock being indexed. A subtype of `SciMLBase.AbstractClock`
+    """
+    clock::C
+    """
+    The subset of indexes being referred to. This can be an integer, an array of integers,
+    a range or `Colon()` to refer to all the points that the clock ticked.
+    """
     idx::I
 end
 
-Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
+# public
+"""
+    $(TYPEDSIGNATURES)
 
+Return a `SciMLBase.IndexedClock` representing the subset of the time points that the clock
+ticked indicated by `idx`.
+"""
+Base.getindex(c::AbstractClock, idx) = IndexedClock(c, idx)
+
+# public
+"""
+    $(TYPEDSIGNATURES)
+
+Return the time points in the interval
+"""
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
 
