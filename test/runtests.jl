@@ -22,6 +22,9 @@ end
         @time @safetestset "Aqua" begin
             include("aqua.jl")
         end
+        @time @safetestset "JET" begin
+            include("JET.jl")
+        end
     end
     if GROUP == "Core" || GROUP == "All"
         @time @safetestset "Display" begin
@@ -59,9 +62,6 @@ end
         end
         @time @safetestset "Clocks" begin
             include("clock.jl")
-        end
-        @time @safetestset "JET" begin
-            include("JET.jl")
         end
     end
 
