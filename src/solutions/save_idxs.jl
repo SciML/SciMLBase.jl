@@ -52,7 +52,7 @@ function get_root_indp(prob::LinearProblem)
     get_root_indp(prob.f)
 end
 
-get_root_indp(::Nothing) = nothing
+get_root_indp(x) = x
 
 function get_root_indp(f::SymbolicLinearInterface)
     get_root_indp(f.sys)
