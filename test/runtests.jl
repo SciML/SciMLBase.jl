@@ -60,6 +60,9 @@ end
         @time @safetestset "Clocks" begin
             include("clock.jl")
         end
+        @time @safetestset "JET" begin
+            include("JET.jl")
+        end
     end
 
     if !is_APPVEYOR &&
