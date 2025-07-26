@@ -30,5 +30,4 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
         with:
           FORCE_LATEST_COMPATIBLE_VERSION: false
-          CHECK_BOUNDS: false
           ALLOW_RERESOLVE: false
