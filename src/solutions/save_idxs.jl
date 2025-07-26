@@ -52,6 +52,8 @@ function get_root_indp(prob::LinearProblem)
     get_root_indp(prob.f)
 end
 
+get_root_indp(prob::AbstractJumpProblem) = get_root_indp(prob.prob)
+
 get_root_indp(x) = x
 
 function get_root_indp(f::SymbolicLinearInterface)
