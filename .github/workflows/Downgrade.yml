@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['alldeps']
+        downgrade_mode: ['alldeps']
+        julia-version: ['1.10', '1']
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
