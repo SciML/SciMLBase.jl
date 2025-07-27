@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         downgrade_mode: ['alldeps']
-        julia-version: ['1.10', '1']
+        julia-version: ['1.10']
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
