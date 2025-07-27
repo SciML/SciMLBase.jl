@@ -45,7 +45,17 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
 end
 
 function get_root_indp(prob::AbstractSciMLProblem)
-    prob.f.sys
+    get_root_indp(prob.f)
+end
+
+function get_root_indp(f::T) where {T <: AbstractSciMLFunction}
+    if hasfield(T, :sys)
+        return f.sys
+    elseif hasfield(T, :f) && f.f isa AbstractSciMLFunction
+        return get_root_indp(f.f)
+    else
+        return nothing
+    end
 end
 
 function get_root_indp(prob::LinearProblem)
