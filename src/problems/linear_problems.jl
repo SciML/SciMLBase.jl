@@ -82,8 +82,8 @@ Optionally, an initial guess ``u₀`` can be supplied which is used for iterativ
 methods.
 
 ```julia
-LinearProblem{isinplace}(A,x,p=NullParameters();u0=nothing,kwargs...)
-LinearProblem(f::AbstractSciMLOperator,u0,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem{isinplace}(A,b,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem(f::AbstractSciMLOperator,b,p=NullParameters();u0=nothing,kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not, i.e. whether
