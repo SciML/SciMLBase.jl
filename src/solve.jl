@@ -151,6 +151,10 @@ function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support constraints. Either remove the `cons` function passed to `OptimizationFunction` or use a different algorithm."))
     requiresconstraints(alg) && isnothing(prob.f.cons) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
+    # Check that if constraints are present and the algorithm supports constraints, both lcons and ucons are provided
+    allowsconstraints(alg) && !isnothing(prob.f.cons) && (isnothing(prob.lcons) || isnothing(prob.ucons)) &&
+        throw(ArgumentError("Constrained optimization problem requires both `lcons` and `ucons` to be provided to OptimizationProblem. " *
+                            "Example: OptimizationProblem(optf, u0, p; lcons=[-Inf], ucons=[0.0])"))
     !allowscallback(alg) && haskey(kwargs, :callback) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) does not support callbacks, remove the `callback` keyword argument from the `solve` call."))
     requiresgradient(alg) && !(prob.f isa AbstractOptimizationFunction) &&
