@@ -89,10 +89,8 @@ end
         @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
             include("downstream/ensemble_diffeq.jl")
         end
-        if VERSION >= v"1.8"
-            @time @safetestset "Solution Indexing" begin
-                include("downstream/solution_interface.jl")
-            end
+        @time @safetestset "Solution Indexing" begin
+            include("downstream/solution_interface.jl")
         end
         @time @safetestset "Unitful interpolations" begin
             include("downstream/unitful_interpolations.jl")
