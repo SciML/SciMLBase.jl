@@ -241,8 +241,11 @@ end
     @test SciMLBase.initialization_status(prob) == SciMLBase.FULLY_DETERMINED
     integ = init(prob; initializealg = NoInit())
 
-    @testset "Errors without `nlsolve_alg`" begin
-        SciMLBase.get_initial_values(prob, integ, fn, SciMLBase.OverrideInit(), Val(false);  abstol, reltol)
+    @testset "Works without `nlsolve_alg`" begin
+        abstol = 1e-10
+        reltol = 1e-8
+        SciMLBase.get_initial_values(
+            prob, integ, fn, SciMLBase.OverrideInit(), Val(false); abstol, reltol)
     end
 
     abstol = 1e-10
