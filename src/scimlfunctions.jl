@@ -2264,7 +2264,7 @@ the usage of `f` and `bc`. These include:
   in [`OptimizationFunction`](@ref). This is used to define the objective function
   of the BVP, which can be minimized by optimization solvers.
 - `equality(res, u, t)`: equality constraints functions for the BVP.
-- `inequality(res, u, t)`: inequality contraints functions for the BVP.
+- `inequality(res, u, t)`: inequality constraints functions for the BVP.
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
   to determine that the equation is actually a BVP for differential algebraic equation (DAE)
   if `M` is singular.
