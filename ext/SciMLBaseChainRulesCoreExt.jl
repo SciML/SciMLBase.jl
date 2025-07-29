@@ -141,7 +141,8 @@ end
 # `back` explicitly while already in a reverse pass causing a nested gradient call. The mutable struct
 # causes accumulation anytime `getfield/property` is called, accumulating multiple times. This tries to treat
 # AbstractDEProblem as immutable for the purposes of reverse mode AD.
-function ChainRulesCore.rrule(::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode}, ::typeof(Base.getproperty), x::NonlinearProblem, f::Symbol)
+function ChainRulesCore.rrule(::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
+        ::typeof(Base.getproperty), x::NonlinearProblem, f::Symbol)
     val = getfield(x, f)
     function back(der)
         dx = if der === nothing
@@ -149,7 +150,8 @@ function ChainRulesCore.rrule(::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasRe
         else
             NamedTuple{(f,)}((der,))
         end
-        return (ChainRulesCore.NoTangent(), ChainRulesCore.ProjectTo(x)(dx), ChainRulesCore.NoTangent())
+        return (ChainRulesCore.NoTangent(), ChainRulesCore.ProjectTo(x)(dx),
+            ChainRulesCore.NoTangent())
     end
     return val, back
 end

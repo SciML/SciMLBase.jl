@@ -43,7 +43,8 @@ begin
     osys = complete(System(diff_eqs, t; observed = obs, name = :osys))
     ssys = complete(System(
         diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed = obs, name = :ssys))
-    jsys = complete(JumpSystem(jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys))
+    jsys = complete(JumpSystem(
+        jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys))
     nsys = complete(System(alg_eqs; observed = obs, name = :nsys))
     optsys = complete(OptimizationSystem(
         loss, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :optsys))
@@ -910,7 +911,8 @@ end
 @testset "Continuous interpolation before discrete save" begin
     @variables x(t)
     @parameters c(t)
-    devt = ModelingToolkit.SymbolicDiscreteCallback(1.0, [c ~ Pre(c) + 1]; discrete_parameters = [c], iv = t)
+    devt = ModelingToolkit.SymbolicDiscreteCallback(
+        1.0, [c ~ Pre(c) + 1]; discrete_parameters = [c], iv = t)
     @mtkcompile sys = System(
         D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [devt])
     prob = ODEProblem(sys, [x => 0.0, c => 1.0], (0.0, 2pi))

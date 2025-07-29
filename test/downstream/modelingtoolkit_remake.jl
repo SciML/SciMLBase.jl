@@ -157,8 +157,10 @@ end
 @testset "DiscreteProblem" begin
     k = ShiftIndex(t)
     @mtkcompile discsys = System(
-        [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~ z(k - 1) * β + x(k - 2)],
-        t; defaults = [x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
+        [x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2),
+            z ~ z(k - 1) * β + x(k - 2)],
+        t; defaults = [
+            x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
     prob = DiscreteProblem(discsys, p, (0, 10))
     prob[x(k-1)] = 1.0
     prob[y(k-1)] = prob[z(k-1)] = 0.0
@@ -168,13 +170,16 @@ end
 
     baseType = Base.typename(typeof(prob)).wrapper
     ugetter = getsym(prob, [x(k-1), y(k-1), z(k-1)])
-    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 2.0, y(k-1) => 3.0, z(k-1) => 4.0])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [x(k-1) => 2.0, y(k-1) => 3.0, z(k-1) => 4.0])
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
-    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k-1) => 2.0, sys.y(k-1) => 3.0, sys.z(k-1) => 4.0])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [sys.x(k-1) => 2.0, sys.y(k-1) => 3.0, sys.z(k-1) => 4.0])
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
     prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 2.0, :yₜ₋₁ => 3.0, :zₜ₋₁ => 4.0])
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
-    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 2.0, sys.y(k-1) => 3.0, :zₜ₋₁ => 4.0])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [x(k-1) => 2.0, sys.y(k-1) => 3.0, :zₜ₋₁ => 4.0])
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
 
     prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 12.0])
@@ -232,7 +237,8 @@ end
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
 
     # Test u0 dependent on p and p dependent on u0
-    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 0.5σ + 1], p = [β => 0.5x(k-1) + 1])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [x(k-1) => 0.5σ + 1], p = [β => 0.5x(k-1) + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test_broken pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     prob2 = @inferred baseType remake(
