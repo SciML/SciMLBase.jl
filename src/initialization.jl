@@ -267,9 +267,6 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
         success = true
     else
         nlsolve_alg = something(nlsolve_alg, alg.nlsolve, Some(nothing))
-        if nlsolve_alg === nothing && state_values(initprob) !== nothing
-            throw(OverrideInitMissingAlgorithm())
-        end
         if alg.abstol !== nothing
             _abstol = alg.abstol
         elseif abstol !== nothing
