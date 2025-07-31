@@ -458,5 +458,5 @@ end
     prob2 = remake(prob; u0)
     @test prob2.u0 === u0
     prob2 = remake(prob; A = SMatrix{3, 3}(A))
-    @test prob2.A  isa SMatrix{3, 3}
+    @test prob2.A isa SMatrix{3, 3}
 end

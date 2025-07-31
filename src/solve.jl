@@ -43,7 +43,8 @@ end
 
 """
 ```julia
-solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm, args...; kwargs...)::OptimizationSolution
+solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm,
+    args...; kwargs...)::OptimizationSolution
 ```
 
 For information about the returned solution object, refer to the documentation for [OptimizationSolution](@ref)
@@ -152,7 +153,8 @@ function _check_opt_alg(prob::OptimizationProblem, alg; kwargs...)
     requiresconstraints(alg) && isnothing(prob.f.cons) &&
         throw(IncompatibleOptimizerError("The algorithm $(typeof(alg)) requires constraints, pass them with the `cons` kwarg in `OptimizationFunction`."))
     # Check that if constraints are present and the algorithm supports constraints, both lcons and ucons are provided
-    allowsconstraints(alg) && !isnothing(prob.f.cons) && (isnothing(prob.lcons) || isnothing(prob.ucons)) &&
+    allowsconstraints(alg) && !isnothing(prob.f.cons) &&
+        (isnothing(prob.lcons) || isnothing(prob.ucons)) &&
         throw(ArgumentError("Constrained optimization problem requires both `lcons` and `ucons` to be provided to OptimizationProblem. " *
                             "Example: OptimizationProblem(optf, u0, p; lcons=[-Inf], ucons=[0.0])"))
     !allowscallback(alg) && haskey(kwargs, :callback) &&
