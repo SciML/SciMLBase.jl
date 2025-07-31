@@ -43,7 +43,8 @@ begin
     osys = complete(System(diff_eqs, t; observed = obs, name = :osys))
     ssys = complete(System(
         diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed = obs, name = :ssys))
-    jsys = complete(JumpSystem(jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys))
+    jsys = complete(JumpSystem(
+        jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys))
     nsys = complete(System(alg_eqs; observed = obs, name = :nsys))
     optsys = complete(OptimizationSystem(
         loss, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :optsys))

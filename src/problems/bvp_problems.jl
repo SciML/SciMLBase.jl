@@ -174,8 +174,10 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LC, UC, PT, K} <:
             _nlls = _unwrap_val(nlls)
         end
 
-        return new{typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p), typeof(f), typeof(lcons), typeof(ucons),
-            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, lcons, ucons, problem_type, kwargs)
+        return new{typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p),
+            typeof(f), typeof(lcons), typeof(ucons),
+            typeof(problem_type), typeof(kwargs)}(
+            f, _u0, _tspan, p, lcons, ucons, problem_type, kwargs)
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}

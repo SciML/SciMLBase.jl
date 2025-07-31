@@ -2318,7 +2318,8 @@ For more details on this argument, see the ODEFunction documentation.
 
 The fields of the BVPFunction type directly match the names of the inputs.
 """
-struct BVPFunction{iip, specialize, twopoint, F, BF, C, EC, IC, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+struct BVPFunction{
+    iip, specialize, twopoint, F, BF, C, EC, IC, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
     JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
     SYS, ID} <: AbstractBVPFunction{iip, twopoint}
     f::F
@@ -2662,7 +2663,6 @@ end
         end
     end
 end
-
 
 (f::SDDEFunction)(args...) = f.f(args...)
 (f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
@@ -4462,7 +4462,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
     costiip = cost !== nothing ? isinplace(cost, 2, "cost", iip) : iip
     equalityiip = equality !== nothing ? isinplace(equality, 3, "equality", iip) : iip
-    inequalityiip = inequality !== nothing ? isinplace(inequality, 3, "inequality", iip) : iip
+    inequalityiip = inequality !== nothing ? isinplace(inequality, 3, "inequality", iip) :
+                    iip
 
     nonconforming = (bciip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
         paramjaciip, costiip, equalityiip, inequalityiip) .!= iip
