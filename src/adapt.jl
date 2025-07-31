@@ -17,9 +17,9 @@ function adapt_structure(to,
 end
 
 # Allow DAE adaptation for GPU kernels
-function adapt_structure(to, f::SciMLBase.ODEFunction{iip}) where {iip}
+function adapt_structure(to, f::ODEFunction{iip}) where {iip}
     # For GPU kernels, we now support DAEs with mass matrices and initialization
-    SciMLBase.ODEFunction{iip, SciMLBase.FullSpecialize}(
+    ODEFunction{iip, FullSpecialize}(
         f.f,
         jac = f.jac,
         mass_matrix = f.mass_matrix,
@@ -28,8 +28,8 @@ function adapt_structure(to, f::SciMLBase.ODEFunction{iip}) where {iip}
 end
 
 # Adapt OverrideInitData for GPU compatibility
-function adapt_structure(to, f::SciMLBase.OverrideInitData)
-    SciMLBase.OverrideInitData(
+function adapt_structure(to, f::OverrideInitData)
+    OverrideInitData(
         adapt(to, f.initializeprob),  # Also adapt initializeprob
         f.update_initializeprob!,
         f.initializeprobmap,
