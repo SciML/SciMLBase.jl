@@ -23,6 +23,19 @@ function ensure_plottrait(PT::Type, arg, desired_plottrait_type::Type)
     end
 end
 
+# Define preferred axis type based on the idxs parameter
+function Makie.preferred_axis_type(plot::Plot{<:Tuple{<:SciMLBase.AbstractTimeseriesSolution}})
+    if haskey(plot, :idxs) || haskey(plot, :vars)
+        idxs = haskey(plot, :idxs) ? plot[:idxs][] : (haskey(plot, :vars) ? plot[:vars][] : nothing)
+        if idxs isa Tuple && length(idxs) == 3
+            return Makie.LScene
+        elseif idxs isa AbstractArray && length(idxs) == 3
+            return Makie.LScene  
+        end
+    end
+    return Makie.Axis
+end
+
 # ## `AbstractTimeseriesSolution` recipe
 
 # First, we define the standard plot type for timeseries solutions.
@@ -137,6 +150,19 @@ end
 # This will be very similar to the timeseries solution recipe, but without some of the conveniences.
 
 Makie.plottype(integrator::SciMLBase.DEIntegrator) = Makie.Lines
+
+# Define preferred axis type for integrator plots
+function Makie.preferred_axis_type(plot::Plot{<:Tuple{<:SciMLBase.DEIntegrator}})
+    if haskey(plot, :idxs) || haskey(plot, :vars)
+        idxs = haskey(plot, :idxs) ? plot[:idxs][] : (haskey(plot, :vars) ? plot[:vars][] : nothing)
+        if idxs isa Tuple && length(idxs) == 3
+            return Makie.LScene
+        elseif idxs isa AbstractArray && length(idxs) == 3
+            return Makie.LScene  
+        end
+    end
+    return Makie.Axis
+end
 
 function Makie.used_attributes(::Type{<:Plot}, integrator::SciMLBase.DEIntegrator)
     (:plot_analytic, :denseplot, :plotdensity, :vars, :idxs)
@@ -272,6 +298,19 @@ end
 
 # Again, we first define the "ideal" plot type for ensemble solutions.
 Makie.plottype(sol::SciMLBase.AbstractEnsembleSolution) = Makie.Lines
+
+# Define preferred axis type for ensemble plots
+function Makie.preferred_axis_type(plot::Plot{<:Tuple{<:SciMLBase.AbstractEnsembleSolution}})
+    if haskey(plot, :idxs) || haskey(plot, :vars)
+        idxs = haskey(plot, :idxs) ? plot[:idxs][] : (haskey(plot, :vars) ? plot[:vars][] : nothing)
+        if idxs isa Tuple && length(idxs) == 3
+            return Makie.LScene
+        elseif idxs isa AbstractArray && length(idxs) == 3
+            return Makie.LScene  
+        end
+    end
+    return Makie.Axis
+end
 
 # We also define the attributes that are used by the ensemble solution recipe:
 function Makie.used_attributes(::Type{<:Plot}, sol::SciMLBase.AbstractEnsembleSolution)
