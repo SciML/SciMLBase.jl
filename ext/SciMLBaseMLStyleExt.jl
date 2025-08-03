@@ -11,7 +11,7 @@ module SciMLBaseMLStyleExt
 using SciMLBase: TimeDomain, ContinuousClock, SolverStepClock, PeriodicClock
 using MLStyle: MLStyle
 using MLStyle.AbstractPatterns: literal, wildcard, PComp, BasicPatterns, decons
-using Moshi.Data: isa_variant
+# Removed Moshi dependency - using basic struct detection instead
 
 # This makes Singletons also work without parentheses in matches
 MLStyle.is_enum(::Type{ContinuousClock}) = true
@@ -26,7 +26,7 @@ function MLStyle.pattern_uncall(::Type{SolverStepClock}, self::Function, _, _, _
 end
 
 function periodic_clock_pattern(c)
-    if c isa TimeDomain && isa_variant(c, PeriodicClock)
+    if c isa PeriodicClock
         (c.dt, c.phase)
     else
         # These values are used in match results, but they shouldn't.
