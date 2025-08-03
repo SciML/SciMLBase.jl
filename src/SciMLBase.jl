@@ -860,7 +860,7 @@ export step!, deleteat!, addat!, get_tmp_cache,
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
-export TimeDomain, ContinuousClock, PeriodicClock, SolverStepClock, Clock, Continuous, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
+export Clocks, TimeDomain, Clock, Continuous, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 export ODEAliasSpecifier, LinearAliasSpecifier
 

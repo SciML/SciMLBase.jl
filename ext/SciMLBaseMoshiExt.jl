@@ -4,79 +4,70 @@ using SciMLBase
 using Moshi.Data: @data
 using Moshi.Match: @match
 
-# Define Moshi-based clock types that can take advantage of pattern matching
-@data MoshiClocks begin
-    MoshiContinuousClock
-    struct MoshiPeriodicClock
+# This extension replaces the fallback Clocks module with the original Moshi-based implementation
+# This gives pattern matching capability when Moshi is loaded
+@data Clocks begin
+    ContinuousClock
+    struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
         phase::Float64 = 0.0
     end
-    MoshiSolverStepClock
+    SolverStepClock
 end
 
-# for backwards compatibility
-const MoshiTimeDomain = MoshiClocks.Type
-using .MoshiClocks: MoshiContinuousClock, MoshiPeriodicClock, MoshiSolverStepClock
+# Override SciMLBase.Clocks with the Moshi version when this extension loads
+Core.eval(SciMLBase, :(const Clocks = $Clocks))
 
-# Create instances that use the Moshi pattern matching
-SciMLBase.isclock(c::MoshiTimeDomain) = @match c begin
-    MoshiPeriodicClock() => true
-    _ => false
-end
+# for backwards compatibility - these need to be redefined with the new types
+Core.eval(SciMLBase, :(const TimeDomain = Clocks.Type))
+Core.eval(SciMLBase, :(using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock))
+Core.eval(SciMLBase, :(const Continuous = ContinuousClock()))
 
-SciMLBase.issolverstepclock(c::MoshiTimeDomain) = @match c begin
-    MoshiSolverStepClock() => true
-    _ => false
-end
-
-SciMLBase.iscontinuous(c::MoshiTimeDomain) = @match c begin
-    MoshiContinuousClock() => true
-    _ => false
-end
-
-function SciMLBase.first_clock_tick_time(c::MoshiTimeDomain, t0)
+# Redefine the pattern matching functions to use @match
+function SciMLBase.isclock(c::SciMLBase.TimeDomain)
     @match c begin
-        MoshiPeriodicClock(dt) => ceil(t0 / dt) * dt
-        MoshiSolverStepClock() => t0
-        MoshiContinuousClock() => error("ContinuousClock() is not a discrete clock")
+        PeriodicClock() => true
+        _ => false
     end
 end
 
-function SciMLBase.canonicalize_indexed_clock(ic::SciMLBase.IndexedClock{I}, sol::SciMLBase.AbstractTimeseriesSolution) where I
+function SciMLBase.issolverstepclock(c::SciMLBase.TimeDomain)
+    @match c begin
+        SolverStepClock() => true
+        _ => false
+    end
+end
+
+function SciMLBase.iscontinuous(c::SciMLBase.TimeDomain)
+    @match c begin
+        ContinuousClock() => true
+        _ => false
+    end
+end
+
+function SciMLBase.first_clock_tick_time(c, t0)
+    @match c begin
+        PeriodicClock(dt) => ceil(t0 / dt) * dt
+        SolverStepClock() => t0
+        ContinuousClock() => error("ContinuousClock() is not a discrete clock")
+        _ => error("Unknown clock type: $(typeof(c))")
+    end
+end
+
+function SciMLBase.canonicalize_indexed_clock(ic::SciMLBase.IndexedClock, sol::SciMLBase.AbstractTimeseriesSolution)
     c = ic.clock
     
-    if c isa MoshiTimeDomain
-        return @match c begin
-            MoshiPeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
-            MoshiSolverStepClock() => begin
-                ssc_idx = findfirst(eachindex(sol.discretes)) do i
-                    !isa(sol.discretes[i].t, AbstractRange)
-                end
-                sol.discretes[ssc_idx].t[ic.idx]
+    @match c begin
+        PeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
+        SolverStepClock() => begin
+            ssc_idx = findfirst(eachindex(sol.discretes)) do i
+                !isa(sol.discretes[i].t, AbstractRange)
             end
-            MoshiContinuousClock() => sol.t[ic.idx]
+            sol.discretes[ssc_idx].t[ic.idx]
         end
-    else
-        # fallback to basic implementation
-        invoke(SciMLBase.canonicalize_indexed_clock, Tuple{SciMLBase.IndexedClock, SciMLBase.AbstractTimeseriesSolution}, ic, sol)
+        ContinuousClock() => sol.t[ic.idx]
+        _ => error("Unknown clock type: $(typeof(c))")
     end
 end
-
-# Create convenience constructors that use Moshi types
-function SciMLBase.Clock(dt::Union{<:Rational, Float64}; phase = 0.0, use_moshi = true)
-    use_moshi ? MoshiPeriodicClock(dt, phase) : SciMLBase.PeriodicClock(dt, phase)
-end
-
-function SciMLBase.Clock(dt; phase = 0.0, use_moshi = true)
-    use_moshi ? MoshiPeriodicClock(convert(Float64, dt), phase) : SciMLBase.PeriodicClock(convert(Float64, dt), phase)
-end
-
-function SciMLBase.Clock(; phase = 0.0, use_moshi = true)
-    use_moshi ? MoshiPeriodicClock(nothing, phase) : SciMLBase.PeriodicClock(nothing, phase)
-end
-
-# Export types for those who want to explicitly use Moshi types
-const ContinuousClockMoshi = MoshiContinuousClock()
-const SolverStepClockMoshi = MoshiSolverStepClock()
 
 end

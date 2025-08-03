@@ -1,21 +1,26 @@
-# Basic clock types - fallback implementation when Moshi is not available
-abstract type TimeDomain end
-
-struct ContinuousClock <: TimeDomain end
-struct SolverStepClock <: TimeDomain end
-
-struct PeriodicClock <: TimeDomain
-    dt::Union{Nothing, Float64, Rational{Int}}
-    phase::Float64
+# Fallback implementation when Moshi is not available
+module Clocks
+    abstract type Type end
     
-    function PeriodicClock(dt::Union{Nothing, Float64, Rational{Int}}, phase::Float64 = 0.0)
-        new(dt, phase)
+    struct ContinuousClock <: Type end
+    struct SolverStepClock <: Type end
+    
+    struct PeriodicClock <: Type
+        dt::Union{Nothing, Float64, Rational{Int}}
+        phase::Float64
+        
+        function PeriodicClock(dt::Union{Nothing, Float64, Rational{Int}}, phase::Float64 = 0.0)
+            new(dt, phase)
+        end
     end
+    
+    # Construct with keywords
+    PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
 end
 
-# Construct with keywords
-PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
-
+# for backwards compatibility
+const TimeDomain = Clocks.Type
+using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
 
