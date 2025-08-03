@@ -13,19 +13,6 @@ function numargs(f)
     end
 end
 
-function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
-        T,
-        V,
-        W,
-        I
-}) where {
-        T,
-        V,
-        W,
-        I
-}
-    (length(T),)
-end
 
 numargs(f::ComposedFunction) = numargs(f.inner)
 

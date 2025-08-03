@@ -4,7 +4,7 @@ if isdefined(Base, :Experimental) &&
     @eval Base.Experimental.@max_methods 1
 end
 using ConstructionBase
-using RecipesBase, RecursiveArrayTools
+using RecursiveArrayTools
 using SciMLStructures
 using SymbolicIndexingInterface
 using DocStringExtensions
@@ -19,7 +19,6 @@ import Logging, ArrayInterface
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, step!, solve!
 import FunctionWrappersWrappers
-import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert

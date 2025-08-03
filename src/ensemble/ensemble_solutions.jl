@@ -184,76 +184,7 @@ end
 
 ### Plot Recipes
 
-@recipe function f(sim::AbstractEnsembleSolution;
-        zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
-                  nothing,
-        trajectories = eachindex(sim))
-    for i in trajectories
-        size(sim.u[i].u, 1) == 0 && continue
-        @series begin
-            legend := false
-            xlims --> (-Inf, Inf)
-            ylims --> (-Inf, Inf)
-            zlims --> (-Inf, Inf)
-            marker_z --> zcolors[i]
-            sim.u[i]
-        end
-    end
-end
 
-@recipe function f(sim::EnsembleSummary;
-        idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
-               1,
-        error_style = :ribbon, ci_type = :quantile)
-    if ci_type == :SEM
-        if sim.u.u[1] isa AbstractArray
-            u = vecarr_to_vectors(sim.u)
-        else
-            u = [sim.u.u]
-        end
-        if sim.u.u[1] isa AbstractArray
-            ci_low = vecarr_to_vectors(VectorOfArray([sqrt.(sim.v.u[i] / sim.num_monte) .*
-                                                      1.96 for i in 1:length(sim.v)]))
-            ci_high = ci_low
-        else
-            ci_low = [[sqrt(sim.v.u[i] / length(sim.num_monte)) .* 1.96
-                       for i in 1:length(sim.v)]]
-            ci_high = ci_low
-        end
-    elseif ci_type == :quantile
-        if sim.med.u[1] isa AbstractArray
-            u = vecarr_to_vectors(sim.med)
-        else
-            u = [sim.med.u]
-        end
-        if sim.u.u[1] isa AbstractArray
-            ci_low = u - vecarr_to_vectors(sim.qlow)
-            ci_high = vecarr_to_vectors(sim.qhigh) - u
-        else
-            ci_low = [u[1] - sim.qlow.u]
-            ci_high = [sim.qhigh.u - u[1]]
-        end
-    else
-        error("ci_type choice not valid. Must be `:SEM` or `:quantile`")
-    end
-    for i in idxs
-        @series begin
-            legend --> false
-            linewidth --> 3
-            fillalpha --> 0.2
-            if error_style == :ribbon
-                ribbon --> (ci_low[i], ci_high[i])
-            elseif error_style == :bars
-                yerror --> (ci_low[i], ci_high[i])
-            elseif error_style == :none
-                nothing
-            else
-                error("error_style not recognized")
-            end
-            sim.t, u[i]
-        end
-    end
-end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)
     [s(args...; kwargs...) for s in sol]
