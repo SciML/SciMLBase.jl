@@ -1,15 +1,21 @@
-@data Clocks begin
-    ContinuousClock
-    struct PeriodicClock
-        dt::Union{Nothing, Float64, Rational{Int}}
-        phase::Float64 = 0.0
+# Basic clock types - fallback implementation when Moshi is not available
+abstract type TimeDomain end
+
+struct ContinuousClock <: TimeDomain end
+struct SolverStepClock <: TimeDomain end
+
+struct PeriodicClock <: TimeDomain
+    dt::Union{Nothing, Float64, Rational{Int}}
+    phase::Float64
+    
+    function PeriodicClock(dt::Union{Nothing, Float64, Rational{Int}}, phase::Float64 = 0.0)
+        new(dt, phase)
     end
-    SolverStepClock
 end
 
-# for backwards compatibility
-const TimeDomain = Clocks.Type
-using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock
+# Construct with keywords
+PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
+
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
 
@@ -40,20 +46,11 @@ discrete-time systems that assume a fixed sample time, such as PID controllers a
 filters.
 """ SolverStepClock
 
-isclock(c::TimeDomain) = @match c begin
-    PeriodicClock() => true
-    _ => false
-end
+isclock(c::TimeDomain) = c isa PeriodicClock
 
-issolverstepclock(c::TimeDomain) = @match c begin
-    SolverStepClock() => true
-    _ => false
-end
+issolverstepclock(c::TimeDomain) = c isa SolverStepClock
 
-iscontinuous(c::TimeDomain) = @match c begin
-    ContinuousClock() => true
-    _ => false
-end
+iscontinuous(c::TimeDomain) = c isa ContinuousClock
 
 is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
 
@@ -64,10 +61,15 @@ iscontinuous(::Any) = false
 is_discrete_time_domain(::Any) = false
 
 function first_clock_tick_time(c, t0)
-    @match c begin
-        PeriodicClock(dt) => ceil(t0 / dt) * dt
-        SolverStepClock() => t0
-        ContinuousClock() => error("ContinuousClock() is not a discrete clock")
+    if c isa PeriodicClock
+        dt = c.dt
+        return ceil(t0 / dt) * dt
+    elseif c isa SolverStepClock
+        return t0
+    elseif c isa ContinuousClock
+        error("ContinuousClock() is not a discrete clock")
+    else
+        error("Unknown clock type: $(typeof(c))")
     end
 end
 
@@ -81,14 +83,17 @@ Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
 
-    return @match c begin
-        PeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
-        SolverStepClock() => begin
-            ssc_idx = findfirst(eachindex(sol.discretes)) do i
-                !isa(sol.discretes[i].t, AbstractRange)
-            end
-            sol.discretes[ssc_idx].t[ic.idx]
+    if c isa PeriodicClock
+        dt = c.dt
+        return ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
+    elseif c isa SolverStepClock
+        ssc_idx = findfirst(eachindex(sol.discretes)) do i
+            !isa(sol.discretes[i].t, AbstractRange)
         end
-        ContinuousClock() => sol.t[ic.idx]
+        return sol.discretes[ssc_idx].t[ic.idx]
+    elseif c isa ContinuousClock
+        return sol.t[ic.idx]
+    else
+        error("Unknown clock type: $(typeof(c))")
     end
 end

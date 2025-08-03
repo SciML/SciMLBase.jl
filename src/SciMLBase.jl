@@ -23,8 +23,6 @@ import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert
-using Moshi.Data: @data
-using Moshi.Match: @match
 import StaticArraysCore
 import Adapt: adapt_structure, adapt
 
@@ -862,7 +860,7 @@ export step!, deleteat!, addat!, get_tmp_cache,
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
-export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
+export TimeDomain, ContinuousClock, PeriodicClock, SolverStepClock, Clock, Continuous, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 export ODEAliasSpecifier, LinearAliasSpecifier
 

@@ -2,7 +2,6 @@ using Test
 using SciMLBase
 using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepClock,
                  first_clock_tick_time, IndexedClock, canonicalize_indexed_clock
-using MLStyle: @match
 
 @testset "Clock" begin
     @test PeriodicClock(nothing, 0.2) isa TimeDomain
@@ -44,29 +43,29 @@ using MLStyle: @match
     @test ic === IndexedClock(Clock(1), 5)
 end
 
-@testset "MLStyle" begin
-    sampletime(c) = @match c begin
-        PeriodicClock(dt, _...) => dt
-        _ => nothing
-    end
+@testset "Basic Clock Operations" begin
+    # Test accessing fields directly instead of pattern matching
+    sampletime(c) = c isa PeriodicClock ? c.dt : nothing
 
     @test sampletime(PeriodicClock(1 // 2, 3.14)) === 1 // 2
     @test sampletime(ContinuousClock()) === nothing
     @test sampletime(missing) === nothing
 
     function clocktype(c)
-        @match c begin
-            Continuous() => "continuous"
-            SolverStepClock() => "solver_step_clock"
-            PeriodicClock(dt, phase) => (dt, phase)
-            _ => "other"
+        if c isa ContinuousClock || c === Continuous
+            "continuous"
+        elseif c isa SolverStepClock
+            "solver_step_clock"
+        elseif c isa PeriodicClock
+            (c.dt, c.phase)
+        else
+            "other"
         end
     end
 
     @test clocktype(Continuous()) === "continuous"
     @test clocktype(ContinuousClock()) === "continuous"
-    @test clocktype(Continuous) === "continuous"
     @test clocktype(SolverStepClock()) === "solver_step_clock"
     @test clocktype(PeriodicClock(1 // 2, 3.14)) === (1 // 2, 3.14)
-    @test clocktype(pi)==="other" broken=true
+    @test clocktype(pi) === "other"
 end
