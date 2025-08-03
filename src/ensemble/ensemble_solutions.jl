@@ -184,8 +184,6 @@ end
 
 ### Plot Recipes
 
-
-
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)
     [s(args...; kwargs...) for s in sol]
 end

@@ -212,7 +212,6 @@ used for plotting.
 plottable_indices(x::AbstractArray) = 1:length(x)
 plottable_indices(x::Number) = 1
 
-
 function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
         vars, tscale, plotat)
     if tspan === nothing

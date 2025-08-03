@@ -5,10 +5,12 @@ using RecipesBase
 import RecursiveArrayTools
 
 # Need to import the plotting-related functions
-import SciMLBase: DEFAULT_PLOT_FUNC, isdenseplot, plottable_indices, interpret_vars, 
+import SciMLBase: DEFAULT_PLOT_FUNC, isdenseplot, plottable_indices, interpret_vars,
                   get_all_timeseries_indexes, ContinuousTimeseries, DiscreteTimeseries,
-                  solution_slice, add_labels!, AbstractTimeseriesSolution, AbstractEnsembleSolution,
-                  AbstractNoTimeSolution, EnsembleSummary, DEIntegrator, AbstractSDEIntegrator,
+                  solution_slice, add_labels!, AbstractTimeseriesSolution,
+                  AbstractEnsembleSolution,
+                  AbstractNoTimeSolution, EnsembleSummary, DEIntegrator,
+                  AbstractSDEIntegrator,
                   getindepsym_defaultt, getname, hasname, u_n, AbstractDEAlgorithm
 
 # Recipe for AbstractTimeseriesSolution
@@ -234,7 +236,7 @@ import SciMLBase: DEFAULT_PLOT_FUNC, isdenseplot, plottable_indices, interpret_v
         label --> reshape(labels, 1, length(labels))
         (plot_vecs...,)
 
-    # Handle discrete variables
+        # Handle discrete variables
     elseif !isempty(disc_vars)
         int_vars = disc_vars
 
@@ -309,9 +311,8 @@ import SciMLBase: DEFAULT_PLOT_FUNC, isdenseplot, plottable_indices, interpret_v
 end
 
 # Recipe for AbstractEnsembleSolution
-@recipe function f(sim::AbstractEnsembleSolution; idxs = nothing, 
-                   summarize = true, error_style = :ribbon, ci_type = :quantile, linealpha = 0.4, zorder = 1)
-
+@recipe function f(sim::AbstractEnsembleSolution; idxs = nothing,
+        summarize = true, error_style = :ribbon, ci_type = :quantile, linealpha = 0.4, zorder = 1)
     if idxs === nothing
         if sim.u[1] isa SciMLBase.AbstractTimeseriesSolution
             idxs = 1:length(sim.u[1].u[1])

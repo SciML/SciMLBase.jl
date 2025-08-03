@@ -22,8 +22,7 @@ import FunctionWrappersWrappers
 import EnumX
 import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert
-using Moshi.Data: @data
-using Moshi.Match: @match
+# Moshi moved to extension for load time optimization
 import StaticArraysCore
 import Adapt: adapt_structure, adapt
 

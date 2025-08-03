@@ -13,7 +13,6 @@ function numargs(f)
     end
 end
 
-
 numargs(f::ComposedFunction) = numargs(f.inner)
 
 """

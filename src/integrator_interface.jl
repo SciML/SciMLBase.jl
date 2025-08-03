@@ -773,7 +773,6 @@ end
 
 Base.length(iter::TimeChoiceIterator) = length(iter.ts)
 
-
 function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     (dt * integ.tdir) < 0 * oneunit(dt) && error("Cannot step backward.")
     t = integ.t
