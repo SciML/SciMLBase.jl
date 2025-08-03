@@ -1,44 +1,91 @@
-# Clock functionality is provided by the Moshi extension
-# This file provides placeholder definitions that error when Moshi is not available
+# Clock functionality requires Moshi extension - original implementation was:
+#
+# @data Clocks begin
+#     ContinuousClock
+#     struct PeriodicClock
+#         dt::Union{Nothing, Float64, Rational{Int}}
+#         phase::Float64 = 0.0
+#     end
+#     SolverStepClock
+# end
+# 
+# This is recreated by the SciMLBaseMoshiExt when Moshi is loaded
 
-# Error message constant
-const MOSHI_ERROR = "Clock functionality requires Moshi.jl. Please run `using Moshi` or `import Moshi` to enable clock features."
-
-# Placeholder types for exports - these will be replaced by the extension
-abstract type TimeDomain end
-module Clocks end
-
-# Placeholder constants
-const Continuous = nothing
-const ContinuousClock = nothing  
-const PeriodicClock = nothing
-const SolverStepClock = nothing
-const IndexedClock = nothing
-
-function Clock(args...; kwargs...)
-    error(MOSHI_ERROR)
+# Create a module with the same structure as the original, but with stub implementations
+module Clocks
+    abstract type Type end
+    
+    struct ContinuousClock <: Type end
+    struct SolverStepClock <: Type end
+    
+    struct PeriodicClock <: Type
+        dt::Union{Nothing, Float64, Rational{Int}}
+        phase::Float64
+        PeriodicClock(dt, phase = 0.0) = new(dt, phase)
+    end
+    
+    # Keyword constructor
+    PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
 end
 
-function isclock(::Any)
-    error(MOSHI_ERROR)
+# Re-export for backwards compatibility  
+const TimeDomain = Clocks.Type
+using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock
+const Continuous = ContinuousClock()
+
+# These will be overridden by the extension with @match-based versions
+Clock(dt::Union{<:Rational, Float64}; phase = 0.0) = PeriodicClock(dt, phase)
+Clock(dt; phase = 0.0) = PeriodicClock(convert(Float64, dt), phase)
+Clock(; phase = 0.0) = PeriodicClock(nothing, phase)
+
+isclock(c::TimeDomain) = c isa PeriodicClock
+issolverstepclock(c::TimeDomain) = c isa SolverStepClock
+iscontinuous(c::TimeDomain) = c isa ContinuousClock
+is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
+
+# Fallbacks for non-TimeDomain types
+isclock(::Any) = false
+issolverstepclock(::Any) = false
+iscontinuous(::Any) = false
+is_discrete_time_domain(::Any) = false
+
+function first_clock_tick_time(c, t0)
+    if c isa PeriodicClock
+        dt = c.dt
+        return ceil(t0 / dt) * dt
+    elseif c isa SolverStepClock
+        return t0
+    elseif c isa ContinuousClock
+        error("ContinuousClock() is not a discrete clock")
+    else
+        error("Unknown clock type: $(typeof(c))")
+    end
 end
 
-function issolverstepclock(::Any)
-    error(MOSHI_ERROR)
+Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
+(clock::TimeDomain)() = clock
+
+struct IndexedClock{I}
+    clock::TimeDomain
+    idx::I
 end
 
-function iscontinuous(::Any)
-    error(MOSHI_ERROR)
-end
+Base.getindex(c::TimeDomain, idx) = IndexedClock(c, idx)
 
-function is_discrete_time_domain(::Any)
-    error(MOSHI_ERROR)
-end
+function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
+    c = ic.clock
 
-function first_clock_tick_time(::Any, ::Any)
-    error(MOSHI_ERROR)
-end
-
-function canonicalize_indexed_clock(::Any, ::Any)
-    error(MOSHI_ERROR)
+    if c isa PeriodicClock
+        dt = c.dt
+        return ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
+    elseif c isa SolverStepClock
+        ssc_idx = findfirst(eachindex(sol.discretes)) do i
+            !isa(sol.discretes[i].t, AbstractRange)
+        end
+        return sol.discretes[ssc_idx].t[ic.idx]
+    elseif c isa ContinuousClock
+        return sol.t[ic.idx]
+    else
+        error("Unknown clock type: $(typeof(c))")
+    end
 end
