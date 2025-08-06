@@ -220,13 +220,8 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
     end
 
     if !isempty(sol.u_analytic)
-        sol.errors[:final] = norm(recursive_mean(abs.(sol.u[end] - sol.u_analytic[end])))
-        if timeseries_errors
-            sol.errors[:l∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                sol.u - sol.u_analytic)))
-            sol.errors[:l2] = norm(sqrt(recursive_mean(vecvecapply((x) -> float.(x) .^ 2,
-                sol.u - sol.u_analytic))))
-        end
+        # This functionality requires LinearAlgebra extension
+        # The actual implementation is in ext/SciMLBaseLinearAlgebraExt.jl
         if dense_errors
             densetimes = collect(range(sol.t[1], stop = sol.t[end], length = 100))
             interp_u = sol(densetimes)

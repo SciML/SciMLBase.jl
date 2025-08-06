@@ -176,30 +176,12 @@ Keyword arguments:
 
   - `abstol`: The absolute value below which the norm of the residual of algebraic equations
     should lie. The norm function used is `integrator.opts.internalnorm` if present, and
-    `LinearAlgebra.norm` if not.
+    `norm` (from LinearAlgebra extension) if not.
 """
 function get_initial_values(
         prob::AbstractDEProblem, integrator::DEIntegrator, f, alg::CheckInit,
         isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...)
-    u0 = state_values(integrator)
-    p = parameter_values(integrator)
-    t = current_time(integrator)
-    M = f.mass_matrix
-
-    M == I && return u0, p, true
-    algebraic_vars = [all(iszero, x) for x in eachcol(M)]
-    algebraic_eqs = [all(iszero, x) for x in eachrow(M)]
-    (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
-    update_coefficients!(M, u0, p, t)
-    tmp = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
-    tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
-
-    normresid = isdefined(integrator.opts, :internalnorm) ?
-                integrator.opts.internalnorm(tmp, t) : norm(tmp)
-    if normresid > abstol
-        throw(CheckInitFailureError(normresid, abstol, true))
-    end
-    return u0, p, true
+    error("LinearAlgebra extension not loaded. Please load LinearAlgebra to use CheckInit.")
 end
 
 function get_initial_values(

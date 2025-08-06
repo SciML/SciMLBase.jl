@@ -8,7 +8,6 @@ using RecipesBase, RecursiveArrayTools
 using SciMLStructures
 using SymbolicIndexingInterface
 using DocStringExtensions
-using LinearAlgebra
 using Statistics
 using Distributed
 using Markdown
@@ -674,6 +673,12 @@ Internal. Used for signifying the AD context comes from a Mooncake.jl context.
 """
 struct MooncakeOriginator <: ADOriginator end
 
+# Default implementations for LinearAlgebra extension
+I = nothing  # Will be overridden by extension (not const to allow reassignment)
+default_identity_matrix() = I
+has_non_trivial_mass_matrix(prob) = false  # Default implementation
+calculate_solution_errors!(sol; kwargs...) = nothing  # Stub implementation
+
 include("initialization.jl")
 include("odenlstep.jl")
 include("utils.jl")
@@ -842,6 +847,8 @@ export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, D
 export OptimizationFunction, MultiObjectiveOptimizationFunction
 
 export CheckInit
+
+export default_identity_matrix, has_non_trivial_mass_matrix, calculate_solution_errors!
 
 export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
 

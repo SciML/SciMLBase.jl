@@ -38,7 +38,7 @@ function Base.summary(io::IO, prob::AbstractDEProblem)
     hasproperty(prob.f, :mass_matrix) && begin
         println(io)
         print(io, "Non-trivial mass matrix: ", type_color,
-            !(prob.f.mass_matrix isa LinearAlgebra.UniformScaling{Bool}), no_color)
+            has_non_trivial_mass_matrix(prob), no_color)
     end
 end
 

@@ -254,7 +254,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 ODEFunction{iip,specialize}(f;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                            jac = __has_jac(f) ? f.jac : nothing,
@@ -343,7 +343,6 @@ The fields of the ODEFunction type directly match the names of the inputs.
 The following example creates an inplace `ODEFunction` whose Jacobian is a `Diagonal`:
 
 ```julia
-using LinearAlgebra
 f = (du,u,p,t) -> du .= t .* u
 jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
 jp = Diagonal(zeros(2))
@@ -454,7 +453,7 @@ and exponential integrators.
 
 ```julia
 SplitFunction{iip,specialize}(f1,f2;
-                             mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
+                             mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : default_identity_matrix(),
                              analytic = __has_analytic(f1) ? f1.analytic : nothing,
                              tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
                              jac = __has_jac(f1) ? f1.jac : nothing,
@@ -581,7 +580,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DynamicalODEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                                     jac = __has_jac(f) ? f.jac : nothing,
@@ -683,7 +682,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DDEFunction{iip,specialize}(f;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                  analytic = __has_analytic(f) ? f.analytic : nothing,
                  tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                  jac = __has_jac(f) ? f.jac : nothing,
@@ -788,7 +787,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DynamicalDDEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                                     jac = __has_jac(f) ? f.jac : nothing,
@@ -1006,7 +1005,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 SDEFunction{iip,specialize}(f,g;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                            jac = __has_jac(f) ? f.jac : nothing,
@@ -1112,7 +1111,7 @@ and exponential integrators.
 
 ```julia
 SplitSDEFunction{iip,specialize}(f1,f2,g;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                  analytic = __has_analytic(f) ? f.analytic : nothing,
                  tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                  jac = __has_jac(f) ? f.jac : nothing,
@@ -1223,7 +1222,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DynamicalSDEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                                     jac = __has_jac(f) ? f.jac : nothing,
@@ -1332,7 +1331,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 RODEFunction{iip,specialize}(f;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                            jac = __has_jac(f) ? f.jac : nothing,
@@ -1579,7 +1578,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 SDDEFunction{iip,specialize}(f,g;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                  analytic = __has_analytic(f) ? f.analytic : nothing,
                  tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                  jac = __has_jac(f) ? f.jac : nothing,
@@ -2116,7 +2115,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 ODEInputFunction{iip, specialize}(f;
-    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
     jac = __has_jac(f) ? f.jac : nothing,
@@ -2233,7 +2232,7 @@ BVPFunction{iip, specialize}(f, bc;
     cost = __has_cost(f) ? f.cost : nothing,
     equality = __has_equality(f) ? f.equality : nothing,
     inequality = __has_inequality(f) ? f.inequality : nothing,
-    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
     jac = __has_jac(f) ? f.jac : nothing,
@@ -2371,7 +2370,7 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DynamicalBVPFunction{iip,specialize}(f, bc;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
                                     jac = __has_jac(f) ? f.jac : nothing,
@@ -2715,8 +2714,8 @@ function ODEFunction{iip, specialize}(f;
 ) where {iip,
         specialize
 }
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    if mass_matrix === default_identity_matrix() && f isa Tuple
+        mass_matrix = ((default_identity_matrix() for i in 1:length(f))...,)
     end
 
     if (specialize === FunctionWrapperSpecialize) &&
@@ -4107,8 +4106,8 @@ function NonlinearFunction{iip, specialize}(f;
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing) where {
         iip, specialize}
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    if mass_matrix === default_identity_matrix() && f isa Tuple
+        mass_matrix = ((default_identity_matrix() for i in 1:length(f))...,)
     end
 
     if jac === nothing && isa(jac_prototype, AbstractSciMLOperator)
@@ -4360,7 +4359,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         cost = __has_cost(f) ? f.cost : nothing,
         equality = __has_equality(f) ? f.equality : nothing,
         inequality = __has_inequality(f) ? f.inequality : nothing,
-        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
         jac = __has_jac(f) ? f.jac : nothing,
@@ -4383,8 +4382,8 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         sys = __has_sys(f) ? f.sys : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing) where {iip, specialize, twopoint}
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    if mass_matrix === default_identity_matrix() && f isa Tuple
+        mass_matrix = ((default_identity_matrix() for i in 1:length(f))...,)
     end
 
     if (specialize === FunctionWrapperSpecialize) &&
@@ -4540,7 +4539,7 @@ end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
 function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
-        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+        mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : default_identity_matrix(),
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
         jac = __has_jac(f) ? f.jac : nothing,
@@ -4563,8 +4562,8 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
         sys = __has_sys(f) ? f.sys : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing) where {iip, specialize, twopoint}
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    if mass_matrix === default_identity_matrix() && f isa Tuple
+        mass_matrix = ((default_identity_matrix() for i in 1:length(f))...,)
     end
 
     if (specialize === FunctionWrapperSpecialize) &&
@@ -4804,8 +4803,8 @@ function ODEInputFunction{iip, specialize}(f;
 ) where {iip,
         specialize
 }
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    if mass_matrix === default_identity_matrix() && f isa Tuple
+        mass_matrix = ((default_identity_matrix() for i in 1:length(f))...,)
     end
 
     if (specialize === FunctionWrapperSpecialize) &&

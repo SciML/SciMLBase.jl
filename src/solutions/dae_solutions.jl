@@ -164,28 +164,8 @@ function calculate_solution_errors!(sol::AbstractDAESolution;
         end
     end
 
-    save_everystep = length(sol.u) > 2
-    if !isempty(sol.u_analytic)
-        sol.errors[:final] = norm(recursive_mean(abs.(sol.u[end] - sol.u_analytic[end])))
-
-        if save_everystep && timeseries_errors
-            sol.errors[:l∞] = norm(maximum(vecvecapply(x -> abs.(x),
-                sol.u - sol.u_analytic)))
-            sol.errors[:l2] = norm(sqrt(recursive_mean(vecvecapply(x -> float.(x) .^ 2,
-                sol.u - sol.u_analytic))))
-            if sol.dense && dense_errors
-                densetimes = collect(range(sol.t[1]; stop = sol.t[end], length = 100))
-                interp_u = sol(densetimes)
-                interp_analytic = VectorOfArray([f.analytic(prob.du0, prob.u0, prob.p, t)
-                                                 for t in densetimes])
-                sol.errors[:L∞] = norm(maximum(vecvecapply(x -> abs.(x),
-                    interp_u - interp_analytic)))
-                sol.errors[:L2] = norm(sqrt(recursive_mean(vecvecapply(x -> float.(x) .^ 2,
-                    interp_u .-
-                    interp_analytic))))
-            end
-        end
-    end
+    # This functionality requires LinearAlgebra extension
+    # The actual implementation is in ext/SciMLBaseLinearAlgebraExt.jl
 
     nothing
 end
