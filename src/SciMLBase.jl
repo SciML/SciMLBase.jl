@@ -14,6 +14,7 @@ using Distributed
 using Markdown
 using Printf
 import Preferences
+using PreallocationTools
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions

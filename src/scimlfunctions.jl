@@ -2618,9 +2618,10 @@ end
 
 (f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
 function (f::SplitFunction)(du, u, p, t)
-    f.f1(f._func_cache, u, p, t)
+    tmp = PreallocationTools.get_tmp(f._func_cache, u)
+    f.f1(tmp, u, p, t)
     f.f2(du, u, p, t)
-    du .+= f._func_cache
+    du .+= tmp
 end
 
 (f::DiscreteFunction)(args...) = f.f(args...)
@@ -2666,11 +2667,11 @@ end
 
 (f::SDDEFunction)(args...) = f.f(args...)
 (f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
-
 function (f::SplitSDEFunction)(du, u, p, t)
-    f.f1(f._func_cache, u, p, t)
+    tmp = PreallocationTools.get_tmp(f._func_cache)
+    f.f1(tmp, u, p, t)
     f.f2(du, u, p, t)
-    du .+= f._func_cache
+    du .+= tmp
 end
 
 (f::RODEFunction)(args...) = f.f(args...)
