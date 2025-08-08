@@ -474,7 +474,7 @@ end
 function SplitODEProblem{iip}(f::SplitFunction, u0, tspan, p = NullParameters();
         kwargs...) where {iip}
     if f._func_cache === nothing && iip
-        _func_cache = similar(u0)
+        _func_cache = DiffCache(u0)
         f = remake(f; _func_cache)
     end
     ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
