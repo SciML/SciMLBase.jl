@@ -1,11 +1,17 @@
 using NonlinearSolve
+using LinearSolve
 using LinearAlgebra
 using ADTypes
 using JET
+const LS = LinearSolve
 
 function f(u, p)
     L, U = cholesky(p.Σ)
-    return L \ (u .* u .- p.λ)
+    rhs = (u .* u .- p.λ)
+    linprob = LinearProblem(Matrix(L), rhs)
+    alg = LS.GenericLUFactorization()
+    sol = LinearSolve.solve(linprob, alg)
+    return sol.u 
 end
 
 function minimize(λ=1.0)
