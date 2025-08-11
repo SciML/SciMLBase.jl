@@ -53,6 +53,11 @@ SciMLBasePyCallExt = "PyCall"
 SciMLBasePythonCallExt = "PythonCall"
 SciMLBaseRCallExt = "RCall"
 SciMLBaseZygoteExt = ["Zygote", "ChainRulesCore"]
+SciMLBaseDistributionsExt = "Distributions"
+SciMLBaseMonteCarloMeasurementsExt = "MonteCarloMeasurements"
+SciMLBaseReverseDiffExt = "ReverseDiff"
+SciMLBaseTrackerExt = "Tracker"
+SciMLBaseForwardDiffExt = "ForwardDiff"
 
 [compat]
 ADTypes = "0.2.5,1.0.0"
@@ -116,4 +121,4 @@ UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Aqua", "ForwardDiff", "MLStyle", "PartialFunctions", "Pkg", "SafeTestsets", "Serialization", "StableRNGs", "StaticArrays", "Tables", "Test", "UnicodePlots", "Zygote"]
+test = ["Aqua", "ForwardDiff", "MLStyle", "PartialFunctions", "Pkg", "SafeTestsets", "Serialization", "StableRNGs", "StaticArrays", "Tables", "Test", "UnicodePlots", "Zygote", "Distributions", "ForwardDiff", "MonteCarloMeasurements", "Measurements", "ReverseDiff", "Tracker"]
