@@ -719,6 +719,7 @@ $(TYPEDEF)
 abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
 include("retcodes.jl")
+include("errors.jl")
 include("symbolic_utils.jl")
 include("performance_warnings.jl")
 
