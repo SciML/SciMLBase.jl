@@ -50,9 +50,9 @@ push!(syss, nsys)
 push!(probs, NonlinearProblem(nsys, [u0; p], jac = true))
 
 rate₁ = β * x * y
-affect₁ = [x ~ x - σ, y ~ y + σ]
+affect₁ = [x ~ Pre(x) - σ, y ~ Pre(y) + σ]
 rate₂ = ρ * y
-affect₂ = [y ~ y - 1, z ~ z + 1]
+affect₂ = [y ~ Pre(y) - 1, z ~ Pre(z) + 1]
 j₁ = ConstantRateJump(rate₁, affect₁)
 j₂ = ConstantRateJump(rate₂, affect₂)
 j₃ = MassActionJump(2 * β + ρ, [z => 1], [x => 1, z => -1])
