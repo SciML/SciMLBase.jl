@@ -27,7 +27,7 @@ import Accessors: @set, @reset, @delete, @insert
 using Moshi.Data: @data
 using Moshi.Match: @match
 import Moshi.Derive: @derive
-import StaticArraysCore
+import StaticArraysCore: StaticArraysCore, SArray
 import Adapt: adapt_structure, adapt
 
 using Reexport
@@ -36,7 +36,7 @@ using SciMLOperators:
                       AbstractSciMLOperator,
                       IdentityOperator, NullOperator,
                       ScaledOperator, AddedOperator, ComposedOperator,
-                      InvertedOperator, InvertibleOperator
+                      InvertedOperator, InvertibleOperator, AbstractSciMLScalarOperator
 
 import SciMLOperators:
                        DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
