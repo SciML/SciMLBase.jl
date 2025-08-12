@@ -8,39 +8,6 @@ function Base.showerror(io::IO, e::IncompatibleOptimizerError)
     print(io, e.err)
 end
 
-const NONCONCRETE_ELTYPE_MESSAGE = """
-                                   Non-concrete element type inside of an `Array` detected.
-                                   Arrays with non-concrete element types, such as
-                                   `Array{Union{Float32,Float64}}`, are not supported by the
-                                   optimizers. Anyways, this is bad for
-                                   performance so you don't want to be doing this!
-
-                                   If this was a mistake, promote the element types to be
-                                   all the same. If this was intentional, for example,
-                                   using Unitful.jl with different unit values, then use
-                                   an array type which has fast broadcast support for
-                                   heterogeneous values such as the ArrayPartition
-                                   from RecursiveArrayTools.jl. For example:
-
-                                   ```julia
-                                   using RecursiveArrayTools
-                                   x = ArrayPartition([1.0,2.0],[1f0,2f0])
-                                   y = ArrayPartition([3.0,4.0],[3f0,4f0])
-                                   x .+ y # fast, stable, and usable as u0 in some optimizers
-                                   ```
-
-                                   Element type:
-                                   """
-
-struct NonConcreteEltypeError <: Exception
-    eltype::Any
-end
-
-function Base.showerror(io::IO, e::NonConcreteEltypeError)
-    print(io, NONCONCRETE_ELTYPE_MESSAGE)
-    print(io, e.eltype)
-end
-
 """
 ```julia
 solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm,
@@ -310,14 +277,6 @@ function get_concrete_u0(prob::BVProblem, isadapt, t0, kwargs)
     return _u0
 end
 
-function isconcreteu0(prob, t0, kwargs)
-    !eval_u0(prob.u0) && prob.u0 !== nothing && !isdistribution(prob.u0)
-end
-
-function isconcretedu0(prob, t0, kwargs)
-    !eval_u0(prob.u0) && prob.du0 !== nothing && !isdistribution(prob.du0)
-end
-
 function checkkwargs(kwargshandle; kwargs...)
     if any(x -> x ∉ allowedkeywords, keys(kwargs))
         if kwargshandle == KeywordArgError
@@ -332,123 +291,6 @@ function checkkwargs(kwargshandle; kwargs...)
             @assert kwargshandle == KeywordArgSilent
         end
     end
-end
-
-function get_concrete_problem(prob::AbstractJumpProblem, isadapt; kwargs...)
-    get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-end
-
-function get_concrete_problem(prob::SteadyStateProblem, isadapt; kwargs...)
-    oldprob = prob
-    prob = get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-    if prob !== oldprob
-        kwargs = (; kwargs..., u0 = SII.state_values(prob), p = SII.parameter_values(prob))
-    end
-    p = get_concrete_p(prob, kwargs)
-    u0 = get_concrete_u0(prob, isadapt, Inf, kwargs)
-    u0 = promote_u0(u0, p, nothing)
-    remake(prob; u0 = u0, p = p)
-end
-
-function get_concrete_problem(prob::NonlinearProblem, isadapt; kwargs...)
-    oldprob = prob
-    prob = get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-    if prob !== oldprob
-        kwargs = (; kwargs..., u0 = SII.state_values(prob), p = SII.parameter_values(prob))
-    end
-    p = get_concrete_p(prob, kwargs)
-    u0 = get_concrete_u0(prob, isadapt, nothing, kwargs)
-    u0 = promote_u0(u0, p, nothing)
-    remake(prob; u0 = u0, p = p)
-end
-
-function get_concrete_problem(prob::NonlinearLeastSquaresProblem, isadapt; kwargs...)
-    oldprob = prob
-    prob = get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-    if prob !== oldprob
-        kwargs = (; kwargs..., u0 = SII.state_values(prob), p = SII.parameter_values(prob))
-    end
-    p = get_concrete_p(prob, kwargs)
-    u0 = get_concrete_u0(prob, isadapt, nothing, kwargs)
-    u0 = promote_u0(u0, p, nothing)
-    remake(prob; u0 = u0, p = p)
-end
-
-function get_concrete_problem(prob::AbstractEnsembleProblem, isadapt; kwargs...)
-    prob
-end
-
-function get_concrete_problem(prob, isadapt; kwargs...)
-    oldprob = prob
-    prob = get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-    if prob !== oldprob
-        kwargs = (; kwargs..., u0 = SII.state_values(prob), p = SII.parameter_values(prob))
-    end
-    p = get_concrete_p(prob, kwargs)
-    tspan = get_concrete_tspan(prob, isadapt, kwargs, p)
-    u0 = get_concrete_u0(prob, isadapt, tspan[1], kwargs)
-    u0_promote = promote_u0(u0, p, tspan[1])
-    tspan_promote = promote_tspan(u0_promote, p, tspan, prob, kwargs)
-    f_promote = promote_f(prob.f, Val(SciMLBase.specialization(prob.f)), u0_promote, p,
-        tspan_promote[1])
-    if isconcreteu0(prob, tspan[1], kwargs) && prob.u0 === u0 &&
-       typeof(u0_promote) === typeof(prob.u0) &&
-       prob.tspan == tspan && typeof(prob.tspan) === typeof(tspan_promote) &&
-       p === prob.p && f_promote === prob.f
-        return prob
-    else
-        return remake(prob; f = f_promote, u0 = u0_promote, p = p, tspan = tspan_promote)
-    end
-end
-
-function get_concrete_problem(prob::DAEProblem, isadapt; kwargs...)
-    oldprob = prob
-    prob = get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-    if prob !== oldprob
-        kwargs = (; kwargs..., u0 = SII.state_values(prob), p = SII.parameter_values(prob))
-    end
-    p = get_concrete_p(prob, kwargs)
-    tspan = get_concrete_tspan(prob, isadapt, kwargs, p)
-    u0 = get_concrete_u0(prob, isadapt, tspan[1], kwargs)
-    du0 = get_concrete_du0(prob, isadapt, tspan[1], kwargs)
-
-    u0_promote = promote_u0(u0, p, tspan[1])
-    du0_promote = promote_u0(du0, p, tspan[1])
-    tspan_promote = promote_tspan(u0_promote, p, tspan, prob, kwargs)
-
-    f_promote = promote_f(prob.f, Val(SciMLBase.specialization(prob.f)), u0_promote, p,
-        tspan_promote[1])
-    if isconcreteu0(prob, tspan[1], kwargs) && typeof(u0_promote) === typeof(prob.u0) &&
-       isconcretedu0(prob, tspan[1], kwargs) && typeof(du0_promote) === typeof(prob.du0) &&
-       prob.tspan == tspan && typeof(prob.tspan) === typeof(tspan_promote) &&
-       p === prob.p && f_promote === prob.f
-        return prob
-    else
-        return remake(prob; f = f_promote, du0 = du0_promote, u0 = u0_promote, p = p,
-            tspan = tspan_promote)
-    end
-end
-
-function get_concrete_problem(prob::DDEProblem, isadapt; kwargs...)
-    oldprob = prob
-    prob = get_updated_symbolic_problem(SciMLBase.get_root_indp(prob), prob; kwargs...)
-    if prob !== oldprob
-        kwargs = (; kwargs..., u0 = SII.state_values(prob), p = SII.parameter_values(prob))
-    end
-    p = get_concrete_p(prob, kwargs)
-    tspan = get_concrete_tspan(prob, isadapt, kwargs, p)
-    u0 = get_concrete_u0(prob, isadapt, tspan[1], kwargs)
-
-    if prob.constant_lags isa Function
-        constant_lags = prob.constant_lags(p)
-    else
-        constant_lags = prob.constant_lags
-    end
-
-    u0 = promote_u0(u0, p, tspan[1])
-    tspan = promote_tspan(u0, p, tspan, prob, kwargs)
-
-    remake(prob; u0 = u0, tspan = tspan, p = p, constant_lags = constant_lags)
 end
 
 """
@@ -471,65 +313,35 @@ function get_updated_symbolic_problem(indp, prob; kw...)
     return prob
 end
 
-promote_tspan(u0, p, tspan, prob, kwargs) = _promote_tspan(tspan, kwargs)
-function _promote_tspan(tspan, kwargs)
-    if (dt = get(kwargs, :dt, nothing)) !== nothing
-        tspan1, tspan2, _ = promote(tspan..., dt)
-        return (tspan1, tspan2)
-    else
-        return tspan
-    end
-end
+# promote_tspan(u0, p, tspan, prob, kwargs) = _promote_tspan(tspan, kwargs)
+# function _promote_tspan(tspan, kwargs)
+#     if (dt = get(kwargs, :dt, nothing)) !== nothing
+#         tspan1, tspan2, _ = promote(tspan..., dt)
+#         return (tspan1, tspan2)
+#     else
+#         return tspan
+#     end
+# end
 
-function promote_f(f::F, ::Val{specialize}, u0, p, t) where {F, specialize}
-    # Ensure our jacobian will be of the same type as u0
-    uElType = u0 === nothing ? Float64 : eltype(u0)
-    if isdefined(f, :jac_prototype) && f.jac_prototype isa AbstractArray
-        f = @set f.jac_prototype = similar(f.jac_prototype, uElType)
-    end
-
-    f = if f isa ODEFunction && isinplace(f) && !(f.f isa AbstractSciMLOperator) &&
-           # Some reinitialization code still uses NLSolvers stuff which doesn't
-           # properly tag, so opt-out if potentially a mass matrix DAE
-           f.mass_matrix isa UniformScaling &&
-           # Jacobians don't wrap, so just ignore those cases
-           f.jac === nothing &&
-           ((specialize === SciMLBase.AutoSpecialize && eltype(u0) !== Any &&
-             RecursiveArrayTools.recursive_unitless_eltype(u0) === eltype(u0) &&
-             one(t) === oneunit(t) && hasdualpromote(u0, t)) ||
-            (specialize === SciMLBase.FunctionWrapperSpecialize &&
-             !(f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper)))
-        return unwrapped_f(f, wrapfun_iip(f.f, (u0, u0, p, t)))
-    else
-        return f
-    end
-end
-
-hasdualpromote(u0, t) = true
-
-function promote_f(f::SplitFunction, ::Val{specialize}, u0, p, t) where {specialize}
-    typeof(f._func_cache) === typeof(u0) && isinplace(f) ? f :
-    remake(f, _func_cache = zero(u0))
-end
 # prepare_alg(alg, u0, p, f) = alg
 
-function get_concrete_tspan(prob, isadapt, kwargs, p)
-    if prob.tspan isa Function
-        tspan = prob.tspan(p)
-    elseif haskey(kwargs, :tspan)
-        tspan = kwargs[:tspan]
-    elseif prob.tspan === (nothing, nothing)
-        throw(NoTspanError())
-    else
-        tspan = prob.tspan
-    end
+# function get_concrete_tspan(prob, isadapt, kwargs, p)
+#     if prob.tspan isa Function
+#         tspan = prob.tspan(p)
+#     elseif haskey(kwargs, :tspan)
+#         tspan = kwargs[:tspan]
+#     elseif prob.tspan === (nothing, nothing)
+#         throw(NoTspanError())
+#     else
+#         tspan = prob.tspan
+#     end
 
-    isadapt && eltype(tspan) <: Integer && (tspan = float.(tspan))
+#     isadapt && eltype(tspan) <: Integer && (tspan = float.(tspan))
 
-    any(isnan, tspan) && throw(NaNTspanError())
+#     any(isnan, tspan) && throw(NaNTspanError())
 
-    tspan
-end
+#     tspan
+# end
 
 function isconcreteu0(prob, t0, kwargs)
     !eval_u0(prob.u0) && prob.u0 !== nothing && !isdistribution(prob.u0)
@@ -568,28 +380,6 @@ function get_concrete_u0(prob, isadapt, t0, kwargs)
     end
 
     _u0
-end
-
-function get_concrete_u0(prob::BVProblem, isadapt, t0, kwargs)
-    if haskey(kwargs, :u0)
-        u0 = kwargs[:u0]
-    else
-        u0 = prob.u0
-    end
-
-    isadapt && eltype(u0) <: Integer && (u0 = float.(u0))
-
-    _u0 = handle_distribution_u0(u0)
-
-    if isinplace(prob) && (_u0 isa Number || _u0 isa SArray)
-        throw(IncompatibleInitialConditionError())
-    end
-
-    if _u0 isa Tuple
-        throw(TupleStateError())
-    end
-
-    return _u0
 end
 
 function get_concrete_du0(prob, isadapt, t0, kwargs)
@@ -673,3 +463,15 @@ value(x) = x
 unitfulvalue(x) = x
 isdistribution(u0) = false
 sse(x::Number) = abs2(x)
+
+struct DualEltypeChecker{T, T2}
+    x::T
+    counter::T2
+end
+
+totallength(x::Number) = 1
+totallength(x::AbstractArray) = __sum(totallength, x; init = 0)
+
+_reshape(v, siz) = reshape(v, siz)
+_reshape(v::Number, siz) = v
+_reshape(v::AbstractSciMLScalarOperator, siz) = v
