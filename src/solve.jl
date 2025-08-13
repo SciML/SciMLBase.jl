@@ -485,3 +485,5 @@ totallength(x::AbstractArray) = __sum(totallength, x; init = 0)
 _reshape(v, siz) = reshape(v, siz)
 _reshape(v::Number, siz) = v
 _reshape(v::AbstractSciMLScalarOperator, siz) = v
+
+set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = x
