@@ -14,7 +14,7 @@ using Distributed
 using Markdown
 using Printf
 import Preferences
-using PreallocationTools
+using PreallocationTools: get_tmp, DiffCache
 
 import Logging, ArrayInterface
 import IteratorInterfaceExtensions
