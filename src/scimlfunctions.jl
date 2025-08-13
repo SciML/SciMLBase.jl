@@ -2618,7 +2618,7 @@ end
 
 (f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
 function (f::SplitFunction)(du, u, p, t)
-    tmp = PreallocationTools.get_tmp(f._func_cache, u)
+    tmp = get_tmp(f._func_cache, u)
     f.f1(tmp, u, p, t)
     f.f2(du, u, p, t)
     du .+= tmp
@@ -2668,7 +2668,7 @@ end
 (f::SDDEFunction)(args...) = f.f(args...)
 (f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
 function (f::SplitSDEFunction)(du, u, p, t)
-    tmp = PreallocationTools.get_tmp(f._func_cache)
+    tmp = get_tmp(f._func_cache)
     f.f1(tmp, u, p, t)
     f.f2(du, u, p, t)
     du .+= tmp
