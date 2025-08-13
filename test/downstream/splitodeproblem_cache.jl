@@ -26,8 +26,8 @@ f_split! = SplitFunction(f1!, f2!)
 prob_split = SplitODEProblem(f_split!, u0, tspan)
 
 #solve
-sol = solve(prob, Rodas5())
-sol_split = solve(prob_split, Rodas5())
+sol = solve(prob, Rodas5P())
+sol_split = solve(prob_split, Rodas5P())
 
 #tests
 @test sol_split == sol
