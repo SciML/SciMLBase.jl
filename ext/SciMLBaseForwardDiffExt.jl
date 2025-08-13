@@ -7,23 +7,14 @@ import SciMLBase:
     wrapfun_oop, wrapfun_iip, isdualtype, value, DualEltypeChecker,
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
     ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
-    RecursiveArrayTools, totallength
+    RecursiveArrayTools, totallength, sse, anyeltypedual
+
+import Static: reduce_tup
 
 
 
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
-
-# Copy of the other prob2dtmin dispatch, just for optionality
-function prob2dtmin(tspan, ::ForwardDiff.Dual, use_end_time)
-    t1, t2 = tspan
-    isfinite(t1) || throw(ArgumentError("t0 in the tspan `(t0, t1)` must be finite"))
-    if use_end_time && isfinite(t2 - t1)
-        return max(eps(t2), eps(t1))
-    else
-        return max(eps(typeof(t1)), eps(t1))
-    end
-end
 
 promote_dual(::Type{T}, ::Type{T2}) where {T <: ForwardDiff.Dual, T2} = T
 function promote_dual(::Type{T},
@@ -414,6 +405,7 @@ unitfulvalue(x::Type{ForwardDiff.Dual{T, V, N}}) where {T, V, N} = V
 unitfulvalue(x::ForwardDiff.Dual) = unitfulvalue(ForwardDiff.value(x))
 
 sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) + sum(sse, ForwardDiff.partials(x))
+
 function SciMLBase.totallength(x::ForwardDiff.Dual)
     return SciMLBase.totallength(ForwardDiff.value(x)) +
            sum(SciMLBase.totallength, ForwardDiff.partials(x))
