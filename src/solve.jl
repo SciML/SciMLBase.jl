@@ -1,3 +1,37 @@
+const NONCONCRETE_ELTYPE_MESSAGE = """
+                                   Non-concrete element type inside of an `Array` detected.
+                                   Arrays with non-concrete element types, such as
+                                   `Array{Union{Float32,Float64}}`, are not supported by the
+                                   differential equation solvers. Anyways, this is bad for
+                                   performance so you don't want to be doing this!
+
+                                   If this was a mistake, promote the element types to be
+                                   all the same. If this was intentional, for example,
+                                   using Unitful.jl with different unit values, then use
+                                   an array type which has fast broadcast support for
+                                   heterogeneous values such as the ArrayPartition
+                                   from RecursiveArrayTools.jl. For example:
+
+                                   ```julia
+                                   using RecursiveArrayTools
+                                   x = ArrayPartition([1.0,2.0],[1f0,2f0])
+                                   y = ArrayPartition([3.0,4.0],[3f0,4f0])
+                                   x .+ y # fast, stable, and usable as u0 into DiffEq!
+                                   ```
+
+                                   Element type:
+                                   """
+
+struct NonConcreteEltypeError <: Exception
+    eltype::Any
+end
+
+function Base.showerror(io::IO, e::NonConcreteEltypeError)
+    print(io, NONCONCRETE_ELTYPE_MESSAGE)
+    print(io, e.eltype)
+    println(io, TruncatedStacktraces.VERBOSE_MSG)
+end
+
 # Skip the DiffEqBase handling
 
 struct IncompatibleOptimizerError <: Exception
