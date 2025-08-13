@@ -587,7 +587,7 @@ $(TYPEDEF)
 
 Base for types defining SciML functions.
 """
-abstract type AbstractSciMLFunction{iip} <: Function end
+abstract type AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
@@ -622,7 +622,7 @@ abstract type AbstractHistoryFunction end
 """
 $(TYPEDEF)
 """
-abstract type AbstractReactionNetwork <: Function end
+abstract type AbstractReactionNetwork end
 
 """
 $(TYPEDEF)
