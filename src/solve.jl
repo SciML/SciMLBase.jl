@@ -313,36 +313,6 @@ function get_updated_symbolic_problem(indp, prob; kw...)
     return prob
 end
 
-# promote_tspan(u0, p, tspan, prob, kwargs) = _promote_tspan(tspan, kwargs)
-# function _promote_tspan(tspan, kwargs)
-#     if (dt = get(kwargs, :dt, nothing)) !== nothing
-#         tspan1, tspan2, _ = promote(tspan..., dt)
-#         return (tspan1, tspan2)
-#     else
-#         return tspan
-#     end
-# end
-
-# prepare_alg(alg, u0, p, f) = alg
-
-# function get_concrete_tspan(prob, isadapt, kwargs, p)
-#     if prob.tspan isa Function
-#         tspan = prob.tspan(p)
-#     elseif haskey(kwargs, :tspan)
-#         tspan = kwargs[:tspan]
-#     elseif prob.tspan === (nothing, nothing)
-#         throw(NoTspanError())
-#     else
-#         tspan = prob.tspan
-#     end
-
-#     isadapt && eltype(tspan) <: Integer && (tspan = float.(tspan))
-
-#     any(isnan, tspan) && throw(NaNTspanError())
-
-#     tspan
-# end
-
 function isconcreteu0(prob, t0, kwargs)
     !eval_u0(prob.u0) && prob.u0 !== nothing && !isdistribution(prob.u0)
 end

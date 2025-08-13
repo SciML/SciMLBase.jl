@@ -25,17 +25,6 @@ function prob2dtmin(tspan, ::ForwardDiff.Dual, use_end_time)
     end
 end
 
-# function hasdualpromote(u0, t::Number)
-#     hasmethod(ArrayInterface.promote_eltype,
-#             Tuple{Type{typeof(u0)}, Type{dualgen(eltype(u0))}}) &&
-#         hasmethod(promote_rule,
-#             Tuple{Type{eltype(u0)}, Type{dualgen(eltype(u0))}}) &&
-#         hasmethod(promote_rule,
-#             Tuple{Type{eltype(u0)}, Type{typeof(t)}})
-# end
-
-
-
 promote_dual(::Type{T}, ::Type{T2}) where {T <: ForwardDiff.Dual, T2} = T
 function promote_dual(::Type{T},
         ::Type{T2}) where {T <: ForwardDiff.Dual, T2 <: ForwardDiff.Dual}
