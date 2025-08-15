@@ -50,16 +50,50 @@ The length of the tuple is dependent on the method.
 function get_tmp_cache(i::DEIntegrator)
     error("get_tmp_cache!: method has not been implemented for the integrator")
 end
+"""
+    user_cache(integrator::DEIntegrator)
+
+Returns user-accessible cache components from the integrator. These are cache arrays that users
+can safely access and modify without breaking the internal integrator state.
+"""
 function user_cache(i::DEIntegrator)
     error("user_cache: method has not been implemented for the integrator")
 end
+
+"""
+    u_cache(integrator::DEIntegrator)
+
+Returns the state variable cache arrays used by the integrator. These contain intermediate
+state values during the integration process.
+"""
 function u_cache(i::DEIntegrator)
     error("u_cache: method has not been implemented for the integrator")
 end
+
+"""
+    du_cache(integrator::DEIntegrator)
+
+Returns the derivative cache arrays used by the integrator. These contain intermediate
+derivative values during the integration process.
+"""
 function du_cache(i::DEIntegrator)
     error("du_cache: method has not been implemented for the integrator")
 end
+
+"""
+    ratenoise_cache(integrator::DEIntegrator)
+
+Returns cache arrays for rate noise in stochastic differential equations. 
+Returns an empty tuple by default for deterministic problems.
+"""
 ratenoise_cache(i::DEIntegrator) = ()
+
+"""
+    rand_cache(integrator::DEIntegrator)
+
+Returns cache arrays for random number generation in stochastic differential equations.
+Returns an empty tuple by default for deterministic problems.
+"""
 rand_cache(i::DEIntegrator) = ()
 
 """

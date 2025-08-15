@@ -47,30 +47,60 @@ discrete-time systems that assume a fixed sample time, such as PID controllers a
 filters.
 """ SolverStepClock
 
+"""
+    isclock(clock)
+
+Returns `true` if the object is a valid clock type (specifically a `PeriodicClock`).
+This function is used for type checking in clock-dependent logic.
+"""
 isclock(c::Clocks.Type) = @match c begin
     PeriodicClock() => true
     _ => false
 end
 isclock(::TimeDomain) = false
 
+"""
+    issolverstepclock(clock)
+
+Returns `true` if the clock is a `SolverStepClock` that triggers at every solver step.
+This is useful for monitoring solver progress or implementing step-dependent logic.
+"""
 issolverstepclock(c::Clocks.Type) = @match c begin
     SolverStepClock() => true
     _ => false
 end
 issolverstepclock(::TimeDomain) = false
 
+"""
+    iscontinuous(clock)
+
+Returns `true` if the clock operates in continuous time (i.e., is a `ContinuousClock`).
+Continuous clocks allow events to occur at any real-valued time instant.
+"""
 iscontinuous(c::Clocks.Type) = @match c begin
     ContinuousClock() => true
     _ => false
 end
 iscontinuous(::TimeDomain) = false
 
+"""
+    iseventclock(clock)
+
+Returns `true` if the clock is an `EventClock` that triggers based on specific events.
+Event clocks are used for condition-based triggering in hybrid systems.
+"""
 iseventclock(c::Clocks.Type) = @match c begin
     EventClock() => true
     _ => false
 end
 iseventclock(::TimeDomain) = false
 
+"""
+    is_discrete_time_domain(clock)
+
+Returns `true` if the clock operates in discrete time (i.e., is not a continuous clock).
+Discrete time domains have specific sampling intervals or event-based triggering.
+"""
 is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
 
 # workaround for https://github.com/Roger-luo/Moshi.jl/issues/43
