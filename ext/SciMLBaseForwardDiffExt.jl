@@ -8,11 +8,7 @@ import SciMLBase:
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
     ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
     RecursiveArrayTools, totallength, sse, anyeltypedual
-
-import Static: reduce_tup
-
-
-
+    
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
 
