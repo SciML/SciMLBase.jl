@@ -150,6 +150,30 @@ timepoint_cor(ensemble_sol, t)
 
 These functions help analyze relationships between different state variables in the ensemble.
 
+## Additional Analysis Functions
+
+### Advanced Timestep Functions
+
+```julia
+timestep_weighted_meancov(ensemble_sol, i, weights)
+timestep_meancor(ensemble_sol, i)
+timestep_meancov(ensemble_sol, i)
+```
+
+- `timestep_weighted_meancov`: Computes weighted mean and covariance at timestep `i`
+- `timestep_meancor`: Computes mean and correlation matrix at timestep `i`  
+- `timestep_meancov`: Computes mean and covariance matrix at timestep `i`
+
+### Advanced Timepoint Functions
+
+```julia
+timepoint_weighted_meancov(ensemble_sol, t, weights)
+timepoint_meancor(ensemble_sol, t)
+timepoint_meancov(ensemble_sol, t)
+```
+
+Similar to timestep versions but operating at specific time points via interpolation.
+
 ## Usage Examples
 
 ### Basic Statistical Analysis

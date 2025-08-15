@@ -157,8 +157,9 @@ TimeChoiceIterator(ts)
 ```julia
 using SciMLBase, OrdinaryDiffEq
 
-function select_ode_algorithm(prob, needs_ad=false, needs_complex=false)
-    candidates = [Tsit5(), Vern7(), RadauIIA5(), TRBDF2()]
+function select_ode_algorithm(prob, needs_ad=false, needs_complex=false, 
+                             needs_high_precision=false)
+    candidates = [Tsit5(), Vern7(), RadauIIA5(), TRBDF2(), Euler()]
     
     for alg in candidates
         # Check AD compatibility
@@ -171,6 +172,11 @@ function select_ode_algorithm(prob, needs_ad=false, needs_complex=false)
             continue
         end
         
+        # Check high precision support
+        if needs_high_precision && !allows_arbitrary_number_types(alg)
+            continue
+        end
+        
         # Prefer adaptive algorithms for general use
         if isadaptive(alg)
             return alg
@@ -180,9 +186,22 @@ function select_ode_algorithm(prob, needs_ad=false, needs_complex=false)
     return Tsit5()  # fallback
 end
 
-# Usage
+# Usage examples
 prob = ODEProblem(f, u0, tspan, p)
-alg = select_ode_algorithm(prob, needs_ad=true)
+
+# Basic usage
+alg = select_ode_algorithm(prob)
+
+# For sensitivity analysis
+alg_ad = select_ode_algorithm(prob, needs_ad=true)
+
+# For complex-valued problems
+alg_complex = select_ode_algorithm(prob, needs_complex=true)
+
+# For high precision computations
+prob_bigfloat = ODEProblem(f, BigFloat.(u0), BigFloat.(tspan), BigFloat.(p))
+alg_hp = select_ode_algorithm(prob_bigfloat, needs_high_precision=true)
+
 sol = solve(prob, alg)
 ```
 

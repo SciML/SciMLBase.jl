@@ -5,6 +5,7 @@ pages = [
     "Interfaces" => Any[
         "interfaces/Array_and_Number.md",
         "interfaces/Problems.md",
+        "interfaces/SpecializedProblems.md",
         "interfaces/SciMLFunctions.md",
         "interfaces/Algorithms.md",
         "interfaces/AlgorithmTraits.md",
