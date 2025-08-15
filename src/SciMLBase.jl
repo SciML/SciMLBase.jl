@@ -27,7 +27,6 @@ import Accessors: @set, @reset, @delete, @insert
 using Moshi.Data: @data
 using Moshi.Match: @match
 import Moshi.Derive: @derive
-import Static: reduce_tup
 import StaticArraysCore: StaticArraysCore, SArray
 import Adapt: adapt_structure, adapt
 

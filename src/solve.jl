@@ -487,3 +487,32 @@ _reshape(v::Number, siz) = v
 _reshape(v::AbstractSciMLScalarOperator, siz) = v
 
 set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = x
+
+# Copied from Static.jl https://github.com/SciML/Static.jl/blob/b50279cc9b33741fd60f382c789fbaef8622d964/src/Static.jl#L743
+@generated function reduce_tup(f::F, inds::Tuple{Vararg{Any, N}}) where {F, N}
+    q = Expr(:block, Expr(:meta, :inline, :propagate_inbounds))
+    if N == 1
+        push!(q.args, :(inds[1]))
+        return q
+    end
+    syms = Vector{Symbol}(undef, N)
+    i = 0
+    for n in 1:N
+        syms[n] = iₙ = Symbol(:i_, (i += 1))
+        push!(q.args, Expr(:(=), iₙ, Expr(:ref, :inds, n)))
+    end
+    W = 1 << (8sizeof(N) - 2 - leading_zeros(N))
+    while W > 0
+        _N = length(syms)
+        for _ in (2W):W:_N
+            for w in 1:W
+                new_sym = Symbol(:i_, (i += 1))
+                push!(q.args, Expr(:(=), new_sym, Expr(:call, :f, syms[w], syms[w + W])))
+                syms[w] = new_sym
+            end
+            deleteat!(syms, (1 + W):(2W))
+        end
+        W >>>= 1
+    end
+    q
+end
