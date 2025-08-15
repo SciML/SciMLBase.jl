@@ -119,6 +119,9 @@ end
         @time @safetestset "Table Traits" begin
             include("downstream/traits.jl")
         end
+        @time @safetestset "SplitODEProblem cache" begin
+            include("downstream/splitodeproblem_cache.jl")
+        end
     end
 
     if !is_APPVEYOR && GROUP == "SymbolicIndexingInterface"
