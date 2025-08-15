@@ -27,8 +27,7 @@ import Accessors: @set, @reset, @delete, @insert
 using Moshi.Data: @data
 using Moshi.Match: @match
 import Moshi.Derive: @derive
-import Static: reduce_tup
-import StaticArraysCore: StaticArraysCore, SArray
+import StaticArraysCore
 import Adapt: adapt_structure, adapt
 
 using Reexport
@@ -37,7 +36,7 @@ using SciMLOperators:
                       AbstractSciMLOperator,
                       IdentityOperator, NullOperator,
                       ScaledOperator, AddedOperator, ComposedOperator,
-                      InvertedOperator, InvertibleOperator, AbstractSciMLScalarOperator
+                      InvertedOperator, InvertibleOperator
 
 import SciMLOperators:
                        DEFAULT_UPDATE_FUNC, update_coefficients, update_coefficients!,
@@ -720,7 +719,6 @@ $(TYPEDEF)
 abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 
 include("retcodes.jl")
-include("errors.jl")
 include("symbolic_utils.jl")
 include("performance_warnings.jl")
 
