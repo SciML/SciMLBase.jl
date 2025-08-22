@@ -352,3 +352,16 @@ function solve_batch(prob, alg, ::EnsembleSplitThreads, II, pmap_batch_size; kwa
     end
     reduce(vcat, batch_data)
 end
+
+function solve(prob::EnsembleProblem, args...; kwargs...)
+    alg = extract_alg(args, kwargs, kwargs)
+    if length(args) > 1
+        __solve(prob, alg, Base.tail(args)...; kwargs...)
+    else
+        __solve(prob, alg; kwargs...)
+    end
+end
+
+function solve(prob::SciMLBase.WeightedEnsembleProblem, args...; kwargs...)
+    WeightedEnsembleSolution(solve(prob.ensembleprob), prob.weights)
+end
