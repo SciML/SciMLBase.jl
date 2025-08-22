@@ -422,28 +422,34 @@ end
 Save the parameter timeseries with index `timeseries_idx`. Calls `get_saveable_values` to
 get the values to save. If it returns `nothing`, then the save does not happen.
 """
-function save_discretes!(integ::DEIntegrator, timeseries_idx)
+function save_discretes!(integ::DEIntegrator, timeseries_idx; skip_duplicates = false)
     inner_sol = get_sol(integ)
     vals = get_saveable_values(inner_sol, parameter_values(integ), timeseries_idx)
     vals === nothing && return
-    save_discretes!(integ.sol, current_time(integ), vals, timeseries_idx)
+    save_discretes!(integ.sol, current_time(integ), vals, timeseries_idx; skip_duplicates)
 end
 
 save_discretes!(args...) = nothing
 
 # public API, used by MTK
-function save_discretes!(sol::AbstractODESolution, t, vals, timeseries_idx)
+function save_discretes!(sol::AbstractODESolution, t, vals, timeseries_idx; skip_duplicates = false)
     RecursiveArrayTools.has_discretes(sol) || return
     disc = RecursiveArrayTools.get_discretes(sol)
-    _save_discretes_internal!(disc[timeseries_idx], t, vals)
+    _save_discretes_internal!(disc[timeseries_idx], t, vals; skip_duplicates)
 end
 
-function _save_discretes_internal!(A::AbstractDiffEqArray, t, vals)
+function _save_discretes_internal!(A::AbstractDiffEqArray, t, vals; skip_duplicates = false)
+    if skip_duplicates && !isempty(A.t) && isequal(t, A.t[end])
+        return
+    end
     push!(A.t, t)
     push!(A.u, vals)
 end
 
-function _save_discretes_internal!(A::PeriodicDiffEqArray, t, vals)
+function _save_discretes_internal!(A::PeriodicDiffEqArray, t, vals; skip_duplicates = false)
+    if skip_duplicates && !isempty(A.u) && isequal(A.t[length(A.u)], t)
+        return
+    end
     idx = length(A.u) + 1
     if A.t[idx] ≉ t
         error("Tried to save periodic discrete value with timeseries $(A.t) at time $t")
