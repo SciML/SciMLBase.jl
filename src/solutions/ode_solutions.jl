@@ -671,7 +671,7 @@ function Base.showerror(io::IO, e::LazyInterpolationException)
 end
 
 function strip_solution(sol::ODESolution; strip_alg = false)
-    if has_lazy_interpolation(sol.alg)
+    if sol.alg !== nothing && has_lazy_interpolation(sol.alg)
         throw(LazyInterpolationException(nameof(typeof(sol.alg))))
     end
 

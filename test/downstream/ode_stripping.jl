@@ -21,3 +21,12 @@ stripped_sol = SciMLBase.strip_solution(sol)
 @test isnothing(stripped_sol.interp.cache.jac_config)
 
 @test isnothing(stripped_sol.interp.cache.grad_config)
+
+@testset "`nothing` alg with empty ODE" begin
+    prob = ODEProblem(Returns(nothing), nothing, (0.0, 1.0), nothing)
+    sol = solve(prob, Tsit5())
+    @test sol.alg === nothing
+    stripped_sol = SciMLBase.strip_solution(sol)
+    @test stripped_sol.alg === nothing
+    @test stripped_sol.prob == (; p = nothing)
+end
