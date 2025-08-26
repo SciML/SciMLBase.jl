@@ -6,12 +6,12 @@ import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
                  @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
                  NoPullback
 
-@zero_adjoint MinimalCtx Tuple{typeof(DiffEqBase.numargs), Any}
+@zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.numargs), Any}
 @is_primitive MinimalCtx Tuple{
-    typeof(DiffEqBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ChainRulesOriginator
+    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ChainRulesOriginator
 }
 
-@mooncake_overlay DiffEqBase.set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = SciMLBase.MooncakeOriginator()
+@mooncake_overlay SciMLBase.set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = SciMLBase.MooncakeOriginator()
 
 function rrule!!(
         f::CoDual{typeof(SciMLBase.set_mooncakeoriginator_if_mooncake)},
