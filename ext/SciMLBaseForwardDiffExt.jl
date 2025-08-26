@@ -152,14 +152,14 @@ const FORWARDDIFF_AUTODETECTION_FAILURE_MESSAGE = """
                                 end
                                 ```
 
-                                Or you can define a dispatch on `DiffEqBase.anyeltypedual`
+                                Or you can define a dispatch on `SciMLBase.anyeltypedual`
                                 which tells the system what fields to interpret as the
                                 differentiable parts. For example, to support ODESolutions
                                 as parameters we tell it the data is `sol.u` and `sol.t` via:
 
                                 ```julia
-                                function DiffEqBase.anyeltypedual(sol::ODESolution, counter = 0)
-                                    DiffEqBase.anyeltypedual((sol.u, sol.t))
+                                function SciMLBase.anyeltypedual(sol::ODESolution, counter = 0)
+                                    SciMLBase.anyeltypedual((sol.u, sol.t))
                                 end
                                 ```
 
@@ -167,7 +167,7 @@ const FORWARDDIFF_AUTODETECTION_FAILURE_MESSAGE = """
                                 that returns Any. For example:
 
                                 ```julia
-                                function DiffEqBase.anyeltypedual(::YourType, ::Type{Val{counter}}) where {counter}
+                                function SciMLBase.anyeltypedual(::YourType, ::Type{Val{counter}}) where {counter}
                                     Any
                                 end
                                 ```
