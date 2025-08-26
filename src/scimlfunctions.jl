@@ -4966,13 +4966,16 @@ function __has_initializeprob(f)
     has_initialization_data(f) && hasfield(typeof(f.initialization_data), :initializeprob)
 end
 function __has_update_initializeprob!(f)
-    has_initialization_data(f) && hasfield(typeof(f.initialization_data), :update_initializeprob!)
+    has_initialization_data(f) &&
+        hasfield(typeof(f.initialization_data), :update_initializeprob!)
 end
 function __has_initializeprobmap(f)
-    has_initialization_data(f) && hasfield(typeof(f.initialization_data), :initializeprobmap)
+    has_initialization_data(f) &&
+        hasfield(typeof(f.initialization_data), :initializeprobmap)
 end
 function __has_initializeprobpmap(f)
-    has_initialization_data(f) && hasfield(typeof(f.initialization_data), :initializeprobpmap)
+    has_initialization_data(f) &&
+        hasfield(typeof(f.initialization_data), :initializeprobpmap)
 end
 __has_initialization_data(f) = hasfield(typeof(f), :initialization_data)
 __has_polynomialize(f) = hasfield(typeof(f), :polynomialize)

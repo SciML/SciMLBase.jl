@@ -90,7 +90,6 @@ const allowedkeywords = (:dense,
     # Parameter estimation with BVP
     :fit_parameters)
 
-
 const KWARGWARN_MESSAGE = """
                           Unrecognized keyword arguments found.
                           The only allowed keyword arguments to `solve` are:

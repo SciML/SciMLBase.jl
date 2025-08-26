@@ -130,7 +130,7 @@ end
     $(TYPEDEF)
 
 A struct representing the operation of indexing a clock to obtain a subset of the time
-points at which it ticked. The actual list of time points depends on the tick instances 
+points at which it ticked. The actual list of time points depends on the tick instances
 on which the clock was ticking, and can be obtained via `canonicalize_indexed_clock`
 by providing a timeseries solution object.
 

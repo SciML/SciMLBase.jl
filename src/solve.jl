@@ -248,7 +248,6 @@ function __solve(prob::OptimizationProblem, alg, args...; kwargs...)
     throw(OptimizerMissingError(alg))
 end
 
-
 # Functions used in solve dispatches
 
 eltypedual(x) = false
@@ -340,8 +339,8 @@ contain the `u0` and `p` passed as keyword arguments.
 
 # Keyword Arguments
 
-- `u0`, `p`: Override values for `state_values(prob)` and `parameter_values(prob)` which
-  should be used instead of the ones in `prob`.
+  - `u0`, `p`: Override values for `state_values(prob)` and `parameter_values(prob)` which
+    should be used instead of the ones in `prob`.
 """
 function get_updated_symbolic_problem(indp, prob; kw...)
     return prob

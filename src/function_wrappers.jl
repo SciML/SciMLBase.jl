@@ -5,7 +5,8 @@ Abstract base type for function wrappers used in automatic differentiation and s
 These wrappers provide specialized interfaces for computing derivatives with respect to different variables.
 
 # Type Parameter
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
 """
 abstract type AbstractWrappedFunction{iip} end
 isinplace(f::AbstractWrappedFunction{iip}) where {iip} = iip
@@ -13,19 +14,21 @@ isinplace(f::AbstractWrappedFunction{iip}) where {iip} = iip
 """
     TimeGradientWrapper{iip, fType, uType, P} <: AbstractWrappedFunction{iip}
 
-Wraps functions to compute gradients with respect to time. This wrapper is particularly useful for 
+Wraps functions to compute gradients with respect to time. This wrapper is particularly useful for
 sensitivity analysis and optimization problems where the time dependence of the solution is critical.
 
 # Fields
-- `f`: The function to wrap
-- `uprev`: Previous state value
-- `p`: Parameters
+
+  - `f`: The function to wrap
+  - `uprev`: Previous state value
+  - `p`: Parameters
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `uType`: Type of the state variables
-- `P`: Type of the parameters
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+  - `fType`: Type of the wrapped function
+  - `uType`: Type of the state variables
+  - `P`: Type of the parameters
 
 This wrapper enables automatic differentiation with respect to time by providing a consistent
 interface for computing `∂f/∂t` across different AD systems.
@@ -53,20 +56,22 @@ end
 """
     UJacobianWrapper{iip, fType, tType, P} <: AbstractWrappedFunction{iip}
 
-Wraps functions to compute Jacobians with respect to state variables `u`. This is one of the most 
-commonly used wrappers in the SciML ecosystem for computing the derivative of the right-hand side 
+Wraps functions to compute Jacobians with respect to state variables `u`. This is one of the most
+commonly used wrappers in the SciML ecosystem for computing the derivative of the right-hand side
 function with respect to the state variables.
 
 # Fields
-- `f`: The function to wrap
-- `t`: Time value
-- `p`: Parameters
+
+  - `f`: The function to wrap
+  - `t`: Time value
+  - `p`: Parameters
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `tType`: Type of the time variable
-- `P`: Type of the parameters
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+  - `fType`: Type of the wrapped function
+  - `tType`: Type of the time variable
+  - `P`: Type of the parameters
 
 This wrapper enables efficient computation of `∂f/∂u` for Jacobian calculations in numerical solvers
 and automatic differentiation systems.
@@ -97,19 +102,21 @@ end
 """
     TimeDerivativeWrapper{iip, F, uType, P} <: AbstractWrappedFunction{iip}
 
-Wraps functions to compute derivatives with respect to time. This wrapper is used when you need to 
+Wraps functions to compute derivatives with respect to time. This wrapper is used when you need to
 compute `∂f/∂t` for sensitivity analysis or when the function has explicit time dependence.
 
 # Fields
-- `f`: The function to wrap
-- `u`: State variables
-- `p`: Parameters
+
+  - `f`: The function to wrap
+  - `u`: State variables
+  - `p`: Parameters
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `F`: Type of the wrapped function
-- `uType`: Type of the state variables
-- `P`: Type of the parameters
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+  - `F`: Type of the wrapped function
+  - `uType`: Type of the state variables
+  - `P`: Type of the parameters
 
 This wrapper provides a consistent interface for time derivative computations across different
 automatic differentiation backends.
@@ -134,19 +141,21 @@ end
 """
     UDerivativeWrapper{iip, F, tType, P} <: AbstractWrappedFunction{iip}
 
-Wraps functions to compute derivatives with respect to state variables. This wrapper is used for 
+Wraps functions to compute derivatives with respect to state variables. This wrapper is used for
 computing `∂f/∂u` and is fundamental for Jacobian computations in numerical solvers.
 
 # Fields
-- `f`: The function to wrap
-- `t`: Time value
-- `p`: Parameters
+
+  - `f`: The function to wrap
+  - `t`: Time value
+  - `p`: Parameters
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `F`: Type of the wrapped function
-- `tType`: Type of the time variable
-- `P`: Type of the parameters
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+  - `F`: Type of the wrapped function
+  - `tType`: Type of the time variable
+  - `P`: Type of the parameters
 
 This wrapper enables efficient state derivative computations for use in automatic differentiation
 and numerical analysis algorithms.
@@ -169,24 +178,27 @@ UDerivativeWrapper(f::F, t, p) where {F} = UDerivativeWrapper{isinplace(f, 4)}(f
 """
     ParamJacobianWrapper{iip, fType, tType, uType} <: AbstractWrappedFunction{iip}
 
-Wraps functions to compute Jacobians with respect to parameters `p`. This wrapper is essential for 
+Wraps functions to compute Jacobians with respect to parameters `p`. This wrapper is essential for
 parameter estimation, inverse problems, and sensitivity analysis with respect to model parameters.
 
 # Fields
-- `f`: The function to wrap
-- `t`: Time value
-- `u`: State variables
+
+  - `f`: The function to wrap
+  - `t`: Time value
+  - `u`: State variables
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `tType`: Type of the time variable
-- `uType`: Type of the state variables
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+  - `fType`: Type of the wrapped function
+  - `tType`: Type of the time variable
+  - `uType`: Type of the state variables
 
 This wrapper enables efficient computation of `∂f/∂p` for parameter sensitivity analysis and
 optimization algorithms.
 """
-mutable struct ParamJacobianWrapper{iip, fType, tType, uType} <: AbstractWrappedFunction{iip}
+mutable struct ParamJacobianWrapper{iip, fType, tType, uType} <:
+               AbstractWrappedFunction{iip}
     f::fType
     t::tType
     u::uType
@@ -211,17 +223,19 @@ end
 """
     JacobianWrapper{iip, fType, pType} <: AbstractWrappedFunction{iip}
 
-A general-purpose Jacobian wrapper that can be configured for different types of Jacobian computations. 
+A general-purpose Jacobian wrapper that can be configured for different types of Jacobian computations.
 This wrapper provides a unified interface for various Jacobian calculations across the SciML ecosystem.
 
 # Fields
-- `f`: The function to wrap
-- `p`: Parameters
+
+  - `f`: The function to wrap
+  - `p`: Parameters
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `pType`: Type of the parameters
+
+  - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+  - `fType`: Type of the wrapped function
+  - `pType`: Type of the parameters
 
 This wrapper provides a flexible interface for Jacobian computations that can adapt to different
 automatic differentiation backends and numerical methods.

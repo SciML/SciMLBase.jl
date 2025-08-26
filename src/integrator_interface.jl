@@ -83,7 +83,7 @@ end
 """
     ratenoise_cache(integrator::DEIntegrator)
 
-Returns cache arrays for rate noise in stochastic differential equations. 
+Returns cache arrays for rate noise in stochastic differential equations.
 Returns an empty tuple by default for deterministic problems.
 """
 ratenoise_cache(i::DEIntegrator) = ()

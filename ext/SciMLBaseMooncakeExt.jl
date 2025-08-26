@@ -2,6 +2,7 @@ module SciMLBaseMooncakeExt
 
 using SciMLBase, Mooncake
 using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator
+using DiffEqBase: DiffEqBase
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
                  @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
                  NoPullback
@@ -19,7 +20,5 @@ function rrule!!(
 )
     return zero_fcodual(SciMLBase.MooncakeOriginator()), NoPullback(f, X)
 end
-
-
 
 end

@@ -33,5 +33,4 @@ SciMLBase.promote_u0(u0, p::AbstractArray{<:Tracker.TrackedReal}, t0) = eltype(p
 
 @inline Base.any(f::Function, x::Tracker.TrackedArray) = any(f, Tracker.data(x))
 
-
 end
