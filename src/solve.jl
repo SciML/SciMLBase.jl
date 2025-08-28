@@ -516,3 +516,40 @@ set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = x
     end
     q
 end
+
+####
+# Catch undefined AD overload cases
+
+const ADJOINT_NOT_FOUND_MESSAGE = """
+                                  Compatibility with reverse-mode automatic differentiation requires SciMLSensitivity.jl.
+                                  Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
+                                  for this functionality. For more details, see https://sensitivity.sciml.ai/dev/.
+                                  """
+
+struct AdjointNotFoundError <: Exception end
+
+function Base.showerror(io::IO, e::AdjointNotFoundError)
+    print(io, ADJOINT_NOT_FOUND_MESSAGE)
+    println(io, TruncatedStacktraces.VERBOSE_MSG)
+end
+
+function _concrete_solve_adjoint(args...; kwargs...)
+    throw(AdjointNotFoundError())
+end
+
+const FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE = """
+                                              Compatibility with forward-mode automatic differentiation requires SciMLSensitivity.jl.
+                                              Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
+                                              for this functionality. For more details, see https://sensitivity.sciml.ai/dev/.
+                                              """
+
+struct ForwardSensitivityNotFoundError <: Exception end
+
+function Base.showerror(io::IO, e::ForwardSensitivityNotFoundError)
+    print(io, FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE)
+    println(io, TruncatedStacktraces.VERBOSE_MSG)
+end
+
+function _concrete_solve_forward(args...; kwargs...)
+    throw(ForwardSensitivityNotFoundError())
+end
