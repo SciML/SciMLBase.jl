@@ -2261,7 +2261,7 @@ All of the remaining functions are optional for improving or accelerating
 the usage of `f` and `bc`. These include:
 
 - `cost(u, p)`: the target to be minimized, similar with the `cost` function
-  in [`OptimizationFunction`](@ref). This is used to define the objective function
+  in `OptimizationFunction`. This is used to define the objective function
   of the BVP, which can be minimized by optimization solvers.
 - `equality(res, u, t)`: equality constraints functions for the BVP.
 - `inequality(res, u, t)`: inequality constraints functions for the BVP.
