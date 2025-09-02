@@ -166,10 +166,10 @@ function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan,
 end
 
 @doc doc"""
+    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving a DiscreteProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)`
 
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 

@@ -92,10 +92,10 @@ function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 @doc doc"""
+    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
 
 Holds information on what variables to alias
 when solving an RODEProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)`
 
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 

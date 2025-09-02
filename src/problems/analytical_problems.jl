@@ -30,10 +30,10 @@ end
 export AnalyticalProblem, AbstractAnalyticalProblem
 
 @doc doc"""
+    AnalyticalAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an AnalyticalProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `AnalyticalAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)`
 
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
     
