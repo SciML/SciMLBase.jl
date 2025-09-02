@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines a steady state ODE problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/>
 
 ## Mathematical Specification of a Steady State Problem
 

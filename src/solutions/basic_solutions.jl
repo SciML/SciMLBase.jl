@@ -17,7 +17,7 @@ Representation of the solution to an linear system Ax=b defined by a LinearProbl
   - `cache`: the `LinearCache` object containing the solver's internal cached variables. This
     is given to allow continuation of solver usage, for example, solving `Ax=b` with the same
     `A` and a new `b` without refactorizing `A`. See the caching interface tutorial for details
-    on how to use the `cache` effectively: http://docs.sciml.ai/LinearSolve/stable/tutorials/caching_interface/
+    on how to use the `cache` effectively: <http://docs.sciml.ai/LinearSolve/stable/tutorials/caching_interface>
   - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
 struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}

@@ -178,7 +178,7 @@ const OPTIMIZER_MISSING_ERROR_MESSAGE = """
                                         `solve(prob,Optim.BFGS())` requires `using OptimizationOptimJL` and
                                         `solve(prob,Adam())` requires `using OptimizationOptimisers`.
 
-                                        For more information, see the Optimization.jl documentation: https://docs.sciml.ai/Optimization/stable/.
+                                        For more information, see the Optimization.jl documentation: <https://docs.sciml.ai/Optimization/stable/>.
                                         """
 
 struct OptimizerMissingError <: Exception
@@ -523,7 +523,7 @@ end
 const ADJOINT_NOT_FOUND_MESSAGE = """
                                   Compatibility with reverse-mode automatic differentiation requires SciMLSensitivity.jl.
                                   Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
-                                  for this functionality. For more details, see https://sensitivity.sciml.ai/dev/.
+                                  for this functionality. For more details, see <https://sensitivity.sciml.ai/dev/>.
                                   """
 
 struct AdjointNotFoundError <: Exception end
@@ -540,7 +540,7 @@ end
 const FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE = """
                                               Compatibility with forward-mode automatic differentiation requires SciMLSensitivity.jl.
                                               Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
-                                              for this functionality. For more details, see https://sensitivity.sciml.ai/dev/.
+                                              for this functionality. For more details, see <https://sensitivity.sciml.ai/dev/>.
                                               """
 
 struct ForwardSensitivityNotFoundError <: Exception end

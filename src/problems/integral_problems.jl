@@ -1,7 +1,7 @@
 @doc doc"""
 
 Defines an integral problem.
-Documentation Page: [https://docs.sciml.ai/Integrals/stable/](https://docs.sciml.ai/Integrals/stable/)
+Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
 
 ## Mathematical Specification of an Integral Problem
 
@@ -123,7 +123,7 @@ struct QuadratureProblem end
 @doc doc"""
 
 Defines a integral problem over pre-sampled data.
-Documentation Page: https://docs.sciml.ai/Integrals/stable/
+Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
 
 ## Mathematical Specification of a data Integral Problem
 

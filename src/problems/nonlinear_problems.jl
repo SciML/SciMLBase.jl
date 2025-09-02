@@ -6,7 +6,7 @@ struct StandardNonlinearProblem end
 @doc doc"""
 
 Defines an interval nonlinear system problem.
-Documentation Page: [https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/](https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/)
+Documentation Page: <https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/>
 
 ## Mathematical Specification of an Interval Nonlinear Problem
 
@@ -107,7 +107,7 @@ end
 @doc doc"""
 
 Defines a nonlinear system problem.
-Documentation Page: [https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/](https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/)
+Documentation Page: <https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/>
 
 ## Mathematical Specification of a Nonlinear Problem
 

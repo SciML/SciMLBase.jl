@@ -11,7 +11,7 @@ or of a random ordinary differential equation defined by an RODEProblem.
 For more information on interacting with `DESolution` types, check out the Solution Handling
 page of the DifferentialEquations.jl documentation.
 
-https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/
+<https://docs.sciml.ai/DiffEqDocs/stable/basics/solution>
 
 ## Fields
 

@@ -20,7 +20,7 @@ one could perform a domain transformation on the variables so that such an issue
 definition of `f`.
 
 For more information, check out the following FAQ page:
-https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?"""
+<https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?>"""
 
 FUNCTIONWRAPPERSWRAPPERS_MSG = """
 No appropriate function wrapper found. This means that the auto-despecialization code used for the reduction
@@ -36,11 +36,11 @@ if `f` has 3 arguments `(u,p,t)` then it's false, otherwise `f(du,u,p,t)` is tru
 
 For more information on the control of specialization options, please see the documentation at:
 
-https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choices
+<https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choices>
 
 If one wants way more detail than necessary on why the function wrappers exist and what they are doing, see:
 
-https://sciml.ai/news/2022/09/21/compile_time/"""
+<https://sciml.ai/news/2022/09/21/compile_time>"""
 
 const NO_PARAMETERS_ARITHMETIC_ERROR_MESSAGE = """
 
