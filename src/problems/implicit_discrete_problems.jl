@@ -132,7 +132,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteP
 end
 
 @doc doc"""
-    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    ImplicitDiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
