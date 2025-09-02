@@ -523,7 +523,7 @@ end
 const ADJOINT_NOT_FOUND_MESSAGE = """
                                   Compatibility with reverse-mode automatic differentiation requires SciMLSensitivity.jl.
                                   Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
-                                  for this functionality. For more details, see <https://sensitivity.sciml.ai/dev/>.
+                                  for this functionality. For more details, see <https://docs.sciml.ai/SciMLSensitivity/dev/>.
                                   """
 
 struct AdjointNotFoundError <: Exception end
@@ -540,7 +540,7 @@ end
 const FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE = """
                                               Compatibility with forward-mode automatic differentiation requires SciMLSensitivity.jl.
                                               Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
-                                              for this functionality. For more details, see <https://sensitivity.sciml.ai/dev/>.
+                                              for this functionality. For more details, see <https://docs.sciml.ai/SciMLSensitivity/dev/>.
                                               """
 
 struct ForwardSensitivityNotFoundError <: Exception end
