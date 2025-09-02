@@ -462,6 +462,7 @@ end
 
 anyeltypedual(x) = anyeltypedual(x, Val{0})
 anyeltypedual(x, counter) = Any
+anyeltypedual(x::FixedSizeDiffCache, counter = 0) = Any
 
 value(x) = x
 unitfulvalue(x) = x
