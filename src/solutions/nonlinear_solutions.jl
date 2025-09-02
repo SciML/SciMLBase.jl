@@ -8,7 +8,7 @@ Statistics from the nonlinear equation solver about the solution process.
   - nf: Number of function evaluations.
   - njacs: Number of Jacobians created during the solve.
   - nfactors: Number of factorzations of the jacobian required for the solve.
-  - nsolve: Number of linear solves `W\b` required for the solve.
+  - nsolve: Number of linear solves `W\\b` required for the solve.
   - nsteps: Total number of iterations for the nonlinear solver.
 """
 mutable struct NLStats

@@ -14,7 +14,7 @@ Statistics from the differential equation solver about the solution process.
     it is zero.
   - nw: The number of W=I-gamma*J (or W=I/gamma-J) matrices constructed during the solving
     process.
-  - nsolve: The number of linear solves `W\b` required for the integration.
+  - nsolve: The number of linear solves `W\\b` required for the integration.
   - njacs: Number of Jacobians calculated during the integration.
   - nnonliniter: Total number of iterations for the nonlinear solvers.
   - nnonlinconvfail: Number of nonlinear solver convergence failures.
