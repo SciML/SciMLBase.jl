@@ -7,7 +7,8 @@ import SciMLBase:
     wrapfun_oop, wrapfun_iip, isdualtype, value, DualEltypeChecker,
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
     ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
-    RecursiveArrayTools, totallength, sse, anyeltypedual, reduce_tup
+    RecursiveArrayTools, totallength, sse, anyeltypedual, reduce_tup, promote_tspan, _promote_tspan,
+    has_continuous_callback
 
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
