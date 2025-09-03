@@ -375,25 +375,6 @@ function anyeltypedual(::Type{T},
     T
 end
 
-function promote_tspan(u0::AbstractArray{<:ForwardDiff.Dual}, p, tspan, prob, kwargs)
-    if (haskey(kwargs, :callback) && has_continuous_callback(kwargs[:callback])) ||
-       (haskey(prob.kwargs, :callback) && has_continuous_callback(prob.kwargs[:callback]))
-        return _promote_tspan(eltype(u0).(tspan), kwargs)
-    else
-        return _promote_tspan(tspan, kwargs)
-    end
-end
-
-function promote_tspan(u0::AbstractArray{<:Complex{<:ForwardDiff.Dual}}, p, tspan, prob,
-        kwargs)
-    return _promote_tspan(real(eltype(u0)).(tspan), kwargs)
-end
-
-function promote_tspan(u0::AbstractArray{<:ForwardDiff.Dual}, p,
-        tspan::Tuple{<:ForwardDiff.Dual, <:ForwardDiff.Dual}, prob, kwargs)
-    return _promote_tspan(tspan, kwargs)
-end
-
 value(x::Type{ForwardDiff.Dual{T, V, N}}) where {T, V, N} = V
 value(x::ForwardDiff.Dual) = value(ForwardDiff.value(x))
 
