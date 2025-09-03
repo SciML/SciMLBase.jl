@@ -1,7 +1,7 @@
 module SciMLBaseMeasurementsExt
 
 using Measurements
-using SciMLBase: value
+using SciMLBase: value, SciMLBase
 
 function SciMLBase.promote_u0(u0::AbstractArray{<:Measurements.Measurement},
         p::AbstractArray{<:Measurements.Measurement}, t0)
