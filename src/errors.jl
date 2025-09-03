@@ -96,7 +96,7 @@ const KWARGWARN_MESSAGE = """
                           The only allowed keyword arguments to `solve` are:
                           $allowedkeywords
 
-                          See https://diffeq.sciml.ai/stable/basics/common_solver_opts/ for more details.
+                          See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more details.
 
                           Set kwargshandle=KeywordArgError for an error message.
                           Set kwargshandle=KeywordArgSilent to ignore this message.
@@ -107,7 +107,7 @@ const KWARGERROR_MESSAGE = """
                            The only allowed keyword arguments to `solve` are:
                            $allowedkeywords
 
-                           See https://diffeq.sciml.ai/stable/basics/common_solver_opts/ for more details.
+                           See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more details.
                            """
 
 struct CommonKwargError <: Exception
@@ -138,7 +138,7 @@ const INCOMPATIBLE_U0_MESSAGE = """
                                 choice in the problem constructor, i.e. `ODEProblem{false}(f,u0,tspan,p,kwargs...)`.
 
                                 For a longer discussion on mutability vs immutability and in-place vs out-of-place, see:
-                                https://diffeq.sciml.ai/stable/tutorials/faster_ode_example/#Example-Accelerating-a-Non-Stiff-Equation:-The-Lorenz-Equation
+                                <https://docs.sciml.ai/DiffEqDocs/stable/tutorials/faster_ode_example#Example-Accelerating-a-Non-Stiff-Equation:-The-Lorenz-Equation>
                                 """
 
 struct IncompatibleInitialConditionError <: Exception end
@@ -153,7 +153,7 @@ const NO_DEFAULT_ALGORITHM_MESSAGE = """
                                      `init(prob, Tsit5())` for an ODE) or import DifferentialEquations
                                      directly.
 
-                                     You can find the list of available solvers at https://diffeq.sciml.ai/stable/solvers/ode_solve/
+                                     You can find the list of available solvers at <https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve>
                                      and its associated pages.
                                      """
 
@@ -193,7 +193,7 @@ const NON_SOLVER_MESSAGE = """
 
                            Please double check the arguments being sent to the solver.
 
-                           You can find the list of available solvers at https://diffeq.sciml.ai/stable/solvers/ode_solve/
+                           You can find the list of available solvers at <https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve>
                            and its associated pages.
                            """
 
@@ -281,7 +281,7 @@ const DIRECT_AUTODIFF_INCOMPATABILITY_MESSAGE = """
                                                 For more details on automatic differentiation, adjoint, and sensitivity analysis
                                                 of differential equations, see the documentation page:
 
-                                                https://diffeq.sciml.ai/stable/analysis/sensitivity/
+                                                <https://docs.sciml.ai/SciMLSensitivity/>
                                                 """
 
 struct DirectAutodiffError <: Exception end
@@ -413,7 +413,7 @@ const TUPLE_STATE_ERROR_MESSAGE = """
                                   ```
 
                                   This will be safer and fast for small ODEs. For more information, see:
-                                  https://diffeq.sciml.ai/stable/tutorials/faster_ode_example/#Further-Optimizations-of-Small-Non-Stiff-ODEs-with-StaticArrays
+                                  <https://docs.sciml.ai/DiffEqDocs/stable/tutorials/faster_ode_example/#Further-Optimizations-of-Small-Non-Stiff-ODEs-with-StaticArrays>
                                   """
 
 struct TupleStateError <: Exception end

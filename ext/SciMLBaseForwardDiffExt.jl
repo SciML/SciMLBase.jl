@@ -98,7 +98,7 @@ to be specified at compiled time and thus cannot have a Bool-based opt out, so i
 may be extended to use a preference system to opt-out with a `UPCONVERT_DUALS`. In the case where
 upconversion is not done automatically, the user is required to upconvert all initial conditions
 themselves, for an example of how this can be confusing to a user see
-https://discourse.julialang.org/t/typeerror-in-julia-turing-when-sampling-for-a-forced-differential-equation/82937
+<https://discourse.julialang.org/t/typeerror-in-julia-turing-when-sampling-for-a-forced-differential-equation/82937>
 """
 @generated function anyeltypedual(x, ::Type{Val{counter}}) where {counter}
     x = x.name === Core.Compiler.typename(Type) ? x.parameters[1] : x

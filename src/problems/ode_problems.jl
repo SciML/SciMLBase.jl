@@ -6,7 +6,7 @@ struct StandardODEProblem end
 @doc doc"""
 
 Defines an ordinary differential equation (ODE) problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/>
 
 ## Mathematical Specification of an ODE Problem
 
@@ -210,7 +210,7 @@ abstract type AbstractDynamicalODEProblem end
 @doc doc"""
 
 Defines a dynamical ordinary differential equation (ODE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/>
 
 Dynamical ordinary differential equations, such as those arising from the definition
 of a Hamiltonian system or a second order ODE, have a special structure that can be
@@ -288,7 +288,7 @@ end
 @doc doc"""
 
 Defines a second order ordinary differential equation (ODE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/>
 
 ## Mathematical Specification of a 2nd Order ODE Problem
 
@@ -392,7 +392,7 @@ abstract type AbstractSplitODEProblem end
 @doc doc"""
 
 Defines a split ordinary differential equation (ODE) problem.
-Documentation Page: https://docs.sciml.ai/DiffEqDocs/stable/types/split_ode_types/
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/split_ode_types/>
 
 ## Mathematical Specification of a Split ODE Problem
 

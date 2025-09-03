@@ -11,7 +11,7 @@ struct TwoPointBVProblem{iip} end # The iip is needed to make type stable constr
 @doc doc"""
 
 Defines an BVP problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/>
 
 ## Mathematical Specification of a BVP Problem
 
@@ -253,7 +253,7 @@ struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type st
 @doc doc"""
 
 Defines a second order BVP problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/>
 
 ## Mathematical Specification of a second order BVP Problem
 

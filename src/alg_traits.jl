@@ -275,7 +275,7 @@ not converge to the same answer. In the context of a stochastic differential equ
 on the integral rule that is chosen. This trait describes which interpretation the solver algorithm subscribes to, and thus whether the solution should
 be interpreted as the solution to the SDE under the Ito or Stratonovich interpretation.
 
-For more information, see https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.html as a good high-level explanation.
+For more information, see <https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.html> as a good high-level explanation.
 
 !!! note
 
