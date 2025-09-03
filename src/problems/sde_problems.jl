@@ -223,10 +223,10 @@ function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, v0, u0, tspan,
 end
 
 @doc doc"""
+    SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an SDEProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias = nothing)`
 
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 

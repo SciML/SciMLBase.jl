@@ -155,10 +155,10 @@ isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
 @doc doc"""
+    OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias = nothing)
 
 Holds information on what variables to alias
 when solving an OptimizationProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias = nothing)`
 
 ### Keywords 
 * `alias_p::Union{Bool, Nothing}`

@@ -169,10 +169,10 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
 end
 
 @doc doc"""
+    IntegralAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an IntegralProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `IntegralAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)``
 
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
