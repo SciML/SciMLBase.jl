@@ -532,3 +532,9 @@ _save_discretes_if_enabled!(::DEIntegrator; kw...) = nothing
 function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; kw...)
     _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
 end
+
+has_continuous_callback(cb::DiscreteCallback) = false
+has_continuous_callback(cb::ContinuousCallback) = true
+has_continuous_callback(cb::VectorContinuousCallback) = true
+has_continuous_callback(cb::CallbackSet) = !isempty(cb.continuous_callbacks)
+has_continuous_callback(cb::Nothing) = false
