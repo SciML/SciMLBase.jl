@@ -2261,7 +2261,7 @@ All of the remaining functions are optional for improving or accelerating
 the usage of `f` and `bc`. These include:
 
 - `cost(u, p)`: the target to be minimized, similar with the `cost` function
-  in [`OptimizationFunction`](@ref). This is used to define the objective function
+  in `OptimizationFunction`. This is used to define the objective function
   of the BVP, which can be minimized by optimization solvers.
 - `equality(res, u, t)`: equality constraints functions for the BVP.
 - `inequality(res, u, t)`: inequality constraints functions for the BVP.
@@ -4279,7 +4279,6 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         lag_hess_colorvec = nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing) where {iip}
-    isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     sys = sys_or_symbolcache(sys, syms, paramsyms)
     OptimizationFunction{
         iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
@@ -4948,6 +4947,7 @@ __has_Wfact(f) = hasfield(typeof(f), :Wfact)
 __has_Wfact_t(f) = hasfield(typeof(f), :Wfact_t)
 __has_W_prototype(f) = hasfield(typeof(f), :W_prototype)
 __has_paramjac(f) = hasfield(typeof(f), :paramjac)
+__has_controljac(f) = hasfield(typeof(f), :controljac)
 __has_jac_prototype(f) = hasfield(typeof(f), :jac_prototype)
 __has_controljac_prototype(f) = hasfield(typeof(f), :controljac_prototype)
 __has_sparsity(f) = hasfield(typeof(f), :sparsity)
