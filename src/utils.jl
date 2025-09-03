@@ -79,11 +79,11 @@ const TOO_MANY_ARGUMENTS_ERROR_MESSAGE = """
                                            du[1] = p[1]*(u[2]-u[1])
                                            du[2] = u[1]*(p[2]-u[3]) - u[2]
                                            du[3] = u[1]*u[2] - p[3]*u[3]
-                                          end
-                                          u0 = [1.0;0.0;0.0]
-                                          p = [10.0,28.0,8/3]
-                                          tspan = (0.0,100.0)
-                                          prob = ODEProblem(lorenz,u0,tspan,p)
+                                         end
+                                         u0 = [1.0;0.0;0.0]
+                                         p = [10.0,28.0,8/3]
+                                         tspan = (0.0,100.0)
+                                         prob = ODEProblem(lorenz,u0,tspan,p)
                                          ```
 
                                          Notice that `f` is defined with a single `p`, an array which matches the definition
@@ -155,10 +155,10 @@ const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
                                           du2 = u[1]*(28.0-u[3]) - u[2]
                                           du3 = u[1]*u[2] - 8/3*u[3]
                                           [du1,du2,du3]
-                                         end
-                                         u0 = [1.0;0.0;0.0]
-                                         tspan = (0.0,100.0)
-                                         prob = ODEProblem(lorenz,u0,tspan)
+                                        end
+                                        u0 = [1.0;0.0;0.0]
+                                        tspan = (0.0,100.0)
+                                        prob = ODEProblem(lorenz,u0,tspan)
                                         ```
 
                                         and in-place:
@@ -168,10 +168,10 @@ const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
                                           du[1] = 10.0*(u[2]-u[1])
                                           du[2] = u[1]*(28.0-u[3]) - u[2]
                                           du[3] = u[1]*u[2] - 8/3*u[3]
-                                         end
-                                         u0 = [1.0;0.0;0.0]
-                                         tspan = (0.0,100.0)
-                                         prob = ODEProblem(lorenz!,u0,tspan)
+                                        end
+                                        u0 = [1.0;0.0;0.0]
+                                        tspan = (0.0,100.0)
+                                        prob = ODEProblem(lorenz!,u0,tspan)
                                         ```
                                         """
 
@@ -543,7 +543,7 @@ See also: `prepare_initial_state`.
 prepare_function(f) = f
 
 """
-        strip_solution(sol)
+    strip_solution(sol)
 
 Strips a SciMLSolution object and its interpolation of their functions to better accommodate serialization.
 """
