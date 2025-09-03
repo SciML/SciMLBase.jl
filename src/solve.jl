@@ -518,6 +518,17 @@ set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = x
     q
 end
 
+promote_tspan(u0, p, tspan, prob, kwargs) = _promote_tspan(tspan, kwargs)
+
+function _promote_tspan(tspan, kwargs)
+    if (dt = get(kwargs, :dt, nothing)) !== nothing
+        tspan1, tspan2, _ = promote(tspan..., dt)
+        return (tspan1, tspan2)
+    else
+        return tspan
+    end
+end
+
 ####
 # Catch undefined AD overload cases
 
