@@ -4279,7 +4279,6 @@ function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         lag_hess_colorvec = nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
                               nothing) where {iip}
-    isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
     sys = sys_or_symbolcache(sys, syms, paramsyms)
     OptimizationFunction{
         iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
