@@ -510,7 +510,7 @@ OptimizationProblem(optf, 1.0)
 # Test OptimizationFunction{iip} respects explicit iip parameter
 # This function would fail isinplace check due to method ambiguity
 struct ProblematicOptFunction end
-(::ProblematicOptFunction)(x, p) = sum(x.^2)
+(::ProblematicOptFunction)(x, p) = sum(x .^ 2)
 # But when iip is explicitly provided, it should work without calling isinplace
 @test_nowarn OptimizationFunction{false}(ProblematicOptFunction())
 @test_nowarn OptimizationFunction{true}(ProblematicOptFunction())
