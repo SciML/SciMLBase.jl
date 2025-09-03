@@ -1,7 +1,7 @@
 module SciMLBaseMeasurementsExt
 
 using Measurements
-using SciMLBase: value
+using SciMLBase: SciMLBase
 
 function SciMLBase.promote_u0(u0::AbstractArray{<:Measurements.Measurement},
         p::AbstractArray{<:Measurements.Measurement}, t0)
@@ -9,10 +9,10 @@ function SciMLBase.promote_u0(u0::AbstractArray{<:Measurements.Measurement},
 end
 SciMLBase.promote_u0(u0, p::AbstractArray{<:Measurements.Measurement}, t0) = eltype(p).(u0)
 
-value(x::Type{Measurements.Measurement{T}}) where {T} = T
-value(x::Measurements.Measurement) = Measurements.value(x)
+SciMLBase.value(x::Type{Measurements.Measurement{T}}) where {T} = T
+SciMLBase.value(x::Measurements.Measurement) = Measurements.value(x)
 
-unitfulvalue(x::Type{Measurements.Measurement{T}}) where {T} = T
-unitfulvalue(x::Measurements.Measurement) = Measurements.value(x)
+SciMLBase.unitfulvalue(x::Type{Measurements.Measurement{T}}) where {T} = T
+SciMLBase.unitfulvalue(x::Measurements.Measurement) = Measurements.value(x)
 
 end
