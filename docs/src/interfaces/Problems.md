@@ -64,7 +64,7 @@ SciMLBase.FullSpecialize
     
     The specialization level must be precompile snooped in the appropriate solver
     package in order to enable the full precompilation and system image generation
-    for zero-latency usage. By default, this is only done with AutoSpecialize and
+    for zero-latency usage. By default, this is only done with `AutoSpecialize` and
     on types `u isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
     `p isa Union{Vector{Float64}, SciMLBase.NullParameters}`. Precompilation snooping
     in the solvers can be done using the Preferences.jl setup on the appropriate

@@ -208,7 +208,7 @@ const NOISE_SIZE_MESSAGE = """
                            Noise sizes are incompatible. The expected number of noise terms in the defined
                            `noise_rate_prototype` does not match the number of noise terms in the defined
                            `AbstractNoiseProcess`. Please ensure that
-                           size(prob.noise_rate_prototype,2) == length(prob.noise.W[1]).
+                           `size(prob.noise_rate_prototype,2) == length(prob.noise.W[1])`.
 
                            Note: Noise process definitions require that users specify `u0`, and this value is
                            directly used in the definition. For example, if `noise = WienerProcess(0.0,0.0)`,

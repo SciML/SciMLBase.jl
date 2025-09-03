@@ -9,7 +9,7 @@ const NONCONCRETE_ELTYPE_MESSAGE = """
                                    all the same. If this was intentional, for example,
                                    using Unitful.jl with different unit values, then use
                                    an array type which has fast broadcast support for
-                                   heterogeneous values such as the ArrayPartition
+                                   heterogeneous values such as the `ArrayPartition`
                                    from RecursiveArrayTools.jl. For example:
 
                                    ```julia
