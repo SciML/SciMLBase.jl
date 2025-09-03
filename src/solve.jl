@@ -47,7 +47,7 @@ solve(prob::OptimizationProblem, alg::AbstractOptimizationAlgorithm,
     args...; kwargs...)::OptimizationSolution
 ```
 
-For information about the returned solution object, refer to the documentation for [OptimizationSolution](@ref)
+For information about the returned solution object, refer to the documentation for [`OptimizationSolution`](@ref)
 
 ## Keyword Arguments
 
