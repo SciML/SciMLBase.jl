@@ -1,7 +1,7 @@
 module SciMLBaseEnzymeExt
 
 using SciMLBase
-import Enzyme: EnzymeRules
+import EnzymeRules
 
 # Enzyme rules for SciMLBase abstract types
 #
