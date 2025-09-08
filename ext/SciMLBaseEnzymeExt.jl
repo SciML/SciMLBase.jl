@@ -1,6 +1,6 @@
 module SciMLBaseEnzymeExt
 
-using SciMLBase
+using SciMLBase: AbstractSensitivityAlgorithm
 import Enzyme: EnzymeRules
 
 # Enzyme rules for SciMLBase abstract types
