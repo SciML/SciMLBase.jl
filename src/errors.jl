@@ -1,6 +1,7 @@
 const allowedkeywords = (:dense,
     :saveat,
     :save_idxs,
+    :save_discretes,
     :tstops,
     :tspan,
     :d_discontinuities,
