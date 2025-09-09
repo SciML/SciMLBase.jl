@@ -108,7 +108,7 @@ SciMLBase.EnsembleAnalysis.componentwise_vectors_timepoint
 
 The available functions for time steps are:
 
-```docs
+```@docs
 SciMLBase.EnsembleAnalysis.timestep_mean
 SciMLBase.EnsembleAnalysis.timestep_median
 SciMLBase.EnsembleAnalysis.timestep_quantile
@@ -151,7 +151,7 @@ timeseries_steps_weighted_meancov
 
 The available functions for the time points are:
 
-```docs
+```@docs
 SciMLBase.EnsembleAnalysis.timeseries_point_mean
 SciMLBase.EnsembleAnalysis.timeseries_point_median
 SciMLBase.EnsembleAnalysis.timeseries_point_quantile
@@ -159,6 +159,7 @@ SciMLBase.EnsembleAnalysis.timeseries_point_meanvar
 SciMLBase.EnsembleAnalysis.timeseries_point_meancov
 SciMLBase.EnsembleAnalysis.timeseries_point_meancor
 SciMLBase.EnsembleAnalysis.timeseries_point_weighted_meancov
+```
 
 ### EnsembleSummary
 
@@ -197,6 +198,12 @@ prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 For our ensemble simulation, we would like to change the initial condition around.
 This is done through the `prob_func`. This function takes in the base problem
 and modifies it to create the new problem that the trajectory actually solves.
+The `prob_func` has the signature `prob_func(prob, i, repeat)` where:
+
+- `prob` is the base problem to be modified
+- `i` is the unique trajectory index (`1` to `trajectories`)  
+- `repeat` is the repeat iteration number (starts at `1`, increments if `output_func` returned `rerun=true`)
+
 Here, we will take the base problem, multiply the initial condition by a `rand()`,
 and use that for calculating the trajectory:
 
