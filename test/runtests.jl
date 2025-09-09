@@ -22,6 +22,10 @@ end
         @time @safetestset "Aqua" begin
             include("aqua.jl")
         end
+        activate_downstream_env()
+        @time @safetestset "JET" begin
+            include("JET.jl")
+        end
     end
     if GROUP == "Core" || GROUP == "All"
         @time @safetestset "Display" begin
