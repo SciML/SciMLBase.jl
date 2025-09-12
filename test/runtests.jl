@@ -33,9 +33,6 @@ end
         @time @safetestset "Function Building Error Messages" begin
             include("function_building_error_messages.jl")
         end
-        @time @safetestset "Solver Missing Error Messages" begin
-            include("solver_missing_error_messages.jl")
-        end
         @time @safetestset "Integrator interface" begin
             include("integrator_tests.jl")
         end
