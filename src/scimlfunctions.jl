@@ -2268,7 +2268,7 @@ the usage of `f` and `bc`. These include:
 - `inequality(res, u, t)`: inequality constraints functions for the BVP.
 - `f_prototype`: a prototype matrix matching the type of the ODE/DAE variables in an optimal control
   problem. For example, in the ODE/DAE that describe the dynamics of the optiml control problem,
-  `f_prototype` should match the type of ODE/DAE variables in `f`.
+  `f_prototype` should match the type and size of the ODE/DAE variables in `f`.
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
   to determine that the equation is actually a BVP for differential algebraic equation (DAE)
   if `M` is singular.
