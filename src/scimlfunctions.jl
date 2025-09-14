@@ -2233,6 +2233,7 @@ BVPFunction{iip, specialize}(f, bc;
     cost = __has_cost(f) ? f.cost : nothing,
     equality = __has_equality(f) ? f.equality : nothing,
     inequality = __has_inequality(f) ? f.inequality : nothing,
+    f_prototype = __has_f_prototype(f) ? f.f_prototype : nothing,
     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2265,6 +2266,9 @@ the usage of `f` and `bc`. These include:
   of the BVP, which can be minimized by optimization solvers.
 - `equality(res, u, t)`: equality constraints functions for the BVP.
 - `inequality(res, u, t)`: inequality constraints functions for the BVP.
+- `f_prototype`: a prototype matrix matching the type of the ODE/DAE variables in an optimal control
+  problem. For example, in the ODE/DAE that describe the dynamics of the optiml control problem,
+  `f_prototype` should match the type and size of the ODE/DAE variables in `f`.
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
   to determine that the equation is actually a BVP for differential algebraic equation (DAE)
   if `M` is singular.
@@ -2319,7 +2323,7 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the BVPFunction type directly match the names of the inputs.
 """
 struct BVPFunction{
-    iip, specialize, twopoint, F, BF, C, EC, IC, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+    iip, specialize, twopoint, F, BF, C, EC, IC, FP, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
     JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
     SYS, ID} <: AbstractBVPFunction{iip, twopoint}
     f::F
@@ -2327,6 +2331,7 @@ struct BVPFunction{
     cost::C
     equality::EC
     inequality::IC
+    f_prototype::FP
     mass_matrix::TMM
     analytic::Ta
     tgrad::Tt
@@ -4361,6 +4366,7 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
         cost = __has_cost(f) ? f.cost : nothing,
         equality = __has_equality(f) ? f.equality : nothing,
         inequality = __has_inequality(f) ? f.inequality : nothing,
+        f_prototype = __has_f_prototype(f) ? f.f_prototype : nothing,
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -4503,25 +4509,25 @@ function BVPFunction{iip, specialize, twopoint}(f, bc;
     sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     if specialize === NoSpecialize
-        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any, Any, Any, Any,
+        BVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any,
             Any, typeof(_colorvec), typeof(_bccolorvec), Any, Any}(
-            _f, bc, cost, equality, inequality, mass_matrix,
+            _f, bc, cost, equality, inequality, f_prototype, mass_matrix,
             analytic, tgrad, jac, bcjac, jvp, vjp, jac_prototype,
             bcjac_prototype, bcresid_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed,
             _colorvec, _bccolorvec, sys, initialization_data)
     else
         BVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc), typeof(cost),
-            typeof(equality), typeof(inequality),
+            typeof(equality), typeof(inequality), typeof(f_prototype),
             typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
             typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys),
             typeof(initialization_data)}(
-            _f, bc, cost, equality, inequality, mass_matrix, analytic,
+            _f, bc, cost, equality, inequality, f_prototype, mass_matrix, analytic,
             tgrad, jac, bcjac, jvp, vjp,
             jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
             Wfact, Wfact_t, paramjac,
@@ -4981,6 +4987,7 @@ __has_denominator(f) = hasfield(typeof(f), :denominator)
 __has_cost(f) = hasfield(typeof(f), :cost)
 __has_equality(f) = hasfield(typeof(f), :equality)
 __has_inequality(f) = hasfield(typeof(f), :inequality)
+__has_f_prototype(f) = hasfield(typeof(f), :f_prototype)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
