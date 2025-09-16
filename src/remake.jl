@@ -608,6 +608,64 @@ function remake(prob::SDDEProblem;
 end
 
 """
+    remake(prob::DAEProblem; f = missing, du0 = missing, u0 = missing, tspan = missing,
+           p = missing, differential_vars = missing, kwargs = missing, _kwargs...)
+
+Remake the given `DAEProblem`.
+If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
+"""
+function remake(prob::DAEProblem; f = missing,
+        du0 = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        differential_vars = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        use_defaults = false,
+        lazy_initialization = nothing,
+        build_initializeprob = Val{true},
+        _kwargs...)
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    if build_initializeprob == Val{true} || build_initializeprob == true
+        if f !== missing && has_initialization_data(f)
+            initialization_data = remake_initialization_data(
+                prob.f.sys, f, u0, tspan[1], p, newu0, newp)
+        else
+            initialization_data = remake_initialization_data(
+                prob.f.sys, prob.f, u0, tspan[1], p, newu0, newp)
+        end
+    else
+        initialization_data = nothing
+    end
+
+    f = coalesce(f, prob.f)
+    f = remake(prob.f; f, initialization_data)
+
+    du0 = coalesce(du0, prob.du0)
+    differential_vars = coalesce(differential_vars, prob.differential_vars)
+
+    iip = isinplace(prob)
+
+    prob = if kwargs === missing
+        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, prob.kwargs..., _kwargs...)
+    else
+        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, kwargs...)
+    end
+
+    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+    @reset prob.u0 = u0
+    @reset prob.p = p
+
+    return prob
+end
+
+"""
     remake(prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
         sense = missing, kwargs = missing, _kwargs...)
