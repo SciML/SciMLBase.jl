@@ -25,7 +25,7 @@ higher-dimension tensors as well.
 ### Constructors
 
 ```julia
-OptimizationProblem{iip}(f, u0, p = SciMLBase.NullParameters(),;
+OptimizationProblem{isinplace}(f, u0, p = SciMLBase.NullParameters(),;
                         lb = nothing,
                         ub = nothing,
                         lcons = nothing,
