@@ -295,3 +295,12 @@ initialization.
 Defaults to false.
 """
 allows_late_binding_tstops(alg::AbstractODEAlgorithm) = false
+
+"""
+    $(TYPEDSIGNATURES)
+
+Trait declaration for whether the optimization algorithm supports the `init` interface. 
+
+Deprecated as this is not an optimization-specific idea and should use the traits for general caching.
+"""
+supports_opt_cache_interface(alg) = false
