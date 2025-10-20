@@ -299,8 +299,15 @@ allows_late_binding_tstops(alg::AbstractODEAlgorithm) = false
 """
     $(TYPEDSIGNATURES)
 
-Trait declaration for whether the optimization algorithm supports the `init` interface. 
+Trait declaration for whether the optimization algorithm supports the `init` interface.
 
 Deprecated as this is not an optimization-specific idea and should use the traits for general caching.
 """
 supports_opt_cache_interface(alg) = false
+
+"""
+    $(TYPEDSIGNATURES)
+
+Trait for specifying whether the passed algorithm supports `init`.
+"""
+has_init(a::AbstractSciMLAlgorithm) = false
