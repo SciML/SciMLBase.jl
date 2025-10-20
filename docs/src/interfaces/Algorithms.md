@@ -35,6 +35,7 @@ SciMLBase.isadaptive
 SciMLBase.isdiscrete
 SciMLBase.forwarddiffs_model
 SciMLBase.forwarddiffs_model_time
+SciMLBase.has_init
 ```
 
 ### Abstract SciML Algorithms
