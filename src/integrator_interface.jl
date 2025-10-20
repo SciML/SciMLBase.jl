@@ -569,7 +569,12 @@ end
 
 ### Integrator traits
 
-has_init(i::AbstractSciMLAlgorithm) = false
+"""
+    has_init(a::AbstractSciMLAlgorithm)
+
+Trait for specifying whether the passed algorithm supports `init`.
+"""
+has_init(a::AbstractSciMLAlgorithm) = false
 
 has_reinit(i::DEIntegrator) = false
 
