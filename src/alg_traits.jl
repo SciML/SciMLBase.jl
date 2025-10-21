@@ -308,6 +308,14 @@ supports_opt_cache_interface(alg) = false
 """
     $(TYPEDSIGNATURES)
 
-Trait for specifying whether the passed algorithm supports `init`.
+Trait for specifying whether the passed algorithm supports `init`. Any `init`ed object can `solve!`.
 """
 has_init(a::AbstractSciMLAlgorithm) = false
+
+"""
+    $(TYPEDSIGNATURES)
+
+Trait for specifying whether the passed algorithm supports `step!`, specifying a more direct control over the internal solver process.
+See https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#init-and-the-Iterator-Interface for more details.
+"""
+has_step(a::AbstractSciMLAlgorithm) = false

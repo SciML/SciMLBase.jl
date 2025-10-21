@@ -935,5 +935,6 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Public traits
 
 @public has_init
+@public has_step
 
 end
