@@ -46,6 +46,8 @@ import SciMLOperators:
 
 @reexport using SciMLOperators
 
+using SciMLPublic: @public
+
 function __solve end
 function __init end
 
@@ -929,5 +931,10 @@ export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallba
 export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 export ODEAliasSpecifier, LinearAliasSpecifier
+
+# Public traits
+
+@public has_init
+@public has_step
 
 end
