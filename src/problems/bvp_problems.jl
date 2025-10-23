@@ -102,7 +102,13 @@ every solve call.
   initial value problem, or a `Vector` of values for ``u(t_i)`` for collocation
   methods.
 * `tspan`: The timespan for the problem.
-* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `lb`: The lower bounds for the solution variables. Defaults to `nothing`.
+* `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
+* `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
+* `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
+* `problem_type`: The type of the problem, either `StandardBVProblem` or
+  `TwoPointBVProblem`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ### Special Keyword Arguments
@@ -127,7 +133,8 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
-            p = NullParameters(); lb = nothing, ub = nothing, lcons = nothing, ucons = nothing, problem_type = nothing, nlls = nothing,
+            p = NullParameters(); lb = nothing, ub = nothing, lcons = nothing,
+            ucons = nothing, problem_type = nothing, nlls = nothing,
             kwargs...) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
@@ -347,21 +354,32 @@ every solve call.
   initial value problem, or a `Vector` of values for ``u(t_i)`` for collocation
   methods.
 * `tspan`: The timespan for the problem.
-* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `lb`: The lower bounds for the solution variables. Defaults to `nothing`.
+* `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
+* `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
+* `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
+* `problem_type`: The type of the problem, either `StandardSecondOrderBVProblem` or
+  `TwoPointSecondOrderBVProblem`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """
-struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
+struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
        AbstractBVProblem{uType, tType, isinplace, nlls}
     f::F
     u0::uType
     tspan::tType
     p::P
+    lb::LB
+    ub::UB
+    lcons::LC
+    ucons::UC
     problem_type::PT
     kwargs::K
 
     @add_kwonly function SecondOrderBVProblem{iip}(
             f::DynamicalBVPFunction{iip, specialize, TP}, u0, tspan,
-            p = NullParameters(); problem_type = nothing, nlls = nothing,
+            p = NullParameters(); lb = nothing, ub = nothing, lcons = nothing,
+            ucons = nothing, problem_type = nothing, nlls = nothing,
             kwargs...) where {iip, specialize, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
@@ -377,7 +395,9 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
         end
 
         return new{typeof(_u0), typeof(_tspan), iip, typeof(nlls), typeof(p), typeof(f),
-            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
+            typeof(lb), typeof(ub), typeof(lcons), typeof(ucons),
+            typeof(problem_type), typeof(kwargs)}(
+            f, _u0, _tspan, p, lb, ub, lcons, ucons, problem_type, kwargs)
     end
 
     function SecondOrderBVProblem{iip}(
