@@ -612,14 +612,23 @@ function check_error(integrator::DEIntegrator)
     verbose = opts.verbose
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
+
     if isnan(integrator.dt)
-        @SciMLMessage("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.", verbose, :dt_NaN)
+        if verbose isa Bool 
+            @warn "NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome."
+        else
+            @SciMLMessage("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.", verbose, :dt_NaN)
+        end
         return ReturnCode.DtNaN
     end
     if integrator.iter > opts.maxiters
-        @SciMLMessage("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).",
+        if verbose isa Bool
+            @warn "Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems)."
+        else
+            @SciMLMessage("Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).",
             verbose,
             :max_iters)
+        end
         return ReturnCode.MaxIters
     end
 
@@ -635,36 +644,61 @@ function check_error(integrator::DEIntegrator)
            (!step_accepted || (hasproperty(opts, :tstops) ?
              integrator.t + integrator.dt < integrator.tdir * first(opts.tstops) :
              true))
-            @SciMLMessage(verbose, :dt_min_unstable) do 
+            if verbose isa Bool 
                 if isdefined(integrator, :EEst)
                     EEst = ", and step error estimate = $(integrator.EEst)"
                 else
                     EEst = ""
                 end
-                "dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable."
-            end 
+                @warn "dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable."
+            else   
+                @SciMLMessage(verbose, :dt_min_unstable) do 
+                    if isdefined(integrator, :EEst)
+                        EEst = ", and step error estimate = $(integrator.EEst)"
+                    else
+                        EEst = ""
+                    end
+                    "dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable."
+                end 
+            end
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat &&
                abs(integrator.dt) <= abs(eps(integrator.t))
-            
-            @SciMLMessage(verbose, :dt_epsilon) do 
+            if verbose isa Bool 
                 if isdefined(integrator, :EEst)
                     EEst = ", and step error estimate = $(integrator.EEst)"
                 else
                     EEst = ""
                 end
-                "At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u)))."
+                @warn "At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u)))."
+            else
+                @SciMLMessage(verbose, :dt_epsilon) do 
+                    if isdefined(integrator, :EEst)
+                        EEst = ", and step error estimate = $(integrator.EEst)"
+                    else
+                        EEst = ""
+                    end
+                    "At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u)))."
+                end
             end
             return ReturnCode.Unstable
         end
     end
     if step_accepted &&
        opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        @SciMLMessage("Instability detected. Aborting", verbose, :instability)
+        if verbose isa Bool 
+            @warn "Instability detected. Aborting"
+        else
+            @SciMLMessage("Instability detected. Aborting", verbose, :instability)
+        end
         return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
-        @SciMLMessage("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.", verbose, :newton_convergence)
+        if verbose isa Bool
+            @warn "Newton steps could not converge and algorithm is not adaptive. Use a lower dt."
+        else
+            @SciMLMessage("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.", verbose, :newton_convergence)
+        end
         return ReturnCode.ConvergenceFailure
     end
     return ReturnCode.Success
