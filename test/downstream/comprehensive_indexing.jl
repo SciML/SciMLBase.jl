@@ -83,7 +83,7 @@ begin
     sint = init(sprob, ImplicitEM(); save_everystep = false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
-    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SteadyStateDiffEq.jl/issues/79
+    ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false)
     integrators = [oint, sint, jint, nint]
     integsystems = [osys, ssys, jsys, nsys]
 

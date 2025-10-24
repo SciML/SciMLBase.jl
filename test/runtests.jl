@@ -95,8 +95,10 @@ end
         @time @safetestset "Integer idxs" begin
             include("downstream/integer_idxs.jl")
         end
-        @time @safetestset "Autodiff Remake" begin
-            include("downstream/remake_autodiff.jl")
+        if VERSION < v"1.12" # Zygote is incredibly broken on 1.12
+            @time @safetestset "Autodiff Remake" begin
+                include("downstream/remake_autodiff.jl")
+            end
         end
         @time @safetestset "Partial Functions" begin
             include("downstream/partial_functions.jl")
@@ -134,8 +136,10 @@ end
         @time @safetestset "Problem Indexing" begin
             include("downstream/problem_interface.jl")
         end
-        @time @safetestset "Adjoints" begin
-            include("downstream/adjoints.jl")
+        if VERSION < v"1.12" # Zygote is incredibly broken on 1.12
+            @time @safetestset "Adjoints" begin
+                include("downstream/adjoints.jl")
+            end
         end
         @time @safetestset "ModelingToolkit Remake" begin
             include("downstream/modelingtoolkit_remake.jl")

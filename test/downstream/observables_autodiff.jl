@@ -5,6 +5,7 @@ import SymbolicIndexingInterface as SII
 import SciMLStructures as SS
 using ModelingToolkitStandardLibrary
 import ModelingToolkitStandardLibrary as MSL
+using SciMLSensitivity
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
