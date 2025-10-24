@@ -48,6 +48,8 @@ import SciMLOperators:
 
 using SciMLPublic: @public
 
+using SciMLLogging: @SciMLMessage
+
 function __solve end
 function __init end
 
