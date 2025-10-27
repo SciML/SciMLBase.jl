@@ -44,12 +44,30 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
-function get_root_indp(indp)
-    if hasmethod(symbolic_container, Tuple{typeof(indp)}) &&
-       (sc = symbolic_container(indp)) !== indp
-        return get_root_indp(sc)
+function get_root_indp(prob::AbstractSciMLProblem)
+    get_root_indp(prob.f)
+end
+
+function get_root_indp(f::T) where {T <: AbstractSciMLFunction}
+    if hasfield(T, :sys)
+        return f.sys
+    elseif hasfield(T, :f) && f.f isa AbstractSciMLFunction
+        return get_root_indp(f.f)
+    else
+        return nothing
     end
-    return indp
+end
+
+function get_root_indp(prob::LinearProblem)
+    get_root_indp(prob.f)
+end
+
+get_root_indp(prob::AbstractJumpProblem) = get_root_indp(prob.prob)
+
+get_root_indp(x) = x
+
+function get_root_indp(f::SymbolicLinearInterface)
+    get_root_indp(f.sys)
 end
 
 # Everything from this point on is public API
