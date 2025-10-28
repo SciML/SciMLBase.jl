@@ -109,6 +109,21 @@ function checkkwargs(kwargshandle; kwargs...)
     end
 end
 
+function checkkwargs(kwargshandle, allowed; kwargs...)
+    if any(x -> x ∉ allowed, keys(kwargs))
+        if kwargshandle == KeywordArgError
+            throw(CommonKwargError(kwargs))
+        elseif kwargshandle == KeywordArgWarn
+            @warn KWARGWARN_MESSAGE
+            unrecognized = setdiff(keys(kwargs), allowed)
+            print("Unrecognized keyword arguments: ")
+            printstyled(unrecognized; bold = true, color = :red)
+            print("\n\n")
+        else
+            @assert kwargshandle == KeywordArgSilent
+        end
+    end
+end
 """
     $(TYPEDSIGNATURES)
 
