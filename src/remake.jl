@@ -246,12 +246,16 @@ function remake(prob::ODEProblem; f = missing,
 
     if specialization(f) === FunctionWrapperSpecialize
         ptspan = promote_tspan(tspan)
+        # Create a prototype with the canonical array type for function wrapping
+        # This ensures SubArrays and other array views work correctly
+        newu0_prototype = similar(newu0)
         if iip
             f = remake(
-                f; f = wrapfun_iip(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1])))
+                f; f = wrapfun_iip(unwrapped_f(f.f), (
+                    newu0_prototype, newu0_prototype, newp, ptspan[1])))
         else
             f = remake(
-                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1])))
+                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0_prototype, newp, ptspan[1])))
         end
     end
 
@@ -653,7 +657,8 @@ function remake(prob::DAEProblem; f = missing,
     iip = isinplace(prob)
 
     prob = if kwargs === missing
-        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, prob.kwargs..., _kwargs...)
+        DAEProblem{iip}(
+            f, du0, newu0, tspan, newp; differential_vars, prob.kwargs..., _kwargs...)
     else
         DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, kwargs...)
     end

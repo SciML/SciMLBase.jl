@@ -150,13 +150,16 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+            # Create a prototype with the canonical array type for function wrapping
+            # This ensures SubArrays and other array views work correctly
+            _u0_prototype = similar(_u0)
             if iip
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                    (_u0, _u0, p,
+                    (_u0_prototype, _u0_prototype, p,
                         _tspan[1])))
             else
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                    (_u0, p,
+                    (_u0_prototype, p,
                         _tspan[1])))
             end
         end
