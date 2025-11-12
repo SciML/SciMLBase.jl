@@ -651,15 +651,13 @@ function check_error(integrator::DEIntegrator)
                     EEst = ""
                 end
                 @warn "dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable."
-            else   
-                @SciMLMessage(verbose, :dt_min_unstable) do 
-                    if isdefined(integrator, :EEst)
-                        EEst = ", and step error estimate = $(integrator.EEst)"
-                    else
-                        EEst = ""
-                    end
-                    "dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable."
-                end 
+            else
+                EEst = if isdefined(integrator, :EEst)
+                    ", and step error estimate = $(integrator.EEst)"
+                else
+                    ""
+                end
+                @SciMLMessage(LazyString("dt(", integrator.dt, ") <= dtmin(", opts.dtmin, ") at t=", integrator.t, EEst, ". Aborting. There is either an error in your model specification or the true solution is unstable."), verbose, :dt_min_unstable)
             end
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat &&
@@ -672,14 +670,12 @@ function check_error(integrator::DEIntegrator)
                 end
                 @warn "At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u)))."
             else
-                @SciMLMessage(verbose, :dt_epsilon) do 
-                    if isdefined(integrator, :EEst)
-                        EEst = ", and step error estimate = $(integrator.EEst)"
-                    else
-                        EEst = ""
-                    end
-                    "At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of $(eltype(integrator.u)))."
+                EEst = if isdefined(integrator, :EEst)
+                    ", and step error estimate = $(integrator.EEst)"
+                else
+                    ""
                 end
+                @SciMLMessage(LazyString("At t=", integrator.t, ", dt was forced below floating point epsilon ", integrator.dt, EEst, ". Aborting. There is either an error in your model specification or the true solution is unstable (or the true solution can not be represented in the precision of ", eltype(integrator.u), ")."), verbose, :dt_epsilon)
             end
             return ReturnCode.Unstable
         end
