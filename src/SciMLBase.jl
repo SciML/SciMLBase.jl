@@ -135,6 +135,14 @@ abstract type AbstractODEProblem{uType, tType, isinplace} <: AbstractDEProblem e
 """
 $(TYPEDEF)
 
+Base for types which define dynamical optimization problems.
+"""
+abstract type AbstractDynamicOptProblem{uType, tType, isinplace} <:
+              AbstractODEProblem{uType, tType, isinplace} end
+
+"""
+$(TYPEDEF)
+
 Base for types which define discrete problems.
 """
 abstract type AbstractDiscreteProblem{uType, tType, isinplace} <:
