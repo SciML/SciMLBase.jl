@@ -270,6 +270,43 @@ function remake(prob::ODEProblem; f = missing,
     return prob
 end
 
+function SciMLBase.remake(prob::AbstractDynamicOptProblem; f = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        wrapped_model = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        use_defaults = false,
+        lazy_initialization = nothing,
+        _kwargs...
+    )
+
+    if tspan === missing
+        tspan = prob.tspan
+    end
+
+    newu0, newp = updated_u0_p(prob, u0, p, tspan[1]; interpret_symbolicmap, use_defaults)
+
+    f = coalesce(f, prob.f)
+    wrapped_model = coalesce(wrapped_model, prob.wrapped_model)
+
+    T = parameterless_type(typeof(prob))
+
+    prob = if kwargs === missing
+        T(f, newu0, tspan, newp, wrapped_model; prob.kwargs..., _kwargs...)
+    else
+        T(f, newu0, tspan, newp, wrapped_model; kwargs...)
+    end
+
+    u0, p = maybe_eager_initialize_problem(prob, nothing, lazy_initialization)
+
+    @reset prob.u0 = u0
+    @reset prob.p = p
+
+    return prob
+end
+
 """
     remake_initializeprob(sys, scimlfn, u0, t0, p)
 
