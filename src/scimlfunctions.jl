@@ -277,7 +277,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -478,7 +478,7 @@ the usage of the `SplitFunction`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -708,7 +708,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -813,7 +813,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -1030,7 +1030,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -1132,7 +1132,7 @@ are optional for improving or accelerating the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the SDE function. Can be used
   to determine that the equation is actually a stochastic differential-algebraic equation (SDAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/sdae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/sdae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -1247,7 +1247,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -1604,7 +1604,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
@@ -2400,7 +2400,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
