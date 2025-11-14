@@ -150,28 +150,36 @@ For specifying Jacobians and mass matrices, see the
 * `f`: The function in the problem.
 * `u0`: The initial guess for the root.
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `lb`: Lower bounds for the solution. Defaults to `nothing`.
+* `ub`: Upper bounds for the solution. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-mutable struct NonlinearProblem{uType, isinplace, P, F, K, PT} <:
+mutable struct NonlinearProblem{uType, isinplace, P, F, K, PT, LB, UB} <:
                AbstractNonlinearProblem{uType, isinplace}
     f::F
     u0::uType
     p::P
     problem_type::PT
+    lb::LB
+    ub::UB
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(f::AbstractNonlinearFunction{iip}, u0,
             p = NullParameters(),
             problem_type = StandardNonlinearProblem();
+            lb = nothing,
+            ub = nothing,
             kwargs...) where {iip}
         if haskey(kwargs, :p)
             error("`p` specified as a keyword argument `p = $(kwargs[:p])` to `NonlinearProblem`. This is not supported.")
         end
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(p), typeof(f),
-            typeof(kwargs), typeof(problem_type)}(f,
+            typeof(kwargs), typeof(problem_type), typeof(lb), typeof(ub)}(f,
             u0,
             p,
             problem_type,
+            lb,
+            ub,
             kwargs)
     end
 
@@ -223,13 +231,13 @@ function NonlinearProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwar
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearProblem}
-    function ctor(f, u0, p, pt, kw)
+    function ctor(f, u0, p, pt, lb, ub, kw)
         if f isa AbstractNonlinearFunction
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)
         end
-        return NonlinearProblem{iip}(f, u0, p, pt; kw...)
+        return NonlinearProblem{iip}(f, u0, p, pt; lb, ub, kw...)
     end
 end
 
@@ -296,21 +304,29 @@ For specifying Jacobians and mass matrices, see the
 * `f`: The function in the problem.
 * `u0`: The initial guess for the solution.
 * `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `lb`: Lower bounds for the solution. Defaults to `nothing`.
+* `ub`: Upper bounds for the solution. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K} <:
+struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K, LB, UB} <:
        AbstractNonlinearProblem{uType, isinplace}
     f::F
     u0::uType
     p::P
+    lb::LB
+    ub::UB
     kwargs::K
 
     @add_kwonly function NonlinearLeastSquaresProblem{iip}(
             f::AbstractNonlinearFunction{
                 iip}, u0,
-            p = NullParameters(); kwargs...) where {iip}
+            p = NullParameters();
+            lb = nothing,
+            ub = nothing,
+            kwargs...) where {iip}
         warn_paramtype(p)
-        return new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs)}(f, u0, p, kwargs)
+        return new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs),
+                   typeof(lb), typeof(ub)}(f, u0, p, lb, ub, kwargs)
     end
 
     function NonlinearLeastSquaresProblem{iip}(f, u0, p = NullParameters()) where {iip}
@@ -334,13 +350,13 @@ function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearLeastSquaresProblem}
-    function ctor(f, u0, p, kw)
+    function ctor(f, u0, p, lb, ub, kw)
         if f isa AbstractNonlinearFunction
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)
         end
-        return NonlinearLeastSquaresProblem{iip}(f, u0, p; kw...)
+        return NonlinearLeastSquaresProblem{iip}(f, u0, p; lb, ub, kw...)
     end
 end
 
