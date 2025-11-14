@@ -85,9 +85,8 @@ has_lazy_interpolation(alg::AbstractDEAlgorithm) = false
 """
     allowsbounds(opt)
 
-Trait declaration for whether an optimizer allows for
-box constraints passed with `lb` and `ub` in
-`OptimizationProblem`.
+Trait declaration for whether an solver allows for
+box constraints passed with `lb` and `ub` in problems.
 
 Defaults to false.
 """
@@ -96,9 +95,9 @@ allowsbounds(opt) = false
 """
     requiresbounds(opt)
 
-Trait declaration for whether an optimizer requires
+Trait declaration for whether an solver requires
 box constraints passed with `lb` and `ub` in
-`OptimizationProblem`.
+problems.
 
 Defaults to false.
 """
