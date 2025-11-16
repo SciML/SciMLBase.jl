@@ -16,7 +16,7 @@ function ensure_plottrait(PT::Type, arg, desired_plottrait_type::Type)
               ::$(string(typeof(arg)))
 
               Makie needs to convert all plot input arguments to types that can be consumed by the backends (typically Arrays with Float32 elements).
-              You can define a method for `Makie.convert_arguments` (a type recipe) for these types or their supertypes to make this set of arguments convertible (See <http://docs.makie.org/stable/documentation/recipes/index.html>).
+              You can define a method for `Makie.convert_arguments` (a type recipe) for these types or their supertypes to make this set of arguments convertible (See <https://docs.makie.org/stable/documentation/recipes/index.html>).
 
               Alternatively, you can define `Makie.convert_single_argument` for single arguments which have types that are unknown to Makie but which can be converted to known types and fed back to the conversion pipeline.
               """)
