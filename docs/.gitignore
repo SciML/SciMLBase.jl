@@ -1,2 +1,5 @@
 build/
 site/
+
+# assets auto-generated while building docs
+src/assets/Project.toml
