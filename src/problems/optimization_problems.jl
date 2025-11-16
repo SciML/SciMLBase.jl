@@ -11,7 +11,7 @@ To define an optimization problem, you need the objective function ``f``
 which is minimized over the domain of ``u``, the collection of optimization variables:
 
 ```math
-min_u f(u,p)
+\min_u f(u,p)
 ```
 
 ``u₀`` is an initial guess for the minimizer. `f` should be specified as `f(u,p)`
@@ -86,7 +86,7 @@ the value of the constraints at `u`. For example, take `f.cons(u,p) = u[1] - u[2
 With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
 If `lcons` and `ucons` are `nothing`, then there are no constraints bounds, meaning that the constraint is satisfied when `-Inf < f.cons < Inf` (which of course is always!). If `lcons[i] = ucons[i] = 0`, then the constraint is satisfied when `f.cons(u,p)[i] = 0`, and so this implies the equality constraint `u[1] = u[2]`. If `lcons[i] = ucons[i] = a`, then ``u[1] - u[2] = a`` is the equality constraint.
 
-Inequality constraints are then given by making `lcons[i] != ucons[i]`. For example, `lcons[i] = -Inf` and `ucons[i] = 0` would imply the inequality constraint ``u[1] <= u[2]`` since any `f.cons[i] <= 0` satisfies the constraint. Similarly, `lcons[i] = -1` and `ucons[i] = 1` would imply that `-1 <= f.cons[i] <= 1` is required or ``-1 <= u[1] - u[2] <= 1``.
+Inequality constraints are then given by making `lcons[i] != ucons[i]`. For example, `lcons[i] = -Inf` and `ucons[i] = 0` would imply the inequality constraint `u[1] <= u[2]` since any `f.cons[i] <= 0` satisfies the constraint. Similarly, `lcons[i] = -1` and `ucons[i] = 1` would imply that `-1 <= f.cons[i] <= 1` is required or `-1 <= u[1] - u[2] <= 1`.
 
 Note that these vectors must be sized to match the number of constraints, with one set of conditions for each constraint.
 

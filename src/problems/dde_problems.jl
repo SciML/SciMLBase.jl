@@ -15,13 +15,11 @@ condition ``u_0`` at time point ``t_0``, and the history function ``h``
 which together define a DDE:
 
 ```math
-\frac{du}{dt} = f(u,h,p,t) \qquad (t \geq t_0)
-```
-```math
-u(t_0) = u_0,
-```
-```math
-u(t) = h(t) \qquad (t < t_0).
+\begin{align*}
+\frac{du}{dt} &= f(u,h,p,t) & (t \geq t_0) \\
+u(t_0) &= u_0, \\
+u(t)   &= h(t) & (t < t_0).
+\end{align*}
 ```
 
 ``f`` should be specified as `f(u, h, p, t)` (or in-place as `f(du, u, h, p, t)`),
@@ -106,8 +104,10 @@ Much like [Dynamical ODEs](@ref dynamical_prob), a Dynamical DDE is a Partitione
 of the form:
 
 ```math
-\frac{dv}{dt} = f_1(u,t,h) \\
-\frac{du}{dt} = f_2(v,h) \\
+\begin{align*}
+\frac{dv}{dt} &= f_1(u,t,h) \\
+\frac{du}{dt} &= f_2(v,h) \\
+\end{align*}
 ```
 
 ### Constructors
@@ -158,8 +158,10 @@ as well.
 From this form, a dynamical ODE:
 
 ```math
-v' = f(v,u,h,p,t) \\
-u' = v \\
+\begin{align*}
+v' &= f(v,u,h,p,t) \\
+u' &= v
+\end{align*}
 ```
 
 ### Constructors

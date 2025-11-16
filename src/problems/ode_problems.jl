@@ -222,8 +222,10 @@ how to define second order differential equations for their efficient numerical 
 These algorithms require a Partitioned ODE of the form:
 
 ```math
-\frac{dv}{dt} = f_1(u,t) \\
-\frac{du}{dt} = f_2(v) \\
+\begin{align*}
+\frac{dv}{dt} &= f_1(u,t) \\
+\frac{du}{dt} &= f_2(v) \\
+\end{align*}
 ```
 This is a Partitioned ODE partitioned into two groups, so the functions should be
 specified as `f1(dv,v,u,p,t)` and `f2(du,v,u,p,t)` (in the inplace form), where `f1`
@@ -308,8 +310,10 @@ as well.
 From this form, a dynamical ODE:
 
 ```math
-v' = f(v,u,p,t) \\
-u' = v \\
+\begin{align*}
+v' &= f(v,u,p,t) \\
+u' &= v
+\end{align*}
 ```
 
 is generated.

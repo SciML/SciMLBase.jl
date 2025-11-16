@@ -246,7 +246,7 @@ $(SIGNATURES)
 
 Define a nonlinear problem from a standard ODE problem. Note that
 this is interpreted in the form of the steady state problem, i.e.
-find the ODE's solution at time ``t = \\infty``
+find the ODE's solution at time ``t = ∞``
 """
 function NonlinearProblem(prob::AbstractODEProblem)
     NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
@@ -271,7 +271,7 @@ To define a Nonlinear Problem, you simply need to give the function ``f`` which 
 nonlinear system:
 
 ```math
-\underset{x}{\min} \| f(x, p) \|
+\min_x \| f(x, p) \|
 ```
 
 and an initial guess ``u_0`` for the minimization problem. ``f`` should be specified as
@@ -378,11 +378,13 @@ form. In this form, the nonlinear problem can be decomposed into a system
 of nonlinear systems. 
 
 ```math
-f_1(u_1,p) = 0
-f_2(u_2,u_1,p) = 0
-f_3(u_3,u_2,u_1,p) = 0
-\vdots
-f_n(u_n,\ldots,u_3,u_2,u_1,p) = 0
+\begin{align*}
+f_1(u_1,p) &= 0 \\
+f_2(u_2,u_1,p) &= 0 \\
+f_3(u_3,u_2,u_1,p) &= 0 \\
+& \vdots \\
+f_n(u_n,\ldots,u_3,u_2,u_1,p) &= 0
+\end{align*}
 ```
 
 Splitting the system in this form can have multiple advantages, including:
@@ -400,15 +402,13 @@ of `NonlinearProblem`s, `probs`, with an attached explicit function for pre-proc
 a cache. This can be interpreted as follows:
 
 ```math
-p_1 = g_1(u,p)
-f_1(u_1,p_1) = 0
-p_2 = g_2(u,p)
-f_2(u_2,u_1,p_2) = 0
-p_3 = g_3(u,p)
-f_3(u_3,u_2,u_1,p_3) = 0
-\vdots
-p_n = g_n(u,p)
-f_n(u_n,\ldots,u_3,u_2,u_1,p_n) = 0
+\begin{align*}
+p_1 &= g_1(u,p) & f_1(u_1,p_1)         &= 0 \\
+p_2 &= g_2(u,p) & f_2(u_2,u_1,p_2)     &= 0 \\
+p_3 &= g_3(u,p) & f_3(u_3,u_2,u_1,p_3) &= 0 \\
+& \vdots \\
+p_n &= g_n(u,p) & f_n(u_n,\ldots,u_3,u_2,u_1,p_n) &= 0 \\
+\end{align*}
 ```
 
 where ``g_i`` is `explicitfuns![i]`. In a computational sense, `explictfuns!`
@@ -486,7 +486,9 @@ explicitfun3(cache,[sol1,sol2])
 sol3 = solve(prob3, NewtonRaphson())
 manualscc = [sol1; sol2; sol3]
 
-sccprob = SciMLBase.SCCNonlinearProblem([prob1,prob2,prob3], SciMLBase.Void{Any}.([explicitfun1,explicitfun2,explicitfun3]))
+sccprob = SciMLBase.SCCNonlinearProblem(
+    [prob1,prob2,prob3],
+    SciMLBase.Void{Any}.([explicitfun1,explicitfun2,explicitfun3]))
 ```
 
 Note that this example aliases the parameters together for a memory-reduced representation.
