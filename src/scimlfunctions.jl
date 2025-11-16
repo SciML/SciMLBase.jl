@@ -237,13 +237,13 @@ $(TYPEDEF)
 """
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an ODE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f(u,p,t)
+M \\frac{du}{dt} = f(u,p,t)
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -281,16 +281,16 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -431,13 +431,13 @@ struct ODEFunction{iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TW
     nlstep_data::NLP
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a split ODE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f_1(u,p,t) + f_2(u,p,t)
+M \\frac{du}{dt} = f_1(u,p,t) + f_2(u,p,t)
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -482,10 +482,10 @@ the usage of the `SplitFunction`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df_1}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df_1}{du}^\ast v``
+- `tgrad(dT,u,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f_1(u,p,t)}{∂t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df_1}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df_1}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df_1}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -496,7 +496,7 @@ the usage of the `SplitFunction`. These include:
   matrix can be used as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the W matrix.
   The default is `nothing`, which means a W of appropriate type for the jacobian and linear solver
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df_1}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df_1}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -555,22 +555,22 @@ struct SplitFunction{
     nlstep_data::NLP
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an ODE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f(u,p,t)
+M \\frac{du}{dt} = f(u,p,t)
 ```
 
 as a partitioned ODE:
 
 ```math
-\begin{align}
-M_1 \frac{du}{dt} = f_1(u,p,t) \\
-M_2 \frac{du}{dt} = f_2(u,p,t)
-\end{align}
+\\begin{align*}
+M_1 \\frac{du}{dt} = f_1(u,p,t) \\\\
+M_2 \\frac{du}{dt} = f_2(u,p,t)
+\\end{align*}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -610,16 +610,16 @@ the usage of `f`. These include:
   respectively.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -666,13 +666,13 @@ $(TYPEDEF)
 """
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a DDE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f(u,h,p,t)
+M \\frac{du}{dt} = f(u,h,p,t)
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -712,16 +712,16 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,h,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -762,22 +762,22 @@ struct DDEFunction{
     initialization_data::ID
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a DDE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f(u,h,p,t)
+M \\frac{du}{dt} = f(u,h,p,t)
 ```
 
 as a partitioned ODE:
 
 ```math
-\begin{align}
-M_1 \frac{du}{dt} = f_1(u,h,p,t) \\
-M_2 \frac{du}{dt} = f_2(u,h,p,t)
-\end{align}
+\\begin{align*}
+M_1 \\frac{du}{dt} = f_1(u,h,p,t) \\\\
+M_2 \\frac{du}{dt} = f_2(u,h,p,t)
+\\end{align*}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -819,16 +819,16 @@ the usage of `f`. These include:
   respectively.
 - `analytic(u0,h,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,h,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,h,p,t)` or `J=jac(u,h,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,h,p,t)` or `Jv=jvp(v,u,h,p,t)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,u,h,p,t)` or `Jv=vjp(v,u,h,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,h,p,t)` or `dT=tgrad(u,h,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,h,p,t)` or `J=jac(u,h,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,h,p,t)` or `Jv=jvp(v,u,h,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,h,p,t)` or `Jv=vjp(v,u,h,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,h,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,h,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -876,7 +876,7 @@ $(TYPEDEF)
 abstract type AbstractDiscreteFunction{iip} <:
               AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a discrete dynamical system `f`, defined by:
@@ -927,13 +927,13 @@ struct DiscreteFunction{iip, specialize, F, Ta, O, SYS, ID} <:
     initialization_data::ID
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an discrete dynamical system `f`, defined by:
 
 ```math
-0 = f(u_{n+1}, u_{n}, p, t_{n+1}, integ)
+0 = f(u_{n+1}, u_n, p, t_{n+1}, \\text{integ})
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -989,13 +989,13 @@ $(TYPEDEF)
 """
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an SDE function `f`, defined by:
 
 ```math
-M du = f(u,p,t)dt + g(u,p,t) dW
+M \\, du = f(u,p,t) \\, dt + g(u,p,t) \\, dW
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1034,18 +1034,18 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
-  ``\frac{dg(u,p,t)}{du} g(u,p,t)``
+  ``\\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1089,13 +1089,13 @@ struct SDEFunction{iip, specialize, F, G, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW,
     initialization_data::ID
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a split SDE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f_1(u,p,t) + f_2(u,p,t) + g(u,p,t) dW
+M \\, du = f_1(u,p,t) \\, dt + f_2(u,p,t) \\, dt + g(u,p,t) \\, dW
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1136,18 +1136,18 @@ are optional for improving or accelerating the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f_1(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df_1}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df_1}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df_1}{du}^\ast v``
+- `tgrad(dT,u,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f_1(u,p,t)}{∂t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df_1}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\\frac{df_1}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\\frac{df_1}{du}^∗ v``
 - `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
-  ``\frac{dg(u,p,t)}{du} g(u,p,t)``
+  ``\\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df_1}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df_1}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1197,22 +1197,22 @@ struct SplitSDEFunction{iip, specialize, F1, F2, G, TMM, C, Ta, Tt, TJ, JVP, VJP
     initialization_data::ID
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an SDE function `f` and `g`, defined by:
 
 ```math
-M du = f(u,p,t) dt + g(u,p,t) dW_t
+M \\, du = f(u,p,t) \\, dt + g(u,p,t) \\, dW_t
 ```
 
 as a partitioned ODE:
 
 ```math
-\begin{align}
-M_1 du = f_1(u,p,t) dt + g(u,p,t) dW_t \\
-M_2 du = f_2(u,p,t) dt + g(u,p,t) dW_t
-\end{align}
+\\begin{align*}
+M_1 \\, du &= f_1(u,p,t) \\, dt + g(u,p,t) \\, dW_t \\\\
+M_2 \\, du &= f_2(u,p,t) \\, dt + g(u,p,t) \\, dW_t
+\\end{align*}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1253,18 +1253,18 @@ the usage of `f`. These include:
   respectively.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `ggprime(J,u,p,t)` or `J = ggprime(u,p,t)`: returns the Milstein derivative
-  ``\frac{dg(u,p,t)}{du} g(u,p,t)``
+  ``\\frac{dg(u,p,t)}{du} g(u,p,t)``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1315,13 +1315,13 @@ $(TYPEDEF)
 """
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a RODE function `f`, defined by:
 
 ```math
-M \frac{du}{dt} = f(u,p,t,W)dt
+M \\frac{du}{dt} = f(u,p,t,W)
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1356,7 +1356,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M` represented in the RODE function. Can be used
   to determine that the equation is actually a random differential-algebraic equation (RDAE)
   if `M` is singular.
-- `analytic`: (u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
+- `analytic`: `(u0,p,t,W)` or `analytic(sol)`: used to pass an analytical solution function for the analytical
   solution of the RODE. Generally only used for testing and development of the solvers.
   The exact form depends on the field `analytic_full`.
 - `analytic_full`: a boolean to indicate whether to use the form `analytic(u0,p,t,W)` (if `false`)
@@ -1366,16 +1366,16 @@ the usage of `f`. These include:
   of the RODE depends on the whole history of the noise, which is available in `sol.W.W`, at
   times `sol.W.t`. In this case, `analytic(sol)` must mutate explicitly the field `sol.u_analytic`
   with the corresponding expected solution at `sol.W.t` or `sol.t`.
-- `tgrad(dT,u,p,t,W)` or dT=tgrad(u,p,t,W): returns ``\frac{\partial f(u,p,t,W)}{\partial t}``
-- `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t,W)` or `Jv=vjp(v,u,p,t,W)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,p,t,W)` or `dT=tgrad(u,p,t,W)`: returns ``\\frac{∂f(u,p,t,W)}{∂t}``
+- `jac(J,u,p,t,W)` or `J=jac(u,p,t,W)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p,t,W)` or `Jv=jvp(v,u,p,t,W)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t,W)` or `Jv=vjp(v,u,p,t,W)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t,W)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t,W)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1424,13 +1424,13 @@ $(TYPEDEF)
 """
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an implicit DAE function `f`, defined by:
 
 ```math
-0 = f(\frac{du}{dt},u,p,t)
+0 = f{\\left(\\frac{du}{dt},u,p,t\\right)}
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1461,11 +1461,11 @@ the usage of `f`. These include:
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns the implicit DAE Jacobian
-  defined as ``gamma \frac{dG}{d(du)} + \frac{dG}{du}``
+  defined as ``γ \\frac{dG}{d(du)} + \\frac{dG}{du}``
 - `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
-  derivative``\frac{df}{du} v``
+  derivative``\\frac{df}{du} v``
 - `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
-  derivative``\frac{df}{du}^\ast v``
+  derivative``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -1499,7 +1499,7 @@ For fully implicit ODEs (`DAEProblem`s), a slightly different Jacobian function
 is necessary. For the DAE
 
 ```math
-G(du,u,p,t) = res
+G(du,u,p,t) = \\text{res}
 ```
 
 The Jacobian should be given in the form `gamma*dG/d(du) + dG/du ` where `gamma`
@@ -1562,13 +1562,13 @@ $(TYPEDEF)
 """
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a SDDE function `f`, defined by:
 
 ```math
-M du = f(u,h,p,t) dt + g(u,h,p,t) dW_t
+M \\, du = f(u,h,p,t) \\, dt + g(u,h,p,t) \\, dW_t
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -1608,16 +1608,16 @@ the usage of `f`. These include:
   Must be an AbstractArray or an AbstractSciMLOperator.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,u,h,p,t)` or `dT=tgrad(u,p,t)`: returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,u,h,p,t)` or `J=jac(u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,h,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,h,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,h,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1665,7 +1665,7 @@ $(TYPEDEF)
 """
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a nonlinear system of equations `f`, defined by:
@@ -1702,15 +1702,15 @@ the usage of `f`. These include:
 
 - `analytic(u0,p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `jac(J,u,p)` or `J=jac(u,p)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p)` or `Jv=jvp(v,u,p)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,u,p)` or `Jv=vjp(v,u,p)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `jac(J,u,p)` or `J=jac(u,p)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p)` or `Jv=jvp(v,u,p)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p)` or `Jv=vjp(v,u,p)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -1757,7 +1757,7 @@ $(TYPEDEF)
 A representation of a polynomial nonlinear system of equations given by
 
 ```math
-0 = f(polynomialize(u, p), p)
+0 = f(\\text{polynomialize}(u, p), p)
 ```
 
 Designed to be used for solving with HomotopyContinuation.
@@ -1797,8 +1797,10 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
     """
     The nonlinear system may be a polynomial of non-polynomial functions. For example,
     ```math
-    sin^2(x^2) + 2sin(x^2) + 1 = 0
-    log(x + y) ^ 3 = 0.5
+    \\begin{align*}
+        \\sin^2(x^2) + 2\\sin(x^2) + 1 &= 0 \\\\
+        \\log(x + y) ^ 3 &= 0.5
+    \\end{align*}
     ```
 
     is a polynomial in `[sin(x^2), log(x + y)]`. To allow for such systems, `polynomialize`
@@ -1858,7 +1860,7 @@ $(TYPEDEF)
 """
 abstract type AbstractIntervalNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of an interval nonlinear system of equations `f`, defined by:
@@ -1916,7 +1918,7 @@ $(TYPEDEF)
 A representation of an objective function `f`, defined by:
 
 ```math
-\\min_{u} f(u,p)
+\\min_u f(u,p)
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
@@ -2099,13 +2101,13 @@ $(TYPEDEF)
 """
 abstract type AbstractODEInputFunction{iip} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a ODE function `f` with inputs, defined by:
 
 ```math
-\frac{dx}{dt} = f(x, u, p, t)
+\\frac{dx}{dt} = f(x, u, p, t)
 ```
 where `x` are the states of the system and `u` are the inputs (which may represent
 different things in different contexts, such as control variables in optimal control).
@@ -2140,12 +2142,12 @@ See the section on `iip` for more details on in-place vs out-of-place handling.
 - `mass_matrix`: the mass matrix `M` represented in the BVP function. Can be used
   to determine that the equation is actually a BVP for differential algebraic equation (DAE)
   if `M` is singular.
-- `jac(J,dx,x,u,p,gamma,t)` or `J=jac(dx,x,u,p,gamma,t)`: returns ``\frac{df}{dx}``
-- `control_jac(J,du,x,u,p,gamma,t)` or `J=control_jac(du,x,u,p,gamma,t)`: returns ``\frac{df}{du}``
+- `jac(J,dx,x,u,p,gamma,t)` or `J=jac(dx,x,u,p,gamma,t)`: returns ``\\frac{df}{dx}``
+- `control_jac(J,du,x,u,p,gamma,t)` or `J=control_jac(du,x,u,p,gamma,t)`: returns ``\\frac{df}{du}``
 - `jvp(Jv,v,du,x,u,p,gamma,t)` or `Jv=jvp(v,du,x,u,p,gamma,t)`: returns the directional
-  derivative ``\frac{df}{du} v``
+  derivative ``\\frac{df}{du} v``
 - `vjp(Jv,v,du,x,u,p,gamma,t)` or `Jv=vjp(v,du,x,u,p,gamma,t)`: returns the adjoint
-  derivative ``\frac{df}{du}^\ast v``
+  derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -2156,7 +2158,7 @@ See the section on `iip` for more details on in-place vs out-of-place handling.
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,x,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,x,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -2202,13 +2204,13 @@ $(TYPEDEF)
 """
 abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a BVP function `f`, defined by:
 
 ```math
-\frac{du}{dt} = f(u, p, t)
+\\frac{du}{dt} = f(u, p, t)
 ```
 
 and the constraints:
@@ -2221,7 +2223,7 @@ If the size of `g(u, p, t)` is different from the size of `u`, then the constrai
 interpreted as a least squares problem, i.e. the objective function is:
 
 ```math
-\min_{u} \| g_i(u, p, t) \|^2
+\\min_u \\| g_i(u, p, t) \\|^2
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -2274,13 +2276,13 @@ the usage of `f` and `bc`. These include:
   if `M` is singular.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the BVP. Generally only used for testing and development of the solvers.
-- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\frac{\partial f(u,p,t)}{\partial t}``
-- `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\frac{df}{du}``
-- `bcjac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\frac{dbc}{du}``
+- `tgrad(dT,u,h,p,t)` or dT=tgrad(u,p,t): returns ``\\frac{∂f(u,p,t)}{∂t}``
+- `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\\frac{df}{du}``
+- `bcjac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns ``\\frac{dbc}{du}``
 - `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
-  derivative ``\frac{df}{du} v``
+  derivative ``\\frac{df}{du} v``
 - `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
-  derivative ``\frac{df}{du}^\ast v``
+  derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
@@ -2291,7 +2293,7 @@ the usage of `f` and `bc`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -2353,13 +2355,13 @@ struct BVPFunction{
     initialization_data::ID
 end
 
-@doc doc"""
+"""
 $(TYPEDEF)
 
 A representation of a dynamical BVP function `f`, defined by:
 
 ```math
-M \frac{ddu}{dt} = f(du,u,p,t)
+M u'' = f(u',u,p,t)
 ```
 
 along with its boundary condition:
@@ -2406,16 +2408,16 @@ the usage of `f`. These include:
   respectively.
 - `analytic(u0,p,t)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
-- `tgrad(dT,du,u,p,t)` or dT=tgrad(du,u,p,t): returns ``\frac{\partial f(du,u,p,t)}{\partial t}``
-- `jac(J,du,u,p,t)` or `J=jac(du,u,p,t)`: returns ``\frac{df}{du}``
-- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\frac{df}{du} v``
-- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\frac{df}{du}^\ast v``
+- `tgrad(dT,du,u,p,t)` or `dT=tgrad(du,u,p,t)`: returns ``\\frac{∂f(du,u,p,t)}{∂t}``
+- `jac(J,du,u,p,t)` or `J=jac(du,u,p,t)`: returns ``\\frac{df}{du}``
+- `jvp(Jv,v,u,p,t)` or `Jv=jvp(v,u,p,t)`: returns the directional derivative ``\\frac{df}{du} v``
+- `vjp(Jv,v,u,p,t)` or `Jv=vjp(v,u,p,t)`: returns the adjoint derivative ``\\frac{df}{du}^∗ v``
 - `jac_prototype`: a prototype matrix matching the type that matches the Jacobian. For example,
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
-- `paramjac(pJ,du,u,p,t)`: returns the parameter Jacobian ``\frac{df}{dp}``.
+- `paramjac(pJ,du,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -2486,7 +2488,8 @@ of the integrand.
 ## iip: In-Place vs Out-Of-Place
 
 Out-of-place functions must be of the form ``y = f(u, p)`` and in-place functions of the form
-``f(y, u, p)``, where `y` is a number or array containing the output. Since `f` is allowed to return any type (e.g. real or complex numbers or
+``f(y, u, p)``, where `y` is a number or array containing the output.
+Since `f` is allowed to return any type (e.g. real or complex numbers or
 arrays), in-place functions must provide a container `integrand_prototype` that is of the
 right type and size for the variable ``y``, and the result is written to this container in-place.
 When in-place forms are used, in-place array operations, i.e. broadcasting, may be used by

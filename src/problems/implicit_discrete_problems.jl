@@ -9,7 +9,7 @@ To define an ImplicitDiscrete Problem, you simply need to give the function ``f`
 condition ``u_0`` which define a function map:
 
 ```math
-0 = f(u_{n+1}, u_{n}, p, t_{n+1}, integ)
+f(u_{n+1}, u_n, p, t_{n+1}, \text{integ}) = 0
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and

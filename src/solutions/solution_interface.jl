@@ -395,7 +395,7 @@ function diffeq_to_arrays(sol, plot_analytic, denseplot, plotdensity, tspan,
         end_idx = searchsortedlast(sol.t, tspan[end])
     end
 
-    # determine type of spacing for plott
+    # determine type of spacing for plot
     densetspacer = if tscale in [:ln, :log10, :log2]
         (start, stop, n) -> exp10.(range(log10(start), stop = log10(stop), length = n))
     else

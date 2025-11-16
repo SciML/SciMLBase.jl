@@ -32,8 +32,10 @@ is the manifold on which the solution must live. A common form for this is the
 two-point `BVProblem` where the manifold defines the solution at two points:
 
 ```math
-u(t_0) = a
-u(t_f) = b
+\begin{align*}
+u(t_0) &= a, \\
+u(t_f) &= b
+\end{align*}
 ```
 
 ## Problem Type
@@ -270,21 +272,23 @@ To define a second order BVP Problem, you simply need to give the function ``f``
 condition ``u_0`` which define an ODE:
 
 ```math
-\frac{ddu}{dt} = f(du,u,p,t)
+u'' = \frac{d^2 u}{dt^2} = f(u', u, p, t)
 ```
 
 along with an implicit function `bc` which defines the residual equation, where
 
 ```math
-bc(du,u,p,t) = 0
+bc(u', u, p, t) = 0
 ```
 
 is the manifold on which the solution must live. A common form for this is the
 two-point `SecondOrderBVProblem` where the manifold defines the solution at two points:
 
 ```math
-g(u(t_0),u'(t_0)) = 0
-g(u(t_f),u'(t_f)) = 0
+\begin{align*}
+g(u(t_0), u'(t_0)) &= 0 \\
+g(u(t_f), u'(t_f)) &= 0
+\end{align*}
 ```
 
 ## Problem Type

@@ -363,9 +363,10 @@ An initialization algorithm that completely skips the initialization phase. The 
 will use the provided initial conditions directly without any consistency checks or
 modifications.
 
-⚠️ **Warning**: Using `NoInit()` with inconsistent initial conditions will likely cause
-solver failures or incorrect results. Only use this when you are absolutely certain
-your initial conditions satisfy all DAE constraints.
+!!! warning
+    Using `NoInit()` with inconsistent initial conditions will likely cause
+    solver failures or incorrect results. Only use this when you are absolutely certain
+    your initial conditions satisfy all DAE constraints.
 
 This is useful when:
 - You know your initial conditions are already perfectly consistent

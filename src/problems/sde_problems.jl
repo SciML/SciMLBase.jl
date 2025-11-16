@@ -14,7 +14,7 @@ To define an SDE Problem, you simply need to give the forcing function `f`,
 the noise function `g`, and the initial condition `u₀` which define an SDE:
 
 ```math
-du = f(u,p,t)dt + Σgᵢ(u,p,t)dWⁱ
+du = f(u,p,t) \, dt + ∑ᵢ gᵢ(u,p,t) \, dWⁱ
 ```
 
 `f` and `g` should be specified as `f(u,p,t)` and  `g(u,p,t)` respectively, and `u₀`
@@ -28,7 +28,7 @@ of `g`s can also be defined to determine an SDE of higher Ito dimension.
 Wraps the data which defines an SDE problem
 
 ```math
-u = f(u,p,t)dt + Σgᵢ(u,p,t)dWⁱ
+u = f(u,p,t) \, dt + ∑ᵢ gᵢ(u,p,t) \, dWⁱ
 ```
 
 with initial condition `u0`.

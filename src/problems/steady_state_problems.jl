@@ -21,7 +21,7 @@ matrices / higher dimension tensors as well.
 Note that for the steady-state to be defined, we must have that `f` is autonomous,
 that is `f` is independent of `t`. But the form which matches the standard ODE
 solver should still be used. The steady state solvers interpret the `f` by
-fixing ``t = \infty``.
+fixing ``t = ∞``.
 
 ## Problem Type
 
