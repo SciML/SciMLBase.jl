@@ -74,17 +74,18 @@ Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
 
 If the bvp is a TwoPointBVProblem then `bc` must be a Tuple `(bca, bcb)` and each of them
-must define either of the following functions:
+must define either of the following sets of functions:
 
 ```julia
-begin
-    bca!(resid_a, u_a, p)
-    bcb!(resid_b, u_b, p)
-end
-begin
-    resid_a = bca(u_a, p)
-    resid_b = bcb(u_b, p)
-end
+bca!(resid_a, u_a, p)
+bcb!(resid_b, u_b, p)
+```
+
+or
+
+```julia
+resid_a = bca(u_a, p)
+resid_b = bcb(u_b, p)
 ```
 
 where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
@@ -327,17 +328,18 @@ Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
 
 If the bvp is a `TwoPointSecondOrderBVProblem` then `bc` must be a Tuple `(bca, bcb)` and each of them
-must define either of the following functions:
+must define either of the following sets of functions:
 
 ```julia
-begin
-    bca!(resid_a, du_a, u_a, p)
-    bcb!(resid_b, du_b, u_b, p)
-end
-begin
-    resid_a = bca(du_a, u_a, p)
-    resid_b = bcb(du_b, u_b, p)
-end
+bca!(resid_a, du_a, u_a, p)
+bcb!(resid_b, du_b, u_b, p)
+```
+
+or
+
+```julia
+resid_a = bca(du_a, u_a, p)
+resid_b = bcb(du_b, u_b, p)
 ```
 
 where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
