@@ -65,7 +65,7 @@ Note that algebraic equations can be specified by using a singular mass matrix.
 
 ### Constructors
 
-```
+```julia
 DDEProblem(f[, u0], h, tspan[, p]; <keyword arguments>)
 DDEProblem{isinplace,specialize}(f[, u0], h, tspan[, p]; <keyword arguments>)
 ```
@@ -112,7 +112,7 @@ of the form:
 
 ### Constructors
 
-```
+```julia
 DynamicalDDEProblem(f1, f2[, v0, u0], h, tspan[, p]; <keyword arguments>)
 DynamicalDDEProblem{isinplace}(f1, f2[, v0, u0], h, tspan[, p]; <keyword arguments>)
 ```
@@ -164,8 +164,8 @@ u' = v \\
 
 ### Constructors
 
-```
-SecondOrderDDEProblem(f, [, du0, u0], h, tspan[, p]; <keyword arguments>)
+```julia
+SecondOrderDDEProblem(f[, du0, u0], h, tspan[, p]; <keyword arguments>)
 SecondOrderDDEProblem{isinplace}(f, [, du0, u0], h, tspan[, p]; <keyword arguments>)
 ```
 
