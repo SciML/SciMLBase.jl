@@ -54,7 +54,7 @@ Documentation Page: <https://docs.sciml.ai/LinearSolve/stable/basics/LinearProbl
 
 ## Mathematical Specification of a Linear Problem
 
-### Concrete LinearProblem
+### Concrete `LinearProblem`
 
 To define a `LinearProblem`, you simply need to give the `AbstractMatrix` ``A``
 and an `AbstractVector` ``b`` which defines the linear system:

@@ -1,7 +1,7 @@
 """
 $(TYPEDEF)
 
-Representation of the solution to an linear system Ax=b defined by a LinearProblem
+Representation of the solution to an linear system `Ax=b` defined by a `LinearProblem`
 
 ## Fields
 
@@ -48,7 +48,7 @@ end
 """
 $(TYPEDEF)
 
-Representation of the solution to an quadrature integral_lb^ub f(x) dx defined by a IntegralProblem
+Representation of the solution to an quadrature integral_lb^ub f(x) dx defined by a `IntegralProblem`
 
 ## Fields
 

@@ -91,8 +91,8 @@ Contains a single callback whose `condition` is a continuous function. The callb
     if the starting condition is less than the tolerance from zero, then no root will be detected.
     This is to stop repeat events happening immediately after a rootfinding event.
   - `repeat_nudge = 1//100`: This is used to set the next testing point after a
-    previously found zero. Defaults to 1//100, which means after a callback, the next
-    sign check will take place at t + dt*1//100 instead of at t to avoid repeats.
+    previously found zero. Defaults to `1//100`, which means after a callback, the next
+    sign check will take place at `t + dt*1//100` instead of at `t` to avoid repeats.
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.

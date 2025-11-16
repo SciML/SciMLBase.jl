@@ -27,20 +27,20 @@ IntegralProblem(f,domain,p=NullParameters(); nout=nothing, batch=nothing, kwargs
 IntegralProblem(f,lb,ub,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
 ```
 
-- f: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
+- `f`: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
   `IntegralFunction` or `BatchIntegralFunction` for inplace and batching optimizations.
 - domain: an object representing an integration domain, i.e. the tuple `(lb, ub)`.
-- lb: DEPRECATED: Either a number or vector of lower bounds.
-- ub: DEPRECATED: Either a number or vector of upper bounds.
-- p: The parameters associated with the problem.
-- nout: DEPRECATED (see `IntegralFunction`): length of the vector output of the integrand
+- `lb`: DEPRECATED: Either a number or vector of lower bounds.
+- `ub`: DEPRECATED: Either a number or vector of upper bounds.
+- `p`: The parameters associated with the problem.
+- `nout`: DEPRECATED (see `IntegralFunction`): length of the vector output of the integrand
   (by default the integrand is assumed to be scalar)
-- batch: DEPRECATED (see `BatchIntegralFunction`): number of points the integrand can
+- `batch`: DEPRECATED (see `BatchIntegralFunction`): number of points the integrand can
   evaluate simultaneously (by default there is no batching)
-- kwargs: Keyword arguments copied to the solvers.
+- `kwargs`: Keyword arguments copied to the solvers.
 
-Additionally, we can supply iip like IntegralProblem{iip}(...) as true or false to declare at
-compile time whether the integrator function is in-place.
+Additionally, we can supply iip like `IntegralProblem{iip}(...)` as `true` or `false`
+to declare at compile time whether the integrator function is in-place.
 
 ### Fields
 
@@ -142,12 +142,12 @@ assigned by a quadrature rule, which depend on sampling points `x`.
 ```
 SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs...)
 ```
-- y: The sampled integrand, must be a subtype of `AbstractArray`.
+- `y`: The sampled integrand, must be a subtype of `AbstractArray`.
   It is assumed that the values of `y` along dimension `dim`
   correspond to the integrand evaluated at sampling points `x`
-- x: Sampling points, must be a subtype of `AbstractVector`.
-- dim: Dimension along which to integrate. Defaults to the last dimension of `y`.
-- kwargs: Keyword arguments copied to the solvers.
+- `x`: Sampling points, must be a subtype of `AbstractVector`.
+- `dim`: Dimension along which to integrate. Defaults to the last dimension of `y`.
+- `kwargs`: Keyword arguments copied to the solvers.
 
 ### Fields
 
