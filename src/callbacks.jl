@@ -318,11 +318,9 @@ DiscreteCallback(condition, affect!;
   - `condition`: This is a function `condition(u,t,integrator)` for declaring when
     the callback should be used. A callback is initiated if the condition evaluates
     to `true`. See the [Integrator Interface](@ref integrator) documentation for information about `integrator`.
-
-      + `affect!`: This is the function `affect!(integrator)` where one is allowed to
-        modify the current state of the integrator. For more information on what can
-        be done, see the [Integrator Interface](@ref integrator) manual page.
-
+  - `affect!`: This is the function `affect!(integrator)` where one is allowed to
+    modify the current state of the integrator. For more information on what can
+    be done, see the [Integrator Interface](@ref integrator) manual page.
   - `save_positions`: Boolean tuple for whether to save before and after the `affect!`.
     This saving will occur just before and after the event, only at event times, and
     does not depend on options like `saveat`, `save_everystep`, etc. (i.e. if
