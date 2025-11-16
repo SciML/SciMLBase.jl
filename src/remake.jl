@@ -310,8 +310,8 @@ end
 """
     remake_initializeprob(sys, scimlfn, u0, t0, p)
 
-!! WARN
-This method is deprecated. Please see `remake_initialization_data`
+!!! warning
+    This method is deprecated. Please see `remake_initialization_data`
 
 Re-create the initialization problem present in the function `scimlfn`, using the
 associated system `sys`, and the user-provided new values of `u0`, initial time `t0` and

@@ -97,7 +97,7 @@ Contains a single callback whose `condition` is a continuous function. The callb
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
 
-!!! warn
+!!! warning
 
     The effect of using a callback with a DAE needs to be done with care because the solution
     `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
@@ -337,7 +337,7 @@ DiscreteCallback(condition, affect!;
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
 
-!!! warn
+!!! warning
 
     The effect of using a callback with a DAE needs to be done with care because the solution
     `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,

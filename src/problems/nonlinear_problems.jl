@@ -416,11 +416,11 @@ is instead a mutating function `explictfuns![i](prob.probs[i],sols)` which
 updates the values of prob.probs[i] using the previous solutions `sols[i-1]`
 and below.
 
-!!! warn
+!!! warning
     For the purposes of differentiation, it's assumed that `explictfuns!` does
     not modify tunable parameters!
 
-!!! warn
+!!! warning
     While `explictfuns![i]` could in theory use `sols[i+1]` in its computation,
     these values will not be updated. It is thus the contract of the interface
     to not use those values except for as caches to be overridden.
