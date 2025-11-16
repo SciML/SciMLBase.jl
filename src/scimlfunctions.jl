@@ -2488,7 +2488,8 @@ of the integrand.
 ## iip: In-Place vs Out-Of-Place
 
 Out-of-place functions must be of the form ``y = f(u, p)`` and in-place functions of the form
-``f(y, u, p)``, where `y` is a number or array containing the output. Since `f` is allowed to return any type (e.g. real or complex numbers or
+``f(y, u, p)``, where `y` is a number or array containing the output.
+Since `f` is allowed to return any type (e.g. real or complex numbers or
 arrays), in-place functions must provide a container `integrand_prototype` that is of the
 right type and size for the variable ``y``, and the result is written to this container in-place.
 When in-place forms are used, in-place array operations, i.e. broadcasting, may be used by

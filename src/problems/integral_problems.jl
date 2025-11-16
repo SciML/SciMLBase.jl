@@ -13,7 +13,7 @@ Integral problems are multi-dimensional integrals defined as:
 
 where `p` are parameters. `u` is a `Number` or `AbstractVector`
 whose geometry matches the space being integrated.
-This space is bounded by the lowerbound `lb` and upperbound `ub`,
+This space is bounded by the lower bound `lb` and upper bound `ub`,
 which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 
 ## Problem Type
