@@ -9,26 +9,18 @@ use by ModelingToolkit.jl.
 $(TYPEDFIELDS)
 """
 struct SymbolicLinearInterface{F1, F2, S, O, M}
-    """
-    A function which takes `A` and the parameter object `p` and updates `A` in-place.
-    """
+    # the docstrings cannot start with a newline because otherwise the docs
+    # builder fragments the list of fields into single-item lists (in TYPEDFIELDS)
+    """A function which takes `A` and the parameter object `p` and updates `A` in-place."""
     update_A!::F1
-    """
-    A function which takes `b` and the parameter object `p` and updates `b` in-place.
-    """
+    """A function which takes `b` and the parameter object `p` and updates `b` in-place."""
     update_b!::F2
-    """
-    The symbolic backend for the `LinearProblem`.
-    """
+    """The symbolic backend for the `LinearProblem`."""
     sys::S
-    """
-    A function which when given a symbolic expression returns a function `(u, p)`
-    that computes the expression.
-    """
+    """A function which when given a symbolic expression returns a function `(u, p)`
+    that computes the expression."""
     observed::O
-    """
-    Arbitrary metadata useful for the symbolic backend.
-    """
+    """Arbitrary metadata useful for the symbolic backend."""
     metadata::M
 end
 
