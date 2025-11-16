@@ -62,7 +62,7 @@ Note that algebraic equations can be specified by using a singular mass matrix.
 
 ### Constructors
 
-```
+```julia
 SDDEProblem(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 ```

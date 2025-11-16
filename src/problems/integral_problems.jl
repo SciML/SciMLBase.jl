@@ -20,7 +20,7 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 
 ### Constructors
 
-```
+```julia
 IntegralProblem(f::AbstractIntegralFunction,domain,p=NullParameters(); kwargs...)
 IntegralProblem(f::AbstractIntegralFunction,lb,ub,p=NullParameters(); kwargs...)
 IntegralProblem(f,domain,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
@@ -139,7 +139,7 @@ assigned by a quadrature rule, which depend on sampling points `x`.
 
 ### Constructors
 
-```
+```julia
 SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs...)
 ```
 - `y`: The sampled integrand, must be a subtype of `AbstractArray`.
