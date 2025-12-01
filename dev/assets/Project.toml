@@ -6,6 +6,9 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 
+[sources]
+SciMLBase = {path = "/home/runner/work/SciMLBase.jl/SciMLBase.jl"}
+
 [compat]
 Documenter = "1"
 ModelingToolkit = "10"
