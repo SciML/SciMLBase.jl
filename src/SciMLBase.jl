@@ -913,6 +913,7 @@ export ODEFunction, DiscreteFunction, ImplicitDiscreteFunction, SplitFunction, D
        DDEFunction, SDEFunction, SplitSDEFunction, RODEFunction, SDDEFunction,
        IncrementingODEFunction, NonlinearFunction, HomotopyNonlinearFunction,
        IntervalNonlinearFunction, BVPFunction,
+       TwoPointBVPFunction, TwoPointDynamicalBVPFunction,
        DynamicalBVPFunction, IntegralFunction, BatchIntegralFunction, ODEInputFunction
 
 export OptimizationFunction, MultiObjectiveOptimizationFunction
