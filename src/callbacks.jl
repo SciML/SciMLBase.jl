@@ -5,12 +5,14 @@ FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
 
 @enum RootfindOpt::Int8 begin
     NoRootFind = 0
-    LeftRootFind = 1
-    RightRootFind = 2
+    BeforeRootFind = 1
+    AfterRootFind = 2
+    LeftRootFind = 3
+    RightRootFind = 4
 end
 
 function Base.convert(::Type{RootfindOpt}, b::Bool)
-    return b ? LeftRootFind : NoRootFind
+    return b ? BeforeRootFind : NoRootFind
 end
 
 """
@@ -19,7 +21,7 @@ ContinuousCallback(condition, affect!, affect_neg!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
-    rootfind = LeftRootFind,
+    rootfind = BeforeRootFind,
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
@@ -31,7 +33,7 @@ ContinuousCallback(condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
-    rootfind = LeftRootFind,
+    rootfind = BeforeRootFind,
     save_positions = (true, true),
     affect_neg! = affect!,
     interp_points = 10,
@@ -61,12 +63,13 @@ Contains a single callback whose `condition` is a continuous function. The callb
     negative). For more information on what can
     be done, see the [Integrator Interface](@ref integrator) manual page. Modifications to
     `u` are safe in this function.
-  - `rootfind=LeftRootFind`: This is a flag to specify the type of rootfinding to do for finding
-    event location. If this is set to `LeftRootfind`, the solution will be backtracked to the point where
-    `condition==0` and if the solution isn't exact, the left limit of root is used. If set to
-    `RightRootFind`, the solution would be set to the right limit of the root. Otherwise, the systems and
-    the `affect!` will occur at `t+dt`. Note that these enums are not exported, and thus one needs to
-    reference them as `SciMLBase.LeftRootFind`, `SciMLBase.RightRootFind`, or `SciMLBase.NoRootFind`.
+  - `rootfind=BeforeRootFind`: This is a flag to specify the type of rootfinding to do for finding event location.
+    If this is set to `BeforeRootFind`, the solution will be backtracked to the point where `condition==0`
+    and if the solution isn't exact, the floating point value before the root (relative the integration direction)
+    is used. If set to `AfterRootFind`, the solution would be set to the floating point value after the root.
+    Otherwise, the systems and the `affect!` will occur at `t+dt`. Note that these enums are not exported,
+    and thus one needs to reference them as `SciMLBase.BeforeRootFind`, `SciMLBase.AfterRootFind`, or
+    `SciMLBase.NoRootFind`. `LeftRootFind` and `RightRootFind` are deprecated.
   - `interp_points=10`: The number of interpolated points to check the condition. The
     condition is found by checking whether any interpolation point / endpoint has
     a different sign. If `interp_points=0`, then conditions will only be noticed if
@@ -153,7 +156,7 @@ function ContinuousCallback(condition, affect!, affect_neg!;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
-        rootfind = LeftRootFind,
+        rootfind = BeforeRootFind,
         save_positions = (true, true),
         interp_points = 10,
         dtrelax = 1,
@@ -172,7 +175,7 @@ function ContinuousCallback(condition, affect!;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
-        rootfind = LeftRootFind,
+        rootfind = BeforeRootFind,
         save_positions = (true, true),
         affect_neg! = affect!,
         interp_points = 10,
@@ -191,7 +194,7 @@ VectorContinuousCallback(condition, affect!, affect_neg!, len;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
-    rootfind = LeftRootFind,
+    rootfind = BeforeRootFind,
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
@@ -203,7 +206,7 @@ VectorContinuousCallback(condition, affect!, len;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
-    rootfind = LeftRootFind,
+    rootfind = BeforeRootFind,
     save_positions = (true, true),
     affect_neg! = affect!,
     interp_points = 10,
@@ -272,7 +275,7 @@ function VectorContinuousCallback(condition, affect!, affect_neg!, len;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
-        rootfind = LeftRootFind,
+        rootfind = BeforeRootFind,
         save_positions = (true, true),
         interp_points = 10,
         dtrelax = 1,
@@ -290,7 +293,7 @@ function VectorContinuousCallback(condition, affect!, len;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
-        rootfind = LeftRootFind,
+        rootfind = BeforeRootFind,
         save_positions = (true, true),
         affect_neg! = affect!,
         interp_points = 10,
