@@ -2703,8 +2703,27 @@ end
 (f::BVPFunction)(args...) = f.f(args...)
 (f::DynamicalBVPFunction)(args...) = f.f(args...)
 
-######### Basic Constructor
+#### fun hack to make NOSPECIALIZE fast
+mutable struct ODE_F_WRAPPER{F}
+    const f::F
+end
+mutable struct DUMB_WRAPPER{P, T}
+    p::P
+    t::T
+    f::ODE_F_WRAPPER
+end
+function (w::ODE_F_WRAPPER)(out, u, d::DUMB_WRAPPER)
+    w.f(out, u, d.p, d.t)
+    return nothing
+end
+function (w::DUMB_WRAPPER)(out, u, p, t)
+    w.p = p
+    w.t = t
+    w.f(out, u, w)
+    return nothing
+end
 
+######### Basic Constructor
 function ODEFunction{iip, specialize}(f;
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
                       I,
