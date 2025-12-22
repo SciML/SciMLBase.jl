@@ -69,6 +69,13 @@ function loss(x, p)
 end
 
 fn = OptimizationFunction(loss; sys = indep_sys)
+
+@testset "`remake(::OptimizationFunction)` works" begin
+    expr = :(A + B)
+    _fn = remake(fn; expr)
+    @test _fn.expr == expr
+end
+
 for T in containerTypes
     push!(probs, OptimizationProblem(fn, u0, T(p)))
 end
