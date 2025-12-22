@@ -2378,6 +2378,9 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 
 ```julia
 DynamicalBVPFunction{iip,specialize}(f, bc;
+                                    cost = __has_cost(f) ? f.cost : nothing,
+                                    equality = __has_equality(f) ? f.equality : nothing,
+                                    inequality = __has_inequality(f) ? f.inequality : nothing,
                                     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
                                     analytic = __has_analytic(f) ? f.analytic : nothing,
                                     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2399,6 +2402,14 @@ for more details on in-place vs out-of-place handling.
 All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
 
+- `cost(du, u, p)`: the target to be minimized, similar with the `cost` function
+  in `OptimizationFunction`. This is used to define the objective function
+  of the BVP, which can be minimized by optimization solvers.
+- `equality(res, du, u, t)`: equality constraints functions for the BVP.
+- `inequality(res, du, u, t)`: inequality constraints functions for the BVP.
+- `f_prototype`: a prototype matrix matching the type of the ODE/DAE variables in an optimal control
+  problem. For example, in the ODE/DAE that describe the dynamics of the optiml control problem,
+  `f_prototype` should match the type and size of the ODE/DAE variables in `f`.
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
@@ -2438,11 +2449,15 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the DynamicalBVPFunction type directly match the names of the inputs.
 """
 struct DynamicalBVPFunction{
-    iip, specialize, twopoint, F, BF, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
+    iip, specialize, twopoint, F, BF, C, EC, IC, FP, TMM, Ta, Tt, TJ, BCTJ, JVP, VJP,
     JP, BCJP, BCRP, SP, TW, TWt, TPJ, O, TCV, BCTCV,
     SYS, ID} <: AbstractBVPFunction{iip, twopoint}
     f::F
     bc::BF
+    cost::C
+    equality::EC
+    inequality::IC
+    f_prototype::FP
     mass_matrix::TMM
     analytic::Ta
     tgrad::Tt
@@ -4550,6 +4565,10 @@ end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
 function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
+        cost = __has_cost(f) ? f.cost : nothing,
+        equality = __has_equality(f) ? f.equality : nothing,
+        inequality = __has_inequality(f) ? f.inequality : nothing,
+        f_prototype = __has_f_prototype(f) ? f.f_prototype : nothing,
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
@@ -4646,14 +4665,18 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
     Wfactiip = Wfact !== nothing ? isinplace(Wfact, 6, "Wfact", iip) : iip
     Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 6, "Wfact_t", iip) : iip
     paramjaciip = paramjac !== nothing ? isinplace(paramjac, 5, "paramjac", iip) : iip
+    costiip = cost !== nothing ? isinplace(cost, 3, "cost", iip) : iip
+    equalityiip = equality !== nothing ? isinplace(equality, 4, "equality", iip) : iip
+    inequalityiip = inequality !== nothing ? isinplace(inequality, 4, "inequality", iip) :
+                    iip
 
     nonconforming = (bciip, jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
-        paramjaciip) .!= iip
+        paramjaciip, costiip, equalityiip, inequalityiip) .!= iip
     bc_nonconforming = bcjaciip .!= bciip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
         functions = ["bc", "jac", "bcjac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t",
-            "paramjac"][nonconforming]
+            "paramjac", "cost", "equality", "inequality"][nonconforming]
         throw(NonconformingFunctionsError(functions))
     end
 
@@ -4684,24 +4707,25 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(f, bc;
     sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     if specialize === NoSpecialize
-        DynamicalBVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any,
+        DynamicalBVPFunction{iip, specialize, twopoint, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any, Any, Any, Any,
             Any,
             Any, typeof(_colorvec), typeof(_bccolorvec), Any, Any}(
-            _f, bc, mass_matrix,
+            _f, bc, cost, equality, inequality, f_prototype, mass_matrix,
             analytic, tgrad, jac, bcjac, jvp, vjp, jac_prototype,
             bcjac_prototype, bcresid_prototype,
             sparsity, Wfact, Wfact_t, paramjac, observed,
             _colorvec, _bccolorvec, sys, initialization_data)
     else
-        DynamicalBVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc),
+        DynamicalBVPFunction{iip, specialize, twopoint, typeof(_f), typeof(bc), typeof(cost),
+            typeof(equality), typeof(inequality), typeof(f_prototype),
             typeof(mass_matrix), typeof(analytic), typeof(tgrad), typeof(jac),
             typeof(bcjac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(bcjac_prototype), typeof(bcresid_prototype), typeof(sparsity),
             typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
             typeof(_colorvec), typeof(_bccolorvec), typeof(sys),
             typeof(initialization_data)}(
-            _f, bc, mass_matrix, analytic,
+            _f, bc, cost, equality, inequality, f_prototype, mass_matrix, analytic,
             tgrad, jac, bcjac, jvp, vjp,
             jac_prototype, bcjac_prototype, bcresid_prototype, sparsity,
             Wfact, Wfact_t, paramjac,
