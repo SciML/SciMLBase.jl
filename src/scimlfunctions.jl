@@ -4264,6 +4264,8 @@ function OptimizationFunction(f, args...; kwargs...)
     OptimizationFunction{true}(f, args...; kwargs...)
 end
 
+OptimizationFunction{iip, spec}(f; adtype::spec, kws...) where {iip, spec} = OptimizationFunction(f, adtype; kws...)
+
 function OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
         grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
         cons = nothing, cons_j = nothing, cons_jvp = nothing,
