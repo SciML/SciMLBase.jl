@@ -4,7 +4,7 @@ We live in a society, and therefore there are rules. In this tutorial we outline
 the rules which are required on container and number types which are allowable
 in SciML tools.
 
-!!! warn
+!!! warning
     
     In general as of 2023, strict adherence to this interface is an early work-in-progress.
     If anything does not conform to the documented interface, please open an issue.
