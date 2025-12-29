@@ -847,6 +847,7 @@ include("deprecated.jl")
 import PrecompileTools
 
 PrecompileTools.@compile_workload begin
+    # ODE test functions
     function lorenz(du, u, p, t)
         du[1] = 10.0(u[2] - u[1])
         du[2] = u[1] * (28.0 - u[3]) - u[2]
@@ -857,10 +858,69 @@ PrecompileTools.@compile_workload begin
         [10.0(u[2] - u[1]), u[1] * (28.0 - u[3]) - u[2], u[1] * u[2] - (8 / 3) * u[3]]
     end
 
-    ODEProblem(lorenz, [1.0; 0.0; 0.0], (0.0, 1.0))
-    ODEProblem(lorenz, [1.0; 0.0; 0.0], (0.0, 1.0), Float64[])
-    ODEProblem(lorenz_oop, [1.0; 0.0; 0.0], (0.0, 1.0))
-    ODEProblem(lorenz_oop, [1.0; 0.0; 0.0], (0.0, 1.0), Float64[])
+    u0 = [1.0, 0.0, 0.0]
+    tspan = (0.0, 1.0)
+
+    # ODEProblem (IIP and OOP)
+    prob_ode_iip = ODEProblem(lorenz, u0, tspan)
+    ODEProblem(lorenz, u0, tspan, Float64[])
+    prob_ode_oop = ODEProblem(lorenz_oop, u0, tspan)
+    ODEProblem(lorenz_oop, u0, tspan, Float64[])
+
+    # NonlinearProblem (IIP and OOP)
+    nl_iip(res, u, p) = (res[1] = u[1]^2 - 2.0; nothing)
+    nl_oop(u, p) = [u[1]^2 - 2.0]
+    prob_nl_iip = NonlinearProblem(nl_iip, [1.0], nothing)
+    prob_nl_oop = NonlinearProblem(nl_oop, [1.0], nothing)
+    NonlinearProblem(nl_iip, [1.0])
+    NonlinearProblem(nl_oop, [1.0])
+
+    # OptimizationProblem
+    opt_f = OptimizationFunction((x, p) -> sum(abs2, x))
+    prob_opt = OptimizationProblem(opt_f, [1.0, 2.0], nothing)
+    OptimizationProblem((x, p) -> sum(abs2, x), [1.0, 2.0])
+
+    # IntegralProblem
+    int_f = (x, p) -> x^2
+    prob_int = IntegralProblem(int_f, (0.0, 1.0), nothing)
+    IntegralProblem(int_f, (0.0, 1.0))
+
+    # LinearProblem
+    A = [1.0 2.0; 3.0 4.0]
+    b = [1.0, 2.0]
+    prob_lin = LinearProblem(A, b)
+    LinearProblem(A, b, nothing)
+
+    # SDEProblem
+    g_iip(du, u, p, t) = (du .= 0.1; nothing)
+    g_oop(u, p, t) = fill(0.1, length(u))
+    prob_sde = SDEProblem(lorenz, g_iip, u0, tspan)
+    SDEProblem(lorenz_oop, g_oop, u0, tspan)
+
+    # DAEProblem
+    dae_f(res, du, u, p, t) = (res[1] = du[1] - u[1]; nothing)
+    DAEProblem(dae_f, [0.0], [1.0], (0.0, 1.0))
+
+    # DDEProblem
+    dde_f(du, u, h, p, t) = (du[1] = h(p, t - 0.1)[1]; nothing)
+    h_func(p, t) = [1.0]
+    DDEProblem(dde_f, [1.0], h_func, (0.0, 1.0))
+
+    # SteadyStateProblem
+    SteadyStateProblem(prob_ode_iip)
+    SteadyStateProblem(prob_ode_oop)
+
+    # DiscreteProblem
+    discrete_f(du, u, p, t) = (du[1] = u[1] * 2; nothing)
+    DiscreteProblem(discrete_f, [1.0], (0, 10))
+
+    # remake for common problem types
+    remake(prob_ode_iip, u0 = [2.0, 0.0, 0.0])
+    remake(prob_ode_oop, u0 = [2.0, 0.0, 0.0])
+    remake(prob_nl_iip, u0 = [2.0])
+    remake(prob_nl_oop, u0 = [2.0])
+    remake(prob_opt, u0 = [2.0, 3.0])
+    remake(prob_lin, b = [2.0, 3.0])
 end
 
 function discretize end
