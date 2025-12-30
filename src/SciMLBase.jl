@@ -921,6 +921,50 @@ PrecompileTools.@compile_workload begin
     remake(prob_nl_oop, u0 = [2.0])
     remake(prob_opt, u0 = [2.0, 3.0])
     remake(prob_lin, b = [2.0, 3.0])
+    remake(prob_sde, u0 = [2.0, 0.0, 0.0])
+
+    # RODEProblem
+    rode_f(du, u, p, t, W) = (du .= u .* W; nothing)
+    RODEProblem(rode_f, u0, tspan)
+
+    # BVProblem
+    bvp_f(du, u, p, t) = (du[1] = u[2]; du[2] = -u[1]; nothing)
+    bvp_bc(res, u, p, t) = (res[1] = u[1][1] - 1.0; res[2] = u[2][1]; nothing)
+    BVProblem(bvp_f, bvp_bc, [1.0, 0.0], (0.0, 1.0))
+
+    # SecondOrderODEProblem
+    so_f(ddu, du, u, p, t) = (ddu .= -u; nothing)
+    SecondOrderODEProblem(so_f, [0.0], [1.0], (0.0, 1.0))
+
+    # SplitODEProblem
+    split_f1(du, u, p, t) = (du .= u; nothing)
+    split_f2(du, u, p, t) = (du .= -u; nothing)
+    SplitODEProblem(SplitFunction(split_f1, split_f2), [1.0], (0.0, 1.0))
+
+    # ImplicitDiscreteProblem
+    impl_f(res, u_next, u, p, t) = (res .= u_next .- 2 .* u; nothing)
+    ImplicitDiscreteProblem(impl_f, [1.0], (0, 10))
+
+    # NonlinearLeastSquaresProblem
+    nllsq_f(u, p) = [u[1]^2 - 1.0]
+    NonlinearLeastSquaresProblem(nllsq_f, [1.5])
+
+    # IntervalNonlinearProblem
+    interval_f(u, p) = u^2 - 2
+    IntervalNonlinearProblem(interval_f, (0.0, 2.0))
+
+    # Callbacks
+    cb_condition(u, t, integrator) = true
+    cb_affect!(integrator) = nothing
+    DiscreteCallback(cb_condition, cb_affect!)
+
+    ccb_condition(u, t, integrator) = t - 0.5
+    ccb_affect!(integrator) = nothing
+    ContinuousCallback(ccb_condition, ccb_affect!)
+
+    cb = DiscreteCallback(cb_condition, cb_affect!)
+    ccb = ContinuousCallback(ccb_condition, ccb_affect!)
+    CallbackSet(cb, ccb)
 end
 
 function discretize end
