@@ -1,7 +1,10 @@
 module EnsembleAnalysis
 
-using SciMLBase, Statistics, RecursiveArrayTools, StaticArraysCore
-using DocStringExtensions
+using SciMLBase: SciMLBase, AbstractSciMLSolution, EnsembleSummary
+using Statistics: Statistics, median, quantile
+using RecursiveArrayTools: RecursiveArrayTools, DiffEqArray, VectorOfArray, vecarr_to_vectors
+using StaticArraysCore: StaticArraysCore
+using DocStringExtensions: DocStringExtensions, SIGNATURES
 
 # Getters
 """
@@ -279,7 +282,7 @@ end
 
 function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
         t = sim.u[1].t; quantiles = [0.05, 0.95]) where {T, N}
-    if sim.u[1] isa SciMLSolution
+    if sim.u[1] isa AbstractSciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
         qlow = timeseries_point_quantile(sim, quantiles[1], t)
