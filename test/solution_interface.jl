@@ -16,14 +16,16 @@ end
 
     int_vars = SciMLBase.interpret_vars(nothing, sol) # nothing = idxs
     plot_vecs,
-    labels = SciMLBase.diffeq_to_arrays(sol,
+        labels = SciMLBase.diffeq_to_arrays(
+        sol,
         true, # plot_analytic
         true, # denseplot
         10, # plotdensity
         ode.tspan,
         int_vars,
         :identity,
-        nothing) # tscale
+        nothing
+    ) # tscale
     @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
 end
 
@@ -42,9 +44,12 @@ end
 @testset "interpolate with empty idxs" begin
     f = (u, p, t) -> u
     sol1 = SciMLBase.build_solution(
-        ODEProblem(f, 1.0, (0.0, 1.0)), :NoAlgorithm, 0.0:0.1:1.0, exp.(0.0:0.1:1.0))
-    sol2 = SciMLBase.build_solution(ODEProblem(f, [1.0, 2.0], (0.0, 1.0)), :NoAlgorithm,
-        0.0:0.1:1.0, vcat.(exp.(0.0:0.1:1.0), 2exp.(0.0:0.1:1.0)))
+        ODEProblem(f, 1.0, (0.0, 1.0)), :NoAlgorithm, 0.0:0.1:1.0, exp.(0.0:0.1:1.0)
+    )
+    sol2 = SciMLBase.build_solution(
+        ODEProblem(f, [1.0, 2.0], (0.0, 1.0)), :NoAlgorithm,
+        0.0:0.1:1.0, vcat.(exp.(0.0:0.1:1.0), 2exp.(0.0:0.1:1.0))
+    )
     for sol in [sol1, sol2]
         @test sol(0.15; idxs = []) == Float64[]
         @test sol(0.15; idxs = Int[]) == Float64[]

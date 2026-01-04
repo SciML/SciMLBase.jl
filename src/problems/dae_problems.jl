@@ -68,7 +68,7 @@ sol = solve(prob,IDA())
 ```
 """
 struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
-       AbstractDAEProblem{uType, duType, tType, isinplace}
+    AbstractDAEProblem{uType, duType, tType, isinplace}
     f::F
     du0::duType
     u0::uType
@@ -76,10 +76,12 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     p::P
     kwargs::K
     differential_vars::D
-    @add_kwonly function DAEProblem{iip}(f::AbstractDAEFunction{iip},
+    @add_kwonly function DAEProblem{iip}(
+            f::AbstractDAEFunction{iip},
             du0, u0, tspan, p = NullParameters();
             differential_vars = nothing,
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _du0 = prepare_initial_state(du0)
         if !isnothing(_u0)
@@ -93,28 +95,32 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
         end
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_du0), typeof(_tspan),
+        new{
+            typeof(_u0), typeof(_du0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(f), typeof(kwargs),
-            typeof(differential_vars)}(f, _du0, _u0, _tspan, p,
-            kwargs, differential_vars)
+            typeof(differential_vars),
+        }(
+            f, _du0, _u0, _tspan, p,
+            kwargs, differential_vars
+        )
     end
 
     function DAEProblem{iip}(f, du0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        DAEProblem(DAEFunction{iip}(f), du0, u0, tspan, p; kwargs...)
+        return DAEProblem(DAEFunction{iip}(f), du0, u0, tspan, p; kwargs...)
     end
 end
 
 function DAEProblem(f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(); kwargs...)
-    DAEProblem{isinplace(f)}(f, du0, u0, tspan, p; kwargs...)
+    return DAEProblem{isinplace(f)}(f, du0, u0, tspan, p; kwargs...)
 end
 
 function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
-    DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
+    return DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}
-    function ctor(f, du0, u0, tspan, p, kw, dv)
+    return function ctor(f, du0, u0, tspan, p, kw, dv)
         iip = isinplace(f)
         return DAEProblem{iip}(f, du0, u0, tspan, p; differential_vars = dv, kw...)
     end
@@ -144,9 +150,11 @@ struct DAEAliasSpecifier
     alias_du0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
 
-    function DAEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-        if alias == true
+    function DAEAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)

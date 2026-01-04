@@ -1,4 +1,3 @@
-
 """
 $(TYPEDEF)
 Statistics from the nonlinear equation solver about the solution process.
@@ -25,12 +24,14 @@ function Base.show(io::IO, ::MIME"text/plain", s::NLStats)
     @printf io "%-50s %-d\n" "Number of Jacobians created:" s.njacs
     @printf io "%-50s %-d\n" "Number of factorizations:" s.nfactors
     @printf io "%-50s %-d\n" "Number of linear solves:" s.nsolve
-    @printf io "%-50s %-d" "Number of nonlinear solver iterations:" s.nsteps
+    return @printf io "%-50s %-d" "Number of nonlinear solver iterations:" s.nsteps
 end
 
 function Base.merge(s1::NLStats, s2::NLStats)
-    NLStats(s1.nf + s2.nf, s1.njacs + s2.njacs, s1.nfactors + s2.nfactors,
-        s1.nsolve + s2.nsolve, s1.nsteps + s2.nsteps)
+    return NLStats(
+        s1.nf + s2.nf, s1.njacs + s2.njacs, s1.nfactors + s2.nfactors,
+        s1.nsolve + s2.nsolve, s1.nsteps + s2.nsteps
+    )
 end
 
 """
@@ -55,7 +56,7 @@ or the steady state solution to a differential equation defined by a SteadyState
   - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
 struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
-       AbstractNonlinearSolution{T, N}
+    AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
     prob::P
@@ -72,7 +73,8 @@ const SteadyStateSolution = NonlinearSolution
 
 get_p(p::AbstractNonlinearSolution) = p.prob.p
 
-function build_solution(prob::Union{AbstractNonlinearProblem, SCCNonlinearProblem},
+function build_solution(
+        prob::Union{AbstractNonlinearProblem, SCCNonlinearProblem},
         alg, u, resid; calculate_error = true,
         retcode = ReturnCode.Default,
         original = nothing,
@@ -80,13 +82,18 @@ function build_solution(prob::Union{AbstractNonlinearProblem, SCCNonlinearProble
         right = nothing,
         stats = nothing,
         trace = nothing,
-        kwargs...)
+        kwargs...
+    )
     T = eltype(eltype(u))
     N = ndims(u)
 
-    NonlinearSolution{T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
-        typeof(original), typeof(left), typeof(stats), typeof(trace)}(u, resid, prob, alg,
-        retcode, original, left, right, stats, trace)
+    return NonlinearSolution{
+        T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
+        typeof(original), typeof(left), typeof(stats), typeof(trace),
+    }(
+        u, resid, prob, alg,
+        retcode, original, left, right, stats, trace
+    )
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
@@ -96,8 +103,12 @@ function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     # Some of the subtypes might not have a trace field
     trace = hasfield(typeof(sol), :trace) ? sol.trace : nothing
 
-    NonlinearSolution{T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
+    return NonlinearSolution{
+        T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
         typeof(sol.alg), typeof(sol.original), typeof(sol.left),
-        typeof(sol.stats), typeof(trace)}(u, sol.resid, sol.prob, sol.alg, sol.retcode,
-        sol.original, sol.left, sol.right, sol.stats, trace)
+        typeof(sol.stats), typeof(trace),
+    }(
+        u, sol.resid, sol.prob, sol.alg, sol.retcode,
+        sol.original, sol.left, sol.right, sol.stats, trace
+    )
 end

@@ -5,7 +5,7 @@ Returns the number of arguments of `f` for each method.
 """
 function numargs(f)
     if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
-       typeof(f).name.name == :RFunction
+            typeof(f).name.name == :RFunction
         # Uses the RCall form to grab the parameter length
         return [length(unsafe_load(f.r.p).formals)]
     else
@@ -13,18 +13,20 @@ function numargs(f)
     end
 end
 
-function numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
+function numargs(
+        f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
+            T,
+            V,
+            W,
+            I,
+        }
+    ) where {
         T,
         V,
         W,
-        I
-}) where {
-        T,
-        V,
-        W,
-        I
-}
-    (length(T),)
+        I,
+    }
+    return (length(T),)
 end
 
 numargs(f::ComposedFunction) = numargs(f.inner)
@@ -35,20 +37,20 @@ $(SIGNATURES)
 Get the number of parameters of a Tuple type, i.e. the number of fields.
 """
 function num_types_in_tuple(sig)
-    length(sig.parameters)
+    return length(sig.parameters)
 end
 
 function num_types_in_tuple(sig::UnionAll)
-    length(Base.unwrap_unionall(sig).parameters)
+    return length(Base.unwrap_unionall(sig).parameters)
 end
 
 const NO_METHODS_ERROR_MESSAGE = """
-                                 No methods were found for the model function passed to the equation solver.
-                                 The function `f` needs to have dispatches, for example, for an ODEProblem
-                                 `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. For more information
-                                 on how the model function `f` should be defined, consult the docstring for
-                                 the appropriate `AbstractSciMLFunction`.
-                                 """
+No methods were found for the model function passed to the equation solver.
+The function `f` needs to have dispatches, for example, for an ODEProblem
+`f` must define either `f(u,p,t)` or `f(du,u,p,t)`. For more information
+on how the model function `f` should be defined, consult the docstring for
+the appropriate `AbstractSciMLFunction`.
+"""
 
 struct NoMethodsError <: Exception
     fname::String
@@ -57,38 +59,38 @@ end
 function Base.showerror(io::IO, e::NoMethodsError)
     println(io, NO_METHODS_ERROR_MESSAGE)
     print(io, "Offending function: ")
-    printstyled(io, e.fname; bold = true, color = :red)
+    return printstyled(io, e.fname; bold = true, color = :red)
 end
 
 const TOO_MANY_ARGUMENTS_ERROR_MESSAGE = """
-                                         All methods for the model function `f` had too many arguments. For example,
-                                         an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
-                                         can be thrown if you define an ODE model for example as `f(du,u,p1,p2,t)`.
-                                         For more information on the required number of arguments for the function
-                                         you were defining, consult the documentation for the `SciMLProblem` or
-                                         `SciMLFunction` type that was being constructed.
+All methods for the model function `f` had too many arguments. For example,
+an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
+can be thrown if you define an ODE model for example as `f(du,u,p1,p2,t)`.
+For more information on the required number of arguments for the function
+you were defining, consult the documentation for the `SciMLProblem` or
+`SciMLFunction` type that was being constructed.
 
-                                         A common reason for this occurrence is due to following the MATLAB or SciPy
-                                         convention for parameter passing, i.e. to add each parameter as an argument.
-                                         In the SciML convention, if you wish to pass multiple parameters, use a
-                                         struct or other collection to hold the parameters. For example, here is the
-                                         parameterized Lorenz equation:
+A common reason for this occurrence is due to following the MATLAB or SciPy
+convention for parameter passing, i.e. to add each parameter as an argument.
+In the SciML convention, if you wish to pass multiple parameters, use a
+struct or other collection to hold the parameters. For example, here is the
+parameterized Lorenz equation:
 
-                                         ```julia
-                                         function lorenz(du,u,p,t)
-                                           du[1] = p[1]*(u[2]-u[1])
-                                           du[2] = u[1]*(p[2]-u[3]) - u[2]
-                                           du[3] = u[1]*u[2] - p[3]*u[3]
-                                         end
-                                         u0 = [1.0;0.0;0.0]
-                                         p = [10.0,28.0,8/3]
-                                         tspan = (0.0,100.0)
-                                         prob = ODEProblem(lorenz,u0,tspan,p)
-                                         ```
+```julia
+function lorenz(du,u,p,t)
+  du[1] = p[1]*(u[2]-u[1])
+  du[2] = u[1]*(p[2]-u[3]) - u[2]
+  du[3] = u[1]*u[2] - p[3]*u[3]
+end
+u0 = [1.0;0.0;0.0]
+p = [10.0,28.0,8/3]
+tspan = (0.0,100.0)
+prob = ODEProblem(lorenz,u0,tspan,p)
+```
 
-                                         Notice that `f` is defined with a single `p`, an array which matches the definition
-                                         of the `p` in the `ODEProblem`. Note that `p` can be any Julia struct.
-                                         """
+Notice that `f` is defined with a single `p`, an array which matches the definition
+of the `p` in the `ODEProblem`. Note that `p` can be any Julia struct.
+"""
 
 struct TooManyArgumentsError <: Exception
     fname::String
@@ -100,80 +102,80 @@ function Base.showerror(io::IO, e::TooManyArgumentsError)
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
     println(io, "\nMethods:")
-    println(io, methods(e.f))
+    return println(io, methods(e.f))
 end
 
 const TOO_FEW_ARGUMENTS_ERROR_MESSAGE_OPTIMIZATION = """
-                                        All methods for the model function `f` had too few arguments. For example,
-                                        an OptimizationProblem `f` must define `f(u,p)` where `u` is the optimization
-                                        state and `p` are the parameters of the optimization (commonly, the hyperparameters
-                                        of the simulation).
+All methods for the model function `f` had too few arguments. For example,
+an OptimizationProblem `f` must define `f(u,p)` where `u` is the optimization
+state and `p` are the parameters of the optimization (commonly, the hyperparameters
+of the simulation).
 
-                                        A common reason for this error is from defining a single-input loss function
-                                        `f(u)`. While parameters are not required, a loss function which takes parameters
-                                        is required, i.e. `f(u,p)`. If you have a function `f(u)`, ignored parameters
-                                        can be easily added using a closure, i.e. `OptimizationProblem((u,_)->f(u),...)`.
+A common reason for this error is from defining a single-input loss function
+`f(u)`. While parameters are not required, a loss function which takes parameters
+is required, i.e. `f(u,p)`. If you have a function `f(u)`, ignored parameters
+can be easily added using a closure, i.e. `OptimizationProblem((u,_)->f(u),...)`.
 
-                                        For example, here is a parameterized optimization problem:
+For example, here is a parameterized optimization problem:
 
-                                        ```julia
-                                        using Optimization, OptimizationOptimJL
-                                        rosenbrock(u,p) =  (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
-                                        u0 = zeros(2)
-                                        p  = [1.0,100.0]
+```julia
+using Optimization, OptimizationOptimJL
+rosenbrock(u,p) =  (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
+u0 = zeros(2)
+p  = [1.0,100.0]
 
-                                        prob = OptimizationProblem(rosenbrock,u0,p)
-                                        sol = solve(prob,NelderMead())
-                                        ```
+prob = OptimizationProblem(rosenbrock,u0,p)
+sol = solve(prob,NelderMead())
+```
 
-                                        and a parameter-less example:
+and a parameter-less example:
 
-                                        ```julia
-                                        using Optimization, OptimizationOptimJL
-                                        rosenbrock(u,p) =  (1 - u[1])^2 + (u[2] - u[1]^2)^2
-                                        u0 = zeros(2)
+```julia
+using Optimization, OptimizationOptimJL
+rosenbrock(u,p) =  (1 - u[1])^2 + (u[2] - u[1]^2)^2
+u0 = zeros(2)
 
-                                        prob = OptimizationProblem(rosenbrock,u0)
-                                        sol = solve(prob,NelderMead())
-                                        ```
-                                        """
+prob = OptimizationProblem(rosenbrock,u0)
+sol = solve(prob,NelderMead())
+```
+"""
 
 const TOO_FEW_ARGUMENTS_ERROR_MESSAGE = """
-                                        All methods for the model function `f` had too few arguments. For example,
-                                        an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
-                                        can be thrown if you define an ODE model for example as `f(u,t)`. The parameters
-                                        `p` are not optional in the definition of `f`! For more information on the required
-                                        number of arguments for the function you were defining, consult the documentation
-                                        for the `SciMLProblem` or `SciMLFunction` type that was being constructed.
+All methods for the model function `f` had too few arguments. For example,
+an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`. This error
+can be thrown if you define an ODE model for example as `f(u,t)`. The parameters
+`p` are not optional in the definition of `f`! For more information on the required
+number of arguments for the function you were defining, consult the documentation
+for the `SciMLProblem` or `SciMLFunction` type that was being constructed.
 
-                                        For example, here is the no parameter Lorenz equation. The two valid versions
-                                        are out of place:
+For example, here is the no parameter Lorenz equation. The two valid versions
+are out of place:
 
-                                        ```julia
-                                        function lorenz(u,p,t)
-                                          du1 = 10.0*(u[2]-u[1])
-                                          du2 = u[1]*(28.0-u[3]) - u[2]
-                                          du3 = u[1]*u[2] - 8/3*u[3]
-                                          [du1,du2,du3]
-                                        end
-                                        u0 = [1.0;0.0;0.0]
-                                        tspan = (0.0,100.0)
-                                        prob = ODEProblem(lorenz,u0,tspan)
-                                        ```
+```julia
+function lorenz(u,p,t)
+  du1 = 10.0*(u[2]-u[1])
+  du2 = u[1]*(28.0-u[3]) - u[2]
+  du3 = u[1]*u[2] - 8/3*u[3]
+  [du1,du2,du3]
+end
+u0 = [1.0;0.0;0.0]
+tspan = (0.0,100.0)
+prob = ODEProblem(lorenz,u0,tspan)
+```
 
-                                        and in-place:
+and in-place:
 
-                                        ```julia
-                                        function lorenz!(du,u,p,t)
-                                          du[1] = 10.0*(u[2]-u[1])
-                                          du[2] = u[1]*(28.0-u[3]) - u[2]
-                                          du[3] = u[1]*u[2] - 8/3*u[3]
-                                        end
-                                        u0 = [1.0;0.0;0.0]
-                                        tspan = (0.0,100.0)
-                                        prob = ODEProblem(lorenz!,u0,tspan)
-                                        ```
-                                        """
+```julia
+function lorenz!(du,u,p,t)
+  du[1] = 10.0*(u[2]-u[1])
+  du[2] = u[1]*(28.0-u[3]) - u[2]
+  du[3] = u[1]*u[2] - 8/3*u[3]
+end
+u0 = [1.0;0.0;0.0]
+tspan = (0.0,100.0)
+prob = ODEProblem(lorenz!,u0,tspan)
+```
+"""
 
 struct TooFewArgumentsError <: Exception
     fname::String
@@ -190,17 +192,17 @@ function Base.showerror(io::IO, e::TooFewArgumentsError)
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
     println(io, "\nMethods:")
-    println(io, methods(e.f))
+    return println(io, methods(e.f))
 end
 
 const ARGUMENTS_ERROR_MESSAGE = """
-                                Methods dispatches for the model function `f` do not match the required number.
-                                For example, an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`.
-                                This error can be thrown if you define an ODE model for example as `f(u,t)`
-                                and `f(u,p,t,x,y)` as both of those are not valid dispatches! For more information
-                                on the required dispatches for the given model function, consult the documentation
-                                for the appropriate `SciMLProblem` or `AbstractSciMLFunction`.
-                                """
+Methods dispatches for the model function `f` do not match the required number.
+For example, an ODEProblem `f` must define either `f(u,p,t)` or `f(du,u,p,t)`.
+This error can be thrown if you define an ODE model for example as `f(u,t)`
+and `f(u,p,t,x,y)` as both of those are not valid dispatches! For more information
+on the required dispatches for the given model function, consult the documentation
+for the appropriate `SciMLProblem` or `AbstractSciMLFunction`.
+"""
 
 struct FunctionArgumentsError <: Exception
     fname::String
@@ -212,7 +214,7 @@ function Base.showerror(io::IO, e::FunctionArgumentsError)
     print(io, "Offending function: ")
     printstyled(io, e.fname; bold = true, color = :red)
     println(io, "\nMethods:")
-    println(io, methods(e.f))
+    return println(io, methods(e.f))
 end
 
 """
@@ -243,9 +245,11 @@ form is disabled and the 2-argument signature is ensured to be matched.
 
   - [`numargs`](@ref numargs)
 """
-function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
+function isinplace(
+        f, inplace_param_number, fname = "f", iip_preferred = true;
         has_two_dispatches = true, isoptimization = false,
-        outofplace_param_number = inplace_param_number - 1)
+        outofplace_param_number = inplace_param_number - 1
+    )
     nargs = numargs(f)
     iip_dispatch = any(x -> x == inplace_param_number, nargs)
     oop_dispatch = any(x -> x == outofplace_param_number, nargs)
@@ -254,7 +258,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
         throw(NoMethodsError(fname))
     end
 
-    if !iip_dispatch && !oop_dispatch && !isoptimization
+    return if !iip_dispatch && !oop_dispatch && !isoptimization
         if all(>(inplace_param_number), nargs)
             throw(TooManyArgumentsError(fname, f))
         elseif all(<(outofplace_param_number), nargs) && has_two_dispatches
@@ -269,7 +273,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
 
             for i in 1:length(nargs)
                 if nargs[i] < inplace_param_number &&
-                   any(isequal(Vararg{Any}), _parameters)
+                        any(isequal(Vararg{Any}), _parameters)
                     # If varargs, assume iip
                     return iip_preferred
                 end
@@ -288,7 +292,7 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
         # If so, no error
         for i in 1:length(nargs)
             if nargs[i] < inplace_param_number &&
-               any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
+                    any(isequal(Vararg{Any}), methods(f).ms[1].sig.parameters)
                 # If varargs, assume iip
                 return iip_preferred
             end
@@ -309,9 +313,11 @@ function isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
 end
 
 isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
-function isinplace(f::AbstractSciMLFunction{iip}, inplace_param_number,
-        fname = nothing) where {iip}
-    iip
+function isinplace(
+        f::AbstractSciMLFunction{iip}, inplace_param_number,
+        fname = nothing
+    ) where {iip}
+    return iip
 end
 
 """
@@ -334,7 +340,7 @@ get_colorizers(io::IO) = get(io, :color, false) ? (TYPE_COLOR, NO_COLOR) : ("", 
 macro def(name, definition)
     return quote
         macro $(esc(name))()
-            esc($(Expr(:quote, definition)))
+            return esc($(Expr(:quote, definition)))
         end
     end
 end
@@ -357,7 +363,7 @@ function check_keywords(alg, kwargs, warnlist)
             end
         end
     end
-    flg
+    return flg
 end
 
 """
@@ -386,7 +392,7 @@ expands to:
     end
 """
 macro add_kwonly(ex)
-    esc(add_kwonly(ex))
+    return esc(add_kwonly(ex))
 end
 
 add_kwonly(ex::Expr) = add_kwonly(Val{ex.head}, ex)
@@ -395,8 +401,12 @@ function add_kwonly(::Type{<:Val}, ex)
     error("add_only does not work with expression $(ex.head)")
 end
 
-function add_kwonly(::Union{Type{Val{:function}},
-            Type{Val{:(=)}}}, ex::Expr)
+function add_kwonly(
+        ::Union{
+            Type{Val{:function}},
+            Type{Val{:(=)}},
+        }, ex::Expr
+    )
     body = ex.args[2:end]  # function body
     default_call = ex.args[1]  # e.g., :(f(a, b=2; c=3))
     kwonly_call = add_kwonly(default_call)
@@ -452,9 +462,13 @@ function add_kwonly(::Type{Val{:call}}, default_call::Expr)
         error("At least one positional mandatory argument is required.")
     end
 
-    kwonly_kwargs = Expr(:parameters,
-        [Expr(:kw, pa, :(error($("No argument $pa"))))
-         for pa in required]..., optional..., default_kwargs...)
+    kwonly_kwargs = Expr(
+        :parameters,
+        [
+            Expr(:kw, pa, :(error($("No argument $pa"))))
+                for pa in required
+        ]..., optional..., default_kwargs...
+    )
     kwonly_call = Expr(:call, funcname, kwonly_kwargs)
     # e.g., :(f(; a=error(...), b=error(...), c=1, d=2))
 
@@ -484,7 +498,7 @@ struct Void{F}
 end
 function (f::Void)(args...)
     f.f(args...)
-    nothing
+    return nothing
 end
 
 """
@@ -493,7 +507,7 @@ To be overloaded in ModelingToolkit
 function handle_varmap end
 
 function mergedefaults(defaults, varmap, vars)
-    defs = if varmap isa Dict
+    return defs = if varmap isa Dict
         merge(defaults, varmap)
     elseif eltype(varmap) <: Pair
         merge(defaults, Dict(varmap))
@@ -548,5 +562,5 @@ prepare_function(f) = f
 Strips a SciMLSolution object and its interpolation of their functions to better accommodate serialization.
 """
 function strip_solution(sol::AbstractSciMLSolution)
-    sol
+    return sol
 end

@@ -9,7 +9,7 @@ containerTypes = [Vector, Tuple, SVector{3}, MVector{3}, SizedVector{3}]
 function lorenz!(du, u, p, t)
     du[1] = p[1] * (u[2] - u[1])
     du[2] = u[1] * (p[2] - u[3]) - u[2]
-    du[3] = u[1] * u[2] - p[3] * u[3]
+    return du[3] = u[1] * u[2] - p[3] * u[3]
 end
 u0 = [1.0; 2.0; 3.0]
 tspan = (0.0, 100.0)
@@ -27,7 +27,7 @@ end
 function ddelorenz!(du, u, h, p, t)
     du[1] = p[1] * (u[2] - u[1])
     du[2] = u[1] * (p[2] - u[3]) - u[2]
-    du[3] = u[1] * u[2] - p[3] * u[3]
+    return du[3] = u[1] * u[2] - p[3] * u[3]
 end
 
 function history(p, t)
@@ -42,7 +42,7 @@ end
 function residual!(resid, u, p, t)
     resid[1] = u[1] - 0.5
     resid[2] = u[2] - 0.5
-    resid[3] = u[3] - 0.5
+    return resid[3] = u[3] - 0.5
 end
 fn = BVPFunction(lorenz!, residual!; sys)
 for T in containerTypes
@@ -50,7 +50,7 @@ for T in containerTypes
 end
 
 function noise!(du, u, p, t)
-    du .= 0.1u
+    return du .= 0.1u
 end
 fn = SDEFunction(lorenz!, noise!; sys)
 for T in containerTypes
@@ -81,7 +81,7 @@ for T in containerTypes
 end
 
 function nllorenz!(du, u, p)
-    lorenz!(du, u, p, 0.0)
+    return lorenz!(du, u, p, 0.0)
 end
 
 fn = NonlinearFunction(nllorenz!; sys = indep_sys)
@@ -96,11 +96,11 @@ end
 update_A! = function (A, p)
     A[1, 1] = p[1]
     A[2, 2] = p[2]
-    A[3, 3] = p[3]
+    return A[3, 3] = p[3]
 end
 update_b! = function (b, p)
     b[1] = p[3]
-    b[2] = -8p[2] - p[1]
+    return b[2] = -8p[2] - p[1]
 end
 f = SciMLBase.SymbolicLinearInterface(update_A!, update_b!, indep_sys, nothing, nothing)
 for T in containerTypes
@@ -109,12 +109,13 @@ end
 
 # temporary definition to test this functionality
 function SciMLBase.late_binding_update_u0_p(
-        prob, u0, p::SciMLBase.NullParameters, t0, newu0, newp)
+        prob, u0, p::SciMLBase.NullParameters, t0, newu0, newp
+    )
     return newu0, ones(3)
 end
 
 @testset "$(SciMLBase.parameterless_type(prob)) - $(typeof(prob.p))" for prob in
-                                                                         deepcopy(probs)
+    deepcopy(probs)
     prob2 = @inferred remake(prob)
     @test prob2.u0 == u0
     @test prob2.p == typeof(prob.p)(p)
@@ -257,40 +258,48 @@ end
 
         # need to pass empty `Dict()` to prevent defaulting to existing values
         prob2 = @inferred baseType remake(
-            prob; u0 = [:x => 0.2], p = Dict())
+            prob; u0 = [:x => 0.2], p = Dict()
+        )
         @test prob2.u0 ≈ [0.2, 30.0, 3.0]
         @test all(prob2.p .≈ [10.0, 0.6, 30.0])
 
         prob2 = @inferred baseType remake(
-            prob; u0 = [:x => 0.2], p = Dict(), use_defaults = true)
+            prob; u0 = [:x => 0.2], p = Dict(), use_defaults = true
+        )
         @test prob2.u0 ≈ [0.2, 3.0, 3.0]
         @test all(prob2.p .≈ [1.0, 0.6, 30.0])
 
         # override defaults
         prob2 = @inferred baseType remake(
-            prob; u0 = [:y => 0.2], p = Dict())
+            prob; u0 = [:y => 0.2], p = Dict()
+        )
         @test prob2.u0 ≈ [1.0, 0.2, 3.0]
         @test all(prob2.p .≈ [10.0, 3.0, 30.0])
         prob2 = @inferred baseType remake(
-            prob; u0 = [:y => 0.2], p = Dict(), use_defaults = true)
+            prob; u0 = [:y => 0.2], p = Dict(), use_defaults = true
+        )
         @test prob2.u0 ≈ [0.1, 0.2, 3.0]
         @test all(prob2.p .≈ [1.0, 0.3, 30.0])
 
         prob2 = @inferred baseType remake(
-            prob; p = [:a => 0.2], u0 = Dict())
+            prob; p = [:a => 0.2], u0 = Dict()
+        )
         @test prob2.u0 ≈ [1.0, 0.6, 3.0]
         @test all(prob2.p .≈ [0.2, 3.0, 30.0])
         prob2 = @inferred baseType remake(
-            prob; p = [:a => 0.2], u0 = Dict(), use_defaults = true)
+            prob; p = [:a => 0.2], u0 = Dict(), use_defaults = true
+        )
         @test prob2.u0 ≈ [0.1, 0.6, 3.0]
         @test all(prob2.p .≈ [0.2, 0.3, 30.0])
 
         prob2 = @inferred baseType remake(
-            prob; p = [:b => 0.2], u0 = Dict())
+            prob; p = [:b => 0.2], u0 = Dict()
+        )
         @test prob2.u0 ≈ [1.0, 30.0, 3.0]
         @test all(prob2.p .≈ [10.0, 0.2, 30.0])
         prob2 = @inferred baseType remake(
-            prob; p = [:b => 0.2], u0 = Dict(), use_defaults = true)
+            prob; p = [:b => 0.2], u0 = Dict(), use_defaults = true
+        )
         @test prob2.u0 ≈ [0.1, 3.0, 3.0]
         @test all(prob2.p .≈ [1.0, 0.2, 30.0])
 
@@ -318,7 +327,7 @@ Base.delete_method(only(methods(SciMLBase.late_binding_update_u0_p, @__MODULE__)
 function lorenz!(du, u, _, t)
     du[1] = 1 * (u[2] - u[1])
     du[2] = u[1] * (2 - u[3]) - u[2]
-    du[3] = u[1] * u[2] - 3 * u[3]
+    return du[3] = u[1] * u[2] - 3 * u[3]
 end
 u0 = [1.0; 2.0; 3.0]
 tspan = (0.0, 100.0)
@@ -335,14 +344,14 @@ new_prob = @inferred IntervalNonlinearProblem remake(interval_prob; p = [0])
 
 # SDEProblem specific
 function noise2!(du, u, p, t)
-    du .= 0.2u
+    return du .= 0.2u
 end
 fn = SDEFunction(lorenz!, noise!; sys)
 sdeprob = SDEProblem(fn, u0, tspan, Tuple(p))
 newprob = remake(sdeprob; g = noise2!)
 @test newprob.f isa SDEFunction
 tmp = newprob.g([0.0, 0.0, 0.0], [1.0, 2.0, 3.0], nothing, 0.0)
-@test tmp≈[0.2, 0.4, 0.6] atol=1e-6
+@test tmp ≈ [0.2, 0.4, 0.6] atol = 1.0e-6
 
 struct Remake_Test1
     p::Any
@@ -384,8 +393,12 @@ a = Remake_Test1(p = 1)
         end
         parameter_index(s.sc, i)
     end
-    sys = SCWrapper(SymbolCache(Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
-        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4)))
+    sys = SCWrapper(
+        SymbolCache(
+            Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
+            :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4)
+        )
+    )
     function foo(du, u, p, t)
         du .= u .* p
     end
@@ -403,8 +416,10 @@ a = Remake_Test1(p = 1)
 end
 
 @testset "value of `nothing` is ignored" begin
-    sys = SymbolCache(Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
-        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4))
+    sys = SymbolCache(
+        Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
+        :t; defaults = Dict(:x => 1, :y => 2, :a => 3, :b => 4)
+    )
     function foo(du, u, p, t)
         du .= u .* p
     end

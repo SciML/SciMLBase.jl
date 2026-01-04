@@ -205,7 +205,7 @@ function (ff::ParamJacobianWrapper{true})(p)
 end
 (ff::ParamJacobianWrapper{false})(p) = ff.f(ff.u, p, ff.t)
 function (ff::ParamJacobianWrapper{false})(du1, p)
-    du1 .= ff.f(ff.u, p, ff.t)
+    return du1 .= ff.f(ff.u, p, ff.t)
 end
 
 """

@@ -3,12 +3,24 @@ using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 @variables x(t), y(t)
 
-@mtkcompile sys1 = System([D(x) ~ x,
-        D(y) ~ -y], t)
-@mtkcompile sys2 = System([D(x) ~ 2x,
-        D(y) ~ -2y], t)
-@mtkcompile sys3 = System([D(x) ~ 3x,
-        D(y) ~ -3y], t)
+@mtkcompile sys1 = System(
+    [
+        D(x) ~ x,
+        D(y) ~ -y,
+    ], t
+)
+@mtkcompile sys2 = System(
+    [
+        D(x) ~ 2x,
+        D(y) ~ -2y,
+    ], t
+)
+@mtkcompile sys3 = System(
+    [
+        D(x) ~ 3x,
+        D(y) ~ -3y,
+    ], t
+)
 
 prob1 = ODEProblem(sys1, [1.0, 1.0], (0.0, 1.0))
 prob2 = ODEProblem(sys2, [2.0, 2.0], (0.0, 1.0))

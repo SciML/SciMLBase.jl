@@ -18,11 +18,11 @@ prob_oop = NonlinearLeastSquaresProblem{false}(loss_function, θ_init, x)
 
 solver = LevenbergMarquardt()
 
-@time sol = solve(prob, solver; maxiters = 10000, abstol = 1e-8)
+@time sol = solve(prob, solver; maxiters = 10000, abstol = 1.0e-8)
 
 optf = OptimizationFunction(prob_oop.f, AutoForwardDiff())
 optprob = OptimizationProblem(optf, prob_oop.u0, prob_oop.p)
-@time sol = solve(optprob, NLopt.LD_LBFGS(); maxiters = 10000, abstol = 1e-8)
+@time sol = solve(optprob, NLopt.LD_LBFGS(); maxiters = 10000, abstol = 1.0e-8)
 
 optprob = OptimizationProblem(prob_oop, AutoForwardDiff())
-@time sol = solve(optprob, NLopt.LD_LBFGS(); maxiters = 10000, abstol = 1e-8)
+@time sol = solve(optprob, NLopt.LD_LBFGS(); maxiters = 10000, abstol = 1.0e-8)

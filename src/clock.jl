@@ -1,6 +1,6 @@
 abstract type AbstractClock end
 
-@data Clocks<:AbstractClock begin
+@data Clocks <: AbstractClock begin
     ContinuousClock
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
@@ -112,7 +112,7 @@ is_discrete_time_domain(::Any) = false
 
 # public
 function first_clock_tick_time(c::Clocks.Type, t0)
-    @match c begin
+    return @match c begin
         PeriodicClock(dt) => ceil(t0 / dt) * dt
         SolverStepClock() => t0
         ContinuousClock() => error("ContinuousClock() is not a discrete clock")

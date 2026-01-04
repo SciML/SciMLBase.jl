@@ -13,9 +13,11 @@ mx, my, C = EA.componentwise_meancov([[1, 1], [2, 2], [3, 3]], [[3, 3], [2, 2], 
 @test all(my .≈ 2.0)
 @test all(C .≈ -1.0)
 mx, my,
-C = EA.componentwise_weighted_meancov([[1, 1], [2, 2], [3, 3]],
+    C = EA.componentwise_weighted_meancov(
+    [[1, 1], [2, 2], [3, 3]],
     [[3, 3], [2, 2], [1, 1]],
-    [[1, 1], [2, 2], [1, 1]])
+    [[1, 1], [2, 2], [1, 1]]
+)
 @test all(mx .≈ 2.0)
 @test all(my .≈ 2.0)
 @test all(C .≈ -0.8)

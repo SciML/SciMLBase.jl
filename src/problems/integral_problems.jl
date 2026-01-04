@@ -51,33 +51,43 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
     domain::T
     p::P
     kwargs::K
-    @add_kwonly function IntegralProblem{iip}(f::AbstractIntegralFunction{iip}, domain,
+    @add_kwonly function IntegralProblem{iip}(
+            f::AbstractIntegralFunction{iip}, domain,
             p = NullParameters(); nout = nothing, batch = nothing,
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         warn_paramtype(p)
-        new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(f,
-            domain, p, kwargs)
+        new{iip, typeof(p), typeof(f), typeof(domain), typeof(kwargs)}(
+            f,
+            domain, p, kwargs
+        )
     end
 end
 
-function IntegralProblem(f::AbstractIntegralFunction,
+function IntegralProblem(
+        f::AbstractIntegralFunction,
         domain,
         p = NullParameters();
-        kwargs...)
-    IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
+        kwargs...
+    )
+    return IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-@deprecate IntegralProblem{iip}(f::AbstractIntegralFunction,
+@deprecate IntegralProblem{iip}(
+    f::AbstractIntegralFunction,
     lb::Union{Number, AbstractVector{<:Number}},
     ub::Union{Number, AbstractVector{<:Number}},
-    p = NullParameters(); kwargs...) where {iip} IntegralProblem{iip}(
-    f, (lb, ub), p; kwargs...)
+    p = NullParameters(); kwargs...
+) where {iip} IntegralProblem{iip}(
+    f, (lb, ub), p; kwargs...
+)
 
 function IntegralProblem(f, args...; kwargs...)
-    IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
+    return IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
 end
 function IntegralProblem{iip}(
-        f, args...; nout = nothing, batch = nothing, kwargs...) where {iip}
+        f, args...; nout = nothing, batch = nothing, kwargs...
+    ) where {iip}
     if nout !== nothing || batch !== nothing
         @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. Instead of using `nout` to define sizes, the new interface requires giving an `integrand_prototype` which is a vector of the form to write to. For example, define an `IntegralFunction` where `integrand_prototype = zero(nout)` (or appropriate vector type), or for batched `integrand_prototype = zero(nout, nbatch)`. See the updated Integrals.jl documentation for details."
     end
@@ -85,11 +95,11 @@ function IntegralProblem{iip}(
     g = if iip
         if batch === nothing
             output_prototype = nout === nothing ? Array{Float64, 0}(undef) :
-                               Vector{Float64}(undef, nout)
+                Vector{Float64}(undef, nout)
             IntegralFunction(f, output_prototype)
         else
             output_prototype = nout === nothing ? Float64[] :
-                               Matrix{Float64}(undef, nout, 0)
+                Matrix{Float64}(undef, nout, 0)
             BatchIntegralFunction(f, output_prototype, max_batch = batch)
         end
     else
@@ -99,7 +109,7 @@ function IntegralProblem{iip}(
             BatchIntegralFunction(f, max_batch = batch)
         end
     end
-    IntegralProblem(g, args...; kwargs...)
+    return IntegralProblem(g, args...; kwargs...)
 end
 
 function Base.getproperty(prob::IntegralProblem, name::Symbol)
@@ -158,12 +168,14 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     x::X
     dim::Int
     kwargs::K
-    @add_kwonly function SampledIntegralProblem(y::AbstractArray, x::AbstractVector;
+    @add_kwonly function SampledIntegralProblem(
+            y::AbstractArray, x::AbstractVector;
             dim = ndims(y),
-            kwargs...)
-        @assert dim<=ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
-        @assert length(x)==size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
-        @assert axes(x, 1)==axes(y, dim) "The integrand `y` must obey the same indexing as the sampling points `x` along the integrated dimension."
+            kwargs...
+        )
+        @assert dim <= ndims(y) "The integration dimension `dim` is larger than the number of dimensions of the integrand `y`"
+        @assert length(x) == size(y, dim) "The integrand `y` must have the same length as the sampling points `x` along the integrated dimension."
+        @assert axes(x, 1) == axes(y, dim) "The integrand `y` must obey the same indexing as the sampling points `x` along the integrated dimension."
         new{typeof(y), typeof(x), typeof(kwargs)}(y, x, dim, kwargs)
     end
 end
@@ -187,7 +199,7 @@ struct IntegralAliasSpecifier <: AbstractAliasSpecifier
     alias_f::Union{Bool, Nothing}
 
     function IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
-        if alias == true
+        return if alias == true
             new(true, true)
         elseif alias == false
             new(false, false)

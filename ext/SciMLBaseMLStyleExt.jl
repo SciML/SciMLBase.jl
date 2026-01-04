@@ -17,16 +17,16 @@ using Moshi.Data: isa_variant
 MLStyle.is_enum(::Type{ContinuousClock}) = true
 MLStyle.is_enum(::Type{SolverStepClock}) = true
 function MLStyle.pattern_uncall(::Type{ContinuousClock}, self::Function, _, _, _)
-    literal(ContinuousClock())
+    return literal(ContinuousClock())
 end
 MLStyle.pattern_uncall(T::TimeDomain, self::Function, _, _, _) = literal(T())
 
 function MLStyle.pattern_uncall(::Type{SolverStepClock}, self::Function, _, _, _)
-    literal(SolverStepClock())
+    return literal(SolverStepClock())
 end
 
 function periodic_clock_pattern(c)
-    if c isa TimeDomain && isa_variant(c, PeriodicClock)
+    return if c isa TimeDomain && isa_variant(c, PeriodicClock)
         (c.dt, c.phase)
     else
         # These values are used in match results, but they shouldn't.
@@ -36,7 +36,8 @@ function periodic_clock_pattern(c)
 end
 
 function MLStyle.pattern_uncall(
-        ::Type{PeriodicClock}, self::Function, type_params, type_args, args)
+        ::Type{PeriodicClock}, self::Function, type_params, type_args, args
+    )
     @assert isempty(type_params)
     @assert isempty(type_args)
     n_args = length(args)
@@ -51,7 +52,8 @@ function MLStyle.pattern_uncall(
     end
 
     comp = PComp(
-        "PeriodicClock(c)", type_infer; view = BasicPatterns.SimpleCachablePre(trans))
+        "PeriodicClock(c)", type_infer; view = BasicPatterns.SimpleCachablePre(trans)
+    )
 
     ps = if n_args === 0
         []
@@ -67,7 +69,7 @@ function MLStyle.pattern_uncall(
         error("too many arguments")
     end
 
-    decons(comp, extract, ps)
+    return decons(comp, extract, ps)
 end
 
 end

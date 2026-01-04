@@ -32,9 +32,11 @@ page of the DifferentialEquations.jl documentation.
     exited due to an error. For more details, see
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct RODESolution{T, N, uType, uType2, DType, tType, randType, discType, P, A, IType, S,
-    AC <: Union{Nothing, Vector{Int}}, V} <:
-       AbstractRODESolution{T, N, uType}
+struct RODESolution{
+        T, N, uType, uType2, DType, tType, randType, discType, P, A, IType, S,
+        AC <: Union{Nothing, Vector{Int}}, V,
+    } <:
+    AbstractRODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
     errors::DType
@@ -54,7 +56,7 @@ struct RODESolution{T, N, uType, uType2, DType, tType, randType, discType, P, A,
 end
 
 function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: RODESolution{T, N}}
-    RODESolution{T, N}
+    return RODESolution{T, N}
 end
 
 function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
@@ -66,10 +68,12 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
         T, N, typeof(patch.u), typeof(patch.u_analytic), typeof(patch.errors),
         typeof(patch.t), typeof(patch.W), typeof(patch.discretes),
         typeof(patch.prob), typeof(patch.alg), typeof(patch.interp),
-        typeof(patch.stats), typeof(patch.alg_choice), typeof(patch.saved_subsystem)}(
+        typeof(patch.stats), typeof(patch.alg_choice), typeof(patch.saved_subsystem),
+    }(
         patch.u, patch.u_analytic, patch.errors, patch.t, patch.W, patch.discretes,
         patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
-        patch.alg_choice, patch.retcode, patch.seed, patch.saved_subsystem)
+        patch.alg_choice, patch.retcode, patch.seed, patch.saved_subsystem
+    )
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::Symbol)
@@ -82,23 +86,29 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::S
     return getfield(x, s)
 end
 
-function (sol::RODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
-        continuity = :left) where {deriv}
-    sol(t, deriv, idxs, continuity)
+function (sol::RODESolution)(
+        t, ::Type{deriv} = Val{0}; idxs = nothing,
+        continuity = :left
+    ) where {deriv}
+    return sol(t, deriv, idxs, continuity)
 end
-function (sol::RODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
-        continuity = :left) where {deriv}
-    sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
+function (sol::RODESolution)(
+        v, t, ::Type{deriv} = Val{0}; idxs = nothing,
+        continuity = :left
+    ) where {deriv}
+    return sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 
-function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
+function build_solution(
+        prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
         alg, t, u; W = nothing, timeseries_errors = length(u) > 2,
         dense = false, dense_errors = dense, calculate_error = true,
         interp = LinearInterpolation(t, u),
         retcode = ReturnCode.Default,
         alg_choice = nothing,
         seed = UInt64(0), destats = missing, stats = nothing,
-        saved_subsystem = nothing, kwargs...)
+        saved_subsystem = nothing, kwargs...
+    )
     T = eltype(eltype(u))
     if prob.u0 === nothing
         N = 2
@@ -136,10 +146,13 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
-        sol = RODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
+        sol = RODESolution{
+            T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
             typeof(W), typeof(discretes),
             typeof(prob), typeof(alg), typeof(interp), typeof(stats),
-            typeof(alg_choice), typeof(saved_subsystem)}(u,
+            typeof(alg_choice), typeof(saved_subsystem),
+        }(
+            u,
             u_analytic,
             errors,
             t, W,
@@ -153,29 +166,35 @@ function build_solution(prob::Union{AbstractRODEProblem, AbstractSDDEProblem},
             alg_choice,
             retcode,
             seed,
-            saved_subsystem)
+            saved_subsystem
+        )
 
         if calculate_error
-            calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors)
+            calculate_solution_errors!(
+                sol; timeseries_errors = timeseries_errors,
+                dense_errors = dense_errors
+            )
         end
 
         return sol
     else
-        return RODESolution{T, N, typeof(u), Nothing, Nothing, typeof(t),
+        return RODESolution{
+            T, N, typeof(u), Nothing, Nothing, typeof(t),
             typeof(W), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
-            typeof(stats), typeof(alg_choice), typeof(saved_subsystem)}(
+            typeof(stats), typeof(alg_choice), typeof(saved_subsystem),
+        }(
             u, nothing, nothing, t, W, discretes,
             prob, alg, interp,
             dense, 0, stats,
-            alg_choice, retcode, seed, saved_subsystem)
+            alg_choice, retcode, seed, saved_subsystem
+        )
     end
 end
 
 function save_discretes!(sol::AbstractRODESolution, t, vals, timeseries_idx)
     RecursiveArrayTools.has_discretes(sol) || return
     disc = RecursiveArrayTools.get_discretes(sol)
-    _save_discretes_internal!(disc[timeseries_idx], t, vals)
+    return _save_discretes_internal!(disc[timeseries_idx], t, vals)
 end
 
 function get_interpolated_discretes(sol::AbstractRODESolution, t, deriv, continuity)
@@ -190,12 +209,15 @@ end
 
 function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
         T1, T2, T3, T4, T5, T6, T7,
-        S <: RODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection}}
-    Timeseries()
+        S <: RODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection},
+    }
+    return Timeseries()
 end
 
-function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = true,
-        timeseries_errors = true, dense_errors = true)
+function calculate_solution_errors!(
+        sol::AbstractRODESolution; fill_uanalytic = true,
+        timeseries_errors = true, dense_errors = true
+    )
     if sol.prob.f isa Tuple
         f = sol.prob.f[1]
     else
@@ -208,35 +230,69 @@ function calculate_solution_errors!(sol::AbstractRODESolution; fill_uanalytic = 
             f.analytic(sol)
         elseif sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
             for i in 1:length(sol)
-                push!(sol.u_analytic,
-                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i]))))
+                push!(
+                    sol.u_analytic,
+                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i])))
+                )
             end
         else
             for i in 1:length(sol)
-                push!(sol.u_analytic,
-                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i]))
+                push!(
+                    sol.u_analytic,
+                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i])
+                )
             end
         end
     end
 
-    if !isempty(sol.u_analytic)
+    return if !isempty(sol.u_analytic)
         sol.errors[:final] = norm(recursive_mean(abs.(sol.u[end] - sol.u_analytic[end])))
         if timeseries_errors
-            sol.errors[:l∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                sol.u - sol.u_analytic)))
-            sol.errors[:l2] = norm(sqrt(recursive_mean(vecvecapply((x) -> float.(x) .^ 2,
-                sol.u - sol.u_analytic))))
+            sol.errors[:l∞] = norm(
+                maximum(
+                    vecvecapply(
+                        (x) -> abs.(x),
+                        sol.u - sol.u_analytic
+                    )
+                )
+            )
+            sol.errors[:l2] = norm(
+                sqrt(
+                    recursive_mean(
+                        vecvecapply(
+                            (x) -> float.(x) .^ 2,
+                            sol.u - sol.u_analytic
+                        )
+                    )
+                )
+            )
         end
         if dense_errors
             densetimes = collect(range(sol.t[1], stop = sol.t[end], length = 100))
             interp_u = sol(densetimes)
-            interp_analytic = [f.analytic(sol.u[1], sol.prob.p, t, sol.W(t)[1])
-                               for t in densetimes]
-            sol.errors[:L∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                interp_u - interp_analytic)))
-            sol.errors[:L2] = norm(sqrt(recursive_mean(vecvecapply((x) -> float.(x) .^ 2,
-                interp_u -
-                interp_analytic))))
+            interp_analytic = [
+                f.analytic(sol.u[1], sol.prob.p, t, sol.W(t)[1])
+                    for t in densetimes
+            ]
+            sol.errors[:L∞] = norm(
+                maximum(
+                    vecvecapply(
+                        (x) -> abs.(x),
+                        interp_u - interp_analytic
+                    )
+                )
+            )
+            sol.errors[:L2] = norm(
+                sqrt(
+                    recursive_mean(
+                        vecvecapply(
+                            (x) -> float.(x) .^ 2,
+                            interp_u -
+                                interp_analytic
+                        )
+                    )
+                )
+            )
         end
     end
 end

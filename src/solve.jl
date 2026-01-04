@@ -1,26 +1,26 @@
 const NONCONCRETE_ELTYPE_MESSAGE = """
-                                   Non-concrete element type inside of an `Array` detected.
-                                   Arrays with non-concrete element types, such as
-                                   `Array{Union{Float32,Float64}}`, are not supported by the
-                                   differential equation solvers. Anyways, this is bad for
-                                   performance so you don't want to be doing this!
+Non-concrete element type inside of an `Array` detected.
+Arrays with non-concrete element types, such as
+`Array{Union{Float32,Float64}}`, are not supported by the
+differential equation solvers. Anyways, this is bad for
+performance so you don't want to be doing this!
 
-                                   If this was a mistake, promote the element types to be
-                                   all the same. If this was intentional, for example,
-                                   using Unitful.jl with different unit values, then use
-                                   an array type which has fast broadcast support for
-                                   heterogeneous values such as the `ArrayPartition`
-                                   from RecursiveArrayTools.jl. For example:
+If this was a mistake, promote the element types to be
+all the same. If this was intentional, for example,
+using Unitful.jl with different unit values, then use
+an array type which has fast broadcast support for
+heterogeneous values such as the `ArrayPartition`
+from RecursiveArrayTools.jl. For example:
 
-                                   ```julia
-                                   using RecursiveArrayTools
-                                   x = ArrayPartition([1.0,2.0],[1f0,2f0])
-                                   y = ArrayPartition([3.0,4.0],[3f0,4f0])
-                                   x .+ y # fast, stable, and usable as u0 into DiffEq!
-                                   ```
+```julia
+using RecursiveArrayTools
+x = ArrayPartition([1.0,2.0],[1f0,2f0])
+y = ArrayPartition([3.0,4.0],[3f0,4f0])
+x .+ y # fast, stable, and usable as u0 into DiffEq!
+```
 
-                                   Element type:
-                                   """
+Element type:
+"""
 
 struct NonConcreteEltypeError <: Exception
     eltype::Any
@@ -28,7 +28,7 @@ end
 
 function Base.showerror(io::IO, e::NonConcreteEltypeError)
     print(io, NONCONCRETE_ELTYPE_MESSAGE)
-    print(io, e.eltype)
+    return print(io, e.eltype)
 end
 
 # Functions used in solve dispatches
@@ -42,7 +42,7 @@ Base.@pure __has_kwargs(::Type{T}) where {T} = :kwargs ∈ fieldnames(T)
 has_kwargs(::Type{T}) where {T} = __has_kwargs(T)
 
 @inline function extract_alg(solve_args, solve_kwargs, prob_kwargs)
-    if isempty(solve_args) || isnothing(first(solve_args))
+    return if isempty(solve_args) || isnothing(first(solve_args))
         if haskey(solve_kwargs, :alg)
             solve_kwargs[:alg]
         elseif haskey(prob_kwargs, :alg)
@@ -51,7 +51,7 @@ has_kwargs(::Type{T}) where {T} = __has_kwargs(T)
             nothing
         end
     elseif first(solve_args) isa SciMLBase.AbstractSciMLAlgorithm &&
-           !(first(solve_args) isa SciMLBase.EnsembleAlgorithm)
+            !(first(solve_args) isa SciMLBase.EnsembleAlgorithm)
         first(solve_args)
     else
         nothing
@@ -64,7 +64,7 @@ eval_u0(u0::Function) = true
 eval_u0(u0) = false
 
 function get_concrete_p(prob, kwargs)
-    if haskey(kwargs, :p)
+    return if haskey(kwargs, :p)
         p = kwargs[:p]
     else
         p = prob.p
@@ -94,7 +94,7 @@ function get_concrete_u0(prob::BVProblem, isadapt, t0, kwargs)
 end
 
 function checkkwargs(kwargshandle; kwargs...)
-    if any(x -> x ∉ allowedkeywords, keys(kwargs))
+    return if any(x -> x ∉ allowedkeywords, keys(kwargs))
         if kwargshandle == KeywordArgError
             throw(CommonKwargError(kwargs))
         elseif kwargshandle == KeywordArgWarn
@@ -110,7 +110,7 @@ function checkkwargs(kwargshandle; kwargs...)
 end
 
 function checkkwargs(kwargshandle, allowed; kwargs...)
-    if any(x -> x ∉ allowed, keys(kwargs))
+    return if any(x -> x ∉ allowed, keys(kwargs))
         if kwargshandle == KeywordArgError
             throw(CommonKwargError(kwargs))
         elseif kwargshandle == KeywordArgWarn
@@ -145,11 +145,11 @@ function get_updated_symbolic_problem(indp, prob; kw...)
 end
 
 function isconcreteu0(prob, t0, kwargs)
-    !eval_u0(prob.u0) && prob.u0 !== nothing && !isdistribution(prob.u0)
+    return !eval_u0(prob.u0) && prob.u0 !== nothing && !isdistribution(prob.u0)
 end
 
 function isconcretedu0(prob, t0, kwargs)
-    !eval_u0(prob.u0) && prob.du0 !== nothing && !isdistribution(prob.du0)
+    return !eval_u0(prob.u0) && prob.du0 !== nothing && !isdistribution(prob.du0)
 end
 
 function get_concrete_u0(prob, isadapt, t0, kwargs)
@@ -171,8 +171,8 @@ function get_concrete_u0(prob, isadapt, t0, kwargs)
 
     nu0 = length(something(_u0, ()))
     if isdefined(prob.f, :mass_matrix) && prob.f.mass_matrix !== nothing &&
-       prob.f.mass_matrix isa AbstractArray &&
-       size(prob.f.mass_matrix, 1) !== nu0
+            prob.f.mass_matrix isa AbstractArray &&
+            size(prob.f.mass_matrix, 1) !== nu0
         throw(IncompatibleMassMatrixError(size(prob.f.mass_matrix, 1), nu0))
     end
 
@@ -180,7 +180,7 @@ function get_concrete_u0(prob, isadapt, t0, kwargs)
         throw(TupleStateError())
     end
 
-    _u0
+    return _u0
 end
 
 function get_concrete_du0(prob, isadapt, t0, kwargs)
@@ -200,7 +200,7 @@ function get_concrete_du0(prob, isadapt, t0, kwargs)
         throw(IncompatibleInitialConditionError())
     end
 
-    _du0
+    return _du0
 end
 
 function promote_u0(u0, p, t0)
@@ -273,7 +273,8 @@ end
 
 @inline __sum(f::F, args...; init, kwargs...) where {F} = sum(f, args...; init, kwargs...)
 @inline function __sum(
-        f::F, a::StaticArraysCore.StaticArray...; init, kwargs...) where {F}
+        f::F, a::StaticArraysCore.StaticArray...; init, kwargs...
+    ) where {F}
     return mapreduce(f, +, a...; init, kwargs...)
 end
 
@@ -312,22 +313,22 @@ set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = x
         end
         W >>>= 1
     end
-    q
+    return q
 end
 
 ####
 # Catch undefined AD overload cases
 
 const ADJOINT_NOT_FOUND_MESSAGE = """
-                                  Compatibility with reverse-mode automatic differentiation requires SciMLSensitivity.jl.
-                                  Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
-                                  for this functionality. For more details, see <https://docs.sciml.ai/SciMLSensitivity/dev/>.
-                                  """
+Compatibility with reverse-mode automatic differentiation requires SciMLSensitivity.jl.
+Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
+for this functionality. For more details, see <https://docs.sciml.ai/SciMLSensitivity/dev/>.
+"""
 
 struct AdjointNotFoundError <: Exception end
 
 function Base.showerror(io::IO, e::AdjointNotFoundError)
-    print(io, ADJOINT_NOT_FOUND_MESSAGE)
+    return print(io, ADJOINT_NOT_FOUND_MESSAGE)
 end
 
 function _concrete_solve_adjoint(args...; kwargs...)
@@ -335,15 +336,15 @@ function _concrete_solve_adjoint(args...; kwargs...)
 end
 
 const FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE = """
-                                              Compatibility with forward-mode automatic differentiation requires SciMLSensitivity.jl.
-                                              Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
-                                              for this functionality. For more details, see <https://docs.sciml.ai/SciMLSensitivity/dev/>.
-                                              """
+Compatibility with forward-mode automatic differentiation requires SciMLSensitivity.jl.
+Please install SciMLSensitivity.jl and do `using SciMLSensitivity`/`import SciMLSensitivity`
+for this functionality. For more details, see <https://docs.sciml.ai/SciMLSensitivity/dev/>.
+"""
 
 struct ForwardSensitivityNotFoundError <: Exception end
 
 function Base.showerror(io::IO, e::ForwardSensitivityNotFoundError)
-    print(io, FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE)
+    return print(io, FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE)
 end
 
 function _concrete_solve_forward(args...; kwargs...)

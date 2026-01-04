@@ -10,16 +10,24 @@ struct EnsembleTestSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     elapsedTime::Float64
     converged::Bool
 end
-function EnsembleTestSolution(sim::AbstractEnsembleSolution{T, N}, errors, weak_errors,
+function EnsembleTestSolution(
+        sim::AbstractEnsembleSolution{T, N}, errors, weak_errors,
         error_means, error_medians, elapsedTime,
-        converged) where {T, N}
-    EnsembleTestSolution{T, N, typeof(sim.u)}(sim.u, errors, weak_errors, error_means,
-        error_medians, sim.elapsedTime, sim.converged)
+        converged
+    ) where {T, N}
+    return EnsembleTestSolution{T, N, typeof(sim.u)}(
+        sim.u, errors, weak_errors, error_means,
+        error_medians, sim.elapsedTime, sim.converged
+    )
 end
-function EnsembleTestSolution(u, errors, weak_errors, error_means, error_medians,
-        elapsedTime, converged)
-    EnsembleTestSolution(EnsembleSolution(u, elapsedTime, converged), errors, weak_errors,
-        error_means, error_medians, elapsedTime, converged)
+function EnsembleTestSolution(
+        u, errors, weak_errors, error_means, error_medians,
+        elapsedTime, converged
+    )
+    return EnsembleTestSolution(
+        EnsembleSolution(u, elapsedTime, converged), errors, weak_errors,
+        error_means, error_medians, elapsedTime, converged
+    )
 end
 
 """
@@ -32,22 +40,32 @@ struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     stats::Any
 end
 function EnsembleSolution(sim, dims::NTuple{N}, elapsedTime, converged, stats) where {N}
-    EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(
-        sim, elapsedTime, converged, stats)
+    return EnsembleSolution{eltype(eltype(sim)), N, typeof(sim)}(
+        sim, elapsedTime, converged, stats
+    )
 end
 function EnsembleSolution(sim, elapsedTime, converged, stats = nothing)
-    EnsembleSolution(sim, (length(sim),), elapsedTime, converged, stats)
+    return EnsembleSolution(sim, (length(sim),), elapsedTime, converged, stats)
 end # Vector of some type which is not an array
-function EnsembleSolution(sim::T, elapsedTime,
-        converged, stats = nothing) where {T <:
-                                           AbstractVector{T2}
-} where {T2 <:
-             Union{AbstractArray, RecursiveArrayTools.AbstractVectorOfArray}}
-    EnsembleSolution{eltype(eltype(sim)), ndims(sim[1]) + 1,
-        typeof(sim)}(sim,
+function EnsembleSolution(
+        sim::T, elapsedTime,
+        converged, stats = nothing
+    ) where {
+        T <:
+        AbstractVector{T2},
+    } where {
+        T2 <:
+        Union{AbstractArray, RecursiveArrayTools.AbstractVectorOfArray},
+    }
+    return EnsembleSolution{
+        eltype(eltype(sim)), ndims(sim[1]) + 1,
+        typeof(sim),
+    }(
+        sim,
         elapsedTime,
         converged,
-        stats)
+        stats
+    )
 end
 
 struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
@@ -55,12 +73,12 @@ struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
     weights::Vector{T2}
     function WeightedEnsembleSolution(ensol, weights)
         @assert length(weights) == length(ensol)
-        new{typeof(ensol), eltype(weights)}(ensol, weights)
+        return new{typeof(ensol), eltype(weights)}(ensol, weights)
     end
 end
 
 function Base.reverse(sim::EnsembleSolution)
-    EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged, sim.stats)
+    return EnsembleSolution(reverse(sim.u), sim.elapsedTime, sim.converged, sim.stats)
 end
 
 """
@@ -108,13 +126,17 @@ struct EnsembleSummary{T, N, Tt, S, S2, S3, S4, S5} <: AbstractEnsembleSolution{
 end
 
 function calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
-    calculate_ensemble_errors(sim.u; elapsedTime = sim.elapsedTime,
-        converged = sim.converged, kwargs...)
+    calculate_ensemble_errors(
+        sim.u; elapsedTime = sim.elapsedTime,
+        converged = sim.converged, kwargs...
+    )
 end
 
-function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
+function calculate_ensemble_errors(
+        u; elapsedTime = 0.0, converged = false,
         weak_timeseries_errors = false,
-        weak_dense_errors = false)
+        weak_dense_errors = false
+    )
     errors = Dict{Symbol, Vector{eltype(u[1].u[1])}}() #Should add type information
     error_means = Dict{Symbol, eltype(u[1].u[1])}()
     error_medians = Dict{Symbol, eltype(u[1].u[1])}()
@@ -141,11 +163,15 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
     weak_errors[:weak_final] = res
     if weak_timeseries_errors
         if analyticvoa
-            ts_weak_errors = [mean([u[j].u[i] - u[j].u_analytic.u[i] for j in 1:length(u)])
-                              for i in 1:length(u[1])]
+            ts_weak_errors = [
+                mean([u[j].u[i] - u[j].u_analytic.u[i] for j in 1:length(u)])
+                    for i in 1:length(u[1])
+            ]
         else
-            ts_weak_errors = [mean([u[j].u[i] - u[j].u_analytic[i] for j in 1:length(u)])
-                              for i in 1:length(u[1])]
+            ts_weak_errors = [
+                mean([u[j].u[i] - u[j].u_analytic[i] for j in 1:length(u)])
+                    for i in 1:length(u[1])
+            ]
         end
         ts_l2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in ts_weak_errors]
         l2_tmp = sqrt(sum(abs2, ts_l2_errors) / length(ts_l2_errors))
@@ -155,39 +181,53 @@ function calculate_ensemble_errors(u; elapsedTime = 0.0, converged = false,
     end
     if weak_dense_errors
         densetimes = collect(range(u[1].t[1], stop = u[1].t[end], length = 100))
-        u_analytic = [[sol.prob.f.analytic(sol.prob.u0, sol.prob.p, densetimes[i],
-                           sol.W(densetimes[i])[1])
-                       for i in eachindex(densetimes)] for sol in u]
+        u_analytic = [
+            [
+                    sol.prob.f.analytic(
+                        sol.prob.u0, sol.prob.p, densetimes[i],
+                        sol.W(densetimes[i])[1]
+                    )
+                    for i in eachindex(densetimes)
+                ] for sol in u
+        ]
 
         udense = [u[j](densetimes) for j in 1:length(u)]
-        dense_weak_errors = [mean([udense[j].u[i] - u_analytic[j][i] for j in 1:length(u)])
-                             for i in eachindex(densetimes)]
+        dense_weak_errors = [
+            mean([udense[j].u[i] - u_analytic[j][i] for j in 1:length(u)])
+                for i in eachindex(densetimes)
+        ]
         dense_L2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in dense_weak_errors]
         L2_tmp = sqrt(sum(abs2, dense_L2_errors) / length(dense_L2_errors))
         max_tmp = maximum([maximum(abs.(err)) for err in dense_weak_errors])
         weak_errors[:weak_L2] = L2_tmp
         weak_errors[:weak_L∞] = max_tmp
     end
-    return EnsembleTestSolution(u, errors, weak_errors, error_means, error_medians,
-        elapsedTime, converged)
+    return EnsembleTestSolution(
+        u, errors, weak_errors, error_means, error_medians,
+        elapsedTime, converged
+    )
 end
 
 ### Displays
 
 function Base.summary(io::IO, A::AbstractEnsembleSolution)
-    print(io, "EnsembleSolution Solution of length ", length(A.u), " with uType:\n",
-        eltype(A.u))
+    return print(
+        io, "EnsembleSolution Solution of length ", length(A.u), " with uType:\n",
+        eltype(A.u)
+    )
 end
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractEnsembleSolution)
-    summary(io, A)
+    return summary(io, A)
 end
 
 ### Plot Recipes
 
-@recipe function f(sim::AbstractEnsembleSolution;
+@recipe function f(
+        sim::AbstractEnsembleSolution;
         zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
-                  nothing,
-        trajectories = eachindex(sim))
+            nothing,
+        trajectories = eachindex(sim)
+    )
     for i in trajectories
         size(sim.u[i].u, 1) == 0 && continue
         @series begin
@@ -201,10 +241,12 @@ end
     end
 end
 
-@recipe function f(sim::EnsembleSummary;
+@recipe function f(
+        sim::EnsembleSummary;
         idxs = sim.u.u[1] isa AbstractArray ? eachindex(sim.u.u[1]) :
-               1,
-        error_style = :ribbon, ci_type = :quantile)
+            1,
+        error_style = :ribbon, ci_type = :quantile
+    )
     if ci_type == :SEM
         if sim.u.u[1] isa AbstractArray
             u = vecarr_to_vectors(sim.u)
@@ -212,12 +254,22 @@ end
             u = [sim.u.u]
         end
         if sim.u.u[1] isa AbstractArray
-            ci_low = vecarr_to_vectors(VectorOfArray([sqrt.(sim.v.u[i] / sim.num_monte) .*
-                                                      1.96 for i in 1:length(sim.v)]))
+            ci_low = vecarr_to_vectors(
+                VectorOfArray(
+                    [
+                        sqrt.(sim.v.u[i] / sim.num_monte) .*
+                            1.96 for i in 1:length(sim.v)
+                    ]
+                )
+            )
             ci_high = ci_low
         else
-            ci_low = [[sqrt(sim.v.u[i] / length(sim.num_monte)) .* 1.96
-                       for i in 1:length(sim.v)]]
+            ci_low = [
+                [
+                    sqrt(sim.v.u[i] / length(sim.num_monte)) .* 1.96
+                        for i in 1:length(sim.v)
+                ],
+            ]
             ci_high = ci_low
         end
     elseif ci_type == :quantile
@@ -256,7 +308,7 @@ end
 end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)
-    [s(args...; kwargs...) for s in sol]
+    return [s(args...; kwargs...) for s in sol]
 end
 
 Base.@propagate_inbounds function Base.getindex(sol::WeightedEnsembleSolution, S)

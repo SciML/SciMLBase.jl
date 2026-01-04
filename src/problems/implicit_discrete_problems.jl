@@ -69,7 +69,7 @@ revert to the standard behavior of fixed timestep methods, which is "step to eac
 tstop".
 """
 struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
-       AbstractDiscreteProblem{uType, tType, isinplace}
+    AbstractDiscreteProblem{uType, tType, isinplace}
     """The function in the map."""
     f::F
     """The initial condition."""
@@ -80,27 +80,35 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
     p::P
     """A callback to be applied to every solver which uses the problem."""
     kwargs::K
-    @add_kwonly function ImplicitDiscreteProblem{iip}(f::ImplicitDiscreteFunction{
+    @add_kwonly function ImplicitDiscreteProblem{iip}(
+            f::ImplicitDiscreteFunction{
                 iip,
             },
             u0, tspan::Tuple,
             p = NullParameters();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan), isinplace(f, 5),
+        new{
+            typeof(_u0), typeof(_tspan), isinplace(f, 5),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f,
+            typeof(f), typeof(kwargs),
+        }(
+            f,
             _u0,
             _tspan,
             p,
-            kwargs)
+            kwargs
+        )
     end
 
-    function ImplicitDiscreteProblem{iip}(f, u0, tspan, p = NullParameters();
-            kwargs...) where {iip}
-        ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    function ImplicitDiscreteProblem{iip}(
+            f, u0, tspan, p = NullParameters();
+            kwargs...
+        ) where {iip}
+        return ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
 
@@ -109,19 +117,23 @@ end
 
 Defines a discrete problem with the specified functions.
 """
-function ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan::Tuple,
-        p = NullParameters(); kwargs...)
-    ImplicitDiscreteProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
+function ImplicitDiscreteProblem(
+        f::ImplicitDiscreteFunction, u0, tspan::Tuple,
+        p = NullParameters(); kwargs...
+    )
+    return ImplicitDiscreteProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
 end
 
-function ImplicitDiscreteProblem(f, u0, tspan, p = NullParameters();
-        kwargs...)
+function ImplicitDiscreteProblem(
+        f, u0, tspan, p = NullParameters();
+        kwargs...
+    )
     iip = isinplace(f, 5)
-    ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    return ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteProblem}
-    function ctor(f, u0, tspan, p, kw)
+    return function ctor(f, u0, tspan, p, kw)
         if f isa AbstractDiscreteFunction
             iip = isinplace(f)
         else
@@ -153,8 +165,9 @@ struct ImplicitDiscreteAliasSpecifier
 
     function ImplicitDiscreteAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias = nothing)
-        if alias == true
+            alias_du0 = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true)
         elseif alias == false
             new(false, false, false)

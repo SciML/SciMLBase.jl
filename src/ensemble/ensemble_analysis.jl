@@ -99,7 +99,7 @@ $(SIGNATURES)
 Computes the mean at i and j, and the covariance, for each component
 """
 function timestep_meancov(sim, i, j)
-    componentwise_meancov(get_timestep(sim, i), get_timestep(sim, j))
+    return componentwise_meancov(get_timestep(sim, i), get_timestep(sim, j))
 end
 timestep_meancov(sim, ::Colon, ::Colon) = timeseries_steps_meancov(sim)
 
@@ -109,7 +109,7 @@ $(SIGNATURES)
 Computes the mean at i and j, and the correlation, for each component
 """
 function timestep_meancor(sim, i, j)
-    componentwise_meancor(get_timestep(sim, i), get_timestep(sim, j))
+    return componentwise_meancor(get_timestep(sim, i), get_timestep(sim, j))
 end
 timestep_meancor(sim, ::Colon, ::Colon) = timeseries_steps_meancor(sim)
 
@@ -119,10 +119,10 @@ $(SIGNATURES)
 Computes the mean at i and j, and the weighted covariance W, for each component
 """
 function timestep_weighted_meancov(sim, W, i, j)
-    componentwise_weighted_meancov(get_timestep(sim, i), get_timestep(sim, j), W)
+    return componentwise_weighted_meancov(get_timestep(sim, i), get_timestep(sim, j), W)
 end
 function timestep_weighted_meancov(sim, W, ::Colon, ::Colon)
-    timeseries_steps_weighted_meancov(sim, W)
+    return timeseries_steps_weighted_meancov(sim, W)
 end
 
 """
@@ -131,7 +131,7 @@ $(SIGNATURES)
 Computes the mean at each time step
 """
 function timeseries_steps_mean(sim)
-    DiffEqArray([timestep_mean(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
+    return DiffEqArray([timestep_mean(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
 end
 
 """
@@ -140,7 +140,7 @@ $(SIGNATURES)
 Computes the median at each time step
 """
 function timeseries_steps_median(sim)
-    DiffEqArray([timestep_median(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
+    return DiffEqArray([timestep_median(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
 end
 
 """
@@ -149,7 +149,7 @@ $(SIGNATURES)
 Computes the quantile q at each time step
 """
 function timeseries_steps_quantile(sim, q)
-    DiffEqArray([timestep_quantile(sim, q, i) for i in 1:length(sim.u[1])], sim.u[1].t)
+    return DiffEqArray([timestep_quantile(sim, q, i) for i in 1:length(sim.u[1])], sim.u[1].t)
 end
 
 """
@@ -166,7 +166,7 @@ function timeseries_steps_meanvar(sim)
         push!(means, m)
         push!(vars, v)
     end
-    DiffEqArray(means, sim.u[1].t), DiffEqArray(vars, sim.u[1].t)
+    return DiffEqArray(means, sim.u[1].t), DiffEqArray(vars, sim.u[1].t)
 end
 
 """
@@ -175,11 +175,14 @@ $(SIGNATURES)
 Computes the covariance matrix and means at each time step
 """
 function timeseries_steps_meancov(sim)
-    reshape(
-        [timestep_meancov(sim, i, j) for i in 1:length(sim.u[1])
-         for j in 1:length(sim.u[1])],
+    return reshape(
+        [
+            timestep_meancov(sim, i, j) for i in 1:length(sim.u[1])
+                for j in 1:length(sim.u[1])
+        ],
         length(sim.u[1]),
-        length(sim.u[1]))
+        length(sim.u[1])
+    )
 end
 
 """
@@ -188,11 +191,14 @@ $(SIGNATURES)
 Computes the correlation matrix and means at each time step
 """
 function timeseries_steps_meancor(sim)
-    reshape(
-        [timestep_meancor(sim, i, j) for i in 1:length(sim.u[1])
-         for j in 1:length(sim.u[1])],
+    return reshape(
+        [
+            timestep_meancor(sim, i, j) for i in 1:length(sim.u[1])
+                for j in 1:length(sim.u[1])
+        ],
         length(sim.u[1]),
-        length(sim.u[1]))
+        length(sim.u[1])
+    )
 end
 
 """
@@ -201,11 +207,14 @@ $(SIGNATURES)
 Computes the weighted covariance matrix and means at each time step
 """
 function timeseries_steps_weighted_meancov(sim, W)
-    reshape(
-        [timestep_meancov(sim, W, i, j) for i in 1:length(sim.u[1])
-         for j in 1:length(sim.u[1])],
+    return reshape(
+        [
+            timestep_meancov(sim, W, i, j) for i in 1:length(sim.u[1])
+                for j in 1:length(sim.u[1])
+        ],
         length(sim.u[1]),
-        length(sim.u[1]))
+        length(sim.u[1])
+    )
 end
 
 """
@@ -256,7 +265,7 @@ $(SIGNATURES)
 Computes the mean at t1 and t2, the covariance, for each component
 """
 function timepoint_meancov(sim, t1, t2)
-    componentwise_meancov(get_timepoint(sim, t1), get_timepoint(sim, t2))
+    return componentwise_meancov(get_timepoint(sim, t1), get_timepoint(sim, t2))
 end
 
 """
@@ -265,7 +274,7 @@ $(SIGNATURES)
 Computes the mean at t1 and t2, the correlation, for each component
 """
 function timepoint_meancor(sim, t1, t2)
-    componentwise_meancor(get_timepoint(sim, t1), get_timepoint(sim, t2))
+    return componentwise_meancor(get_timepoint(sim, t1), get_timepoint(sim, t2))
 end
 
 """
@@ -274,11 +283,13 @@ $(SIGNATURES)
 Computes the mean at t1 and t2, the weighted covariance W, for each component
 """
 function timepoint_weighted_meancov(sim, W, t1, t2)
-    componentwise_weighted_meancov(get_timepoint(sim, t1), get_timepoint(sim, t2), W)
+    return componentwise_weighted_meancov(get_timepoint(sim, t1), get_timepoint(sim, t2), W)
 end
 
-function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N},
-        t = sim.u[1].t; quantiles = [0.05, 0.95]) where {T, N}
+function SciMLBase.EnsembleSummary(
+        sim::SciMLBase.AbstractEnsembleSolution{T, N},
+        t = sim.u[1].t; quantiles = [0.05, 0.95]
+    ) where {T, N}
     if sim.u[1] isa SciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
@@ -292,9 +303,13 @@ function SciMLBase.EnsembleSummary(sim::SciMLBase.AbstractEnsembleSolution{T, N}
     end
 
     trajectories = length(sim)
-    EnsembleSummary{T, N, typeof(t), typeof(m), typeof(v), typeof(med), typeof(qlow),
-        typeof(qhigh)}(t, m, v, med, qlow, qhigh, trajectories, sim.elapsedTime,
-        sim.converged)
+    return EnsembleSummary{
+        T, N, typeof(t), typeof(m), typeof(v), typeof(med), typeof(qlow),
+        typeof(qhigh),
+    }(
+        t, m, v, med, qlow, qhigh, trajectories, sim.elapsedTime,
+        sim.converged
+    )
 end
 
 """
@@ -303,7 +318,7 @@ $(SIGNATURES)
 Computes the mean at each time point in ts
 """
 function timeseries_point_mean(sim, ts)
-    DiffEqArray([timepoint_mean(sim, t) for t in ts], ts)
+    return DiffEqArray([timepoint_mean(sim, t) for t in ts], ts)
 end
 
 """
@@ -312,7 +327,7 @@ $(SIGNATURES)
 Computes the median at each time point in ts
 """
 function timeseries_point_median(sim, ts)
-    DiffEqArray([timepoint_median(sim, t) for t in ts], ts)
+    return DiffEqArray([timepoint_median(sim, t) for t in ts], ts)
 end
 
 """
@@ -321,7 +336,7 @@ $(SIGNATURES)
 Computes the quantile q at each time point in ts
 """
 function timeseries_point_quantile(sim, q, ts)
-    DiffEqArray([timepoint_quantile(sim, q, t) for t in ts], ts)
+    return DiffEqArray([timepoint_quantile(sim, q, t) for t in ts], ts)
 end
 
 """
@@ -338,7 +353,7 @@ function timeseries_point_meanvar(sim, ts)
         push!(means, m)
         push!(vars, v)
     end
-    DiffEqArray(means, ts), DiffEqArray(vars, ts)
+    return DiffEqArray(means, ts), DiffEqArray(vars, ts)
 end
 
 """
@@ -347,15 +362,17 @@ $(SIGNATURES)
 Computes the covariance matrix and means at each time point in ts
 """
 function timeseries_point_meancov(sim, ts)
-    timeseries_point_meancov(sim, ts[1:(end - 1)], ts[2:end])
+    return timeseries_point_meancov(sim, ts[1:(end - 1)], ts[2:end])
 end
 
 """
 $(SIGNATURES)
 """
 function timeseries_point_meancov(sim, ts1, ts2)
-    reshape([timepoint_meancov(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-        length(ts2))
+    return reshape(
+        [timepoint_meancov(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
+        length(ts2)
+    )
 end
 
 """
@@ -364,15 +381,17 @@ $(SIGNATURES)
 Computes the correlation matrix and means at each time point in ts
 """
 function timeseries_point_meancor(sim, ts)
-    timeseries_point_meancor(sim, ts[1:(end - 1)], ts[2:end])
+    return timeseries_point_meancor(sim, ts[1:(end - 1)], ts[2:end])
 end
 
 """
 $(SIGNATURES)
 """
 function timeseries_point_meancor(sim, ts1, ts2)
-    reshape([timepoint_meancor(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-        length(ts2))
+    return reshape(
+        [timepoint_meancor(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
+        length(ts2)
+    )
 end
 
 """
@@ -381,15 +400,17 @@ $(SIGNATURES)
 Computes the weighted covariance matrix and means at each time point in ts
 """
 function timeseries_point_weighted_meancov(sim, W, ts)
-    timeseries_point_weighted_meancov(sim, W, ts[1:(end - 1)], ts[2:end])
+    return timeseries_point_weighted_meancov(sim, W, ts[1:(end - 1)], ts[2:end])
 end
 
 """
 $(SIGNATURES)
 """
 function timeseries_point_weighted_meancov(sim, W, ts1, ts2)
-    reshape([timepoint_meancov(sim, W, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-        length(ts2))
+    return reshape(
+        [timepoint_meancov(sim, W, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
+        length(ts2)
+    )
 end
 
 function componentwise_mean(A)
@@ -409,7 +430,7 @@ function componentwise_mean(A)
     else
         mean /= n
     end
-    mean
+    return mean
 end
 
 # Welford algorithm
@@ -508,7 +529,7 @@ function componentwise_meancor(A, B; bessel = true)
         vx = sqrt.(vx)
         vy = sqrt.(vy)
     end
-    mx, my, cov ./ (vx .* vy)
+    return mx, my, cov ./ (vx .* vy)
 end
 
 function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
@@ -569,24 +590,24 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
 end
 
 export get_timestep,
-       get_timepoint,
-       componentwise_vectors_timestep, componentwise_vectors_timepoint
+    get_timepoint,
+    componentwise_vectors_timestep, componentwise_vectors_timepoint
 
 export componentwise_mean, componentwise_meanvar
 
 export timestep_mean, timestep_median, timestep_quantile, timestep_meanvar,
-       timestep_meancov, timestep_meancor, timestep_weighted_meancov
+    timestep_meancov, timestep_meancor, timestep_weighted_meancov
 
 export timeseries_steps_mean, timeseries_steps_median, timeseries_steps_quantile,
-       timeseries_steps_meanvar, timeseries_steps_meancov,
-       timeseries_steps_meancor, timeseries_steps_weighted_meancov
+    timeseries_steps_meanvar, timeseries_steps_meancov,
+    timeseries_steps_meancor, timeseries_steps_weighted_meancov
 
 export timepoint_mean, timepoint_median, timepoint_quantile,
-       timepoint_meanvar, timepoint_meancov,
-       timepoint_meancor, timepoint_weighted_meancov
+    timepoint_meanvar, timepoint_meancov,
+    timepoint_meancor, timepoint_weighted_meancov
 
 export timeseries_point_mean, timeseries_point_median, timeseries_point_quantile,
-       timeseries_point_meanvar, timeseries_point_meancov,
-       timeseries_point_meancor, timeseries_point_weighted_meancov
+    timeseries_point_meanvar, timeseries_point_meancov,
+    timeseries_point_meancor, timeseries_point_weighted_meancov
 
 end

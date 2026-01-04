@@ -10,7 +10,7 @@ function SciMLBase.numargs(f::PyObject)
     f2 = hasproperty(f, :py_func) ? f.py_func : f
     # if `f` is a bound method (i.e., `self.f`), `getfullargspec` includes
     # `self` in the `args` list. So, we subtract 1 in that case:
-    length(first(inspect.getfullargspec(f2))) - inspect.ismethod(f2)
+    return length(first(inspect.getfullargspec(f2))) - inspect.ismethod(f2)
 end
 
 # differential equation solutions can be converted to lists, this tells PyCall not

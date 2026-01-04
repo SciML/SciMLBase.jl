@@ -33,11 +33,11 @@ function TupleOfArraysWrapper(vt::Vector{VectorTemplate})
 end
 
 function Base.getindex(t::TupleOfArraysWrapper, i::Tuple{Int, Int})
-    t.x[i[1]][i[2]]
+    return t.x[i[1]][i[2]]
 end
 
 function Base.setindex!(t::TupleOfArraysWrapper, val, i::Tuple{Int, Int})
-    t.x[i[1]][i[2]] = val
+    return t.x[i[1]][i[2]] = val
 end
 
 function as_diffeq_array(vt::Vector{VectorTemplate}, t)
@@ -45,7 +45,7 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
 end
 
 function get_root_indp(prob::AbstractSciMLProblem)
-    get_root_indp(prob.f)
+    return get_root_indp(prob.f)
 end
 
 function get_root_indp(f::T) where {T <: AbstractSciMLFunction}
@@ -59,7 +59,7 @@ function get_root_indp(f::T) where {T <: AbstractSciMLFunction}
 end
 
 function get_root_indp(prob::LinearProblem)
-    get_root_indp(prob.f)
+    return get_root_indp(prob.f)
 end
 
 get_root_indp(prob::AbstractJumpProblem) = get_root_indp(prob.prob)
@@ -67,7 +67,7 @@ get_root_indp(prob::AbstractJumpProblem) = get_root_indp(prob.prob)
 get_root_indp(x) = x
 
 function get_root_indp(f::SymbolicLinearInterface)
-    get_root_indp(f.sys)
+    return get_root_indp(f.sys)
 end
 
 # Everything from this point on is public API
@@ -145,19 +145,24 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     if eltype(saved_idxs) == Int
         state_map = Dict{Int, Int}(v => k for (k, v) in enumerate(saved_idxs))
         return SavedSubsystem(
-            state_map, nothing, nothing, nothing, nothing, nothing, nothing)
+            state_map, nothing, nothing, nothing, nothing, nothing, nothing
+        )
     end
 
     # array state symbolics must be scalarized
-    saved_idxs = collect(Iterators.flatten(map(saved_idxs) do sym
-        if symbolic_type(sym) == NotSymbolic()
-            (sym,)
-        elseif sym isa AbstractArray && is_variable(indp, sym)
-            collect(sym)
-        else
-            (sym,)
-        end
-    end))
+    saved_idxs = collect(
+        Iterators.flatten(
+            map(saved_idxs) do sym
+                if symbolic_type(sym) == NotSymbolic()
+                    (sym,)
+                elseif sym isa AbstractArray && is_variable(indp, sym)
+                    collect(sym)
+                else
+                    (sym,)
+                end
+            end
+        )
+    )
 
     saved_state_idxs = Int[]
     ts_idx_to_type_to_param_idx = Dict()
@@ -230,7 +235,8 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
             identity_partitions = Set{Ttsidx}(keys(ts_idx_to_type_to_param_idx))
         end
         return SavedSubsystem(
-            state_map, nothing, nothing, identity_partitions, nothing, nothing, nothing)
+            state_map, nothing, nothing, identity_partitions, nothing, nothing, nothing
+        )
     end
 
     if num_ts_params == 0
@@ -267,7 +273,8 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     timeseries_idx_to_param_idx = Dict{TParammapKeys, TParamIdx}(timeseries_idx_to_param_idx)
     return SavedSubsystem(
         state_map, parammap, timeseries_idx_to_param_idx, identitypartitions,
-        timeseries_partition_templates, indexes_in_partition, ts_idx_to_count)
+        timeseries_partition_templates, indexes_in_partition, ts_idx_to_count
+    )
 end
 
 """
@@ -303,16 +310,18 @@ struct SavedSubsystemWithFallback{S <: SavedSubsystem, T}
 end
 
 function SymbolicIndexingInterface.symbolic_container(sswf::SavedSubsystemWithFallback)
-    sswf.fallback
+    return sswf.fallback
 end
 
 function SymbolicIndexingInterface.is_timeseries_parameter(
-        sswf::SavedSubsystemWithFallback, sym)
-    timeseries_parameter_index(sswf, sym) !== nothing
+        sswf::SavedSubsystemWithFallback, sym
+    )
+    return timeseries_parameter_index(sswf, sym) !== nothing
 end
 
 function SymbolicIndexingInterface.timeseries_parameter_index(
-        sswf::SavedSubsystemWithFallback, sym)
+        sswf::SavedSubsystemWithFallback, sym
+    )
     ss = sswf.saved_subsystem
     ss.timeseries_params_map === nothing && return nothing
     if symbolic_type(sym) == NotSymbolic()
@@ -358,7 +367,8 @@ function get_saveable_values(sswf::SavedSubsystemWithFallback, ps, tsidx)
 end
 
 function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
-        sswf::SavedSubsystemWithFallback, ps, args...)
+        sswf::SavedSubsystemWithFallback, ps, args...
+    )
     ss = sswf.saved_subsystem
     for (tsidx, val) in args
         if tsidx in ss.identity_partitions
@@ -371,8 +381,10 @@ function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
 
         # now we know val isa TupleOfArraysWrapper
         for idx in ss.indexes_in_partition[tsidx]
-            set_parameter!(ps, val[ss.timeseries_params_map[idx].parameter_idx],
-                ss.timeseries_idx_to_param_idx[idx])
+            set_parameter!(
+                ps, val[ss.timeseries_params_map[idx].parameter_idx],
+                ss.timeseries_idx_to_param_idx[idx]
+            )
         end
     end
 
@@ -390,10 +402,10 @@ one is not required. `save_idxs` may be a scalar or `nothing`.
 """
 get_save_idxs_and_saved_subsystem(prob, ::Nothing) = nothing, nothing
 function get_save_idxs_and_saved_subsystem(prob, save_idxs::Vector{Int})
-    save_idxs, SavedSubsystem(prob, parameter_values(prob), save_idxs)
+    return save_idxs, SavedSubsystem(prob, parameter_values(prob), save_idxs)
 end
 function get_save_idxs_and_saved_subsystem(prob, save_idx::Int)
-    save_idx, SavedSubsystem(prob, parameter_values(prob), save_idx)
+    return save_idx, SavedSubsystem(prob, parameter_values(prob), save_idx)
 end
 function get_save_idxs_and_saved_subsystem(prob, save_idxs)
     if !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
@@ -408,7 +420,7 @@ function get_save_idxs_and_saved_subsystem(prob, save_idxs)
             # no states to save
             save_idxs = Int[]
         elseif !(save_idxs isa AbstractArray) ||
-               symbolic_type(save_idxs) != NotSymbolic()
+                symbolic_type(save_idxs) != NotSymbolic()
             # only a single state to save, and save it as a scalar timeseries instead of
             # single-element array
             save_idxs = only(_save_idxs)

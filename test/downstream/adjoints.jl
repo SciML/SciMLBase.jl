@@ -4,33 +4,41 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 @parameters σ ρ β
 @variables x(t) y(t) z(t)
 
-eqs = [D(x) ~ σ * (y - x),
+eqs = [
+    D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
-    D(z) ~ x * y - β * z]
+    D(z) ~ x * y - β * z,
+]
 
 @named lorenz1 = System(eqs, t)
 @named lorenz2 = System(eqs, t)
 
 @parameters γ
 @variables a(t) α(t)
-connections = [0 ~ lorenz1.x + lorenz2.y + a * γ,
-    α ~ 2lorenz1.x + a * γ]
+connections = [
+    0 ~ lorenz1.x + lorenz2.y + a * γ,
+    α ~ 2lorenz1.x + a * γ,
+]
 @mtkcompile sys = System(connections, t, [a, α], [γ], systems = [lorenz1, lorenz2])
 
-u0 = [lorenz1.x => 1.0,
+u0 = [
+    lorenz1.x => 1.0,
     lorenz1.y => 0.0,
     lorenz1.z => 0.0,
     lorenz2.x => 0.0,
     lorenz2.y => 1.0,
-    lorenz2.z => 0.0]
+    lorenz2.z => 0.0,
+]
 
-p = [lorenz1.σ => 10.0,
+p = [
+    lorenz1.σ => 10.0,
     lorenz1.ρ => 28.0,
     lorenz1.β => 8 / 3,
     lorenz2.σ => 10.0,
     lorenz2.ρ => 28.0,
     lorenz2.β => 8 / 3,
-    γ => 2.0]
+    γ => 2.0,
+]
 
 tspan = (0.0, 100.0)
 prob = ODEProblem(sys, [u0; p], tspan)
@@ -70,7 +78,7 @@ end
 @test all(map(x -> x == true_grad_vecsym, gs_ts.u))
 
 # BatchedInterface AD
-@variables x(t)=1.0 y(t)=1.0 z(t)=1.0 w(t)=1.0
+@variables x(t) = 1.0 y(t) = 1.0 z(t) = 1.0 w(t) = 1.0
 @named sys1 = System([D(x) ~ x + y, D(y) ~ y * z, D(z) ~ z * t * x], t)
 sys1 = complete(sys1)
 prob1 = ODEProblem(sys1, [], (0.0, 10.0))

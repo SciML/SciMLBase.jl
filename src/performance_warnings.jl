@@ -1,4 +1,3 @@
-
 const PERFORMANCE_WARNINGS = Preferences.@load_preference("PerformanceWarnings", true)
 
 should_warn_paramtype(p::AbstractArray) = !isconcretetype(eltype(p))
@@ -29,7 +28,7 @@ set_preferences!(
 ```
 """
 function warn_paramtype(p, warn_performance = PERFORMANCE_WARNINGS)
-    if warn_performance && should_warn_paramtype(p)
-        @warn WARN_PARAMTYPE_MESSAGE maxlog=1
+    return if warn_performance && should_warn_paramtype(p)
+        @warn WARN_PARAMTYPE_MESSAGE maxlog = 1
     end
 end

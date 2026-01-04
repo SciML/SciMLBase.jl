@@ -70,7 +70,7 @@ The `SteadyStateSolution` type is different from the other DiffEq solutions beca
 it does not have temporal information.
 """
 struct SteadyStateProblem{uType, isinplace, P, F, K} <:
-       AbstractSteadyStateProblem{uType, isinplace}
+    AbstractSteadyStateProblem{uType, isinplace}
     """f: The function in the ODE."""
     f::F
     """The initial guess for the steady state."""
@@ -78,13 +78,17 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     """Parameter values for the ODE function."""
     p::P
     kwargs::K
-    @add_kwonly function SteadyStateProblem{iip}(f::AbstractODEFunction{iip},
+    @add_kwonly function SteadyStateProblem{iip}(
+            f::AbstractODEFunction{iip},
             u0, p = NullParameters();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         warn_paramtype(p)
-        new{typeof(_u0), isinplace(f), typeof(p), typeof(f), typeof(kwargs)}(f, _u0, p,
-            kwargs)
+        new{typeof(_u0), isinplace(f), typeof(p), typeof(f), typeof(kwargs)}(
+            f, _u0, p,
+            kwargs
+        )
     end
 
     """
@@ -95,7 +99,7 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     This is determined automatically, but not inferred.
     """
     function SteadyStateProblem{iip}(f, u0, p = NullParameters()) where {iip}
-        SteadyStateProblem(ODEFunction{iip}(f), u0, p)
+        return SteadyStateProblem(ODEFunction{iip}(f), u0, p)
     end
 end
 
@@ -106,15 +110,15 @@ Define a steady state problem using an instance of
 [`AbstractODEFunction`](@ref AbstractODEFunction).
 """
 function SteadyStateProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwargs...)
-    SteadyStateProblem{isinplace(f)}(f, u0, p; kwargs...)
+    return SteadyStateProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
 function SteadyStateProblem(f, u0, p = NullParameters(); kwargs...)
-    SteadyStateProblem(ODEFunction(f), u0, p; kwargs...)
+    return SteadyStateProblem(ODEFunction(f), u0, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SteadyStateProblem}
-    function ctor(f, u0, p, kw)
+    return function ctor(f, u0, p, kw)
         if f isa AbstractODEFunction
             iip = isinplace(f)
         else
@@ -130,7 +134,7 @@ $(SIGNATURES)
 Define a steady state problem from a standard ODE problem.
 """
 function SteadyStateProblem(prob::AbstractODEProblem)
-    SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
+    return SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
 end
 
 SymbolicIndexingInterface.is_time_dependent(::SteadyStateProblem) = true
@@ -161,8 +165,9 @@ struct SteadyStateAliasSpecifier <: AbstractAliasSpecifier
 
     function SteadyStateAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-        if alias == true
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)
