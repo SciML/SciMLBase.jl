@@ -99,7 +99,7 @@ For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref perfo
 * `kwargs`: The keyword arguments passed onto the solves.
 """
 struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND} <:
-       AbstractSDDEProblem{uType, tType, lType, isinplace, ND}
+    AbstractSDDEProblem{uType, tType, lType, isinplace, ND}
     f::F
     g::G
     u0::uType
@@ -115,50 +115,62 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     neutral::Bool
     order_discontinuity_t0::Rational{Int}
 
-    @add_kwonly function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
+    @add_kwonly function SDDEProblem{iip}(
+            f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
             p = NullParameters();
             noise_rate_prototype = nothing, noise = nothing,
             seed = UInt64(0),
             constant_lags = (), dependent_lags = (),
             neutral = f.mass_matrix !== I &&
-                      det(f.mass_matrix) != 1,
+                det(f.mass_matrix) != 1,
             order_discontinuity_t0 = 0 // 1,
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
+        new{
+            typeof(_u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
             typeof(p), typeof(noise), typeof(f), typeof(g), typeof(h), typeof(kwargs),
-            typeof(noise_rate_prototype)}(f, g, _u0, h, _tspan, p, noise, constant_lags,
+            typeof(noise_rate_prototype),
+        }(
+            f, g, _u0, h, _tspan, p, noise, constant_lags,
             dependent_lags, kwargs, noise_rate_prototype,
-            seed, neutral, order_discontinuity_t0)
+            seed, neutral, order_discontinuity_t0
+        )
     end
 
-    function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
+    function SDDEProblem{iip}(
+            f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
             p = NullParameters();
-            order_discontinuity_t0 = 1 // 1, kwargs...) where {iip}
-        SDDEProblem{iip}(f, g, h(p, first(tspan)), h, tspan, p;
+            order_discontinuity_t0 = 1 // 1, kwargs...
+        ) where {iip}
+        return SDDEProblem{iip}(
+            f, g, h(p, first(tspan)), h, tspan, p;
             order_discontinuity_t0 = max(1 // 1, order_discontinuity_t0),
-            kwargs...)
+            kwargs...
+        )
     end
 
     function SDDEProblem{iip}(f, g, args...; kwargs...) where {iip}
-        SDDEProblem{iip}(SDDEFunction{iip}(f, g), g, args...; kwargs...)
+        return SDDEProblem{iip}(SDDEFunction{iip}(f, g), g, args...; kwargs...)
     end
 end
 
 function SDDEProblem(f, g, args...; kwargs...)
-    SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
+    return SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
 end
 
 function SDDEProblem(f::AbstractSDDEFunction, args...; kwargs...)
-    SDDEProblem{isinplace(f)}(f, args...; kwargs...)
+    return SDDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
-    function ctor(f, g, u0, h, tspan, p, noise, constant_lags, dependent_lags, kw,
-            noise_rate_prototype, seed, neutral, order_discontinuity_t0)
+    return function ctor(
+            f, g, u0, h, tspan, p, noise, constant_lags, dependent_lags, kw,
+            noise_rate_prototype, seed, neutral, order_discontinuity_t0
+        )
         if f isa AbstractSDDEFunction
             iip = isinplace(f)
         else
@@ -166,7 +178,8 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
         end
         return SDDEProblem{iip}(
             f, g, u0, h, tspan, p; kw..., noise, constant_lags, dependent_lags,
-            noise_rate_prototype, seed, neutral, order_discontinuity_t0)
+            noise_rate_prototype, seed, neutral, order_discontinuity_t0
+        )
     end
 end
 
@@ -196,9 +209,11 @@ struct SDDEAliasSpecifier
     alias_tstops::Union{Bool, Nothing}
     alias_jumps::Union{Bool, Nothing}
 
-    function SDDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
-        if alias == true
+    function SDDEAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)

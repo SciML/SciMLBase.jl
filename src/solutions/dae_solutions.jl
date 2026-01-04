@@ -28,7 +28,7 @@ page of the DifferentialEquations.jl documentation.
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S, rateType, V} <:
-       AbstractDAESolution{T, N, uType}
+    AbstractDAESolution{T, N, uType}
     u::uType
     du::duType
     u_analytic::uType2
@@ -45,18 +45,22 @@ struct DAESolution{T, N, uType, duType, uType2, DType, tType, P, A, ID, S, rateT
     saved_subsystem::V
 end
 
-function DAESolution{T, N}(u, du, u_analytic, errors, t, k, prob, alg, interp, dense,
-        tslocation, stats, retcode, saved_subsystem) where {T, N}
-    return DAESolution{T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
+function DAESolution{T, N}(
+        u, du, u_analytic, errors, t, k, prob, alg, interp, dense,
+        tslocation, stats, retcode, saved_subsystem
+    ) where {T, N}
+    return DAESolution{
+        T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
         typeof(t), typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k),
-        typeof(saved_subsystem)}(
+        typeof(saved_subsystem),
+    }(
         u, du, u_analytic, errors, t, k, prob, alg, interp, dense, tslocation, stats,
         retcode, saved_subsystem
     )
 end
 
 function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: DAESolution{T, N}}
-    DAESolution{T, N}
+    return DAESolution{T, N}
 end
 
 function ConstructionBase.setproperties(sol::DAESolution, patch::NamedTuple)
@@ -64,9 +68,11 @@ function ConstructionBase.setproperties(sol::DAESolution, patch::NamedTuple)
     N = u === nothing ? 2 : ndims(eltype(u)) + 1
     T = eltype(eltype(u))
     patch = merge(getproperties(sol), patch)
-    return DAESolution{T, N}(patch.u, patch.du, patch.u_analytic, patch.errors, patch.t,
+    return DAESolution{T, N}(
+        patch.u, patch.du, patch.u_analytic, patch.errors, patch.t,
         patch.k, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation,
-        patch.stats, patch.retcode, patch.saved_subsystem)
+        patch.stats, patch.retcode, patch.saved_subsystem
+    )
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Symbol)
@@ -79,19 +85,21 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Sy
     return getfield(x, s)
 end
 
-function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
+function build_solution(
+        prob::AbstractDAEProblem, alg, t, u, du = nothing;
         timeseries_errors = length(u) > 2,
         dense = false,
         dense_errors = dense,
         calculate_error = true,
         k = nothing,
         interp = du === nothing ? LinearInterpolation(t, u) :
-                 HermiteInterpolation(t, u, du),
+            HermiteInterpolation(t, u, du),
         retcode = ReturnCode.Default,
         destats = missing,
         stats = nothing,
         saved_subsystem = nothing,
-        kwargs...)
+        kwargs...
+    )
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
@@ -109,13 +117,15 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
         end
         Base.depwarn(msg, :build_solution)
     end
-    if has_analytic(prob.f)
+    return if has_analytic(prob.f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
 
-        sol = DAESolution{T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
+        sol = DAESolution{
+            T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors),
             typeof(t), typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k),
-            typeof(saved_subsystem)}(
+            typeof(saved_subsystem),
+        }(
             u,
             du,
             u_analytic,
@@ -129,17 +139,22 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
             0,
             stats,
             retcode,
-            saved_subsystem)
+            saved_subsystem
+        )
 
         if calculate_error
-            calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors)
+            calculate_solution_errors!(
+                sol; timeseries_errors = timeseries_errors,
+                dense_errors = dense_errors
+            )
         end
         sol
     else
-        DAESolution{T, N, typeof(u), typeof(du), Nothing, Nothing, typeof(t),
+        DAESolution{
+            T, N, typeof(u), typeof(du), Nothing, Nothing, typeof(t),
             typeof(prob), typeof(alg), typeof(interp), typeof(stats), typeof(k),
-            typeof(saved_subsystem)}(
+            typeof(saved_subsystem),
+        }(
             u, du,
             nothing,
             nothing, t, k,
@@ -148,13 +163,16 @@ function build_solution(prob::AbstractDAEProblem, alg, t, u, du = nothing;
             dense, 0,
             stats,
             retcode,
-            saved_subsystem)
+            saved_subsystem
+        )
     end
 end
 
-function calculate_solution_errors!(sol::AbstractDAESolution;
+function calculate_solution_errors!(
+        sol::AbstractDAESolution;
         fill_uanalytic = true, timeseries_errors = true,
-        dense_errors = true)
+        dense_errors = true
+    )
     prob = sol.prob
     f = prob.f
 
@@ -169,25 +187,57 @@ function calculate_solution_errors!(sol::AbstractDAESolution;
         sol.errors[:final] = norm(recursive_mean(abs.(sol.u[end] - sol.u_analytic[end])))
 
         if save_everystep && timeseries_errors
-            sol.errors[:l∞] = norm(maximum(vecvecapply(x -> abs.(x),
-                sol.u - sol.u_analytic)))
-            sol.errors[:l2] = norm(sqrt(recursive_mean(vecvecapply(x -> float.(x) .^ 2,
-                sol.u - sol.u_analytic))))
+            sol.errors[:l∞] = norm(
+                maximum(
+                    vecvecapply(
+                        x -> abs.(x),
+                        sol.u - sol.u_analytic
+                    )
+                )
+            )
+            sol.errors[:l2] = norm(
+                sqrt(
+                    recursive_mean(
+                        vecvecapply(
+                            x -> float.(x) .^ 2,
+                            sol.u - sol.u_analytic
+                        )
+                    )
+                )
+            )
             if sol.dense && dense_errors
                 densetimes = collect(range(sol.t[1]; stop = sol.t[end], length = 100))
                 interp_u = sol(densetimes)
-                interp_analytic = VectorOfArray([f.analytic(prob.du0, prob.u0, prob.p, t)
-                                                 for t in densetimes])
-                sol.errors[:L∞] = norm(maximum(vecvecapply(x -> abs.(x),
-                    interp_u - interp_analytic)))
-                sol.errors[:L2] = norm(sqrt(recursive_mean(vecvecapply(x -> float.(x) .^ 2,
-                    interp_u .-
-                    interp_analytic))))
+                interp_analytic = VectorOfArray(
+                    [
+                        f.analytic(prob.du0, prob.u0, prob.p, t)
+                            for t in densetimes
+                    ]
+                )
+                sol.errors[:L∞] = norm(
+                    maximum(
+                        vecvecapply(
+                            x -> abs.(x),
+                            interp_u - interp_analytic
+                        )
+                    )
+                )
+                sol.errors[:L2] = norm(
+                    sqrt(
+                        recursive_mean(
+                            vecvecapply(
+                                x -> float.(x) .^ 2,
+                                interp_u .-
+                                    interp_analytic
+                            )
+                        )
+                    )
+                )
             end
         end
     end
 
-    nothing
+    return nothing
 end
 
 function build_solution(sol::AbstractDAESolution{T, N}, u_analytic, errors) where {T, N}

@@ -117,7 +117,7 @@ Contains a single callback whose `condition` is a continuous function. The callb
   API
 """
 struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
-       AbstractContinuousCallback
+    AbstractContinuousCallback
     condition::F1
     affect!::F2
     affect_neg!::F3
@@ -133,23 +133,29 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     repeat_nudge::T3
     initializealg::T4
     saved_clock_partitions::SCP
-    function ContinuousCallback(condition::F1, affect!::F2, affect_neg!::F3,
+    function ContinuousCallback(
+            condition::F1, affect!::F2, affect_neg!::F3,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R, abstol::T,
             reltol::T2, repeat_nudge::T3, initializealg::T4 = nothing,
-            saved_clock_partitions::SCP = ()) where {F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP
-    }
+            saved_clock_partitions::SCP = ()
+        ) where {
+            F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP,
+        }
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP}(_condition,
+        return new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP}(
+            _condition,
             affect!, affect_neg!,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
-            dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions)
+            dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions
+        )
     end
 end
 
-function ContinuousCallback(condition, affect!, affect_neg!;
+function ContinuousCallback(
+        condition, affect!, affect_neg!;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -160,15 +166,19 @@ function ContinuousCallback(condition, affect!, affect_neg!;
         abstol = 10eps(), reltol = 0,
         repeat_nudge = 1 // 100,
         initializealg = nothing,
-        saved_clock_partitions = ())
-    ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize,
+        saved_clock_partitions = ()
+    )
+    return ContinuousCallback(
+        condition, affect!, affect_neg!, initialize, finalize,
         idxs,
         rootfind, interp_points,
         save_positions,
-        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions
+    )
 end
 
-function ContinuousCallback(condition, affect!;
+function ContinuousCallback(
+        condition, affect!;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -178,11 +188,14 @@ function ContinuousCallback(condition, affect!;
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing, saved_clock_partitions = ())
-    ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize, idxs,
+        initializealg = nothing, saved_clock_partitions = ()
+    )
+    return ContinuousCallback(
+        condition, affect!, affect_neg!, initialize, finalize, idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions
+    )
 end
 
 """
@@ -231,7 +244,7 @@ Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
 - `saved_clock_partitions`: An iterable of `len` elements, where the `i`th element is an iterable of clock partition indices to save when the `i`th event triggers. MTK-only API.
 """
 struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
-       AbstractContinuousCallback
+    AbstractContinuousCallback
     condition::F1
     affect!::F2
     affect_neg!::F3
@@ -254,21 +267,26 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             interp_points, save_positions, dtrelax::R,
             abstol::T, reltol::T2, repeat_nudge::T3,
             initializealg::T4 = nothing,
-            saved_clock_partitions::SCP = ()) where {F1, F2, F3, F4, F5, T, T2,
-            T3, T4, I, R, SCP}
+            saved_clock_partitions::SCP = ()
+        ) where {
+            F1, F2, F3, F4, F5, T, T2,
+            T3, T4, I, R, SCP,
+        }
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP}(
+        return new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP}(
             _condition,
             affect!, affect_neg!, len,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
             dtrelax, abstol, reltol, repeat_nudge, initializealg,
-            saved_clock_partitions)
+            saved_clock_partitions
+        )
     end
 end
 
-function VectorContinuousCallback(condition, affect!, affect_neg!, len;
+function VectorContinuousCallback(
+        condition, affect!, affect_neg!, len;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -277,16 +295,20 @@ function VectorContinuousCallback(condition, affect!, affect_neg!, len;
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing, saved_clock_partitions = ())
-    VectorContinuousCallback(condition, affect!, affect_neg!, len,
+        initializealg = nothing, saved_clock_partitions = ()
+    )
+    return VectorContinuousCallback(
+        condition, affect!, affect_neg!, len,
         initialize, finalize,
         idxs,
         rootfind, interp_points,
         save_positions, dtrelax,
-        abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions)
+        abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions
+    )
 end
 
-function VectorContinuousCallback(condition, affect!, len;
+function VectorContinuousCallback(
+        condition, affect!, len;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -296,12 +318,15 @@ function VectorContinuousCallback(condition, affect!, len;
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing, saved_clock_partitions = ())
-    VectorContinuousCallback(condition, affect!, affect_neg!, len, initialize, finalize,
+        initializealg = nothing, saved_clock_partitions = ()
+    )
+    return VectorContinuousCallback(
+        condition, affect!, affect_neg!, len, initialize, finalize,
         idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions
+    )
 end
 
 """
@@ -364,25 +389,32 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
     save_positions::BitArray{1}
     initializealg::F5
     saved_clock_partitions::SCP
-    function DiscreteCallback(condition::F1, affect!::F2,
+    function DiscreteCallback(
+            condition::F1, affect!::F2,
             initialize::F3, finalize::F4,
             save_positions,
             initializealg::F5 = nothing,
-            saved_clock_partitions::SCP = ()) where {F1, F2, F3, F4, F5, SCP}
+            saved_clock_partitions::SCP = ()
+        ) where {F1, F2, F3, F4, F5, SCP}
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, SCP}(_condition,
+        return new{typeof(_condition), F2, F3, F4, F5, SCP}(
+            _condition,
             affect!, initialize, finalize,
             BitArray(collect(save_positions)),
-            initializealg, saved_clock_partitions)
+            initializealg, saved_clock_partitions
+        )
     end
 end
-function DiscreteCallback(condition, affect!;
+function DiscreteCallback(
+        condition, affect!;
         initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
         save_positions = (true, true),
-        initializealg = nothing, saved_clock_partitions = ())
-    DiscreteCallback(
+        initializealg = nothing, saved_clock_partitions = ()
+    )
+    return DiscreteCallback(
         condition, affect!, initialize, finalize, save_positions, initializealg,
-        saved_clock_partitions)
+        saved_clock_partitions
+    )
 end
 
 """
@@ -419,7 +451,7 @@ CallbackSet(cb::Nothing) = CallbackSet()
 
 # For Varargs, use recursion to make it type-stable
 function CallbackSet(callbacks::Union{DECallback, Nothing}...)
-    CallbackSet(split_callbacks((), (), callbacks...)...)
+    return CallbackSet(split_callbacks((), (), callbacks...)...)
 end
 
 """
@@ -430,14 +462,16 @@ Split comma separated callbacks into sets of continuous and discrete callbacks.
 @inline split_callbacks(cs, ds) = cs, ds
 @inline split_callbacks(cs, ds, c::Nothing, args...) = split_callbacks(cs, ds, args...)
 @inline function split_callbacks(cs, ds, c::AbstractContinuousCallback, args...)
-    split_callbacks((cs..., c), ds, args...)
+    return split_callbacks((cs..., c), ds, args...)
 end
 @inline function split_callbacks(cs, ds, d::AbstractDiscreteCallback, args...)
-    split_callbacks(cs, (ds..., d), args...)
+    return split_callbacks(cs, (ds..., d), args...)
 end
 @inline function split_callbacks(cs, ds, d::CallbackSet, args...)
-    split_callbacks((cs..., d.continuous_callbacks...), (ds..., d.discrete_callbacks...),
-        args...)
+    return split_callbacks(
+        (cs..., d.continuous_callbacks...), (ds..., d.discrete_callbacks...),
+        args...
+    )
 end
 
 """
@@ -454,6 +488,7 @@ function save_discretes!(integrator::DEIntegrator, cb::Union{ContinuousCallback,
     for idx in cb.saved_clock_partitions
         save_discretes!(integrator, idx; skip_duplicates)
     end
+    return
 end
 
 function save_discretes!(integrator::DEIntegrator, cb::VectorContinuousCallback; kw...)
@@ -461,6 +496,7 @@ function save_discretes!(integrator::DEIntegrator, cb::VectorContinuousCallback;
     for idx in eachindex(cb.saved_clock_partitions)
         save_discretes!(integrator, cb, idx; skip_duplicates = true)
     end
+    return
 end
 
 function save_discretes!(integrator::DEIntegrator, cb::VectorContinuousCallback, i; skip_duplicates = false)
@@ -468,17 +504,18 @@ function save_discretes!(integrator::DEIntegrator, cb::VectorContinuousCallback,
     for idx in cb.saved_clock_partitions[i]
         save_discretes!(integrator, idx; skip_duplicates)
     end
+    return
 end
 
 function _save_all_discretes!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...)
     save_discretes!(integrator, cb; skip_duplicates = true)
-    _save_all_discretes!(integrator, cbs...)
+    return _save_all_discretes!(integrator, cbs...)
 end
 
 _save_all_discretes!(::DEIntegrator) = nothing
 
 function save_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
-    _save_all_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
+    return _save_all_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
 end
 
 """
@@ -491,18 +528,18 @@ time of the simulation, after the finalizer has run.
 function save_final_discretes!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback})
     cb.finalize === FINALIZE_DEFAULT && return
     cb.save_positions[2] || return
-    save_discretes!(integrator, cb; skip_duplicates = true)
+    return save_discretes!(integrator, cb; skip_duplicates = true)
 end
 
 function _save_all_final_discretes!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...)
     save_final_discretes!(integrator, cb)
-    _save_all_final_discretes!(integrator, cbs...)
+    return _save_all_final_discretes!(integrator, cbs...)
 end
 
 _save_all_final_discretes!(::DEIntegrator) = nothing
 
 function save_final_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
-    _save_all_final_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
+    return _save_all_final_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
 end
 
 """
@@ -517,16 +554,16 @@ Save the discrete variables associated with callback `cb` in `integrator` if
 """
 function save_discretes_if_enabled!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback}; skip_duplicates = false)
     cb.save_positions[2] || return
-    save_discretes!(integrator, cb; skip_duplicates)
+    return save_discretes!(integrator, cb; skip_duplicates)
 end
 
 function _save_discretes_if_enabled!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...; kw...)
     save_discretes_if_enabled!(integrator, cb; kw...)
-    _save_discretes_if_enabled!(integrator, cbs...; kw...)
+    return _save_discretes_if_enabled!(integrator, cbs...; kw...)
 end
 
 _save_discretes_if_enabled!(::DEIntegrator; kw...) = nothing
 
 function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; kw...)
-    _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
+    return _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
 end

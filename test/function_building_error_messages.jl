@@ -9,7 +9,7 @@ function test_num_args()
     numpar2 = SciMLBase.numargs(g) # [2]
     numpar3 = SciMLBase.numargs(sqrt ∘ g) # [2]
     @show numpar, minimum(numpar) == 1, maximum(numpar) == 2
-    minimum(numpar) == 1 && maximum(numpar) == 2 &&
+    return minimum(numpar) == 1 && maximum(numpar) == 2 &&
         maximum(numpar2) == 2 &&
         only(numpar3) == 2
 end
@@ -187,8 +187,10 @@ sWfact_t(u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip, giip, Wfact_t = sWfact_t)
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop, giip, Wfact_t = sWfact_t)
 sWfact_t(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip, giip,
-    Wfact_t = sWfact_t)
+@test_throws SciMLBase.NonconformingFunctionsError SDEFunction(
+    fiip, giip,
+    Wfact_t = sWfact_t
+)
 SDEFunction(foop, goop, Wfact_t = sWfact_t)
 sWfact_t(du, u, p, gamma, t) = [1.0]
 SDEFunction(fiip, giip, Wfact_t = sWfact_t)
@@ -208,8 +210,10 @@ sparamjac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(fiip, giip, paramjac = sparamjac)
 @test_throws SciMLBase.TooFewArgumentsError SDEFunction(foop, goop, paramjac = sparamjac)
 sparamjac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError SDEFunction(fiip, giip,
-    paramjac = sparamjac)
+@test_throws SciMLBase.NonconformingFunctionsError SDEFunction(
+    fiip, giip,
+    paramjac = sparamjac
+)
 SDEFunction(foop, goop, paramjac = sparamjac)
 sparamjac(du, u, p, t) = [1.0]
 SDEFunction(fiip, giip, paramjac = sparamjac)
@@ -254,13 +258,15 @@ frode(u, p, t, W) = p * u
 rode_analytic(u0, t, p, W) = u0 * exp(p * t)
 function rode_analytic!(sol)
     empty!(sol.u_analytic)
-    append!(sol.u_analytic, sol.prob.u0 * exp.(sol.prob.p * sol.t))
+    return append!(sol.u_analytic, sol.prob.u0 * exp.(sol.prob.p * sol.t))
 end
 @test_nowarn RODEFunction(frode)
 @test_nowarn RODEFunction(frode, analytic = rode_analytic)
 @test_nowarn RODEFunction(frode, analytic = rode_analytic!, analytic_full = true)
-@test_throws MethodError RODEFunction(frode, analytic = rode_analytic!,
-    analytic_full = nothing)
+@test_throws MethodError RODEFunction(
+    frode, analytic = rode_analytic!,
+    analytic_full = nothing
+)
 
 # DAEFunction
 
@@ -371,8 +377,10 @@ ddeWfact_t(u, h, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
 ddeWfact_t(u, h, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
-    Wfact_t = ddeWfact_t)
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(
+    ddefiip,
+    Wfact_t = ddeWfact_t
+)
 DDEFunction(ddefoop, Wfact_t = Wfact_t)
 ddeWfact_t(du, u, h, p, gamma, t) = [1.0]
 DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
@@ -392,8 +400,10 @@ ddeparamjac(u, h, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefiip, paramjac = ddeparamjac)
 @test_throws SciMLBase.TooFewArgumentsError DDEFunction(ddefoop, paramjac = ddeparamjac)
 ddeparamjac(u, h, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(ddefiip,
-    paramjac = ddeparamjac)
+@test_throws SciMLBase.NonconformingFunctionsError DDEFunction(
+    ddefiip,
+    paramjac = ddeparamjac
+)
 DDEFunction(ddefoop, paramjac = paramjac)
 ddeparamjac(du, u, h, p, t) = [1.0]
 DDEFunction(ddefiip, paramjac = ddeparamjac)
@@ -479,13 +489,13 @@ p = 2.0
 intfiip(y, u, p) = y .= 1.0
 
 for (f, kws, iip) in (
-        (intf, (;), false),
-        (IntegralFunction(intf), (;), false),
-        (IntegralFunction(intf, 1.0), (;), false),
-        (intfiip, (; nout = 3), true),
-        (IntegralFunction(intfiip, zeros(3)), (;), true)
-    ),
-    domain in (((0.0, 1.0),), (([0.0], [1.0]),))
+            (intf, (;), false),
+            (IntegralFunction(intf), (;), false),
+            (IntegralFunction(intf, 1.0), (;), false),
+            (intfiip, (; nout = 3), true),
+            (IntegralFunction(intfiip, zeros(3)), (;), true),
+        ),
+        domain in (((0.0, 1.0),), (([0.0], [1.0]),))
 
     IntegralProblem(f, domain...; kws...)
     IntegralProblem(f, domain..., p; kws...)
@@ -535,48 +545,66 @@ BVPFunction(bfboth, bcfboth)
 
 bjac(u, t) = [1.0]
 bcjac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip,
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(
+    bfiip,
     bciip,
     jac = bjac,
-    bcjac = bcjac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop,
+    bcjac = bcjac
+)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(
+    bfoop,
     bciip,
     jac = bjac,
-    bcjac = bcjac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip,
+    bcjac = bcjac
+)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(
+    bfiip,
     bcoop,
     jac = bjac,
-    bcjac = bcjac)
-@test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop,
+    bcjac = bcjac
+)
+@test_throws SciMLBase.TooFewArgumentsError BVPFunction(
+    bfoop,
     bcoop,
     jac = bjac,
-    bcjac = bcjac)
+    bcjac = bcjac
+)
 bjac(u, p, t) = [1.0]
 bcjac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfiip,
     bcoop,
     jac = bjac,
-    bcjac = bcjac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+    bcjac = bcjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfiip,
     bciip,
     jac = bjac,
-    bcjac = bcjac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+    bcjac = bcjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfoop,
     bciip,
     jac = bjac,
-    bcjac = bcjac)
+    bcjac = bcjac
+)
 BVPFunction(bfoop, bcoop, jac = bjac)
 bjac(du, u, p, t) = [1.0]
 bcjac(du, u, p, t) = [1.0]
 BVPFunction(bfiip, bciip, jac = bjac, bcjac = bcjac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfoop,
     bciip,
     jac = bjac,
-    bcjac = bcjac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+    bcjac = bcjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfiip,
     bcoop,
     jac = bjac,
-    bcjac = bcjac)
+    bcjac = bcjac
+)
 BVPFunction(bfoop, bcoop, jac = bjac, bcjac = bcjac)
 
 bWfact(u, t) = [1.0]
@@ -599,17 +627,23 @@ bWfact_t(u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact_t = bWfact_t)
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, Wfact_t = bWfact_t)
 bWfact_t(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfiip,
     bciip,
-    Wfact_t = bWfact_t)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+    Wfact_t = bWfact_t
+)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfoop,
     bciip,
-    Wfact_t = bWfact_t)
+    Wfact_t = bWfact_t
+)
 bWfact_t(du, u, p, gamma, t) = [1.0]
 BVPFunction(bfiip, bciip, Wfact_t = bWfact_t)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfoop,
     bciip,
-    Wfact_t = bWfact_t)
+    Wfact_t = bWfact_t
+)
 
 btgrad(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, tgrad = btgrad)
@@ -625,17 +659,23 @@ bparamjac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, paramjac = bparamjac)
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfoop, bciip, paramjac = bparamjac)
 bparamjac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfiip,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfiip,
     bciip,
-    paramjac = bparamjac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+    paramjac = bparamjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfoop,
     bciip,
-    paramjac = bparamjac)
+    paramjac = bparamjac
+)
 bparamjac(du, u, p, t) = [1.0]
 BVPFunction(bfiip, bciip, paramjac = bparamjac)
-@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(bfoop,
+@test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
+    bfoop,
     bciip,
-    paramjac = bparamjac)
+    paramjac = bparamjac
+)
 
 bjvp(u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, jvp = bjvp)
@@ -663,11 +703,13 @@ BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0)
 equality(u, p) = u
 inequality(u, p) = u
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
-    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality)
+    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality
+)
 equality(res, u, p) = (res .= u)
 inequality(res, u, p) = (res .= u)
 BVPFunction(
-    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality)
+    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality
+)
 
 # DynamicalBVPFunction
 
@@ -689,156 +731,214 @@ DynamicalBVPFunction(dbfboth, dbcfboth)
 
 dbjac(du, u, t) = [1.0]
 dbcjac(du, u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(dbfiip,
+@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
+    dbfiip,
     dbciip,
     jac = dbjac,
-    bcjac = dbcjac)
-@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(dbfoop,
+    bcjac = dbcjac
+)
+@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
     jac = dbjac,
-    bcjac = dbcjac)
-@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(dbfiip,
+    bcjac = dbcjac
+)
+@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
+    dbfiip,
     dbcoop,
     jac = dbjac,
-    bcjac = dbcjac)
-@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(dbfoop,
+    bcjac = dbcjac
+)
+@test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
+    dbfoop,
     dbcoop,
     jac = dbjac,
-    bcjac = dbcjac)
+    bcjac = dbcjac
+)
 dbjac(du, u, p, t) = [1.0]
 dbcjac(du, u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfiip,
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfiip,
     dbcoop,
     jac = dbjac,
-    bcjac = dbcjac)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfiip,
+    bcjac = dbcjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfiip,
     dbciip,
     jac = dbjac,
-    bcjac = dbcjac)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfoop,
+    bcjac = dbcjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
     jac = dbjac,
-    bcjac = dbcjac)
+    bcjac = dbcjac
+)
 DynamicalBVPFunction(dbfoop, dbcoop, jac = dbjac)
 dbjac(ddu, du, u, p, t) = [1.0]
 dbcjac(ddu, du, u, p, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, jac = dbjac, bcjac = dbcjac)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfoop,
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
     jac = dbjac,
-    bcjac = dbcjac)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfiip,
+    bcjac = dbcjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfiip,
     dbcoop,
     jac = dbjac,
-    bcjac = dbcjac)
+    bcjac = dbcjac
+)
 DynamicalBVPFunction(dbfoop, dbcoop, jac = dbjac, bcjac = dbcjac)
 
 dbWfact(du, u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, Wfact = dbWfact)
+    dbfiip, dbciip, Wfact = dbWfact
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, Wfact = dbWfact)
+    dbfoop, dbciip, Wfact = dbWfact
+)
 dbWfact(du, u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, Wfact = dbWfact)
+    dbfiip, dbciip, Wfact = dbWfact
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, Wfact = dbWfact)
+    dbfoop, dbciip, Wfact = dbWfact
+)
 dbWfact(du, u, p, gamma, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfiip, dbciip, Wfact = dbWfact)
+    dbfiip, dbciip, Wfact = dbWfact
+)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, Wfact = dbWfact)
+    dbfoop, dbciip, Wfact = dbWfact
+)
 dbWfact(ddu, du, u, p, gamma, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, Wfact = dbWfact)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, Wfact = dbWfact)
+    dbfoop, dbciip, Wfact = dbWfact
+)
 
 dbWfact_t(du, u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, Wfact_t = dbWfact_t)
+    dbfiip, dbciip, Wfact_t = dbWfact_t
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, Wfact_t = dbWfact_t)
+    dbfoop, dbciip, Wfact_t = dbWfact_t
+)
 dbWfact_t(du, u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, Wfact_t = dbWfact_t)
+    dbfiip, dbciip, Wfact_t = dbWfact_t
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, Wfact_t = dbWfact_t)
+    dbfoop, dbciip, Wfact_t = dbWfact_t
+)
 dbWfact_t(du, u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfiip,
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfiip,
     dbciip,
-    Wfact_t = dbWfact_t)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfoop,
+    Wfact_t = dbWfact_t
+)
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
-    Wfact_t = dbWfact_t)
+    Wfact_t = dbWfact_t
+)
 dbWfact_t(ddu, du, u, p, gamma, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, Wfact_t = dbWfact_t)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfoop,
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
-    Wfact_t = dbWfact_t)
+    Wfact_t = dbWfact_t
+)
 
 dbtgrad(du, u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, tgrad = dbtgrad)
+    dbfiip, dbciip, tgrad = dbtgrad
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, tgrad = dbtgrad)
+    dbfoop, dbciip, tgrad = dbtgrad
+)
 dbtgrad(du, u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfiip, dbciip, tgrad = dbtgrad)
+    dbfiip, dbciip, tgrad = dbtgrad
+)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, tgrad = dbtgrad)
+    dbfoop, dbciip, tgrad = dbtgrad
+)
 dbtgrad(ddu, du, u, p, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, tgrad = dbtgrad)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, tgrad = dbtgrad)
+    dbfoop, dbciip, tgrad = dbtgrad
+)
 
 dbparamjac(du, u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, paramjac = dbparamjac)
+    dbfiip, dbciip, paramjac = dbparamjac
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, paramjac = dbparamjac)
+    dbfoop, dbciip, paramjac = dbparamjac
+)
 dbparamjac(du, u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfiip,
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfiip,
     dbciip,
-    paramjac = dbparamjac)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfoop,
+    paramjac = dbparamjac
+)
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
-    paramjac = dbparamjac)
+    paramjac = dbparamjac
+)
 dbparamjac(ddu, du, u, p, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, paramjac = dbparamjac)
-@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(dbfoop,
+@test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
+    dbfoop,
     dbciip,
-    paramjac = dbparamjac)
+    paramjac = dbparamjac
+)
 
 dbjvp(du, u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, jvp = dbjvp)
+    dbfiip, dbciip, jvp = dbjvp
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, jvp = dbjvp)
+    dbfoop, dbciip, jvp = dbjvp
+)
 dbjvp(du, u, v, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfiip, dbciip, jvp = dbjvp)
+    dbfiip, dbciip, jvp = dbjvp
+)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, jvp = dbjvp)
+    dbfoop, dbciip, jvp = dbjvp
+)
 dbjvp(ddu, du, u, v, p, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, jvp = dbjvp)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, jvp = dbjvp)
+    dbfoop, dbciip, jvp = dbjvp
+)
 
 dbvjp(du, u, p, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfiip, dbciip, vjp = dbvjp)
+    dbfiip, dbciip, vjp = dbvjp
+)
 @test_throws SciMLBase.TooFewArgumentsError DynamicalBVPFunction(
-    dbfoop, dbciip, vjp = dbvjp)
+    dbfoop, dbciip, vjp = dbvjp
+)
 dbvjp(du, u, v, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfiip, dbciip, vjp = dbvjp)
+    dbfiip, dbciip, vjp = dbvjp
+)
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, vjp = dbvjp)
+    dbfoop, dbciip, vjp = dbvjp
+)
 dbvjp(ddu, du, u, v, p, t) = [1.0]
 DynamicalBVPFunction(dbfiip, dbciip, vjp = dbvjp)
 
 @test_throws SciMLBase.NonconformingFunctionsError DynamicalBVPFunction(
-    dbfoop, dbciip, vjp = dbvjp)
+    dbfoop, dbciip, vjp = dbvjp
+)
 
 # IntegralFunction
 

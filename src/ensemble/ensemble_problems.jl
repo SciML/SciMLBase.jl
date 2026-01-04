@@ -152,12 +152,15 @@ function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...
     Base.depwarn(
         "This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
 Ensembles Simulations Interface page for more details",
-        :EnsembleProblem)
-    invoke(EnsembleProblem,
+        :EnsembleProblem
+    )
+    return invoke(
+        EnsembleProblem,
         Tuple{Any},
         prob;
         prob_func = DEFAULT_VECTOR_PROB_FUNC,
-        kwargs...)
+        kwargs...
+    )
 end
 
 """
@@ -174,17 +177,19 @@ Main constructor for `EnsembleProblem`.
   - `u_init`: Initial value for aggregation.
   - `safetycopy`: Whether to deepcopy the problem before modifying.
 """
-function EnsembleProblem(prob;
+function EnsembleProblem(
+        prob;
         prob_func = DEFAULT_PROB_FUNC,
         output_func = DEFAULT_OUTPUT_FUNC,
         reduction = DEFAULT_REDUCTION,
         u_init = nothing,
-        safetycopy = prob_func !== DEFAULT_PROB_FUNC)
+        safetycopy = prob_func !== DEFAULT_PROB_FUNC
+    )
     _prob_func = prepare_function(prob_func)
     _output_func = prepare_function(output_func)
     _reduction = prepare_function(reduction)
     _u_init = prepare_initial_state(u_init)
-    EnsembleProblem(prob, _prob_func, _output_func, _reduction, _u_init, safetycopy)
+    return EnsembleProblem(prob, _prob_func, _output_func, _reduction, _u_init, safetycopy)
 end
 
 """
@@ -192,13 +197,15 @@ $(TYPEDEF)
 
 Alternate constructor that uses only keyword arguments.
 """
-function EnsembleProblem(; prob,
+function EnsembleProblem(;
+        prob,
         prob_func = DEFAULT_PROB_FUNC,
         output_func = DEFAULT_OUTPUT_FUNC,
         reduction = DEFAULT_REDUCTION,
         u_init = nothing, p = nothing,
-        safetycopy = prob_func !== DEFAULT_PROB_FUNC)
-    EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
+        safetycopy = prob_func !== DEFAULT_PROB_FUNC
+    )
+    return EnsembleProblem(prob; prob_func, output_func, reduction, u_init, safetycopy)
 end
 
 """
@@ -211,11 +218,13 @@ Constructor that is used for NOnlinearProblem.
     This dispatch is deprecated. See the Parallel Ensembles Simulations Interface page.
 """
 function SciMLBase.EnsembleProblem(
-        prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...) where {T}
+        prob::AbstractSciMLProblem, u0s::Vector{Vector{T}}; kwargs...
+    ) where {T}
     Base.depwarn(
         "This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
 Ensembles Simulations Interface page for more details",
-        :EnsembleProblem)
+        :EnsembleProblem
+    )
     prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[i])
     return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
 end
@@ -231,7 +240,7 @@ Defines a weighted version of an `EnsembleProblem`, where different simulations 
   - `weights`: A vector of weights corresponding to each simulation.
 """
 struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
-       AbstractEnsembleProblem
+    AbstractEnsembleProblem
     ensembleprob::T1
     weights::T2
 end
@@ -240,7 +249,7 @@ end
 Returns a list of all accessible properties, including those from the inner ensemble and `:weights`.
 """
 function Base.propertynames(e::WeightedEnsembleProblem)
-    (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
+    return (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
 end
 
 """
@@ -264,5 +273,5 @@ function WeightedEnsembleProblem(args...; weights, kwargs...)
     @assert sum(weights) ≈ 1
     ep = EnsembleProblem(args...; kwargs...)
     @assert length(ep.prob) == length(weights)
-    WeightedEnsembleProblem(ep, weights)
+    return WeightedEnsembleProblem(ep, weights)
 end

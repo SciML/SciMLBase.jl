@@ -447,11 +447,11 @@ const symfalse = Symbol("false")
 function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     @warn "Backwards compatibility support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
 
-    if retcode == :Default || retcode == :DEFAULT
+    return if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
-           retcode == :LOCALLY_SOLVED
+            retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
+            retcode == :LOCALLY_SOLVED
         ReturnCode.Success
     elseif retcode == :Terminated
         ReturnCode.Terminated
@@ -472,8 +472,8 @@ function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
     elseif retcode == :Failure || retcode == symfalse
         ReturnCode.Failure
     elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
-           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
-           retcode == :INFEASIBLE_OR_UNBOUNDED
+            retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
+            retcode == :INFEASIBLE_OR_UNBOUNDED
         ReturnCode.Infeasible
     else
         ReturnCode.Failure
@@ -483,11 +483,11 @@ end
 # Deprecate ASAP, only to make the deprecation easier
 symbol_to_ReturnCode(retcode::ReturnCode.T) = retcode
 function symbol_to_ReturnCode(retcode::Symbol)
-    if retcode == :Default || retcode == :DEFAULT
+    return if retcode == :Default || retcode == :DEFAULT
         ReturnCode.Default
     elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
-           retcode == :LOCALLY_SOLVED
+            retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
+            retcode == :LOCALLY_SOLVED
         ReturnCode.Success
     elseif retcode == :Terminated
         ReturnCode.Terminated
@@ -506,8 +506,8 @@ function symbol_to_ReturnCode(retcode::Symbol)
     elseif retcode == :Failure || retcode == symfalse
         ReturnCode.Failure
     elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
-           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
-           retcode == :INFEASIBLE_OR_UNBOUNDED
+            retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
+            retcode == :INFEASIBLE_OR_UNBOUNDED
         ReturnCode.Infeasible
     else
         ReturnCode.Failure
@@ -515,7 +515,7 @@ function symbol_to_ReturnCode(retcode::Symbol)
 end
 
 function Base.convert(::Type{ReturnCode.T}, bool::Bool)
-    bool ? ReturnCode.Success : ReturnCode.Failure
+    return bool ? ReturnCode.Success : ReturnCode.Failure
 end
 
 """
@@ -527,7 +527,7 @@ Returns a boolean for whether a return code should be interpreted as a form of s
 function successful_retcode end
 
 function successful_retcode(retcode::ReturnCode.T)
-    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
+    return retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
         retcode == ReturnCode.ExactSolutionLeft ||
         retcode == ReturnCode.ExactSolutionRight ||
         retcode == ReturnCode.FloatingPointLimit ||

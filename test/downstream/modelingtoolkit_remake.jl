@@ -14,19 +14,25 @@ syss = []
 @parameters σ ρ β q
 @variables x(t) y(t) z(t)
 
-eqs = [D(x) ~ σ * (y - x),
+eqs = [
+    D(x) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
-    D(z) ~ x * y - β * z]
+    D(z) ~ x * y - β * z,
+]
 
 @named sys = System([eqs; q ~ 3β], t)
 sys = complete(sys)
-u0 = [x => 1.0,
+u0 = [
+    x => 1.0,
     y => 0.0,
-    z => 0.0]
+    z => 0.0,
+]
 
-p = [σ => 28.0,
+p = [
+    σ => 28.0,
     ρ => 10.0,
-    β => 8 / 3]
+    β => 8 / 3,
+]
 
 tspan = (0.0, 100.0)
 
@@ -69,7 +75,8 @@ push!(probs, OptimizationProblem(optsys, [u0; p]))
 
 @mtkcompile sys = System(
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
-    [x, y, z], [σ, β, ρ])
+    [x, y, z], [σ, β, ρ]
+)
 sccprob = SCCNonlinearProblem(sys, [u0; p])
 @test_nowarn SciMLBase.initialization_status(sccprob)
 push!(syss, sys)
@@ -148,7 +155,8 @@ for (sys, prob) in zip(syss, probs)
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     prob2 = @inferred baseType remake(
-        prob; u0 = [sys.x => 0.5σ + 1], p = [sys.β => 0.5x + 1])
+        prob; u0 = [sys.x => 0.5σ + 1], p = [sys.β => 0.5x + 1]
+    )
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     # Not testing `Symbol => expr` since nested substitution doesn't work with that
@@ -159,34 +167,46 @@ end
     @mtkcompile discsys = System(
         [
             x ~ x(k - 1) * ρ + y(k - 2), y ~ y(k - 1) * σ - z(k - 2), z ~
-                                                                      z(k - 1) * β +
-                                                                      x(k - 2)],
+                z(k - 1) * β +
+                x(k - 2),
+        ],
         t; defaults = [
-            x => 1.0, y => 1.0, z => 1.0, x(k-1) => 0.0, y(k-1) => 0.0, z(k-1) => 0.0])
+            x => 1.0, y => 1.0, z => 1.0, x(k - 1) => 0.0, y(k - 1) => 0.0, z(k - 1) => 0.0,
+        ]
+    )
     prob = DiscreteProblem(discsys, p, (0, 10))
-    prob[x(k-1)] = 1.0
-    prob[y(k-1)] = prob[z(k-1)] = 0.0
+    prob[x(k - 1)] = 1.0
+    prob[y(k - 1)] = prob[z(k - 1)] = 0.0
 
     @test parameter_values(prob) isa ModelingToolkit.MTKParameters
     @inferred typeof(prob) remake(prob)
 
     baseType = Base.typename(typeof(prob)).wrapper
-    ugetter = getsym(prob, [x(k-1), y(k-1), z(k-1)])
-    prob2 = @inferred baseType remake(prob; u0 = [
-        x(k-1) => 2.0, y(k-1) => 3.0, z(k-1) => 4.0])
+    ugetter = getsym(prob, [x(k - 1), y(k - 1), z(k - 1)])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [
+            x(k - 1) => 2.0, y(k - 1) => 3.0, z(k - 1) => 4.0,
+        ]
+    )
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
-    prob2 = @inferred baseType remake(prob; u0 = [
-        sys.x(k-1) => 2.0, sys.y(k-1) => 3.0, sys.z(k-1) => 4.0])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [
+            sys.x(k - 1) => 2.0, sys.y(k - 1) => 3.0, sys.z(k - 1) => 4.0,
+        ]
+    )
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
     prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 2.0, :yₜ₋₁ => 3.0, :zₜ₋₁ => 4.0])
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
-    prob2 = @inferred baseType remake(prob; u0 = [
-        x(k-1) => 2.0, sys.y(k-1) => 3.0, :zₜ₋₁ => 4.0])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [
+            x(k - 1) => 2.0, sys.y(k - 1) => 3.0, :zₜ₋₁ => 4.0,
+        ]
+    )
     @test ugetter(prob2) == [2.0, 3.0, 4.0]
 
-    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 12.0])
+    prob2 = @inferred baseType remake(prob; u0 = [x(k - 1) => 12.0])
     @test ugetter(prob2) == [12.0, 0.0, 0.0]
-    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k-1) => 12.0])
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k - 1) => 12.0])
     @test ugetter(prob2) == [12.0, 0.0, 0.0]
     prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 12.0])
     @test ugetter(prob2) == [12.0, 0.0, 0.0]
@@ -222,29 +242,34 @@ end
 
     # Test p dependent on u0
     @test_broken begin
-        prob2 = @inferred baseType remake(prob; p = [σ => 0.5x(k-1) + 1])
+        prob2 = @inferred baseType remake(prob; p = [σ => 0.5x(k - 1) + 1])
         @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
-        prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.5x(k-1) + 1])
+        prob2 = @inferred baseType remake(prob; p = [sys.σ => 0.5x(k - 1) + 1])
         @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
-        prob2 = @inferred baseType remake(prob; p = [:σ => 0.5x(k-1) + 1])
+        prob2 = @inferred baseType remake(prob; p = [:σ => 0.5x(k - 1) + 1])
         @test pgetter(prob2) ≈ [1.5, 8 / 3, 10.0]
     end
 
     # Test u0 dependent on p
-    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 0.5σ + 1])
+    prob2 = @inferred baseType remake(prob; u0 = [x(k - 1) => 0.5σ + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
-    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k-1) => 0.5σ + 1])
+    prob2 = @inferred baseType remake(prob; u0 = [sys.x(k - 1) => 0.5σ + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     prob2 = @inferred baseType remake(prob; u0 = [:xₜ₋₁ => 0.5σ + 1])
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
 
     # Test u0 dependent on p and p dependent on u0
-    prob2 = @inferred baseType remake(prob; u0 = [x(k-1) => 0.5σ + 1], p = [β => 0.5x(k-1) +
-                                                                                 1])
+    prob2 = @inferred baseType remake(
+        prob; u0 = [x(k - 1) => 0.5σ + 1], p = [
+            β => 0.5x(k - 1) +
+                1,
+        ]
+    )
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test_broken pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     prob2 = @inferred baseType remake(
-        prob; u0 = [sys.x(k-1) => 0.5σ + 1], p = [sys.β => 0.5x(k-1) + 1])
+        prob; u0 = [sys.x(k - 1) => 0.5σ + 1], p = [sys.β => 0.5x(k - 1) + 1]
+    )
     @test ugetter(prob2) ≈ [15.0, 0.0, 0.0]
     @test_broken pgetter(prob2) ≈ [28.0, 8.5, 10.0]
     # Not testing `Symbol => expr` since nested substitution doesn't work with that
@@ -262,7 +287,8 @@ function loss(x, p)
     prob = p[1]
 
     prob = @inferred ODEProblem remake(
-        prob; p = [prob.f.sys.p => x[1]], u0 = typeof(x)(prob.u0))
+        prob; p = [prob.f.sys.p => x[1]], u0 = typeof(x)(prob.u0)
+    )
     sol = solve(prob, Tsit5())
     vals = sol(ts; idxs = prob.f.sys.x).u
     return sum((data .- vals) .^ 2) / length(ts)
@@ -271,7 +297,7 @@ end
 f = OptimizationFunction(loss, Optimization.AutoForwardDiff())
 prob = OptimizationProblem(f, [0.5], [odeprob])
 sol = solve(prob, BFGS())
-@test sol.u[1]≈2.5 rtol=1e-4
+@test sol.u[1] ≈ 2.5 rtol = 1.0e-4
 
 # Issue ModelingToolkit.jl#2637
 @testset "remake with defaults containing expressions" begin
@@ -298,16 +324,20 @@ end
         du[2] = p[3] - p[4] * u[2]
         nothing
     end
-    sys = SymbolCache(Dict(V => 1:2, V[1] => 1, V[2] => 2),
-        Dict(k => 1:4, k[1] => 1, k[2] => 2, k[3] => 3, k[4] => 4), t)
+    sys = SymbolCache(
+        Dict(V => 1:2, V[1] => 1, V[2] => 2),
+        Dict(k => 1:4, k[1] => 1, k[2] => 2, k[3] => 3, k[4] => 4), t
+    )
     struct SCWrapper{S}
         sys::S
     end
     SymbolicIndexingInterface.symbolic_container(s::SCWrapper) = s.sys
     SymbolicIndexingInterface.variable_symbols(s::SCWrapper) = filter(
-        x -> symbolic_type(x) != ArraySymbolic(), variable_symbols(s.sys))
+        x -> symbolic_type(x) != ArraySymbolic(), variable_symbols(s.sys)
+    )
     SymbolicIndexingInterface.parameter_symbols(s::SCWrapper) = filter(
-        x -> symbolic_type(x) != ArraySymbolic(), parameter_symbols(s.sys))
+        x -> symbolic_type(x) != ArraySymbolic(), parameter_symbols(s.sys)
+    )
     sys = SCWrapper(sys)
     fn = ODEFunction(rhs!; sys)
     oprob_scal_scal = ODEProblem(fn, [10.0, 20.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0])
@@ -349,7 +379,8 @@ end
 
 @static if length(methods(SciMLBase.detect_cycles)) == 1
     function SciMLBase.detect_cycles(
-            ::ModelingToolkit.AbstractSystem, varmap::Dict{Any, Any}, vars)
+            ::ModelingToolkit.AbstractSystem, varmap::Dict{Any, Any}, vars
+        )
         for sym in vars
             newval = ModelingToolkit.fixpoint_sub(sym, varmap; maxiters = 10)
             vs = ModelingToolkit.vars(newval)
@@ -369,24 +400,31 @@ end
 
     prob = ODEProblem(sys, [x => 1.0, y => 1.0, p => 1.0, q => 1.0], (0.0, 1.0))
     @test_throws SciMLBase.CyclicDependencyError remake(
-        prob; u0 = [x => 2y + 3, y => 2x + 1])
+        prob; u0 = [x => 2y + 3, y => 2x + 1]
+    )
     @test_throws SciMLBase.CyclicDependencyError remake(prob; p = [p => 2q + 1, q => p + 3])
     @test_throws SciMLBase.CyclicDependencyError remake(
-        prob; u0 = [x => 2y + p, y => q + 3], p = [p => x + y, q => p + 3])
+        prob; u0 = [x => 2y + p, y => q + 3], p = [p => x + y, q => p + 3]
+    )
 end
 
 @testset "SCCNonlinearProblem" begin
     @mtkbuild fullsys = System(
         [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
-        [x, y, z], [σ, β, ρ])
+        [x, y, z], [σ, β, ρ]
+    )
 
-    u0 = [x => 1.0,
+    u0 = [
+        x => 1.0,
         y => 0.0,
-        z => 0.0]
+        z => 0.0,
+    ]
 
-    p = [σ => 28.0,
+    p = [
+        σ => 28.0,
         ρ => 10.0,
-        β => 8 / 3]
+        β => 8 / 3,
+    ]
 
     sccprob = SCCNonlinearProblem(fullsys, [u0; p])
 
@@ -407,11 +445,14 @@ end
     @test sccprob3.p === sccprob3.probs[2].p
 
     @test_throws ["parameters_alias", "SCCNonlinearProblem"] remake(
-        sccprob; parameters_alias = false, p = [σ => 2.0])
+        sccprob; parameters_alias = false, p = [σ => 2.0]
+    )
 
     newp = remake_buffer(sccprob.f.sys, sccprob.p, [σ], [3.0])
-    sccprob4 = remake(sccprob; parameters_alias = false, p = newp,
-        probs = [remake(sccprob.probs[1]; p = deepcopy(newp)), sccprob.probs[2]])
+    sccprob4 = remake(
+        sccprob; parameters_alias = false, p = newp,
+        probs = [remake(sccprob.probs[1]; p = deepcopy(newp)), sccprob.probs[2]]
+    )
     @test sccprob4.parameters_alias === Val(false)
     @test sccprob4.p !== sccprob4.probs[1].p
     @test sccprob4.p !== sccprob4.probs[2].p
@@ -420,7 +461,7 @@ end
 # TODO: Rewrite this test when MTK build initialization for everything
 @testset "Lazy initialization" begin
     @variables _x(..) [guess = 1.0] y(t) [guess = 1.0]
-    @parameters p=1.0 [guess = 1.0]
+    @parameters p = 1.0 [guess = 1.0]
     @brownians a
     x = _x(t)
 
@@ -437,13 +478,13 @@ end
     @test SciMLBase.is_trivial_initialization(initdata)
 
     @testset "$Problem" for (rhss, Problem, Func) in [
-        (0.0, ODEProblem, ODEFunction),
-        (a, SDEProblem, SDEFunction),
-        (_x(t - 0.1), DDEProblem, DDEFunction),
-        (_x(t - 0.1) + a, SDDEProblem, SDDEFunction),
-        (y + 2, NonlinearProblem, NonlinearFunction),
-        (y + 2, NonlinearLeastSquaresProblem, NonlinearFunction)
-    ]
+            (0.0, ODEProblem, ODEFunction),
+            (a, SDEProblem, SDEFunction),
+            (_x(t - 0.1), DDEProblem, DDEFunction),
+            (_x(t - 0.1) + a, SDDEProblem, SDDEFunction),
+            (y + 2, NonlinearProblem, NonlinearFunction),
+            (y + 2, NonlinearLeastSquaresProblem, NonlinearFunction),
+        ]
         is_nlsolve = Func == NonlinearFunction
         D = is_nlsolve ? (v) -> v^3 : Differential(t)
         sys_args = is_nlsolve ? () : (t,)
@@ -453,7 +494,8 @@ end
         prob = Problem(sys, [x => 1.0, y => 1.0], prob_args...)
         func_args = isdefined(prob.f, :g) ? (prob.f.g,) : ()
         func = Func{true, SciMLBase.FullSpecialize}(
-            prob.f.f, func_args...; initialization_data = initdata, sys = prob.f.sys)
+            prob.f.f, func_args...; initialization_data = initdata, sys = prob.f.sys
+        )
         prob2 = remake(prob; f = func)
         @test SciMLBase.is_trivial_initialization(prob2)
         @test prob2.ps[p] ≈ 3.0
@@ -466,7 +508,8 @@ end
     @parameters k2 p Gamma y0 d k1
     @mtkcompile sys = System(
         [D(y) ~ p - d * y, D(x1) ~ -k1 * x1 + k2 * (Gamma - x1), x2 ~ Gamma - x1],
-        t; defaults = Dict(y => y0, Gamma => x1 + x2))
+        t; defaults = Dict(y => y0, Gamma => x1 + x2)
+    )
     u0 = [x1 => 1.0, x2 => 2.0]
     p0 = [p => 10.0, d => 5.0, y0 => 3.0, k1 => 1.0, k2 => 2.0]
     prob = ODEProblem(sys, [u0; p0], (0.0, 1.0))
@@ -483,7 +526,8 @@ end
     @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p [guess = 1.0] q [guess = 1.0]
     @mtkcompile sys = System(
-        [D(x) ~ p * x + q * y, y ~ 2x], t; parameter_dependencies = [q ~ 2p])
+        [D(x) ~ p * x + q * y, y ~ 2x], t; parameter_dependencies = [q ~ 2p]
+    )
     prob = ODEProblem(sys, [:x => 1.0, p => 1.0], (0.0, 1.0))
     @test_nowarn remake(prob; u0 = [:y => 1.0, :x => nothing])
 end
@@ -497,12 +541,13 @@ end
     buf, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), prob.p)
     newps = repack(ForwardDiff.Dual.(buf))
     prob2 = @test_nowarn remake(
-        prob; f = prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps)
+        prob; f = prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps
+    )
     @test prob2.f.initialization_data !== nothing
     initprob = prob2.f.initialization_data.initializeprob
     @test eltype(initprob.u0) <: ForwardDiff.Dual
     @test eltype(SciMLStructures.canonicalize(SciMLStructures.Tunable(), initprob.p)[1]) <:
-          ForwardDiff.Dual
+    ForwardDiff.Dual
 end
 
 @testset "Array unknown specified as Symbol" begin

@@ -25,7 +25,7 @@ struct OptimizationStats
 end
 
 function OptimizationStats(; iterations = 0, time = 0.0, fevals = 0, gevals = 0, hevals = 0)
-    OptimizationStats(iterations, time, fevals, gevals, hevals)
+    return OptimizationStats(iterations, time, fevals, gevals, hevals)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", s::OptimizationStats)
@@ -34,13 +34,14 @@ function Base.show(io::IO, ::MIME"text/plain", s::OptimizationStats)
     @printf io "%-50s %-f\n" "Time in seconds:" s.time
     @printf io "%-50s %-d\n" "Number of function evaluations:" s.fevals
     @printf io "%-50s %-d\n" "Number of gradient evaluations:" s.gevals
-    @printf io "%-50s %-d" "Number of hessian evaluations:" s.hevals
+    return @printf io "%-50s %-d" "Number of hessian evaluations:" s.hevals
 end
 
 function Base.merge(s1::OptimizationStats, s2::OptimizationStats)
-    OptimizationStats(
+    return OptimizationStats(
         s1.iterations + s2.iterations, s1.time + s2.time, s1.fevals + s2.fevals,
-        s1.gevals + s2.gevals, s1.hevals + s2.hevals)
+        s1.gevals + s2.gevals, s1.hevals + s2.hevals
+    )
 end
 
 """
@@ -71,7 +72,7 @@ solution interfaces, check out the
 [SciML Solution Interface documentation page](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/)
 """
 struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST} <:
-       AbstractOptimizationSolution{T, N}
+    AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
     alg::A # algorithm
@@ -81,21 +82,27 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
     stats::ST
 end
 
-function build_solution(cache::AbstractOptimizationCache,
+function build_solution(
+        cache::AbstractOptimizationCache,
         alg, u, objective;
         retcode = ReturnCode.Default,
         original = nothing,
         stats = nothing,
-        kwargs...)
+        kwargs...
+    )
     T = eltype(eltype(u))
     N = ndims(u)
 
     #Backwords compatibility, remove ASAP
     retcode = symbol_to_ReturnCode(retcode)
 
-    OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original), typeof(stats)}(u, cache,
-        alg, objective, retcode, original, stats)
+    return OptimizationSolution{
+        T, N, typeof(u), typeof(cache), typeof(alg),
+        typeof(objective), typeof(original), typeof(stats),
+    }(
+        u, cache,
+        alg, objective, retcode, original, stats
+    )
 end
 
 """
@@ -104,34 +111,41 @@ $(TYPEDEF)
 Representation the default cache for an optimization problem defined by an `OptimizationProblem`.
 """
 mutable struct DefaultOptimizationCache{F <: OptimizationFunction, P} <:
-               AbstractOptimizationCache
+    AbstractOptimizationCache
     f::F
     p::P
 end
 
 # for compatibility
-function build_solution(prob::AbstractOptimizationProblem,
+function build_solution(
+        prob::AbstractOptimizationProblem,
         alg, u, objective;
         retcode = ReturnCode.Default,
         original = nothing,
-        kwargs...)
+        kwargs...
+    )
     T = eltype(eltype(u))
     N = ndims(u)
 
     Base.depwarn(
         "`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated." *
-        " Consider implementing an `AbstractOptimizationCache` instead.",
-        "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
+            " Consider implementing an `AbstractOptimizationCache` instead.",
+        "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)"
+    )
 
     cache = DefaultOptimizationCache(prob.f, prob.p)
 
     #Backwords compatibility, remove ASAP
     retcode = symbol_to_ReturnCode(retcode)
 
-    OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original)}(u, cache, alg, objective,
+    return OptimizationSolution{
+        T, N, typeof(u), typeof(cache), typeof(alg),
+        typeof(objective), typeof(original),
+    }(
+        u, cache, alg, objective,
         retcode,
-        original)
+        original
+    )
 end
 
 function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
@@ -142,10 +156,12 @@ function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
 end
 
 function has_reinit(cache::SciMLBase.AbstractOptimizationCache)
-    hasfield(typeof(cache), :reinit_cache)
+    return hasfield(typeof(cache), :reinit_cache)
 end
-function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
-        u0 = missing, interpret_symbolicmap = true)
+function reinit!(
+        cache::SciMLBase.AbstractOptimizationCache; p = missing,
+        u0 = missing, interpret_symbolicmap = true
+    )
     if p === missing && u0 === missing
         p, u0 = cache.p, cache.u0
     else # at least one of them has a value
@@ -158,16 +174,24 @@ function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
         isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
         ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
         if isu0symbolic && !has_sys(cache.f)
-            throw(ArgumentError("This cache does not support symbolic maps with" *
-                                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
-                                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                                "parameter order."))
+            throw(
+                ArgumentError(
+                    "This cache does not support symbolic maps with" *
+                        " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                        "with the `u0` keyword argument as a vector of values, paying attention to" *
+                        "parameter order."
+                )
+            )
         end
         if ispsymbolic && !has_sys(cache.f)
-            throw(ArgumentError("This cache does not support symbolic maps with " *
-                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `p` keyword argument as a vector of values (paying attention to" *
-                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+            throw(
+                ArgumentError(
+                    "This cache does not support symbolic maps with " *
+                        "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                        "with the `p` keyword argument as a vector of values (paying attention to" *
+                        "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"
+                )
+            )
         end
         if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(cache, p, u0)
@@ -185,7 +209,7 @@ function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
 end
 
 function SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationCache)
-    if has_reinit(x)
+    return if has_reinit(x)
         x.reinit_cache.p
     else
         x.p
@@ -211,26 +235,33 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
 end
 
 function SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationSolution)
-    parameter_values(x.cache)
+    return parameter_values(x.cache)
 end
 SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationSolution) = x.cache
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
-        s::Symbol)
+Base.@propagate_inbounds function Base.getproperty(
+        x::AbstractOptimizationSolution,
+        s::Symbol
+    )
     if s === :minimizer
-        Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
-            "sol.minimizer")
+        Base.depwarn(
+            "`sol.minimizer` is deprecated. Use `sol.u` instead.",
+            "sol.minimizer"
+        )
         return getfield(x, :u)
     elseif s === :x
         return getfield(x, :u)
     elseif s === :minimum
-        Base.depwarn("`sol.minimum` is deprecated. Use `sol.objective` instead.",
-            "sol.minimum")
+        Base.depwarn(
+            "`sol.minimum` is deprecated. Use `sol.objective` instead.",
+            "sol.minimum"
+        )
         return getfield(x, :objective)
     elseif s === :prob
         Base.depwarn(
             "`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
-            "sol.prob")
+            "sol.prob"
+        )
         return getfield(x, :cache)
     elseif s === :ps
         return ParameterIndexingProxy(x)
@@ -240,9 +271,11 @@ end
 
 function Base.summary(io::IO, A::AbstractOptimizationSolution)
     type_color, no_color = get_colorizers(io)
-    print(io,
+    return print(
+        io,
         type_color, nameof(typeof(A)),
         no_color, " with uType ",
         type_color, eltype(A.u),
-        no_color)
+        no_color
+    )
 end

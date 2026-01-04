@@ -9,26 +9,36 @@ function SciMLBase.promote_u0(
             <:MonteCarloMeasurements.AbstractParticles,
         },
         p::AbstractArray{<:MonteCarloMeasurements.AbstractParticles},
-        t0)
-    u0
+        t0
+    )
+    return u0
 end
-function SciMLBase.promote_u0(u0,
+function SciMLBase.promote_u0(
+        u0,
         p::AbstractArray{<:MonteCarloMeasurements.AbstractParticles},
-        t0)
-    eltype(p).(u0)
+        t0
+    )
+    return eltype(p).(u0)
 end
 
-function SciMLBase.promote_u0(::Nothing,
+function SciMLBase.promote_u0(
+        ::Nothing,
         p::AbstractArray{<:MonteCarloMeasurements.AbstractParticles},
-        t0)
+        t0
+    )
     return nothing
 end
 
 SciMLBase.value(x::Type{MonteCarloMeasurements.AbstractParticles{T, N}}) where {T, N} = T
 SciMLBase.value(x::MonteCarloMeasurements.AbstractParticles) = mean(x.particles)
-function SciMLBase.unitfulvalue(x::Type{MonteCarloMeasurements.AbstractParticles{
-        T, N}}) where {T, N}
-    T
+function SciMLBase.unitfulvalue(
+        x::Type{
+            MonteCarloMeasurements.AbstractParticles{
+                T, N,
+            },
+        }
+    ) where {T, N}
+    return T
 end
 SciMLBase.unitfulvalue(x::MonteCarloMeasurements.AbstractParticles) = mean(x.particles)
 

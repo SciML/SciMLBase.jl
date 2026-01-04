@@ -1,7 +1,7 @@
 using Test
 using SciMLBase
 using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepClock,
-                 first_clock_tick_time, IndexedClock, canonicalize_indexed_clock
+    first_clock_tick_time, IndexedClock, canonicalize_indexed_clock
 using MLStyle: @match
 
 @testset "Clock" begin
@@ -68,5 +68,5 @@ end
     @test clocktype(Continuous) === "continuous"
     @test clocktype(SolverStepClock()) === "solver_step_clock"
     @test clocktype(PeriodicClock(1 // 2, 3.14)) === (1 // 2, 3.14)
-    @test clocktype(pi)==="other" broken=true
+    @test clocktype(pi) === "other" broken = true
 end

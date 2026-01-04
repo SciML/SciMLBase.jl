@@ -4,7 +4,8 @@
 A collection of all the data required for `OverrideInit`.
 """
 struct OverrideInitData{
-    IProb, UIProb, IProbMap, IProbPmap, M, OOP <: Union{Val{true}, Val{false}}}
+        IProb, UIProb, IProbMap, IProbPmap, M, OOP <: Union{Val{true}, Val{false}},
+    }
     """
     The `AbstractNonlinearProblem` to solve for initialization.
     """
@@ -41,21 +42,28 @@ struct OverrideInitData{
     """
     is_update_oop::OOP
 
-    function OverrideInitData(initprob::I, update_initprob!::J, initprobmap::K,
-            initprobpmap::L, metadata::M, is_update_oop::O) where {I, J, K, L, M, O}
+    function OverrideInitData(
+            initprob::I, update_initprob!::J, initprobmap::K,
+            initprobpmap::L, metadata::M, is_update_oop::O
+        ) where {I, J, K, L, M, O}
         @assert initprob isa
-                Union{SCCNonlinearProblem, ImmutableNonlinearProblem,
-            NonlinearProblem, NonlinearLeastSquaresProblem}
+            Union{
+            SCCNonlinearProblem, ImmutableNonlinearProblem,
+            NonlinearProblem, NonlinearLeastSquaresProblem,
+        }
         return new{I, J, K, L, M, O}(
-            initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop)
+            initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop
+        )
     end
 end
 
 function OverrideInitData(
         initprob, update_initprob!, initprobmap, initprobpmap;
-        metadata = nothing, is_update_oop = Val(false))
-    OverrideInitData(
-        initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop)
+        metadata = nothing, is_update_oop = Val(false)
+    )
+    return OverrideInitData(
+        initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop
+    )
 end
 
 """
@@ -79,14 +87,17 @@ struct CheckInitFailureError <: Exception
 end
 
 function Base.showerror(io::IO, e::CheckInitFailureError)
-    print(io,
+    print(
+        io,
         """
         DAE initialization failed: your u0 did not satisfy the initialization requirements, \
         normresid = $(e.normresid) > abstol = $(e.abstol).
-        """)
+        """
+    )
 
-    if e.isdae
-        print(io,
+    return if e.isdae
+        print(
+            io,
             """
             If you wish for the system to automatically change the algebraic variables to \
             satisfy the algebraic constraints, please pass `initializealg = BrownFullBasicInit()` \
@@ -97,15 +108,18 @@ function Base.showerror(io::IO, e::CheckInitFailureError)
             intractable without symbolic manipulation of the system. For an automated \
             system that will generate numerically stable initializations, see \
             ModelingToolkit.jl structural simplification for more details.
-            """)
+            """
+        )
     end
 end
 
 struct OverrideInitMissingAlgorithm <: Exception end
 
 function Base.showerror(io::IO, e::OverrideInitMissingAlgorithm)
-    print(io,
-        "OverrideInit specified but no NonlinearSolve.jl algorithm provided. Provide an algorithm via the `nlsolve_alg` keyword argument to `get_initial_values`.")
+    return print(
+        io,
+        "OverrideInit specified but no NonlinearSolve.jl algorithm provided. Provide an algorithm via the `nlsolve_alg` keyword argument to `get_initial_values`."
+    )
 end
 
 struct OverrideInitNoTolerance <: Exception
@@ -113,8 +127,10 @@ struct OverrideInitNoTolerance <: Exception
 end
 
 function Base.showerror(io::IO, e::OverrideInitNoTolerance)
-    print(io,
-        "Tolerances were not provided to `OverrideInit`. `$(e.tolerance)` must be provided as a keyword argument to `get_initial_values` or as a keyword argument to the `OverrideInit` constructor.")
+    return print(
+        io,
+        "Tolerances were not provided to `OverrideInit`. `$(e.tolerance)` must be provided as a keyword argument to `get_initial_values` or as a keyword argument to the `OverrideInit` constructor."
+    )
 end
 
 """
@@ -140,17 +156,21 @@ function evaluate_f(integrator::DEIntegrator, prob, f, isinplace, u, p, t)
 end
 
 function evaluate_f(
-        integrator::DEIntegrator, prob::AbstractDAEProblem, f, isinplace, u, p, t)
+        integrator::DEIntegrator, prob::AbstractDAEProblem, f, isinplace, u, p, t
+    )
     return _evaluate_f(integrator, f, isinplace, integrator.du, u, p, t)
 end
 
 function evaluate_f(
-        integrator::AbstractDDEIntegrator, prob::AbstractDDEProblem, f, isinplace, u, p, t)
+        integrator::AbstractDDEIntegrator, prob::AbstractDDEProblem, f, isinplace, u, p, t
+    )
     return _evaluate_f(integrator, f, isinplace, u, get_history_function(integrator), p, t)
 end
 
-function evaluate_f(integrator::AbstractSDDEIntegrator,
-        prob::AbstractSDDEProblem, f, isinplace, u, p, t)
+function evaluate_f(
+        integrator::AbstractSDDEIntegrator,
+        prob::AbstractSDDEProblem, f, isinplace, u, p, t
+    )
     return _evaluate_f(integrator, f, isinplace, u, get_history_function(integrator), p, t)
 end
 
@@ -180,7 +200,8 @@ Keyword arguments:
 """
 function get_initial_values(
         prob::AbstractDEProblem, integrator::DEIntegrator, f, alg::CheckInit,
-        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...)
+        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...
+    )
     u0 = state_values(integrator)
     p = parameter_values(integrator)
     t = current_time(integrator)
@@ -195,7 +216,7 @@ function get_initial_values(
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
     normresid = isdefined(integrator.opts, :internalnorm) ?
-                integrator.opts.internalnorm(tmp, t) : norm(tmp)
+        integrator.opts.internalnorm(tmp, t) : norm(tmp)
     if normresid > abstol
         throw(CheckInitFailureError(normresid, abstol, true))
     end
@@ -204,14 +225,15 @@ end
 
 function get_initial_values(
         prob::AbstractDAEProblem, integrator::DEIntegrator, f, alg::CheckInit,
-        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...)
+        isinplace::Union{Val{true}, Val{false}}; abstol, kwargs...
+    )
     u0 = state_values(integrator)
     p = parameter_values(integrator)
     t = current_time(integrator)
 
     resid = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
     normresid = isdefined(integrator.opts, :internalnorm) ?
-                integrator.opts.internalnorm(resid, t) : norm(resid)
+        integrator.opts.internalnorm(resid, t) : norm(resid)
 
     if normresid > abstol
         throw(CheckInitFailureError(normresid, abstol, false))
@@ -242,8 +264,10 @@ All additional keyword arguments are forwarded to `solve`.
 In case the initialization problem is trivial, `nlsolve_alg`, `abstol` and `reltol` are
 not required. `solve` is also not called.
 """
-function get_initial_values(prob, valp, f, alg::OverrideInit,
-        iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...)
+function get_initial_values(
+        prob, valp, f, alg::OverrideInit,
+        iip::Union{Val{true}, Val{false}}; nlsolve_alg = nothing, abstol = nothing, reltol = nothing, kwargs...
+    )
     u0 = state_values(valp)
     p = parameter_values(valp)
 
@@ -285,7 +309,7 @@ function get_initial_values(prob, valp, f, alg::OverrideInit,
 
         success = if initprob isa NonlinearLeastSquaresProblem
             # Do not accept StalledSuccess as a solution
-            # A good local minima is not a success 
+            # A good local minima is not a success
             resid = nlsol.resid
             normresid = norm(resid)
             SciMLBase.successful_retcode(nlsol) && normresid <= abstol
@@ -322,16 +346,16 @@ end
 is_trivial_initialization(::Nothing) = true
 
 function is_trivial_initialization(initdata::OverrideInitData)
-    !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
+    return !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
         state_values(initdata.initializeprob) === nothing
 end
 
 function is_trivial_initialization(f::AbstractSciMLFunction)
-    has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
+    return has_initialization_data(f) && is_trivial_initialization(f.initialization_data)
 end
 
 function is_trivial_initialization(prob::AbstractSciMLProblem)
-    is_trivial_initialization(prob.f)
+    return is_trivial_initialization(prob.f)
 end
 
 @enum DETERMINED_STATUS OVERDETERMINED FULLY_DETERMINED UNDERDETERMINED

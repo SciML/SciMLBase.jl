@@ -95,7 +95,7 @@ sol = solve(prob)
 ```
 """
 mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
-               AbstractODEProblem{uType, tType, isinplace}
+    AbstractODEProblem{uType, tType, isinplace}
     """The ODE is `du = f(u,p,t)` for out-of-place and f(du,u,p,t) for in-place."""
     f::F
     """The initial condition is `u(tspan[1]) = u0`."""
@@ -108,22 +108,28 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     kwargs::K
     """An internal argument for storing traits about the solving process."""
     problem_type::PT
-    @add_kwonly function ODEProblem{iip}(f::AbstractODEFunction{iip},
+    @add_kwonly function ODEProblem{iip}(
+            f::AbstractODEFunction{iip},
             u0, tspan, p = NullParameters(),
             problem_type = StandardODEProblem();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan),
+        new{
+            typeof(_u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),
-            typeof(problem_type)}(f,
+            typeof(problem_type),
+        }(
+            f,
             _u0,
             _tspan,
             p,
             kwargs,
-            problem_type)
+            problem_type
+        )
     end
 
     """
@@ -137,45 +143,61 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-        ODEProblem(_f, _u0, _tspan, p; kwargs...)
+        return ODEProblem(_f, _u0, _tspan, p; kwargs...)
     end
 
-    @add_kwonly function ODEProblem{iip, recompile}(f, u0, tspan, p = NullParameters();
-            kwargs...) where {iip, recompile}
+    @add_kwonly function ODEProblem{iip, recompile}(
+            f, u0, tspan, p = NullParameters();
+            kwargs...
+        ) where {iip, recompile}
         ODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
     end
 
-    function ODEProblem{iip, FunctionWrapperSpecialize}(f, u0, tspan, p = NullParameters();
-            kwargs...) where {iip}
+    function ODEProblem{iip, FunctionWrapperSpecialize}(
+            f, u0, tspan, p = NullParameters();
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
             if iip
-                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_iip(f,
-                    (_u0, _u0, p,
-                        _tspan[1])))
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(
+                    wrapfun_iip(
+                        f,
+                        (
+                            _u0, _u0, p,
+                            _tspan[1],
+                        )
+                    )
+                )
             else
-                ff = ODEFunction{iip, FunctionWrapperSpecialize}(wrapfun_oop(f,
-                    (_u0, p,
-                        _tspan[1])))
+                ff = ODEFunction{iip, FunctionWrapperSpecialize}(
+                    wrapfun_oop(
+                        f,
+                        (
+                            _u0, p,
+                            _tspan[1],
+                        )
+                    )
+                )
             end
         end
-        ODEProblem{iip}(ff, _u0, _tspan, p; kwargs...)
+        return ODEProblem{iip}(ff, _u0, _tspan, p; kwargs...)
     end
 end
 
 function Base.setproperty!(prob::ODEProblem, s::Symbol, v)
     @warn "Mutation of ODEProblem detected. SciMLBase v2.0 has made ODEProblem temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and ODEProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
-    Base.setfield!(prob, s, v)
+    return Base.setfield!(prob, s, v)
 end
 
 function Base.setproperty!(prob::ODEProblem, s::Symbol, v, order::Symbol)
     @warn "Mutation of ODEProblem detected. SciMLBase v2.0 has made ODEProblem temporarily mutable in order to allow for interfacing with EnzymeRules due to a current limitation in the rule system. This change is only intended to be temporary and ODEProblem will return to being a struct in a later non-breaking release. Do not rely on this behavior, use with caution."
-    Base.setfield!(prob, s, v, order)
+    return Base.setfield!(prob, s, v, order)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: ODEProblem}
-    function ctor(f, u0, tspan, p, kw, pt)
+    return function ctor(f, u0, tspan, p, kw, pt)
         if f isa AbstractODEFunction
             iip = isinplace(f)
         else
@@ -191,7 +213,7 @@ end
 Define an ODE problem from an [`ODEFunction`](@ref).
 """
 function ODEProblem(f::AbstractODEFunction, u0, tspan, args...; kwargs...)
-    ODEProblem{isinplace(f)}(f, u0, tspan, args...; kwargs...)
+    return ODEProblem{isinplace(f)}(f, u0, tspan, args...; kwargs...)
 end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
@@ -199,7 +221,7 @@ function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     _u0 = prepare_initial_state(u0)
     _tspan = promote_tspan(tspan)
     _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-    ODEProblem(_f, _u0, _tspan, p; kwargs...)
+    return ODEProblem(_f, _u0, _tspan, p; kwargs...)
 end
 
 """
@@ -273,18 +295,24 @@ struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
 
 Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
 """
-function DynamicalODEProblem(f::DynamicalODEFunction, du0, u0, tspan, p = NullParameters();
-        kwargs...)
-    ODEProblem(f, ArrayPartition(du0, u0), tspan, p; kwargs...)
+function DynamicalODEProblem(
+        f::DynamicalODEFunction, du0, u0, tspan, p = NullParameters();
+        kwargs...
+    )
+    return ODEProblem(f, ArrayPartition(du0, u0), tspan, p; kwargs...)
 end
 function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwargs...)
-    ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(du0, u0), tspan, p; kwargs...)
+    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(du0, u0), tspan, p; kwargs...)
 end
 
-function DynamicalODEProblem{iip}(f1, f2, du0, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
-    ODEProblem(DynamicalODEFunction{iip}(f1, f2), ArrayPartition(du0, u0), tspan, p,
-        DynamicalODEProblem{iip}(); kwargs...)
+function DynamicalODEProblem{iip}(
+        f1, f2, du0, u0, tspan, p = NullParameters();
+        kwargs...
+    ) where {iip}
+    return ODEProblem(
+        DynamicalODEFunction{iip}(f1, f2), ArrayPartition(du0, u0), tspan, p,
+        DynamicalODEProblem{iip}(); kwargs...
+    )
 end
 
 @doc doc"""
@@ -338,53 +366,65 @@ Defines the ODE with the specified functions.
 struct SecondOrderODEProblem{iip} <: AbstractDynamicalODEProblem end
 function SecondOrderODEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 5)
-    SecondOrderODEProblem{iip}(f, du0, u0, tspan, p; kwargs...)
+    return SecondOrderODEProblem{iip}(f, du0, u0, tspan, p; kwargs...)
 end
 
-function SecondOrderODEProblem{iip}(f, du0, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
+function SecondOrderODEProblem{iip}(
+        f, du0, u0, tspan, p = NullParameters();
+        kwargs...
+    ) where {iip}
     if iip
         f2 = function (du, v, u, p, t)
-            du .= v
+            return du .= v
         end
     else
         f2 = function (v, u, p, t)
-            v
+            return v
         end
     end
     _u0 = ArrayPartition((du0, u0))
-    ODEProblem(DynamicalODEFunction{iip}(f, f2), _u0, tspan, p,
-        SecondOrderODEProblem{iip}(); kwargs...)
+    return ODEProblem(
+        DynamicalODEFunction{iip}(f, f2), _u0, tspan, p,
+        SecondOrderODEProblem{iip}(); kwargs...
+    )
 end
-function SecondOrderODEProblem(f::DynamicalODEFunction, du0, u0, tspan,
-        p = NullParameters(); kwargs...)
+function SecondOrderODEProblem(
+        f::DynamicalODEFunction, du0, u0, tspan,
+        p = NullParameters(); kwargs...
+    )
     iip = isinplace(f.f1, 5)
     _u0 = ArrayPartition((du0, u0))
     if f.f2.f === nothing
         if iip
             f2 = function (du, v, u, p, t)
-                du .= v
+                return du .= v
             end
         else
             f2 = function (v, u, p, t)
-                v
+                return v
             end
         end
         return ODEProblem(
-            DynamicalODEFunction{iip}(f.f1, f2; mass_matrix = f.mass_matrix,
-                analytic = f.analytic),
+            DynamicalODEFunction{iip}(
+                f.f1, f2; mass_matrix = f.mass_matrix,
+                analytic = f.analytic
+            ),
             _u0,
             tspan,
             p,
-            SecondOrderODEProblem{iip}(); kwargs...)
+            SecondOrderODEProblem{iip}(); kwargs...
+        )
     else
         return ODEProblem(
-            DynamicalODEFunction{iip}(f.f1, f.f2; mass_matrix = f.mass_matrix,
-                analytic = f.analytic),
+            DynamicalODEFunction{iip}(
+                f.f1, f.f2; mass_matrix = f.mass_matrix,
+                analytic = f.analytic
+            ),
             _u0,
             tspan,
             p,
-            SecondOrderODEProblem{iip}(); kwargs...)
+            SecondOrderODEProblem{iip}(); kwargs...
+        )
     end
 end
 
@@ -458,13 +498,15 @@ struct SplitODEProblem{iip} <: AbstractSplitODEProblem end
 
 function SplitODEProblem(f1, f2, u0, tspan, p = NullParameters(); kwargs...)
     f = SplitFunction(f1, f2)
-    SplitODEProblem(f, u0, tspan, p; kwargs...)
+    return SplitODEProblem(f, u0, tspan, p; kwargs...)
 end
 
-function SplitODEProblem{iip}(f1, f2, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
+function SplitODEProblem{iip}(
+        f1, f2, u0, tspan, p = NullParameters();
+        kwargs...
+    ) where {iip}
     f = SplitFunction{iip}(f1, f2)
-    SplitODEProblem(f, u0, tspan, p; kwargs...)
+    return SplitODEProblem(f, u0, tspan, p; kwargs...)
 end
 
 """
@@ -473,15 +515,17 @@ $(SIGNATURES)
 Define a split ODE problem from a [`SplitFunction`](@ref).
 """
 function SplitODEProblem(f::SplitFunction, u0, tspan, p = NullParameters(); kwargs...)
-    SplitODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+    return SplitODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
-function SplitODEProblem{iip}(f::SplitFunction, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
+function SplitODEProblem{iip}(
+        f::SplitFunction, u0, tspan, p = NullParameters();
+        kwargs...
+    ) where {iip}
     if f._func_cache === nothing && iip
         _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(u0) : u0
         f = remake(f; _func_cache)
     end
-    ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
+    return ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
 
 abstract type AbstractIncrementingODEProblem end
@@ -495,24 +539,29 @@ struct IncrementingODEProblem{iip} <: AbstractIncrementingODEProblem end
 
 function IncrementingODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     f = IncrementingODEFunction(f)
-    IncrementingODEProblem(f, u0, tspan, p; kwargs...)
+    return IncrementingODEProblem(f, u0, tspan, p; kwargs...)
 end
 
-function IncrementingODEProblem{iip}(f, u0, tspan, p = NullParameters();
-        kwargs...) where {iip}
+function IncrementingODEProblem{iip}(
+        f, u0, tspan, p = NullParameters();
+        kwargs...
+    ) where {iip}
     f = IncrementingODEFunction{iip}(f)
-    IncrementingODEProblem(f, u0, tspan, p; kwargs...)
+    return IncrementingODEProblem(f, u0, tspan, p; kwargs...)
 end
 
 function IncrementingODEProblem(
         f::IncrementingODEFunction, u0, tspan, p = NullParameters();
-        kwargs...)
-    IncrementingODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+        kwargs...
+    )
+    return IncrementingODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function IncrementingODEProblem{iip}(f::IncrementingODEFunction, u0, tspan,
-        p = NullParameters(); kwargs...) where {iip}
-    ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
+function IncrementingODEProblem{iip}(
+        f::IncrementingODEFunction, u0, tspan,
+        p = NullParameters(); kwargs...
+    ) where {iip}
+    return ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
 
 @doc doc"""
@@ -539,9 +588,11 @@ struct ODEAliasSpecifier <: AbstractAliasSpecifier
     alias_du0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
 
-    function ODEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-        if alias == true
+    function ODEAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)
@@ -552,7 +603,7 @@ struct ODEAliasSpecifier <: AbstractAliasSpecifier
 end
 
 struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
-       AbstractODEProblem{uType, tType, isinplace}
+    AbstractODEProblem{uType, tType, isinplace}
     """The ODE is `du = f(u,p,t)` for out-of-place and f(du,u,p,t) for in-place."""
     f::F
     """The initial condition is `u(tspan[1]) = u0`."""
@@ -565,22 +616,28 @@ struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     kwargs::K
     """An internal argument for storing traits about the solving process."""
     problem_type::PT
-    @add_kwonly function ImmutableODEProblem{iip}(f::AbstractODEFunction{iip},
+    @add_kwonly function ImmutableODEProblem{iip}(
+            f::AbstractODEFunction{iip},
             u0, tspan, p = NullParameters(),
             problem_type = StandardODEProblem();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan),
+        new{
+            typeof(_u0), typeof(_tspan),
             isinplace(f), typeof(p), typeof(f),
             typeof(kwargs),
-            typeof(problem_type)}(f,
+            typeof(problem_type),
+        }(
+            f,
             _u0,
             _tspan,
             p,
             kwargs,
-            problem_type)
+            problem_type
+        )
     end
 
     """
@@ -590,20 +647,24 @@ struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     `isinplace` optionally sets whether the function is inplace or not.
     This is determined automatically, but not inferred.
     """
-    function ImmutableODEProblem{iip}(f,
+    function ImmutableODEProblem{iip}(
+            f,
             u0,
             tspan,
             p = NullParameters();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-        ImmutableODEProblem(_f, _u0, _tspan, p; kwargs...)
+        return ImmutableODEProblem(_f, _u0, _tspan, p; kwargs...)
     end
 
-    @add_kwonly function ImmutableODEProblem{iip, recompile}(f, u0, tspan,
+    @add_kwonly function ImmutableODEProblem{iip, recompile}(
+            f, u0, tspan,
             p = NullParameters();
-            kwargs...) where {iip, recompile}
+            kwargs...
+        ) where {iip, recompile}
         ImmutableODEProblem{iip}(ODEFunction{iip, recompile}(f), u0, tspan, p; kwargs...)
     end
 end
@@ -614,7 +675,7 @@ end
 Define an ODE problem from an [`ODEFunction`](@ref).
 """
 function ImmutableODEProblem(f::AbstractODEFunction, u0, tspan, args...; kwargs...)
-    ImmutableODEProblem{isinplace(f)}(f, u0, tspan, args...; kwargs...)
+    return ImmutableODEProblem{isinplace(f)}(f, u0, tspan, args...; kwargs...)
 end
 
 function ImmutableODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
@@ -622,7 +683,7 @@ function ImmutableODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     _u0 = prepare_initial_state(u0)
     _tspan = promote_tspan(tspan)
     _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-    ImmutableODEProblem(_f, _u0, _tspan, p; kwargs...)
+    return ImmutableODEProblem(_f, _u0, _tspan, p; kwargs...)
 end
 
 staticarray_itize(x) = x
@@ -632,10 +693,12 @@ staticarray_itize(x::Matrix) = StaticArraysCore.SMatrix{size(x)...}(x)
 staticarray_itize(x::StaticArraysCore.SizedMatrix) = StaticArraysCore.SMatrix{size(x)...}(x)
 
 function Base.convert(::Type{ImmutableODEProblem}, prob::T) where {T <: ODEProblem}
-    ImmutableODEProblem(prob.f,
+    return ImmutableODEProblem(
+        prob.f,
         staticarray_itize(prob.u0),
         prob.tspan,
         staticarray_itize(prob.p),
         prob.problem_type;
-        prob.kwargs...)
+        prob.kwargs...
+    )
 end

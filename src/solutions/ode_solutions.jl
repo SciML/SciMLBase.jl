@@ -56,11 +56,11 @@ function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     @printf io "%-50s %-d\n" "Number of rootfind condition calls:" s.ncondition
     @printf io "%-50s %-d\n" "Number of accepted steps:" s.naccept
     @printf io "%-50s %-d" "Number of rejected steps:" s.nreject
-    iszero(s.maxeig) || @printf io "\n%-50s %-e" "Maximum eigenvalue recorded:" s.maxeig
+    return iszero(s.maxeig) || @printf io "\n%-50s %-e" "Maximum eigenvalue recorded:" s.maxeig
 end
 
 function Base.merge(a::DEStats, b::DEStats)
-    DEStats(
+    return DEStats(
         a.nf + b.nf,
         a.nf2 + b.nf2,
         a.nw + b.nw,
@@ -105,9 +105,11 @@ page of the DifferentialEquations.jl documentation.
     exited due to an error. For more details, see
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
-struct ODESolution{T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
-    AC <: Union{Nothing, Vector{Int}}, R, O, V} <:
-       AbstractODESolution{T, N, uType}
+struct ODESolution{
+        T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
+        AC <: Union{Nothing, Vector{Int}}, R, O, V,
+    } <:
+    AbstractODESolution{T, N, uType}
     u::uType
     u_analytic::uType2
     errors::DType
@@ -128,7 +130,7 @@ struct ODESolution{T, N, uType, uType2, DType, tType, rateType, discType, P, A, 
 end
 
 function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution{T, N}}
-    ODESolution{T, N}
+    return ODESolution{T, N}
 end
 
 function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
@@ -136,9 +138,11 @@ function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
     N = u === nothing ? 2 : ndims(eltype(u)) + 1
     T = eltype(eltype(u))
     patch = merge(getproperties(sol), patch)
-    return ODESolution{T, N}(patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
+    return ODESolution{T, N}(
+        patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
         patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
-        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem)
+        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem
+    )
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
@@ -155,30 +159,38 @@ end
 function ODESolution{T, N}(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode, resid = nothing,
-        original = nothing, saved_subsystem = nothing) where {T, N}
-    return ODESolution{T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
+        original = nothing, saved_subsystem = nothing
+    ) where {T, N}
+    return ODESolution{
+        T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
-        typeof(saved_subsystem)}(u, u_analytic, errors, t, k, discretes, prob, alg, interp,
-        dense, tslocation, stats, alg_choice, retcode, resid, original, saved_subsystem)
+        typeof(saved_subsystem),
+    }(
+        u, u_analytic, errors, t, k, discretes, prob, alg, interp,
+        dense, tslocation, stats, alg_choice, retcode, resid, original, saved_subsystem
+    )
 end
 
 error_if_observed_derivative(_, _, ::Type{Val{0}}) = nothing
 function error_if_observed_derivative(sys, idx, ::Type)
-    if symbolic_type(idx) != NotSymbolic() && is_observed(sys, idx) ||
-       symbolic_type(idx) == NotSymbolic() && any(x -> is_observed(sys, x), idx)
-        error("""
-        Cannot interpolate derivatives of observed variables. A possible solution could be
-        interpolating the symbolic expression that evaluates to the derivative of the
-        observed variable or using DataInterpolations.jl.
-        """)
+    return if symbolic_type(idx) != NotSymbolic() && is_observed(sys, idx) ||
+            symbolic_type(idx) == NotSymbolic() && any(x -> is_observed(sys, x), idx)
+        error(
+            """
+            Cannot interpolate derivatives of observed variables. A possible solution could be
+            interpolating the symbolic expression that evaluates to the derivative of the
+            observed variable or using DataInterpolations.jl.
+            """
+        )
     end
 end
 
 function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
         T1, T2, T3, T4, T5, T6, T7,
-        S <: ODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection}}
-    Timeseries()
+        S <: ODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection},
+    }
+    return Timeseries()
 end
 
 function _hold_discrete(disc_u, disc_t, t::Number)
@@ -210,59 +222,75 @@ end
 
 function is_discrete_expression(indp, expr)
     ts_idxs = get_all_timeseries_indexes(indp, expr)
-    length(ts_idxs) > 1 || length(ts_idxs) == 1 && only(ts_idxs) != ContinuousTimeseries()
+    return length(ts_idxs) > 1 || length(ts_idxs) == 1 && only(ts_idxs) != ContinuousTimeseries()
 end
 
-function (sol::AbstractODESolution)(t, ::Type{deriv} = Val{0}; idxs = nothing,
-        continuity = :left) where {deriv}
+function (sol::AbstractODESolution)(
+        t, ::Type{deriv} = Val{0}; idxs = nothing,
+        continuity = :left
+    ) where {deriv}
     if t isa IndexedClock
         t = canonicalize_indexed_clock(t, sol)
     end
-    sol(t, deriv, idxs, continuity)
+    return sol(t, deriv, idxs, continuity)
 end
-function (sol::AbstractODESolution)(v, t, ::Type{deriv} = Val{0}; idxs = nothing,
-        continuity = :left) where {deriv}
+function (sol::AbstractODESolution)(
+        v, t, ::Type{deriv} = Val{0}; idxs = nothing,
+        continuity = :left
+    ) where {deriv}
     if t isa IndexedClock
         t = canonicalize_indexed_clock(t, sol)
     end
-    sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
+    return sol.interp(v, t, idxs, deriv, sol.prob.p, continuity)
 end
 
-function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Nothing,
-        continuity) where {deriv}
-    sol.interp(t, idxs, deriv, sol.prob.p, continuity)
+function (sol::AbstractODESolution)(
+        t::Number, ::Type{deriv}, idxs::Nothing,
+        continuity
+    ) where {deriv}
+    return sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
 
-function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-        idxs::Nothing, continuity) where {deriv}
+function (sol::AbstractODESolution)(
+        t::AbstractVector{<:Number}, ::Type{deriv},
+        idxs::Nothing, continuity
+    ) where {deriv}
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
-    augment(sol.interp(t, idxs, deriv, sol.prob.p, continuity), sol; discretes)
+    return augment(sol.interp(t, idxs, deriv, sol.prob.p, continuity), sol; discretes)
 end
 
-function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::Integer,
-        continuity) where {deriv}
-    sol.interp(t, idxs, deriv, sol.prob.p, continuity)
+function (sol::AbstractODESolution)(
+        t::Number, ::Type{deriv}, idxs::Integer,
+        continuity
+    ) where {deriv}
+    return sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
-function (sol::AbstractODESolution)(t::Number, ::Type{deriv},
+function (sol::AbstractODESolution)(
+        t::Number, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
-        continuity) where {deriv}
+        continuity
+    ) where {deriv}
     if isempty(idxs)
         return eltype(eltype(sol.u))[]
     end
     if eltype(sol.u) <: Number
         idxs = only(idxs)
     end
-    sol.interp(t, idxs, deriv, sol.prob.p, continuity)
+    return sol.interp(t, idxs, deriv, sol.prob.p, continuity)
 end
-function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-        idxs::Integer, continuity) where {deriv}
+function (sol::AbstractODESolution)(
+        t::AbstractVector{<:Number}, ::Type{deriv},
+        idxs::Integer, continuity
+    ) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     return DiffEqArray(A.u, A.t, p, sol)
 end
-function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
+function (sol::AbstractODESolution)(
+        t::AbstractVector{<:Number}, ::Type{deriv},
         idxs::AbstractVector{<:Integer},
-        continuity) where {deriv}
+        continuity
+    ) where {deriv}
     if isempty(idxs)
         return map(_ -> eltype(eltype(sol.u))[], t)
     end
@@ -274,8 +302,10 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
     return DiffEqArray(A.u, A.t, p, sol)
 end
 
-function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
-        continuity) where {deriv}
+function (sol::AbstractODESolution)(
+        t::Number, ::Type{deriv}, idxs,
+        continuity
+    ) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
     ps = parameter_values(sol)
@@ -295,10 +325,12 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs,
     return getsym(sol, idxs)(state)
 end
 
-function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVector,
-        continuity) where {deriv}
+function (sol::AbstractODESolution)(
+        t::Number, ::Type{deriv}, idxs::AbstractVector,
+        continuity
+    ) where {deriv}
     if symbolic_type(idxs) == NotSymbolic() &&
-       any(isequal(NotSymbolic()), symbolic_type.(idxs))
+            any(isequal(NotSymbolic()), symbolic_type.(idxs))
         error("Incorrect specification of `idxs`")
     end
     if symbolic_type(idxs) == NotSymbolic() && isempty(idxs)
@@ -319,8 +351,10 @@ function (sol::AbstractODESolution)(t::Number, ::Type{deriv}, idxs::AbstractVect
     return getsym(sol, idxs)(state)
 end
 
-function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
-        continuity) where {deriv}
+function (sol::AbstractODESolution)(
+        t::AbstractVector{<:Number}, ::Type{deriv}, idxs,
+        continuity
+    ) where {deriv}
     symbolic_type(idxs) == NotSymbolic() && error("Incorrect specification of `idxs`")
     error_if_observed_derivative(sol, idxs, deriv)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
@@ -341,8 +375,10 @@ function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv}, 
     return DiffEqArray(u, t, p, sol; discretes)
 end
 
-function (sol::AbstractODESolution)(t::AbstractVector{<:Number}, ::Type{deriv},
-        idxs::AbstractVector, continuity) where {deriv}
+function (sol::AbstractODESolution)(
+        t::AbstractVector{<:Number}, ::Type{deriv},
+        idxs::AbstractVector, continuity
+    ) where {deriv}
     if symbolic_type(idxs) == NotSymbolic() && isempty(idxs)
         return map(_ -> eltype(eltype(sol.u))[], t)
     end
@@ -370,21 +406,22 @@ struct DDESolutionHistoryWrapper{T}
 end
 
 function (w::DDESolutionHistoryWrapper)(p, t; idxs = nothing)
-    w.sol(t; idxs)
+    return w.sol(t; idxs)
 end
 function (w::DDESolutionHistoryWrapper)(out, p, t; idxs = nothing)
-    w.sol(out, t; idxs)
+    return w.sol(out, t; idxs)
 end
 function (w::DDESolutionHistoryWrapper)(p, t, deriv::Type{Val{i}}; idxs = nothing) where {i}
-    w.sol(t, deriv; idxs)
+    return w.sol(t, deriv; idxs)
 end
 function (w::DDESolutionHistoryWrapper)(
-        out, p, t, deriv::Type{Val{i}}; idxs = nothing) where {i}
-    w.sol(out, t, deriv; idxs)
+        out, p, t, deriv::Type{Val{i}}; idxs = nothing
+    ) where {i}
+    return w.sol(out, t, deriv; idxs)
 end
 
 function SymbolicIndexingInterface.get_history_function(sol::AbstractODESolution)
-    DDESolutionHistoryWrapper(sol)
+    return DDESolutionHistoryWrapper(sol)
 end
 
 # public API, used by MTK
@@ -426,7 +463,7 @@ function save_discretes!(integ::DEIntegrator, timeseries_idx; skip_duplicates = 
     inner_sol = get_sol(integ)
     vals = get_saveable_values(inner_sol, parameter_values(integ), timeseries_idx)
     vals === nothing && return
-    save_discretes!(integ.sol, current_time(integ), vals, timeseries_idx; skip_duplicates)
+    return save_discretes!(integ.sol, current_time(integ), vals, timeseries_idx; skip_duplicates)
 end
 
 save_discretes!(args...) = nothing
@@ -435,7 +472,7 @@ save_discretes!(args...) = nothing
 function save_discretes!(sol::AbstractODESolution, t, vals, timeseries_idx; skip_duplicates = false)
     RecursiveArrayTools.has_discretes(sol) || return
     disc = RecursiveArrayTools.get_discretes(sol)
-    _save_discretes_internal!(disc[timeseries_idx], t, vals; skip_duplicates)
+    return _save_discretes_internal!(disc[timeseries_idx], t, vals; skip_duplicates)
 end
 
 function _save_discretes_internal!(A::AbstractDiffEqArray, t, vals; skip_duplicates = false)
@@ -443,7 +480,7 @@ function _save_discretes_internal!(A::AbstractDiffEqArray, t, vals; skip_duplica
         return
     end
     push!(A.t, t)
-    push!(A.u, vals)
+    return push!(A.u, vals)
 end
 
 function _save_discretes_internal!(A::PeriodicDiffEqArray, t, vals; skip_duplicates = false)
@@ -454,10 +491,11 @@ function _save_discretes_internal!(A::PeriodicDiffEqArray, t, vals; skip_duplica
     if A.t[idx] ≉ t
         error("Tried to save periodic discrete value with timeseries $(A.t) at time $t")
     end
-    push!(A.u, vals)
+    return push!(A.u, vals)
 end
 
-function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
+function build_solution(
+        prob::Union{AbstractODEProblem, AbstractDDEProblem},
         alg, t, u; timeseries_errors = length(u) > 2,
         dense = false, dense_errors = dense,
         calculate_error = true,
@@ -467,14 +505,15 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
         retcode = ReturnCode.Default, destats = missing, stats = nothing,
         resid = nothing, original = nothing,
         saved_subsystem = nothing,
-        kwargs...)
+        kwargs...
+    )
     T = eltype(eltype(u))
 
     if prob.u0 === nothing
         N = 2
     elseif prob isa BVProblem && !hasmethod(size, Tuple{typeof(prob.u0)})
         __u0 = hasmethod(prob.u0, Tuple{typeof(prob.p), typeof(first(prob.tspan))}) ?
-               prob.u0(prob.p, first(prob.tspan)) : prob.u0(first(prob.tspan))
+            prob.u0(prob.p, first(prob.tspan)) : prob.u0(first(prob.tspan))
         N = length((size(__u0)..., length(u)))
     else
         N = ndims(eltype(u)) + 1
@@ -510,7 +549,8 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
     if has_analytic(f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()
-        sol = ODESolution{T, N}(u,
+        sol = ODESolution{T, N}(
+            u,
             u_analytic,
             errors,
             t, k,
@@ -525,14 +565,18 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
             retcode,
             resid,
             original,
-            saved_subsystem)
+            saved_subsystem
+        )
         if calculate_error
-            calculate_solution_errors!(sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors)
+            calculate_solution_errors!(
+                sol; timeseries_errors = timeseries_errors,
+                dense_errors = dense_errors
+            )
         end
         return sol
     else
-        return ODESolution{T, N}(u,
+        return ODESolution{T, N}(
+            u,
             nothing,
             nothing,
             t, k,
@@ -547,19 +591,24 @@ function build_solution(prob::Union{AbstractODEProblem, AbstractDDEProblem},
             retcode,
             resid,
             original,
-            saved_subsystem)
+            saved_subsystem
+        )
     end
 end
 
-function calculate_solution_errors!(sol::AbstractODESolution; fill_uanalytic = true,
-        timeseries_errors = true, dense_errors = true)
+function calculate_solution_errors!(
+        sol::AbstractODESolution; fill_uanalytic = true,
+        timeseries_errors = true, dense_errors = true
+    )
     f = sol.prob.f
 
     if fill_uanalytic
         for i in 1:size(sol.u, 1)
             if sol.prob isa AbstractDDEProblem
-                push!(sol.u_analytic,
-                    f.analytic(sol.prob.u0, sol.prob.h, sol.prob.p, sol.t[i]))
+                push!(
+                    sol.u_analytic,
+                    f.analytic(sol.prob.u0, sol.prob.h, sol.prob.p, sol.t[i])
+                )
             else
                 push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i]))
             end
@@ -567,25 +616,56 @@ function calculate_solution_errors!(sol::AbstractODESolution; fill_uanalytic = t
     end
 
     save_everystep = length(sol.u) > 2
-    if !isempty(sol.u_analytic)
+    return if !isempty(sol.u_analytic)
         sol.errors[:final] = norm(recursive_mean(abs.(sol.u[end] .- sol.u_analytic[end])))
 
         if save_everystep && timeseries_errors
-            sol.errors[:l∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                sol.u - sol.u_analytic)))
-            sol.errors[:l2] = norm(sqrt(recursive_mean(vecvecapply((x) -> float.(x) .^ 2,
-                sol.u - sol.u_analytic))))
+            sol.errors[:l∞] = norm(
+                maximum(
+                    vecvecapply(
+                        (x) -> abs.(x),
+                        sol.u - sol.u_analytic
+                    )
+                )
+            )
+            sol.errors[:l2] = norm(
+                sqrt(
+                    recursive_mean(
+                        vecvecapply(
+                            (x) -> float.(x) .^ 2,
+                            sol.u - sol.u_analytic
+                        )
+                    )
+                )
+            )
             if sol.dense && dense_errors
                 densetimes = collect(range(sol.t[1], stop = sol.t[end], length = 100))
                 interp_u = sol(densetimes)
-                interp_analytic = VectorOfArray([f.analytic(sol.prob.u0, sol.prob.p, t)
-                                                 for t in densetimes])
-                sol.errors[:L∞] = norm(maximum(vecvecapply((x) -> abs.(x),
-                    interp_u - interp_analytic)))
-                sol.errors[:L2] = norm(sqrt(recursive_mean(vecvecapply(
-                    (x) -> float.(x) .^ 2,
-                    interp_u -
-                    interp_analytic))))
+                interp_analytic = VectorOfArray(
+                    [
+                        f.analytic(sol.prob.u0, sol.prob.p, t)
+                            for t in densetimes
+                    ]
+                )
+                sol.errors[:L∞] = norm(
+                    maximum(
+                        vecvecapply(
+                            (x) -> abs.(x),
+                            interp_u - interp_analytic
+                        )
+                    )
+                )
+                sol.errors[:L2] = norm(
+                    sqrt(
+                        recursive_mean(
+                            vecvecapply(
+                                (x) -> float.(x) .^ 2,
+                                interp_u -
+                                    interp_analytic
+                            )
+                        )
+                    )
+                )
             end
         end
     end
@@ -605,7 +685,8 @@ function solution_new_tslocation(sol::ODESolution{T, N}, tslocation) where {T, N
 end
 
 function solution_new_original_retcode(
-        sol::ODESolution{T, N}, original, retcode, resid) where {T, N}
+        sol::ODESolution{T, N}, original, retcode, resid
+    ) where {T, N}
     @reset sol.original = original
     @reset sol.retcode = retcode
     return @set sol.resid = resid
@@ -622,7 +703,8 @@ end
 mask_discretes(::Nothing, _, _...) = nothing
 
 function mask_discretes(
-        discretes::ParameterTimeseriesCollection, new_t, ::Union{Int, CartesianIndex})
+        discretes::ParameterTimeseriesCollection, new_t, ::Union{Int, CartesianIndex}
+    )
     masked_discretes = map(discretes) do disc
         i = searchsortedlast(disc.t, new_t)
         disc[i:i]
@@ -672,8 +754,10 @@ struct LazyInterpolationException <: Exception
 end
 
 function Base.showerror(io::IO, e::LazyInterpolationException)
-    print(io, "The algorithm", e.var,
-        " uses lazy interpolation, which is incompatible with `strip_solution`.")
+    return print(
+        io, "The algorithm", e.var,
+        " uses lazy interpolation, which is incompatible with `strip_solution`."
+    )
 end
 
 function strip_solution(sol::ODESolution; strip_alg = false)

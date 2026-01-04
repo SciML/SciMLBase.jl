@@ -17,15 +17,17 @@ mutable struct DummyIntegrator{Alg, IIP, U, T} <: SciMLBase.DEIntegrator{Alg, II
     sol::DummySolution
 
     function DummyIntegrator()
-        new{Bool, Bool, Vector{Float64}, Float64}([0.0], 0, [0.0], 0, 1, 1, [],
-            DummySolution(ReturnCode.Default))
+        return new{Bool, Bool, Vector{Float64}, Float64}(
+            [0.0], 0, [0.0], 0, 1, 1, [],
+            DummySolution(ReturnCode.Default)
+        )
     end
 end
 
 function SciMLBase.add_tstop!(integrator::DummyIntegrator, t)
     integrator.tdir * (t - integrator.t) < 0 &&
         error("Tried to add a tstop that is behind the current time. This is strictly forbidden")
-    push!(integrator.tstops, t)
+    return push!(integrator.tstops, t)
 end
 
 function SciMLBase.step!(integrator::DummyIntegrator)
@@ -36,17 +38,17 @@ function SciMLBase.step!(integrator::DummyIntegrator)
     integrator.uprev .= integrator.u
     integrator.u[1] += 2 * (t_next - integrator.t)
     integrator.tprev = integrator.t
-    integrator.t = t_next
+    return integrator.t = t_next
 end
 
 function step_dt!(integrator, args...)
     t = integrator.t
     step!(integrator, args...)
-    integrator.t - t
+    return integrator.t - t
 end
 
 function SciMLBase.done(integrator::DummyIntegrator)
-    integrator.t > 10
+    return integrator.t > 10
 end
 
 SciMLBase.check_error(::DummyIntegrator) = ReturnCode.Success
@@ -67,7 +69,7 @@ for (uprev, tprev, u, t) in intervals(DummyIntegrator())
     @test t - tprev == 1
 end
 @test eltype(collect(intervals(DummyIntegrator()))) ==
-      Tuple{Vector{Float64}, Float64, Vector{Float64}, Float64}
+    Tuple{Vector{Float64}, Float64, Vector{Float64}, Float64}
 
 @test integrator.sol.retcode == ReturnCode.Default
 @test check_error(integrator) == ReturnCode.Success

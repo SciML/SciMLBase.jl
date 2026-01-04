@@ -1,7 +1,7 @@
 using Test, SciMLBase
 
 function showtest(x, with_color = true)
-    sprint() do io
+    return sprint() do io
         Base.show(IOContext(io, :color => with_color), MIME"text/plain"(), x)
     end
 end

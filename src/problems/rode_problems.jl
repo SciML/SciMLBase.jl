@@ -55,7 +55,7 @@ page.
 * `kwargs`: The keyword arguments passed onto the solves.
 """
 mutable struct RODEProblem{uType, tType, isinplace, P, NP, F, K, ND} <:
-               AbstractRODEProblem{uType, tType, isinplace, ND}
+    AbstractRODEProblem{uType, tType, isinplace, ND}
     f::F
     u0::uType
     tspan::tType
@@ -64,31 +64,37 @@ mutable struct RODEProblem{uType, tType, isinplace, P, NP, F, K, ND} <:
     kwargs::K
     rand_prototype::ND
     seed::UInt64
-    @add_kwonly function RODEProblem{iip}(f::RODEFunction{iip}, u0, tspan,
+    @add_kwonly function RODEProblem{iip}(
+            f::RODEFunction{iip}, u0, tspan,
             p = NullParameters();
             rand_prototype = nothing,
             noise = nothing, seed = UInt64(0),
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan),
+        new{
+            typeof(_u0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(noise), typeof(f), typeof(kwargs),
-            typeof(rand_prototype)}(f, _u0, _tspan, p, noise, kwargs,
-            rand_prototype, seed)
+            typeof(rand_prototype),
+        }(
+            f, _u0, _tspan, p, noise, kwargs,
+            rand_prototype, seed
+        )
     end
     function RODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        RODEProblem(RODEFunction{iip}(f), u0, tspan, p; kwargs...)
+        return RODEProblem(RODEFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
 
 function RODEProblem(f::RODEFunction, u0, tspan, p = NullParameters(); kwargs...)
-    RODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+    return RODEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
-    RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
+    return RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
 end
 
 @doc doc"""
@@ -119,16 +125,20 @@ struct RODEAliasSpecifier <: AbstractAliasSpecifier
     alias_noise::Union{Bool, Nothing}
     alias_jumps::Union{Bool, Nothing}
 
-    function RODEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+    function RODEAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing,
-            alias_jumps = nothing, alias = nothing)
-        if alias == true
+            alias_jumps = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_du0,
-                alias_tstops, alias_noise, alias_jumps)
+            new(
+                alias_p, alias_f, alias_u0, alias_du0,
+                alias_tstops, alias_noise, alias_jumps
+            )
         end
     end
 end

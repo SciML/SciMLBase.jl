@@ -5,20 +5,26 @@ using SymbolicIndexingInterface
 @parameters σ ρ β
 @variables x(t) y(t) z(t)
 
-eqs = [D(D(x)) ~ σ * (y - x),
+eqs = [
+    D(D(x)) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
-    D(z) ~ x * y - β * z]
+    D(z) ~ x * y - β * z,
+]
 
 @mtkcompile sys = System(eqs, t)
 
-u0 = [D(x) => 2.0,
+u0 = [
+    D(x) => 2.0,
     x => 1.0,
     y => 0.0,
-    z => 0.0]
+    z => 0.0,
+]
 
-p = [σ => 28.0,
+p = [
+    σ => 28.0,
     ρ => 10.0,
-    β => 8 / 3]
+    β => 8 / 3,
+]
 
 tspan = (0.0, 100.0)
 
@@ -32,17 +38,17 @@ getσ1 = getp(sys, σ)
 getσ2 = getp(sys, sys.σ)
 getσ3 = getp(sys, :σ)
 @test getσ1(oprob) == getσ2(oprob) == getσ3(oprob) == oprob.ps[σ] == oprob.ps[sys.σ] ==
-      oprob.ps[:σ] == 28.0
+    oprob.ps[:σ] == 28.0
 getρ1 = getp(sys, ρ)
 getρ2 = getp(sys, sys.ρ)
 getρ3 = getp(sys, :ρ)
 @test getρ1(oprob) == getρ2(oprob) == getρ3(oprob) == oprob.ps[ρ] == oprob.ps[sys.ρ] ==
-      oprob.ps[:ρ] == 10.0
+    oprob.ps[:ρ] == 10.0
 getβ1 = getp(sys, β)
 getβ2 = getp(sys, sys.β)
 getβ3 = getp(sys, :β)
 @test getβ1(oprob) == getβ2(oprob) == getβ3(oprob) == oprob.ps[β] == oprob.ps[sys.β] ==
-      oprob.ps[:β] == 8 / 3
+    oprob.ps[:β] == 8 / 3
 
 @test oprob[x] == oprob[sys.x] == oprob[:x] == 1.0
 @test oprob[y] == oprob[sys.y] == oprob[:y] == 0.0
@@ -53,25 +59,25 @@ getβ3 = getp(sys, :β)
 setσ = setp(sys, σ)
 setσ(oprob, 10.0)
 @test getσ1(oprob) == getσ2(oprob) == getσ3(oprob) == oprob.ps[σ] == oprob.ps[sys.σ] ==
-      oprob.ps[:σ] == 10.0
+    oprob.ps[:σ] == 10.0
 setρ = setp(sys, sys.ρ)
 setρ(oprob, 20.0)
 @test getρ1(oprob) == getρ2(oprob) == getρ3(oprob) == oprob.ps[ρ] == oprob.ps[sys.ρ] ==
-      oprob.ps[:ρ] == 20.0
+    oprob.ps[:ρ] == 20.0
 setβ = setp(sys, :β)
 setβ(oprob, 30.0)
 @test getβ1(oprob) == getβ2(oprob) == getβ3(oprob) == oprob.ps[β] == oprob.ps[sys.β] ==
-      oprob.ps[:β] == 30.0
+    oprob.ps[:β] == 30.0
 
 oprob.ps[σ] = 11.0
 @test getσ1(oprob) == getσ2(oprob) == getσ3(oprob) == oprob.ps[σ] == oprob.ps[sys.σ] ==
-      oprob.ps[:σ] == 11.0
+    oprob.ps[:σ] == 11.0
 oprob.ps[sys.ρ] = 21.0
 @test getρ1(oprob) == getρ2(oprob) == getρ3(oprob) == oprob.ps[ρ] == oprob.ps[sys.ρ] ==
-      oprob.ps[:ρ] == 21.0
+    oprob.ps[:ρ] == 21.0
 oprob.ps[:β] = 31.0
 @test getβ1(oprob) == getβ2(oprob) == getβ3(oprob) == oprob.ps[β] == oprob.ps[sys.β] ==
-      oprob.ps[:β] == 31.0
+    oprob.ps[:β] == 31.0
 
 oprob[x] = 10.0
 @test oprob[x] == oprob[sys.x] == oprob[:x] == 10.0
@@ -110,7 +116,8 @@ noiseeqs = [
     0.1 * D(x),
     0.1 * x,
     0.1 * y,
-    0.1 * z]
+    0.1 * z,
+]
 @named noise_sys = SDESystem(sys, noiseeqs)
 noise_sys = complete(noise_sys)
 sprob = SDEProblem(noise_sys, [u0; p], (0.0, 100.0))
@@ -120,17 +127,17 @@ getσ1 = getp(noise_sys, σ)
 getσ2 = getp(noise_sys, sys.σ)
 getσ3 = getp(noise_sys, :σ)
 @test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == sprob.ps[σ] == sprob.ps[sys.σ] ==
-      sprob.ps[:σ] == 28.0
+    sprob.ps[:σ] == 28.0
 getρ1 = getp(noise_sys, ρ)
 getρ2 = getp(noise_sys, sys.ρ)
 getρ3 = getp(noise_sys, :ρ)
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
-      sprob.ps[:ρ] == 10.0
+    sprob.ps[:ρ] == 10.0
 getβ1 = getp(noise_sys, β)
 getβ2 = getp(noise_sys, sys.β)
 getβ3 = getp(noise_sys, :β)
 @test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == sprob.ps[β] == sprob.ps[sys.β] ==
-      sprob.ps[:β] == 8 / 3
+    sprob.ps[:β] == 8 / 3
 
 @test sprob[x] == sprob[noise_sys.x] == sprob[:x] == 1.0
 @test sprob[y] == sprob[noise_sys.y] == sprob[:y] == 0.0
@@ -139,27 +146,27 @@ getβ3 = getp(noise_sys, :β)
 setσ = setp(noise_sys, σ)
 setσ(sprob, 10.0)
 @test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == sprob.ps[σ] == sprob.ps[sys.σ] ==
-      sprob.ps[:σ] == 10.0
+    sprob.ps[:σ] == 10.0
 setρ = setp(noise_sys, sys.ρ)
 setρ(sprob, 20.0)
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
-      sprob.ps[:ρ] == 20.0
+    sprob.ps[:ρ] == 20.0
 setp(noise_sys, noise_sys.ρ)(sprob, 25.0)
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
-      sprob.ps[:ρ] == 25.0
+    sprob.ps[:ρ] == 25.0
 setβ = setp(noise_sys, :β)
 setβ(sprob, 30.0)
 @test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == sprob.ps[β] == sprob.ps[sys.β] ==
-      sprob.ps[:β] == 30.0
+    sprob.ps[:β] == 30.0
 sprob.ps[σ] = 11.0
 @test getσ1(sprob) == getσ2(sprob) == getσ3(sprob) == sprob.ps[σ] == sprob.ps[sys.σ] ==
-      sprob.ps[:σ] == 11.0
+    sprob.ps[:σ] == 11.0
 sprob.ps[sys.ρ] = 21.0
 @test getρ1(sprob) == getρ2(sprob) == getρ3(sprob) == sprob.ps[ρ] == sprob.ps[sys.ρ] ==
-      sprob.ps[:ρ] == 21.0
+    sprob.ps[:ρ] == 21.0
 sprob.ps[:β] = 31.0
 @test getβ1(sprob) == getβ2(sprob) == getβ3(sprob) == sprob.ps[β] == sprob.ps[sys.β] ==
-      sprob.ps[:β] == 31.0
+    sprob.ps[:β] == 31.0
 
 sprob[x] = 10.0
 @test sprob[x] == sprob[noise_sys.x] == sprob[:x] == 10.0
@@ -194,10 +201,12 @@ set_tuple!(sprob, [10.0, 10.0])
 @test get_tuple(sprob) == (10.0, 10.0)
 
 using LinearAlgebra
-sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
+sts = @variables x(t)[1:3] = [1, 2, 3.0] y(t) = 1.0
 ps = @parameters p[1:3] = [1, 2, 3]
-eqs = [collect(D.(x) .~ x)
-       D(y) ~ norm(x) * y - x[1]]
+eqs = [
+    collect(D.(x) .~ x)
+    D(y) ~ norm(x) * y - x[1]
+]
 @mtkcompile sys = System(eqs, t, [sts...;], [ps...;])
 prob = ODEProblem(sys, [], (0, 1.0))
 @test getp(sys, p)(prob) == prob.ps[p] == [1, 2, 3]
@@ -212,7 +221,7 @@ prob.ps[p] = [7, 8, 9]
 @variables X(t) X2(t)
 eqs = [
     D(X) ~ p - d * X,
-    X2 ~ 2 * X
+    X2 ~ 2 * X,
 ]
 @mtkcompile osys = System(eqs, t)
 
@@ -274,7 +283,7 @@ eprob = EnsembleProblem(oprob)
 @variables X(t) X2(t)
 eqs = [
     D(X) ~ p - d * X,
-    X2 ~ 2 * X
+    X2 ~ 2 * X,
 ]
 @mtkbuild osys = System(eqs, t)
 
@@ -287,11 +296,11 @@ prob = SteadyStateProblem(osys, [u0; ps])
 @test prob[[X, X2]] == prob[[osys.X, osys.X2]] == prob[[:X, :X2]] == [0.1, 0.2]
 @test getsym(prob, X)(prob) == getsym(prob, osys.X)(prob) == getsym(prob, :X)(prob) == 0.1
 @test getsym(prob, X2)(prob) == getsym(prob, osys.X2)(prob) == getsym(prob, :X2)(prob) ==
-      0.2
+    0.2
 @test getsym(prob, [X, X2])(prob) == getsym(prob, [osys.X, osys.X2])(prob) ==
-      getsym(prob, [:X, :X2])(prob) == [0.1, 0.2]
+    getsym(prob, [:X, :X2])(prob) == [0.1, 0.2]
 @test getsym(prob, (X, X2))(prob) == getsym(prob, (osys.X, osys.X2))(prob) ==
-      getsym(prob, (:X, :X2))(prob) == (0.1, 0.2)
+    getsym(prob, (:X, :X2))(prob) == (0.1, 0.2)
 
 @testset "SCCNonlinearProblem" begin
     function fullf!(du, u, p)
@@ -304,7 +313,7 @@ prob = SteadyStateProblem(osys, [u0; ps])
         du[7] = u[1] + u[2] + u[3] + 2.0u[4] + u[5] + 4.0u[6] - 1.5u[7] + 1.5u[8]
         du[8] = u[1] + 2.0u[2] + 3.0u[3] + 5.0u[4] + 6.0u[5] + u[6] - u[7] - u[8]
     end
-    @variables u[1:8]=zeros(8) [irreducible = true]
+    @variables u[1:8] = zeros(8) [irreducible = true]
     u2 = collect(u)
     @parameters p = 1.0
     eqs = Any[0 for _ in 1:8]

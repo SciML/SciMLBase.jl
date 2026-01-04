@@ -10,21 +10,27 @@ using SciMLSensitivity
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
 
-eqs = [D(D(x)) ~ σ * (y - x),
+eqs = [
+    D(D(x)) ~ σ * (y - x),
     D(y) ~ x * (ρ - z) - y,
     D(z) ~ x * y - β * z,
-    w ~ x + y + z + 2 * β]
+    w ~ x + y + z + 2 * β,
+]
 
 @mtkcompile sys = System(eqs, t)
 
-u0 = [D(x) => 2.0,
+u0 = [
+    D(x) => 2.0,
     x => 1.0,
     y => 0.0,
-    z => 0.0]
+    z => 0.0,
+]
 
-p = [σ => 28.0,
+p = [
+    σ => 28.0,
     ρ => 10.0,
-    β => 8 / 3]
+    β => 8 / 3,
+]
 
 tspan = (0.0, 100.0)
 prob = ODEProblem(sys, [u0; p], tspan)
@@ -69,7 +75,7 @@ end
 
 # DAE
 
-function create_model(; C₁ = 3e-5, C₂ = 1e-6)
+function create_model(; C₁ = 3.0e-5, C₂ = 1.0e-6)
     @named resistor1 = MSL.Electrical.Resistor(R = 5.0)
     @named resistor2 = MSL.Electrical.Resistor(R = 2.0)
     @named capacitor1 = MSL.Electrical.Capacitor(C = C₁)
@@ -79,17 +85,21 @@ function create_model(; C₁ = 3e-5, C₂ = 1e-6)
     @named ground = MSL.Electrical.Ground()
     @named ampermeter = MSL.Electrical.CurrentSensor()
 
-    eqs = [connect(input_signal.output, source.V)
-           connect(source.p, capacitor1.n, capacitor2.n)
-           connect(source.n, resistor1.p, resistor2.p, ground.g)
-           connect(resistor1.n, capacitor1.p, ampermeter.n)
-           connect(resistor2.n, capacitor2.p, ampermeter.p)]
+    eqs = [
+        connect(input_signal.output, source.V)
+        connect(source.p, capacitor1.n, capacitor2.n)
+        connect(source.n, resistor1.p, resistor2.p, ground.g)
+        connect(resistor1.n, capacitor1.p, ampermeter.n)
+        connect(resistor2.n, capacitor2.p, ampermeter.p)
+    ]
 
-    @named circuit_model = System(eqs, t,
+    return @named circuit_model = System(
+        eqs, t,
         systems = [
             resistor1, resistor2, capacitor1, capacitor2,
-            source, input_signal, ground, ampermeter
-        ], defaults = [resistor1.n.v => 0.0])
+            source, input_signal, ground, ampermeter,
+        ], defaults = [resistor1.n.v => 0.0]
+    )
 end
 
 @testset "DAE Observable function AD" begin

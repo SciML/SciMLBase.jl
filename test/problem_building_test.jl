@@ -4,11 +4,11 @@ function simplependulum!(du, u, p, t)
     θ = u[1]
     dθ = u[2]
     du[1] = dθ
-    du[2] = -9.81 * sin(θ)
+    return du[2] = -9.81 * sin(θ)
 end
 function bc!(residual, u, p, t)
     residual[1] = u[1][1] + pi / 2
-    residual[2] = u[end][1] - pi / 2
+    return residual[2] = u[end][1] - pi / 2
 end
 prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
 @test prob_bvp.tspan === (0.0, 1.0)
@@ -103,7 +103,7 @@ end
     function f1(u, p)
         y = u[1]
         x = p[1]
-        return SA[1 - y ^ 2 - x ^ 2]
+        return SA[1 - y^2 - x^2]
     end
 
     function f2(u, p)
@@ -115,7 +115,7 @@ end
     function f3(u, p)
         lam = u[1]
         x, xt, y, yt = p
-        return SA[-2xt ^ 2 - 2yt ^ 2 - 2y * (-1 + y * lam) - 2x ^ 2 * lam]
+        return SA[-2xt^2 - 2yt^2 - 2y * (-1 + y * lam) - 2x^2 * lam]
     end
 
     explicit1 = Returns(nothing)
@@ -131,7 +131,8 @@ end
     prob2 = NonlinearProblem(f2, SA[0.0], p)
     prob3 = NonlinearProblem(f3, SA[1.0], p)
     sccprob = SCCNonlinearProblem(
-        (prob1, prob2, prob3), (explicit1, explicit2, explicit3), p, true)
+        (prob1, prob2, prob3), (explicit1, explicit2, explicit3), p, true
+    )
 
     @test !SciMLBase.isinplace(sccprob)
     @test sccprob isa SCCNonlinearProblem{SVector{3, Float64}}

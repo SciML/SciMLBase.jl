@@ -96,7 +96,7 @@ As described above the second argument of the objective definition can take a fu
 For an example of how to use this data handling, see the `Sophia` example in the [Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/optimization) or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
 """
 struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
-       AbstractOptimizationProblem{iip}
+    AbstractOptimizationProblem{iip}
     f::F
     u0::uType
     p::P
@@ -113,37 +113,45 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
             p = NullParameters();
             lb = nothing, ub = nothing, int = nothing,
             lcons = nothing, ucons = nothing,
-            sense = nothing, kwargs...) where {iip}
+            sense = nothing, kwargs...
+        ) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
         end
         warn_paramtype(p)
-        new{iip, typeof(f), typeof(u0), typeof(p),
+        new{
+            iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
-            typeof(sense), typeof(kwargs)}(f, u0, p, lb, ub, int, lcons, ucons, sense,
-            kwargs)
+            typeof(sense), typeof(kwargs),
+        }(
+            f, u0, p, lb, ub, int, lcons, ucons, sense,
+            kwargs
+        )
     end
 end
 
 function OptimizationProblem(
         f::Union{OptimizationFunction, MultiObjectiveOptimizationFunction},
-        args...; kwargs...)
-    OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
+        args...; kwargs...
+    )
+    return OptimizationProblem{isinplace(f)}(f, args...; kwargs...)
 end
 function OptimizationProblem(f, args...; kwargs...)
-    OptimizationProblem(OptimizationFunction(f), args...; kwargs...)
+    return OptimizationProblem(OptimizationFunction(f), args...; kwargs...)
 end
 
 function OptimizationFunction(
-        f::NonlinearFunction, adtype::AbstractADType = NoAD(); kwargs...)
+        f::NonlinearFunction, adtype::AbstractADType = NoAD(); kwargs...
+    )
     if isinplace(f)
         throw(ArgumentError("Converting NonlinearFunction to OptimizationFunction is not supported with in-place functions yet."))
     end
-    OptimizationFunction((u, p) -> sum(abs2, f(u, p)), adtype; kwargs...)
+    return OptimizationFunction((u, p) -> sum(abs2, f(u, p)), adtype; kwargs...)
 end
 
 function OptimizationProblem(
-        prob::NonlinearLeastSquaresProblem, adtype::AbstractADType = NoAD(); kwargs...)
+        prob::NonlinearLeastSquaresProblem, adtype::AbstractADType = NoAD(); kwargs...
+    )
     if isinplace(prob)
         throw(ArgumentError("Converting NonlinearLeastSquaresProblem to OptimizationProblem is not supported with in-place functions yet."))
     end
@@ -173,8 +181,9 @@ struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
     alias_u0::Union{Bool, Nothing}
 
     function OptimizationAliasSpecifier(;
-            alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
-        if alias == true
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true)
         elseif alias == false
             new(false, false, false)

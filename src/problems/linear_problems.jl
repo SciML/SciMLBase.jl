@@ -30,7 +30,7 @@ has_sys(::SymbolicLinearInterface) = true
 SymbolicIndexingInterface.symbolic_container(sli::SymbolicLinearInterface) = sli.sys
 
 function SymbolicIndexingInterface.observed(fn::SymbolicLinearInterface, sym)
-    if fn.observed !== nothing
+    return if fn.observed !== nothing
         fn.observed(sym)
     elseif fn.sys !== nothing
         SymbolicIndexingInterface.observed(fn.sys, sym)
@@ -96,25 +96,29 @@ parameters. Any extra keyword arguments are passed on to the solvers.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
 struct LinearProblem{
-    uType, isinplace, F, bType, P, I <: Union{SymbolicLinearInterface, Nothing}, K} <:
-       AbstractLinearProblem{bType, isinplace}
+        uType, isinplace, F, bType, P, I <: Union{SymbolicLinearInterface, Nothing}, K,
+    } <:
+    AbstractLinearProblem{bType, isinplace}
     A::F
     b::bType
     u0::uType
     p::P
     f::I
     kwargs::K
-    @add_kwonly function LinearProblem{iip}(A, b, p = NullParameters(); u0 = nothing,
-            f = nothing, kwargs...) where {iip}
+    @add_kwonly function LinearProblem{iip}(
+            A, b, p = NullParameters(); u0 = nothing,
+            f = nothing, kwargs...
+        ) where {iip}
         warn_paramtype(p)
         new{typeof(u0), iip, typeof(A), typeof(b), typeof(p), typeof(f), typeof(kwargs)}(
             A, b, u0, p,
-            f, kwargs)
+            f, kwargs
+        )
     end
 end
 
 function LinearProblem(A, b, args...; kwargs...)
-    if A isa AbstractArray
+    return if A isa AbstractArray
         LinearProblem{true}(A, b, args...; kwargs...)
     elseif A isa Number
         LinearProblem{false}(A, b, args...; kwargs...)
@@ -129,10 +133,11 @@ SymbolicIndexingInterface.parameter_values(prob::LinearProblem) = prob.p
 SymbolicIndexingInterface.is_time_dependent(::LinearProblem) = false
 function SymbolicIndexingInterface.set_parameter!(
         valp::LinearProblem{A, B, C, D, E, <:SymbolicLinearInterface},
-        val, idx) where {A, B, C, D, E}
+        val, idx
+    ) where {A, B, C, D, E}
     set_parameter!(parameter_values(valp), val, idx)
     valp.f.update_A!(valp.A, valp.p)
-    valp.f.update_b!(valp.b, valp.p)
+    return valp.f.update_b!(valp.b, valp.p)
 end
 
 @doc doc"""
@@ -157,7 +162,7 @@ struct LinearAliasSpecifier <: AbstractAliasSpecifier
     alias_b::Union{Bool, Nothing}
 
     function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
-        if alias == true
+        return if alias == true
             new(true, true)
         elseif alias == false
             new(false, false)

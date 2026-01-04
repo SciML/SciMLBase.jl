@@ -76,7 +76,7 @@ revert to the standard behavior of fixed timestep methods, which is "step to eac
 tstop".
 """
 struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
-       AbstractDiscreteProblem{uType, tType, isinplace}
+    AbstractDiscreteProblem{uType, tType, isinplace}
     """The function in the map."""
     f::F
     """The initial condition."""
@@ -87,43 +87,55 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     p::P
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
-    @add_kwonly function DiscreteProblem{iip}(f::AbstractDiscreteFunction{iip},
+    @add_kwonly function DiscreteProblem{iip}(
+            f::AbstractDiscreteFunction{iip},
             u0, tspan, p = NullParameters();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan), isinplace(f, 4),
+        new{
+            typeof(_u0), typeof(_tspan), isinplace(f, 4),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f,
+            typeof(f), typeof(kwargs),
+        }(
+            f,
             _u0,
             _tspan,
             p,
-            kwargs)
+            kwargs
+        )
     end
 
-    function DiscreteProblem{iip}(u0::Nothing, tspan::Nothing, p = NullParameters();
-            callback = nothing) where {iip}
+    function DiscreteProblem{iip}(
+            u0::Nothing, tspan::Nothing, p = NullParameters();
+            callback = nothing
+        ) where {iip}
         if iip
             f = DISCRETE_INPLACE_DEFAULT
         else
             f = DISCRETE_OUTOFPLACE_DEFAULT
         end
-        new{Nothing, Nothing, iip, typeof(p),
-            typeof(f), typeof(callback)}(f,
+        return new{
+            Nothing, Nothing, iip, typeof(p),
+            typeof(f), typeof(callback),
+        }(
+            f,
             nothing,
             nothing,
             p,
-            callback)
+            callback
+        )
     end
 
     function DiscreteProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+        return DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DiscreteProblem}
-    function ctor(f, u0, tspan, p, kw)
+    return function ctor(f, u0, tspan, p, kw)
         if f isa AbstractDiscreteFunction
             iip = isinplace(f)
         else
@@ -138,15 +150,19 @@ end
 
 Defines a discrete problem with the specified functions.
 """
-function DiscreteProblem(f::AbstractDiscreteFunction, u0, tspan,
-        p = NullParameters(); kwargs...)
-    DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+function DiscreteProblem(
+        f::AbstractDiscreteFunction, u0, tspan,
+        p = NullParameters(); kwargs...
+    )
+    return DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function DiscreteProblem(f::Base.Callable, u0, tspan, p = NullParameters();
-        kwargs...)
+function DiscreteProblem(
+        f::Base.Callable, u0, tspan, p = NullParameters();
+        kwargs...
+    )
     iip = isinplace(f, 4)
-    DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    return DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
 """
@@ -154,15 +170,17 @@ $(SIGNATURES)
 
 Define a discrete problem with the identity map.
 """
-function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan,
-        p = NullParameters(); kwargs...)
+function DiscreteProblem(
+        u0::Union{AbstractArray, Number}, tspan,
+        p = NullParameters(); kwargs...
+    )
     iip = u0 isa AbstractArray
     if iip
         f = DISCRETE_INPLACE_DEFAULT
     else
         f = DISCRETE_OUTOFPLACE_DEFAULT
     end
-    DiscreteProblem(f, u0, tspan, p; kwargs...)
+    return DiscreteProblem(f, u0, tspan, p; kwargs...)
 end
 
 @doc doc"""
@@ -187,8 +205,9 @@ struct DiscreteAliasSpecifier
 
     function DiscreteAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias = nothing)
-        if alias == true
+            alias_du0 = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true)
         elseif alias == false
             new(false, false, false)
