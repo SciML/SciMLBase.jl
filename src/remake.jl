@@ -1002,40 +1002,37 @@ function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
     end
 end
 
-@generated function scc_update_subproblems(probs::Tuple, newu0, newp, parameters_alias)
-    function get_expr(i::Int)
-        subprob_name = Symbol(:subprob, i)
-        return quote
-                $subprob_name = probs[$i]
-                # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
-                N = length(state_values($subprob_name))
-                if ArrayInterface.ismutable(newu0)
-                    _u0 = newu0[(offset + 1):(offset + N)]
-            else
-                    _u0 = StaticArraysCore.similar_type(
-                        newu0, StaticArraysCore.Size(N)
-                    )(newu0[(offset + 1):(offset + N)])
-            end
-                $subprob_name = if parameters_alias === Val(true)
-                    remake($subprob_name; u0 = _u0, p = newp)
-            else
-                    remake($subprob_name; u0 = _u0)
-            end
-                offset += N
-            end,
-            subprob_name
+@inline _scc_update_subproblems(newu0, newp, ::Val{P}, offset::Int) where {P} = ()
+@inline function _scc_update_subproblems(
+        newu0, newp, ::Val{parameters_alias}, offset::Int,
+        subprob, probs...
+    ) where {parameters_alias}
+    u0 = state_values(subprob)
+    if u0 !== nothing
+        N = length(state_values(subprob))
+        if ArrayInterface.ismutable(newu0)
+            _u0 = newu0[(offset + 1):(offset + N)]
+        else
+            _u0 = StaticArraysCore.similar_type(
+                newu0, StaticArraysCore.Size(N)
+            )(newu0[(offset + 1):(offset + N)])
+        end
+        if parameters_alias
+            subprob = remake(subprob; u0 = _u0, p = newp)
+        else
+            subprob = remake(subprob; u0 = _u0)
+        end
+        offset += N
     end
-    expr = quote
-        offset = 0
-    end
-    subprob_names = []
-    for i in 1:fieldcount(probs)
-        subexpr, spname = get_expr(i)
-        push!(expr.args, subexpr)
-        push!(subprob_names, spname)
-    end
-    push!(expr.args, Expr(:tuple, subprob_names...))
-    return expr
+
+    return (
+        subprob,
+        _scc_update_subproblems(newu0, newp, Val{parameters_alias}(), offset, probs...)...,
+    )
+end
+
+function scc_update_subproblems(probs::Tuple, newu0, newp, ::Val{P}) where {P}
+    return _scc_update_subproblems(newu0, newp, Val{P}(), 0, probs...)
 end
 
 """

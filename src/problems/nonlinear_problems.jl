@@ -538,15 +538,25 @@ mutable struct SCCNonlinearProblem{
             alias::Palias
         ) where {P, E, F <: NonlinearFunction, Par, Palias}
         init = state_values(first(probs))
+        has_no_u0 = init === nothing
+        if has_no_u0
+            # In this case, all of `probs` are `LinearProblem`
+            @assert first(probs) isa LinearProblem
+            init = first(probs).A
+        end
         if ArrayInterface.ismutable(init)
             init = similar(init, 0)
         else
             init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
         end
-        u0 = mapreduce(
-            state_values, vcat, probs; init = init
-        )
-        uType = typeof(u0)
+        if has_no_u0
+            uType = Nothing
+        else
+            u0 = mapreduce(
+                state_values, vcat, probs; init = init
+            )
+            uType = typeof(u0)
+        end
         return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
@@ -581,6 +591,9 @@ function SymbolicIndexingInterface.symbolic_container(prob::SCCNonlinearProblem)
 end
 function SymbolicIndexingInterface.parameter_values(prob::SCCNonlinearProblem)
     return prob.p
+end
+function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{Nothing})
+    return nothing
 end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
     init = state_values(first(prob.probs))
