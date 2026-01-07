@@ -346,7 +346,7 @@ end
 is_trivial_initialization(::Nothing) = true
 
 function is_trivial_initialization(initdata::OverrideInitData)
-    return !(initdata.initializeprob isa NonlinearLeastSquaresProblem) &&
+    return !(initdata.initializeprob isa Union{NonlinearLeastSquaresProblem, SCCNonlinearProblem{Nothing}}) &&
         state_values(initdata.initializeprob) === nothing
 end
 
