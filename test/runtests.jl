@@ -22,6 +22,9 @@ end
         @time @safetestset "Aqua" begin
             include("aqua.jl")
         end
+        @time @safetestset "ExplicitImports" begin
+            include("explicit_imports.jl")
+        end
     end
     if GROUP == "Core" || GROUP == "All"
         @time @safetestset "Display" begin
