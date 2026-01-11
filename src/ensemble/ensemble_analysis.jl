@@ -1,7 +1,11 @@
 module EnsembleAnalysis
 
-using SciMLBase, Statistics, RecursiveArrayTools, StaticArraysCore
-using DocStringExtensions
+using SciMLBase
+using Statistics: Statistics, cov, median, quantile
+using RecursiveArrayTools: RecursiveArrayTools, DiffEqArray, VectorOfArray,
+                            vecarr_to_vectors
+using StaticArraysCore: StaticArraysCore
+using DocStringExtensions: DocStringExtensions, SIGNATURES
 
 # Getters
 """
