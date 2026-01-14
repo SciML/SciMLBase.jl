@@ -1067,7 +1067,6 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Public traits
 
-@public has_init
-@public has_step
+@public has_init, has_step, successful_retcode
 
 end
