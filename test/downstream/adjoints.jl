@@ -1,5 +1,26 @@
-using ModelingToolkit, OrdinaryDiffEq, SymbolicIndexingInterface, Zygote, Test
+using ModelingToolkit, OrdinaryDiffEq, SymbolicIndexingInterface, Test
 using ModelingToolkit: t_nounits as t, D_nounits as D
+
+# DifferentiationInterface with version-dependent backends
+using DifferentiationInterface
+using ADTypes
+using ForwardDiff: ForwardDiff
+using Mooncake: Mooncake
+if VERSION < v"1.12"
+    using Zygote: Zygote
+    using Enzyme: Enzyme
+end
+
+# Define available reverse-mode backends based on Julia version
+const REVERSE_BACKENDS = if VERSION < v"1.12"
+    [AutoZygote(), AutoMooncake()]
+else
+    [AutoMooncake()]
+end
+
+function backend_name(backend::ADTypes.AbstractADType)
+    return string(typeof(backend).name.name)
+end
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t)
@@ -44,38 +65,57 @@ tspan = (0.0, 100.0)
 prob = ODEProblem(sys, [u0; p], tspan)
 sol = solve(prob, Rodas4())
 
-gs_sym, = Zygote.gradient(sol) do sol
-    sum(sol[lorenz1.x])
-end
-idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
-true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_sym[idx_sym] = 1.0
+@testset "Symbolic indexing gradients" begin
+    for backend in REVERSE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            gs_sym = DifferentiationInterface.gradient(sol -> sum(sol[lorenz1.x]), backend, sol)
+            idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
+            true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
+            true_grad_sym[idx_sym] = 1.0
 
-@test all(map(x -> x == true_grad_sym, gs_sym))
-
-gs_vec, = Zygote.gradient(sol) do sol
-    sum(sum.(sol[[lorenz1.x, lorenz2.x]]))
-end
-idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
-true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_vecsym[idx_vecsym] .= 1.0
-
-@test all(map(x -> x == true_grad_vecsym, gs_vec.u))
-
-gs_tup, = Zygote.gradient(sol) do sol
-    sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)])))
-end
-idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
-true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
-true_grad_tupsym[idx_tupsym] .= 1.0
-
-@test all(map(x -> x == true_grad_tupsym, gs_tup.u))
-
-gs_ts, = Zygote.gradient(sol) do sol
-    sum(sum.(sol[[lorenz1.x, lorenz2.x], :]))
+            @test all(map(x -> x == true_grad_sym, gs_sym))
+        end
+    end
 end
 
-@test all(map(x -> x == true_grad_vecsym, gs_ts.u))
+@testset "Vector symbolic indexing gradients" begin
+    for backend in REVERSE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            gs_vec = DifferentiationInterface.gradient(sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x]])), backend, sol)
+            idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
+            true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
+            true_grad_vecsym[idx_vecsym] .= 1.0
+
+            @test all(map(x -> x == true_grad_vecsym, gs_vec.u))
+        end
+    end
+end
+
+@testset "Tuple symbolic indexing gradients" begin
+    for backend in REVERSE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            gs_tup = DifferentiationInterface.gradient(sol -> sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)]))), backend, sol)
+            idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
+            true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
+            true_grad_tupsym[idx_tupsym] .= 1.0
+
+            @test all(map(x -> x == true_grad_tupsym, gs_tup.u))
+        end
+    end
+end
+
+@testset "Time series symbolic indexing gradients" begin
+    for backend in REVERSE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            gs_ts = DifferentiationInterface.gradient(sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x], :])), backend, sol)
+            idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
+            true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
+            true_grad_vecsym[idx_vecsym] .= 1.0
+
+            @test all(map(x -> x == true_grad_vecsym, gs_ts.u))
+        end
+    end
+end
 
 # BatchedInterface AD
 @variables x(t) = 1.0 y(t) = 1.0 z(t) = 1.0 w(t) = 1.0
@@ -89,11 +129,18 @@ prob2 = ODEProblem(sys2, [], (0.0, 10.0))
 bi = BatchedInterface((sys1, [x, y, z]), (sys2, [x, y, w]))
 getter = getsym(bi)
 
-p1grad, p2grad = Zygote.gradient(prob1, prob2) do prob1, prob2
-    sum(getter(prob1, prob2))
-end
+@testset "BatchedInterface AD" begin
+    for backend in REVERSE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            # Compute gradient with respect to prob1
+            p1grad = DifferentiationInterface.gradient(prob1 -> sum(getter(prob1, prob2)), backend, prob1)
+            # Compute gradient with respect to prob2
+            p2grad = DifferentiationInterface.gradient(prob2 -> sum(getter(prob1, prob2)), backend, prob2)
 
-@test p1grad.u0 ≈ ones(3)
-testp2grad = zeros(3)
-testp2grad[variable_index(prob2, w)] = 1.0
-@test p2grad.u0 ≈ testp2grad
+            @test p1grad.u0 ≈ ones(3)
+            testp2grad = zeros(3)
+            testp2grad[variable_index(prob2, w)] = 1.0
+            @test p2grad.u0 ≈ testp2grad
+        end
+    end
+end
