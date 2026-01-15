@@ -35,6 +35,9 @@ jobs:
           - "SymbolicIndexingInterface"
           - "QA"
           - "Python"
+        exclude:
+          - version: "pre"
+            group: "QA"
     uses: "SciML/.github/.github/workflows/tests.yml@v1"
     with:
       group: "${{ matrix.group }}"
