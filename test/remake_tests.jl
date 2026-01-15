@@ -1,7 +1,9 @@
 using SciMLBase
 using SymbolicIndexingInterface
 using StaticArrays
-using ForwardDiff
+using DifferentiationInterface
+using ADTypes
+using ForwardDiff: ForwardDiff
 
 probs = []
 containerTypes = [Vector, Tuple, SVector{3}, MVector{3}, SizedVector{3}]
@@ -312,7 +314,7 @@ end
             @test eltype(prob2.p) <: ForwardDiff.Dual
             return prob2.ps[:a]
         end
-        ForwardDiff.derivative(fakeloss!, 1.0)
+        DifferentiationInterface.derivative(fakeloss!, AutoForwardDiff(), 1.0)
     end
 
     # test late_binding_update_u0_p
