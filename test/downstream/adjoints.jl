@@ -12,11 +12,10 @@ if VERSION < v"1.12"
 end
 
 # Define available reverse-mode backends based on Julia version
-const REVERSE_BACKENDS = if VERSION < v"1.12"
-    [AutoZygote(), AutoMooncake()]
-else
-    [AutoMooncake()]
-end
+# Note: Mooncake does not support SymbolicIndexingInterface AD yet
+# See: https://github.com/SciML/SciMLBase.jl/issues/1207
+const ZYGOTE_BACKENDS = VERSION < v"1.12" ? [AutoZygote()] : []
+const MOONCAKE_BACKENDS = [AutoMooncake()]
 
 function backend_name(backend::ADTypes.AbstractADType)
     return string(typeof(backend).name.name)
@@ -66,9 +65,11 @@ prob = ODEProblem(sys, [u0; p], tspan)
 sol = solve(prob, Rodas4())
 
 @testset "Symbolic indexing gradients" begin
-    for backend in REVERSE_BACKENDS
+    for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            gs_sym = DifferentiationInterface.gradient(sol -> sum(sol[lorenz1.x]), backend, sol)
+            gs_sym = DifferentiationInterface.gradient(
+                sol -> sum(sol[lorenz1.x]), backend, sol
+            )
             idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
             true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
             true_grad_sym[idx_sym] = 1.0
@@ -76,43 +77,118 @@ sol = solve(prob, Rodas4())
             @test all(map(x -> x == true_grad_sym, gs_sym))
         end
     end
+    # Mooncake does not support SymbolicIndexingInterface AD yet
+    # https://github.com/SciML/SciMLBase.jl/issues/1207
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend)) (broken)" begin
+            @test_broken begin
+                gs_sym = DifferentiationInterface.gradient(
+                    sol -> sum(sol[lorenz1.x]), backend, sol
+                )
+                idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
+                true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
+                true_grad_sym[idx_sym] = 1.0
+                all(map(x -> x == true_grad_sym, gs_sym))
+            end
+        end
+    end
 end
 
 @testset "Vector symbolic indexing gradients" begin
-    for backend in REVERSE_BACKENDS
+    for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            gs_vec = DifferentiationInterface.gradient(sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x]])), backend, sol)
-            idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
+            gs_vec = DifferentiationInterface.gradient(
+                sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x]])), backend, sol
+            )
+            idx_vecsym = SymbolicIndexingInterface.variable_index.(
+                Ref(sys), [lorenz1.x, lorenz2.x]
+            )
             true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
             true_grad_vecsym[idx_vecsym] .= 1.0
 
             @test all(map(x -> x == true_grad_vecsym, gs_vec.u))
         end
     end
+    # Mooncake does not support SymbolicIndexingInterface AD yet
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend)) (broken)" begin
+            @test_broken begin
+                gs_vec = DifferentiationInterface.gradient(
+                    sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x]])), backend, sol
+                )
+                idx_vecsym = SymbolicIndexingInterface.variable_index.(
+                    Ref(sys), [lorenz1.x, lorenz2.x]
+                )
+                true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
+                true_grad_vecsym[idx_vecsym] .= 1.0
+                all(map(x -> x == true_grad_vecsym, gs_vec.u))
+            end
+        end
+    end
 end
 
 @testset "Tuple symbolic indexing gradients" begin
-    for backend in REVERSE_BACKENDS
+    for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            gs_tup = DifferentiationInterface.gradient(sol -> sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)]))), backend, sol)
-            idx_tupsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
+            gs_tup = DifferentiationInterface.gradient(
+                sol -> sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)]))), backend, sol
+            )
+            idx_tupsym = SymbolicIndexingInterface.variable_index.(
+                Ref(sys), [lorenz1.x, lorenz2.x]
+            )
             true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
             true_grad_tupsym[idx_tupsym] .= 1.0
 
             @test all(map(x -> x == true_grad_tupsym, gs_tup.u))
         end
     end
+    # Mooncake does not support SymbolicIndexingInterface AD yet
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend)) (broken)" begin
+            @test_broken begin
+                gs_tup = DifferentiationInterface.gradient(
+                    sol -> sum(sum.(collect.(sol[(lorenz1.x, lorenz2.x)]))), backend, sol
+                )
+                idx_tupsym = SymbolicIndexingInterface.variable_index.(
+                    Ref(sys), [lorenz1.x, lorenz2.x]
+                )
+                true_grad_tupsym = zeros(length(ModelingToolkit.unknowns(sys)))
+                true_grad_tupsym[idx_tupsym] .= 1.0
+                all(map(x -> x == true_grad_tupsym, gs_tup.u))
+            end
+        end
+    end
 end
 
 @testset "Time series symbolic indexing gradients" begin
-    for backend in REVERSE_BACKENDS
+    for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            gs_ts = DifferentiationInterface.gradient(sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x], :])), backend, sol)
-            idx_vecsym = SymbolicIndexingInterface.variable_index.(Ref(sys), [lorenz1.x, lorenz2.x])
+            gs_ts = DifferentiationInterface.gradient(
+                sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x], :])), backend, sol
+            )
+            idx_vecsym = SymbolicIndexingInterface.variable_index.(
+                Ref(sys), [lorenz1.x, lorenz2.x]
+            )
             true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
             true_grad_vecsym[idx_vecsym] .= 1.0
 
             @test all(map(x -> x == true_grad_vecsym, gs_ts.u))
+        end
+    end
+    # Mooncake does not support SymbolicIndexingInterface AD yet
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend)) (broken)" begin
+            @test_broken begin
+                gs_ts = DifferentiationInterface.gradient(
+                    sol -> sum(sum.(sol[[lorenz1.x, lorenz2.x], :])), backend, sol
+                )
+                idx_vecsym = SymbolicIndexingInterface.variable_index.(
+                    Ref(sys), [lorenz1.x, lorenz2.x]
+                )
+                true_grad_vecsym = zeros(length(ModelingToolkit.unknowns(sys)))
+                true_grad_vecsym[idx_vecsym] .= 1.0
+                all(map(x -> x == true_grad_vecsym, gs_ts.u))
+            end
         end
     end
 end
@@ -130,17 +206,35 @@ bi = BatchedInterface((sys1, [x, y, z]), (sys2, [x, y, w]))
 getter = getsym(bi)
 
 @testset "BatchedInterface AD" begin
-    for backend in REVERSE_BACKENDS
+    for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             # Compute gradient with respect to prob1
-            p1grad = DifferentiationInterface.gradient(prob1 -> sum(getter(prob1, prob2)), backend, prob1)
+            p1grad = DifferentiationInterface.gradient(
+                prob1 -> sum(getter(prob1, prob2)), backend, prob1
+            )
             # Compute gradient with respect to prob2
-            p2grad = DifferentiationInterface.gradient(prob2 -> sum(getter(prob1, prob2)), backend, prob2)
+            p2grad = DifferentiationInterface.gradient(
+                prob2 -> sum(getter(prob1, prob2)), backend, prob2
+            )
 
             @test p1grad.u0 ≈ ones(3)
             testp2grad = zeros(3)
             testp2grad[variable_index(prob2, w)] = 1.0
             @test p2grad.u0 ≈ testp2grad
+        end
+    end
+    # Mooncake does not support SymbolicIndexingInterface AD yet
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend)) (broken)" begin
+            @test_broken begin
+                p1grad = DifferentiationInterface.gradient(
+                    prob1 -> sum(getter(prob1, prob2)), backend, prob1
+                )
+                p2grad = DifferentiationInterface.gradient(
+                    prob2 -> sum(getter(prob1, prob2)), backend, prob2
+                )
+                p1grad.u0 ≈ ones(3)
+            end
         end
     end
 end

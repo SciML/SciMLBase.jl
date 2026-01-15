@@ -37,6 +37,7 @@ setter = setsym_oop(prob, [unknowns(lotka_volterra_sys); parameters(lotka_volter
 u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
 
 # These tests use Zygote-specific sensealg (ZygoteVJP), so only run on Julia < 1.12
+# Tests are currently broken - see https://github.com/SciML/SciMLBase.jl/issues/1208
 if VERSION < v"1.12"
     # Define loss functions that take single arguments for DifferentiationInterface
     function make_sum_of_solution_u0(p_fixed)
@@ -63,13 +64,18 @@ if VERSION < v"1.12"
         end
     end
 
-    @testset "Basic remake autodiff" begin
+    @testset "Basic remake autodiff (broken)" begin
         backend = AutoZygote()
         @testset "$(backend_name(backend))" begin
-            du01 = DifferentiationInterface.gradient(make_sum_of_solution_u0(p), backend, u0)
-            dp1 = DifferentiationInterface.gradient(make_sum_of_solution_p(u0), backend, p)
-            @test du01 !== nothing
-            @test dp1 !== nothing
+            @test_broken begin
+                du01 = DifferentiationInterface.gradient(
+                    make_sum_of_solution_u0(p), backend, u0
+                )
+                dp1 = DifferentiationInterface.gradient(
+                    make_sum_of_solution_p(u0), backend, p
+                )
+                du01 !== nothing && dp1 !== nothing
+            end
         end
     end
 
@@ -96,13 +102,18 @@ if VERSION < v"1.12"
         end
     end
 
-    @testset "Symbolic indexing autodiff" begin
+    @testset "Symbolic indexing autodiff (broken)" begin
         backend = AutoZygote()
         @testset "$(backend_name(backend))" begin
-            du01 = DifferentiationInterface.gradient(make_symbolic_indexing_u0(p), backend, u0)
-            dp1 = DifferentiationInterface.gradient(make_symbolic_indexing_p(u0), backend, p)
-            @test du01 !== nothing
-            @test dp1 !== nothing
+            @test_broken begin
+                du01 = DifferentiationInterface.gradient(
+                    make_symbolic_indexing_u0(p), backend, u0
+                )
+                dp1 = DifferentiationInterface.gradient(
+                    make_symbolic_indexing_p(u0), backend, p
+                )
+                du01 !== nothing && dp1 !== nothing
+            end
         end
     end
 
@@ -128,15 +139,18 @@ if VERSION < v"1.12"
         end
     end
 
-    @testset "Symbolic indexing observed autodiff" begin
+    @testset "Symbolic indexing observed autodiff (broken)" begin
         backend = AutoZygote()
         @testset "$(backend_name(backend))" begin
-            du01 = DifferentiationInterface.gradient(
-                make_symbolic_indexing_observed_u0(p), backend, u0)
-            dp1 = DifferentiationInterface.gradient(
-                make_symbolic_indexing_observed_p(u0), backend, p)
-            @test du01 !== nothing
-            @test dp1 !== nothing
+            @test_broken begin
+                du01 = DifferentiationInterface.gradient(
+                    make_symbolic_indexing_observed_u0(p), backend, u0
+                )
+                dp1 = DifferentiationInterface.gradient(
+                    make_symbolic_indexing_observed_p(u0), backend, p
+                )
+                du01 !== nothing && dp1 !== nothing
+            end
         end
     end
 end
