@@ -37,7 +37,6 @@ setter = setsym_oop(prob, [unknowns(lotka_volterra_sys); parameters(lotka_volter
 u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
 
 # These tests use Zygote-specific sensealg (ZygoteVJP), so only run on Julia < 1.12
-# Tests are currently broken - see https://github.com/SciML/SciMLBase.jl/issues/1208
 if VERSION < v"1.12"
     # Define loss functions that take single arguments for DifferentiationInterface
     function make_sum_of_solution_u0(p_fixed)
@@ -64,10 +63,10 @@ if VERSION < v"1.12"
         end
     end
 
-    @testset "Basic remake autodiff (broken)" begin
+    @testset "Basic remake autodiff" begin
         backend = AutoZygote()
         @testset "$(backend_name(backend))" begin
-            @test_broken begin
+            @test begin
                 du01 = DifferentiationInterface.gradient(
                     make_sum_of_solution_u0(p), backend, u0
                 )
@@ -102,10 +101,10 @@ if VERSION < v"1.12"
         end
     end
 
-    @testset "Symbolic indexing autodiff (broken)" begin
+    @testset "Symbolic indexing autodiff" begin
         backend = AutoZygote()
         @testset "$(backend_name(backend))" begin
-            @test_broken begin
+            @test begin
                 du01 = DifferentiationInterface.gradient(
                     make_symbolic_indexing_u0(p), backend, u0
                 )
@@ -139,10 +138,10 @@ if VERSION < v"1.12"
         end
     end
 
-    @testset "Symbolic indexing observed autodiff (broken)" begin
+    @testset "Symbolic indexing observed autodiff" begin
         backend = AutoZygote()
         @testset "$(backend_name(backend))" begin
-            @test_broken begin
+            @test begin
                 du01 = DifferentiationInterface.gradient(
                     make_symbolic_indexing_observed_u0(p), backend, u0
                 )
