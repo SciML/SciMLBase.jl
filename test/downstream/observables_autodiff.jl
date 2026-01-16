@@ -150,7 +150,7 @@ function create_model(; C₁ = 3.0e-5, C₂ = 1.0e-6)
         systems = [
             resistor1, resistor2, capacitor1, capacitor2,
             source, input_signal, ground, ampermeter,
-        ], defaults = [resistor1.n.v => 0.0]
+        ], initial_conditions = [resistor1.n.v => 0.0]
     )
 end
 
