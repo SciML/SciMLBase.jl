@@ -1,7 +1,9 @@
 module SciMLBaseMooncakeExt
 
 using SciMLBase, Mooncake
-using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator
+using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator,
+    ODESolution, RODESolution, ODEProblem, SDEProblem, EnsembleSolution,
+    NonlinearProblem, IntervalNonlinearProblem
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
     @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
     NoPullback
@@ -20,5 +22,18 @@ function rrule!!(
     return zero_fcodual(SciMLBase.MooncakeOriginator()), NoPullback(f, X)
 end
 
+# ============================================================================
+# Import ChainRulesCore rrules for Mooncake via @from_rrule
+# These enable Mooncake to use the existing ChainRulesCore differentiation rules
+# for symbolic indexing on ODESolution objects.
+# See: https://github.com/SciML/SciMLBase.jl/issues/1207
+# ============================================================================
+
+# ODESolution symbolic indexing: sol[sym]
+@from_rrule(
+    MinimalCtx,
+    Tuple{typeof(getindex), ODESolution, Any},
+    true,
+)
 
 end
