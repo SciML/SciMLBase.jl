@@ -30,127 +30,136 @@ function lotka_volterra(; name = name)
 end
 
 @named lotka_volterra_sys = lotka_volterra()
-lotka_volterra_sys = mtkcompile(lotka_volterra_sys, split = false)
-prob = ODEProblem(lotka_volterra_sys, [], (0.0, 10.0))
-sol = solve(prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6)
-setter = setsym_oop(prob, [unknowns(lotka_volterra_sys); parameters(lotka_volterra_sys)])
-u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
 
-# These tests use Zygote-specific sensealg (ZygoteVJP), so only run on Julia < 1.12
-# Tests are currently broken - see https://github.com/SciML/SciMLBase.jl/issues/1208
+function make_sum_of_solution_u0(prob)
+    return function (u0)
+        # If `p` is passed to `remake`, MTK won't copy `u0` to initials
+        # and it will be reset to the previous value
+        _prob = remake(prob, u0 = u0)
+        return sum(
+            solve(
+                _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
+                sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
+            )
+        )
+    end
+end
+
+function make_sum_of_solution_p(prob, u0_fixed)
+    return function (p)
+        _prob = remake(prob, u0 = u0_fixed, p = p)
+        return sum(
+            solve(
+                _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
+                sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
+            )
+        )
+    end
+end
+
+function make_symbolic_indexing_u0(prob)
+    return function (u0)
+        _prob = remake(prob, u0 = u0)
+        soln = solve(
+            _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
+            sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
+        )
+        return sum(soln[x])
+    end
+end
+
+function make_symbolic_indexing_p(prob, u0_fixed)
+    return function (p)
+        _prob = remake(prob, u0 = u0_fixed, p = p)
+        soln = solve(
+            _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
+            sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
+        )
+        return sum(soln[x])
+    end
+end
+
+function make_symbolic_indexing_observed_u0(prob)
+    return function (u0)
+        _prob = remake(prob, u0 = u0)
+        soln = solve(
+            _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
+            sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
+        )
+        return sum(soln[o, i] for i in 1:length(soln))
+    end
+end
+
+function make_symbolic_indexing_observed_p(prob, u0_fixed)
+    return function (p)
+        _prob = remake(prob, u0 = u0_fixed, p = p)
+        soln = solve(
+            _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
+            sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
+        )
+        return sum(soln[o, i] for i in 1:length(soln))
+    end
+end
+
 if VERSION < v"1.12"
-    # Define loss functions that take single arguments for DifferentiationInterface
-    function make_sum_of_solution_u0(p_fixed)
-        return function (u0)
-            _prob = remake(prob, u0 = u0, p = p_fixed)
-            return sum(
-                solve(
-                    _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
-                    sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
-                )
-            )
+    backend = AutoZygote()
+    derivatives = []
+    @testset "`split = $split`" for split in (false, true)
+        cur_ders = Dict()
+        push!(derivatives, cur_ders)
+
+        # `split = true` runs into https://github.com/JuliaDiff/ChainRules.jl/issues/830
+        # for Zygote. It can be re-enabled for other backends if they are tested here.
+        if split
+            continue
+            @test_broken false
         end
+        sys = mtkcompile(lotka_volterra_sys; split)
+        prob = ODEProblem(sys, [], (0.0, 10.0))
+        sol = solve(prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6)
+        setter = setsym_oop(prob, [unknowns(sys); parameters(sys)])
+        u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
+
+        du01 = DifferentiationInterface.gradient(
+            make_sum_of_solution_u0(prob), backend, u0
+        )
+        @test du01 !== nothing
+        cur_ders["sum_of_solution_u0"] = du01
+        dp1 = DifferentiationInterface.gradient(
+            make_sum_of_solution_p(prob, u0), backend, p
+        )
+        @test dp1 !== nothing
+        cur_ders["sum_of_solution_p"] = dp1
+
+        du01 = DifferentiationInterface.gradient(
+            make_symbolic_indexing_u0(prob), backend, u0
+        )
+        @test du01 !== nothing
+        cur_ders["symbolic_indexing_u0"] = du01
+        dp1 = DifferentiationInterface.gradient(
+            make_symbolic_indexing_p(prob, u0), backend, p
+        )
+        @test dp1 !== nothing
+        cur_ders["symbolic_indexing_p"] = dp1
+
+        du01 = DifferentiationInterface.gradient(
+            make_symbolic_indexing_observed_u0(prob), backend, u0
+        )
+        @test du01 !== nothing
+        cur_ders["symbolic_indexing_observed_u0"] = du01
+        dp1 = DifferentiationInterface.gradient(
+            make_symbolic_indexing_observed_p(prob, u0), backend, p
+        )
+        @test dp1 !== nothing
+        cur_ders["symbolic_indexing_observed_p"] = dp1
     end
 
-    function make_sum_of_solution_p(u0_fixed)
-        return function (p)
-            _prob = remake(prob, u0 = u0_fixed, p = p)
-            return sum(
-                solve(
-                    _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
-                    sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
-                )
-            )
-        end
-    end
-
-    @testset "Basic remake autodiff (broken)" begin
-        backend = AutoZygote()
-        @testset "$(backend_name(backend))" begin
-            @test_broken begin
-                du01 = DifferentiationInterface.gradient(
-                    make_sum_of_solution_u0(p), backend, u0
-                )
-                dp1 = DifferentiationInterface.gradient(
-                    make_sum_of_solution_p(u0), backend, p
-                )
-                du01 !== nothing && dp1 !== nothing
-            end
-        end
-    end
-
-    # These tests depend on a ZygoteRule in a package extension
-    function make_symbolic_indexing_u0(p_fixed)
-        return function (u0)
-            _prob = remake(prob, u0 = u0, p = p_fixed)
-            soln = solve(
-                _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
-                sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
-            )
-            return sum(soln[x])
-        end
-    end
-
-    function make_symbolic_indexing_p(u0_fixed)
-        return function (p)
-            _prob = remake(prob, u0 = u0_fixed, p = p)
-            soln = solve(
-                _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
-                sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
-            )
-            return sum(soln[x])
-        end
-    end
-
-    @testset "Symbolic indexing autodiff (broken)" begin
-        backend = AutoZygote()
-        @testset "$(backend_name(backend))" begin
-            @test_broken begin
-                du01 = DifferentiationInterface.gradient(
-                    make_symbolic_indexing_u0(p), backend, u0
-                )
-                dp1 = DifferentiationInterface.gradient(
-                    make_symbolic_indexing_p(u0), backend, p
-                )
-                du01 !== nothing && dp1 !== nothing
-            end
-        end
-    end
-
-    function make_symbolic_indexing_observed_u0(p_fixed)
-        return function (u0)
-            _prob = remake(prob, u0 = u0, p = p_fixed)
-            soln = solve(
-                _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
-                sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
-            )
-            return sum(soln[o, i] for i in 1:length(soln))
-        end
-    end
-
-    function make_symbolic_indexing_observed_p(u0_fixed)
-        return function (p)
-            _prob = remake(prob, u0 = u0_fixed, p = p)
-            soln = solve(
-                _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
-                sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
-            )
-            return sum(soln[o, i] for i in 1:length(soln))
-        end
-    end
-
-    @testset "Symbolic indexing observed autodiff (broken)" begin
-        backend = AutoZygote()
-        @testset "$(backend_name(backend))" begin
-            @test_broken begin
-                du01 = DifferentiationInterface.gradient(
-                    make_symbolic_indexing_observed_u0(p), backend, u0
-                )
-                dp1 = DifferentiationInterface.gradient(
-                    make_symbolic_indexing_observed_p(u0), backend, p
-                )
-                du01 !== nothing && dp1 !== nothing
-            end
+    @testset "Consistent gradients" begin
+        nosplit_ders, split_ders = derivatives
+        ks = intersect(keys(nosplit_ders), keys(split_ders))
+        @test length(ks) == 6 broken = true
+        @testset "$k" for k in ks
+            @test nosplit_ders[k] ≈ split_ders[k]
         end
     end
 end
