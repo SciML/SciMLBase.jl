@@ -439,8 +439,6 @@ EnumX.@enumx ReturnCode begin
     InternalLinearSolveFailed
 end
 
-Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
-
 const symtrue = Symbol("true")
 const symfalse = Symbol("false")
 
