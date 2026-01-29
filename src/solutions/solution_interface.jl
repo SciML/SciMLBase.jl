@@ -173,6 +173,8 @@ function Base.summary(io::IO, A::AbstractTimeseriesSolution)
     )
 end
 
+
+Base.show(io::IO, A::AbstractSciMLProblem) = show(io, MIME"text/plain", A)
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
     println(io, string("retcode: ", A.retcode))
     println(io, string("Interpolation: "), interp_summary(A.interp))
