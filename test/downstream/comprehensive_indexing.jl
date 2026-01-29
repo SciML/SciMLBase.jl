@@ -2,6 +2,8 @@ using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimizatio
     OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
     SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
     DiffEqCallbacks, StochasticDelayDiffEq, Test, Plots
+import Symbolics
+import SymbolicUtils as SU
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -430,62 +432,62 @@ end
     y_val = getindex.(sol.u, y_idx)
     obs_val = getindex.(x_val, 1) .+ y_val
 
-    @testset "Solution indexing" begin
-        # don't check inference for weird cases of nested arrays/tuples
-        for (sym, val, check_inference) in [
-                (x, x_val, true),
-                (sys.x, x_val, true),
-                (:x, x_val, true),
-                (x_idx, x_val, true),
-                (x[1] + sys.y, obs_val, true),
-                ([x[1], x[2]], getindex.(x_val, ([1, 2],)), true),
-                ([sys.x[1], sys.x[2]], getindex.(x_val, ([1, 2],)), true),
-                ([x[1], x_idx[2]], getindex.(x_val, ([1, 2],)), false),
-                ([x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
-                ([sys.x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
-                ([:x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
-                ([x, y], [[i, j] for (i, j) in zip(x_val, y_val)], false),
-                ([sys.x, sys.y], [[i, j] for (i, j) in zip(x_val, y_val)], false),
-                ([:x, :y], [[i, j] for (i, j) in zip(x_val, y_val)], false),
-                ([x_idx, y_idx], [[i, j] for (i, j) in zip(x_val, y_val)], false),
-                ([x, y_idx], [[i, j] for (i, j) in zip(x_val, y_val)], false),
-                ([x, x], [[i, i] for i in x_val], true),
-                ([sys.x, sys.x], [[i, i] for i in x_val], true),
-                ([:x, :x], [[i, i] for i in x_val], true),
-                ([x, x_idx], [[i, i] for i in x_val], false),
-                ((x, y), [(i, j) for (i, j) in zip(x_val, y_val)], true),
-                ((sys.x, sys.y), [(i, j) for (i, j) in zip(x_val, y_val)], true),
-                ((:x, :y), [(i, j) for (i, j) in zip(x_val, y_val)], true),
-                ((x, y_idx), [(i, j) for (i, j) in zip(x_val, y_val)], true),
-                ((x, x), [(i, i) for i in x_val], true),
-                ((sys.x, sys.x), [(i, i) for i in x_val], true),
-                ((:x, :x), [(i, i) for i in x_val], true),
-                ((x, x_idx), [(i, i) for i in x_val], true),
-                ((x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
-                ((sys.x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
-                ((:x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
-                (
-                    (x, (x[1] + y, y)),
-                    [(i, (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false,
-                ),
-                (
-                    [x, [x[1] + y, y]],
-                    [[i, [k, j]] for (i, j, k) in zip(x_val, y_val, obs_val)], false,
-                ),
-                (
-                    (x, [x[1] + y, y], (x[1] + y, y_idx)),
-                    [(i, [k, j], (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false,
-                ),
-                (
-                    [x, [x[1] + y, y], (x[1] + y, y_idx)],
-                    [[i, [k, j], (k, j)] for (i, j, k) in zip(x_val, y_val, obs_val)], false,
-                ),
-            ]
-            if check_inference
-                @inferred getsym(prob, sym)(sol)
-            end
-            @test getsym(prob, sym)(sol) == val
+    @testset "Solution indexing ($sym)" for (sym, val, check_inference) in [
+            # don't check inference for weird cases of nested arrays/tuples
+            (x, x_val, true),
+            (sys.x, x_val, true),
+            (:x, x_val, true),
+            (x_idx, x_val, true),
+            (x[1] + sys.y, obs_val, true),
+            ([x[1], x[2]], getindex.(x_val, ([1, 2],)), true),
+            ([sys.x[1], sys.x[2]], getindex.(x_val, ([1, 2],)), true),
+            # Type-annotation is required, otherwise this is a `Vector{Num}` and treated
+            # like a symbolic expression
+            (Any[x[1], x_idx[2]], getindex.(x_val, ([1, 2],)), false),
+            ([x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
+            ([sys.x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
+            ([:x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
+            ([x, y], [[i, j] for (i, j) in zip(x_val, y_val)], false),
+            ([sys.x, sys.y], [[i, j] for (i, j) in zip(x_val, y_val)], false),
+            ([:x, :y], [[i, j] for (i, j) in zip(x_val, y_val)], false),
+            ([x_idx, y_idx], [[i, j] for (i, j) in zip(x_val, y_val)], false),
+            ([x, y_idx], [[i, j] for (i, j) in zip(x_val, y_val)], false),
+            ([x, x], [[i, i] for i in x_val], true),
+            ([sys.x, sys.x], [[i, i] for i in x_val], true),
+            ([:x, :x], [[i, i] for i in x_val], true),
+            ([x, x_idx], [[i, i] for i in x_val], false),
+            ((x, y), [(i, j) for (i, j) in zip(x_val, y_val)], true),
+            ((sys.x, sys.y), [(i, j) for (i, j) in zip(x_val, y_val)], true),
+            ((:x, :y), [(i, j) for (i, j) in zip(x_val, y_val)], true),
+            ((x, y_idx), [(i, j) for (i, j) in zip(x_val, y_val)], true),
+            ((x, x), [(i, i) for i in x_val], true),
+            ((sys.x, sys.x), [(i, i) for i in x_val], true),
+            ((:x, :x), [(i, i) for i in x_val], true),
+            ((x, x_idx), [(i, i) for i in x_val], true),
+            ((x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
+            ((sys.x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
+            ((:x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
+            (
+                (x, (x[1] + y, y)),
+                [(i, (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+            (
+                [x, [x[1] + y, y]],
+                [[i, [k, j]] for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+            (
+                (x, [x[1] + y, y], (x[1] + y, y_idx)),
+                [(i, [k, j], (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+            (
+                [x, [x[1] + y, y], (x[1] + y, y_idx)],
+                [[i, [k, j], (k, j)] for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+        ]
+        if check_inference
+            @inferred getsym(prob, sym)(sol)
         end
+        @test getsym(prob, sym)(sol) == val
     end
 
     x_newval = [3.0, 6.0, 9.0]
@@ -493,56 +495,54 @@ end
     x_probval = prob[x]
     y_probval = prob[y]
 
-    @testset "Problem indexing" begin
-        for (sym, oldval, newval, check_inference) in [
-                (x, x_probval, x_newval, true),
-                (sys.x, x_probval, x_newval, true),
-                (:x, x_probval, x_newval, true),
-                (x_idx, x_probval, x_newval, true),
-                ((x, y), (x_probval, y_probval), (x_newval, y_newval), true),
-                ((sys.x, sys.y), (x_probval, y_probval), (x_newval, y_newval), true),
-                ((:x, :y), (x_probval, y_probval), (x_newval, y_newval), true),
-                ((x_idx, y_idx), (x_probval, y_probval), (x_newval, y_newval), true),
-                ([x, y], [x_probval, y_probval], [x_newval, y_newval], false),
-                ([sys.x, sys.y], [x_probval, y_probval], [x_newval, y_newval], false),
-                ([:x, :y], [x_probval, y_probval], [x_newval, y_newval], false),
-                ([x_idx, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
-                ((x, y_idx), (x_probval, y_probval), (x_newval, y_newval), true),
-                ([x, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
-                ((x_idx, y), (x_probval, y_probval), (x_newval, y_newval), true),
-                ([x_idx, y], [x_probval, y_probval], [x_newval, y_newval], false),
-                (
-                    [x[1:2], [y_idx, x[3]]], [x_probval[1:2], [y_probval, x_probval[3]]],
-                    [x_newval[1:2], [y_newval, x_newval[3]]], false,
-                ),
-                (
-                    [x[1:2], (y_idx, x[3])], [x_probval[1:2], (y_probval, x_probval[3])],
-                    [x_newval[1:2], (y_newval, x_newval[3])], false,
-                ),
-                (
-                    (x[1:2], [y_idx, x[3]]), (x_probval[1:2], [y_probval, x_probval[3]]),
-                    (x_newval[1:2], [y_newval, x_newval[3]]), false,
-                ),
-                (
-                    (x[1:2], (y_idx, x[3])), (x_probval[1:2], (y_probval, x_probval[3])),
-                    (x_newval[1:2], (y_newval, x_newval[3])), false,
-                ),
-            ]
-            getter = getsym(prob, sym)
-            setter! = setsym(prob, sym)
-            if check_inference
-                @inferred getter(prob)
-            end
-            @test getter(prob) == oldval
-            if check_inference
-                @inferred setter!(prob, newval)
-            else
-                setter!(prob, newval)
-            end
-            @test getter(prob) == newval
-            setter!(prob, oldval)
-            @test getter(prob) == oldval
+    @testset "Problem indexing ($sym)" for (sym, oldval, newval, check_inference) in [
+            (x, x_probval, x_newval, true),
+            (sys.x, x_probval, x_newval, true),
+            (:x, x_probval, x_newval, true),
+            (x_idx, x_probval, x_newval, true),
+            ((x, y), (x_probval, y_probval), (x_newval, y_newval), true),
+            ((sys.x, sys.y), (x_probval, y_probval), (x_newval, y_newval), true),
+            ((:x, :y), (x_probval, y_probval), (x_newval, y_newval), true),
+            ((x_idx, y_idx), (x_probval, y_probval), (x_newval, y_newval), true),
+            ([x, y], [x_probval, y_probval], [x_newval, y_newval], false),
+            ([sys.x, sys.y], [x_probval, y_probval], [x_newval, y_newval], false),
+            ([:x, :y], [x_probval, y_probval], [x_newval, y_newval], false),
+            ([x_idx, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
+            ((x, y_idx), (x_probval, y_probval), (x_newval, y_newval), true),
+            (Any[x, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
+            ((x_idx, y), (x_probval, y_probval), (x_newval, y_newval), true),
+            (Any[x_idx, y], [x_probval, y_probval], [x_newval, y_newval], false),
+            (
+                Any[x[1:2], Any[y_idx, x[3]]], [x_probval[1:2], [y_probval, x_probval[3]]],
+                [x_newval[1:2], [y_newval, x_newval[3]]], false,
+            ),
+            (
+                Any[x[1:2], (y_idx, x[3])], [x_probval[1:2], (y_probval, x_probval[3])],
+                [x_newval[1:2], (y_newval, x_newval[3])], false,
+            ),
+            (
+                (x[1:2], Any[y_idx, x[3]]), (x_probval[1:2], [y_probval, x_probval[3]]),
+                (x_newval[1:2], [y_newval, x_newval[3]]), false,
+            ),
+            (
+                (x[1:2], (y_idx, x[3])), (x_probval[1:2], (y_probval, x_probval[3])),
+                (x_newval[1:2], (y_newval, x_newval[3])), false,
+            ),
+        ]
+        getter = getsym(prob, sym)
+        setter! = setsym(prob, sym)
+        if check_inference
+            @inferred getter(prob)
         end
+        @test getter(prob) == oldval
+        if check_inference
+            @inferred setter!(prob, newval)
+        else
+            setter!(prob, newval)
+        end
+        @test getter(prob) == newval
+        setter!(prob, oldval)
+        @test getter(prob) == oldval
     end
 
     @testset "Parameter indexing" begin
@@ -686,7 +686,8 @@ end
             end
             x = newx
         end
-        vars = ModelingToolkit.vars(x)
+        vars = Set{Symbolics.SymbolicT}()
+        SU.search_variables!(vars, x)
         return mapreduce(union, vars; init = Set()) do sym
             if is_variable(s, sym)
                 Set([ContinuousTimeseries()])
@@ -1040,10 +1041,10 @@ end
 # Issue https://github.com/SciML/ModelingToolkit.jl/issues/3004
 @testset "Continuous interpolation before discrete save" begin
     @variables x(t)
-    @parameters c(t)
+    @discretes c(t)
     devt = ModelingToolkit.SymbolicDiscreteCallback(1.0, [c ~ Pre(c) + 1]; discrete_parameters = [c], iv = t)
     @mtkcompile sys = System(
-        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [devt]
+        D(x) ~ c * cos(x), t, [x, c], []; discrete_events = [devt]
     )
     prob = ODEProblem(sys, [x => 0.0, c => 1.0], (0.0, 2pi))
     sol = solve(prob, Tsit5())
@@ -1120,14 +1121,14 @@ end
 end
 
 @testset "RODESolutions save discretes" begin
-    @parameters k(t)
+    @discretes k(t)
     @variables A(t)
     function affect2!(m, o, ctx, integ)
         return (; k = m.k + 1.0)
     end
     db = 1.0 => ModelingToolkit.ImperativeAffect(affect2!; modified = (; k))
 
-    @named ssys = System(D(A) ~ k * A, t, [A], [k]; noise_eqs = [0.0], discrete_events = db)
+    @named ssys = System(D(A) ~ k * A, t, [A, k], []; noise_eqs = [0.0], discrete_events = db)
     ssys = complete(ssys)
     prob = SDEProblem(ssys, [A => 1.0, k => 1.0], (0.0, 4.0))
     sol = solve(prob, RI5())
