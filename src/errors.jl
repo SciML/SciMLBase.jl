@@ -90,7 +90,7 @@ const allowedkeywords = (
     # For AbstractAliasSpecifier
     :alias,
     # Parameter estimation with BVP
-    :fit_parameters,
+    :tune_parameters,
 )
 
 
