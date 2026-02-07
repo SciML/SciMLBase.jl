@@ -2,6 +2,7 @@ using ModelingToolkit, SymbolicIndexingInterface
 using JumpProcesses
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using OrdinaryDiffEq
+using DiffEqNoiseProcess
 using Optimization
 using OptimizationOptimJL
 using ForwardDiff
@@ -20,7 +21,7 @@ eqs = [
     D(z) ~ x * y - β * z,
 ]
 
-@named sys = System([eqs; q ~ 3β], t)
+@named sys = System(eqs, t, [x, y, z], [σ, ρ, β, q]; bindings = [q => 3β])
 sys = complete(sys)
 u0 = [
     x => 1.0,
@@ -170,7 +171,7 @@ end
                 z(k - 1) * β +
                 x(k - 2),
         ],
-        t; defaults = [
+        t; initial_conditions = [
             x => 1.0, y => 1.0, z => 1.0, x(k - 1) => 0.0, y(k - 1) => 0.0, z(k - 1) => 0.0,
         ]
     )
@@ -305,7 +306,7 @@ sol = solve(prob, BFGS())
     @parameters P
 
     for sign in [+1.0, -1.0]
-        @named sys = System([D(x) ~ P], t, [x], [P]; defaults = [P => sign * x]) # set P from initial condition of x
+        @named sys = System([D(x) ~ P], t, [x], [P]; initial_conditions = [P => sign * x]) # set P from initial condition of x
         sys = complete(sys)
 
         prob1 = ODEProblem(sys, [x => 1.0], (0.0, 1.0))
@@ -350,7 +351,7 @@ end
 
 @testset "remake with parameter dependent on observed" begin
     @variables x(t) y(t)
-    @parameters p = x + y
+    @parameters p = missing
     @mtkcompile sys = System([D(x) ~ x, p ~ x + y], t)
     prob = ODEProblem(sys, [x => 1.0, y => 2.0], (0.0, 1.0))
     @test prob.ps[p] ≈ 3.0
@@ -508,7 +509,7 @@ end
     @parameters k2 p Gamma y0 d k1
     @mtkcompile sys = System(
         [D(y) ~ p - d * y, D(x1) ~ -k1 * x1 + k2 * (Gamma - x1), x2 ~ Gamma - x1],
-        t; defaults = Dict(y => y0, Gamma => x1 + x2)
+        t, [x1, x2, y], [k2, p, Gamma, y0, d, k1]; initial_conditions = Dict(y => y0, Gamma => x1 + x2)
     )
     u0 = [x1 => 1.0, x2 => 2.0]
     p0 = [p => 10.0, d => 5.0, y0 => 3.0, k1 => 1.0, k2 => 2.0]
@@ -526,7 +527,7 @@ end
     @variables x(t) [guess = 1.0] y(t) [guess = 1.0]
     @parameters p [guess = 1.0] q [guess = 1.0]
     @mtkcompile sys = System(
-        [D(x) ~ p * x + q * y, y ~ 2x], t; parameter_dependencies = [q ~ 2p]
+        [D(x) ~ p * x + q * y, y ~ 2x], t; bindings = [q => 2p]
     )
     prob = ODEProblem(sys, [:x => 1.0, p => 1.0], (0.0, 1.0))
     @test_nowarn remake(prob; u0 = [:y => 1.0, :x => nothing])
