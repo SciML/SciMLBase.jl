@@ -1090,7 +1090,7 @@ end
 @testset "SDDEs" begin
     function oscillator(; name, k = 1.0, τ = 0.01)
         @parameters k = k τ = τ
-        @brownian a
+        @brownians a
         @variables x(..) = 0.1 + t y(t) = 0.1 + t jcn(t) delx(t)
         eqs = [
             D(x(t)) ~ y + a,
