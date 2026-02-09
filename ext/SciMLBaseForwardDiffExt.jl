@@ -141,7 +141,7 @@ themselves, for an example of how this can be confusing to a user see
 end
 
 const FORWARDDIFF_AUTODETECTION_FAILURE_MESSAGE = """
-Failed to automatically detect ForwardDiff compatability of
+Failed to automatically detect ForwardDiff compatibility of
 the parameter object. In order for ForwardDiff.jl automatic
 differentiation to work on a solution object, the state of
 the differential equation or nonlinear solve (`u0`) needs to
