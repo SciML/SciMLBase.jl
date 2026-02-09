@@ -15,7 +15,7 @@ sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10, saveat
 @test size(sim[:, 1, :, :]) == (2, 101, 10)
 @test size(sim[:, :, 1, :]) == (2, 2, 10)
 @test size(sim[:, :, :, 1]) == (2, 2, 101)
-@test Array(sim)[1, :, :, :] == sim[1, :, :, :]
-@test Array(sim)[:, 1, :, :] == sim[:, 1, :, :]
-@test Array(sim)[:, :, 1, :] == sim[:, :, 1, :]
-@test Array(sim)[:, :, :, 1] == sim[:, :, :, 1]
+@test Array(sim)[1, :, :, :] == Array(sim[1, :, :, :])
+@test Array(sim)[:, 1, :, :] == Array(sim[:, 1, :, :])
+@test Array(sim)[:, :, 1, :] == Array(sim[:, :, 1, :])
+@test Array(sim)[:, :, :, 1] == Array(sim[:, :, :, 1])

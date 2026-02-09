@@ -25,7 +25,7 @@ jobs:
       - uses: julia-actions/julia-downgrade-compat@v2
 #        if: ${{ matrix.version == '1.6' }}
         with:
-          skip: Pkg,TOML
+          skip: Pkg,TOML,DifferentiationInterface
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
