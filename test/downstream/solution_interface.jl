@@ -254,7 +254,8 @@ end
 
     @testset "ODE with callbacks" begin
         @variables x(t) y(t)
-        @parameters p q(t) r(t) s(t) u(t)
+        @parameters p
+        @discretes q(t) r(t) s(t) u(t)
         evs = [
             ModelingToolkit.SymbolicDiscreteCallback(
                 0.1, [q ~ Pre(q) + 1, s ~ Pre(s) - 1];
@@ -266,8 +267,8 @@ end
             )
         ]
         @mtkcompile sys = System(
-            [D(x) ~ x + p * y, D(y) ~ 2p + x], t, [x, y],
-            [p, q, r, s, u], discrete_events = evs
+            [D(x) ~ x + p * y, D(y) ~ 2p + x], t, [x, y, q, r, s, u],
+            [p], discrete_events = evs
         )
         @test length(unknowns(sys)) == 2
         @test length(parameters(sys)) == 5
@@ -308,7 +309,8 @@ end
 
     @testset "SavedSubsystemWithFallback" begin
         @variables x(t) y(t)
-        @parameters p q(t) r(t) s(t) u(t)
+        @parameters p
+        @discretes q(t) r(t) s(t) u(t)
         evs = [
             ModelingToolkit.SymbolicDiscreteCallback(
                 0.1, [q ~ Pre(q) + 1, s ~ Pre(s) - 1];
@@ -320,8 +322,8 @@ end
             )
         ]
         @mtkcompile sys = System(
-            [D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
-            [p, q, r, s, u], discrete_events = evs
+            [D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y, q, r, s, u],
+            [p], discrete_events = evs
         )
         prob = ODEProblem(
             sys, [x => 1.0, y => 1.0, p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0],
@@ -367,7 +369,8 @@ end
 
     @testset "get_save_idxs_and_saved_subsystem" begin
         @variables x(t) y(t)
-        @parameters p q(t) r(t) s(t) u(t)
+        @parameters p
+        @discretes q(t) r(t) s(t) u(t)
         evs = [
             ModelingToolkit.SymbolicDiscreteCallback(
                 0.1, [q ~ Pre(q) + 1, s ~ Pre(s) - 1];
@@ -379,8 +382,8 @@ end
             )
         ]
         @mtkcompile sys = System(
-            [D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y],
-            [p, q, r, s, u], discrete_events = evs
+            [D(x) ~ x + p * y, D(y) ~ 2p + x^2], t, [x, y, q, r, s, u],
+            [p], discrete_events = evs
         )
         prob = ODEProblem(
             sys, [x => 1.0, y => 1.0, p => 0.5, q => 0.0, r => 1.0, s => 10.0, u => 4096.0],
