@@ -1011,7 +1011,7 @@ end
     @discretes c(t)
     devt = ModelingToolkit.SymbolicDiscreteCallback(1.0, [c ~ Pre(c) + 1]; discrete_parameters = [c], iv = t)
     @mtkcompile sys = System(
-        D(x) ~ c * cos(x), t, [x], []; discrete_events = [devt]
+        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [devt]
     )
     prob = ODEProblem(sys, [x => 0.0, c => 1.0], (0.0, 2pi))
     sol = solve(prob, Tsit5())
@@ -1095,7 +1095,7 @@ end
     end
     db = 1.0 => ModelingToolkit.ImperativeAffect(affect2!; modified = (; k))
 
-    @named ssys = System(D(A) ~ k * A, t, [A], []; noise_eqs = [0.0], discrete_events = db)
+    @named ssys = System(D(A) ~ k * A, t, [A], [k]; noise_eqs = [0.0], discrete_events = db)
     ssys = complete(ssys)
     prob = SDEProblem(ssys, [A => 1.0, k => 1.0], (0.0, 4.0))
     sol = solve(prob, RI5())
