@@ -65,12 +65,14 @@ sol = solve(prob, Tsit5())
             @test du == gs.u
 
             # Observable in a vector
+            # Zygote returns incorrect gradient on Julia 1.10 (elements swapped)
+            # See https://github.com/SciML/SciMLBase.jl/issues/1233
             gs2 = DifferentiationInterface.gradient(
                 sol -> sum(sum.(sol[[sys.w, sys.x]])), backend, sol
             )
             du_ = [1.0, 1.0, 2.0, 0.0]
             du = [du_ for _ in sol[[D(x), x, y, z]]]
-            @test du == gs2.u
+            @test_broken du == gs2.u
         end
     end
     # Mooncake does not support SymbolicIndexingInterface AD yet
