@@ -11,6 +11,3 @@ eqs = "eqs"
 rhs = "rhs"
 MTK = "MTK"
 siz = "siz"
-# Legacy identifiers with typos (cannot rename without breaking API)
-Incompatability = "Incompatability"
-INCOMPATABILITY = "INCOMPATABILITY"
