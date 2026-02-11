@@ -69,6 +69,19 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
     trace::Tr
 end
 
+function NonlinearSolution(u, resid, prob, alg, retcode, original, left, right, stats, trace)
+    T = eltype(eltype(u))
+    N = ndims(u)
+
+    return NonlinearSolution{
+        T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
+        typeof(original), typeof(left), typeof(stats), typeof(trace),
+    }(
+        u, resid, prob, alg,
+        retcode, original, left, right, stats, trace
+    )
+end
+
 const SteadyStateSolution = NonlinearSolution
 
 get_p(p::AbstractNonlinearSolution) = p.prob.p
@@ -84,30 +97,17 @@ function build_solution(
         trace = nothing,
         kwargs...
     )
-    T = eltype(eltype(u))
-    N = ndims(u)
-
-    return NonlinearSolution{
-        T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
-        typeof(original), typeof(left), typeof(stats), typeof(trace),
-    }(
-        u, resid, prob, alg,
-        retcode, original, left, right, stats, trace
+    return NonlinearSolution(
+        u, resid, prob, alg, retcode,
+        original, left, right, stats, trace
     )
 end
 
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
-    T = eltype(eltype(u))
-    N = ndims(u)
-
     # Some of the subtypes might not have a trace field
     trace = hasfield(typeof(sol), :trace) ? sol.trace : nothing
 
-    return NonlinearSolution{
-        T, N, typeof(u), typeof(sol.resid), typeof(sol.prob),
-        typeof(sol.alg), typeof(sol.original), typeof(sol.left),
-        typeof(sol.stats), typeof(trace),
-    }(
+    return NonlinearSolution(
         u, sol.resid, sol.prob, sol.alg, sol.retcode,
         sol.original, sol.left, sol.right, sol.stats, trace
     )
