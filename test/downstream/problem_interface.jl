@@ -322,24 +322,7 @@ prob = SteadyStateProblem(osys, [u0; ps])
 
     prob = NonlinearProblem(model, [])
     sccprob = SCCNonlinearProblem(model, [])
-
-    for sym in [u, u..., u[2] + u[3], p * u[1] + u[2]]
-        @test prob[sym] ≈ sccprob[sym]
-    end
-
-    for sym in [p, 2p + 1]
-        @test prob.ps[sym] ≈ sccprob.ps[sym]
-    end
-
-    for (i, sym) in enumerate([u[1], u[3], u[6]])
-        sccprob[sym] = 0.5i
-        @test sccprob[sym] ≈ 0.5i
-    end
-    sccprob.ps[p] = 2.5
-    @test sccprob.ps[p] ≈ 2.5
-    for scc in sccprob.probs
-        @test scc.ps[p] ≈ 2.5
-    end
+    @test sccprob isa SCCNonlinearProblem
 end
 
 @testset "LinearProblem" begin

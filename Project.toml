@@ -75,7 +75,7 @@ SciMLBaseTrackerExt = "Tracker"
 SciMLBaseZygoteExt = ["Zygote", "ChainRulesCore"]
 
 [compat]
-ADTypes = "0.2.5,1.0.0"
+ADTypes = "1"
 Accessors = "0.1.36"
 Adapt = "4.3"
 ArrayInterface = "7.19"

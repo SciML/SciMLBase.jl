@@ -222,12 +222,12 @@ of `noise_rate_prototype` and `noise` are not aligned in this manner and the def
 be double checked.
 """
 
-struct NoiseSizeIncompatabilityError <: Exception
+struct NoiseSizeIncompatibilityError <: Exception
     prototypesize::Int
     noisesize::Int
 end
 
-function Base.showerror(io::IO, e::NoiseSizeIncompatabilityError)
+function Base.showerror(io::IO, e::NoiseSizeIncompatibilityError)
     println(io, NOISE_SIZE_MESSAGE)
     println(io, "size(prob.noise_rate_prototype,2) = $(e.prototypesize)")
     return println(io, "length(prob.noise.W[1]) = $(e.noisesize)")
@@ -269,7 +269,7 @@ function compatible_problem_types(prob, alg)
     end
 end
 
-const DIRECT_AUTODIFF_INCOMPATABILITY_MESSAGE = """
+const DIRECT_AUTODIFF_INCOMPATIBILITY_MESSAGE = """
 Incompatible solver + automatic differentiation pairing.
 The chosen automatic differentiation algorithm requires the ability
 for compiler transforms on the code which is only possible on pure-Julia
@@ -292,7 +292,7 @@ of differential equations, see the documentation page:
 struct DirectAutodiffError <: Exception end
 
 function Base.showerror(io::IO, e::DirectAutodiffError)
-    return println(io, DIRECT_AUTODIFF_INCOMPATABILITY_MESSAGE)
+    return println(io, DIRECT_AUTODIFF_INCOMPATIBILITY_MESSAGE)
 end
 
 const NONNUMBER_ELTYPE_MESSAGE = """
