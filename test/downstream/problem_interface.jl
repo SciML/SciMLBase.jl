@@ -321,10 +321,8 @@ prob = SteadyStateProblem(osys, [u0; ps])
     @mtkcompile model = System(0 .~ eqs, [u...], [p])
 
     prob = NonlinearProblem(model, [])
-    # SCCNonlinearProblem construction currently errors due to
-    # SymbolicUtils.DefaultSubstituter API mismatch with ModelingToolkit.
-    # See https://github.com/SciML/SciMLBase.jl/issues/1229
-    @test_broken (sccprob = SCCNonlinearProblem(model, [])) isa Any
+    sccprob = SCCNonlinearProblem(model, [])
+    @test sccprob isa SCCNonlinearProblem
 end
 
 @testset "LinearProblem" begin
