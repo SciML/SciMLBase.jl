@@ -103,6 +103,13 @@ function build_solution(
     )
 end
 
+function strip_solution(sol::NonlinearSolution)
+    @reset sol.prob = (; p = nothing)
+    @reset sol.alg = nothing
+    @reset sol.original = nothing
+    return sol
+end
+
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     # Some of the subtypes might not have a trace field
     trace = hasfield(typeof(sol), :trace) ? sol.trace : nothing
