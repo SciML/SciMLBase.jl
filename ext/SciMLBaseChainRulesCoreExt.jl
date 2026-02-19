@@ -65,25 +65,12 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
     return VA[sym], ODESolution_getindex_pullback
 end
 
-function ChainRulesCore.rrule(::Type{ODEProblem}, args...; kwargs...)
-    function ODEProblemAdjoint(ȳ)
-        return (NoTangent(), ȳ.f, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
-    end
-
-    return ODEProblem(args...; kwargs...), ODEProblemAdjoint
-end
-
-function ChainRulesCore.rrule(
-        ::Type{
-            <:ODEProblem{iip, T},
-        }, args...; kwargs...
-    ) where {iip, T}
-    function ODEProblemAdjoint(ȳ)
-        return (NoTangent(), ȳ.f, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
-    end
-
-    return ODEProblem(args...; kwargs...), ODEProblemAdjoint
-end
+# NOTE: Constructor rrules for ODEProblem were removed. ODEProblem is a mutable struct,
+# and Zygote's mutable struct tangent cache is not reset between repeated pullback calls
+# when a constructor rrule exists (the Jnew reset in Zygote src/lib/lib.jl is bypassed).
+# This caused Zygote.jacobian and repeated pullback calls to accumulate gradients
+# incorrectly. Without these rrules, Zygote traces through the constructor natively
+# using __new__/__splatnew__ which has proper cache reset.
 
 function ChainRulesCore.rrule(::Type{SDEProblem}, args...; kwargs...)
     function SDEProblemAdjoint(ȳ)
