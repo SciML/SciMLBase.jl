@@ -263,6 +263,15 @@ end
     sol.u, solu_adjoint
 end
 
+@adjoint function Base.getindex(sol::SciMLBase.LinearSolution, i::Integer)
+    function LinearSolution_getindex_pullback(Δ)
+        du = zero(sol.u)
+        du[i] = Δ
+        (SciMLBase.build_linear_solution(sol.cache.alg, du, sol.resid, sol.cache), nothing)
+    end
+    sol[i], LinearSolution_getindex_pullback
+end
+
 @adjoint function literal_getproperty(
         sol::SciMLBase.OptimizationSolution,
         ::Val{:u}
