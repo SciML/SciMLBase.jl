@@ -2895,10 +2895,10 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
     elseif specialization(f) === AutoSpecialize
         ODEFunction{
             isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
-            Any, Any,
-            Any, Any, Any, typeof(f.jac_prototype),
-            typeof(f.sparsity), Any, Any, typeof(f.W_prototype),
-            Any,
+            Nothing, Nothing,
+            typeof(f.jac), Nothing, Nothing, typeof(f.jac_prototype),
+            typeof(f.sparsity), Nothing, Nothing, typeof(f.W_prototype),
+            Nothing,
             Any, typeof(f.colorvec),
             typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData},
         }(
