@@ -320,12 +320,14 @@ function isinplace(
     return iip
 end
 
-# FunctionWrappersWrapper always wraps in-place functions in the AutoSpecialize context
+# Determine in-place status for FunctionWrappersWrapper by inspecting the return types
+# of the wrapped FunctionWrapper variants. An IIP wrapper has at least one variant that
+# returns Nothing (the mutating convention), while OOP wrappers return non-Nothing types.
 function isinplace(f::FunctionWrappersWrappers.FunctionWrappersWrapper, inplace_param_number,
         fname = "f", iip_preferred = true;
         has_two_dispatches = false, isoptimization = false,
         outofplace_param_number = inplace_param_number - 1)
-    return true
+    return any(R -> R === Nothing, FunctionWrappersWrappers.wrapped_return_types(f))
 end
 
 """
