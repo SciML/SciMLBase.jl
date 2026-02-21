@@ -1458,6 +1458,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 DAEFunction{iip,specialize}(f;
                            analytic = __has_analytic(f) ? f.analytic : nothing,
                            jac = __has_jac(f) ? f.jac : nothing,
+                           jac_u = __has_jac_u(f) ? f.jac_u : nothing,
+                           jac_du = __has_jac_du(f) ? f.jac_du : nothing,
                            jvp = __has_jvp(f) ? f.jvp : nothing,
                            vjp = __has_vjp(f) ? f.vjp : nothing,
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
@@ -1477,6 +1479,13 @@ the usage of `f`. These include:
   solution of the ODE. Generally only used for testing and development of the solvers.
 - `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns the implicit DAE Jacobian
   defined as ``γ \\frac{dG}{d(du)} + \\frac{dG}{du}``
+- `jac_u(J,du,u,p,t)` or `J=jac_u(du,u,p,t)`: returns the partial DAE Jacobian
+  ``\\frac{dG}{du}``
+- `jac_du(J,du,u,p,t)` or `J=jac_du(du,u,p,t)`: returns the partial DAE Jacobian
+  ``\\frac{dG}{d(du)}``
+  When `jac_u` and `jac_du` are provided, the solver can efficiently reuse them when only
+  the coupling coefficient γ changes (e.g., step size or order changes), avoiding full Jacobian
+  recomputation. If only `jac` is provided, the solver extracts the components automatically.
 - `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
   derivative``\\frac{df}{du} v``
 - `vjp(Jv,v,du,u,p,gamma,t)` or `Jv=vjp(v,du,u,p,gamma,t)`: returns the adjoint
@@ -1553,7 +1562,8 @@ automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
 struct DAEFunction{
-        iip, specialize, F, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, TPJ, O, TCV,
+        iip, specialize, F, Ta, Tt, TJ, TJU, TJD, JVP, VJP, JP, SP, TW, TWt, TPJ, O,
+        TCV,
         SYS, ID,
     } <:
     AbstractDAEFunction{iip}
@@ -1561,6 +1571,8 @@ struct DAEFunction{
     analytic::Ta
     tgrad::Tt
     jac::TJ
+    jac_u::TJU
+    jac_du::TJD
     jvp::JVP
     vjp::VJP
     jac_prototype::JP
@@ -3913,6 +3925,8 @@ function DAEFunction{iip, specialize}(
         analytic = __has_analytic(f) ? f.analytic : nothing,
         tgrad = __has_tgrad(f) ? f.tgrad : nothing,
         jac = __has_jac(f) ? f.jac : nothing,
+        jac_u = __has_jac_u(f) ? f.jac_u : nothing,
+        jac_du = __has_jac_du(f) ? f.jac_du : nothing,
         jvp = __has_jvp(f) ? f.jvp : nothing,
         vjp = __has_vjp(f) ? f.vjp : nothing,
         jac_prototype = __has_jac_prototype(f) ?
@@ -3957,13 +3971,15 @@ function DAEFunction{iip, specialize}(
     end
 
     jaciip = jac !== nothing ? isinplace(jac, 6, "jac", iip) : iip
+    jacuiip = jac_u !== nothing ? isinplace(jac_u, 5, "jac_u", iip) : iip
+    jacduiip = jac_du !== nothing ? isinplace(jac_du, 5, "jac_du", iip) : iip
     jvpiip = jvp !== nothing ? isinplace(jvp, 7, "jvp", iip) : iip
     vjpiip = vjp !== nothing ? isinplace(vjp, 7, "vjp", iip) : iip
 
-    nonconforming = (jaciip, jvpiip, vjpiip) .!= iip
+    nonconforming = (jaciip, jacuiip, jacduiip, jvpiip, vjpiip) .!= iip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
-        functions = ["jac", "jvp", "vjp"][nonconforming]
+        functions = ["jac", "jac_u", "jac_du", "jvp", "vjp"][nonconforming]
         throw(NonconformingFunctionsError(functions))
     end
 
@@ -3977,11 +3993,11 @@ function DAEFunction{iip, specialize}(
     return if specialize === NoSpecialize
         DAEFunction{
             iip, specialize, Any, Any, Any,
-            Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any,
             Any, typeof(_colorvec), Any, Any,
         }(
-            _f, analytic, tgrad, jac, jvp,
+            _f, analytic, tgrad, jac, jac_u, jac_du, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
             _colorvec, sys, initdata
@@ -3989,13 +4005,14 @@ function DAEFunction{iip, specialize}(
     else
         DAEFunction{
             iip, specialize, typeof(_f), typeof(analytic), typeof(tgrad),
-            typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
+            typeof(jac), typeof(jac_u), typeof(jac_du),
+            typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
             typeof(paramjac),
             typeof(observed), typeof(_colorvec),
             typeof(sys), typeof(initdata),
         }(
-            _f, analytic, tgrad, jac, jvp, vjp,
+            _f, analytic, tgrad, jac, jac_u, jac_du, jvp, vjp,
             jac_prototype, sparsity, Wfact, Wfact_t,
             paramjac, observed,
             _colorvec, sys, initdata
@@ -5296,6 +5313,8 @@ end
 
 # Check that field/property exists (may be nothing)
 __has_jac(f) = hasfield(typeof(f), :jac)
+__has_jac_u(f) = hasfield(typeof(f), :jac_u)
+__has_jac_du(f) = hasfield(typeof(f), :jac_du)
 __has_jvp(f) = hasfield(typeof(f), :jvp)
 __has_vjp(f) = hasfield(typeof(f), :vjp)
 __has_tgrad(f) = hasfield(typeof(f), :tgrad)
@@ -5346,6 +5365,8 @@ __has_f_prototype(f) = hasfield(typeof(f), :f_prototype)
 has_invW(f::AbstractSciMLFunction) = false
 has_analytic(f::AbstractSciMLFunction) = __has_analytic(f) && f.analytic !== nothing
 has_jac(f::AbstractSciMLFunction) = __has_jac(f) && f.jac !== nothing
+has_jac_u(f::AbstractSciMLFunction) = __has_jac_u(f) && f.jac_u !== nothing
+has_jac_du(f::AbstractSciMLFunction) = __has_jac_du(f) && f.jac_du !== nothing
 has_jvp(f::AbstractSciMLFunction) = __has_jvp(f) && f.jvp !== nothing
 has_vjp(f::AbstractSciMLFunction) = __has_vjp(f) && f.vjp !== nothing
 has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
