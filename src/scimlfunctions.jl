@@ -2904,6 +2904,21 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             f.Wfact_t, f.W_prototype, f.paramjac,
             f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
         )
+    elseif specialization(f) === AutoSpecialize
+        ODEFunction{
+            isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
+            Nothing, typeof(f.tgrad),
+            typeof(f.jac), Nothing, Nothing, typeof(f.jac_prototype),
+            typeof(f.sparsity), Nothing, Nothing, typeof(f.W_prototype),
+            Nothing,
+            Any, typeof(f.colorvec),
+            typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData},
+        }(
+            newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
+            f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
+            f.Wfact_t, f.W_prototype, f.paramjac,
+            f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
+        )
     else
         ODEFunction{
             isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
