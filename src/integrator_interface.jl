@@ -292,7 +292,10 @@ end
 """
     has_rng(integrator::DEIntegrator) -> Bool
 
-Returns `true` if the integrator carries a random number generator.
+Returns `true` if the integrator type supports the RNG interface
+(`get_rng` / `set_rng!`). This is a type-level trait — integrators
+that return `true` always carry a valid `AbstractRNG`, defaulting to
+`Random.default_rng()` when none is provided by the caller.
 Default: `false` for all `DEIntegrator` subtypes.
 """
 has_rng(::DEIntegrator) = false
