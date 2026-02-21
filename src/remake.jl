@@ -107,6 +107,69 @@ end
 """
     $(TYPEDSIGNATURES)
 
+Check if the type `T` of an `AbstractSciMLFunction` has any type-erased (abstract) type
+parameters beyond `iip` and `specialize`. Returns `true` if any field type parameter (index
+3 and beyond) is not a concrete type (`isconcretetype` returns false), indicating that type
+erasure was applied (e.g. by `promote_f` for AutoSpecialize compilation caching).
+"""
+@generated function _has_type_erased_params(::Type{T}) where {T <: AbstractSciMLFunction}
+    params = T.parameters
+    for i in 3:length(params)
+        p = params[i]
+        if !isconcretetype(p)
+            return true
+        end
+    end
+    return false
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Reconstruct `new_func` preserving the abstract type parameters from `orig_func`.
+This function is only called when `orig_func` has type-erased parameters (detected by
+`_has_type_erased_params`). For each field type parameter (positions 3+), if the original
+has a more abstract type than the result, the original's abstract type is preserved.
+
+This prevents `remake` from undoing type erasure intentionally applied by `promote_f` for
+AutoSpecialize compilation caching.
+"""
+function _rebuild_preserving_type_erasure(orig_func, new_func)
+    OrigType = typeof(orig_func)
+    NewType = typeof(new_func)
+
+    # Only apply when both are the same base function type
+    if parameterless_type(OrigType) !== parameterless_type(NewType)
+        return new_func
+    end
+
+    orig_params = OrigType.parameters
+    new_params = NewType.parameters
+
+    # Must have same number of type parameters
+    if length(orig_params) != length(new_params)
+        return new_func
+    end
+
+    # For each field type parameter, preserve the original's more abstract type
+    rebuilt_params = collect(Any, new_params)
+    for i in 3:length(orig_params)
+        op = orig_params[i]
+        np = new_params[i]
+        if op !== np && np <: op
+            rebuilt_params[i] = op
+        end
+    end
+
+    PT = parameterless_type(NewType)
+    ErasedType = PT{rebuilt_params...}
+    vals = ntuple(i -> getfield(new_func, i), fieldcount(NewType))
+    return ErasedType(vals...)
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
 A utility function which merges two `NamedTuple`s `a` and `b`, assuming that the
 keys of `a` are a subset of those of `b`. Values in `b` take priority over those
 in `a`, except if they are `nothing`. Keys not present in `a` are assumed to have
@@ -209,7 +272,17 @@ function remake(
         props = @delete props.g
         args = (args..., g)
     end
-    return T{iip, spec}(args...; props..., kwargs...)
+    result = T{iip, spec}(args...; props..., kwargs...)
+    # Preserve type erasure from AutoSpecialize's promote_f. The keyword constructor
+    # above uses typeof(field) for each type parameter, which restores concrete types
+    # and undoes the intentional type erasure. Re-apply the original abstract type
+    # parameters to maintain compilation caching benefits.
+    # The _has_type_erased_params check is @generated and resolves at compile time,
+    # so this branch is eliminated entirely for the common non-erased case.
+    if _has_type_erased_params(typeof(func))
+        return _rebuild_preserving_type_erasure(func, result)
+    end
+    return result
 end
 
 """
