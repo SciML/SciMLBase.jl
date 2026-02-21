@@ -320,6 +320,14 @@ function isinplace(
     return iip
 end
 
+# FunctionWrappersWrapper always wraps in-place functions in the AutoSpecialize context
+function isinplace(f::FunctionWrappersWrappers.FunctionWrappersWrapper, inplace_param_number,
+        fname = "f", iip_preferred = true;
+        has_two_dispatches = false, isoptimization = false,
+        outofplace_param_number = inplace_param_number - 1)
+    return true
+end
+
 """
     @CSI_str cmd
 
