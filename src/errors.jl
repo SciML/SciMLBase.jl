@@ -54,6 +54,7 @@ const allowedkeywords = (
     :save_noise,
     :delta,
     :seed,
+    :rng,
     :alg_hints,
     :kwargshandle,
     :trajectories,

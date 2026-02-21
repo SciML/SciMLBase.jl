@@ -290,6 +290,45 @@ function set_reltol!(i::DEIntegrator, t)
 end
 
 """
+    has_rng(integrator::DEIntegrator) -> Bool
+
+Returns `true` if the integrator carries a random number generator.
+Default: `false` for all `DEIntegrator` subtypes.
+"""
+has_rng(::DEIntegrator) = false
+
+"""
+    get_rng(integrator::DEIntegrator) -> AbstractRNG
+
+Returns the integrator's random number generator.
+Throws an informative error if the integrator does not support RNG.
+"""
+function get_rng(integrator::DEIntegrator)
+    error("Integrator of type $(typeof(integrator)) does not carry an RNG. " *
+          "Ensure the solver package version supports the SciMLBase RNG interface " *
+          "(has_rng / get_rng / set_rng!).")
+end
+
+"""
+    set_rng!(integrator::DEIntegrator, rng) -> nothing
+
+Replaces the integrator's random number generator. The new RNG must be the
+same concrete type as the existing one (the type is baked into the integrator's
+type parameters).
+
+This is needed for RNG types that don't support `Random.seed!`, such as
+counter-based RNGs (Random123.jl's Philox, Threefry) which are configured via
+`(key, counter)` pairs rather than a single seed. For these types, reseeding
+requires constructing a new instance and swapping it in.
+
+For standard RNGs (Xoshiro, MersenneTwister, StableRNG), `Random.seed!` works
+and `set_rng!` is not needed — but it is available for consistency.
+"""
+function set_rng!(integrator::DEIntegrator, rng)
+    error("Integrator of type $(typeof(integrator)) does not support set_rng!.")
+end
+
+"""
     reinit!(integrator::DEIntegrator,args...; kwargs...)
 
 The reinit function lets you restart the integration at a new value.
