@@ -116,6 +116,13 @@ Note that if a method does not have adaptivity, the following rules apply:
   - `callback`: Specifies a callback function that is called between iterations.
   - `verbose`: Toggles whether warnings are thrown when the solver exits early.
     Defaults to true.
+  - `rng`: Pass an `AbstractRNG` instance to be used by the integrator for any
+    stochastic operations (e.g., jump process sampling, noise generation). Can
+    also be used in user callbacks. When provided, `rng` takes priority over
+    `seed`. Defaults to `Random.default_rng()` when the solver supports it. The
+    integrator's RNG can be accessed via `get_rng(integrator)` and replaced via
+    `set_rng!(integrator, rng)`. Use `has_rng(integrator)` to check whether an
+    integrator supports the RNG interface.
 
 ## Progress Monitoring
 
