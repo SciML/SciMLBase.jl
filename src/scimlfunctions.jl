@@ -2911,8 +2911,8 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.jac), Nothing, Nothing, typeof(f.jac_prototype),
             typeof(f.sparsity), Nothing, Nothing, typeof(f.W_prototype),
             Nothing,
-            Any, typeof(f.colorvec),
-            typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData},
+            typeof(f.observed), typeof(f.colorvec),
+            typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
         }(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
