@@ -24,6 +24,35 @@ f = Foo{1}()
 (this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
+@testset "isinplace for FunctionWrappersWrapper" begin
+    using FunctionWrappersWrappers
+
+    # IIP: all wrappers return Nothing
+    iip_fww = FunctionWrappersWrapper(
+        (du, u, p, t) -> (du .= u; nothing),
+        (Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},),
+        (Nothing,)
+    )
+    @test @inferred SciMLBase.isinplace(iip_fww, 4) === true
+
+    # OOP: wrapper returns non-Nothing
+    oop_fww = FunctionWrappersWrapper(
+        (u, p, t) -> u .* 2,
+        (Tuple{Vector{Float64}, Nothing, Float64},),
+        (Vector{Float64},)
+    )
+    @test @inferred SciMLBase.isinplace(oop_fww, 3) === false
+
+    # Multi-variant IIP (like OrdinaryDiffEq uses with 4 dual variants)
+    multi_iip = FunctionWrappersWrapper(
+        (du, u, p, t) -> (du .= u; nothing),
+        (Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},
+         Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64}),
+        (Nothing, Nothing)
+    )
+    @test @inferred SciMLBase.isinplace(multi_iip, 4) === true
+end
+
 @testset "isinplace accepts an out-of-place version with different numbers of parameters " begin
     f1(u) = 2 * u
     @test !isinplace(f1, 2)
