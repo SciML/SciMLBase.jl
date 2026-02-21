@@ -1480,10 +1480,10 @@ the usage of `f`. These include:
 - `jac(J,du,u,p,gamma,t)` or `J=jac(du,u,p,gamma,t)`: returns the implicit DAE Jacobian
   defined as ``γ \\frac{dG}{d(du)} + \\frac{dG}{du}``
 - `jac_u(J,du,u,p,t)` or `J=jac_u(du,u,p,t)`: returns the partial DAE Jacobian
-  ``\\frac{dG}{du}``. Must be provided together with `jac_du`.
+  ``\\frac{dG}{du}``
 - `jac_du(J,du,u,p,t)` or `J=jac_du(du,u,p,t)`: returns the partial DAE Jacobian
-  ``\\frac{dG}{d(du)}``. Must be provided together with `jac_u`.
-  When both `jac_u` and `jac_du` are provided, the solver can efficiently reuse them when only
+  ``\\frac{dG}{d(du)}``
+  When `jac_u` and `jac_du` are provided, the solver can efficiently reuse them when only
   the coupling coefficient γ changes (e.g., step size or order changes), avoiding full Jacobian
   recomputation. If only `jac` is provided, the solver extracts the components automatically.
 - `jvp(Jv,v,du,u,p,gamma,t)` or `Jv=jvp(v,du,u,p,gamma,t)`: returns the directional
@@ -3968,10 +3968,6 @@ function DAEFunction{iip, specialize}(
         _colorvec = ArrayInterface.matrix_colors(jac_prototype)
     else
         _colorvec = colorvec
-    end
-
-    if (jac_u === nothing) != (jac_du === nothing)
-        throw(ArgumentError("jac_u and jac_du must both be provided or both be nothing"))
     end
 
     jaciip = jac !== nothing ? isinplace(jac, 6, "jac", iip) : iip
