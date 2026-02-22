@@ -126,22 +126,36 @@ end
 """
     $(TYPEDSIGNATURES)
 
-Reconstruct `source` with the exact type `TargetType`, copying all field values.
-The return type depends only on `TargetType` (which must be known at compile time),
-NOT on the type of `source`. This makes it fully inferrable even when the compiler
-only has partial type information for `source`.
+Reconstruct `source` preserving the non-concrete (erased) type parameters from
+`TargetType` while using `source`'s actual concrete types for all other parameters.
 
 Used to preserve type erasure from `promote_f`/`unwrapped_f` for AutoSpecialize:
 the keyword constructor in `remake` narrows abstract type parameters back to concrete
-types, and this function restores the original erased type by reconstructing the struct
-with the same field values but the desired abstract type parameters.
+types, and this function restores the erased type parameters (e.g. `Union{Nothing,
+OverrideInitData}` for initialization_data) while allowing concrete field types
+(like the function `f`) to change freely.
 """
 @generated function _reconstruct_as_type(
-        ::Type{TargetType}, source
-) where {TargetType <: AbstractSciMLFunction}
-    nf = fieldcount(TargetType)
+        ::Type{TargetType}, source::SourceType
+) where {TargetType <: AbstractSciMLFunction, SourceType <: AbstractSciMLFunction}
+    target_params = collect(TargetType.parameters)
+    source_params = collect(SourceType.parameters)
+
+    # For erased (non-concrete) type parameters at index >= 3, keep the target's
+    # abstract type. For all other parameters, use the source's actual type.
+    mixed_params = similar(target_params, Any)
+    for i in eachindex(target_params)
+        if i >= 3 && !isconcretetype(target_params[i])
+            mixed_params[i] = target_params[i]
+        else
+            mixed_params[i] = source_params[i]
+        end
+    end
+
+    MixedType = TargetType.name.wrapper{mixed_params...}
+    nf = fieldcount(MixedType)
     field_exprs = [:(getfield(source, $i)) for i in 1:nf]
-    return :($(TargetType)($(field_exprs...)))
+    return :($(MixedType)($(field_exprs...)))
 end
 
 """
