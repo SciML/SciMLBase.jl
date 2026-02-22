@@ -37,16 +37,16 @@ forwarddiffs_model_time(alg::AbstractSciMLAlgorithm) = false
 Trait declaration for the ForwardDiff chunk size used by the algorithm
 when calling the model function with ForwardDiff.Dual numbers.
 
-Returns an `Int`: `0` means unspecified (the framework will choose a default,
-typically 1 for FunctionWrapper compatibility). Any positive integer `N` means
-the algorithm will use chunk size `N`.
+Returns a `Val{N}()`: `Val(0)` means unspecified (the framework will choose
+a default, typically 1 for FunctionWrapper compatibility). `Val(N)` for any
+positive integer `N` means the algorithm will use chunk size `N`.
 
 This is used by DiffEqBase to compile FunctionWrapper variants with matching
 Dual number chunk sizes, avoiding `NoFunctionWrapperFoundError`.
 
-Defaults to 0 (unspecified).
+Defaults to `Val(0)` (unspecified).
 """
-forwarddiff_chunksize(alg::AbstractSciMLAlgorithm) = 0
+forwarddiff_chunksize(alg::AbstractSciMLAlgorithm) = Val(0)
 
 """
     allows_arbitrary_number_types(alg::AbstractDEAlgorithm)
