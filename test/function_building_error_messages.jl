@@ -53,6 +53,27 @@ f = Foo{1}()
     @test @inferred SciMLBase.isinplace(multi_iip, 4) === true
 end
 
+@testset "widen_bounded_type_params" begin
+    f = ODEFunction{true, SciMLBase.AutoSpecialize}((du, u, p, t) -> du .= u)
+    @test typeof(f).parameters[end-1] === Nothing  # ID is concrete
+    @test typeof(f).parameters[end] === Nothing     # NLP is concrete
+
+    widened = @inferred SciMLBase.widen_bounded_type_params(f)
+
+    # Bounded params are widened to their upper bounds
+    @test typeof(widened).parameters[end-1] === Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+
+    # Unbounded params stay concrete
+    @test SciMLBase.isinplace(widened) === true
+    @test SciMLBase.specialization(widened) === SciMLBase.AutoSpecialize
+
+    # All field values preserved
+    for fname in fieldnames(typeof(f))
+        @test getfield(f, fname) === getfield(widened, fname)
+    end
+end
+
 @testset "isinplace accepts an out-of-place version with different numbers of parameters " begin
     f1(u) = 2 * u
     @test !isinplace(f1, 2)

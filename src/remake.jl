@@ -161,6 +161,46 @@ end
 """
     $(TYPEDSIGNATURES)
 
+Widen all bounded type parameters of an `AbstractSciMLFunction` to their upper bounds.
+
+For example, an `ODEFunction` has `ID <: Union{Nothing, OverrideInitData}` and
+`NLP <: Union{Nothing, ODENLStepData}`. This function replaces the concrete types of
+those parameters with `Union{Nothing, OverrideInitData}` and `Union{Nothing, ODENLStepData}`
+respectively, while leaving all unbounded (`<: Any`) type parameters concrete.
+
+This ensures that all AutoSpecialize instances of a function type share the same type
+regardless of model-specific details (e.g. initialization functions), preventing
+recompilation of `promote_f` and solver code for each model.
+"""
+@generated function widen_bounded_type_params(f::F) where {F <: AbstractSciMLFunction}
+    # Walk the UnionAll chain to collect TypeVars and their upper bounds
+    wrapper = F.name.wrapper
+    typevars = TypeVar[]
+    body = wrapper
+    while body isa UnionAll
+        push!(typevars, body.var)
+        body = body.body
+    end
+
+    params = collect(F.parameters)
+    new_params = similar(params, Any)
+    for i in eachindex(params)
+        if i <= length(typevars) && typevars[i].ub !== Any
+            new_params[i] = typevars[i].ub
+        else
+            new_params[i] = params[i]
+        end
+    end
+
+    NewType = wrapper{new_params...}
+    nf = fieldcount(NewType)
+    field_exprs = [:(getfield(f, $i)) for i in 1:nf]
+    return :($(NewType)($(field_exprs...)))
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
 A utility function which merges two `NamedTuple`s `a` and `b`, assuming that the
 keys of `a` are a subset of those of `b`. Values in `b` take priority over those
 in `a`, except if they are `nothing`. Keys not present in `a` are assumed to have
