@@ -25,6 +25,7 @@ const allowedkeywords = (
     :beta2,
     :qmax,
     :qmin,
+    :qmax_first_step,
     :qsteady_min,
     :qsteady_max,
     :qoldinit,
