@@ -107,6 +107,100 @@ end
 """
     $(TYPEDSIGNATURES)
 
+Check if the type `T` of an `AbstractSciMLFunction` has any type-erased (abstract) type
+parameters beyond `iip` and `specialize`. Returns `true` if any field type parameter (index
+3 and beyond) is not a concrete type (`isconcretetype` returns false), indicating that type
+erasure was applied (e.g. by `promote_f` for AutoSpecialize compilation caching).
+"""
+@generated function _has_type_erased_params(::Type{T}) where {T <: AbstractSciMLFunction}
+    params = T.parameters
+    for i in 3:length(params)
+        p = params[i]
+        if !isconcretetype(p)
+            return true
+        end
+    end
+    return false
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Reconstruct `source` preserving the non-concrete (erased) type parameters from
+`TargetType` while using `source`'s actual concrete types for all other parameters.
+
+Used to preserve type erasure from `promote_f`/`unwrapped_f` for AutoSpecialize:
+the keyword constructor in `remake` narrows abstract type parameters back to concrete
+types, and this function restores the erased type parameters (e.g. `Union{Nothing,
+OverrideInitData}` for initialization_data) while allowing concrete field types
+(like the function `f`) to change freely.
+"""
+@generated function _reconstruct_as_type(
+        ::Type{TargetType}, source::SourceType
+) where {TargetType <: AbstractSciMLFunction, SourceType <: AbstractSciMLFunction}
+    target_params = collect(TargetType.parameters)
+    source_params = collect(SourceType.parameters)
+
+    # For erased (non-concrete) type parameters at index >= 3, keep the target's
+    # abstract type. For all other parameters, use the source's actual type.
+    mixed_params = similar(target_params, Any)
+    for i in eachindex(target_params)
+        if i >= 3 && !isconcretetype(target_params[i])
+            mixed_params[i] = target_params[i]
+        else
+            mixed_params[i] = source_params[i]
+        end
+    end
+
+    MixedType = TargetType.name.wrapper{mixed_params...}
+    nf = fieldcount(MixedType)
+    field_exprs = [:(getfield(source, $i)) for i in 1:nf]
+    return :($(MixedType)($(field_exprs...)))
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Widen all bounded type parameters of an `AbstractSciMLFunction` to their upper bounds.
+
+For example, an `ODEFunction` has `ID <: Union{Nothing, OverrideInitData}` and
+`NLP <: Union{Nothing, ODENLStepData}`. This function replaces the concrete types of
+those parameters with `Union{Nothing, OverrideInitData}` and `Union{Nothing, ODENLStepData}`
+respectively, while leaving all unbounded (`<: Any`) type parameters concrete.
+
+This ensures that all AutoSpecialize instances of a function type share the same type
+regardless of model-specific details (e.g. initialization functions), preventing
+recompilation of `promote_f` and solver code for each model.
+"""
+@generated function widen_bounded_type_params(f::F) where {F <: AbstractSciMLFunction}
+    # Walk the UnionAll chain to collect TypeVars and their upper bounds
+    wrapper = F.name.wrapper
+    typevars = TypeVar[]
+    body = wrapper
+    while body isa UnionAll
+        push!(typevars, body.var)
+        body = body.body
+    end
+
+    params = collect(F.parameters)
+    new_params = similar(params, Any)
+    for i in eachindex(params)
+        if i <= length(typevars) && typevars[i].ub !== Any
+            new_params[i] = typevars[i].ub
+        else
+            new_params[i] = params[i]
+        end
+    end
+
+    NewType = wrapper{new_params...}
+    nf = fieldcount(NewType)
+    field_exprs = [:(getfield(f, $i)) for i in 1:nf]
+    return :($(NewType)($(field_exprs...)))
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
 A utility function which merges two `NamedTuple`s `a` and `b`, assuming that the
 keys of `a` are a subset of those of `b`. Values in `b` take priority over those
 in `a`, except if they are `nothing`. Keys not present in `a` are assumed to have
@@ -209,7 +303,24 @@ function remake(
         props = @delete props.g
         args = (args..., g)
     end
-    return T{iip, spec}(args...; props..., kwargs...)
+    result = T{iip, spec}(args...; props..., kwargs...)
+    # Preserve type erasure from AutoSpecialize's promote_f. The keyword constructor
+    # above uses typeof(field) for each type parameter, which restores concrete types
+    # and undoes the intentional type erasure. Re-apply the original abstract type
+    # parameters to maintain compilation caching benefits.
+    # The _has_type_erased_params check is @generated and resolves at compile time,
+    # so this branch is eliminated entirely for the common non-erased case.
+    #
+    # Check both `func` (the original function being remade) and `forig` (the incoming
+    # `f` keyword argument, if it was an AbstractSciMLFunction). When `get_concrete_problem`
+    # calls `remake(prob; f=promoted_f)`, the promoted_f from `unwrapped_f` has type-erased
+    # params but the original `prob.f` does not — so we must check `forig` too.
+    if _has_type_erased_params(typeof(func))
+        return _reconstruct_as_type(typeof(func), result)
+    elseif forig isa AbstractSciMLFunction && _has_type_erased_params(typeof(forig))
+        return _reconstruct_as_type(typeof(forig), result)
+    end
+    return result
 end
 
 """

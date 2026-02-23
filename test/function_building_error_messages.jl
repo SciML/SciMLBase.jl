@@ -24,6 +24,56 @@ f = Foo{1}()
 (this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
+@testset "isinplace for FunctionWrappersWrapper" begin
+    using FunctionWrappersWrappers
+
+    # IIP: all wrappers return Nothing
+    iip_fww = FunctionWrappersWrapper(
+        (du, u, p, t) -> (du .= u; nothing),
+        (Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},),
+        (Nothing,)
+    )
+    @test @inferred SciMLBase.isinplace(iip_fww, 4) === true
+
+    # OOP: wrapper returns non-Nothing
+    oop_fww = FunctionWrappersWrapper(
+        (u, p, t) -> u .* 2,
+        (Tuple{Vector{Float64}, Nothing, Float64},),
+        (Vector{Float64},)
+    )
+    @test @inferred SciMLBase.isinplace(oop_fww, 3) === false
+
+    # Multi-variant IIP (like OrdinaryDiffEq uses with 4 dual variants)
+    multi_iip = FunctionWrappersWrapper(
+        (du, u, p, t) -> (du .= u; nothing),
+        (Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},
+         Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64}),
+        (Nothing, Nothing)
+    )
+    @test @inferred SciMLBase.isinplace(multi_iip, 4) === true
+end
+
+@testset "widen_bounded_type_params" begin
+    f = ODEFunction{true, SciMLBase.AutoSpecialize}((du, u, p, t) -> du .= u)
+    @test typeof(f).parameters[end-1] === Nothing  # ID is concrete
+    @test typeof(f).parameters[end] === Nothing     # NLP is concrete
+
+    widened = @inferred SciMLBase.widen_bounded_type_params(f)
+
+    # Bounded params are widened to their upper bounds
+    @test typeof(widened).parameters[end-1] === Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+
+    # Unbounded params stay concrete
+    @test SciMLBase.isinplace(widened) === true
+    @test SciMLBase.specialization(widened) === SciMLBase.AutoSpecialize
+
+    # All field values preserved
+    for fname in fieldnames(typeof(f))
+        @test getfield(f, fname) === getfield(widened, fname)
+    end
+end
+
 @testset "isinplace accepts an out-of-place version with different numbers of parameters " begin
     f1(u) = 2 * u
     @test !isinplace(f1, 2)
@@ -492,7 +542,6 @@ for (f, kws, iip) in (
             (intf, (;), false),
             (IntegralFunction(intf), (;), false),
             (IntegralFunction(intf, 1.0), (;), false),
-            (intfiip, (; nout = 3), true),
             (IntegralFunction(intfiip, zeros(3)), (;), true),
         ),
         domain in (((0.0, 1.0),), (([0.0], [1.0]),))

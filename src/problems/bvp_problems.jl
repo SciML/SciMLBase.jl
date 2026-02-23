@@ -112,6 +112,7 @@ every solve call.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
 * `problem_type`: The type of the problem, either `StandardBVProblem` or
   `TwoPointBVProblem`.
+* `singular_term`: The singular term of the problem. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ### Special Keyword Arguments
@@ -122,7 +123,7 @@ every solve call.
   doesn't store array size as part of type information. If we can't reliably infer this,
   we set it to `Nothing`. Downstreams solvers must be setup to deal with this case.
 """
-struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
+struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, S, K} <:
     AbstractBVProblem{uType, tType, isinplace, nlls}
     f::F
     u0::uType
@@ -133,18 +134,20 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
     lcons::LC
     ucons::UC
     problem_type::PT
+    singular_term::S
     kwargs::K
 
     @add_kwonly function BVProblem{iip}(
             f::AbstractBVPFunction{iip, TP}, u0, tspan,
             p = NullParameters(); lb = nothing, ub = nothing, lcons = nothing,
-            ucons = nothing, problem_type = nothing, nlls = nothing,
+            ucons = nothing, problem_type = nothing, singular_term = nothing, nlls = nothing,
             kwargs...
         ) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         prob_type = TP ? TwoPointBVProblem{iip}() : StandardBVProblem()
+        @assert singular_term === nothing || isa(singular_term, AbstractMatrix) "Singular term must be a singular matrix or nothing."
 
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
@@ -193,9 +196,9 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
         return new{
             typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p),
             typeof(f), typeof(lb), typeof(ub), typeof(lcons), typeof(ucons),
-            typeof(problem_type), typeof(kwargs),
+            typeof(problem_type), typeof(singular_term), typeof(kwargs),
         }(
-            f, _u0, _tspan, p, lb, ub, lcons, ucons, problem_type, kwargs
+            f, _u0, _tspan, p, lb, ub, lcons, ucons, problem_type, singular_term, kwargs
         )
     end
 

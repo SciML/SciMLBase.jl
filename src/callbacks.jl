@@ -87,9 +87,11 @@ Contains a single callback whose `condition` is a continuous function. The callb
     ignored.
   - `finalize`: This is a function `(c,u,t,integrator)` which can be used to finalize
     the state of the callback `c`. It can modify the argument `c` and the return is ignored.
-  - `abstol=1e-14` & `reltol=0`: These are used to specify a tolerance from zero for the rootfinder:
-    if the starting condition is less than the tolerance from zero, then no root will be detected.
-    This is to stop repeat events happening immediately after a rootfinding event.
+  - `abstol=10eps()`: Tolerance for repeted event prevention. If the callback was just triggered
+    and the new starting condition is less than the tolerance from its value at the root,
+    then the next testing point will be nudged to avoid repeats. If the callback does not
+    mutate the integrator in a way that affect the condition, this can be safely set to `0.0`.
+    `reltol` is deprecated.
   - `repeat_nudge = 1//100`: This is used to set the next testing point after a
     previously found zero. Defaults to `1//100`, which means after a callback, the next
     sign check will take place at `t + dt*1//100` instead of at `t` to avoid repeats.

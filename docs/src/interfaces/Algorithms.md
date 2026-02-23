@@ -35,6 +35,9 @@ SciMLBase.isadaptive
 SciMLBase.isdiscrete
 SciMLBase.forwarddiffs_model
 SciMLBase.forwarddiffs_model_time
+SciMLBase.forwarddiff_chunksize
+SciMLBase.has_lazy_interpolation
+SciMLBase.allows_late_binding_tstops
 SciMLBase.has_init
 SciMLBase.has_step
 ```

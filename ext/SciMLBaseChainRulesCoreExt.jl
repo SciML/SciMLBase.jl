@@ -5,6 +5,7 @@ using SciMLBase: getobserved
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
 using SymbolicIndexingInterface
+using RecursiveArrayTools: AbstractVectorOfArray
 
 function ChainRulesCore.rrule(
         config::ChainRulesCore.RuleConfig{
@@ -64,25 +65,12 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
     return VA[sym], ODESolution_getindex_pullback
 end
 
-function ChainRulesCore.rrule(::Type{ODEProblem}, args...; kwargs...)
-    function ODEProblemAdjoint(ȳ)
-        return (NoTangent(), ȳ.f, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
-    end
-
-    return ODEProblem(args...; kwargs...), ODEProblemAdjoint
-end
-
-function ChainRulesCore.rrule(
-        ::Type{
-            <:ODEProblem{iip, T},
-        }, args...; kwargs...
-    ) where {iip, T}
-    function ODEProblemAdjoint(ȳ)
-        return (NoTangent(), ȳ.f, ȳ.u0, ȳ.tspan, ȳ.p, ȳ.kwargs, ȳ.problem_type)
-    end
-
-    return ODEProblem(args...; kwargs...), ODEProblemAdjoint
-end
+# NOTE: Constructor rrules for ODEProblem were removed. ODEProblem is a mutable struct,
+# and Zygote's mutable struct tangent cache is not reset between repeated pullback calls
+# when a constructor rrule exists (the Jnew reset in Zygote src/lib/lib.jl is bypassed).
+# This caused Zygote.jacobian and repeated pullback calls to accumulate gradients
+# incorrectly. Without these rrules, Zygote traces through the constructor natively
+# using __new__/__splatnew__ which has proper cache reset.
 
 function ChainRulesCore.rrule(::Type{SDEProblem}, args...; kwargs...)
     function SDEProblemAdjoint(ȳ)
@@ -137,8 +125,12 @@ function ChainRulesCore.rrule(
         RODESolutionAdjoint
 end
 
-function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged)
-    out = EnsembleSolution(sim, time, converged)
+# EnsembleSolution rrule with full support for various gradient types
+# Matches the Zygote extension implementation for consistency
+function ChainRulesCore.rrule(
+        ::Type{EnsembleSolution}, sim, time, converged, stats = nothing
+    )
+    out = EnsembleSolution(sim, time, converged, stats)
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
         arrarr = [
             [
@@ -146,10 +138,37 @@ function ChainRulesCore.rrule(::SciMLBase.EnsembleSolution, sim, time, converged
                     for j in 1:size(p̄)[end - 1]
                 ] for i in 1:size(p̄)[end]
         ]
-        return (NoTangent(), EnsembleSolution(arrarr, 0.0, true), NoTangent(), NoTangent())
+        return (
+            NoTangent(),
+            EnsembleSolution(arrarr, 0.0, true, stats),
+            NoTangent(),
+            NoTangent(),
+            NoTangent(),
+        )
+    end
+    function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
+        return (
+            NoTangent(),
+            EnsembleSolution(p̄, 0.0, true, stats),
+            NoTangent(),
+            NoTangent(),
+            NoTangent(),
+        )
+    end
+    function EnsembleSolution_adjoint(p̄::AbstractVectorOfArray)
+        return (
+            NoTangent(),
+            EnsembleSolution(p̄, 0.0, true, stats),
+            NoTangent(),
+            NoTangent(),
+            NoTangent(),
+        )
     end
     function EnsembleSolution_adjoint(p̄::EnsembleSolution)
-        return (NoTangent(), p̄, NoTangent(), NoTangent())
+        return (NoTangent(), p̄, NoTangent(), NoTangent(), NoTangent())
+    end
+    function EnsembleSolution_adjoint(p̄::NamedTuple)
+        return (NoTangent(), p̄.u, NoTangent(), NoTangent(), NoTangent())
     end
     return out, EnsembleSolution_adjoint
 end

@@ -1057,7 +1057,8 @@ export step!, deleteat!, addat!, get_tmp_cache,
     set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
     u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
     set_u!, check_error, change_t_via_interpolation!, addsteps!,
-    isdiscrete, reeval_internals_due_to_modification!
+    isdiscrete, reeval_internals_due_to_modification!,
+    has_rng, get_rng, set_rng!
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 
@@ -1067,7 +1068,6 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Public traits
 
-@public has_init
-@public has_step
+@public has_init, has_step, successful_retcode
 
 end

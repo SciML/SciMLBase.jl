@@ -40,7 +40,7 @@ rules for a Number type are held in general:
   - `x::T + y::T = z::T`
   - `x::T * y::T = z::T`
   - `oneunit(x::T)::T`
-  - `one(x::T) * oneunit(x::T) = z::T`
+  - `(one(x::T) * oneunit(x::T))::T`
   - `t::T2 * x::T + y::T = z::T` for `T2` a time type and `T` the dependent variable type (this includes the
     `muladd` equivalent form).
 
