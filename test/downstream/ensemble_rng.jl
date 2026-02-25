@@ -65,6 +65,7 @@ const SOLVER_PAIRS = [
     ("SDE", sde_prob, SOSRI()),
     ("SSA", ssa_jprob, SSAStepper()),
     ("ODE+Jump", ode_jump_prob, Tsit5()),
+    ("SDE+Jump", sde_jump_prob, SOSRI()),
 ]
 
 # ============================================================
@@ -120,6 +121,8 @@ end
                 ("ODE", ode_prob, Tsit5()),
                 ("SDE", sde_prob, SOSRI()),
                 ("SSA", ssa_jprob, SSAStepper()),
+                ("ODE+Jump", ode_jump_prob, Tsit5()),
+                ("SDE+Jump", sde_jump_prob, SOSRI()),
             ]
             @testset "$name" begin
                 eprob = make_eprob(prob)
