@@ -217,6 +217,11 @@ function ODEProblem(f::AbstractODEFunction, u0, tspan, args...; kwargs...)
 end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
+
+    if f isa String
+        throw(ArgumentError("Hai passato una Stringa come primo argomento (f). " * "Per definire un ODEProblem, f deve essere una funzione, " * "ad esempio f(u,p,t) o f(du,u,p,t)."))
+    end
+
     iip = isinplace(f, 4)
     _u0 = prepare_initial_state(u0)
     _tspan = promote_tspan(tspan)
