@@ -310,8 +310,10 @@ function __solve(
     end
 end
 
-function batch_func(i, prob, alg, ensemble_rng_state, thread_prob;
-        worker_id = 0, kwargs...)
+function batch_func(
+        i, prob, alg, ensemble_rng_state, thread_prob;
+        worker_id = 0, kwargs...
+    )
     (; trajectory_seeds, _prob_func_has_rng, rng_func, master_rng) = ensemble_rng_state
 
     # Build context for this trajectory
@@ -413,8 +415,10 @@ function solve_batch(
         # thread_prob = nothing: pmap serializes prob to each worker, so every
         # worker gets its own deserialized copy. No shared memory means no
         # JumpProblem race condition, unlike the threaded case.
-        batch_func(i, prob, alg, dist_rng_state, nothing;
-            worker_id = myid(), kwargs...)
+        batch_func(
+            i, prob, alg, dist_rng_state, nothing;
+            worker_id = myid(), kwargs...
+        )
     end
 
     return tighten_container_eltype(batch_data)
@@ -438,11 +442,15 @@ function responsible_map(f, II...)
     return batch_data
 end
 
-function SciMLBase.solve_batch(prob, alg, ::EnsembleSerial, II, pmap_batch_size,
-        ensemble_rng_state; worker_id = 0, kwargs...)
+function SciMLBase.solve_batch(
+        prob, alg, ::EnsembleSerial, II, pmap_batch_size,
+        ensemble_rng_state; worker_id = 0, kwargs...
+    )
     batch_data = responsible_map(II) do i
-        SciMLBase.batch_func(i, prob, alg, ensemble_rng_state, nothing;
-            worker_id, kwargs...)
+        SciMLBase.batch_func(
+            i, prob, alg, ensemble_rng_state, nothing;
+            worker_id, kwargs...
+        )
     end
     return SciMLBase.tighten_container_eltype(batch_data)
 end
@@ -453,8 +461,10 @@ function solve_batch(
     )
     nthreads = min(Threads.nthreads(), length(II))
     if length(II) == 1 || nthreads == 1
-        return solve_batch(prob, alg, EnsembleSerial(), II, pmap_batch_size,
-            ensemble_rng_state; worker_id, kwargs...)
+        return solve_batch(
+            prob, alg, EnsembleSerial(), II, pmap_batch_size,
+            ensemble_rng_state; worker_id, kwargs...
+        )
     end
 
     # Per-task JumpProblem isolation (replaces vestigial threadid()-indexed deepcopy).
@@ -473,8 +483,10 @@ function solve_batch(
         else
             nothing
         end
-        batch_func(i, prob, alg, ensemble_rng_state, _base_prob;
-            worker_id, kwargs...)
+        batch_func(
+            i, prob, alg, ensemble_rng_state, _base_prob;
+            worker_id, kwargs...
+        )
     end
     return tighten_container_eltype(batch_data)
 end
@@ -492,8 +504,10 @@ function tmap(f, args...)
     return batch_data
 end
 
-function solve_batch(prob, alg, ::EnsembleSplitThreads, II, pmap_batch_size,
-        ensemble_rng_state; kwargs...)
+function solve_batch(
+        prob, alg, ::EnsembleSplitThreads, II, pmap_batch_size,
+        ensemble_rng_state; kwargs...
+    )
     wp = CachingPool(workers())
     N = nworkers()
     batch_size = length(II) ÷ N
@@ -508,8 +522,10 @@ function solve_batch(prob, alg, ::EnsembleSplitThreads, II, pmap_batch_size,
             else
                 I_local = II[(batch_size * (i - 1) + 1):(batch_size * i)]
             end
-            solve_batch(prob, alg, EnsembleThreads(), I_local, pmap_batch_size,
-                dist_rng_state; worker_id = myid(), kwargs...)
+            solve_batch(
+                prob, alg, EnsembleThreads(), I_local, pmap_batch_size,
+                dist_rng_state; worker_id = myid(), kwargs...
+            )
         end
     end
     return reduce(vcat, batch_data)
