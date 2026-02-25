@@ -41,10 +41,17 @@ sde_jump_prob = JumpProblem(
     Direct(), birth_jump, death_jump,
 )
 
-# Helper: extract endpoints from ensemble solution
+# ============================================================
+# Helpers
+# ============================================================
+
+# Extract endpoints from ensemble solution
 endpoints(sim) = [sol[end] for sol in sim]
 
-# Helper: build ensemble problem with default prob_func using rand()
+# Extract first positive time from each trajectory (jump time, skipping t=0 entries)
+first_jump_times(sim) = [sol.t[findfirst(>(0), sol.t)] for sol in sim]
+
+# Build ensemble problem with default prob_func using rand()
 # JumpProblem doesn't expose u0 directly, so use identity prob_func for those —
 # stochasticity comes from the jump process itself.
 function make_eprob(prob; safetycopy = true)
@@ -54,7 +61,7 @@ function make_eprob(prob; safetycopy = true)
         EnsembleProblem(
             prob;
             prob_func = (prob, i, repeat) -> remake(prob; u0 = rand() * 0.1 .+ prob.u0),
-            safetycopy
+            safetycopy,
         )
     end
 end
@@ -68,10 +75,24 @@ const SOLVER_PAIRS = [
     ("SDE+Jump", sde_jump_prob, SOSRI()),
 ]
 
+# Jump problem/algorithm pairs for first-jump-time distinct stream tests.
+# SSA only saves jump times by default; ODE+Jump and SDE+Jump need save_everystep=false
+# to suppress adaptive timesteps and isolate jump times.
+const SSA_PAIR = ("SSA", ssa_jprob, SSAStepper())
+const CONTINUOUS_JUMP_PAIRS = [
+    ("ODE+Jump", ode_jump_prob, Tsit5()),
+    ("SDE+Jump", sde_jump_prob, SOSRI()),
+]
+
+# All ensemble algorithms for testing
+const THREADED_ALGS = Threads.nthreads() >= 2 ?
+    [("Serial", EnsembleSerial()), ("Threaded", EnsembleThreads())] :
+    [("Serial", EnsembleSerial())]
+
 # ============================================================
-# A. Seed reproducibility (Serial + Threaded)
+# 1. Seed reproducibility (Serial + Threaded, all problem types)
 # ============================================================
-@testset "A. Seed reproducibility" begin
+@testset "1. Seed reproducibility" begin
     for (name, prob, alg) in SOLVER_PAIRS
         @testset "$name" begin
             eprob = make_eprob(prob)
@@ -80,8 +101,14 @@ const SOLVER_PAIRS = [
             @test endpoints(sim1) == endpoints(sim2)
 
             if Threads.nthreads() >= 2
-                sim3 = solve(eprob, alg, EnsembleThreads(); seed = UInt64(42), trajectories = 8)
-                sim4 = solve(eprob, alg, EnsembleThreads(); seed = UInt64(42), trajectories = 8)
+                sim3 = solve(
+                    eprob, alg, EnsembleThreads();
+                    seed = UInt64(42), trajectories = 8,
+                )
+                sim4 = solve(
+                    eprob, alg, EnsembleThreads();
+                    seed = UInt64(42), trajectories = 8,
+                )
                 @test endpoints(sim3) == endpoints(sim4)
             end
         end
@@ -89,65 +116,190 @@ const SOLVER_PAIRS = [
 end
 
 # ============================================================
-# B. rng kwarg reproducibility + priority over seed
+# 2. rng kwarg reproducibility + priority over seed
 # ============================================================
-@testset "B. rng kwarg + priority" begin
+@testset "2. rng kwarg + priority" begin
     eprob = make_eprob(ode_prob)
 
     sim_rng1 = solve(
         eprob, Tsit5(), EnsembleSerial();
-        rng = Random.Xoshiro(99), trajectories = 6
+        rng = Random.Xoshiro(99), trajectories = 6,
     )
     sim_rng2 = solve(
         eprob, Tsit5(), EnsembleSerial();
-        rng = Random.Xoshiro(99), trajectories = 6
+        rng = Random.Xoshiro(99), trajectories = 6,
     )
     @test endpoints(sim_rng1) == endpoints(sim_rng2)
 
     # rng takes priority over conflicting seed
     sim_rng_seed = solve(
         eprob, Tsit5(), EnsembleSerial();
-        rng = Random.Xoshiro(99), seed = UInt64(12345), trajectories = 6
+        rng = Random.Xoshiro(99), seed = UInt64(12345), trajectories = 6,
     )
     @test endpoints(sim_rng_seed) == endpoints(sim_rng1)
 end
 
 # ============================================================
-# C. Serial/Threaded equivalence
+# 3. Serial/Threaded/Distributed equivalence (all problem types)
 # ============================================================
-@testset "C. Serial/Threaded equivalence" begin
-    if Threads.nthreads() >= 2
-        for (name, prob, alg) in [
-                ("ODE", ode_prob, Tsit5()),
-                ("SDE", sde_prob, SOSRI()),
-                ("SSA", ssa_jprob, SSAStepper()),
-                ("ODE+Jump", ode_jump_prob, Tsit5()),
-                ("SDE+Jump", sde_jump_prob, SOSRI()),
-            ]
-            @testset "$name" begin
-                eprob = make_eprob(prob)
-                sim_s = solve(
-                    eprob, alg, EnsembleSerial();
-                    seed = UInt64(77), trajectories = 8
-                )
+@testset "3. Cross-algorithm equivalence" begin
+    for (name, prob, alg) in SOLVER_PAIRS
+        @testset "$name" begin
+            eprob = make_eprob(prob)
+            sim_s = solve(
+                eprob, alg, EnsembleSerial();
+                seed = UInt64(77), trajectories = 8,
+            )
+
+            if Threads.nthreads() >= 2
                 sim_t = solve(
                     eprob, alg, EnsembleThreads();
-                    seed = UInt64(77), trajectories = 8
+                    seed = UInt64(77), trajectories = 8,
                 )
                 @test endpoints(sim_s) == endpoints(sim_t)
+            end
+
+            sim_d = solve(
+                eprob, alg, EnsembleDistributed();
+                seed = UInt64(77), trajectories = 8,
+            )
+            @test endpoints(sim_s) == endpoints(sim_d)
+
+            sim_st = solve(
+                eprob, alg, EnsembleSplitThreads();
+                seed = UInt64(77), trajectories = 8,
+            )
+            @test endpoints(sim_s) == endpoints(sim_st)
+        end
+    end
+end
+
+# ============================================================
+# 4. Distinct streams — prob_func level (StableRNG end-to-end)
+#    Verifies each trajectory's prob_func receives a distinct RNG stream.
+#    Uses StableRNG for both master and rng_func → fully deterministic.
+# ============================================================
+@testset "4. Distinct streams (prob_func)" begin
+    stable_rng_func = ctx -> StableRNG(ctx.trajectory_seed)
+    eprob = EnsembleProblem(
+        ode_prob;
+        prob_func = (prob, i, repeat, rng, ctx) ->
+            remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
+    )
+
+    for (alg_name, ensalg) in [
+            THREADED_ALGS;
+            ("Distributed", EnsembleDistributed());
+            ("SplitThreads", EnsembleSplitThreads())
+        ]
+        @testset "$alg_name" begin
+            sim = solve(
+                eprob, Tsit5(), ensalg;
+                rng = StableRNG(42), rng_func = stable_rng_func, trajectories = 20,
+            )
+            @test allunique(endpoints(sim))
+        end
+    end
+end
+
+# ============================================================
+# 5. Distinct streams — solver level
+#    Verifies each trajectory's solver uses a distinct RNG stream.
+#    Jump problems: check allunique first positive jump times.
+#    SDE problems: check allunique endpoints (continuous-valued).
+# ============================================================
+@testset "5. Distinct streams (solver)" begin
+    # Jump problems: check first jump times are distinct.
+    # SSA only saves jump times by default; ODE+Jump and SDE+Jump need
+    # save_everystep=false to suppress ODE/SDE adaptive timesteps.
+    @testset "Jump first-times" begin
+        let (name, jprob, alg) = SSA_PAIR
+            @testset "$name" begin
+                eprob = EnsembleProblem(jprob)
+                for (alg_name, ensalg) in [
+                        THREADED_ALGS;
+                        ("Distributed", EnsembleDistributed());
+                        ("SplitThreads", EnsembleSplitThreads())
+                    ]
+                    @testset "$alg_name" begin
+                        sim = solve(
+                            eprob, alg, ensalg;
+                            rng = StableRNG(42), trajectories = 20,
+                        )
+                        @test allunique(first_jump_times(sim))
+                    end
+                end
+            end
+        end
+
+        for (name, jprob, alg) in CONTINUOUS_JUMP_PAIRS
+            @testset "$name" begin
+                eprob = EnsembleProblem(jprob)
+                for (alg_name, ensalg) in [
+                        THREADED_ALGS;
+                        ("Distributed", EnsembleDistributed());
+                        ("SplitThreads", EnsembleSplitThreads())
+                    ]
+                    @testset "$alg_name" begin
+                        sim = solve(
+                            eprob, alg, ensalg;
+                            rng = StableRNG(42), trajectories = 20,
+                            save_everystep = false,
+                        )
+                        @test allunique(first_jump_times(sim))
+                    end
+                end
+            end
+        end
+    end
+
+    # SDE: check endpoints are distinct (continuous-valued)
+    @testset "SDE endpoints" begin
+        eprob = EnsembleProblem(sde_prob)
+        for (alg_name, ensalg) in [
+                THREADED_ALGS;
+                ("Distributed", EnsembleDistributed());
+                ("SplitThreads", EnsembleSplitThreads())
+            ]
+            @testset "$alg_name" begin
+                sim = solve(
+                    eprob, SOSRI(), ensalg;
+                    rng = StableRNG(42), trajectories = 20,
+                )
+                @test allunique(endpoints(sim))
             end
         end
     end
 end
 
 # ============================================================
-# E. 5-arg prob_func reproducibility
+# 6. Different seeds → different results (all problem types)
 # ============================================================
-@testset "E. 5-arg prob_func" begin
+@testset "6. Different seeds → different results" begin
+    for (name, prob, alg) in SOLVER_PAIRS
+        @testset "$name" begin
+            eprob = make_eprob(prob)
+            sim_a = solve(
+                eprob, alg, EnsembleSerial();
+                seed = UInt64(42), trajectories = 6,
+            )
+            sim_b = solve(
+                eprob, alg, EnsembleSerial();
+                seed = UInt64(123), trajectories = 6,
+            )
+            @test endpoints(sim_a) != endpoints(sim_b)
+        end
+    end
+end
+
+# ============================================================
+# 7. 5-arg prob_func reproducibility
+# ============================================================
+@testset "7. 5-arg prob_func" begin
     eprob5 = EnsembleProblem(
         ode_prob;
         prob_func = (prob, i, repeat, rng, ctx) ->
-        remake(prob; u0 = rand(rng) * prob.u0)
+            remake(prob; u0 = rand(rng) * prob.u0),
     )
     sim1 = solve(eprob5, Tsit5(), EnsembleSerial(); seed = UInt64(55), trajectories = 6)
     sim2 = solve(eprob5, Tsit5(), EnsembleSerial(); seed = UInt64(55), trajectories = 6)
@@ -155,64 +307,64 @@ end
 end
 
 # ============================================================
-# F. Custom rng_func (StableRNG)
+# 8. Custom rng_func (StableRNG)
 # ============================================================
-@testset "F. Custom rng_func (StableRNG)" begin
+@testset "8. Custom rng_func (StableRNG)" begin
     custom_rng_func = ctx -> StableRNG(ctx.trajectory_seed)
     # Custom rng_func returns StableRNG (doesn't seed TaskLocalRNG),
     # so must use 5-arg prob_func that explicitly uses the provided rng.
     eprob_stable = EnsembleProblem(
         ode_prob;
         prob_func = (prob, i, repeat, rng, ctx) ->
-        remake(prob; u0 = rand(rng) * 0.1 + prob.u0)
+            remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
     )
 
     sim1 = solve(
         eprob_stable, Tsit5(), EnsembleSerial();
-        seed = UInt64(88), rng_func = custom_rng_func, trajectories = 6
+        seed = UInt64(88), rng_func = custom_rng_func, trajectories = 6,
     )
     sim2 = solve(
         eprob_stable, Tsit5(), EnsembleSerial();
-        seed = UInt64(88), rng_func = custom_rng_func, trajectories = 6
+        seed = UInt64(88), rng_func = custom_rng_func, trajectories = 6,
     )
     @test endpoints(sim1) == endpoints(sim2)
 
     if Threads.nthreads() >= 2
         sim_t = solve(
             eprob_stable, Tsit5(), EnsembleThreads();
-            seed = UInt64(88), rng_func = custom_rng_func, trajectories = 6
+            seed = UInt64(88), rng_func = custom_rng_func, trajectories = 6,
         )
         @test endpoints(sim_t) == endpoints(sim1)
     end
 end
 
 # ============================================================
-# G. Batch size independence
+# 9. Batch size independence
 # ============================================================
-@testset "G. Batch size independence" begin
+@testset "9. Batch size independence" begin
     eprob = make_eprob(ode_prob)
     sim_full = solve(
         eprob, Tsit5(), EnsembleSerial();
-        seed = UInt64(33), trajectories = 12, batch_size = 12
+        seed = UInt64(33), trajectories = 12, batch_size = 12,
     )
     sim_batched = solve(
         eprob, Tsit5(), EnsembleSerial();
-        seed = UInt64(33), trajectories = 12, batch_size = 5
+        seed = UInt64(33), trajectories = 12, batch_size = 5,
     )
     @test endpoints(sim_full) == endpoints(sim_batched)
 end
 
 # ============================================================
-# H. EnsembleContext field verification
+# 10. EnsembleContext field verification
 # ============================================================
-@testset "H. EnsembleContext fields" begin
+@testset "10. EnsembleContext fields" begin
     captured_ctxs = EnsembleContext[]
     eprob_ctx = EnsembleProblem(
         ode_prob;
         prob_func = (prob, i, repeat, rng, ctx) -> begin
             push!(captured_ctxs, ctx)
             remake(prob; u0 = rand(rng) * prob.u0)
-        end
+        end,
     )
     sim = solve(eprob_ctx, Tsit5(), EnsembleSerial(); seed = UInt64(42), trajectories = 5)
 
@@ -228,9 +380,9 @@ end
 end
 
 # ============================================================
-# I. No seed graceful execution
+# 11. No seed graceful execution
 # ============================================================
-@testset "I. No seed graceful execution" begin
+@testset "11. No seed graceful execution" begin
     eprob = EnsembleProblem(ode_prob)
     sim = solve(eprob, Tsit5(), EnsembleSerial(); trajectories = 4)
     @test length(sim) == 4
@@ -238,31 +390,9 @@ end
 end
 
 # ============================================================
-# J. Different seeds produce different results
+# 12. safetycopy=false isolation (task_local_storage path)
 # ============================================================
-@testset "J. Different seeds → different results" begin
-    eprob = make_eprob(ode_prob)
-    sim_a = solve(eprob, Tsit5(), EnsembleSerial(); seed = UInt64(42), trajectories = 6)
-    sim_b = solve(eprob, Tsit5(), EnsembleSerial(); seed = UInt64(123), trajectories = 6)
-    @test endpoints(sim_a) != endpoints(sim_b)
-end
-
-# ============================================================
-# K. Threaded stress test (SSA, 400 trajectories)
-# ============================================================
-@testset "K. Threaded SSA stress test" begin
-    if Threads.nthreads() >= 2
-        eprob = make_eprob(ssa_jprob)
-        sim1 = solve(eprob, SSAStepper(), EnsembleThreads(); seed = UInt64(42), trajectories = 400)
-        sim2 = solve(eprob, SSAStepper(), EnsembleThreads(); seed = UInt64(42), trajectories = 400)
-        @test endpoints(sim1) == endpoints(sim2)
-    end
-end
-
-# ============================================================
-# K2. JumpProblem safetycopy=false isolation (task_local_storage path)
-# ============================================================
-@testset "K2. safetycopy=false isolation" begin
+@testset "12. safetycopy=false isolation" begin
     for (name, jprob, alg) in [
             ("SDE", sde_prob, SOSRI()),
             ("SSA", ssa_jprob, SSAStepper()),
@@ -276,18 +406,18 @@ end
             if Threads.nthreads() >= 2
                 sim1 = solve(
                     eprob, alg, EnsembleThreads();
-                    seed = UInt64(42), trajectories = 50
+                    seed = UInt64(42), trajectories = 50,
                 )
                 sim2 = solve(
                     eprob, alg, EnsembleThreads();
-                    seed = UInt64(42), trajectories = 50
+                    seed = UInt64(42), trajectories = 50,
                 )
                 @test endpoints(sim1) == endpoints(sim2)
 
                 # Serial/Threaded equivalence
                 sim_s = solve(
                     eprob, alg, EnsembleSerial();
-                    seed = UInt64(42), trajectories = 50
+                    seed = UInt64(42), trajectories = 50,
                 )
                 @test endpoints(sim_s) == endpoints(sim1)
             end
@@ -295,18 +425,18 @@ end
             # Distributed reproducibility
             sim_d1 = solve(
                 eprob, alg, EnsembleDistributed();
-                seed = UInt64(42), trajectories = 20
+                seed = UInt64(42), trajectories = 20,
             )
             sim_d2 = solve(
                 eprob, alg, EnsembleDistributed();
-                seed = UInt64(42), trajectories = 20
+                seed = UInt64(42), trajectories = 20,
             )
             @test endpoints(sim_d1) == endpoints(sim_d2)
 
             # Serial/Distributed equivalence
             sim_s = solve(
                 eprob, alg, EnsembleSerial();
-                seed = UInt64(42), trajectories = 20
+                seed = UInt64(42), trajectories = 20,
             )
             @test endpoints(sim_s) == endpoints(sim_d1)
         end
@@ -314,28 +444,46 @@ end
 end
 
 # ============================================================
-# L. Non-DE regression tests
+# 13. Threaded stress test (SSA, 400 trajectories)
 # ============================================================
-@testset "L. Non-DE regression" begin
+@testset "13. Threaded SSA stress test" begin
+    if Threads.nthreads() >= 2
+        eprob = make_eprob(ssa_jprob)
+        sim1 = solve(
+            eprob, SSAStepper(), EnsembleThreads();
+            seed = UInt64(42), trajectories = 400,
+        )
+        sim2 = solve(
+            eprob, SSAStepper(), EnsembleThreads();
+            seed = UInt64(42), trajectories = 400,
+        )
+        @test endpoints(sim1) == endpoints(sim2)
+    end
+end
+
+# ============================================================
+# 14. Non-DE regression tests
+# ============================================================
+@testset "14. Non-DE regression" begin
     @testset "NonlinearSolve" begin
         f_nl(u, p) = u .* u .- p
         nlprob = NonlinearProblem(f_nl, [1.0, 1.0], 2.0)
         nl_eprob = EnsembleProblem(
             nlprob;
-            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand(2) .+ 0.5)
+            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand(2) .+ 0.5),
         )
 
         # Ensemble solve with seed succeeds (rng is NOT forwarded)
         sim1 = solve(
             nl_eprob, NewtonRaphson(), EnsembleSerial();
-            seed = UInt64(42), trajectories = 5
+            seed = UInt64(42), trajectories = 5,
         )
         @test length(sim1) == 5
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = solve(
             nl_eprob, NewtonRaphson(), EnsembleSerial();
-            seed = UInt64(42), trajectories = 5
+            seed = UInt64(42), trajectories = 5,
         )
         @test endpoints(sim1) == endpoints(sim2)
     end
@@ -346,43 +494,29 @@ end
         optprob = OptimizationProblem(optf, zeros(2))
         opt_eprob = EnsembleProblem(
             optprob;
-            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand(2))
+            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand(2)),
         )
 
         # Ensemble solve with seed succeeds (rng is NOT forwarded)
         sim1 = Optimization.solve(
             opt_eprob, OptimizationOptimJL.BFGS(),
-            EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10
+            EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
         @test length(sim1) == 4
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = Optimization.solve(
             opt_eprob, OptimizationOptimJL.BFGS(),
-            EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10
+            EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
         @test endpoints(sim1) == endpoints(sim2)
     end
 end
 
 # ============================================================
-# M. Distributed smoke test (single-worker pmap, ODE only)
+# 15. Distributed smoke test (worker_id propagation)
 # ============================================================
-@testset "M. Distributed smoke test" begin
-    eprob = make_eprob(ode_prob)
-
-    # EnsembleDistributed with seed completes
-    sim1 = solve(eprob, Tsit5(), EnsembleDistributed(); seed = UInt64(42), trajectories = 6)
-    @test length(sim1) == 6
-
-    # Reproducibility
-    sim2 = solve(eprob, Tsit5(), EnsembleDistributed(); seed = UInt64(42), trajectories = 6)
-    @test endpoints(sim1) == endpoints(sim2)
-
-    # Serial/Distributed equivalence
-    sim_s = solve(eprob, Tsit5(), EnsembleSerial(); seed = UInt64(42), trajectories = 6)
-    @test endpoints(sim_s) == endpoints(sim1)
-
+@testset "15. Distributed worker_id propagation" begin
     # worker_id is propagated (single-worker pmap runs on worker 1)
     dist_ctxs = EnsembleContext[]
     eprob_ctx = EnsembleProblem(
@@ -390,11 +524,11 @@ end
         prob_func = (prob, i, repeat, rng, ctx) -> begin
             push!(dist_ctxs, ctx)
             prob
-        end
+        end,
     )
     solve(
         eprob_ctx, Tsit5(), EnsembleDistributed();
-        seed = UInt64(42), trajectories = 3
+        seed = UInt64(42), trajectories = 3,
     )
     @test length(dist_ctxs) == 3
     @test all(ctx.worker_id ∈ workers() for ctx in dist_ctxs)
