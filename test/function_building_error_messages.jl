@@ -46,8 +46,10 @@ f = Foo{1}()
     # Multi-variant IIP (like OrdinaryDiffEq uses with 4 dual variants)
     multi_iip = FunctionWrappersWrapper(
         (du, u, p, t) -> (du .= u; nothing),
-        (Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},
-         Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64}),
+        (
+            Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},
+            Tuple{Vector{Float64}, Vector{Float64}, Nothing, Float64},
+        ),
         (Nothing, Nothing)
     )
     @test @inferred SciMLBase.isinplace(multi_iip, 4) === true
@@ -55,13 +57,13 @@ end
 
 @testset "widen_bounded_type_params" begin
     f = ODEFunction{true, SciMLBase.AutoSpecialize}((du, u, p, t) -> du .= u)
-    @test typeof(f).parameters[end-1] === Nothing  # ID is concrete
+    @test typeof(f).parameters[end - 1] === Nothing  # ID is concrete
     @test typeof(f).parameters[end] === Nothing     # NLP is concrete
 
     widened = @inferred SciMLBase.widen_bounded_type_params(f)
 
     # Bounded params are widened to their upper bounds
-    @test typeof(widened).parameters[end-1] === Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end - 1] === Union{Nothing, SciMLBase.OverrideInitData}
     @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
 
     # Unbounded params stay concrete

@@ -307,9 +307,11 @@ Returns the integrator's random number generator.
 Throws an informative error if the integrator does not support RNG.
 """
 function get_rng(integrator::DEIntegrator)
-    error("Integrator of type $(typeof(integrator)) does not carry an RNG. " *
-          "Ensure the solver package version supports the SciMLBase RNG interface " *
-          "(has_rng / get_rng / set_rng!).")
+    error(
+        "Integrator of type $(typeof(integrator)) does not carry an RNG. " *
+            "Ensure the solver package version supports the SciMLBase RNG interface " *
+            "(has_rng / get_rng / set_rng!)."
+    )
 end
 
 """

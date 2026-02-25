@@ -151,20 +151,24 @@ function Makie.convert_arguments(
         )
 
         if length(plot_vecs) == 2
-            append!(makie_plotspecs, map(
-                (x, y, label) -> PlotSpec(plot_type_sym, Point2f.(x, y); label),
-                eachcol(plot_vecs[1]),
-                eachcol(plot_vecs[2]),
-                labels
-            ))
+            append!(
+                makie_plotspecs, map(
+                    (x, y, label) -> PlotSpec(plot_type_sym, Point2f.(x, y); label),
+                    eachcol(plot_vecs[1]),
+                    eachcol(plot_vecs[2]),
+                    labels
+                )
+            )
         elseif length(plot_vecs) == 3
-            append!(makie_plotspecs, map(
-                (x, y, z, label) -> PlotSpec(plot_type_sym, Point3f.(x, y, z); label),
-                eachcol(plot_vecs[1]),
-                eachcol(plot_vecs[2]),
-                eachcol(plot_vecs[3]),
-                labels
-            ))
+            append!(
+                makie_plotspecs, map(
+                    (x, y, z, label) -> PlotSpec(plot_type_sym, Point3f.(x, y, z); label),
+                    eachcol(plot_vecs[1]),
+                    eachcol(plot_vecs[2]),
+                    eachcol(plot_vecs[3]),
+                    labels
+                )
+            )
         end
     end
 

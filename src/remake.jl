@@ -137,7 +137,7 @@ OverrideInitData}` for initialization_data) while allowing concrete field types
 """
 @generated function _reconstruct_as_type(
         ::Type{TargetType}, source::SourceType
-) where {TargetType <: AbstractSciMLFunction, SourceType <: AbstractSciMLFunction}
+    ) where {TargetType <: AbstractSciMLFunction, SourceType <: AbstractSciMLFunction}
     target_params = collect(TargetType.parameters)
     source_params = collect(SourceType.parameters)
 
