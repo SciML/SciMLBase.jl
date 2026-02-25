@@ -219,7 +219,7 @@ end
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 
     if f isa String
-        throw(ArgumentError("Hai passato una Stringa come primo argomento (f). " * "Per definire un ODEProblem, f deve essere una funzione, " * "ad esempio f(u,p,t) o f(du,u,p,t)."))
+    throw(ArgumentError("The first argument (f) to ODEProblem must be a function, but a String was provided. " * "Please ensure f is defined as f(u,p,t) or f(du,u,p,t)."))
     end
 
     iip = isinplace(f, 4)

@@ -149,3 +149,9 @@ end
         end
     end
 end
+
+using Test 
+
+@testset "Francesco Error Handling Test" begin
+    @test_throws ArgumentError ODEProblem("non una funzione", [1.0], (0.0, 1.0))
+end
