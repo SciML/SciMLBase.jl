@@ -25,3 +25,6 @@ The breaking changes in v2.0 are:
     for wrapping Fortran solvers in the interface. https://github.com/SciML/SciMLBase.jl/pull/477
   - `SDEProblem` constructor was changed to remove an anti-pattern which required passing the diffusion function `g` twice, i.e. `SDEProblem(SDEFunction(f,g),g, ...)`.
     Now this is simply `SDEProblem(SDEFunction(f,g),...)`. https://github.com/SciML/SciMLBase.jl/pull/489
+
+
+Prova Gsoc
