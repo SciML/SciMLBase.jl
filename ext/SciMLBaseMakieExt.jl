@@ -1,6 +1,7 @@
 module SciMLBaseMakieExt
 
 using SciMLBase
+using SymbolicIndexingInterface
 using Makie
 
 import Makie.SpecApi as S
@@ -34,7 +35,7 @@ end
 Makie.plottype(sol::SciMLBase.AbstractTimeseriesSolution) = Makie.Lines
 
 function Makie.used_attributes(::Type{<:Plot}, sol::SciMLBase.AbstractTimeseriesSolution)
-    return (:plot_analytic, :denseplot, :plotdensity, :plotat, :tspan, :tscale, :vars, :idxs)
+    return (:plot_analytic, :denseplot, :plotdensity, :plotat, :tspan, :tscale, :vars, :idxs, :scatter_discretes)
 end
 
 function Makie.convert_arguments(
@@ -47,7 +48,8 @@ function Makie.convert_arguments(
         tspan = nothing,
         tscale = :identity,
         vars = nothing,
-        idxs = nothing
+        idxs = nothing,
+        scatter_discretes = true
     )
 
     # First, this recipe is specifically only for timeseries solutions.
@@ -74,13 +76,30 @@ function Makie.convert_arguments(
 
     # Extract indices (this is SOP)
 
-    idxs = idxs === nothing ? (1:length(sol.u[1])) : idxs
+    idxs = idxs === nothing ? SciMLBase.plottable_indices(sol.u[1]) : idxs
 
     if !(idxs isa Union{Tuple, AbstractArray})
         vars = SciMLBase.interpret_vars([idxs], sol)
     else
         vars = SciMLBase.interpret_vars(idxs, sol)
     end
+
+    # Separate continuous and discrete variables
+    disc_vars = Tuple[]
+    cont_vars = Tuple[]
+    for var in vars
+        tsidxs = union(
+            var[2] === 0 ? () : get_all_timeseries_indexes(sol, var[2]),
+            get_all_timeseries_indexes(sol, var[3])
+        )
+        if ContinuousTimeseries() in tsidxs || isempty(tsidxs)
+            push!(cont_vars, var)
+        else
+            push!(disc_vars, (var..., only(tsidxs)))
+        end
+    end
+    idxs = identity.(cont_vars)
+    vars = identity.(cont_vars)
 
     # Translate automatics inside the function, for ease of use + passthrough from higher
     # level recipes
@@ -117,35 +136,92 @@ function Makie.convert_arguments(
     # to pass in a `tscale` attribute directly.
     @assert tscale isa Symbol "`tscale` if passed in to `Makie.plot` must be a Symbol, got a $(typeof(tscale))"
 
-    # Convert the solution to arrays - this is the hard part!
-    plot_vecs,
-        labels = SciMLBase.diffeq_to_arrays(
-        sol, plot_analytic, denseplot,
-        plotdensity, tspan, vars, tscale, plotat
-    )
-
     # We must convert from plot Type to symbol here, for plotspec use
     # since PlotSpecs are defined based on symbols
     plot_type_sym = Makie.plotsym(PT) # TODO this is still a bit hacky!
 
-    # Finally, generate a vector of PlotSpecs (one per variable pair)
-    # TODO: broadcast across all input attributes, or figure out how to
-    # allow customizable colors/labels/etc if required
-    makie_plotspecs = if length(plot_vecs) == 2
-        map(
-            (x, y, label) -> PlotSpec(plot_type_sym, Point2f.(x, y); label),
-            eachcol(plot_vecs[1]),
-            eachcol(plot_vecs[2]),
-            labels
+    makie_plotspecs = PlotSpec[]
+
+    # Convert continuous variables to arrays and generate PlotSpecs
+    if !isempty(cont_vars)
+        plot_vecs,
+            labels = SciMLBase.diffeq_to_arrays(
+            sol, plot_analytic, denseplot,
+            plotdensity, tspan, vars, tscale, plotat
         )
-    elseif length(plot_vecs) == 3
-        map(
-            (x, y, z, label) -> PlotSpec(plot_type_sym, Point3f.(x, y, z); label),
-            eachcol(plot_vecs[1]),
-            eachcol(plot_vecs[2]),
-            eachcol(plot_vecs[3]),
-            labels
-        )
+
+        if length(plot_vecs) == 2
+            append!(
+                makie_plotspecs, map(
+                    (x, y, label) -> PlotSpec(plot_type_sym, Point2f.(x, y); label),
+                    eachcol(plot_vecs[1]),
+                    eachcol(plot_vecs[2]),
+                    labels
+                )
+            )
+        elseif length(plot_vecs) == 3
+            append!(
+                makie_plotspecs, map(
+                    (x, y, z, label) -> PlotSpec(plot_type_sym, Point3f.(x, y, z); label),
+                    eachcol(plot_vecs[1]),
+                    eachcol(plot_vecs[2]),
+                    eachcol(plot_vecs[3]),
+                    labels
+                )
+            )
+        end
+    end
+
+    # Plot discrete variables as step functions
+    for (func, xvar, yvar, tsidx) in disc_vars
+        partition = sol.discretes[tsidx]
+        ts = current_time(partition)
+        if tspan !== nothing
+            tstart = searchsortedfirst(ts, tspan[1])
+            tend = searchsortedlast(ts, tspan[2])
+            if tstart == lastindex(ts) + 1 || tend == firstindex(ts) - 1
+                continue
+            end
+        else
+            tstart = firstindex(ts)
+            tend = lastindex(ts)
+        end
+        ts = ts[tstart:tend]
+
+        if symbolic_type(xvar) == NotSymbolic() && xvar == 0
+            xvar = only(independent_variable_symbols(sol))
+        end
+        xvals = sol(ts; idxs = xvar).u
+        yvals = getp(sol, yvar)(sol, tstart:tend)
+        tmpvals = map(func, xvals, yvals)
+        xvals = getindex.(tmpvals, 1)
+        yvals = getindex.(tmpvals, 2)
+
+        label = string(SciMLBase.hasname(yvar) ? SciMLBase.getname(yvar) : yvar)
+
+        scatter_spec = Makie.SpecApi.Scatter(Point2f.(xvals, yvals); label)
+
+        # For lines/scatterlines, build step-function coordinates
+        step_x = vec([xvals[1:(end - 1)]'; xvals[2:end]'])
+        step_y = repeat(yvals[1:(end - 1)], inner = 2)
+
+        line_spec = Makie.SpecApi.Lines(Point2f.(step_x, step_y); label, linestyle = :dash)
+
+        # If scatter, don't plot lines.  If lines, don't plot scatter unless asked for.  If scatterlines, plot both.
+        if PT <: Makie.Scatter
+            push!(makie_plotspecs, scatter_spec)
+        elseif PT <: Makie.Lines
+            push!(makie_plotspecs, line_spec)
+            if scatter_discretes
+                push!(makie_plotspecs, scatter_spec)
+            end
+        elseif PT <: Makie.ScatterLines
+            push!(makie_plotspecs, scatter_spec)
+            push!(makie_plotspecs, line_spec)
+        else
+            push!(makie_plotspecs, Makie.PlotSpec(plot_type_sym, Point2f.(xvals, yvals); label))
+        end
+
     end
 
     return makie_plotspecs
