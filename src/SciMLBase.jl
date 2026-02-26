@@ -1058,7 +1058,7 @@ export step!, deleteat!, addat!, get_tmp_cache,
     u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
     set_u!, check_error, change_t_via_interpolation!, addsteps!,
     isdiscrete, reeval_internals_due_to_modification!,
-    has_rng, get_rng, set_rng!
+    has_rng, get_rng, set_rng!, supports_solve_rng
 
 export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallback
 

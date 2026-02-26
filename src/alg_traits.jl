@@ -335,3 +335,13 @@ Trait for specifying whether the passed algorithm supports `step!`, specifying a
 See https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#init-and-the-Iterator-Interface for more details.
 """
 has_step(a) = false
+
+"""
+    supports_solve_rng(prob, alg) -> Bool
+
+Whether `solve(prob, alg; rng=...)` is supported for this problem/algorithm path.
+
+Pass `alg = nothing` to query support for the default solver-selection path
+(i.e., `solve(prob; rng=...)`).
+"""
+supports_solve_rng(::AbstractSciMLProblem, alg) = false
