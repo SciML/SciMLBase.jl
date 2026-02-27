@@ -62,7 +62,7 @@ rate₂ = ρ * y
 affect₂ = [y ~ Pre(y) - 1, z ~ Pre(z) + 1]
 j₁ = ConstantRateJump(rate₁, affect₁)
 j₂ = ConstantRateJump(rate₂, affect₂)
-j₃ = MassActionJump(2 * β + ρ, [z => 1], [x => 1, z => -1])
+j₃ = MassActionJump(2 * β + ρ, [z => 1], [x => 1, z => -1]; scale_rates = false)
 @named js = JumpSystem([j₁, j₂, j₃], t, [x, y, z], [σ, β, ρ])
 js = complete(js)
 
