@@ -7,6 +7,8 @@ import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_a
 using SymbolicIndexingInterface
 using RecursiveArrayTools: AbstractVectorOfArray
 
+@non_differentiable SciMLBase.checkkwargs(kwargshandle)
+
 # numargs and isinplace use `methods()` for runtime reflection and are not differentiable.
 # Mooncake already has @zero_adjoint for numargs; this is the ChainRules/Zygote equivalent.
 @non_differentiable SciMLBase.numargs(::Any)
