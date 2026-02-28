@@ -94,6 +94,7 @@ SciMLBase.ReturnCode.ExactSolutionRight
 SciMLBase.ReturnCode.FloatingPointLimit
 SciMLBase.ReturnCode.InternalLineSearchFailed
 SciMLBase.ReturnCode.InternalLinearSolveFailed
+SciMLBase.ReturnCode.APosterioriSafetyFailure
 SciMLBase.ReturnCode.ShrinkThresholdExceeded
 SciMLBase.ReturnCode.Stalled
 SciMLBase.ReturnCode.SuccessfulStall
