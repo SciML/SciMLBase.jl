@@ -437,6 +437,28 @@ EnumX.@enumx ReturnCode begin
       - `successful_retcode` = `false`
     """
     InternalLinearSolveFailed
+
+    """
+        ReturnCode.APosterioriSafetyFailure
+
+    A failure exit state of the solver. If this return code is given, then the solver
+    completed execution but an a posteriori error check detected that the computed
+    solution is likely inaccurate due to numerical issues. This is distinct from
+    `ReturnCode.Failure` which indicates the solver itself failed to complete.
+
+    ## Common Reasons for Seeing this Return Code
+
+      - A linear solver (e.g. LU factorization) succeeded but a post-solve residual check
+        `‖A*x - b‖` found the residual to be unacceptably large, indicating numerical
+        instability from a near-singular or ill-conditioned matrix.
+      - This return code is used when `residualsafety = true` is set on an LU algorithm
+        and the residual exceeds the safety threshold.
+
+    ## Properties
+
+      - `successful_retcode` = `false`
+    """
+    APosterioriSafetyFailure
 end
 
 const symtrue = Symbol("true")
