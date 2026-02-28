@@ -27,7 +27,10 @@ EnsembleProblem(prob::AbstractSciMLProblem;
     is the problem, `i` is the unique id `1:trajectories` for the problem, and
     `repeat` is the iteration of the repeat. At first, it is `1`, but if
     `rerun` was true this will be `2`, `3`, etc. counting the number of times
-    problem `i` has been repeated.
+    problem `i` has been repeated. `prob_func` must preserve the problem type
+    of `prob` — for example, a `JumpProblem` must remain a `JumpProblem`, an
+    `ODEProblem` must remain an `ODEProblem`. Changing type parameters within
+    the same problem type (e.g., different parameter or state types) is allowed.
 
   - `reduction`: This function is used to aggregate the results in each simulation batch. 
     By default, it appends the `data` from the batch to `u`, which is initialized via `u_data`. 

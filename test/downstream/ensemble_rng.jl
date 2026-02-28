@@ -184,7 +184,7 @@ end
     eprob = EnsembleProblem(
         ode_prob;
         prob_func = (prob, i, repeat, rng, ctx) ->
-            remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
+        remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
     )
 
     for (alg_name, ensalg) in [
@@ -273,6 +273,51 @@ end
 end
 
 # ============================================================
+# 5b. Distinct streams — explicit JumpProblem RNG
+#     JumpProblem with explicit Xoshiro RNG (not TaskLocalRNG).
+#     Without the seed fallback, deepcopy would give identical RNG states.
+# ============================================================
+@testset "5b. Distinct streams — explicit JumpProblem RNG" begin
+    explicit_rng_jprob = JumpProblem(
+        ssa_dprob, Direct(), birth_jump, death_jump;
+        rng = Random.Xoshiro(999)
+    )
+    eprob = EnsembleProblem(explicit_rng_jprob)
+
+    for (alg_name, ensalg) in [
+            THREADED_ALGS;
+            ("Distributed", EnsembleDistributed());
+            ("SplitThreads", EnsembleSplitThreads())
+        ]
+        @testset "$alg_name" begin
+            sim = solve(
+                eprob, SSAStepper(), ensalg;
+                rng = StableRNG(42), trajectories = 20
+            )
+            @test allunique(first_jump_times(sim))
+        end
+    end
+
+    # Reproducibility: same seed → same results
+    sim1 = solve(
+        eprob, SSAStepper(), EnsembleSerial();
+        seed = UInt64(42), trajectories = 10
+    )
+    sim2 = solve(
+        eprob, SSAStepper(), EnsembleSerial();
+        seed = UInt64(42), trajectories = 10
+    )
+    @test endpoints(sim1) == endpoints(sim2)
+
+    # Different seeds → different results
+    sim3 = solve(
+        eprob, SSAStepper(), EnsembleSerial();
+        seed = UInt64(123), trajectories = 10
+    )
+    @test endpoints(sim1) != endpoints(sim3)
+end
+
+# ============================================================
 # 6. Different seeds → different results (all problem types)
 # ============================================================
 @testset "6. Different seeds → different results" begin
@@ -299,7 +344,7 @@ end
     eprob5 = EnsembleProblem(
         ode_prob;
         prob_func = (prob, i, repeat, rng, ctx) ->
-            remake(prob; u0 = rand(rng) * prob.u0),
+        remake(prob; u0 = rand(rng) * prob.u0),
     )
     sim1 = solve(eprob5, Tsit5(), EnsembleSerial(); seed = UInt64(55), trajectories = 6)
     sim2 = solve(eprob5, Tsit5(), EnsembleSerial(); seed = UInt64(55), trajectories = 6)
@@ -316,7 +361,7 @@ end
     eprob_stable = EnsembleProblem(
         ode_prob;
         prob_func = (prob, i, repeat, rng, ctx) ->
-            remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
+        remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
     )
 
     sim1 = solve(

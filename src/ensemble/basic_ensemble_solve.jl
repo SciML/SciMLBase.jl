@@ -245,11 +245,52 @@ function __solve(
     trajectory_seeds = (rng !== nothing || seed !== nothing) ?
         generate_trajectory_seeds(rng, seed, trajectories) : nothing
 
-    # Detect prob_func arity once (3-arg vs 5-arg) using SciMLBase.numargs
-    _prob_func_has_rng = any(>=(5), numargs(prob.prob_func))
+    # Detect prob_func arity once (3-arg vs 5-arg) using SciMLBase.numargs.
+    _has_rng = any(>=(5), numargs(prob.prob_func))
 
-    # Bundle ensemble RNG state to pass through solve_batch -> batch_func
-    ensemble_rng_state = (; trajectory_seeds, _prob_func_has_rng, rng_func, master_rng = rng)
+    # NOTE: _solve_rng_mode is pre-computed from prob.prob's type. This assumes prob_func
+    # preserves the problem type (e.g., a JumpProblem stays a JumpProblem). Changing type
+    # parameters within the same problem type is fine.
+    _is_rng_solver = supports_solve_rng(prob.prob, alg)
+    _is_jump_prob = prob.prob isa AbstractJumpProblem
+
+    # Function barrier: _dispatch_ensemble_solve converts Bool flags to Val types
+    # so the compiler sees concrete types in _solve_ensemble_impl. Val(::Bool) infers
+    # as abstract Val; explicit if/else with Val literals gives Union{Val{true}, Val{false}}
+    # which the compiler can union-split.
+    return _dispatch_ensemble_solve(
+        _has_rng, _is_rng_solver, _is_jump_prob,
+        prob, alg, ensemblealg, trajectory_seeds, rng_func, rng, logger;
+        trajectories, batch_size, pmap_batch_size, kwargs...
+    )
+end
+
+# Two-stage function barrier to keep union splitting manageable:
+# Stage 1 splits on _has_rng (Bool → Val{true}/Val{false}, 2-way union)
+# Stage 2 splits on the solve mode (3-way union would combine to 6 paths with stage 1)
+function _dispatch_ensemble_solve(
+        _has_rng::Bool, _is_rng_solver::Bool, _is_jump_prob::Bool,
+        prob, alg, ensemblealg, trajectory_seeds, rng_func, rng, logger;
+        kwargs...
+    )
+    _prob_func_has_rng = _has_rng ? Val(true) : Val(false)
+    _solve_rng_mode = _is_rng_solver ? Val(:rng) : _is_jump_prob ? Val(:seed) : Val(:none)
+    return _solve_ensemble_impl(
+        prob, alg, ensemblealg, _prob_func_has_rng, _solve_rng_mode,
+        trajectory_seeds, rng_func, rng, logger;
+        kwargs...
+    )
+end
+
+function _solve_ensemble_impl(
+        prob, alg, ensemblealg, _prob_func_has_rng::Val{PF}, _solve_rng_mode::Val{SM},
+        trajectory_seeds, rng_func, rng, logger;
+        trajectories, batch_size, pmap_batch_size, kwargs...
+    ) where {PF, SM}
+    # Bundle ensemble RNG state to pass through solve_batch -> batch_func.
+    # All fields have concrete types here thanks to the function barrier.
+    ensemble_rng_state = (; trajectory_seeds, _prob_func_has_rng, _solve_rng_mode, rng_func,
+        master_rng = rng)
 
     return Logging.with_logger(logger) do
         num_batches = trajectories ÷ batch_size
@@ -310,11 +351,24 @@ function __solve(
     end
 end
 
+# Val-dispatch helpers for type-stable branching in batch_func.
+_invoke_prob_func(::Val{true}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter, rng, ctx)
+_invoke_prob_func(::Val{false}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter)
+
+# Solve dispatch: :rng passes rng kwarg, :seed passes seed kwarg (JP v9 fallback), :none passes neither.
+_invoke_solve(::Val{:rng}, new_prob, alg, rng, seed; kwargs...) =
+    solve(new_prob, alg; rng, kwargs...)
+_invoke_solve(::Val{:seed}, new_prob, alg, rng, seed; kwargs...) =
+    seed !== nothing ? solve(new_prob, alg; seed, kwargs...) : solve(new_prob, alg; kwargs...)
+_invoke_solve(::Val{:none}, new_prob, alg, rng, seed; kwargs...) =
+    solve(new_prob, alg; kwargs...)
+
 function batch_func(
         i, prob, alg, ensemble_rng_state, thread_prob;
         worker_id = 0, kwargs...
     )
-    (; trajectory_seeds, _prob_func_has_rng, rng_func, master_rng) = ensemble_rng_state
+    (; trajectory_seeds, _prob_func_has_rng, _solve_rng_mode, rng_func,
+        master_rng) = ensemble_rng_state
 
     # Build context for this trajectory
     traj_seed = trajectory_seeds !== nothing ? trajectory_seeds[i] : nothing
@@ -336,11 +390,8 @@ function batch_func(
     end
 
     # Call prob_func (3-arg or 5-arg)
-    new_prob = if _prob_func_has_rng
-        prob.prob_func(_prob, i, iter, trajectory_rng, ctx)
-    else
-        prob.prob_func(_prob, i, iter)
-    end
+    new_prob = _invoke_prob_func(
+        _prob_func_has_rng, prob.prob_func, _prob, i, iter, trajectory_rng, ctx)
 
     # Progress handling
     progress = get(kwargs, :progress, false)
@@ -351,15 +402,12 @@ function batch_func(
         kwargs = (kwargs..., progress_name = progress_name, progress_id = progress_id)
     end
 
-    # Solve — only pass rng= when the problem+algorithm pair supports it.
-    # Non-DE solvers (Optimization.jl, NonlinearSolve.jl) don't accept rng.
-    # The TaskLocalRNG is already seeded by rng_func, so any rand() calls in
-    # those solvers still draw from the deterministic per-trajectory stream.
-    _solve_call = if supports_solve_rng(new_prob, alg)
-        solve(new_prob, alg; rng = trajectory_rng, kwargs...)
-    else
-        solve(new_prob, alg; kwargs...)
-    end
+    # Solve — dispatch on pre-computed _solve_rng_mode:
+    #   :rng  → pass rng kwarg (new interface)
+    #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
+    #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
+    _solve_call = _invoke_solve(
+        _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...)
     x = prob.output_func(_solve_call, i)
     if !(x isa Tuple)
         rerun_warn()
@@ -379,16 +427,10 @@ function batch_func(
         else
             prob.prob
         end
-        new_prob = if _prob_func_has_rng
-            prob.prob_func(_prob2, i, iter, trajectory_rng, ctx)
-        else
-            prob.prob_func(_prob2, i, iter)
-        end
-        _solve_call = if supports_solve_rng(new_prob, alg)
-            solve(new_prob, alg; rng = trajectory_rng, kwargs...)
-        else
-            solve(new_prob, alg; kwargs...)
-        end
+        new_prob = _invoke_prob_func(
+            _prob_func_has_rng, prob.prob_func, _prob2, i, iter, trajectory_rng, ctx)
+        _solve_call = _invoke_solve(
+            _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...)
         x = prob.output_func(_solve_call, i)
         if !(x isa Tuple)
             rerun_warn()
@@ -479,7 +521,7 @@ function solve_batch(
             if !haskey(tls, :_ensemble_jump_prob)
                 tls[:_ensemble_jump_prob] = deepcopy(prob.prob)
             end
-            tls[:_ensemble_jump_prob]
+            tls[:_ensemble_jump_prob]::typeof(prob.prob)
         else
             nothing
         end
