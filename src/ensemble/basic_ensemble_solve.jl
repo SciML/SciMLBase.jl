@@ -289,8 +289,10 @@ function _solve_ensemble_impl(
     ) where {PF, SM}
     # Bundle ensemble RNG state to pass through solve_batch -> batch_func.
     # All fields have concrete types here thanks to the function barrier.
-    ensemble_rng_state = (; trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
-        master_rng = rng)
+    ensemble_rng_state = (;
+        trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
+        master_rng = rng,
+    )
 
     return Logging.with_logger(logger) do
         num_batches = trajectories ÷ batch_size
@@ -359,7 +361,7 @@ _invoke_prob_func(::Val{false}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter)
 # Val-dispatch for solve RNG strategy:
 #   :rng  → solver supports rng kwarg directly (e.g. JumpProcesses ≥ v10)
 #   :seed → solver doesn't support rng kwarg but problem is a JumpProblem;
-#           pass seed kwarg so JP v9's resetted_jump_problem can reseed the stored RNG
+#           pass seed kwarg so JP v9 can reseed the aggregator's stored RNG
 #   :none → non-jump solver; TaskLocalRNG already seeded by rng_func, no extra kwargs needed
 _invoke_solve(::Val{:rng}, new_prob, alg, rng, seed; kwargs...) =
     solve(new_prob, alg; rng, kwargs...)
@@ -372,8 +374,10 @@ function batch_func(
         i, prob, alg, ensemble_rng_state, thread_prob;
         worker_id = 0, kwargs...
     )
-    (; trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
-        master_rng) = ensemble_rng_state
+    (;
+        trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
+        master_rng,
+    ) = ensemble_rng_state
 
     # Build context for this trajectory
     traj_seed = trajectory_seeds !== nothing ? trajectory_seeds[i] : nothing
@@ -396,7 +400,8 @@ function batch_func(
 
     # Call prob_func — dispatches to 5-arg (prob, i, repeat, rng, ctx) or 3-arg (prob, i, repeat)
     new_prob = _invoke_prob_func(
-        _prob_func_is_5arg, prob.prob_func, _prob, i, iter, trajectory_rng, ctx)
+        _prob_func_is_5arg, prob.prob_func, _prob, i, iter, trajectory_rng, ctx
+    )
 
     # Progress handling
     progress = get(kwargs, :progress, false)
@@ -412,7 +417,8 @@ function batch_func(
     #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
     #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
     _solve_call = _invoke_solve(
-        _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...)
+        _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...
+    )
     x = prob.output_func(_solve_call, i)
     if !(x isa Tuple)
         rerun_warn()
@@ -433,9 +439,11 @@ function batch_func(
             prob.prob
         end
         new_prob = _invoke_prob_func(
-            _prob_func_is_5arg, prob.prob_func, _prob2, i, iter, trajectory_rng, ctx)
+            _prob_func_is_5arg, prob.prob_func, _prob2, i, iter, trajectory_rng, ctx
+        )
         _solve_call = _invoke_solve(
-            _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...)
+            _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...
+        )
         x = prob.output_func(_solve_call, i)
         if !(x isa Tuple)
             rerun_warn()
