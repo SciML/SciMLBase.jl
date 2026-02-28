@@ -265,6 +265,7 @@ ODEFunction{iip,specialize}(f;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+                           vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -293,6 +294,10 @@ the usage of `f`. These include:
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
+- `vjp_p(Jpv,v,u,p,t)` or `Jpv=vjp_p(v,u,p,t)`: returns the parameter adjoint derivative
+  ``\\frac{df}{dp}^∗ v``, i.e. the vector-Jacobian product with respect to parameters. This
+  avoids materializing the full parameter Jacobian when only the VJP is needed (e.g. in adjoint
+  sensitivity analysis). When not provided, falls back to `paramjac` or AD-based computation.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
   finite differences and automatic differentiation to be computed in an accelerated manner
@@ -411,6 +416,7 @@ numerically-defined functions.
 """
 struct ODEFunction{
         iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
+        VJP_P,
         O, TCV,
         SYS, ID <: Union{Nothing, OverrideInitData}, NLP <: Union{Nothing, ODENLStepData},
     } <:
@@ -428,6 +434,7 @@ struct ODEFunction{
     Wfact_t::TWt
     W_prototype::WP
     paramjac::TPJ
+    vjp_p::VJP_P
     observed::O
     colorvec::TCV
     sys::SYS
@@ -2763,6 +2770,7 @@ function ODEFunction{iip, specialize}(
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+        vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
         syms = nothing,
         indepsym = nothing,
         paramsyms = nothing,
@@ -2813,14 +2821,15 @@ function ODEFunction{iip, specialize}(
     Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
     Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
     paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
+    vjp_piip = vjp_p !== nothing ? isinplace(vjp_p, 5, "vjp_p", iip) : iip
 
     nonconforming = (
         jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
-        paramjaciip,
+        paramjaciip, vjp_piip,
     ) .!= iip
     if any(nonconforming)
         nonconforming = findall(nonconforming)
-        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac"][nonconforming]
+        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac", "vjp_p"][nonconforming]
         throw(NonconformingFunctionsError(functions))
     end
 
@@ -2839,12 +2848,13 @@ function ODEFunction{iip, specialize}(
             Any, Any, Any, typeof(jac_prototype),
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
             Any,
+            Any,
             typeof(_colorvec),
             typeof(sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData},
         }(
             _f, mass_matrix, analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac,
+            Wfact_t, W_prototype, paramjac, vjp_p,
             observed, _colorvec, sys, initdata, nlstep_data
         )
     elseif specialize === false
@@ -2854,6 +2864,7 @@ function ODEFunction{iip, specialize}(
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
             typeof(paramjac),
+            typeof(vjp_p),
             typeof(observed),
             typeof(_colorvec),
             typeof(sys), typeof(initdata), typeof(nlstep_data),
@@ -2861,7 +2872,7 @@ function ODEFunction{iip, specialize}(
             _f, mass_matrix,
             analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac,
+            Wfact_t, W_prototype, paramjac, vjp_p,
             observed, _colorvec, sys, initdata, nlstep_data
         )
     else
@@ -2871,13 +2882,14 @@ function ODEFunction{iip, specialize}(
             typeof(jac), typeof(jvp), typeof(vjp), typeof(jac_prototype),
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t), typeof(W_prototype),
             typeof(paramjac),
+            typeof(vjp_p),
             typeof(observed),
             typeof(_colorvec),
             typeof(sys), typeof(initdata), typeof(nlstep_data),
         }(
             _f, mass_matrix, analytic, tgrad,
             jac, jvp, vjp, jac_prototype, sparsity, Wfact,
-            Wfact_t, W_prototype, paramjac,
+            Wfact_t, W_prototype, paramjac, vjp_p,
             observed, _colorvec, sys, initdata, nlstep_data
         )
     end
@@ -2896,27 +2908,29 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             isinplace(f), specialization(f), Any, Any, Any,
             Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any, Any,
+            Any,
             Any, typeof(f.colorvec),
             typeof(f.sys), Union{Nothing, OverrideInitData}, Union{Nothing, ODENLStepData},
         }(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-            f.Wfact_t, f.W_prototype, f.paramjac,
+            f.Wfact_t, f.W_prototype, f.paramjac, f.vjp_p,
             f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
         )
     elseif specialization(f) === AutoSpecialize
         ODEFunction{
             isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
-            Nothing, typeof(f.tgrad),
+            typeof(f.analytic), typeof(f.tgrad),
             typeof(f.jac), Nothing, Nothing, typeof(f.jac_prototype),
             typeof(f.sparsity), Nothing, Nothing, typeof(f.W_prototype),
+            Nothing,
             Nothing,
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
         }(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-            f.Wfact_t, f.W_prototype, f.paramjac,
+            f.Wfact_t, f.W_prototype, f.paramjac, f.vjp_p,
             f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
         )
     else
@@ -2926,12 +2940,13 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
             typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
             typeof(f.paramjac),
+            typeof(f.vjp_p),
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
         }(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-            f.Wfact_t, f.W_prototype, f.paramjac,
+            f.Wfact_t, f.W_prototype, f.paramjac, f.vjp_p,
             f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
         )
     end
@@ -5337,6 +5352,7 @@ __has_Wfact(f) = hasfield(typeof(f), :Wfact)
 __has_Wfact_t(f) = hasfield(typeof(f), :Wfact_t)
 __has_W_prototype(f) = hasfield(typeof(f), :W_prototype)
 __has_paramjac(f) = hasfield(typeof(f), :paramjac)
+__has_vjp_p(f) = hasfield(typeof(f), :vjp_p)
 __has_controljac(f) = hasfield(typeof(f), :controljac)
 __has_jac_prototype(f) = hasfield(typeof(f), :jac_prototype)
 __has_controljac_prototype(f) = hasfield(typeof(f), :controljac_prototype)
@@ -5388,6 +5404,7 @@ has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
 has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
+has_vjp_p(f::AbstractSciMLFunction) = __has_vjp_p(f) && f.vjp_p !== nothing
 has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
 function has_initializeprob(f::AbstractSciMLFunction)
     return __has_initializeprob(f) && f.initialization_data.initializeprob !== nothing
@@ -5457,6 +5474,9 @@ end
 function has_paramjac(f::Union{SplitFunction, SplitSDEFunction})
     return (__has_paramjac(f) && f.paramjac !== nothing) || has_paramjac(f.f1)
 end
+function has_vjp_p(f::Union{SplitFunction, SplitSDEFunction})
+    return (__has_vjp_p(f) && f.vjp_p !== nothing) || has_vjp_p(f.f1)
+end
 function has_colorvec(f::Union{SplitFunction, SplitSDEFunction})
     return (__has_colorvec(f) && f.colorvec !== nothing) || has_colorvec(f.f1)
 end
@@ -5468,6 +5488,7 @@ has_tgrad(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_tgrad(f.f1
 has_Wfact(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_Wfact(f.f1)
 has_Wfact_t(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_Wfact_t(f.f1)
 has_paramjac(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_paramjac(f.f1)
+has_vjp_p(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_vjp_p(f.f1)
 has_colorvec(f::Union{DynamicalODEFunction, DynamicalDDEFunction}) = has_colorvec(f.f1)
 
 has_jac(f::DynamicalBVPFunction) = has_jac(f.f)
@@ -5477,6 +5498,7 @@ has_tgrad(f::DynamicalBVPFunction) = has_tgrad(f.f)
 has_Wfact(f::DynamicalBVPFunction) = has_Wfact(f.f)
 has_Wfact_t(f::DynamicalBVPFunction) = has_Wfact_t(f.f)
 has_paramjac(f::DynamicalBVPFunction) = has_paramjac(f.f)
+has_vjp_p(f::DynamicalBVPFunction) = has_vjp_p(f.f)
 has_colorvec(f::DynamicalBVPFunction) = has_colorvec(f.f)
 
 has_jac(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_jac(f.f)
@@ -5486,6 +5508,7 @@ has_tgrad(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_tgrad(f.f)
 has_Wfact(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_Wfact(f.f)
 has_Wfact_t(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_Wfact_t(f.f)
 has_paramjac(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_paramjac(f.f)
+has_vjp_p(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_vjp_p(f.f)
 has_colorvec(f::Union{UDerivativeWrapper, UJacobianWrapper}) = has_colorvec(f.f)
 
 has_jac(f::JacobianWrapper) = has_jac(f.f)
@@ -5495,6 +5518,7 @@ has_tgrad(f::JacobianWrapper) = has_tgrad(f.f)
 has_Wfact(f::JacobianWrapper) = has_Wfact(f.f)
 has_Wfact_t(f::JacobianWrapper) = has_Wfact_t(f.f)
 has_paramjac(f::JacobianWrapper) = has_paramjac(f.f)
+has_vjp_p(f::JacobianWrapper) = has_vjp_p(f.f)
 has_colorvec(f::JacobianWrapper) = has_colorvec(f.f)
 
 for _fieldname in fieldnames(NonlinearFunction)
