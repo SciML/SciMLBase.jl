@@ -246,9 +246,10 @@ function __solve(
         generate_trajectory_seeds(rng, seed, trajectories) : nothing
 
     # Detect prob_func arity once (3-arg vs 5-arg) using SciMLBase.numargs.
-    _has_rng = any(>=(5), numargs(prob.prob_func))
+    _prob_func_is_5arg = any(>=(5), numargs(prob.prob_func))
 
-    # NOTE: _solve_rng_mode is pre-computed from prob.prob's type. This assumes prob_func
+    # Pre-compute solve-RNG strategy flags from prob.prob's type. These are converted to
+    # Val types in _dispatch_ensemble_solve for type-stable dispatch. This assumes prob_func
     # preserves the problem type (e.g., a JumpProblem stays a JumpProblem). Changing type
     # parameters within the same problem type is fine.
     _is_rng_solver = supports_solve_rng(prob.prob, alg)
@@ -259,37 +260,36 @@ function __solve(
     # as abstract Val; explicit if/else with Val literals gives Union{Val{true}, Val{false}}
     # which the compiler can union-split.
     return _dispatch_ensemble_solve(
-        _has_rng, _is_rng_solver, _is_jump_prob,
+        _prob_func_is_5arg, _is_rng_solver, _is_jump_prob,
         prob, alg, ensemblealg, trajectory_seeds, rng_func, rng, logger;
         trajectories, batch_size, pmap_batch_size, kwargs...
     )
 end
 
-# Two-stage function barrier to keep union splitting manageable:
-# Stage 1 splits on _has_rng (Bool → Val{true}/Val{false}, 2-way union)
-# Stage 2 splits on the solve mode (3-way union would combine to 6 paths with stage 1)
+# Function barrier: converts Bool flags to Val types with explicit if/else so the
+# compiler sees Union{Val{true}, Val{false}} (union-splittable) rather than abstract Val.
 function _dispatch_ensemble_solve(
-        _has_rng::Bool, _is_rng_solver::Bool, _is_jump_prob::Bool,
+        _prob_func_is_5arg::Bool, _is_rng_solver::Bool, _is_jump_prob::Bool,
         prob, alg, ensemblealg, trajectory_seeds, rng_func, rng, logger;
         kwargs...
     )
-    _prob_func_has_rng = _has_rng ? Val(true) : Val(false)
+    _prob_func_is_5arg = _prob_func_is_5arg ? Val(true) : Val(false)
     _solve_rng_mode = _is_rng_solver ? Val(:rng) : _is_jump_prob ? Val(:seed) : Val(:none)
     return _solve_ensemble_impl(
-        prob, alg, ensemblealg, _prob_func_has_rng, _solve_rng_mode,
+        prob, alg, ensemblealg, _prob_func_is_5arg, _solve_rng_mode,
         trajectory_seeds, rng_func, rng, logger;
         kwargs...
     )
 end
 
 function _solve_ensemble_impl(
-        prob, alg, ensemblealg, _prob_func_has_rng::Val{PF}, _solve_rng_mode::Val{SM},
+        prob, alg, ensemblealg, _prob_func_is_5arg::Val{PF}, _solve_rng_mode::Val{SM},
         trajectory_seeds, rng_func, rng, logger;
         trajectories, batch_size, pmap_batch_size, kwargs...
     ) where {PF, SM}
     # Bundle ensemble RNG state to pass through solve_batch -> batch_func.
     # All fields have concrete types here thanks to the function barrier.
-    ensemble_rng_state = (; trajectory_seeds, _prob_func_has_rng, _solve_rng_mode, rng_func,
+    ensemble_rng_state = (; trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
         master_rng = rng)
 
     return Logging.with_logger(logger) do
@@ -352,10 +352,15 @@ function _solve_ensemble_impl(
 end
 
 # Val-dispatch helpers for type-stable branching in batch_func.
+# Val{true} = 5-arg prob_func(prob, i, repeat, rng, ctx); Val{false} = 3-arg prob_func(prob, i, repeat).
 _invoke_prob_func(::Val{true}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter, rng, ctx)
 _invoke_prob_func(::Val{false}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter)
 
-# Solve dispatch: :rng passes rng kwarg, :seed passes seed kwarg (JP v9 fallback), :none passes neither.
+# Val-dispatch for solve RNG strategy:
+#   :rng  → solver supports rng kwarg directly (e.g. JumpProcesses ≥ v10)
+#   :seed → solver doesn't support rng kwarg but problem is a JumpProblem;
+#           pass seed kwarg so JP v9's resetted_jump_problem can reseed the stored RNG
+#   :none → non-jump solver; TaskLocalRNG already seeded by rng_func, no extra kwargs needed
 _invoke_solve(::Val{:rng}, new_prob, alg, rng, seed; kwargs...) =
     solve(new_prob, alg; rng, kwargs...)
 _invoke_solve(::Val{:seed}, new_prob, alg, rng, seed; kwargs...) =
@@ -367,14 +372,14 @@ function batch_func(
         i, prob, alg, ensemble_rng_state, thread_prob;
         worker_id = 0, kwargs...
     )
-    (; trajectory_seeds, _prob_func_has_rng, _solve_rng_mode, rng_func,
+    (; trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
         master_rng) = ensemble_rng_state
 
     # Build context for this trajectory
     traj_seed = trajectory_seeds !== nothing ? trajectory_seeds[i] : nothing
     ctx = EnsembleContext(i, worker_id, traj_seed, master_rng)
 
-    # Get per-trajectory RNG (always called — ensemble layer is the one source of truth)
+    # Get per-trajectory RNG (always called to seed TaskLocalRNG for this trajectory)
     trajectory_rng = rng_func(ctx)
 
     iter = 1
@@ -389,9 +394,9 @@ function batch_func(
         prob.prob
     end
 
-    # Call prob_func (3-arg or 5-arg)
+    # Call prob_func — dispatches to 5-arg (prob, i, repeat, rng, ctx) or 3-arg (prob, i, repeat)
     new_prob = _invoke_prob_func(
-        _prob_func_has_rng, prob.prob_func, _prob, i, iter, trajectory_rng, ctx)
+        _prob_func_is_5arg, prob.prob_func, _prob, i, iter, trajectory_rng, ctx)
 
     # Progress handling
     progress = get(kwargs, :progress, false)
@@ -428,7 +433,7 @@ function batch_func(
             prob.prob
         end
         new_prob = _invoke_prob_func(
-            _prob_func_has_rng, prob.prob_func, _prob2, i, iter, trajectory_rng, ctx)
+            _prob_func_is_5arg, prob.prob_func, _prob2, i, iter, trajectory_rng, ctx)
         _solve_call = _invoke_solve(
             _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...)
         x = prob.output_func(_solve_call, i)

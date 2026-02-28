@@ -11,6 +11,9 @@ EnsembleProblem(prob::AbstractSciMLProblem;
     u_init = [], safetycopy = prob_func !== DEFAULT_PROB_FUNC)
 ```
 
+`prob_func` may also accept 5 arguments `(prob, i, repeat, rng, ctx)` where `rng` is the
+per-trajectory RNG and `ctx` is an [`EnsembleContext`](@ref).
+
 ## Positional Arguments
 
   - `prob`: The canonical problem of the ensemble problem. This is the prob that is seeded
@@ -81,6 +84,16 @@ a new problem type:
 function prob_func(prob, i, repeat)
     @. prob.u0 = u0_arr[i]
     prob
+end
+```
+
+When `rng` or `seed` is passed to `solve`, a 5-argument form
+`prob_func(prob, i, repeat, rng, ctx)` can be used to access the per-trajectory
+RNG and [`EnsembleContext`](@ref):
+
+```julia
+function prob_func(prob, i, repeat, rng, ctx)
+    remake(prob, u0 = randn(rng, length(prob.u0)))
 end
 ```
 
