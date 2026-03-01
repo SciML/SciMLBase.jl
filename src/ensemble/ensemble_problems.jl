@@ -86,9 +86,10 @@ function prob_func(prob, i, repeat)
 end
 ```
 
-When `rng` or `seed` is passed to `solve`, a 5-argument form
-`prob_func(prob, i, repeat, rng, ctx)` can be used to access the per-trajectory
-RNG and [`EnsembleContext`](@ref):
+A 5-argument form `prob_func(prob, i, repeat, rng, ctx)` can be used to access
+the per-trajectory RNG and [`EnsembleContext`](@ref). When `rng` or `seed` is
+passed to `solve`, `ctx.trajectory_seed` and `ctx.master_rng` are populated;
+otherwise they are `nothing`.
 
 ```julia
 function prob_func(prob, i, repeat, rng, ctx)

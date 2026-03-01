@@ -251,8 +251,11 @@ function __solve(
     # Pre-compute solve-RNG strategy flags from prob.prob's type. These are converted to
     # Val types in _dispatch_ensemble_solve for type-stable dispatch. This assumes prob_func
     # preserves the problem type (e.g., a JumpProblem stays a JumpProblem).
+    # For the deprecated Vector-of-problems path, prob.prob is a Vector — default to :seed
+    # mode so seed/rng kwargs are forwarded (matching master behavior).
     _is_rng_solver = supports_solve_rng(prob.prob, alg)
-    _is_jump_prob = prob.prob isa AbstractJumpProblem
+    _is_jump_prob = prob.prob isa AbstractJumpProblem ||
+        prob.prob isa AbstractVector
 
     # Function barrier: _dispatch_ensemble_solve converts Bool flags to Val types
     # so the compiler sees concrete types in _solve_ensemble_impl. Val(::Bool) infers

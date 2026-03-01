@@ -51,9 +51,11 @@ endpoints(sim) = [sol[end] for sol in sim]
 # Extract first positive time from each trajectory (jump time, skipping t=0 entries)
 first_jump_times(sim) = [sol.t[findfirst(>(0), sol.t)] for sol in sim]
 
-# Build ensemble problem with default prob_func using rand()
-# JumpProblem doesn't expose u0 directly, so use identity prob_func for those —
-# stochasticity comes from the jump process itself.
+# Extract all solution time arrays (continuous-valued, safe for != comparisons)
+all_timeseries(sim) = [sol.t for sol in sim]
+
+# Build ensemble problem with default prob_func that perturbs u0.
+# JumpProblems use identity prob_func — stochasticity comes from the jump process itself.
 function make_eprob(prob; safetycopy = true)
     return if prob isa JumpProblem
         EnsembleProblem(prob; safetycopy)
@@ -314,7 +316,7 @@ end
         eprob, SSAStepper(), EnsembleSerial();
         seed = UInt64(123), trajectories = 10
     )
-    @test endpoints(sim1) != endpoints(sim3)
+    @test first_jump_times(sim1) != first_jump_times(sim3)
 end
 
 # ============================================================
@@ -332,7 +334,7 @@ end
                 eprob, alg, EnsembleSerial();
                 seed = UInt64(123), trajectories = 6,
             )
-            @test endpoints(sim_a) != endpoints(sim_b)
+            @test all_timeseries(sim_a) != all_timeseries(sim_b)
         end
     end
 end
