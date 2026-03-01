@@ -588,6 +588,50 @@ function solve_batch(
     return reduce(vcat, batch_data)
 end
 
+# Backwards-compatible 5-arg fallbacks for callers that don't pass ensemble_rng_state
+# (e.g. DiffEqGPU's CPU offload path). Constructs a no-op RNG state and forwards.
+const _DEFAULT_ENSEMBLE_RNG_STATE = (;
+    trajectory_seeds = nothing,
+    _prob_func_is_5arg = Val(false),
+    _solve_rng_mode = Val(:none),
+    rng_func = Returns(nothing),
+    master_rng = nothing,
+)
+
+function solve_batch(prob, alg, ensemblealg::EnsembleSerial, II, pmap_batch_size; kwargs...)
+    return solve_batch(
+        prob, alg, ensemblealg, II, pmap_batch_size,
+        _DEFAULT_ENSEMBLE_RNG_STATE; kwargs...
+    )
+end
+
+function solve_batch(
+        prob, alg, ensemblealg::EnsembleThreads, II, pmap_batch_size; kwargs...
+    )
+    return solve_batch(
+        prob, alg, ensemblealg, II, pmap_batch_size,
+        _DEFAULT_ENSEMBLE_RNG_STATE; kwargs...
+    )
+end
+
+function solve_batch(
+        prob, alg, ensemblealg::EnsembleDistributed, II, pmap_batch_size; kwargs...
+    )
+    return solve_batch(
+        prob, alg, ensemblealg, II, pmap_batch_size,
+        _DEFAULT_ENSEMBLE_RNG_STATE; kwargs...
+    )
+end
+
+function solve_batch(
+        prob, alg, ensemblealg::EnsembleSplitThreads, II, pmap_batch_size; kwargs...
+    )
+    return solve_batch(
+        prob, alg, ensemblealg, II, pmap_batch_size,
+        _DEFAULT_ENSEMBLE_RNG_STATE; kwargs...
+    )
+end
+
 function solve(prob::EnsembleProblem, args...; kwargs...)
     alg = extract_alg(args, kwargs, kwargs)
     return if length(args) > 1
