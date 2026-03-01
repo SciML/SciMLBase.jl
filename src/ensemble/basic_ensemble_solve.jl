@@ -250,8 +250,7 @@ function __solve(
 
     # Pre-compute solve-RNG strategy flags from prob.prob's type. These are converted to
     # Val types in _dispatch_ensemble_solve for type-stable dispatch. This assumes prob_func
-    # preserves the problem type (e.g., a JumpProblem stays a JumpProblem). Changing type
-    # parameters within the same problem type is fine.
+    # preserves the problem type (e.g., a JumpProblem stays a JumpProblem).
     _is_rng_solver = supports_solve_rng(prob.prob, alg)
     _is_jump_prob = prob.prob isa AbstractJumpProblem
 
