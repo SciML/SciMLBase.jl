@@ -205,7 +205,7 @@ DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
 function isdenseplot(sol)
     return (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
-        !(sol isa AbstractRODESolution) &&
+        !(sol.prob isa Union{AbstractRODEProblem, AbstractSDDEProblem}) &&
         !(
         hasfield(typeof(sol), :interp) &&
             sol.interp isa SensitivityInterpolation
