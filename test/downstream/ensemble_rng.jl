@@ -578,3 +578,65 @@ end
     @test length(dist_ctxs) == 3
     @test all(ctx.worker_id ∈ workers() for ctx in dist_ctxs)
 end
+
+# ============================================================
+# 16. JumpProblem remake with parameter change — thread safety
+# ============================================================
+@testset "16. JumpProblem remake parameter change" begin
+    # Small-population birth-death with low rates (fast simulation).
+    # A callback at t_cb applies a large parameter-dependent jump to u[1]
+    # and terminates. This tests that remake's aliased JumpProblem fields
+    # don't cause race conditions on threads, and that the remade parameter
+    # actually flows through to the solution.
+    pbirth_rate(u, p, t) = p[1]
+    pdeath_rate(u, p, t) = p[2] * u[1]
+    pbirth_jump = ConstantRateJump(pbirth_rate, integrator -> (integrator.u[1] += 1))
+    pdeath_jump = ConstantRateJump(pdeath_rate, integrator -> (integrator.u[1] -= 1))
+
+    p0 = [0.1, 0.001, 0.0]
+    pdprob = DiscreteProblem([5], (0.0, 100.0), p0)
+    pjprob = JumpProblem(pdprob, Direct(), pbirth_jump, pdeath_jump)
+
+    t_cb = 50.0
+    pcb = DiscreteCallback(
+        (u, t, integrator) -> t == t_cb,
+        integrator -> begin
+            integrator.u[1] += round(Int, integrator.p[3])
+            reset_aggregated_jumps!(integrator)
+            terminate!(integrator)
+        end,
+    )
+
+    n_traj = 50
+    pscales = [1000 * i for i in 1:n_traj]
+    pf = (prob, i, repeat) ->
+        remake(prob; p = [prob.prob.p[1], prob.prob.p[2], Float64(pscales[i])])
+
+    for safetycopy in (true, false)
+        @testset "safetycopy=$safetycopy" begin
+            eprob = EnsembleProblem(pjprob; prob_func = pf, safetycopy)
+
+            sim = solve(
+                eprob, SSAStepper(), EnsembleThreads();
+                rng = StableRNG(42), trajectories = n_traj,
+                callback = pcb, tstops = [t_cb],
+            )
+
+            # The callback saves pre/post states at t_cb then terminates.
+            # post_cb - pre_cb must equal the trajectory's scale.
+            for (idx, sol) in enumerate(sim)
+                pre_cb = sol.u[end - 1][1]
+                post_cb = sol.u[end][1]
+                @test post_cb - pre_cb == pscales[idx]
+            end
+
+            # Reproducibility: same RNG → same results
+            sim2 = solve(
+                eprob, SSAStepper(), EnsembleThreads();
+                rng = StableRNG(42), trajectories = n_traj,
+                callback = pcb, tstops = [t_cb],
+            )
+            @test endpoints(sim) == endpoints(sim2)
+        end
+    end
+end
