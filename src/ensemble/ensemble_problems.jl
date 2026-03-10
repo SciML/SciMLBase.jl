@@ -11,6 +11,9 @@ EnsembleProblem(prob::AbstractSciMLProblem;
     u_init = [], safetycopy = prob_func !== DEFAULT_PROB_FUNC)
 ```
 
+`prob_func` may also accept 5 arguments `(prob, i, repeat, rng, ctx)` where `rng` is the
+per-trajectory RNG and `ctx` is an [`EnsembleContext`](@ref).
+
 ## Positional Arguments
 
   - `prob`: The canonical problem of the ensemble problem. This is the prob that is seeded
@@ -27,7 +30,9 @@ EnsembleProblem(prob::AbstractSciMLProblem;
     is the problem, `i` is the unique id `1:trajectories` for the problem, and
     `repeat` is the iteration of the repeat. At first, it is `1`, but if
     `rerun` was true this will be `2`, `3`, etc. counting the number of times
-    problem `i` has been repeated.
+    problem `i` has been repeated. `prob_func` must preserve the problem type
+    of `prob` — for example, a `JumpProblem` must remain a `JumpProblem`, an
+    `ODEProblem` must remain an `ODEProblem`.
 
   - `reduction`: This function is used to aggregate the results in each simulation batch. 
     By default, it appends the `data` from the batch to `u`, which is initialized via `u_data`. 
@@ -78,6 +83,17 @@ a new problem type:
 function prob_func(prob, i, repeat)
     @. prob.u0 = u0_arr[i]
     prob
+end
+```
+
+A 5-argument form `prob_func(prob, i, repeat, rng, ctx)` can be used to access
+the per-trajectory RNG and [`EnsembleContext`](@ref). When `rng` or `seed` is
+passed to `solve`, `ctx.trajectory_seed` and `ctx.master_rng` are populated;
+otherwise they are `nothing`.
+
+```julia
+function prob_func(prob, i, repeat, rng, ctx)
+    remake(prob, u0 = randn(rng, length(prob.u0)))
 end
 ```
 
