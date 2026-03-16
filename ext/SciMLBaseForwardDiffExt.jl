@@ -297,6 +297,10 @@ end
 function anyeltypedual(sol::RecursiveArrayTools.AbstractDiffEqArray, counter = 0)
     return diffeqmapreduce(anyeltypedual, promote_dual, (sol.u, sol.t))
 end
+function anyeltypedual(sol::RecursiveArrayTools.AbstractDiffEqArray, ::Type{Val{counter}}) where {counter}
+    return diffeqmapreduce(anyeltypedual, promote_dual, (sol.u, sol.t))
+end
+
 
 function anyeltypedual(
         prob::Union{ODEProblem, SDEProblem, RODEProblem, DDEProblem},

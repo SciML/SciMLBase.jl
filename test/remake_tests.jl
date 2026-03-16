@@ -484,3 +484,13 @@ end
     prob2 = remake(prob; A = SMatrix{3, 3}(A))
     @test prob2.A isa SMatrix{3, 3}
 end
+
+@testset "Issue#1267: `anyeltypedual` ambiguity" begin
+    ts = 0.0:0.1:10.0
+    f1(t) = t - 1
+    f2(t) = t^2
+    vals = [[f1(t), f2(t)] for t ∈ ts]
+    sol = DiffEqArray(vals, ts)
+    @test SciMLBase.anyeltypedual(sol, Val{0}) == Any
+end
+
