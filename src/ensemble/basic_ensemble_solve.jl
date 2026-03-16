@@ -382,6 +382,10 @@ function solve_batch(prob, alg, ::EnsembleSplitThreads, II, pmap_batch_size; kwa
 end
 
 function solve(prob::EnsembleProblem, args...; kwargs...)
+    if haskey(kwargs, :ensemblealg)
+        throw(ArgumentError("`ensemblealg` should be passed as a positional argument, not a keyword argument. For example: `solve(prob, alg, EnsembleThreads(); kwargs...)`"))
+    end
+    
     alg = extract_alg(args, kwargs, kwargs)
     return if length(args) > 1
         __solve(prob, alg, Base.tail(args)...; kwargs...)
