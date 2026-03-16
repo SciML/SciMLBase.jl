@@ -294,7 +294,9 @@ function anyeltypedual(
     return Any
 end
 
-function anyeltypedual(sol::RecursiveArrayTools.AbstractDiffEqArray, counter = 0)
+function anyeltypedual(
+        sol::RecursiveArrayTools.AbstractVectorOfArray, ::Type{Val{counter}} = Val{0}
+    ) where {counter}
     return diffeqmapreduce(anyeltypedual, promote_dual, (sol.u, sol.t))
 end
 
