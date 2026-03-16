@@ -8,7 +8,7 @@ These wrappers provide specialized interfaces for computing derivatives with res
 - `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
 """
 abstract type AbstractWrappedFunction{iip} end
-isinplace(f::AbstractWrappedFunction{iip}) where {iip} = iip
+isinplace(f::AbstractWrappedFunction{iip}) where {iip} = iip === true
 
 """
     TimeGradientWrapper{iip, fType, uType, P} <: AbstractWrappedFunction{iip}

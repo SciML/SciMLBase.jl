@@ -312,12 +312,12 @@ function isinplace(
     end
 end
 
-isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip
+isinplace(f::AbstractSciMLFunction{iip}) where {iip} = iip === true
 function isinplace(
         f::AbstractSciMLFunction{iip}, inplace_param_number,
         fname = nothing
     ) where {iip}
-    return iip
+    return iip === true
 end
 
 # Determine in-place status for FunctionWrappersWrapper by inspecting the return types
