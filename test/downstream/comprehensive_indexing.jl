@@ -1060,7 +1060,7 @@ end
 
             @test sol.discretes.collection[2].t[1] > 0.0
         end
-        
+
         @testset "`ContinuousCallback`" begin
             cb2 = ContinuousCallback(
                 (u, t, i) -> cos(4pi * t), affect2!, save_positions = (true, true),

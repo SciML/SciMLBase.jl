@@ -489,8 +489,7 @@ end
     ts = 0.0:0.1:10.0
     f1(t) = t - 1
     f2(t) = t^2
-    vals = [[f1(t), f2(t)] for t ∈ ts]
+    vals = [[f1(t), f2(t)] for t in ts]
     sol = DiffEqArray(vals, ts)
     @test SciMLBase.anyeltypedual(sol, Val{0}) == Any
 end
-
