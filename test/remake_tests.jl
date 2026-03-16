@@ -4,6 +4,7 @@ using StaticArrays
 using DifferentiationInterface
 using ADTypes
 using ForwardDiff: ForwardDiff
+using RecursiveArrayTools
 
 probs = []
 containerTypes = [Vector, Tuple, SVector{3}, MVector{3}, SizedVector{3}]
