@@ -1036,6 +1036,52 @@ end
             end
         end
     end
+
+    @testset "`initialize_save_discretes`" begin
+        fn = ODEFunction(f!; sys = sys)
+        prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
+        cb1 = PeriodicCallback(
+            0.1; initial_affect = true, final_affect = true,
+            save_positions = (false, false)
+        ) do integ
+            integ.p[1:2] .+= exp(-integ.t)
+            SciMLBase.save_discretes!(integ, 1)
+        end
+        function affect2!(integ)
+            integ.p[3:4] .+= only(integ.u)
+        end
+
+        @testset "`DiscreteCallback`" begin
+            cb2 = DiscreteCallback(
+                (args...) -> true, affect2!, save_positions = (true, true),
+                initialize_save_discretes = false, saved_clock_partitions = (2,)
+            )
+            sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+            @test sol.discretes.collection[2].t[1] > 0.0
+        end
+
+        @testset "`ContinuousCallback`" begin
+            cb2 = ContinuousCallback(
+                (u, t, i) -> cos(4pi * t), affect2!, save_positions = (true, true),
+                initialize_save_discretes = false, saved_clock_partitions = (2,)
+            )
+            sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+            @test sol.discretes.collection[2].t[1] > 0.0
+        end
+
+        @testset "`VectorContinuousCallback`" begin
+            cb2 = VectorContinuousCallback(
+                (out, u, t, integ) -> (out[1] = cos(4pi * t)), (integ, i) -> affect2!(integ), 2;
+                save_positions = (true, true),
+                initialize_save_discretes = false, saved_clock_partitions = [(2,)]
+            )
+            sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+            @test sol.discretes.collection[2].t[1] > 0.0
+        end
+    end
 end
 
 # Issue https://github.com/SciML/ModelingToolkit.jl/issues/3004
