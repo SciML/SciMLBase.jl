@@ -614,7 +614,7 @@ end
     n_traj = 50
     pscales = [1000 * i for i in 1:n_traj]
     pf = (prob, ctx) ->
-        remake(prob; p = [prob.prob.p[1], prob.prob.p[2], Float64(pscales[ctx.sim_id])])
+    remake(prob; p = [prob.prob.p[1], prob.prob.p[2], Float64(pscales[ctx.sim_id])])
 
     for safetycopy in (true, false)
         @testset "safetycopy=$safetycopy" begin
