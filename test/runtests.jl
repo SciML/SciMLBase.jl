@@ -24,6 +24,9 @@ end
         end
     end
     if GROUP == "Core" || GROUP == "All"
+        @time @safetestset "Adapt structure" begin
+            include("adapt.jl")
+        end
         @time @safetestset "Display" begin
             include("display.jl")
         end
