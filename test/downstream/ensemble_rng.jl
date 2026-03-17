@@ -62,7 +62,7 @@ function make_eprob(prob; safetycopy = true)
     else
         EnsembleProblem(
             prob;
-            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand() * 0.1 .+ prob.u0),
+            prob_func = (prob, ctx) -> remake(prob; u0 = rand() * 0.1 .+ prob.u0),
             safetycopy,
         )
     end
@@ -182,11 +182,11 @@ end
 #    Uses StableRNG for both master and rng_func → fully deterministic.
 # ============================================================
 @testset "4. Distinct streams (prob_func)" begin
-    stable_rng_func = ctx -> StableRNG(ctx.trajectory_seed)
+    stable_rng_func = ctx -> StableRNG(ctx.sim_seed)
     eprob = EnsembleProblem(
         ode_prob;
-        prob_func = (prob, i, repeat, rng, ctx) ->
-        remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
+        prob_func = (prob, ctx) ->
+        remake(prob; u0 = rand(ctx.rng) * 0.1 + prob.u0),
     )
 
     for (alg_name, ensalg) in [
@@ -342,11 +342,11 @@ end
 # ============================================================
 # 7. 5-arg prob_func reproducibility
 # ============================================================
-@testset "7. 5-arg prob_func" begin
+@testset "7. 2-arg prob_func with ctx.rng" begin
     eprob5 = EnsembleProblem(
         ode_prob;
-        prob_func = (prob, i, repeat, rng, ctx) ->
-        remake(prob; u0 = rand(rng) * prob.u0),
+        prob_func = (prob, ctx) ->
+        remake(prob; u0 = rand(ctx.rng) * prob.u0),
     )
     sim1 = solve(eprob5, Tsit5(), EnsembleSerial(); seed = UInt64(55), trajectories = 6)
     sim2 = solve(eprob5, Tsit5(), EnsembleSerial(); seed = UInt64(55), trajectories = 6)
@@ -357,13 +357,13 @@ end
 # 8. Custom rng_func (StableRNG)
 # ============================================================
 @testset "8. Custom rng_func (StableRNG)" begin
-    custom_rng_func = ctx -> StableRNG(ctx.trajectory_seed)
+    custom_rng_func = ctx -> StableRNG(ctx.sim_seed)
     # Custom rng_func returns StableRNG (doesn't seed TaskLocalRNG),
-    # so must use 5-arg prob_func that explicitly uses the provided rng.
+    # so must use prob_func that explicitly uses ctx.rng.
     eprob_stable = EnsembleProblem(
         ode_prob;
-        prob_func = (prob, i, repeat, rng, ctx) ->
-        remake(prob; u0 = rand(rng) * 0.1 + prob.u0),
+        prob_func = (prob, ctx) ->
+        remake(prob; u0 = rand(ctx.rng) * 0.1 + prob.u0),
     )
 
     sim1 = solve(
@@ -408,21 +408,23 @@ end
     captured_ctxs = EnsembleContext[]
     eprob_ctx = EnsembleProblem(
         ode_prob;
-        prob_func = (prob, i, repeat, rng, ctx) -> begin
+        prob_func = (prob, ctx) -> begin
             push!(captured_ctxs, ctx)
-            remake(prob; u0 = rand(rng) * prob.u0)
+            remake(prob; u0 = rand(ctx.rng) * prob.u0)
         end,
     )
     sim = solve(eprob_ctx, Tsit5(), EnsembleSerial(); seed = UInt64(42), trajectories = 5)
 
     @test length(captured_ctxs) == 5
-    @test Set(ctx.global_trajectory_id for ctx in captured_ctxs) == Set(1:5)
+    @test Set(ctx.sim_id for ctx in captured_ctxs) == Set(1:5)
     @test all(ctx.worker_id == 0 for ctx in captured_ctxs)
-    @test all(ctx.trajectory_seed isa UInt64 for ctx in captured_ctxs)
+    @test all(ctx.sim_seed isa UInt64 for ctx in captured_ctxs)
+    @test all(ctx.rng !== nothing for ctx in captured_ctxs)
+    @test all(ctx.repeat == 1 for ctx in captured_ctxs)
 
-    # Trajectory seeds match the expected pre-generated values
-    expected_seeds = SciMLBase.generate_trajectory_seeds(nothing, UInt64(42), 5)
-    actual_seeds = [captured_ctxs[i].trajectory_seed for i in 1:5]
+    # Simulation seeds match the expected pre-generated values
+    expected_seeds = SciMLBase.generate_sim_seeds(nothing, UInt64(42), 5)
+    actual_seeds = [captured_ctxs[i].sim_seed for i in 1:5]
     @test Set(actual_seeds) == Set(expected_seeds)
 end
 
@@ -517,7 +519,7 @@ end
         nlprob = NonlinearProblem(f_nl, [1.0, 1.0], 2.0)
         nl_eprob = EnsembleProblem(
             nlprob;
-            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand(2) .+ 0.5),
+            prob_func = (prob, ctx) -> remake(prob; u0 = rand(2) .+ 0.5),
         )
 
         # Ensemble solve with seed succeeds (rng is NOT forwarded)
@@ -541,7 +543,7 @@ end
         optprob = OptimizationProblem(optf, zeros(2))
         opt_eprob = EnsembleProblem(
             optprob;
-            prob_func = (prob, i, repeat) -> remake(prob; u0 = rand(2)),
+            prob_func = (prob, ctx) -> remake(prob; u0 = rand(2)),
         )
 
         # Ensemble solve with seed succeeds (rng is NOT forwarded)
@@ -568,7 +570,7 @@ end
     dist_ctxs = EnsembleContext[]
     eprob_ctx = EnsembleProblem(
         ode_prob;
-        prob_func = (prob, i, repeat, rng, ctx) -> begin
+        prob_func = (prob, ctx) -> begin
             push!(dist_ctxs, ctx)
             prob
         end,
@@ -611,8 +613,8 @@ end
 
     n_traj = 50
     pscales = [1000 * i for i in 1:n_traj]
-    pf = (prob, i, repeat) ->
-        remake(prob; p = [prob.prob.p[1], prob.prob.p[2], Float64(pscales[i])])
+    pf = (prob, ctx) ->
+        remake(prob; p = [prob.prob.p[1], prob.prob.p[2], Float64(pscales[ctx.sim_id])])
 
     for safetycopy in (true, false)
         @testset "safetycopy=$safetycopy" begin
@@ -651,7 +653,7 @@ end
 @testset "17. Backwards-compatible 5-arg solve_batch" begin
     eprob = EnsembleProblem(
         ode_prob;
-        prob_func = (prob, i, repeat) -> remake(prob; u0 = prob.u0 + 0.01 * i),
+        prob_func = (prob, ctx) -> remake(prob; u0 = prob.u0 + 0.01 * ctx.sim_id),
     )
 
     result_serial = SciMLBase.solve_batch(

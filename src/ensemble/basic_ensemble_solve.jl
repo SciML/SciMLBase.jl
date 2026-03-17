@@ -56,16 +56,19 @@ function merge_stats(us)
 end
 
 """
-    EnsembleContext{S, R}
+    EnsembleContext{S, R, M}
 
-Contextual information about the current trajectory within an ensemble simulation.
-Passed to `rng_func` and (optionally) the 5-argument `prob_func`.
+Contextual information about the current simulation within an ensemble solve.
+Passed to `rng_func`, `prob_func(prob, ctx)`, and `output_func(sol, ctx)`.
 
 ## Fields
-- `global_trajectory_id::Int` — Unique trajectory index (1:trajectories)
+- `sim_id::Int` — Unique simulation index (1:trajectories)
+- `repeat::Int` — Rerun counter (starts at 1, increments if `output_func` requests rerun)
 - `worker_id::Int` — 0 for serial/threaded; `Distributed.myid()` for distributed
-- `trajectory_seed::S` — Pre-generated seed for this trajectory, or `nothing`
-- `master_rng::R` — User-provided master RNG, or `nothing`.
+- `sim_seed::S` — Pre-generated seed for this simulation, or `nothing`
+- `rng::R` — Per-simulation RNG created by `rng_func`, or `nothing`.
+  When `rng_func` has not yet been called (i.e. inside `rng_func` itself), this is `nothing`.
+- `master_rng::M` — User-provided master RNG, or `nothing`.
   Set to `nothing` in distributed modes (`EnsembleDistributed`, `EnsembleSplitThreads`)
   to avoid serialization issues.
 
@@ -74,20 +77,22 @@ Passed to `rng_func` and (optionally) the 5-argument `prob_func`.
     is shared across tasks. A custom `rng_func` must **not** mutate `master_rng` unless
     it is thread-safe. The default `default_rng_func` does not access `master_rng`.
 """
-struct EnsembleContext{S, R}
-    global_trajectory_id::Int
+struct EnsembleContext{S, R, M}
+    sim_id::Int
+    repeat::Int
     worker_id::Int
-    trajectory_seed::S
-    master_rng::R
+    sim_seed::S
+    rng::R
+    master_rng::M
 end
 
 """
-    generate_trajectory_seeds(rng, seed, trajectories)
+    generate_sim_seeds(rng, seed, trajectories)
 
-Pre-generate an array of per-trajectory seeds from a master RNG.
+Pre-generate an array of per-simulation seeds from a master RNG.
 If `rng` is provided it is used directly; otherwise `Xoshiro(seed)` is constructed.
 """
-function generate_trajectory_seeds(rng, seed, trajectories)
+function generate_sim_seeds(rng, seed, trajectories)
     master = rng !== nothing ? rng : Random.Xoshiro(seed)
     return [rand(master, UInt64) for _ in 1:trajectories]
 end
@@ -95,12 +100,15 @@ end
 """
     default_rng_func(ctx::EnsembleContext)
 
-Default per-trajectory RNG factory. Seeds `TaskLocalRNG` with the trajectory seed
+Default per-simulation RNG factory. Seeds `TaskLocalRNG` with the simulation seed
 (if available) and returns `Random.default_rng()`.
+
+Note: `ctx.rng` is `nothing` when this function is called, since its purpose is to
+create the RNG that will be stored in `ctx.rng` for `prob_func` and `output_func`.
 """
 function default_rng_func(ctx::EnsembleContext)
-    if ctx.trajectory_seed !== nothing
-        Random.seed!(ctx.trajectory_seed)
+    if ctx.sim_seed !== nothing
+        Random.seed!(ctx.sim_seed)
     end
     return Random.default_rng()
 end
@@ -241,12 +249,9 @@ function __solve(
     logger = progress_aggregate ? AggregateLogger(Logging.current_logger()) :
         Logging.current_logger()
 
-    # Pre-generate trajectory seeds if rng or seed is provided
-    trajectory_seeds = (rng !== nothing || seed !== nothing) ?
-        generate_trajectory_seeds(rng, seed, trajectories) : nothing
-
-    # Detect prob_func arity once (3-arg vs 5-arg) using SciMLBase.numargs.
-    _prob_func_is_5arg = any(>=(5), numargs(prob.prob_func))
+    # Pre-generate simulation seeds if rng or seed is provided
+    sim_seeds = (rng !== nothing || seed !== nothing) ?
+        generate_sim_seeds(rng, seed, trajectories) : nothing
 
     # Pre-compute solve-RNG strategy flags from prob.prob's type. These are converted to
     # Val types in _dispatch_ensemble_solve for type-stable dispatch. This assumes prob_func
@@ -262,8 +267,8 @@ function __solve(
     # as abstract Val; explicit if/else with Val literals gives Union{Val{true}, Val{false}}
     # which the compiler can union-split.
     return _dispatch_ensemble_solve(
-        _prob_func_is_5arg, _is_rng_solver, _is_jump_prob,
-        prob, alg, ensemblealg, trajectory_seeds, rng_func, rng, logger;
+        _is_rng_solver, _is_jump_prob,
+        prob, alg, ensemblealg, sim_seeds, rng_func, rng, logger;
         trajectories, batch_size, pmap_batch_size, kwargs...
     )
 end
@@ -271,28 +276,27 @@ end
 # Function barrier: converts Bool flags to Val types with explicit if/else so the
 # compiler sees Union{Val{true}, Val{false}} (union-splittable) rather than abstract Val.
 function _dispatch_ensemble_solve(
-        _prob_func_is_5arg::Bool, _is_rng_solver::Bool, _is_jump_prob::Bool,
-        prob, alg, ensemblealg, trajectory_seeds, rng_func, rng, logger;
+        _is_rng_solver::Bool, _is_jump_prob::Bool,
+        prob, alg, ensemblealg, sim_seeds, rng_func, rng, logger;
         kwargs...
     )
-    _prob_func_is_5arg = _prob_func_is_5arg ? Val(true) : Val(false)
     _solve_rng_mode = _is_rng_solver ? Val(:rng) : _is_jump_prob ? Val(:seed) : Val(:none)
     return _solve_ensemble_impl(
-        prob, alg, ensemblealg, _prob_func_is_5arg, _solve_rng_mode,
-        trajectory_seeds, rng_func, rng, logger;
+        prob, alg, ensemblealg, _solve_rng_mode,
+        sim_seeds, rng_func, rng, logger;
         kwargs...
     )
 end
 
 function _solve_ensemble_impl(
-        prob, alg, ensemblealg, _prob_func_is_5arg::Val{PF}, _solve_rng_mode::Val{SM},
-        trajectory_seeds, rng_func, rng, logger;
+        prob, alg, ensemblealg, _solve_rng_mode::Val{SM},
+        sim_seeds, rng_func, rng, logger;
         trajectories, batch_size, pmap_batch_size, kwargs...
-    ) where {PF, SM}
+    ) where {SM}
     # Bundle ensemble RNG state to pass through solve_batch -> batch_func.
     # All fields have concrete types here thanks to the function barrier.
     ensemble_rng_state = (;
-        trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
+        sim_seeds, _solve_rng_mode, rng_func,
         master_rng = rng,
     )
 
@@ -355,11 +359,6 @@ function _solve_ensemble_impl(
     end
 end
 
-# Val-dispatch helpers for type-stable branching in batch_func.
-# Val{true} = 5-arg prob_func(prob, i, repeat, rng, ctx); Val{false} = 3-arg prob_func(prob, i, repeat).
-_invoke_prob_func(::Val{true}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter, rng, ctx)
-_invoke_prob_func(::Val{false}, pf, prob, i, iter, rng, ctx) = pf(prob, i, iter)
-
 # Val-dispatch for solve RNG strategy:
 #   :rng  → solver supports rng kwarg directly (e.g. JumpProcesses ≥ v10)
 #   :seed → solver doesn't support rng kwarg but problem is a JumpProblem;
@@ -376,20 +375,21 @@ function batch_func(
         i, prob, alg, ensemble_rng_state, thread_prob;
         worker_id = 0, kwargs...
     )
-    (;
-        trajectory_seeds, _prob_func_is_5arg, _solve_rng_mode, rng_func,
-        master_rng,
-    ) = ensemble_rng_state
+    (; sim_seeds, _solve_rng_mode, rng_func, master_rng) = ensemble_rng_state
 
-    # Build context for this trajectory
-    traj_seed = trajectory_seeds !== nothing ? trajectory_seeds[i] : nothing
-    ctx = EnsembleContext(i, worker_id, traj_seed, master_rng)
-
-    # Get per-trajectory RNG (always called to seed TaskLocalRNG for this trajectory)
-    trajectory_rng = rng_func(ctx)
-
+    # Build context for this simulation (rng = nothing before rng_func is called)
+    sim_seed = sim_seeds !== nothing ? sim_seeds[i] : nothing
     iter = 1
-    # Respect safetycopy: if true, deepcopy per trajectory (user's explicit choice).
+    pre_ctx = EnsembleContext(i, iter, worker_id, sim_seed, nothing, master_rng)
+
+    # Get per-simulation RNG (always called to seed TaskLocalRNG for this simulation)
+    sim_rng = rng_func(pre_ctx)
+
+    # Update context with the created RNG (new variable to avoid type instability
+    # since R changes from Nothing to the concrete RNG type)
+    ctx = @set pre_ctx.rng = sim_rng
+
+    # Respect safetycopy: if true, deepcopy per simulation (user's explicit choice).
     # If false, use per-task JumpProblem copy if available (fixes race condition),
     # otherwise use the original problem directly.
     _prob = if prob.safetycopy
@@ -400,10 +400,8 @@ function batch_func(
         prob.prob
     end
 
-    # Call prob_func — dispatches to 5-arg (prob, i, repeat, rng, ctx) or 3-arg (prob, i, repeat)
-    new_prob = _invoke_prob_func(
-        _prob_func_is_5arg, prob.prob_func, _prob, i, iter, trajectory_rng, ctx
-    )
+    # Call prob_func(prob, ctx) — single 2-arg form, no arity detection needed
+    new_prob = prob.prob_func(_prob, ctx)
 
     # Progress handling
     progress = get(kwargs, :progress, false)
@@ -419,9 +417,9 @@ function batch_func(
     #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
     #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
     _solve_call = _invoke_solve(
-        _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...
+        _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
     )
-    x = prob.output_func(_solve_call, i)
+    x = prob.output_func(_solve_call, ctx)
     if !(x isa Tuple)
         rerun_warn()
         _x = (x, false)
@@ -433,6 +431,7 @@ function batch_func(
     rerun = _x[2]
     while rerun
         iter += 1
+        ctx = @set ctx.repeat = iter
         _prob2 = if prob.safetycopy
             deepcopy(prob.prob)
         elseif thread_prob !== nothing
@@ -440,13 +439,11 @@ function batch_func(
         else
             prob.prob
         end
-        new_prob = _invoke_prob_func(
-            _prob_func_is_5arg, prob.prob_func, _prob2, i, iter, trajectory_rng, ctx
-        )
+        new_prob = prob.prob_func(_prob2, ctx)
         _solve_call = _invoke_solve(
-            _solve_rng_mode, new_prob, alg, trajectory_rng, traj_seed; kwargs...
+            _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
         )
-        x = prob.output_func(_solve_call, i)
+        x = prob.output_func(_solve_call, ctx)
         if !(x isa Tuple)
             rerun_warn()
             _x = (x, false)
@@ -591,8 +588,7 @@ end
 # Backwards-compatible 5-arg fallbacks for callers that don't pass ensemble_rng_state
 # (e.g. DiffEqGPU's CPU offload path). Constructs a no-op RNG state and forwards.
 const _DEFAULT_ENSEMBLE_RNG_STATE = (;
-    trajectory_seeds = nothing,
-    _prob_func_is_5arg = Val(false),
+    sim_seeds = nothing,
     _solve_rng_mode = Val(:none),
     rng_func = Returns(nothing),
     master_rng = nothing,

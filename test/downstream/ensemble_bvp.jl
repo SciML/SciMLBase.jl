@@ -10,7 +10,7 @@ function bc!(residual, u, p, t)
     return residual[2] = u[end][1]
 end
 
-function prob_func(prob, i, repeat)
+function prob_func(prob, ctx)
     return remake(prob, p = [rand()])
 end
 
