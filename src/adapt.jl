@@ -1,8 +1,8 @@
 function adapt_structure(
         to,
         prob::Union{
-            NonlinearProblem{<:Any, <:Any, iip},
-            ImmutableNonlinearProblem{<:Any, <:Any, iip},
+            NonlinearProblem{<:Any, iip},
+            ImmutableNonlinearProblem{<:Any, iip},
         }
     ) where {iip}
     return ImmutableNonlinearProblem{iip}(
