@@ -2921,10 +2921,10 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
         ODEFunction{
             isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
-            typeof(f.jac), Nothing, Nothing, typeof(f.jac_prototype),
-            typeof(f.sparsity), Nothing, Nothing, typeof(f.W_prototype),
-            Nothing,
-            Nothing,
+            typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
+            typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
+            typeof(f.paramjac),
+            typeof(f.vjp_p),
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
         }(
