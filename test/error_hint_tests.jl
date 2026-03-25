@@ -1,18 +1,12 @@
 using SciMLBase, Test
 
-function showerror_string(e)
-    buf = IOBuffer()
-    showerror(buf, e)
-    return String(take!(buf))
-end
-
 @testset "DomainError hint only in SciML context" begin
     # DomainError outside any SciML context should NOT show the SciML hint
     @testset "standalone log(-1) does not trigger hint" begin
         output = try
             log(-1.0)
         catch e
-            showerror_string(e)
+            sprint(showerror, e)
         end
         @test occursin("DomainError", output)
         @test !occursin("DomainError detected in the user", output)
@@ -22,7 +16,7 @@ end
         output = try
             sqrt(-1.0)
         catch e
-            showerror_string(e)
+            sprint(showerror, e)
         end
         @test occursin("DomainError", output)
         @test !occursin("DomainError detected in the user", output)
@@ -35,7 +29,7 @@ end
         output = try
             odefun(-1.0, nothing, 0.0)
         catch e
-            showerror_string(e)
+            sprint(showerror, e)
         end
         @test occursin("DomainError", output)
         @test occursin("DomainError detected in the user", output)
@@ -48,7 +42,7 @@ end
         output = try
             odefun(du, [-1.0], nothing, 0.0)
         catch e
-            showerror_string(e)
+            sprint(showerror, e)
         end
         @test occursin("DomainError", output)
         @test occursin("DomainError detected in the user", output)
@@ -59,7 +53,7 @@ end
         output = try
             throw(DomainError(-1, "some other message"))
         catch e
-            showerror_string(e)
+            sprint(showerror, e)
         end
         @test occursin("DomainError", output)
         @test !occursin("DomainError detected in the user", output)
@@ -71,7 +65,7 @@ end
         output = try
             SciMLBase.NullParameters() + 1
         catch e
-            showerror_string(e)
+            sprint(showerror, e)
         end
         @test occursin("NullParameters", output)
     end
