@@ -30,10 +30,10 @@ end
 function adapt_structure(to, f::ODEFunction{iip}) where {iip}
     # For GPU kernels, we now support DAEs with mass matrices and initialization
     return ODEFunction{iip, FullSpecialize}(
-        f.f,
-        jac = f.jac,
-        mass_matrix = f.mass_matrix,
-        initialization_data = f.initialization_data
+        adapt(to, f.f),
+        jac = adapt(to, f.jac),
+        mass_matrix = adapt(to, f.mass_matrix),
+        initialization_data = adapt(to, f.initialization_data)
     )
 end
 
