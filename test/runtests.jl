@@ -51,6 +51,9 @@ end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
+        @time @safetestset "Error hints" begin
+            include("error_hint_tests.jl")
+        end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end

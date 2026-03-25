@@ -66,11 +66,13 @@ SciML-specific error hints when the error occurs outside of a SciML solver conte
 function _has_sciml_in_stacktrace()
     bt = catch_backtrace()
     frames = stacktrace(bt)
-    scimlbase_dir = pkgdir(@__MODULE__)
-    scimlbase_dir === nothing && return false
+    scimlbase_src = let d = pkgdir(@__MODULE__)
+        d === nothing ? nothing : joinpath(d, "src")
+    end
+    scimlbase_src === nothing && return false
     for frame in frames
         fpath = string(frame.file)
-        if startswith(fpath, scimlbase_dir)
+        if startswith(fpath, scimlbase_src)
             return true
         end
     end
