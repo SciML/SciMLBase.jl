@@ -56,9 +56,34 @@ expression. Two common reasons for this issue are:
    will always be in the function signature regardless of if the problem is defined with parameters!
 """
 
+"""
+    _has_sciml_in_stacktrace()
+
+Check whether any frame in the current exception's stacktrace originates from SciMLBase
+(e.g. from `SciMLFunction` wrappers in `scimlfunctions.jl`). This is used to avoid showing
+SciML-specific error hints when the error occurs outside of a SciML solver context.
+"""
+function _has_sciml_in_stacktrace()
+    bt = catch_backtrace()
+    frames = stacktrace(bt)
+    scimlbase_src = let d = pkgdir(@__MODULE__)
+        d === nothing ? nothing : joinpath(d, "src")
+    end
+    scimlbase_src === nothing && return false
+    for frame in frames
+        fpath = string(frame.file)
+        if startswith(fpath, scimlbase_src)
+            return true
+        end
+    end
+    return false
+end
+
 function __init__()
     Base.Experimental.register_error_hint(DomainError) do io, e
-        if e isa DomainError && occursin("will only return a complex result if called with a complex argument. Try ", e.msg)
+        if e isa DomainError &&
+                occursin("will only return a complex result if called with a complex argument. Try ", e.msg) &&
+                _has_sciml_in_stacktrace()
             println(io, DOMAINERROR_COMPLEX_MSG)
         end
     end
