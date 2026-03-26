@@ -1045,7 +1045,6 @@ export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSeria
 
 export EnsembleAnalysis, EnsembleSummary
 
-export tuples, intervals, TimeChoiceIterator
 
 export step!, deleteat!, addat!, get_tmp_cache,
     full_cache, user_cache, u_cache, du_cache,

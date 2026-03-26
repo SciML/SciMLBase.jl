@@ -59,17 +59,6 @@ integrator = DummyIntegrator()
 @test step_dt!(integrator, 1.5, true) == 1.5
 @test_throws ErrorException step!(integrator, -1)
 
-for (u, t) in tuples(DummyIntegrator())
-    @test u[1] == 2 * t
-end
-@test eltype(collect(tuples(DummyIntegrator()))) == Tuple{Vector{Float64}, Float64}
-
-for (uprev, tprev, u, t) in intervals(DummyIntegrator())
-    @test u[1] - uprev[1] == 2
-    @test t - tprev == 1
-end
-@test eltype(collect(intervals(DummyIntegrator()))) ==
-    Tuple{Vector{Float64}, Float64, Vector{Float64}, Float64}
 
 @test integrator.sol.retcode == ReturnCode.Default
 @test check_error(integrator) == ReturnCode.Success

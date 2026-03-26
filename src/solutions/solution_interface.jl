@@ -183,7 +183,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
     return show(io, m, A.u)
 end
 
-RecursiveArrayTools.tuples(sol::AbstractTimeseriesSolution) = tuple.(sol.u, sol.t)
 
 function Base.iterate(sol::AbstractTimeseriesSolution, state = 0)
     state >= length(sol) && return nothing
