@@ -225,17 +225,19 @@ function savevalues!(i::DEIntegrator)
 end
 
 """
-    u_modified!(i::DEIntegrator,bool)
+    derivative_discontinuity!(i::DEIntegrator, bool)
 
 Sets `bool` which states whether a change to `u` occurred, allowing the solver to handle the discontinuity. By default,
 this is assumed to be true if a callback is used. This will result in the re-calculation of the derivative at
 `t+dt`, which is not necessary if the algorithm is FSAL and `u` does not experience a discontinuous change at the
 end of the interval. Thus, if `u` is unmodified in a callback, a single call to the derivative calculation can be
-eliminated by `u_modified!(integrator,false)`.
+eliminated by `derivative_discontinuity!(integrator, false)`.
 """
-function u_modified!(i::DEIntegrator, bool)
-    error("u_modified!: method has not been implemented for the integrator")
+function derivative_discontinuity!(i::DEIntegrator, bool)
+    error("derivative_discontinuity!: method has not been implemented for the integrator")
 end
+
+@deprecate u_modified!(i::DEIntegrator, bool) derivative_discontinuity!(i, bool)
 
 """
     add_tstop!(i::DEIntegrator,t)
@@ -464,7 +466,7 @@ function set_u!(integrator::DEIntegrator, sym, val)
     end
 
     integrator.u[i] = val
-    return u_modified!(integrator, true)
+    return derivative_discontinuity!(integrator, true)
 end
 
 """
@@ -549,7 +551,7 @@ SymbolicIndexingInterface.state_values(A::DEIntegrator) = A.u
 SymbolicIndexingInterface.current_time(A::DEIntegrator) = A.t
 function SymbolicIndexingInterface.set_state!(A::DEIntegrator, val, idx)
     A.u[idx] = val
-    return u_modified!(A, true)
+    return derivative_discontinuity!(A, true)
 end
 
 SymbolicIndexingInterface.is_time_dependent(::DEIntegrator) = true
