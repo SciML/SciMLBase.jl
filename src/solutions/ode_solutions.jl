@@ -146,10 +146,7 @@ function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
 end
 
 Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
-    if s === :destats
-        Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
-        return getfield(x, :stats)
-    elseif s === :ps
+    if s === :ps
         return ParameterIndexingProxy(x)
     end
     return getfield(x, s)
@@ -502,7 +499,7 @@ function build_solution(
         k = nothing,
         alg_choice = nothing,
         interp = LinearInterpolation(t, u),
-        retcode = ReturnCode.Default, destats = missing, stats = nothing,
+        retcode = ReturnCode.Default, stats = nothing,
         resid = nothing, original = nothing,
         saved_subsystem = nothing,
         kwargs...
@@ -523,16 +520,6 @@ function build_solution(
         f = prob.f[1]
     else
         f = prob.f
-    end
-
-    if !ismissing(destats)
-        msg = "`destats` kwarg has been deprecated in favor of `stats`"
-        if stats !== nothing
-            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
-        else
-            stats = destats
-        end
-        Base.depwarn(msg, :build_solution)
     end
 
     ps = parameter_values(prob)

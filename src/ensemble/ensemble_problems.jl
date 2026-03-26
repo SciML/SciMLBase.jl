@@ -134,34 +134,6 @@ Appends new data to the accumulated data and returns `false` to indicate no earl
 """
 DEFAULT_REDUCTION(u, data, I) = append!(u, data), false
 
-"""
-Selects the i-th problem from a vector of problems.
-"""
-DEFAULT_VECTOR_PROB_FUNC(prob, i, repeat) = prob[i]
-
-"""
-$(TYPEDEF)
-
-Constructor for deprecated usage where a vector of problems is passed directly.
-
-!!! warning
-
-    This constructor is deprecated. Use the standard ensemble syntax with `prob_func` instead.
-"""
-function EnsembleProblem(prob::AbstractVector{<:AbstractSciMLProblem}; kwargs...)
-    Base.depwarn(
-        "This dispatch is deprecated for the standard ensemble syntax. See the Parallel \
-Ensembles Simulations Interface page for more details",
-        :EnsembleProblem
-    )
-    return invoke(
-        EnsembleProblem,
-        Tuple{Any},
-        prob;
-        prob_func = DEFAULT_VECTOR_PROB_FUNC,
-        kwargs...
-    )
-end
 
 """
 $(TYPEDEF)
