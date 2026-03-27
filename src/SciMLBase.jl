@@ -859,8 +859,6 @@ include("callbacks.jl")
 
 include("adapt.jl")
 
-include("deprecated.jl")
-
 import PrecompileTools
 
 PrecompileTools.@compile_workload begin
