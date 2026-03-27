@@ -562,10 +562,7 @@ SymbolicIndexingInterface.is_time_dependent(::DEIntegrator) = true
 SymbolicIndexingInterface.constant_structure(::DEIntegrator) = true
 
 function Base.getproperty(A::DEIntegrator, sym::Symbol)
-    if sym === :destats && hasfield(typeof(A), :stats)
-        @warn "destats has been deprecated for stats"
-        getfield(A, :stats)
-    elseif sym === :ps
+    if sym === :ps
         return ParameterIndexingProxy(A)
     else
         return getfield(A, sym)
