@@ -1,6 +1,6 @@
-# Necessary to have initialize set u_modified to false if all don't do anything
+# Necessary to have initialize set derivative_discontinuity to false if all don't do anything
 # otherwise unnecessary save
-INITIALIZE_DEFAULT(cb, u, t, integrator) = u_modified!(integrator, false)
+INITIALIZE_DEFAULT(cb, u, t, integrator) = derivative_discontinuity!(integrator, false)
 FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
 
 @enum RootfindOpt::Int8 begin
