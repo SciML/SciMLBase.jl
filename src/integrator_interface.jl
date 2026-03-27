@@ -227,10 +227,10 @@ end
 """
     derivative_discontinuity!(i::DEIntegrator, bool)
 
-Sets `bool` which states whether a change to `u` occurred, allowing the solver to handle the discontinuity. By default,
-this is assumed to be true if a callback is used. This will result in the re-calculation of the derivative at
-`t+dt`, which is not necessary if the algorithm is FSAL and `u` does not experience a discontinuous change at the
-end of the interval. Thus, if `u` is unmodified in a callback, a single call to the derivative calculation can be
+Sets `bool` which states whether a change to `f(u,p,t)` occurred, i.e. whether `u`, `p`, `t`, or something about the definition of `f`, has occurred in such a way that the integration process has introduced a discontinuity. By default,
+this is assumed to be true if a callback is used and is assumed to be false between steps in the integrator interface. A true will result trigger extra calculations, such as the re-calculation of the derivative the beginning of the next step or Jacobians, which is not necessary if the algorithm is FSAL and no discontinuous change is hit. 
+
+Thus, if `(f,u,p,t)` is unmodified in a callback, a single call to the derivative calculation can be
 eliminated by `derivative_discontinuity!(integrator, false)`.
 """
 function derivative_discontinuity!(i::DEIntegrator, bool)
