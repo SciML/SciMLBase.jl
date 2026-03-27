@@ -859,8 +859,6 @@ include("callbacks.jl")
 
 include("adapt.jl")
 
-include("deprecated.jl")
-
 import PrecompileTools
 
 PrecompileTools.@compile_workload begin
@@ -994,7 +992,6 @@ function unwrap_fw end
 
 export ReturnCode
 
-export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
 # Exports
 export AllObserved
