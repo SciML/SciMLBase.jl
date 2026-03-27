@@ -102,8 +102,6 @@ function Base.getproperty(prob::IntegralProblem, name::Symbol)
     return Base.getfield(prob, name)
 end
 
-struct QuadratureProblem end
-@deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
 
 @doc doc"""
 
