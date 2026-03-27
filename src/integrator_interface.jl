@@ -237,6 +237,8 @@ function derivative_discontinuity!(i::DEIntegrator, bool)
     error("derivative_discontinuity!: method has not been implemented for the integrator")
 end
 
+# Already removed in a breaking release's release notes, thus this can be removed anytime without a major.
+# For upgrade simplicity, remove in 2028.
 @deprecate u_modified!(i::DEIntegrator, bool) derivative_discontinuity!(i, bool)
 
 """
