@@ -76,12 +76,6 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
     )
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::Symbol)
-    if s === :ps
-        return ParameterIndexingProxy(x)
-    end
-    return getfield(x, s)
-end
 
 function (sol::RODESolution)(
         t, ::Type{deriv} = Val{0}; idxs = nothing,
