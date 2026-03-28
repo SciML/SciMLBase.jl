@@ -282,7 +282,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DDEProblem}
     end
 end
 
-DDEProblem(f, args...; kwargs...) = DDEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f), args...; kwargs...)
+DDEProblem(f, args...; kwargs...) = DDEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f; function_type = DelayDE), args...; kwargs...)
 
 function DDEProblem(f::Union{AbstractDDEFunction, AbstractODEFunction}, args...; kwargs...)
     return DDEProblem{isinplace(f)}(f, args...; kwargs...)

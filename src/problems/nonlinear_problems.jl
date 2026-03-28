@@ -219,7 +219,7 @@ function NonlinearProblem(f::Union{AbstractNonlinearFunction, AbstractODEFunctio
 end
 
 function NonlinearProblem(f, u0, p = NullParameters(); kwargs...)
-    return NonlinearProblem(ODEFunction{isinplace(f, 3), FullSpecialize}(f), u0, p; kwargs...)
+    return NonlinearProblem(ODEFunction{isinplace(f, 3), FullSpecialize}(f; function_type = TimeIndependent), u0, p; kwargs...)
 end
 
 """
@@ -363,7 +363,7 @@ function NonlinearLeastSquaresProblem(
 end
 
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
-    return NonlinearLeastSquaresProblem(ODEFunction{isinplace(f, 3), FullSpecialize}(f), u0, p; kwargs...)
+    return NonlinearLeastSquaresProblem(ODEFunction{isinplace(f, 3), FullSpecialize}(f; function_type = TimeIndependent), u0, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearLeastSquaresProblem}

@@ -116,7 +116,7 @@ function DAEProblem(f::Union{AbstractDAEFunction, AbstractODEFunction}, du0, u0,
 end
 
 function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return DAEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f), du0, u0, tspan, p; kwargs...)
+    return DAEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f; function_type = ImplicitDE), du0, u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}

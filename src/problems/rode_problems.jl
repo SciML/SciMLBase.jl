@@ -94,7 +94,7 @@ function RODEProblem(f::RODEFunction, u0, tspan, p = NullParameters(); kwargs...
 end
 
 function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
-    return RODEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f), u0, tspan, p; kwargs...)
+    return RODEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f; function_type = RandomODE), u0, tspan, p; kwargs...)
 end
 
 @doc doc"""

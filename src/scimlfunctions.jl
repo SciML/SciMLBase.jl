@@ -81,6 +81,107 @@ ODEProblem{true, SciMLBase.AutoSpecialize}(f, [1.0], (0.0, 1.0))
 struct AutoSpecialize <: AbstractSpecialization end
 
 """
+    AbstractFunctionType
+
+Trait types that control argument count validation for SciMLFunction constructors.
+Each function type knows how many arguments `f`, `jac`, `jvp`, etc. should take.
+"""
+abstract type AbstractFunctionType end
+
+"""Standard ODE: `f(du,u,p,t)` or `f(u,p,t)`"""
+struct StandardODE <: AbstractFunctionType end
+"""Delay DE: `f(du,u,h,p,t)` or `f(u,h,p,t)`"""
+struct DelayDE <: AbstractFunctionType end
+"""Implicit/DAE: `f(res,du,u,p,t)`"""
+struct ImplicitDE <: AbstractFunctionType end
+"""Random ODE: `f(du,u,p,t,W)` or `f(u,p,t,W)`"""
+struct RandomODE <: AbstractFunctionType end
+"""Time-independent (nonlinear): `f(du,u,p)` or `f(u,p)`"""
+struct TimeIndependent <: AbstractFunctionType end
+
+# Argument counts for isinplace detection of the main function f
+_f_argcount(::Type{StandardODE}) = 4
+_f_argcount(::Type{DelayDE}) = 5
+_f_argcount(::Type{ImplicitDE}) = 5
+_f_argcount(::Type{RandomODE}) = 5
+_f_argcount(::Type{TimeIndependent}) = 3
+
+# Argument counts for auxiliary functions (jac, tgrad, jvp, vjp, Wfact, paramjac)
+# These follow from the calling convention of each function type.
+_jac_argcount(::Type{StandardODE}) = 4
+_jac_argcount(::Type{DelayDE}) = 5
+_jac_argcount(::Type{ImplicitDE}) = 6   # (J, du, u, p, gamma, t)
+_jac_argcount(::Type{RandomODE}) = 4    # jac doesn't take W
+_jac_argcount(::Type{TimeIndependent}) = 3
+
+_tgrad_argcount(::Type{StandardODE}) = 4
+_tgrad_argcount(::Type{DelayDE}) = 5
+_tgrad_argcount(::Type{TimeIndependent}) = 0  # no tgrad for nonlinear
+_tgrad_argcount(::Type{ImplicitDE}) = 0
+_tgrad_argcount(::Type{RandomODE}) = 4
+
+_jvp_argcount(::Type{StandardODE}) = 5
+_jvp_argcount(::Type{DelayDE}) = 6
+_jvp_argcount(::Type{ImplicitDE}) = 7
+_jvp_argcount(::Type{RandomODE}) = 5
+_jvp_argcount(::Type{TimeIndependent}) = 4
+
+_Wfact_argcount(::Type{StandardODE}) = 5
+_Wfact_argcount(::Type{DelayDE}) = 6
+_Wfact_argcount(::Type{RandomODE}) = 4
+_Wfact_argcount(::Type{ImplicitDE}) = 0
+_Wfact_argcount(::Type{TimeIndependent}) = 0
+
+_paramjac_argcount(::Type{StandardODE}) = 4
+_paramjac_argcount(::Type{DelayDE}) = 5
+_paramjac_argcount(::Type{RandomODE}) = 4
+_paramjac_argcount(::Type{ImplicitDE}) = 0
+_paramjac_argcount(::Type{TimeIndependent}) = 0
+
+function _validate_auxiliary_iip(::Type{FT}, iip;
+        jac=nothing, tgrad=nothing, jvp=nothing, vjp=nothing,
+        Wfact=nothing, Wfact_t=nothing, paramjac=nothing, vjp_p=nothing,
+        jac_u=nothing, jac_du=nothing) where {FT <: AbstractFunctionType}
+    names = String[]
+    checks = Bool[]
+    if jac !== nothing
+        push!(names, "jac"); push!(checks, isinplace(jac, _jac_argcount(FT), "jac", iip) != iip)
+    end
+    if tgrad !== nothing && _tgrad_argcount(FT) > 0
+        push!(names, "tgrad"); push!(checks, isinplace(tgrad, _tgrad_argcount(FT), "tgrad", iip) != iip)
+    end
+    if jvp !== nothing
+        push!(names, "jvp"); push!(checks, isinplace(jvp, _jvp_argcount(FT), "jvp", iip) != iip)
+    end
+    if vjp !== nothing
+        push!(names, "vjp"); push!(checks, isinplace(vjp, _jvp_argcount(FT), "vjp", iip) != iip)
+    end
+    if Wfact !== nothing && _Wfact_argcount(FT) > 0
+        push!(names, "Wfact"); push!(checks, isinplace(Wfact, _Wfact_argcount(FT), "Wfact", iip) != iip)
+    end
+    if Wfact_t !== nothing && _Wfact_argcount(FT) > 0
+        push!(names, "Wfact_t"); push!(checks, isinplace(Wfact_t, _Wfact_argcount(FT), "Wfact_t", iip) != iip)
+    end
+    if paramjac !== nothing && _paramjac_argcount(FT) > 0
+        push!(names, "paramjac"); push!(checks, isinplace(paramjac, _paramjac_argcount(FT), "paramjac", iip) != iip)
+    end
+    if vjp_p !== nothing
+        push!(names, "vjp_p"); push!(checks, isinplace(vjp_p, _jvp_argcount(FT), "vjp_p", iip) != iip)
+    end
+    # DAE-specific partial Jacobians
+    if jac_u !== nothing
+        push!(names, "jac_u"); push!(checks, isinplace(jac_u, _f_argcount(FT), "jac_u", iip) != iip)
+    end
+    if jac_du !== nothing
+        push!(names, "jac_du"); push!(checks, isinplace(jac_du, _f_argcount(FT), "jac_du", iip) != iip)
+    end
+    nonconforming = findall(checks)
+    if !isempty(nonconforming)
+        throw(NonconformingFunctionsError(names[nonconforming]))
+    end
+end
+
+"""
 $(TYPEDEF)
 
 `NoSpecialize` forces SciMLFunctions to not specialize on the types
@@ -415,7 +516,8 @@ automatically symbolically generating the Jacobian and more from the
 numerically-defined functions.
 """
 struct ODEFunction{
-        iip, specialize, F, G, TMM, Ta, Tt, TJ, TJU, TJD, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
+        iip, specialize, FT <: AbstractFunctionType,
+        F, G, TMM, Ta, Tt, TJ, TJU, TJD, JVP, VJP, JP, SP, TW, TWt, WP, TPJ,
         VJP_P, GG, O, TCV,
         SYS, RP, ID <: Union{Nothing, OverrideInitData}, NLP <: Union{Nothing, ODENLStepData},
     } <:
@@ -446,6 +548,8 @@ struct ODEFunction{
     initialization_data::ID
     nlstep_data::NLP
 end
+
+function_type(::ODEFunction{iip, spec, FT}) where {iip, spec, FT} = FT
 
 """
 DDEFunction is an alias for ODEFunction.
@@ -2615,6 +2719,7 @@ end
 
 function ODEFunction{iip, specialize}(
         f;
+        function_type::Type{FT} = StandardODE,
         g = nothing,
         mass_matrix = __has_mass_matrix(f) ? f.mass_matrix :
             I,
@@ -2656,6 +2761,7 @@ function ODEFunction{iip, specialize}(
     ) where {
         iip,
         specialize,
+        FT <: AbstractFunctionType,
     }
     if mass_matrix === I && f isa Tuple
         mass_matrix = ((I for i in 1:length(f))...,)
@@ -2681,24 +2787,8 @@ function ODEFunction{iip, specialize}(
         _colorvec = colorvec
     end
 
-    jaciip = jac !== nothing ? isinplace(jac, 4, "jac", iip) : iip
-    tgradiip = tgrad !== nothing ? isinplace(tgrad, 4, "tgrad", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 5, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 5, "vjp", iip) : iip
-    Wfactiip = Wfact !== nothing ? isinplace(Wfact, 5, "Wfact", iip) : iip
-    Wfact_tiip = Wfact_t !== nothing ? isinplace(Wfact_t, 5, "Wfact_t", iip) : iip
-    paramjaciip = paramjac !== nothing ? isinplace(paramjac, 4, "paramjac", iip) : iip
-    vjp_piip = vjp_p !== nothing ? isinplace(vjp_p, 5, "vjp_p", iip) : iip
-
-    nonconforming = (
-        jaciip, tgradiip, jvpiip, vjpiip, Wfactiip, Wfact_tiip,
-        paramjaciip, vjp_piip,
-    ) .!= iip
-    if any(nonconforming)
-        nonconforming = findall(nonconforming)
-        functions = ["jac", "tgrad", "jvp", "vjp", "Wfact", "Wfact_t", "paramjac", "vjp_p"][nonconforming]
-        throw(NonconformingFunctionsError(functions))
-    end
+    _validate_auxiliary_iip(FT, iip;
+        jac, tgrad, jvp, vjp, Wfact, Wfact_t, paramjac, vjp_p, jac_u, jac_du)
 
     _f = prepare_function(f)
     _g = g !== nothing ? prepare_function(g) : nothing
@@ -2711,7 +2801,7 @@ function ODEFunction{iip, specialize}(
 
     return if specialize === NoSpecialize
         ODEFunction{
-            iip, specialize,
+            iip, specialize, FT,
             Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, typeof(jac_prototype),
             typeof(sparsity), Any, Any, typeof(W_prototype), Any,
@@ -2727,7 +2817,7 @@ function ODEFunction{iip, specialize}(
         )
     elseif specialize === false
         ODEFunction{
-            iip, FunctionWrapperSpecialize,
+            iip, FunctionWrapperSpecialize, FT,
             typeof(_f), typeof(_g), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jac_u), typeof(jac_du),
             typeof(jvp), typeof(vjp), typeof(jac_prototype),
@@ -2747,7 +2837,7 @@ function ODEFunction{iip, specialize}(
         )
     else
         ODEFunction{
-            iip, specialize,
+            iip, specialize, FT,
             typeof(_f), typeof(_g), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
             typeof(jac), typeof(jac_u), typeof(jac_du),
             typeof(jvp), typeof(vjp), typeof(jac_prototype),
@@ -2767,17 +2857,21 @@ function ODEFunction{iip, specialize}(
     end
 end
 
-function ODEFunction{iip}(f; kwargs...) where {iip}
-    return ODEFunction{iip, FullSpecialize}(f; kwargs...)
+function ODEFunction{iip}(f; function_type = StandardODE, kwargs...) where {iip}
+    return ODEFunction{iip, FullSpecialize}(f; function_type, kwargs...)
 end
 ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
+ODEFunction(f; function_type::Type{FT} = StandardODE, kwargs...) where {FT} = ODEFunction{isinplace(f, _f_argcount(FT)), FullSpecialize}(f; function_type, kwargs...)
 ODEFunction(f::ODEFunction; kwargs...) = f
 
+# Convenience constructors that set the correct function_type for each domain.
+# These allow DDEFunction(f; jac=myjac) to validate with DDE arg counts.
+
 function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
+    FT = function_type(f)
     return if specialization(f) === NoSpecialize
         ODEFunction{
-            isinplace(f), specialization(f), Any, Any, Any, Any, Any,
+            isinplace(f), specialization(f), FT, Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any, typeof(f.jac_prototype),
             typeof(f.sparsity), Any, Any, Any, Any,
             Any, Any, Any, typeof(f.colorvec),
@@ -2791,7 +2885,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
         )
     elseif specialization(f) === AutoSpecialize
         ODEFunction{
-            isinplace(f), specialization(f), typeof(newf), typeof(f.g),
+            isinplace(f), specialization(f), FT, typeof(newf), typeof(f.g),
             typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
             typeof(f.jac), typeof(f.jac_u), typeof(f.jac_du),
@@ -2811,7 +2905,7 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
         )
     else
         ODEFunction{
-            isinplace(f), specialization(f), typeof(newf), typeof(f.g),
+            isinplace(f), specialization(f), FT, typeof(newf), typeof(f.g),
             typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
             typeof(f.jac), typeof(f.jac_u), typeof(f.jac_du),
