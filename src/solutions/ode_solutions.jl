@@ -145,12 +145,6 @@ function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
     )
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
-    if s === :ps
-        return ParameterIndexingProxy(x)
-    end
-    return getfield(x, s)
-end
 
 # FIXME: Remove the defaults for resid and original on a breaking release
 function ODESolution{T, N}(

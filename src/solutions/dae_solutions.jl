@@ -75,12 +75,6 @@ function ConstructionBase.setproperties(sol::DAESolution, patch::NamedTuple)
     )
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Symbol)
-    if s === :ps
-        return ParameterIndexingProxy(x)
-    end
-    return getfield(x, s)
-end
 
 function build_solution(
         prob::AbstractDAEProblem, alg, t, u, du = nothing;
