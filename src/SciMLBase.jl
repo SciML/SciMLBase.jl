@@ -24,9 +24,6 @@ import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert
-using Moshi.Data: @data
-using Moshi.Match: @match
-import Moshi.Derive: @derive
 import StaticArraysCore: StaticArraysCore, SArray
 import Adapt: adapt_structure, adapt
 
@@ -777,18 +774,12 @@ end
 function specialization(
         ::Union{
             ODEFunction{iip, specialize},
-            SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-            SDDEFunction{iip, specialize},
-            DAEFunction{iip, specialize},
             DynamicalODEFunction{iip, specialize},
             SplitFunction{iip, specialize},
-            DynamicalSDEFunction{iip, specialize},
             SplitSDEFunction{iip, specialize},
             DynamicalDDEFunction{iip, specialize},
             DiscreteFunction{iip, specialize},
             ImplicitDiscreteFunction{iip, specialize},
-            RODEFunction{iip, specialize},
-            NonlinearFunction{iip, specialize},
             OptimizationFunction{iip, specialize},
             BVPFunction{iip, specialize},
             DynamicalBVPFunction{iip, specialize},

@@ -77,7 +77,7 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     kwargs::K
     differential_vars::D
     @add_kwonly function DAEProblem{iip}(
-            f::AbstractDAEFunction{iip},
+            f::Union{AbstractDAEFunction{iip}, AbstractODEFunction{iip}},
             du0, u0, tspan, p = NullParameters();
             differential_vars = nothing,
             kwargs...
@@ -111,12 +111,12 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     end
 end
 
-function DAEProblem(f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(); kwargs...)
+function DAEProblem(f::Union{AbstractDAEFunction, AbstractODEFunction}, du0, u0, tspan, p = NullParameters(); kwargs...)
     return DAEProblem{isinplace(f)}(f, du0, u0, tspan, p; kwargs...)
 end
 
 function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
+    return DAEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f), du0, u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}

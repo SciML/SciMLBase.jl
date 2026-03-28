@@ -116,7 +116,7 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     order_discontinuity_t0::Rational{Int}
 
     @add_kwonly function SDDEProblem{iip}(
-            f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
+            f::Union{AbstractSDDEFunction{iip}, AbstractODEFunction{iip}}, g, u0, h, tspan,
             p = NullParameters();
             noise_rate_prototype = nothing, noise = nothing,
             seed = UInt64(0),
@@ -142,7 +142,7 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     end
 
     function SDDEProblem{iip}(
-            f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
+            f::Union{AbstractSDDEFunction{iip}, AbstractODEFunction{iip}}, g, h, tspan::Tuple,
             p = NullParameters();
             order_discontinuity_t0 = 1 // 1, kwargs...
         ) where {iip}
@@ -162,7 +162,7 @@ function SDDEProblem(f, g, args...; kwargs...)
     return SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
 end
 
-function SDDEProblem(f::AbstractSDDEFunction, args...; kwargs...)
+function SDDEProblem(f::Union{AbstractSDDEFunction, AbstractODEFunction}, args...; kwargs...)
     return SDDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
 
@@ -171,7 +171,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
             f, g, u0, h, tspan, p, noise, constant_lags, dependent_lags, kw,
             noise_rate_prototype, seed, neutral, order_discontinuity_t0
         )
-        if f isa AbstractSDDEFunction
+        if f isa Union{AbstractSDDEFunction, AbstractODEFunction}
             iip = isinplace(f)
         else
             iip = isinplace(f, 5)

@@ -171,7 +171,7 @@ mutable struct NonlinearProblem{uType, isinplace, P, F, K, PT, LB, UB} <:
     ub::UB
     kwargs::K
     @add_kwonly function NonlinearProblem{iip}(
-            f::AbstractNonlinearFunction{iip}, u0,
+            f::Union{AbstractNonlinearFunction{iip}, AbstractODEFunction{iip}}, u0,
             p = NullParameters(),
             problem_type = StandardNonlinearProblem();
             lb = nothing,
@@ -214,12 +214,12 @@ $(SIGNATURES)
 Define a nonlinear problem using an instance of
 [`AbstractNonlinearFunction`](@ref AbstractNonlinearFunction).
 """
-function NonlinearProblem(f::AbstractNonlinearFunction, u0, p = NullParameters(); kwargs...)
+function NonlinearProblem(f::Union{AbstractNonlinearFunction, AbstractODEFunction}, u0, p = NullParameters(); kwargs...)
     return NonlinearProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
 function NonlinearProblem(f, u0, p = NullParameters(); kwargs...)
-    return NonlinearProblem(NonlinearFunction(f), u0, p; kwargs...)
+    return NonlinearProblem(ODEFunction{isinplace(f, 3), FullSpecialize}(f), u0, p; kwargs...)
 end
 
 """
@@ -245,7 +245,7 @@ end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearProblem}
     return function ctor(f, u0, p, pt, lb, ub, kw)
-        if f isa AbstractNonlinearFunction
+        if f isa Union{AbstractNonlinearFunction, AbstractODEFunction}
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)
@@ -331,9 +331,7 @@ struct NonlinearLeastSquaresProblem{uType, isinplace, P, F, K, LB, UB} <:
     kwargs::K
 
     @add_kwonly function NonlinearLeastSquaresProblem{iip}(
-            f::AbstractNonlinearFunction{
-                iip,
-            }, u0,
+            f::Union{AbstractNonlinearFunction{iip}, AbstractODEFunction{iip}}, u0,
             p = NullParameters();
             lb = nothing,
             ub = nothing,
@@ -358,19 +356,19 @@ Define a nonlinear least squares problem using an instance of
 [`AbstractNonlinearFunction`](@ref AbstractNonlinearFunction).
 """
 function NonlinearLeastSquaresProblem(
-        f::AbstractNonlinearFunction, u0,
+        f::Union{AbstractNonlinearFunction, AbstractODEFunction}, u0,
         p = NullParameters(); kwargs...
     )
     return NonlinearLeastSquaresProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
 function NonlinearLeastSquaresProblem(f, u0, p = NullParameters(); kwargs...)
-    return NonlinearLeastSquaresProblem(NonlinearFunction(f), u0, p; kwargs...)
+    return NonlinearLeastSquaresProblem(ODEFunction{isinplace(f, 3), FullSpecialize}(f), u0, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearLeastSquaresProblem}
     return function ctor(f, u0, p, lb, ub, kw)
-        if f isa AbstractNonlinearFunction
+        if f isa Union{AbstractNonlinearFunction, AbstractODEFunction}
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)

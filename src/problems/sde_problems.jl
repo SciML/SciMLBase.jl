@@ -95,7 +95,7 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     noise_rate_prototype::ND
     seed::UInt64
     @add_kwonly function SDEProblem{iip}(
-            f::AbstractSDEFunction{iip}, u0,
+            f::Union{AbstractSDEFunction{iip}, AbstractODEFunction{iip}}, u0,
             tspan, p = NullParameters();
             noise_rate_prototype = nothing,
             noise = nothing, seed = UInt64(0),
@@ -122,7 +122,7 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     end
 end
 
-function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
+function SDEProblem(f::Union{AbstractSDEFunction, AbstractODEFunction}, u0, tspan, p = NullParameters(); kwargs...)
     return SDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
@@ -133,7 +133,7 @@ end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SDEProblem}
     return function ctor(f, g, u0, tspan, p, noise, kw, noise_rate_prototype, seed)
-        if f isa AbstractSDEFunction
+        if f isa Union{AbstractSDEFunction, AbstractODEFunction}
             iip = isinplace(f)
             if g !== f.g
                 f = remake(f; g)

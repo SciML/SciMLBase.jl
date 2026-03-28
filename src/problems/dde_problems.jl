@@ -218,7 +218,7 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     problem_type::PT
 
     @add_kwonly function DDEProblem{iip}(
-            f::AbstractDDEFunction{iip}, u0, h, tspan,
+            f::Union{AbstractDDEFunction{iip}, AbstractODEFunction{iip}}, u0, h, tspan,
             p = NullParameters();
             constant_lags = (),
             dependent_lags = (),
@@ -250,7 +250,7 @@ struct DDEProblem{uType, tType, lType, lType2, isinplace, P, F, H, K, PT} <:
     end
 
     function DDEProblem{iip}(
-            f::AbstractDDEFunction{iip}, h, tspan::Tuple,
+            f::Union{AbstractDDEFunction{iip}, AbstractODEFunction{iip}}, h, tspan::Tuple,
             p = NullParameters();
             order_discontinuity_t0 = 1, kwargs...
         ) where {iip}
@@ -270,7 +270,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DDEProblem}
             f, u0, h, tspan, p, constant_lags, dependent_lags,
             kw, neutral, order_discontinuity_t0, problem_type
         )
-        if f isa AbstractDDEFunction
+        if f isa Union{AbstractDDEFunction, AbstractODEFunction}
             iip = isinplace(f)
         else
             iip = isinplace(f, 5)
@@ -282,9 +282,9 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DDEProblem}
     end
 end
 
-DDEProblem(f, args...; kwargs...) = DDEProblem(DDEFunction(f), args...; kwargs...)
+DDEProblem(f, args...; kwargs...) = DDEProblem(ODEFunction{isinplace(f, 5), FullSpecialize}(f), args...; kwargs...)
 
-function DDEProblem(f::AbstractDDEFunction, args...; kwargs...)
+function DDEProblem(f::Union{AbstractDDEFunction, AbstractODEFunction}, args...; kwargs...)
     return DDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
 
