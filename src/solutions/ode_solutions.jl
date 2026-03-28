@@ -146,11 +146,10 @@ function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
 end
 
 
-# FIXME: Remove the defaults for resid and original on a breaking release
 function ODESolution{T, N}(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
-        tslocation, stats, alg_choice, retcode, resid = nothing,
-        original = nothing, saved_subsystem = nothing
+        tslocation, stats, alg_choice, retcode, resid,
+        original, saved_subsystem
     ) where {T, N}
     return ODESolution{
         T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),

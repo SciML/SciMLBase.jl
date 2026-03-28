@@ -209,9 +209,7 @@ Base.@propagate_inbounds function Base.getproperty(
         x::AbstractOptimizationSolution,
         s::Symbol
     )
-    if s === :x
-        return getfield(x, :u)
-    elseif s === :ps
+    if s === :ps
         return ParameterIndexingProxy(x)
     end
     return getfield(x, s)

@@ -87,20 +87,6 @@ function IntegralProblem{iip}(
     return IntegralProblem(g, args...; kwargs...)
 end
 
-function Base.getproperty(prob::IntegralProblem, name::Symbol)
-    if name === :lb
-        domain = getfield(prob, :domain)
-        lb, ub = domain
-        return lb
-    elseif name === :ub
-        domain = getfield(prob, :domain)
-        lb, ub = domain
-        return ub
-    elseif name === :ps
-        return ParameterIndexingProxy(prob)
-    end
-    return Base.getfield(prob, name)
-end
 
 
 @doc doc"""
