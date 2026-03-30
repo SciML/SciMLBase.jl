@@ -1,22 +1,26 @@
 abstract type AbstractClock end
 
-@data Clocks <: AbstractClock begin
-    ContinuousClock
-    struct PeriodicClock
-        dt::Union{Nothing, Float64, Rational{Int}}
-        phase::Float64 = 0.0
-    end
-    SolverStepClock
-    struct EventClock
-        id::Symbol
-    end
+struct ContinuousClock <: AbstractClock end
+struct PeriodicClock <: AbstractClock
+    dt::Union{Nothing, Float64, Rational{Int}}
+    phase::Float64
+end
+PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, Float64(phase))
+PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, Float64(phase))
+struct SolverStepClock <: AbstractClock end
+struct EventClock <: AbstractClock
+    id::Symbol
 end
 
-@derive Clocks[Show, Hash, Eq]
+# Namespace module for backwards-compatible Clocks.ContinuousClock etc.
+module Clocks
+using ..SciMLBase: AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock
+const Type = AbstractClock
+export ContinuousClock, PeriodicClock, SolverStepClock, EventClock
+end
 
 # for backwards compatibility
 const TimeDomain = AbstractClock
-using .Clocks: ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
 
@@ -53,11 +57,7 @@ filters.
 Returns `true` if the object is a valid clock type (specifically a `PeriodicClock`).
 This function is used for type checking in clock-dependent logic.
 """
-isclock(c::Clocks.Type) = @match c begin
-    PeriodicClock() => true
-    _ => false
-end
-isclock(::TimeDomain) = false
+isclock(@nospecialize(clk)) = clk isa PeriodicClock
 
 """
     issolverstepclock(clock)
@@ -65,11 +65,7 @@ isclock(::TimeDomain) = false
 Returns `true` if the clock is a `SolverStepClock` that triggers at every solver step.
 This is useful for monitoring solver progress or implementing step-dependent logic.
 """
-issolverstepclock(c::Clocks.Type) = @match c begin
-    SolverStepClock() => true
-    _ => false
-end
-issolverstepclock(::TimeDomain) = false
+issolverstepclock(@nospecialize(clk)) = clk isa SolverStepClock
 
 """
     iscontinuous(clock)
@@ -77,11 +73,7 @@ issolverstepclock(::TimeDomain) = false
 Returns `true` if the clock operates in continuous time (i.e., is a `ContinuousClock`).
 Continuous clocks allow events to occur at any real-valued time instant.
 """
-iscontinuous(c::Clocks.Type) = @match c begin
-    ContinuousClock() => true
-    _ => false
-end
-iscontinuous(::TimeDomain) = false
+iscontinuous(@nospecialize(clk)) = clk isa ContinuousClock
 
 """
     iseventclock(clock)
@@ -89,11 +81,7 @@ iscontinuous(::TimeDomain) = false
 Returns `true` if the clock is an `EventClock` that triggers based on specific events.
 Event clocks are used for condition-based triggering in hybrid systems.
 """
-iseventclock(c::Clocks.Type) = @match c begin
-    EventClock() => true
-    _ => false
-end
-iseventclock(::TimeDomain) = false
+iseventclock(@nospecialize(clk)) = clk isa EventClock
 
 """
     is_discrete_time_domain(clock)
@@ -101,26 +89,13 @@ iseventclock(::TimeDomain) = false
 Returns `true` if the clock operates in discrete time (i.e., is not a continuous clock).
 Discrete time domains have specific sampling intervals or event-based triggering.
 """
-is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
-
-# workaround for https://github.com/Roger-luo/Moshi.jl/issues/43
-isclock(::Any) = false
-issolverstepclock(::Any) = false
-iscontinuous(::Any) = false
-iseventclock(::Any) = false
-is_discrete_time_domain(::Any) = false
+is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 
 # public
-function first_clock_tick_time(c::Clocks.Type, t0)
-    return @match c begin
-        PeriodicClock(dt) => ceil(t0 / dt) * dt
-        SolverStepClock() => t0
-        ContinuousClock() => error("ContinuousClock() is not a discrete clock")
-        EventClock() => error("Event clocks do not have a defined first tick time.")
-        _ => error("Unimplemented for clock $c")
-    end
-end
-
+first_clock_tick_time(c::PeriodicClock, t0) = ceil(t0 / c.dt) * c.dt
+first_clock_tick_time(::SolverStepClock, t0) = t0
+first_clock_tick_time(::ContinuousClock, _) = error("ContinuousClock() is not a discrete clock")
+first_clock_tick_time(::EventClock, _) = error("Event clocks do not have a defined first tick time.")
 function first_clock_tick_time(c::TimeDomain, _)
     error("Unimplemented for clock $c")
 end
@@ -130,7 +105,7 @@ end
     $(TYPEDEF)
 
 A struct representing the operation of indexing a clock to obtain a subset of the time
-points at which it ticked. The actual list of time points depends on the tick instances 
+points at which it ticked. The actual list of time points depends on the tick instances
 on which the clock was ticking, and can be obtained via `canonicalize_indexed_clock`
 by providing a timeseries solution object.
 
@@ -172,15 +147,16 @@ Return the time points in the interval
 """
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
-
-    return @match c begin
-        PeriodicClock(dt) => ceil(sol.prob.tspan[1] / dt) * dt .+ (ic.idx .- 1) .* dt
-        SolverStepClock() => begin
-            ssc_idx = findfirst(eachindex(sol.discretes)) do i
-                !isa(sol.discretes[i].t, AbstractRange)
-            end
-            sol.discretes[ssc_idx].t[ic.idx]
+    if c isa PeriodicClock
+        ceil(sol.prob.tspan[1] / c.dt) * c.dt .+ (ic.idx .- 1) .* c.dt
+    elseif c isa SolverStepClock
+        ssc_idx = findfirst(eachindex(sol.discretes)) do i
+            !isa(sol.discretes[i].t, AbstractRange)
         end
-        ContinuousClock() => sol.t[ic.idx]
+        sol.discretes[ssc_idx].t[ic.idx]
+    elseif c isa ContinuousClock
+        sol.t[ic.idx]
+    else
+        error("Unimplemented for clock $c")
     end
 end
