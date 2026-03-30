@@ -2896,10 +2896,10 @@ function ODEFunction{iip, specialize}(
 end
 
 function ODEFunction{iip}(f; kwargs...) where {iip}
-    return ODEFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
+    return ODEFunction{iip, FullSpecialize}(f; kwargs...)
 end
 ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), DEFAULT_SPECIALIZATION}(f; kwargs...)
+ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
 ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
@@ -3206,7 +3206,7 @@ end
 
 SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
-    return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
+    return SplitFunction{iip, FullSpecialize}(
         ODEFunction(f1), ODEFunction{iip}(f2);
         kwargs...
     )
@@ -3313,7 +3313,7 @@ function DynamicalODEFunction(f1, f2 = nothing; kwargs...)
     return DynamicalODEFunction{isinplace(f1, 5)}(f1, f2; kwargs...)
 end
 function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
-    return DynamicalODEFunction{iip, DEFAULT_SPECIALIZATION}(
+    return DynamicalODEFunction{iip, FullSpecialize}(
         ODEFunction{iip}(f1),
         ODEFunction{iip}(f2); kwargs...
     )
