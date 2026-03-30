@@ -57,9 +57,7 @@ filters.
 Returns `true` if the object is a valid clock type (specifically a `PeriodicClock`).
 This function is used for type checking in clock-dependent logic.
 """
-isclock(::PeriodicClock) = true
-isclock(::AbstractClock) = false
-isclock(::Any) = false
+isclock(@nospecialize(clk)) = clk isa PeriodicClock
 
 """
     issolverstepclock(clock)
@@ -67,9 +65,7 @@ isclock(::Any) = false
 Returns `true` if the clock is a `SolverStepClock` that triggers at every solver step.
 This is useful for monitoring solver progress or implementing step-dependent logic.
 """
-issolverstepclock(::SolverStepClock) = true
-issolverstepclock(::AbstractClock) = false
-issolverstepclock(::Any) = false
+issolverstepclock(@nospecialize(clk)) = clk isa SolverStepClock
 
 """
     iscontinuous(clock)
@@ -77,9 +73,7 @@ issolverstepclock(::Any) = false
 Returns `true` if the clock operates in continuous time (i.e., is a `ContinuousClock`).
 Continuous clocks allow events to occur at any real-valued time instant.
 """
-iscontinuous(::ContinuousClock) = true
-iscontinuous(::AbstractClock) = false
-iscontinuous(::Any) = false
+iscontinuous(@nospecialize(clk)) = clk isa ContinuousClock
 
 """
     iseventclock(clock)
@@ -87,9 +81,7 @@ iscontinuous(::Any) = false
 Returns `true` if the clock is an `EventClock` that triggers based on specific events.
 Event clocks are used for condition-based triggering in hybrid systems.
 """
-iseventclock(::EventClock) = true
-iseventclock(::AbstractClock) = false
-iseventclock(::Any) = false
+iseventclock(@nospecialize(clk)) = clk isa EventClock
 
 """
     is_discrete_time_domain(clock)
@@ -97,8 +89,7 @@ iseventclock(::Any) = false
 Returns `true` if the clock operates in discrete time (i.e., is not a continuous clock).
 Discrete time domains have specific sampling intervals or event-based triggering.
 """
-is_discrete_time_domain(c::TimeDomain) = !iscontinuous(c)
-is_discrete_time_domain(::Any) = false
+is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 
 # public
 first_clock_tick_time(c::PeriodicClock, t0) = ceil(t0 / c.dt) * c.dt
