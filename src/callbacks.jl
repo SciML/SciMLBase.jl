@@ -173,7 +173,7 @@ function ContinuousCallback(
         repeat_nudge = 1 // 100,
         initializealg = nothing,
         saved_clock_partitions = (),
-        is_discontinuity = true
+        is_discontinuity = true,
         initialize_save_discretes = true,
     )
     return ContinuousCallback(
@@ -341,7 +341,7 @@ function VectorContinuousCallback(
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
         initializealg = nothing, saved_clock_partitions = (),
-        is_discontinuity = true
+        is_discontinuity = true,
         initialize_save_discretes = true
     )
     return VectorContinuousCallback(
@@ -422,7 +422,7 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
             save_positions,
             initializealg::F5 = nothing,
             saved_clock_partitions::SCP = (),
-            is_discontinuity::Bool = true
+            is_discontinuity::Bool = true,
             initialize_save_discretes = true
         ) where {F1, F2, F3, F4, F5, SCP}
         _condition = prepare_function(condition)
@@ -440,12 +440,13 @@ function DiscreteCallback(
         initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
         save_positions = (true, true),
         initializealg = nothing, saved_clock_partitions = (),
-        is_discontinuity = true
+        is_discontinuity = true,
+        initialize_save_discretes = true
     )
     return DiscreteCallback(
         condition, affect!, initialize, finalize, save_positions, initializealg,
         saved_clock_partitions, is_discontinuity,
-        initialize_save_discretes = true,
+        initialize_save_discretes,
     )
 end
 
