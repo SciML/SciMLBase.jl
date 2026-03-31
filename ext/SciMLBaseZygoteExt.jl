@@ -258,7 +258,7 @@ end
     function solu_adjoint(Δ)
         zerou = zero(sol.u)
         _Δ = @. ifelse(Δ === nothing, zerou, Δ)
-        (SciMLBase.build_linear_solution(sol.cache.alg, _Δ, sol.resid, sol.cache),)
+        (SciMLBase.build_linear_solution(sol.alg, _Δ, sol.resid, sol.cache),)
     end
     sol.u, solu_adjoint
 end
@@ -267,7 +267,7 @@ end
     function LinearSolution_getindex_pullback(Δ)
         du = zero(sol.u)
         du[i] = Δ
-        (SciMLBase.build_linear_solution(sol.cache.alg, du, sol.resid, sol.cache), nothing)
+        (SciMLBase.build_linear_solution(sol.alg, du, sol.resid, sol.cache), nothing)
     end
     sol[i], LinearSolution_getindex_pullback
 end

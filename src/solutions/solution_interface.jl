@@ -264,7 +264,7 @@ plottable_indices(x::Number) = 1
     cont_vars = Tuple[]
     for var in vars
         tsidxs = union(
-            get_all_timeseries_indexes(sol, var[2]),
+            var[2] === 0 ? () : get_all_timeseries_indexes(sol, var[2]),
             get_all_timeseries_indexes(sol, var[3])
         )
         if ContinuousTimeseries() in tsidxs || isempty(tsidxs)

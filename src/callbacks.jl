@@ -136,12 +136,14 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     initializealg::T4
     saved_clock_partitions::SCP
     is_discontinuity::Bool
+    initialize_save_discretes::Bool
     function ContinuousCallback(
             condition::F1, affect!::F2, affect_neg!::F3,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R, abstol::T,
             reltol::T2, repeat_nudge::T3, initializealg::T4 = nothing,
-            saved_clock_partitions::SCP = (), is_discontinuity::Bool = true
+            saved_clock_partitions::SCP = (), is_discontinuity::Bool = true, 
+            initialize_save_discretes::Bool = true
         ) where {
             F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP,
         }
@@ -152,7 +154,8 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
-            dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions, is_discontinuity
+            dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+            is_discontinuity, initialize_save_discretes 
         )
     end
 end
@@ -171,13 +174,15 @@ function ContinuousCallback(
         initializealg = nothing,
         saved_clock_partitions = (),
         is_discontinuity = true
+        initialize_save_discretes = true,
     )
     return ContinuousCallback(
         condition, affect!, affect_neg!, initialize, finalize,
         idxs,
         rootfind, interp_points,
         save_positions,
-        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions, is_discontinuity
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        is_discontinuity, initialize_save_discretes
     )
 end
 
@@ -193,13 +198,15 @@ function ContinuousCallback(
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
         initializealg = nothing, saved_clock_partitions = (), 
-        is_discontinuity = true
+        is_discontinuity = true,
+        initialize_save_discretes = true,
     )
     return ContinuousCallback(
         condition, affect!, affect_neg!, initialize, finalize, idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions, is_discontinuity
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        is_discontinuity, initialize_save_discretes
     )
 end
 
@@ -267,6 +274,7 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     initializealg::T4
     saved_clock_partitions::SCP
     is_discontinuity::Bool
+    initialize_save_discretes::Bool
     function VectorContinuousCallback(
             condition::F1, affect!::F2, affect_neg!::F3, len::Int,
             initialize::F4, finalize::F5, idxs::I, rootfind,
@@ -274,7 +282,8 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             abstol::T, reltol::T2, repeat_nudge::T3,
             initializealg::T4 = nothing,
             saved_clock_partitions::SCP = (),
-            is_discontinuity::Bool = true
+            is_discontinuity::Bool = true,
+            initialize_save_discretes = true
         ) where {
             F1, F2, F3, F4, F5, T, T2,
             T3, T4, I, R, SCP,
@@ -288,7 +297,8 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             BitArray(collect(save_positions)),
             dtrelax, abstol, reltol, repeat_nudge, initializealg,
             saved_clock_partitions,
-            is_discontinuity
+            is_discontinuity,
+            initialize_save_discretes
         )
     end
 end
@@ -304,7 +314,8 @@ function VectorContinuousCallback(
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
         initializealg = nothing, saved_clock_partitions = (), 
-        is_discontinuity = true
+        is_discontinuity = true,
+        initialize_save_discretes = true
     )
     return VectorContinuousCallback(
         condition, affect!, affect_neg!, len,
@@ -312,7 +323,9 @@ function VectorContinuousCallback(
         idxs,
         rootfind, interp_points,
         save_positions, dtrelax,
-        abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions, is_discontinuity
+        is_discontinuity,
+        abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        initialize_save_discretes
     )
 end
 
@@ -329,13 +342,15 @@ function VectorContinuousCallback(
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
         initializealg = nothing, saved_clock_partitions = (),
         is_discontinuity = true
+        initialize_save_discretes = true
     )
     return VectorContinuousCallback(
         condition, affect!, affect_neg!, len, initialize, finalize,
         idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions, is_discontinuity
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        is_discontinuity, initialize_save_discretes
     )
 end
 
@@ -400,6 +415,7 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
     initializealg::F5
     saved_clock_partitions::SCP
     is_discontinuity::Bool
+    initialize_save_discretes::Bool
     function DiscreteCallback(
             condition::F1, affect!::F2,
             initialize::F3, finalize::F4,
@@ -407,13 +423,15 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
             initializealg::F5 = nothing,
             saved_clock_partitions::SCP = (),
             is_discontinuity::Bool = true
+            initialize_save_discretes = true
         ) where {F1, F2, F3, F4, F5, SCP}
         _condition = prepare_function(condition)
         return new{typeof(_condition), F2, F3, F4, F5, SCP}(
             _condition,
             affect!, initialize, finalize,
             BitArray(collect(save_positions)),
-            initializealg, saved_clock_partitions, is_discontinuity
+            initializealg, saved_clock_partitions, is_discontinuity,
+            initialize_save_discretes
         )
     end
 end
@@ -426,7 +444,8 @@ function DiscreteCallback(
     )
     return DiscreteCallback(
         condition, affect!, initialize, finalize, save_positions, initializealg,
-        saved_clock_partitions, is_discontinuity
+        saved_clock_partitions, is_discontinuity,
+        initialize_save_discretes = true,
     )
 end
 
@@ -559,14 +578,14 @@ end
     $TYPEDSIGNATURES
 
 Save the discrete variables associated with callback `cb` in `integrator` if
-`save_positions[2]` is `true`.
+`save_positions[2] && initialize_save_discretes` is `true`.
 
 # Keyword arguments
 
 - `skip_duplicates`: Skip saving variables that have already been saved at the current time.
 """
 function save_discretes_if_enabled!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback}; skip_duplicates = false)
-    cb.save_positions[2] || return
+    cb.save_positions[2] && cb.initialize_save_discretes || return
     return save_discretes!(integrator, cb; skip_duplicates)
 end
 
