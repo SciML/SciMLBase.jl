@@ -274,7 +274,7 @@ function (sol::AbstractODESolution)(
     ) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol)
+    return DiffEqArray(A.u, A.t, p, sol; interp = sol.interp, dense = sol.dense)
 end
 function (sol::AbstractODESolution)(
         t::AbstractVector{<:Number}, ::Type{deriv},
@@ -289,7 +289,7 @@ function (sol::AbstractODESolution)(
     end
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol)
+    return DiffEqArray(A.u, A.t, p, sol; interp = sol.interp, dense = sol.dense)
 end
 
 function (sol::AbstractODESolution)(
@@ -351,7 +351,8 @@ function (sol::AbstractODESolution)(
     getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
-        return DiffEqArray(getter(interp_sol), t, p, sol)
+        return DiffEqArray(getter(interp_sol), t, p, sol;
+            interp = sol.interp, dense = sol.dense)
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
     interp_sol = sol.interp(t, nothing, deriv, p, continuity)
@@ -362,7 +363,8 @@ function (sol::AbstractODESolution)(
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
-    return DiffEqArray(u, t, p, sol; discretes)
+    return DiffEqArray(u, t, p, sol; discretes,
+        interp = sol.interp, dense = sol.dense)
 end
 
 function (sol::AbstractODESolution)(
@@ -377,7 +379,8 @@ function (sol::AbstractODESolution)(
     getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
-        return DiffEqArray(getter(interp_sol), t, p, sol)
+        return DiffEqArray(getter(interp_sol), t, p, sol;
+            interp = sol.interp, dense = sol.dense)
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
     interp_sol = sol.interp(t, nothing, deriv, p, continuity)
@@ -388,7 +391,8 @@ function (sol::AbstractODESolution)(
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
-    return DiffEqArray(u, t, p, sol; discretes)
+    return DiffEqArray(u, t, p, sol; discretes,
+        interp = sol.interp, dense = sol.dense)
 end
 
 struct DDESolutionHistoryWrapper{T}
