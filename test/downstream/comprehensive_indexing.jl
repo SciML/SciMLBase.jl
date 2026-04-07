@@ -1,7 +1,7 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
     OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
     SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
-    DiffEqCallbacks, StochasticDelayDiffEq, Test, Plots
+    DiffEqCallbacks, Test, Plots
 import Symbolics
 import SymbolicUtils as SU
 using ModelingToolkit: t_nounits as t, D_nounits as D
@@ -1162,7 +1162,7 @@ end
     delay = sys.osc1.τ
     original = sys.osc1.x
     @test prob[sym] ≈ prob[original] .+ (prob.tspan[1] - prob.ps[delay])
-    sol = solve(prob, ImplicitEM())
+    sol = solve(prob, MethodOfSteps(ImplicitEM()))
     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
 end
 
