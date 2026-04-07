@@ -2172,9 +2172,6 @@ ODEInputFunction{iip, specialize}(f;
     controljac_prototype = __has_controljac_prototype(f) ? f.controljac_prototype : nothing,
     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-    syms = nothing,
-    indepsym = nothing,
-    paramsyms = nothing,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing)
 ```
@@ -2292,9 +2289,6 @@ BVPFunction{iip, specialize}(f, bc;
     bcjac_prototype = __has_jac_prototype(bc) ? bc.jac_prototype : nothing,
     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-    syms = nothing,
-    indepsym= nothing,
-    paramsyms = nothing,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing,
@@ -2771,9 +2765,6 @@ function ODEFunction{iip, specialize}(
         W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
         vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -2835,7 +2826,7 @@ function ODEFunction{iip, specialize}(
 
     _f = prepare_function(f)
 
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
     initdata = reconstruct_initialization_data(
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap
@@ -2896,10 +2887,10 @@ function ODEFunction{iip, specialize}(
 end
 
 function ODEFunction{iip}(f; kwargs...) where {iip}
-    return ODEFunction{iip, FullSpecialize}(f; kwargs...)
+    return ODEFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), FullSpecialize}(f; kwargs...)
+ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), DEFAULT_SPECIALIZATION}(f; kwargs...)
 ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
@@ -2921,10 +2912,10 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
         ODEFunction{
             isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
             typeof(f.analytic), typeof(f.tgrad),
-            typeof(f.jac), Nothing, Nothing, typeof(f.jac_prototype),
-            typeof(f.sparsity), Nothing, Nothing, typeof(f.W_prototype),
-            Nothing,
-            Nothing,
+            typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
+            typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
+            typeof(f.paramjac),
+            typeof(f.vjp_p),
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
         }(
@@ -3147,9 +3138,6 @@ function SplitFunction{iip, specialize}(
         Wfact_t = __has_Wfact_t(f1) ? f1.Wfact_t : nothing,
         paramjac = __has_paramjac(f1) ? f1.paramjac :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f1) ? f1.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -3167,7 +3155,7 @@ function SplitFunction{iip, specialize}(
         iip,
         specialize,
     }
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
     initdata = reconstruct_initialization_data(
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap
@@ -3206,7 +3194,7 @@ end
 
 SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
-    return SplitFunction{iip, FullSpecialize}(
+    return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
         ODEFunction(f1), ODEFunction{iip}(f2);
         kwargs...
     )
@@ -3261,9 +3249,6 @@ function DynamicalODEFunction{iip, specialize}(
             nothing,
         paramjac = __has_paramjac(f1) ? f1.paramjac :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f1) ? f1.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -3275,7 +3260,7 @@ function DynamicalODEFunction{iip, specialize}(
         iip,
         specialize,
     }
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         DynamicalODEFunction{
@@ -3313,7 +3298,7 @@ function DynamicalODEFunction(f1, f2 = nothing; kwargs...)
     return DynamicalODEFunction{isinplace(f1, 5)}(f1, f2; kwargs...)
 end
 function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
-    return DynamicalODEFunction{iip, FullSpecialize}(
+    return DynamicalODEFunction{iip, DEFAULT_SPECIALIZATION}(
         ODEFunction{iip}(f1),
         ODEFunction{iip}(f2); kwargs...
     )
@@ -3324,9 +3309,6 @@ function DiscreteFunction{iip, specialize}(
         f;
         analytic = __has_analytic(f) ? f.analytic :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         sys = __has_sys(f) ? f.sys : nothing,
@@ -3337,7 +3319,7 @@ function DiscreteFunction{iip, specialize}(
         specialize,
     }
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         DiscreteFunction{iip, specialize, Any, Any, Any, Any, Any}(
@@ -3388,9 +3370,6 @@ function ImplicitDiscreteFunction{iip, specialize}(
         analytic = __has_analytic(f) ?
             f.analytic :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ?
             f.observed :
             DEFAULT_OBSERVED,
@@ -3405,7 +3384,7 @@ function ImplicitDiscreteFunction{iip, specialize}(
         specialize,
     }
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         ImplicitDiscreteFunction{iip, specialize, Any, Any, Any, Any, Any, Any}(
@@ -3479,9 +3458,6 @@ function SDEFunction{iip, specialize}(
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
         ggprime = nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -3529,7 +3505,7 @@ function SDEFunction{iip, specialize}(
     _f = prepare_function(f)
     _g = prepare_function(g)
 
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         SDEFunction{
@@ -3676,9 +3652,6 @@ function SplitSDEFunction{iip, specialize}(
             nothing,
         paramjac = __has_paramjac(f1) ? f1.paramjac :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f1) ? f1.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -3690,7 +3663,7 @@ function SplitSDEFunction{iip, specialize}(
         iip,
         specialize,
     }
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         SplitSDEFunction{
@@ -3779,9 +3752,6 @@ function DynamicalSDEFunction{iip, specialize}(
             nothing,
         paramjac = __has_paramjac(f1) ? f1.paramjac :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f1) ? f1.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -3793,7 +3763,7 @@ function DynamicalSDEFunction{iip, specialize}(
         iip,
         specialize,
     }
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         DynamicalSDEFunction{
@@ -3855,9 +3825,6 @@ function RODEFunction{iip, specialize}(
         Wfact = __has_Wfact(f) ? f.Wfact : nothing,
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -3905,7 +3872,7 @@ function RODEFunction{iip, specialize}(
     =#
 
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         RODEFunction{
@@ -3967,9 +3934,6 @@ function DAEFunction{iip, specialize}(
         Wfact = __has_Wfact(f) ? f.Wfact : nothing,
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -4014,7 +3978,7 @@ function DAEFunction{iip, specialize}(
     end
 
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
     initdata = reconstruct_initialization_data(
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap
@@ -4074,9 +4038,6 @@ function DDEFunction{iip, specialize}(
         Wfact = __has_Wfact(f) ? f.Wfact : nothing,
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -4121,7 +4082,7 @@ function DDEFunction{iip, specialize}(
     end
 
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         DDEFunction{
@@ -4215,9 +4176,6 @@ function DynamicalDDEFunction{iip, specialize}(
             nothing,
         paramjac = __has_paramjac(f1) ? f1.paramjac :
             nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f1) ? f1.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f1) ? f1.colorvec :
@@ -4229,7 +4187,7 @@ function DynamicalDDEFunction{iip, specialize}(
         iip,
         specialize,
     }
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         DynamicalDDEFunction{
@@ -4294,9 +4252,6 @@ function SDDEFunction{iip, specialize}(
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
         ggprime = nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -4324,7 +4279,7 @@ function SDDEFunction{iip, specialize}(
 
     _f = prepare_function(f)
     _g = prepare_function(g)
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
 
     return if specialize === NoSpecialize
         SDDEFunction{
@@ -4396,8 +4351,6 @@ function NonlinearFunction{iip, specialize}(
             nothing,
         paramjac = __has_paramjac(f) ? f.paramjac :
             nothing,
-        syms = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED_NO_TIME,
         colorvec = __has_colorvec(f) ? f.colorvec :
@@ -4440,7 +4393,7 @@ function NonlinearFunction{iip, specialize}(
     end
 
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms)
+
     return if specialize === NoSpecialize
         NonlinearFunction{
             iip, specialize,
@@ -4526,8 +4479,6 @@ function IntervalNonlinearFunction{iip, specialize}(
         analytic = __has_analytic(f) ?
             f.analytic :
             nothing,
-        syms = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ?
             f.observed :
             DEFAULT_OBSERVED_NO_TIME,
@@ -4539,7 +4490,7 @@ function IntervalNonlinearFunction{iip, specialize}(
         specialize,
     }
     _f = prepare_function(f)
-    sys = sys_or_symbolcache(sys, syms, paramsyms)
+
 
     return if specialize === NoSpecialize
         IntervalNonlinearFunction{
@@ -4589,8 +4540,6 @@ function OptimizationFunction{iip}(
         cons_jac_prototype = __has_jac_prototype(f) ?
             f.jac_prototype : nothing,
         cons_hess_prototype = nothing,
-        syms = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED_NO_TIME,
         expr = nothing, cons_expr = nothing,
@@ -4605,7 +4554,7 @@ function OptimizationFunction{iip}(
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
             nothing
     ) where {iip}
-    sys = sys_or_symbolcache(sys, syms, paramsyms)
+
     return OptimizationFunction{
         iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
         typeof(fgh), typeof(hv),
@@ -4648,8 +4597,6 @@ function MultiObjectiveOptimizationFunction{iip}(
         cons_jac_prototype = __has_jac_prototype(f) ?
             f.jac_prototype : nothing,
         cons_hess_prototype = nothing,
-        syms = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED_NO_TIME,
         expr = nothing, cons_expr = nothing,
@@ -4665,7 +4612,7 @@ function MultiObjectiveOptimizationFunction{iip}(
             nothing
     ) where {iip}
     isinplace(f, 2; has_two_dispatches = false, isoptimization = true)
-    sys = sys_or_symbolcache(sys, syms, paramsyms)
+
     return MultiObjectiveOptimizationFunction{
         iip, typeof(adtype), typeof(f), typeof(jac), typeof(hess),
         typeof(hv),
@@ -4709,9 +4656,6 @@ function BVPFunction{iip, specialize, twopoint}(
         Wfact = __has_Wfact(f) ? f.Wfact : nothing,
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
@@ -4841,7 +4785,6 @@ function BVPFunction{iip, specialize, twopoint}(
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     return if specialize === NoSpecialize
         BVPFunction{
@@ -4909,9 +4852,6 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(
         Wfact = __has_Wfact(f) ? f.Wfact : nothing,
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed : DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
         bccolorvec = __has_colorvec(bc) ? bc.colorvec : nothing,
@@ -5037,7 +4977,6 @@ function DynamicalBVPFunction{iip, specialize, twopoint}(
 
     _f = prepare_function(f)
 
-    sys = something(sys, SymbolCache(syms, paramsyms, indepsym))
 
     return if specialize === NoSpecialize
         DynamicalBVPFunction{
@@ -5173,9 +5112,6 @@ function ODEInputFunction{iip, specialize}(
         Wfact_t = __has_Wfact_t(f) ? f.Wfact_t : nothing,
         W_prototype = __has_W_prototype(f) ? f.W_prototype : nothing,
         paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-        syms = nothing,
-        indepsym = nothing,
-        paramsyms = nothing,
         observed = __has_observed(f) ? f.observed :
             DEFAULT_OBSERVED,
         colorvec = __has_colorvec(f) ? f.colorvec : nothing,
@@ -5248,7 +5184,7 @@ function ODEInputFunction{iip, specialize}(
 
     _f = prepare_function(f)
 
-    sys = sys_or_symbolcache(sys, syms, paramsyms, indepsym)
+
     initdata = reconstruct_initialization_data(
         initialization_data, initializeprob, update_initializeprob!,
         initializeprobmap, initializeprobpmap
@@ -5318,17 +5254,6 @@ ODEInputFunction(f::ODEInputFunction; kwargs...) = f
 
 ########## Utility functions
 
-function sys_or_symbolcache(sys, syms, paramsyms, indepsym = nothing)
-    if sys === nothing &&
-            (syms !== nothing || paramsyms !== nothing || indepsym !== nothing)
-        Base.depwarn(
-            "The use of keyword arguments `syms`, `paramsyms` and `indepsym` for `SciMLFunction`s is deprecated. Pass `sys = SymbolCache(syms, paramsyms, indepsym)` instead.",
-            :syms
-        )
-        sys = SymbolCache(syms, paramsyms, indepsym)
-    end
-    return sys
-end
 
 function reconstruct_initialization_data(
         initdata, initprob, update_initprob!, initprobmap, initprobpmap

@@ -24,6 +24,9 @@ end
         end
     end
     if GROUP == "Core" || GROUP == "All"
+        @time @safetestset "Adapt structure" begin
+            include("adapt.jl")
+        end
         @time @safetestset "Display" begin
             include("display.jl")
         end
@@ -50,6 +53,9 @@ end
         end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
+        end
+        @time @safetestset "Error hints" begin
+            include("error_hint_tests.jl")
         end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")

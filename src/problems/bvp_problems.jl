@@ -186,7 +186,9 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, S, K} 
                 if f.bcresid_prototype !== nothing
                     _nlls = length(f.bcresid_prototype) != length(__u0)
                 else
-                    _nlls = Nothing # Cannot reliably infer
+                    # For StandardBVProblem without bcresid_prototype, the solver
+                    # creates a residual matching u0 size, so it is not NLLS.
+                    _nlls = false
                 end
             end
         else

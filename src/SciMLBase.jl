@@ -24,9 +24,6 @@ import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert
-using Moshi.Data: @data
-using Moshi.Match: @match
-import Moshi.Derive: @derive
 import StaticArraysCore: StaticArraysCore, SArray
 import Adapt: adapt_structure, adapt
 
@@ -859,8 +856,6 @@ include("callbacks.jl")
 
 include("adapt.jl")
 
-include("deprecated.jl")
-
 import PrecompileTools
 
 PrecompileTools.@compile_workload begin
@@ -994,7 +989,6 @@ function unwrap_fw end
 
 export ReturnCode
 
-export DEAlgorithm, SciMLAlgorithm, DEProblem, DEAlgorithm, DESolution, SciMLSolution
 
 # Exports
 export AllObserved
@@ -1046,7 +1040,6 @@ export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSeria
 
 export EnsembleAnalysis, EnsembleSummary
 
-export tuples, intervals, TimeChoiceIterator
 
 export step!, deleteat!, addat!, get_tmp_cache,
     full_cache, user_cache, u_cache, du_cache,
@@ -1056,7 +1049,7 @@ export step!, deleteat!, addat!, get_tmp_cache,
     add_tstop!, has_tstop, first_tstop, pop_tstop!,
     add_saveat!, set_abstol!,
     set_reltol!, get_du, get_du!, get_dt, get_proposed_dt, set_proposed_dt!,
-    u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
+    derivative_discontinuity!, u_modified!, savevalues!, reinit!, auto_dt_reset!, set_t!,
     set_u!, check_error, change_t_via_interpolation!, addsteps!,
     isdiscrete, reeval_internals_due_to_modification!,
     has_rng, get_rng, set_rng!, supports_solve_rng
