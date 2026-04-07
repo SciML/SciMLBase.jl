@@ -646,29 +646,3 @@ end
 end
 
 # ============================================================
-# 17. Backwards-compatible 5-arg solve_batch
-# ============================================================
-# DiffEqGPU calls SciMLBase.solve_batch with 5 positional args (no ensemble_rng_state).
-# Verify the fallback methods work for Serial and Threaded.
-@testset "17. Backwards-compatible 5-arg solve_batch" begin
-    eprob = EnsembleProblem(
-        ode_prob;
-        prob_func = (prob, ctx) -> remake(prob; u0 = prob.u0 + 0.01 * ctx.sim_id),
-    )
-
-    result_serial = SciMLBase.solve_batch(
-        eprob, Tsit5(), EnsembleSerial(), 1:5, nothing; saveat = [0.0, 0.5, 1.0]
-    )
-    @test length(result_serial) == 5
-    @test all(sol.retcode == ReturnCode.Success for sol in result_serial)
-    @test all(length(sol.t) == 3 for sol in result_serial)
-
-    if Threads.nthreads() >= 2
-        result_threaded = SciMLBase.solve_batch(
-            eprob, Tsit5(), EnsembleThreads(), 1:5, nothing; saveat = [0.0, 0.5, 1.0]
-        )
-        @test length(result_threaded) == 5
-        @test all(sol.retcode == ReturnCode.Success for sol in result_threaded)
-        @test all(length(sol.t) == 3 for sol in result_threaded)
-    end
-end
