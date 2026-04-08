@@ -198,17 +198,16 @@ prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 For our ensemble simulation, we would like to change the initial condition around.
 This is done through the `prob_func`. This function takes in the base problem
 and modifies it to create the new problem that the trajectory actually solves.
-The `prob_func` has the signature `prob_func(prob, i, repeat)` where:
+The `prob_func` has the signature `prob_func(prob, ctx)` where:
 
 - `prob` is the base problem to be modified
-- `i` is the unique trajectory index (`1` to `trajectories`)  
-- `repeat` is the repeat iteration number (starts at `1`, increments if `output_func` returned `rerun=true`)
+- `ctx` is an `EnsembleContext` with fields `sim_id` (unique trajectory index, `1` to `trajectories`), `repeat` (rerun iteration, starts at `1`), `rng` (per-trajectory RNG), `sim_seed`, `worker_id`, and `master_rng`
 
 Here, we will take the base problem, multiply the initial condition by a `rand()`,
 and use that for calculating the trajectory:
 
 ```julia
-@everywhere function prob_func(prob, i, repeat)
+@everywhere function prob_func(prob, ctx)
     remake(prob, u0 = rand() * prob.u0)
 end
 ```
@@ -245,7 +244,7 @@ use the `@everywhere` macro. Instead, the same problem can be implemented simply
 ```@example ensemble1_2
 using OrdinaryDiffEq
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
-function prob_func(prob, i, repeat)
+function prob_func(prob, ctx)
     remake(prob, u0 = rand() * prob.u0)
 end
 ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
@@ -260,8 +259,8 @@ the environmental variable `JULIA_NUM_THREADS` (see Julia's [documentation](http
 ### Pre-Determined Initial Conditions
 
 Often, you may already know what initial conditions you want to use. This
-can be specified by the `i` argument of the `prob_func`. This `i` is the unique
-index of each trajectory. So, if we have `trajectories=100`, then we have `i` as
+can be specified by `ctx.sim_id` in the `prob_func`. The `sim_id` is the unique
+index of each trajectory. So, if we have `trajectories=100`, then we have `ctx.sim_id` as
 some index in `1:100`, and it's different for each trajectory.
 
 So, if we wanted to use a grid of evenly spaced initial conditions from `0` to `1`,
@@ -269,8 +268,8 @@ we could simply index the `linspace` type:
 
 ```@example ensemble1_3
 initial_conditions = range(0, stop = 1, length = 100)
-function prob_func(prob, i, repeat)
-    remake(prob, u0 = initial_conditions[i])
+function prob_func(prob, ctx)
+    remake(prob, u0 = initial_conditions[ctx.sim_id])
 end
 ```
 
@@ -318,7 +317,7 @@ Once again, we do this with a `prob_func`, and here we modify the parameters in
 # capture that local `p` which isn't redefined anywhere in that local scope.
 # This allows it to be type stable.
 prob_func = let p = p
-    (prob, i, repeat) -> begin
+    (prob, ctx) -> begin
         x = 0.3rand(2)
         remake(prob, p = [p[1], p[2], x[1], x[2]])
     end
@@ -356,7 +355,7 @@ the standard error of the mean for the final time point below our tolerance
 to discard the rest of the data.
 
 ```@example ensemble3
-function output_func(sol, i)
+function output_func(sol, ctx)
     last(sol), false
 end
 ```
@@ -368,7 +367,7 @@ using OrdinaryDiffEq
 # Linear ODE which starts at 0.5 and solves from t=0.0 to t=1.0
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 
-function prob_func(prob, i, repeat)
+function prob_func(prob, ctx)
     remake(prob, u0 = rand() * prob.u0)
 end
 ```

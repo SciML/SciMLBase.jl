@@ -5,8 +5,8 @@ $(TYPEDEF)
 
 ```julia
 EnsembleProblem(prob::AbstractSciMLProblem;
-    output_func = (sol, i) -> (sol, false),
-    prob_func = (prob, i, repeat) -> (prob),
+    output_func = (sol, ctx) -> (sol, false),
+    prob_func = (prob, ctx) -> prob,
     reduction = (u, data, I) -> (append!(u, data), false),
     u_init = [], safetycopy = prob_func !== DEFAULT_PROB_FUNC)
 ```
@@ -19,32 +19,33 @@ EnsembleProblem(prob::AbstractSciMLProblem;
 
 ## Keyword Arguments
 
-  - `output_func`: The function determines what is saved from the solution to the
-    output array. Defaults to saving the solution itself. The output is
-    `(out,rerun)` where `out` is the output and `rerun` is a boolean which
-    designates whether to rerun.
-  - `prob_func`: The function by which the problem is to be modified. `prob`
-    is the problem, `i` is the unique id `1:trajectories` for the problem, and
-    `repeat` is the iteration of the repeat. At first, it is `1`, but if
-    `rerun` was true this will be `2`, `3`, etc. counting the number of times
-    problem `i` has been repeated.
+  - `output_func`: A function `(sol, ctx)` that determines what is saved from the solution
+    to the output array. `ctx` is an [`EnsembleContext`](@ref) with fields like `ctx.sim_id`.
+    Defaults to saving the solution itself. The output is `(out, rerun)` where `out` is the
+    output and `rerun` is a boolean which designates whether to rerun.
+  - `prob_func`: A function `(prob, ctx)` that modifies the problem for each trajectory.
+    `ctx` is an [`EnsembleContext`](@ref) providing `ctx.sim_id` (unique id `1:trajectories`),
+    `ctx.repeat` (rerun counter, starts at `1`), `ctx.rng` (per-trajectory RNG or `nothing`),
+    `ctx.sim_seed`, and `ctx.master_rng`. `prob_func` must preserve the problem type
+    of `prob` — for example, a `JumpProblem` must remain a `JumpProblem`, an
+    `ODEProblem` must remain an `ODEProblem`.
 
-  - `reduction`: This function is used to aggregate the results in each simulation batch. 
-    By default, it appends the `data` from the batch to `u`, which is initialized via `u_data`. 
+  - `reduction`: This function is used to aggregate the results in each simulation batch.
+    By default, it appends the `data` from the batch to `u`, which is initialized via `u_data`.
     The `I` is a range of indices corresponding to the trajectories for the current batch.
     ### Arguments:
-        - `u`: The solution from the current ensemble run. This is the accumulated data that gets 
+        - `u`: The solution from the current ensemble run. This is the accumulated data that gets
           updated in each batch.
-        - `data`: The results from the current batch of simulations. This is typically some data 
+        - `data`: The results from the current batch of simulations. This is typically some data
           (e.g., variable values, time steps) that is merged with `u`.
-        - `I`: A range of indices corresponding to the simulations in the current batch. This provides 
+        - `I`: A range of indices corresponding to the simulations in the current batch. This provides
           the trajectory indices for the batch.
 
     ### Returns:
         - `(new_data, has_converged)`: A tuple where:
         - `new_data`: The updated accumulated data, typically the result of appending `data` to `u`.
-        - `has_converged`: A boolean indicating whether the simulation has converged and should terminate early. 
-          If `true`, the simulation will stop early. If `false`, the simulation will continue. By default, this is 
+        - `has_converged`: A boolean indicating whether the simulation has converged and should terminate early.
+          If `true`, the simulation will stop early. If `false`, the simulation will continue. By default, this is
           `false`, meaning the simulation will not stop early.
 
   - `u_init`: The initial form of the object that gets updated in-place inside the
@@ -63,7 +64,7 @@ EnsembleProblem(prob::AbstractSciMLProblem;
 One can specify a function `prob_func` which changes the problem. For example:
 
 ```julia
-function prob_func(prob, i, repeat)
+function prob_func(prob, ctx)
     @. prob.u0 = randn() * prob.u0
     prob
 end
@@ -75,20 +76,28 @@ problem types are immutable, it uses `.=`. Otherwise, one can just create
 a new problem type:
 
 ```julia
-function prob_func(prob, i, repeat)
-    @. prob.u0 = u0_arr[i]
+function prob_func(prob, ctx)
+    @. prob.u0 = u0_arr[ctx.sim_id]
     prob
+end
+```
+
+To access the per-trajectory RNG (available when `rng` or `seed` is passed to `solve`):
+
+```julia
+function prob_func(prob, ctx)
+    remake(prob, u0 = randn(ctx.rng, length(prob.u0)))
 end
 ```
 
 ## `output_func` Specification
 
 The `output_func` is a reduction function. Its arguments are the generated solution and the
-unique index for the run. For example, if we wish to only save the 2nd coordinate
+[`EnsembleContext`](@ref). For example, if we wish to only save the 2nd coordinate
 at the end of each solution, we can do:
 
 ```julia
-output_func(sol, i) = (sol[end, 2], false)
+output_func(sol, ctx) = (sol[end, 2], false)
 ```
 
 Thus, the ensemble simulation would return as its data an array which is the
@@ -122,18 +131,17 @@ end
 """
 Returns the same problem without modification.
 """
-DEFAULT_PROB_FUNC(prob, i, repeat) = prob
+DEFAULT_PROB_FUNC(prob, ctx) = prob
 
 """
 Returns the solution as-is, along with `false` indicating no rerun.
 """
-DEFAULT_OUTPUT_FUNC(sol, i) = (sol, false)
+DEFAULT_OUTPUT_FUNC(sol, ctx) = (sol, false)
 
 """
 Appends new data to the accumulated data and returns `false` to indicate no early termination.
 """
 DEFAULT_REDUCTION(u, data, I) = append!(u, data), false
-
 
 """
 $(TYPEDEF)
@@ -197,7 +205,7 @@ function SciMLBase.EnsembleProblem(
 Ensembles Simulations Interface page for more details",
         :EnsembleProblem
     )
-    prob_func = (prob, i, repeat = nothing) -> remake(prob, u0 = u0s[i])
+    prob_func = (prob, ctx) -> remake(prob, u0 = u0s[ctx.sim_id])
     return SciMLBase.EnsembleProblem(prob; prob_func, kwargs...)
 end
 

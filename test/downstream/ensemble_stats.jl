@@ -5,7 +5,7 @@ f(u, p, t) = 1.01 * u
 u0 = 1 / 2
 tspan = (0.0, 1.0)
 prob = ODEProblem(f, u0, tspan)
-function prob_func(prob, i, repeat)
+function prob_func(prob, ctx)
     return remake(prob, u0 = rand() * prob.u0)
 end
 ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
