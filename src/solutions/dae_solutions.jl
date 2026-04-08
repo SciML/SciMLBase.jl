@@ -75,15 +75,6 @@ function ConstructionBase.setproperties(sol::DAESolution, patch::NamedTuple)
     )
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractDAESolution, s::Symbol)
-    if s === :destats
-        Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
-        return getfield(x, :stats)
-    elseif s === :ps
-        return ParameterIndexingProxy(x)
-    end
-    return getfield(x, s)
-end
 
 function build_solution(
         prob::AbstractDAEProblem, alg, t, u, du = nothing;
@@ -95,7 +86,6 @@ function build_solution(
         interp = du === nothing ? LinearInterpolation(t, u) :
             HermiteInterpolation(t, u, du),
         retcode = ReturnCode.Default,
-        destats = missing,
         stats = nothing,
         saved_subsystem = nothing,
         kwargs...
@@ -108,15 +98,6 @@ function build_solution(
         N = ndims(eltype(u)) + 1
     end
 
-    if !ismissing(destats)
-        msg = "`destats` kwarg has been deprecated in favor of `stats`"
-        if stats !== nothing
-            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
-        else
-            stats = destats
-        end
-        Base.depwarn(msg, :build_solution)
-    end
     return if has_analytic(prob.f)
         u_analytic = Vector{typeof(prob.u0)}()
         errors = Dict{Symbol, real(eltype(prob.u0))}()

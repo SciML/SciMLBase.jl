@@ -53,7 +53,7 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(
             f::AbstractIntegralFunction{iip}, domain,
-            p = NullParameters(); nout = nothing, batch = nothing,
+            p = NullParameters();
             kwargs...
         ) where {iip}
         warn_paramtype(p)
@@ -73,62 +73,21 @@ function IntegralProblem(
     return IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-@deprecate IntegralProblem{iip}(
-    f::AbstractIntegralFunction,
-    lb::Union{Number, AbstractVector{<:Number}},
-    ub::Union{Number, AbstractVector{<:Number}},
-    p = NullParameters(); kwargs...
-) where {iip} IntegralProblem{iip}(
-    f, (lb, ub), p; kwargs...
-)
-
 function IntegralProblem(f, args...; kwargs...)
     return IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
 end
 function IntegralProblem{iip}(
-        f, args...; nout = nothing, batch = nothing, kwargs...
+        f, args...; kwargs...
     ) where {iip}
-    if nout !== nothing || batch !== nothing
-        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. Instead of using `nout` to define sizes, the new interface requires giving an `integrand_prototype` which is a vector of the form to write to. For example, define an `IntegralFunction` where `integrand_prototype = zero(nout)` (or appropriate vector type), or for batched `integrand_prototype = zero(nout, nbatch)`. See the updated Integrals.jl documentation for details."
-    end
-
     g = if iip
-        if batch === nothing
-            output_prototype = nout === nothing ? Array{Float64, 0}(undef) :
-                Vector{Float64}(undef, nout)
-            IntegralFunction(f, output_prototype)
-        else
-            output_prototype = nout === nothing ? Float64[] :
-                Matrix{Float64}(undef, nout, 0)
-            BatchIntegralFunction(f, output_prototype, max_batch = batch)
-        end
+        IntegralFunction(f, Array{Float64, 0}(undef))
     else
-        if batch === nothing
-            IntegralFunction(f)
-        else
-            BatchIntegralFunction(f, max_batch = batch)
-        end
+        IntegralFunction(f)
     end
     return IntegralProblem(g, args...; kwargs...)
 end
 
-function Base.getproperty(prob::IntegralProblem, name::Symbol)
-    if name === :lb
-        domain = getfield(prob, :domain)
-        lb, ub = domain
-        return lb
-    elseif name === :ub
-        domain = getfield(prob, :domain)
-        lb, ub = domain
-        return ub
-    elseif name === :ps
-        return ParameterIndexingProxy(prob)
-    end
-    return Base.getfield(prob, name)
-end
 
-struct QuadratureProblem end
-@deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
 
 @doc doc"""
 

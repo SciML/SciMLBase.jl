@@ -93,9 +93,6 @@ function build_solution(
     T = eltype(eltype(u))
     N = ndims(u)
 
-    #Backwords compatibility, remove ASAP
-    retcode = symbol_to_ReturnCode(retcode)
-
     return OptimizationSolution{
         T, N, typeof(u), typeof(cache), typeof(alg),
         typeof(objective), typeof(original), typeof(stats),
@@ -116,37 +113,6 @@ mutable struct DefaultOptimizationCache{F <: OptimizationFunction, P} <:
     p::P
 end
 
-# for compatibility
-function build_solution(
-        prob::AbstractOptimizationProblem,
-        alg, u, objective;
-        retcode = ReturnCode.Default,
-        original = nothing,
-        kwargs...
-    )
-    T = eltype(eltype(u))
-    N = ndims(u)
-
-    Base.depwarn(
-        "`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated." *
-            " Consider implementing an `AbstractOptimizationCache` instead.",
-        "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)"
-    )
-
-    cache = DefaultOptimizationCache(prob.f, prob.p)
-
-    #Backwords compatibility, remove ASAP
-    retcode = symbol_to_ReturnCode(retcode)
-
-    return OptimizationSolution{
-        T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original),
-    }(
-        u, cache, alg, objective,
-        retcode,
-        original
-    )
-end
 
 function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
     if x in (:u0, :p) && has_reinit(cache)
@@ -243,27 +209,7 @@ Base.@propagate_inbounds function Base.getproperty(
         x::AbstractOptimizationSolution,
         s::Symbol
     )
-    if s === :minimizer
-        Base.depwarn(
-            "`sol.minimizer` is deprecated. Use `sol.u` instead.",
-            "sol.minimizer"
-        )
-        return getfield(x, :u)
-    elseif s === :x
-        return getfield(x, :u)
-    elseif s === :minimum
-        Base.depwarn(
-            "`sol.minimum` is deprecated. Use `sol.objective` instead.",
-            "sol.minimum"
-        )
-        return getfield(x, :objective)
-    elseif s === :prob
-        Base.depwarn(
-            "`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
-            "sol.prob"
-        )
-        return getfield(x, :cache)
-    elseif s === :ps
+    if s === :ps
         return ParameterIndexingProxy(x)
     end
     return getfield(x, s)

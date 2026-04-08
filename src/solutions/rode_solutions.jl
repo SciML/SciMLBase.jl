@@ -76,15 +76,6 @@ function ConstructionBase.setproperties(sol::RODESolution, patch::NamedTuple)
     )
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractRODESolution, s::Symbol)
-    if s === :destats
-        Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
-        return getfield(x, :stats)
-    elseif s === :ps
-        return ParameterIndexingProxy(x)
-    end
-    return getfield(x, s)
-end
 
 function (sol::RODESolution)(
         t, ::Type{deriv} = Val{0}; idxs = nothing,
@@ -106,7 +97,7 @@ function build_solution(
         interp = LinearInterpolation(t, u),
         retcode = ReturnCode.Default,
         alg_choice = nothing,
-        seed = UInt64(0), destats = missing, stats = nothing,
+        seed = UInt64(0), stats = nothing,
         saved_subsystem = nothing, kwargs...
     )
     T = eltype(eltype(u))
@@ -120,16 +111,6 @@ function build_solution(
         f = prob.f[1]
     else
         f = prob.f
-    end
-
-    if !ismissing(destats)
-        msg = "`destats` kwarg has been deprecated in favor of `stats`"
-        if stats !== nothing
-            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
-        else
-            stats = destats
-        end
-        Base.depwarn(msg, :build_solution)
     end
 
     ps = parameter_values(prob)
