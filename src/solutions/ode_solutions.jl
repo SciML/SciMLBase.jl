@@ -106,15 +106,17 @@ page of the DifferentialEquations.jl documentation.
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
 """
 struct ODESolution{
-        T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
-        AC <: Union{Nothing, Vector{Int}}, R, O, V,
+        T, N, uType, duType, uType2, DType, tType, rateType, randType, discType, P, A,
+        IType, S, AC <: Union{Nothing, Vector{Int}}, R, O, V,
     } <:
     AbstractODESolution{T, N, uType}
     u::uType
+    du::duType
     u_analytic::uType2
     errors::DType
     t::tType
     k::rateType
+    W::randType
     discretes::discType
     prob::P
     alg::A
@@ -126,6 +128,7 @@ struct ODESolution{
     retcode::ReturnCode.T
     resid::R
     original::O
+    seed::UInt64
     saved_subsystem::V
 end
 
@@ -139,9 +142,10 @@ function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
     T = eltype(eltype(u))
     patch = merge(getproperties(sol), patch)
     return ODESolution{T, N}(
-        patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
-        patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
-        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem
+        patch.u, patch.du, patch.u_analytic, patch.errors, patch.t, patch.k,
+        patch.W, patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense,
+        patch.tslocation, patch.stats, patch.alg_choice, patch.retcode, patch.resid,
+        patch.original, patch.seed, patch.saved_subsystem
     )
 end
 
@@ -155,20 +159,20 @@ Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Sy
     return getfield(x, s)
 end
 
-# FIXME: Remove the defaults for resid and original on a breaking release
 function ODESolution{T, N}(
-        u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
+        u, du, u_analytic, errors, t, k, W, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode, resid = nothing,
-        original = nothing, saved_subsystem = nothing
+        original = nothing, seed::UInt64 = UInt64(0), saved_subsystem = nothing
     ) where {T, N}
     return ODESolution{
-        T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
-        typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
+        T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors), typeof(t),
+        typeof(k), typeof(W), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
         typeof(saved_subsystem),
     }(
-        u, u_analytic, errors, t, k, discretes, prob, alg, interp,
-        dense, tslocation, stats, alg_choice, retcode, resid, original, saved_subsystem
+        u, du, u_analytic, errors, t, k, W, discretes, prob, alg, interp,
+        dense, tslocation, stats, alg_choice, retcode, resid, original, seed,
+        saved_subsystem
     )
 end
 
@@ -187,8 +191,8 @@ function error_if_observed_derivative(sys, idx, ::Type)
 end
 
 function SymbolicIndexingInterface.is_parameter_timeseries(::Type{S}) where {
-        T1, T2, T3, T4, T5, T6, T7,
-        S <: ODESolution{T1, T2, T3, T4, T5, T6, T7, <:ParameterTimeseriesCollection},
+        T1, T2, T3, T4, T5, T6, T7, T8, T9,
+        S <: ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, <:ParameterTimeseriesCollection},
     }
     return Timeseries()
 end
@@ -551,9 +555,11 @@ function build_solution(
         errors = Dict{Symbol, real(eltype(prob.u0))}()
         sol = ODESolution{T, N}(
             u,
+            nothing,
             u_analytic,
             errors,
             t, k,
+            nothing,
             discretes,
             prob,
             alg,
@@ -565,6 +571,7 @@ function build_solution(
             retcode,
             resid,
             original,
+            UInt64(0),
             saved_subsystem
         )
         if calculate_error
@@ -579,7 +586,9 @@ function build_solution(
             u,
             nothing,
             nothing,
+            nothing,
             t, k,
+            nothing,
             discretes,
             prob,
             alg,
@@ -591,27 +600,89 @@ function build_solution(
             retcode,
             resid,
             original,
+            UInt64(0),
             saved_subsystem
         )
     end
+end
+
+function _fill_uanalytic_ode!(sol, f)
+    for i in 1:size(sol.u, 1)
+        if sol.prob isa AbstractDDEProblem
+            push!(
+                sol.u_analytic,
+                f.analytic(sol.prob.u0, sol.prob.h, sol.prob.p, sol.t[i])
+            )
+        else
+            push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i]))
+        end
+    end
+end
+
+function _fill_uanalytic_dae!(sol, f)
+    prob = sol.prob
+    for i in 1:size(sol.u, 1)
+        push!(sol.u_analytic, f.analytic(prob.du0, prob.u0, prob.p, sol.t[i]))
+    end
+end
+
+function _fill_uanalytic_rode!(sol, f)
+    empty!(sol.u_analytic)
+    if f isa RODEFunction && f.analytic_full == true
+        f.analytic(sol)
+    elseif sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
+        for i in 1:length(sol)
+            push!(
+                sol.u_analytic,
+                f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i])))
+            )
+        end
+    else
+        for i in 1:length(sol)
+            push!(
+                sol.u_analytic,
+                f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i])
+            )
+        end
+    end
+end
+
+function _dense_analytic_ode(sol, f, densetimes)
+    return VectorOfArray(
+        [f.analytic(sol.prob.u0, sol.prob.p, t) for t in densetimes]
+    )
+end
+
+function _dense_analytic_dae(sol, f, densetimes)
+    prob = sol.prob
+    return VectorOfArray(
+        [f.analytic(prob.du0, prob.u0, prob.p, t) for t in densetimes]
+    )
+end
+
+function _dense_analytic_rode(sol, f, densetimes)
+    return [f.analytic(sol.u[1], sol.prob.p, t, sol.W(t)[1]) for t in densetimes]
 end
 
 function calculate_solution_errors!(
         sol::AbstractODESolution; fill_uanalytic = true,
         timeseries_errors = true, dense_errors = true
     )
-    f = sol.prob.f
+    prob = sol.prob
+
+    if prob.f isa Tuple
+        f = prob.f[1]
+    else
+        f = prob.f
+    end
 
     if fill_uanalytic
-        for i in 1:size(sol.u, 1)
-            if sol.prob isa AbstractDDEProblem
-                push!(
-                    sol.u_analytic,
-                    f.analytic(sol.prob.u0, sol.prob.h, sol.prob.p, sol.t[i])
-                )
-            else
-                push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i]))
-            end
+        if prob isa AbstractDAEProblem
+            _fill_uanalytic_dae!(sol, f)
+        elseif prob isa Union{AbstractRODEProblem, AbstractSDDEProblem}
+            _fill_uanalytic_rode!(sol, f)
+        else
+            _fill_uanalytic_ode!(sol, f)
         end
     end
 
@@ -641,12 +712,13 @@ function calculate_solution_errors!(
             if sol.dense && dense_errors
                 densetimes = collect(range(sol.t[1], stop = sol.t[end], length = 100))
                 interp_u = sol(densetimes)
-                interp_analytic = VectorOfArray(
-                    [
-                        f.analytic(sol.prob.u0, sol.prob.p, t)
-                            for t in densetimes
-                    ]
-                )
+                interp_analytic = if prob isa AbstractDAEProblem
+                    _dense_analytic_dae(sol, f, densetimes)
+                elseif prob isa Union{AbstractRODEProblem, AbstractSDDEProblem}
+                    _dense_analytic_rode(sol, f, densetimes)
+                else
+                    _dense_analytic_ode(sol, f, densetimes)
+                end
                 sol.errors[:L∞] = norm(
                     maximum(
                         vecvecapply(
@@ -694,6 +766,7 @@ end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     @reset sol.u = sol.u[I]
+    @reset sol.du = sol.du === nothing ? nothing : sol.du[I]
     @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
     @reset sol.t = sol.t[I]
     @reset sol.k = sol.dense ? sol.k[I] : sol.k
