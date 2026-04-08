@@ -21,38 +21,6 @@ import SciMLStructures
     y, odefunction_remake_back
 end
 
-# This method resolves the ambiguity with the pullback defined in
-# RecursiveArrayToolsZygoteExt
-# https://github.com/SciML/RecursiveArrayTools.jl/blob/d06ecb856f43bc5e37cbaf50e5f63c578bf3f1bd/ext/RecursiveArrayToolsZygoteExt.jl#L67
-@adjoint function Base.getindex(VA::ODESolution, i::Int, j::Int)
-    function ODESolution_getindex_pullback(Δ)
-        du = [
-            m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
-                zero(VA.u[1]) for m in 1:length(VA.u)
-        ]
-        dp = zero(VA.prob.p)
-        dprob = remake(VA.prob, p = dp)
-        du, dprob
-        T = eltype(eltype(VA.u))
-        if dprob.u0 === nothing
-            N = 2
-        elseif dprob isa SciMLBase.BVProblem && !hasmethod(size, Tuple{typeof(dprob.u0)})
-            __u0 = hasmethod(dprob.u0, Tuple{typeof(dprob.p), typeof(first(dprob.tspan))}) ?
-                dprob.u0(dprob.p, first(dprob.tspan)) : dprob.u0(first(dprob.tspan))
-            N = length((size(__u0)..., length(du)))
-        else
-            N = length((size(dprob.u0)..., length(du)))
-        end
-        Δ′ = ODESolution{T, N}(
-            du, nothing, nothing,
-            VA.t, VA.k, VA.discretes, dprob, VA.alg, VA.interp, VA.dense, 0, VA.stats,
-            VA.alg_choice, VA.retcode
-        )
-        (Δ′, nothing, nothing)
-    end
-    VA[i, j], ODESolution_getindex_pullback
-end
-
 @adjoint function Base.getindex(VA::ODESolution, sym, j::Integer)
     res, pullback = ChainRulesCore.rrule(Zygote.ZygoteRuleConfig(), getindex, VA, sym, j)
     return res, Base.tail ∘ pullback
@@ -82,17 +50,6 @@ end
         (p̄.u, nothing, nothing, nothing)
     end
     out, EnsembleSolution_adjoint
-end
-
-@adjoint function Base.getindex(VA::ODESolution, i::Int)
-    function ODESolution_getindex_pullback(Δ)
-        Δ′ = [
-            (i == j ? Δ : Zygote.FillArrays.Fill(zero(eltype(x)), size(x)))
-                for (x, j) in zip(VA.u, 1:length(VA))
-        ]
-        (Δ′, nothing)
-    end
-    VA[:, i], ODESolution_getindex_pullback
 end
 
 @adjoint function Base.getindex(VA::ODESolution, sym)
