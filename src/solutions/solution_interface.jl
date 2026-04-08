@@ -200,8 +200,9 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     return show(io, m, A.u)
 end
 
-DEFAULT_PLOT_FUNC(x, y) = (x, y)
-DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
+# Use plotting helpers from RecursiveArrayTools
+# (DEFAULT_PLOT_FUNC, plottable_indices, plot_indices, getindepsym_defaultt,
+#  interpret_vars, add_labels!, diffeq_to_arrays, solplot_vecs_and_labels)
 
 function isdenseplot(sol)
     return (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
@@ -212,17 +213,8 @@ function isdenseplot(sol)
     )
 end
 
-"""
-    $(TYPEDSIGNATURES)
-
-Given the first element in a timeseries solution, return an `AbstractArray` of
-indices that can be plotted as continuous variables. This is useful for systems
-that store auxiliary variables in the state vector which are not meant to be
-used for plotting.
-"""
-plottable_indices(x::AbstractArray) = 1:length(x)
-plottable_indices(x::Number) = 1
-
+# Solution-specific recipe: computes solution-specific defaults, delegates core
+# plotting to RecursiveArrayTools' helpers, and handles analytic + discrete overlays.
 @recipe function f(
         sol::AbstractTimeseriesSolution;
         plot_analytic = false,
@@ -254,6 +246,7 @@ plottable_indices(x::Number) = 1
         throw(ArgumentError("No analytic solution was found but `plot_analytic` was set to `true`."))
     end
 
+    # Separate continuous vs discrete variables (solution-specific)
     idxs = idxs === nothing ? plottable_indices(sol.u[1]) : idxs
     if !(idxs isa Union{Tuple, AbstractArray})
         vars = interpret_vars([idxs], sol)
@@ -279,89 +272,33 @@ plottable_indices(x::Number) = 1
     xflip --> tdir < 0
     seriestype --> :path
 
+    # Main continuous variable series — delegates to RAT helpers
     @series begin
         if idxs isa Union{AbstractArray, Tuple} && isempty(idxs)
             label --> nothing
             ([], [])
         else
             tscale = get(plotattributes, :xscale, :identity)
-            plot_vecs,
-                labels = diffeq_to_arrays(
-                sol, plot_analytic, denseplot,
-                plotdensity, tspan, vars, tscale, plotat
+            # Use RAT's diffeq_to_arrays for core plotting logic
+            plot_vecs, labels = diffeq_to_arrays(
+                sol, denseplot, plotdensity, tspan, vars, tscale, plotat
             )
 
-            # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
+            # Axis labels
             if idxs isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
-                val = hasname(vars[1][2]) ? String(getname(vars[1][2])) : vars[1][2]
-                if val isa Integer
-                    if val == 0
-                        val = "t"
-                    else
-                        val = "u[$val]"
+                for (guide, idx) in [(:xguide, 2), (:yguide, 3)]
+                    if idx <= length(vars[1])
+                        guide --> RecursiveArrayTools._var_label(sol, vars[1][idx])
                     end
                 end
-                xguide --> val
-                val = hasname(vars[1][3]) ? String(getname(vars[1][3])) : vars[1][3]
-                if val isa Integer
-                    if val == 0
-                        val = "t"
-                    else
-                        val = "u[$val]"
-                    end
-                end
-                yguide --> val
-                if length(idxs) > 2
-                    val = hasname(vars[1][4]) ? String(getname(vars[1][4])) : vars[1][4]
-                    if val isa Integer
-                        if val == 0
-                            val = "t"
-                        else
-                            val = "u[$val]"
-                        end
-                    end
-                    zguide --> val
+                if length(vars[1]) > 3
+                    zguide --> RecursiveArrayTools._var_label(sol, vars[1][4])
                 end
             end
 
-            if (
-                    !any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 1))) &&
-                        getindex.(vars, 1) == zeros(length(vars))
-                ) ||
-                    (
-                    !any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 2))) &&
-                        getindex.(vars, 2) == zeros(length(vars))
-                ) ||
-                    all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 1)) ||
-                    all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 2))
+            if all(x -> (x[2] isa Integer && x[2] == 0) ||
+                        isequal(x[2], getindepsym_defaultt(sol)), vars)
                 xguide --> "$(getindepsym_defaultt(sol))"
-            end
-            if length(vars[1]) >= 3 &&
-                    (
-                    (
-                        !any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 3))) &&
-                            getindex.(vars, 3) == zeros(length(vars))
-                    ) ||
-                        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 3))
-                )
-                yguide --> "$(getindepsym_defaultt(sol))"
-            end
-            if length(vars[1]) >= 4 &&
-                    (
-                    (
-                        !any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 4))) &&
-                            getindex.(vars, 4) == zeros(length(vars))
-                    ) ||
-                        all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 4))
-                )
-                zguide --> "$(getindepsym_defaultt(sol))"
-            end
-
-            if (
-                    !any(!isequal(NotSymbolic()), symbolic_type.(getindex.(vars, 2))) &&
-                        getindex.(vars, 2) == zeros(length(vars))
-                ) ||
-                    all(t -> Symbol(t) == getindepsym_defaultt(sol), getindex.(vars, 2))
                 if tspan === nothing
                     if tdir > 0
                         xlims --> (sol.t[1], sol.t[end])
@@ -377,6 +314,16 @@ plottable_indices(x::Number) = 1
             (plot_vecs...,)
         end
     end
+
+    # Analytic solution overlay (solution-specific)
+    if plot_analytic
+        @series begin
+            tscale = get(plotattributes, :xscale, :identity)
+            _plot_analytic_series(sol, denseplot, plotdensity, tspan, vars, tscale, plotat)
+        end
+    end
+
+    # Discrete variable series (solution-specific)
     for (func, xvar, yvar, tsidx) in disc_vars
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
@@ -396,12 +343,10 @@ plottable_indices(x::Number) = 1
             xvar = only(independent_variable_symbols(sol))
         end
         xvals = sol(ts; idxs = xvar).u
-        # xvals = getsym(sol, xvar)(sol, tstart:tend)
         yvals = getp(sol, yvar)(sol, tstart:tend)
         tmpvals = map(func, xvals, yvals)
         xvals = getindex.(tmpvals, 1)
         yvals = getindex.(tmpvals, 2)
-        # Scatterplot of points
         @series begin
             seriestype := :line
             linestyle --> :dash
@@ -417,173 +362,86 @@ plottable_indices(x::Number) = 1
     end
 end
 
-function diffeq_to_arrays(
-        sol, plot_analytic, denseplot, plotdensity, tspan,
-        vars, tscale, plotat
-    )
-    if tspan === nothing
-        if sol.tslocation == 0
-            end_idx = length(sol)
-        else
-            end_idx = sol.tslocation
-        end
-        start_idx = 1
-    else
-        start_idx = searchsortedfirst(sol.t, tspan[1])
-        end_idx = searchsortedlast(sol.t, tspan[end])
-    end
-
-    # determine type of spacing for plot
+# Analytic solution plotting helper (solution-specific, uses sol.prob)
+function _plot_analytic_series(sol, denseplot, plotdensity, tspan, vars, tscale, plotat)
     densetspacer = if tscale in [:ln, :log10, :log2]
         (start, stop, n) -> exp10.(range(log10(start), stop = log10(stop), length = n))
     else
         (start, stop, n) -> range(start; stop = stop, length = n)
     end
 
+    if tspan === nothing
+        start_idx = 1
+        end_idx = sol.tslocation == 0 ? length(sol) : sol.tslocation
+    else
+        start_idx = searchsortedfirst(sol.t, tspan[1])
+        end_idx = searchsortedlast(sol.t, tspan[end])
+    end
+
     if plotat !== nothing
         plott = plotat
-        plot_analytic_timeseries = nothing
     elseif denseplot
-        # Generate the points from the plot from dense function
         if sol isa AbstractAnalyticalSolution
-            tspan = sol.prob.tspan
-            plott = collect(densetspacer(tspan[1], tspan[end], plotdensity))
+            _tspan = sol.prob.tspan
+            plott = collect(densetspacer(_tspan[1], _tspan[end], plotdensity))
         elseif tspan === nothing
             plott = collect(densetspacer(sol.t[start_idx], sol.t[end_idx], plotdensity))
         else
             plott = collect(densetspacer(tspan[1], tspan[end], plotdensity))
         end
-        if plot_analytic
-            if sol.prob.f isa Tuple
-                plot_analytic_timeseries = [
-                    sol.prob.f[1].analytic(
-                            sol.prob.u0, sol.prob.p,
-                            t
-                        ) for t in plott
-                ]
-            else
-                plot_analytic_timeseries = [
-                    sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t)
-                        for t in plott
-                ]
-            end
-        else
-            plot_analytic_timeseries = nothing
-        end
     else
-        # Plot for sparse output: use the timeseries itself
-        if sol.tslocation == 0
-            plott = sol.t
-            plot_timeseries = DiffEqArray(sol.u, sol.t)
-            if plot_analytic
-                plot_analytic_timeseries = sol.u_analytic
-            else
-                plot_analytic_timeseries = nothing
-            end
-        else
-            if tspan === nothing
-                plott = sol.t[start_idx:end_idx]
-            else
-                plott = collect(densetspacer(tspan[1], tspan[2], plotdensity))
-            end
+        plott = sol.tslocation == 0 ? sol.t : sol.t[start_idx:end_idx]
+    end
 
-            if plot_analytic
-                plot_analytic_timeseries = sol.u_analytic[start_idx:end_idx]
-            else
-                plot_analytic_timeseries = nothing
-            end
-        end
+    if sol.prob.f isa Tuple
+        plot_analytic_timeseries = [
+            sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p, t) for t in plott
+        ]
+    else
+        plot_analytic_timeseries = [
+            sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t) for t in plott
+        ]
     end
 
     dims = length(vars[1]) - 1
-    for var in vars
-        @assert length(var) - 1 == dims
-    end
-    # Should check that all have the same dims!
-    return plot_vecs,
-        labels = solplot_vecs_and_labels(
-        dims, vars, plott, sol,
-        plot_analytic, plot_analytic_timeseries
-    )
-end
-
-function interpret_vars(vars, sol)
-    if vars === nothing
-        # Default: plot all timeseries
-        if sol[:, 1] isa Union{Tuple, AbstractArray}
-            vars = collect((DEFAULT_PLOT_FUNC, 0, i) for i in plot_indices(sol[:, 1]))
-        else
-            vars = [(DEFAULT_PLOT_FUNC, 0, 1)]
-        end
-    end
-
-    if vars isa Base.Integer
-        vars = [(DEFAULT_PLOT_FUNC, 0, vars)]
-    end
-
-    if vars isa AbstractArray
-        # If list given, its elements should be tuples, or we assume x = time
-        tmp = Tuple[]
-        for x in vars
-            if x isa Tuple
-                if x[1] isa Int
-                    push!(tmp, tuple(DEFAULT_PLOT_FUNC, x...))
-                else
-                    push!(tmp, x)
+    varsyms = variable_symbols(sol)
+    plot_vecs = []
+    labels = String[]
+    for x in vars
+        tmp = []
+        strs = String[]
+        for j in 2:length(x)
+            if (x[j] isa Integer && x[j] == 0)
+                push!(tmp, plott)
+                push!(strs, "t")
+            elseif isequal(x[j], getindepsym_defaultt(sol))
+                push!(tmp, plott)
+                push!(strs, String(getname(x[j])))
+            elseif x[j] == 1 && !(sol[:, 1] isa Union{AbstractArray, ArrayPartition})
+                push!(tmp, plot_analytic_timeseries)
+                push!(strs, RecursiveArrayTools._var_label(sol, x[j]))
+            else
+                _tmp = Vector{eltype(sol.u[1])}(undef, length(plot_analytic_timeseries))
+                for n in 1:length(plot_analytic_timeseries)
+                    _tmp[n] = plot_analytic_timeseries[n][x[j]]
                 end
-            else
-                push!(tmp, (DEFAULT_PLOT_FUNC, 0, x))
+                push!(tmp, _tmp)
+                push!(strs, RecursiveArrayTools._var_label(sol, x[j]))
             end
         end
-        vars = tmp
-    end
-
-    if vars isa Tuple
-        # If tuple given...
-        if vars[end - 1] isa AbstractArray
-            if vars[end] isa AbstractArray
-                # If both axes are lists we zip (will fail if different lengths)
-                vars = collect(
-                    zip(
-                        [DEFAULT_PLOT_FUNC for i in eachindex(vars[end - 1])],
-                        vars[end - 1], vars[end]
-                    )
-                )
-            else
-                # Just the x axis is a list
-                vars = [(DEFAULT_PLOT_FUNC, x, vars[end]) for x in vars[end - 1]]
+        f = x[1]
+        tmp = map(f, tmp...)
+        tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
+        for i in eachindex(tmp)
+            if length(plot_vecs) < i
+                push!(plot_vecs, [])
             end
-        else
-            if vars[2] isa AbstractArray
-                # Just the y axis is a list
-                vars = [(DEFAULT_PLOT_FUNC, vars[end - 1], y) for y in vars[end]]
-            else
-                # Both axes are numbers
-                if vars[1] isa Int || symbolic_type(vars[1]) != NotSymbolic()
-                    vars = [tuple(DEFAULT_PLOT_FUNC, vars...)]
-                else
-                    vars = [vars]
-                end
-            end
+            push!(plot_vecs[i], tmp[i])
         end
+        add_analytic_labels!(labels, x, dims, sol, strs)
     end
-
-    # Here `vars` should be a list of tuples (x, y).
-    @assert(typeof(vars) <: AbstractArray)
-    @assert(eltype(vars) <: Tuple)
-    return vars
-end
-
-function add_labels!(labels, x, dims, sol, strs)
-    if ((x[2] isa Integer && x[2] == 0) || isequal(x[2], getindepsym_defaultt(sol))) &&
-            dims == 2
-        push!(labels, strs[end])
-    elseif x[1] !== DEFAULT_PLOT_FUNC
-        push!(labels, "f($(join(strs, ',')))")
-    else
-        push!(labels, "($(join(strs, ',')))")
-    end
-    return labels
+    plot_vecs = [hcat(x...) for x in plot_vecs]
+    return plot_vecs, labels
 end
 
 function add_analytic_labels!(labels, x, dims, sol, strs)
@@ -598,106 +456,5 @@ function add_analytic_labels!(labels, x, dims, sol, strs)
     return labels
 end
 
-function solplot_vecs_and_labels(
-        dims, vars, plott, sol, plot_analytic,
-        plot_analytic_timeseries
-    )
-    plot_vecs = []
-    labels = String[]
-    varsyms = variable_symbols(sol)
-    batch_symbolic_vars = []
-    for x in vars
-        for j in 2:length(x)
-            if (x[j] isa Integer && x[j] == 0) || isequal(x[j], getindepsym_defaultt(sol))
-            else
-                push!(batch_symbolic_vars, x[j])
-            end
-        end
-    end
-    batch_symbolic_vars = identity.(batch_symbolic_vars)
-    indexed_solution = sol(plott; idxs = batch_symbolic_vars)
-    idxx = 0
-    for x in vars
-        tmp = []
-        strs = String[]
-        for j in 2:length(x)
-            if (x[j] isa Integer && x[j] == 0) || isequal(x[j], getindepsym_defaultt(sol))
-                push!(tmp, plott)
-                push!(strs, "t")
-            else
-                idxx += 1
-                push!(tmp, indexed_solution[idxx, :])
-                if !isempty(varsyms) && x[j] isa Integer
-                    push!(strs, String(getname(varsyms[x[j]])))
-                elseif hasname(x[j])
-                    push!(strs, String(getname(x[j])))
-                else
-                    push!(strs, "u[$(x[j])]")
-                end
-            end
-        end
-
-        f = x[1]
-
-        tmp = map(f, tmp...)
-
-        tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
-        for i in eachindex(tmp)
-            if length(plot_vecs) < i
-                push!(plot_vecs, [])
-            end
-            push!(plot_vecs[i], tmp[i])
-        end
-        add_labels!(labels, x, dims, sol, strs)
-    end
-
-    if plot_analytic
-        for x in vars
-            tmp = []
-            strs = String[]
-            for j in 2:length(x)
-                if (x[j] isa Integer && x[j] == 0)
-                    push!(tmp, plott)
-                    push!(strs, "t")
-                elseif isequal(x[j], getindepsym_defaultt(sol))
-                    push!(tmp, plott)
-                    push!(strs, String(getname(x[j])))
-                elseif x[j] == 1 && !(sol[:, 1] isa Union{AbstractArray, ArrayPartition})
-                    push!(tmp, plot_analytic_timeseries)
-                    if !isempty(varsyms) && x[j] isa Integer
-                        push!(strs, String(getname(varsyms[x[j]])))
-                    elseif hasname(x[j])
-                        push!(strs, String(getname(x[j])))
-                    else
-                        push!(strs, "u[$(x[j])]")
-                    end
-                else
-                    _tmp = Vector{eltype(sol.u[1])}(undef, length(plot_analytic_timeseries))
-                    for n in 1:length(plot_analytic_timeseries)
-                        _tmp[n] = plot_analytic_timeseries[n][x[j]]
-                    end
-                    push!(tmp, _tmp)
-                    if !isempty(varsyms) && x[j] isa Integer
-                        push!(strs, String(getname(varsyms[x[j]])))
-                    elseif hasname(x[j])
-                        push!(strs, String(getname(x[j])))
-                    else
-                        push!(strs, "u[$(x[j])]")
-                    end
-                end
-            end
-            f = x[1]
-            tmp = map(f, tmp...)
-            tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
-            for i in eachindex(tmp)
-                push!(plot_vecs[i], tmp[i])
-            end
-            add_analytic_labels!(labels, x, dims, sol, strs)
-        end
-    end
-    plot_vecs = [hcat(x...) for x in plot_vecs]
-    return plot_vecs, labels
-end
-
-plot_indices(A::AbstractArray) = eachindex(A)
-plot_indices(A::ArrayPartition) = eachindex(A)
+# ArrayPartition specialization
+RecursiveArrayTools.plot_indices(A::ArrayPartition) = eachindex(A)

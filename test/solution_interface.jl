@@ -6,6 +6,7 @@ using Test, SciMLBase
 end
 
 @testset "plot ODE solution" begin
+    using RecursiveArrayTools: interpret_vars, diffeq_to_arrays
     f = ODEFunction((u, p, t) -> -u, analytic = (u0, p, t) -> u0 * exp(-t))
     ode = ODEProblem(f, 1.0, (0.0, 1.0))
     sol = SciMLBase.build_solution(ode, :NoAlgorithm, [ode.tspan[begin]], [ode.u0])
@@ -14,19 +15,19 @@ end
         push!(sol.u, ode.u0)
     end
 
-    int_vars = SciMLBase.interpret_vars(nothing, sol) # nothing = idxs
-    plot_vecs,
-        labels = SciMLBase.diffeq_to_arrays(
-        sol,
-        true, # plot_analytic
-        true, # denseplot
-        10, # plotdensity
-        ode.tspan,
-        int_vars,
-        :identity,
-        nothing
-    ) # tscale
-    @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
+    int_vars = interpret_vars(nothing, sol)
+    # Core plotting (without analytic) now in RecursiveArrayTools
+    plot_vecs, labels = diffeq_to_arrays(
+        sol, true, 10, ode.tspan, int_vars, :identity, nothing
+    )
+    @test length(plot_vecs) == 2  # x and y vectors
+    @test length(labels) == 1     # one variable
+
+    # Analytic overlay via SciMLBase helper
+    analytic_vecs, analytic_labels = SciMLBase._plot_analytic_series(
+        sol, true, 10, ode.tspan, int_vars, :identity, nothing
+    )
+    @test analytic_vecs[2][:, 1] ≈ @. exp(-analytic_vecs[1][:, 1])
 end
 
 @testset "interpolate empty ODE solution" begin
