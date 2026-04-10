@@ -64,6 +64,7 @@ SciMLBaseMakieExt = "Makie"
 SciMLBaseMeasurementsExt = "Measurements"
 SciMLBaseMonteCarloMeasurementsExt = "MonteCarloMeasurements"
 SciMLBaseMooncakeExt = "Mooncake"
+SciMLBaseMooncakeForwardDiffExt = ["Mooncake", "ForwardDiff"]
 SciMLBasePartialFunctionsExt = "PartialFunctions"
 SciMLBasePyCallExt = "PyCall"
 SciMLBasePythonCallExt = "PythonCall"
