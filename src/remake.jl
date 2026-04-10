@@ -428,16 +428,24 @@ function SciMLBase.remake(
 end
 
 """
-    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
+    $TYPEDEF
+
+Additional information passed to `remake_initialization_data` which influences behavior of
+implementors. Currently does not contain any fields.
+"""
+struct RemakeInitializationDataContext end
+
+"""
+    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext)
 
 Re-create the initialization data present in the function `scimlfn`, using the
 associated system `sys`, the user provided new values of `u0`, initial time `t0`,
 user-provided `p`, new u0 vector `newu0` and new parameter object `newp`. By default,
-returns `nothing` if `scimlfn` does not have initialization data.
+returns `nothing` if `scimlfn` does not have initialization data. 
 
 Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
-function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
+function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext = RemakeInitializationDataContext())
     if !has_initialization_data(scimlfn)
         return nothing
     end
@@ -1489,26 +1497,34 @@ function updated_u0_p(
 end
 
 """
+    $TYPEDEF
+
+Additional information passed to `late_binding_update_u0_p` which influences behavior of
+implementors. Currently does not contain any fields.
+"""
+struct LateBindingUpdateU0PContext end
+
+"""
     $(TYPEDSIGNATURES)
 
 A function to perform custom modifications to `newu0` and/or `newp` after they have been
 constructed in `remake`. `root_indp` is the innermost index provider found by recursively
 calling `SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns
-the updated `newu0` and `newp`.
+the updated `newu0` and `newp`. 
 """
-function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
+function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx::LateBindingUpdateU0PContext = LateBindingUpdateU0PContext())
     return newu0, newp
 end
 
 """
     $(TYPEDSIGNATURES)
 
-Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)` after finding
+Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx)` after finding
 `root_indp`.
 """
-function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
+function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp, ctx::LateBindingUpdateU0PContext = LateBindingUpdateU0PContext())
     root_indp = get_root_indp(prob)
-    return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
+    return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx)
 end
 
 # overloaded in MTK to intercept symbolic remake
