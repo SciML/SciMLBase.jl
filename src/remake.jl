@@ -428,16 +428,24 @@ function SciMLBase.remake(
 end
 
 """
-    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
+    $TYPEDEF
+
+Additional information passed to `remake_initialization_data` which influences behavior of
+implementors. Currently does not contain any fields.
+"""
+struct RemakeInitializationDataContext end
+
+"""
+    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext)
 
 Re-create the initialization data present in the function `scimlfn`, using the
 associated system `sys`, the user provided new values of `u0`, initial time `t0`,
 user-provided `p`, new u0 vector `newu0` and new parameter object `newp`. By default,
-returns `nothing` if `scimlfn` does not have initialization data.
+returns `nothing` if `scimlfn` does not have initialization data. 
 
 Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
 """
-function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
+function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext = RemakeInitializationDataContext())
     if !has_initialization_data(scimlfn)
         return nothing
     end
