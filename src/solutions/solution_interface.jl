@@ -27,8 +27,10 @@ function augment(
         discretes = nothing
     ) where {T, N, Q, B}
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense)
+    return DiffEqArray(
+        A.u, A.t, p, sol; discretes,
+        interp = sol.interp, dense = sol.dense
+    )
 end
 
 # SymbolicIndexingInterface.jl

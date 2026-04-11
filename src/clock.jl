@@ -14,9 +14,9 @@ end
 
 # Namespace module for backwards-compatible Clocks.ContinuousClock etc.
 module Clocks
-using ..SciMLBase: AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock
-const Type = AbstractClock
-export ContinuousClock, PeriodicClock, SolverStepClock, EventClock
+    using ..SciMLBase: AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock
+    const Type = AbstractClock
+    export ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 end
 
 # for backwards compatibility
@@ -148,7 +148,7 @@ Return the time points in the interval
 """
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
-    if c isa PeriodicClock
+    return if c isa PeriodicClock
         ceil(sol.prob.tspan[1] / c.dt) * c.dt .+ (ic.idx .- 1) .* c.dt
     elseif c isa SolverStepClock
         ssc_idx = findfirst(eachindex(sol.discretes)) do i
