@@ -410,6 +410,15 @@ function rrule!!(
     return zero_fcodual(y), _scatter_pullback_indexed
 end
 
+# NOTE: The NonlinearSolution observable case (`isol[w]` for init solutions)
+# is not yet supported. Calling the observed function via Mooncake's
+# build_rrule hits a symbolic comparison inside MTK's observed function
+# cache that produces a Num in a boolean context, which Mooncake can't
+# differentiate through. This needs either:
+#   - A Mooncake-friendly observed function from MTK, or
+#   - A different gradient strategy (e.g. ForwardDiff over the inner call).
+# Tracked in SciMLBase.jl#1207.
+
 # NOTE: The ChainRules extension also defines rrules for constructors
 # (SDEProblem, ODESolution, RODESolution, IntervalNonlinearProblem,
 # EnsembleSolution) and for `getproperty(::NonlinearProblem, ::Symbol)`.
