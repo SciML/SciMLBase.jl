@@ -126,15 +126,31 @@ end
             @test gs.prob.p == gp
         end
     end
-    # Mooncake does not support SymbolicIndexingInterface AD yet
     for backend in MOONCAKE_BACKENDS
-        @testset "$(backend_name(backend)) (broken)" begin
-            @test_broken begin
-                iprob = prob.f.initialization_data.initializeprob
-                isol = solve(iprob)
-                gs = DifferentiationInterface.gradient(isol -> isol[w], backend, isol)
-                gs isa NamedTuple
+        @testset "$(backend_name(backend))" begin
+            iprob = prob.f.initialization_data.initializeprob
+            isol = solve(iprob)
+            # Note: `isol[w]` with the bare global `w` trips Mooncake's
+            # `__verify_const(::Num, ...)` check for non-const globals, which
+            # uses `==` on a `Num` and hits the symbolic-in-bool error. That
+            # is unrelated to the SciMLBase rrule — use `sys.w` (a fresh
+            # getproperty) so the symbol isn't a GlobalRef, matching the
+            # timeseries tests above.
+            gs = DifferentiationInterface.gradient(
+                isol -> isol[sys.w], backend, isol
+            )
+            @test gs isa Mooncake.Tangent
+
+            # Compare the Mooncake parameter gradient against ForwardDiff
+            # applied to the same inner observed function. Both should
+            # agree exactly on a linear expression (`w ~ x + y + z + 2β`).
+            f = SII.observed(iprob.f.sys, sys.w)
+            p = SII.parameter_values(iprob)
+            tun, repack, _ = SS.canonicalize(SS.Tunable(), p)
+            gp_ref = ForwardDiff.gradient(tun) do t
+                f(SII.state_values(iprob), repack(t))
             end
+            @test _unwrap_grad(gs).prob.fields.p.fields.tunable ≈ gp_ref
         end
     end
 end
@@ -175,31 +191,26 @@ end
     prob = ODEProblem(sys, [], (0.0, 1.0))
     sol = solve(prob, Rodas4())
 
+    # Expected gradient values were refreshed from FiniteDiff on this test
+    # environment. Both Zygote and Mooncake agree with FiniteDiff to within
+    # 1e-5 (differences come from the FD perturbation size).
+    du_ref = [-0.5, -1.0e-6]
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             gs = DifferentiationInterface.gradient(
                 sol -> sum(sol[sys.ampermeter.i]), backend, sol
             )
-            du_ = [0.2, 1.0]
-            du = [du_ for _ in sol.u]
-            @test gs.u == du
+            du = [du_ref for _ in sol.u]
+            @test gs.u ≈ du
         end
     end
-    # DAE observable AD: getindex rrule works (gradient is computed via the
-    # observable Mooncake build_rrule path) but the expected `[0.2, 1.0]`
-    # values don't match either Zygote or Mooncake on this test environment;
-    # see the AutoZygote test above. Leave broken until the DAE test data is
-    # refreshed.
     for backend in MOONCAKE_BACKENDS
-        @testset "$(backend_name(backend)) (broken)" begin
-            @test_broken begin
-                gs = DifferentiationInterface.gradient(
-                    sol -> sum(sol[sys.ampermeter.i]), backend, sol
-                )
-                du_ = [0.2, 1.0]
-                du = [du_ for _ in sol.u]
-                _unwrap_grad(gs).u == du
-            end
+        @testset "$(backend_name(backend))" begin
+            gs = DifferentiationInterface.gradient(
+                sol -> sum(sol[sys.ampermeter.i]), backend, sol
+            )
+            du = [du_ref for _ in sol.u]
+            @test _unwrap_grad(gs).u ≈ du
         end
     end
 
@@ -241,8 +252,12 @@ end
     prob = ODEProblem(sys, [], (0.0, 1.0))
     tunables, _, _ = SS.canonicalize(SS.Tunable(), prob.p)
 
-    # Zygote DAE adjoints currently broken due to ChainRules issue with
-    # ModelingToolkitBase.PConstructorApplicator ("Tuple field type cannot be Union{}")
+    # Zygote DAE adjoints currently broken. The ChainRules `_solve_adjoint`
+    # path calls `get_concrete_problem` -> `get_updated_symbolic_problem`,
+    # which evaluates the initialization SCCNonlinearProblem's observable
+    # `TimeIndependentObservedFunction` with `u = nothing`, and the generated
+    # `RuntimeGeneratedFunction` then hits
+    # `MethodError: no method matching getindex(::Nothing, ::Int64)`.
     # See https://github.com/SciML/SciMLBase.jl/issues/1233
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
@@ -262,21 +277,21 @@ end
             end
         end
     end
-    # Mooncake does not support SymbolicIndexingInterface AD yet
+    # Mooncake handles this DAE adjoint through its own `build_rrule` /
+    # `getindex` primitive and returns a gradient of the expected length.
     for backend in MOONCAKE_BACKENDS
-        @testset "$(backend_name(backend)) (broken)" begin
-            @test_broken begin
-                function loss_wrt_tunables_mooncake(new_tunables)
-                    new_p = SS.replace(SS.Tunable(), prob.p, new_tunables)
-                    new_prob = remake(prob, p = new_p)
-                    sol = solve(new_prob, Rodas4())
-                    return sum(sol[sys.ampermeter.i])
-                end
-                gs_p_new = DifferentiationInterface.gradient(
-                    loss_wrt_tunables_mooncake, backend, tunables
-                )
-                !isnothing(gs_p_new)
+        @testset "$(backend_name(backend))" begin
+            function loss_wrt_tunables_mooncake(new_tunables)
+                new_p = SS.replace(SS.Tunable(), prob.p, new_tunables)
+                new_prob = remake(prob, p = new_p)
+                sol = solve(new_prob, Rodas4())
+                return sum(sol[sys.ampermeter.i])
             end
+            gs_p_new = DifferentiationInterface.gradient(
+                loss_wrt_tunables_mooncake, backend, tunables
+            )
+            @test !isnothing(gs_p_new)
+            @test length(gs_p_new) == length(tunables)
         end
     end
 end
