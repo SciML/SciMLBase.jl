@@ -18,14 +18,18 @@ if VERSION < v"1.12"
 end
 
 # Define available reverse-mode backends based on Julia version
-# Note: Mooncake does not support SymbolicIndexingInterface AD yet
-# See: https://github.com/SciML/SciMLBase.jl/issues/1207
 const ZYGOTE_BACKENDS = VERSION < v"1.12" ? [AutoZygote()] : []
 const MOONCAKE_BACKENDS = [AutoMooncake()]
 
 function backend_name(backend::ADTypes.AbstractADType)
     return string(typeof(backend).name.name)
 end
+
+# Mooncake's gradient for a struct returns a `Mooncake.Tangent` whose fields
+# are stored under `.fields`, while Zygote returns a NamedTuple with direct
+# property access. Normalize so both backends can be tested with the same
+# accessor.
+_unwrap_grad(gs) = hasproperty(gs, :fields) ? getfield(gs, :fields) : gs
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
@@ -75,17 +79,25 @@ sol = solve(prob, Tsit5())
             @test_broken du == gs2.u
         end
     end
-    # Mooncake does not support SymbolicIndexingInterface AD yet
-    # https://github.com/SciML/SciMLBase.jl/issues/1207
     for backend in MOONCAKE_BACKENDS
-        @testset "$(backend_name(backend)) (broken)" begin
+        @testset "$(backend_name(backend))" begin
+            gs = DifferentiationInterface.gradient(
+                sol -> sum(sol[sys.w]), backend, sol
+            )
+            du_ = [1.0, 1.0, 1.0, 0.0]
+            du = [du_ for _ in sol[[D(x), x, y, z]]]
+            @test du == _unwrap_grad(gs).u
+
+            # Vector observable not yet supported by the Mooncake getindex
+            # primitive — falls back to differentiating the [...] AbstractArray
+            # constructor and hits the dispatch chain.
             @test_broken begin
-                gs = DifferentiationInterface.gradient(
-                    sol -> sum(sol[sys.w]), backend, sol
+                gs2 = DifferentiationInterface.gradient(
+                    sol -> sum(sum.(sol[[sys.w, sys.x]])), backend, sol
                 )
-                du_ = [1.0, 1.0, 1.0, 0.0]
-                du = [du_ for _ in sol[[D(x), x, y, z]]]
-                du == gs.u
+                du_v = [1.0, 1.0, 2.0, 0.0]
+                duv = [du_v for _ in sol[[D(x), x, y, z]]]
+                duv == _unwrap_grad(gs2).u
             end
         end
     end
@@ -173,7 +185,11 @@ end
             @test gs.u == du
         end
     end
-    # Mooncake does not support SymbolicIndexingInterface AD yet
+    # DAE observable AD: getindex rrule works (gradient is computed via the
+    # observable Mooncake build_rrule path) but the expected `[0.2, 1.0]`
+    # values don't match either Zygote or Mooncake on this test environment;
+    # see the AutoZygote test above. Leave broken until the DAE test data is
+    # refreshed.
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend)) (broken)" begin
             @test_broken begin
@@ -182,7 +198,7 @@ end
                 )
                 du_ = [0.2, 1.0]
                 du = [du_ for _ in sol.u]
-                gs.u == du
+                _unwrap_grad(gs).u == du
             end
         end
     end

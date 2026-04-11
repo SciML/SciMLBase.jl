@@ -1,11 +1,14 @@
 module SciMLBaseMooncakeExt
 
 using SciMLBase, Mooncake
-using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator
+using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator,
+    AbstractTimeseriesSolution, getobserved
+using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index,
+    parameter_values
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
     @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
-    NoPullback, NoTangent, NoRData, primal, tangent, prepare_pullback_cache,
-    value_and_pullback!!
+    NoPullback, NoFData, NoRData, NoTangent, fdata, zero_tangent,
+    primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!
 
 # OverrideInitData and ODENLStepData are solver/initialization infrastructure
 # embedded in ODEFunction type parameters. They are not differentiable, but their
@@ -16,7 +19,14 @@ import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
 Mooncake.tangent_type(::Type{<:SciMLBase.OverrideInitData}) = Mooncake.NoTangent
 Mooncake.tangent_type(::Type{<:SciMLBase.ODENLStepData}) = Mooncake.NoTangent
 
+# Non-differentiable helpers — these use runtime reflection (`methods`) or
+# only validate/dispatch and have no numerical gradient contribution.
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.numargs), Any}
+@zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.checkkwargs), Any}
+@zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any}
+@zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any}
+@zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any, Any}
+
 @is_primitive MinimalCtx Tuple{
     typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ChainRulesOriginator,
 }
@@ -241,5 +251,180 @@ function rrule!!(
 
     return ys_codual, responsible_map_pullback!!
 end
+
+# =============================================================================
+# Symbolic indexing of solutions: getindex(sol, sym)
+# =============================================================================
+#
+# Mooncake cannot differentiate through `sol[sym]` for symbolic `sym` because
+# the SymbolicIndexingInterface dispatch chain uses hash-consed symbols,
+# task-local values, IdDicts, and atomic pointers — none of which are
+# differentiable infrastructure. Make `getindex(::AbstractTimeseriesSolution,
+# sym)` a primitive that bypasses the dispatch and:
+#
+# - For state variables: scatter the gradient directly into `sol.u[k][i]`
+# - For observables: build a Mooncake derived rule for the observed function
+#   and apply it (analogous to how `SciMLBaseChainRulesCoreExt` uses
+#   `rrule_via_ad` to recurse into Zygote for the observed function).
+
+@is_primitive MinimalCtx Tuple{typeof(getindex), AbstractTimeseriesSolution, Any}
+@is_primitive MinimalCtx Tuple{
+    typeof(getindex), AbstractTimeseriesSolution, Any, Integer,
+}
+
+# Differentiate the observed function `getter(sym, u, p, t)` once with
+# Mooncake. The pullback `pb(dy)` mutates the fdata captured in the input
+# CoDuals so the gradients land in the locations we control: `u_fd` for the
+# state and `p_fd` for the parameters. This is the Mooncake equivalent of
+# how SciMLBaseChainRulesCoreExt uses `rrule_via_ad` to recurse into Zygote.
+function _run_observable_pullback(getter, s, u_jp, p, t_jp, dy)
+    sig = Tuple{typeof(getter), typeof(s), typeof(u_jp), typeof(p), typeof(t_jp)}
+    rule = build_rrule(sig)
+
+    # Allocate fresh fdata for u and p so the gradient lands in known
+    # buffers rather than the (possibly aliased) original tangents.
+    u_fd = zero(u_jp)
+    p_fd = fdata(zero_tangent(p))
+    getter_cd = CoDual(getter, fdata(zero_tangent(getter)))
+    sym_cd = CoDual(s, fdata(zero_tangent(s)))
+    u_cd = CoDual(u_jp, u_fd)
+    p_cd = CoDual(p, p_fd)
+    t_cd = CoDual(t_jp, fdata(zero_tangent(t_jp)))
+
+    _, pb = rule(getter_cd, sym_cd, u_cd, p_cd, t_cd)
+    pb(dy)
+    return u_fd, p_fd
+end
+
+# Accumulate parameter gradient `p_fd` (an FData) into `dest_p_tangent`
+# (which may be a Tangent for immutable structs or an FData/MutableTangent
+# for other layouts). We can't use Mooncake.increment!! because of type
+# mismatches between Tangent and FData. Instead, walk the NamedTuple
+# structure and accumulate Vector-typed leaves in place.
+function _accumulate_p_fdata!(dest, src)
+    (dest isa NoFData || dest isa NoTangent || src isa NoFData || src isa NoTangent) &&
+        return nothing
+    if dest isa Vector{<:Real} && src isa Vector{<:Real}
+        @. dest += src
+        return nothing
+    end
+    # Tangent / MutableTangent use .fields; FData uses .data.
+    dest_fields = if dest isa Mooncake.FData
+        dest.data
+    elseif dest isa Mooncake.Tangent || dest isa Mooncake.MutableTangent
+        dest.fields
+    else
+        return nothing
+    end
+    src_fields = if src isa Mooncake.FData
+        src.data
+    elseif src isa Mooncake.Tangent || src isa Mooncake.MutableTangent
+        src.fields
+    else
+        return nothing
+    end
+    for name in propertynames(dest_fields)
+        hasproperty(src_fields, name) || continue
+        _accumulate_p_fdata!(getfield(dest_fields, name), getfield(src_fields, name))
+    end
+    return nothing
+end
+
+function _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
+    getter = getobserved(VA)
+    u_jp = VA.u[jp]
+    p = parameter_values(VA.prob)
+    t_jp = VA.t[jp]
+
+    u_fd, p_fd = _run_observable_pullback(getter, s, u_jp, p, t_jp, dy)
+
+    # Scatter u-grad into sol_fdata.u at index jp
+    u_dest = sol_fdata.data.u[jp]
+    @. u_dest += u_fd
+
+    # Propagate p-grad into sol_fdata.prob.p (if accessible).
+    prob_fd = sol_fdata.data.prob
+    if prob_fd isa Mooncake.MutableTangent && hasfield(typeof(prob_fd.fields), :p)
+        _accumulate_p_fdata!(prob_fd.fields.p, p_fd)
+    end
+    return nothing
+end
+
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractTimeseriesSolution},
+        sym::CoDual,
+    )
+    VA = sol.x
+    s = sym.x
+    y = VA[s]
+    # Allocate a zero-initialized fdata for the output. Downstream rrules
+    # (e.g. `sum`) mutate this in-place to accumulate the output gradient.
+    y_fdata = zero(y)
+    sol_fdata = sol.dx
+
+    function _scatter_pullback(::NoRData)
+        i = symbolic_type(s) != NotSymbolic() ? variable_index(VA, s) : s
+        if i !== nothing
+            # State variable: scatter y_fdata[k] into sol_fdata.u[k][i].
+            u_fd = sol_fdata.data.u
+            for k in eachindex(VA.u)
+                u_fd[k][i] += y_fdata[k]
+            end
+        else
+            # Observable: differentiate the observed function via a Mooncake
+            # derived rule, once per saved time point.
+            for k in eachindex(VA.u)
+                _observable_pullback_at!(sol_fdata, VA, s, y_fdata[k], k)
+            end
+        end
+        return (NoRData(), NoRData(), NoRData())
+    end
+
+    return CoDual(y, y_fdata), _scatter_pullback
+end
+
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractTimeseriesSolution},
+        sym::CoDual,
+        j::CoDual{<:Integer},
+    )
+    VA = sol.x
+    s = sym.x
+    jp = j.x
+    y = VA[s, jp]
+    sol_fdata = sol.dx
+
+    # Scalar output: gradient comes via dy (rdata).
+    function _scatter_pullback_indexed(dy)
+        i = symbolic_type(s) != NotSymbolic() ? variable_index(VA, s) : s
+        if i !== nothing
+            sol_fdata.data.u[jp][i] += dy
+        else
+            _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
+        end
+        return (NoRData(), NoRData(), NoRData(), NoRData())
+    end
+
+    return zero_fcodual(y), _scatter_pullback_indexed
+end
+
+# NOTE: The NonlinearSolution observable case (`isol[w]` for init solutions)
+# is not yet supported. Calling the observed function via Mooncake's
+# build_rrule hits a symbolic comparison inside MTK's observed function
+# cache that produces a Num in a boolean context, which Mooncake can't
+# differentiate through. This needs either:
+#   - A Mooncake-friendly observed function from MTK, or
+#   - A different gradient strategy (e.g. ForwardDiff over the inner call).
+# Tracked in SciMLBase.jl#1207.
+
+# NOTE: The ChainRules extension also defines rrules for constructors
+# (SDEProblem, ODESolution, RODESolution, IntervalNonlinearProblem,
+# EnsembleSolution) and for `getproperty(::NonlinearProblem, ::Symbol)`.
+# These are Zygote-specific workarounds for how Zygote handles mutable
+# struct field accumulation and constructor tracing. Mooncake's MutableTangent
+# handles struct construction and field access with proper cache reset
+# semantics natively, so those rrules are not needed on the Mooncake path.
 
 end
