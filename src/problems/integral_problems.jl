@@ -88,7 +88,6 @@ function IntegralProblem{iip}(
 end
 
 
-
 @doc doc"""
 
 Defines a integral problem over pre-sampled data.
