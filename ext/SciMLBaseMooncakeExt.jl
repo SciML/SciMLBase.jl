@@ -2,9 +2,10 @@ module SciMLBaseMooncakeExt
 
 using SciMLBase, Mooncake
 using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator,
-    AbstractTimeseriesSolution, getobserved
+    AbstractTimeseriesSolution, AbstractNonlinearSolution, getobserved
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index,
     parameter_values
+import SymbolicIndexingInterface as SII
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
     @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
     NoPullback, NoFData, NoRData, NoTangent, fdata, zero_tangent,
@@ -271,6 +272,9 @@ end
 @is_primitive MinimalCtx Tuple{
     typeof(getindex), AbstractTimeseriesSolution, Any, Integer,
 }
+@is_primitive MinimalCtx Tuple{
+    typeof(getindex), AbstractTimeseriesSolution, AbstractVector,
+}
 
 # Differentiate the observed function `getter(sym, u, p, t)` once with
 # Mooncake. The pullback `pb(dy)` mutates the fdata captured in the input
@@ -350,6 +354,27 @@ function _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
     return nothing
 end
 
+# Scatter the accumulated gradient `dy_per_timestep` (one scalar per saved
+# time point) for a single symbol `s` back into `sol_fdata`. Shared between
+# the scalar-symbol and vector-of-symbols `getindex` rrules.
+function _scatter_symbol_timeseries!(sol_fdata, VA, s, dy_per_timestep)
+    i = symbolic_type(s) != NotSymbolic() ? variable_index(VA, s) : s
+    if i !== nothing
+        # State variable: scatter dy_per_timestep[k] into sol_fdata.u[k][i].
+        u_fd = sol_fdata.data.u
+        for k in eachindex(VA.u)
+            u_fd[k][i] += dy_per_timestep[k]
+        end
+    else
+        # Observable: differentiate the observed function via a Mooncake
+        # derived rule, once per saved time point.
+        for k in eachindex(VA.u)
+            _observable_pullback_at!(sol_fdata, VA, s, dy_per_timestep[k], k)
+        end
+    end
+    return nothing
+end
+
 function rrule!!(
         ::CoDual{typeof(getindex)},
         sol::CoDual{<:AbstractTimeseriesSolution},
@@ -364,24 +389,44 @@ function rrule!!(
     sol_fdata = sol.dx
 
     function _scatter_pullback(::NoRData)
-        i = symbolic_type(s) != NotSymbolic() ? variable_index(VA, s) : s
-        if i !== nothing
-            # State variable: scatter y_fdata[k] into sol_fdata.u[k][i].
-            u_fd = sol_fdata.data.u
-            for k in eachindex(VA.u)
-                u_fd[k][i] += y_fdata[k]
-            end
-        else
-            # Observable: differentiate the observed function via a Mooncake
-            # derived rule, once per saved time point.
-            for k in eachindex(VA.u)
-                _observable_pullback_at!(sol_fdata, VA, s, y_fdata[k], k)
-            end
-        end
+        _scatter_symbol_timeseries!(sol_fdata, VA, s, y_fdata)
         return (NoRData(), NoRData(), NoRData())
     end
 
     return CoDual(y, y_fdata), _scatter_pullback
+end
+
+# Vector of symbols: `sol[[sym1, sym2, ...]]` returns a `Vector{Vector{T}}`
+# where entry `k` is `[sol[sym1][k], sol[sym2][k], ...]`. We allocate a
+# matching zero-initialized fdata vector and, in the pullback, transpose the
+# per-timestep gradient back into per-symbol gradients before scattering via
+# `_scatter_symbol_timeseries!`. Each element of `syms` is dispatched through
+# the same state-vs-observable logic as the scalar rrule.
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractTimeseriesSolution},
+        syms::CoDual{<:AbstractVector},
+    )
+    VA = sol.x
+    ss = syms.x
+    y = VA[ss]
+    # Preallocate per-element zero fdata matching the primal shape.
+    y_fdata = [zero(yi) for yi in y]
+    sol_fdata = sol.dx
+
+    function _scatter_pullback_vec(::NoRData)
+        nsyms = length(ss)
+        nt = length(VA.u)
+        # Transpose: per-symbol vector of length nt, where entry k is
+        # y_fdata[k][j] for symbol j.
+        for (j, s) in enumerate(ss)
+            dy_j = [y_fdata[k][j] for k in 1:nt]
+            _scatter_symbol_timeseries!(sol_fdata, VA, s, dy_j)
+        end
+        return (NoRData(), NoRData(), NoRData())
+    end
+
+    return CoDual(y, y_fdata), _scatter_pullback_vec
 end
 
 function rrule!!(
@@ -410,14 +455,109 @@ function rrule!!(
     return zero_fcodual(y), _scatter_pullback_indexed
 end
 
-# NOTE: The NonlinearSolution observable case (`isol[w]` for init solutions)
-# is not yet supported. Calling the observed function via Mooncake's
-# build_rrule hits a symbolic comparison inside MTK's observed function
-# cache that produces a Num in a boolean context, which Mooncake can't
-# differentiate through. This needs either:
-#   - A Mooncake-friendly observed function from MTK, or
-#   - A different gradient strategy (e.g. ForwardDiff over the inner call).
-# Tracked in SciMLBase.jl#1207.
+# =============================================================================
+# Symbolic indexing of nonlinear (no-time) solutions: getindex(NS, sym)
+# =============================================================================
+#
+# `AbstractNonlinearSolution` is also used by MTK as the result of DAE
+# initialization (`prob.f.initialization_data.initializeprob` solved). Indexing
+# such a solution with a symbolic name (`isol[w]`) goes through the same
+# symbolic dispatch as the timeseries case and is not differentiable by
+# Mooncake without help.
+#
+# Unlike the timeseries case, the observed function for a nonlinear solution
+# takes only `(u, p)` (no time argument). More importantly, calling
+# `getter(sym, u, p)` directly inside Mooncake's tracing is brittle: the
+# `ObservedFunctionCache` does `get!(dict, value(obsvar)) do ... end`, and
+# Mooncake's abstract interpretation of that get! together with the symbolic
+# `obsvar` causes either:
+#   - `__verify_const(::Num, ...)` errors when `sym` is a non-const global,
+#   - extremely slow `build_rrule` (>15 minutes) for the cache-lookup chain,
+#   - or `isequal_bsimpl` typeasserts inside `SymbolicUtils/hashconsing.jl`.
+#
+# The fix is to extract the inner observed function *outside* Mooncake's
+# tracing — ObservedFunctionCache called with no extra arguments
+# (`getter(sym)`) returns the cached generated function which takes plain
+# numeric `(u, p)` arrays. We then ask Mooncake to differentiate only that
+# inner numeric function, which it handles in seconds.
+
+@is_primitive MinimalCtx Tuple{typeof(getindex), AbstractNonlinearSolution, Any}
+
+function _run_observable_pullback_no_t(getter, s, u, p, dy)
+    # Resolve the inner observed function from the cache outside Mooncake's
+    # tracing. Calling `ObservedFunctionCache(sym)` with no extra args returns
+    # the cached `inner(u, p)` (a `GeneratedFunctionWrapper`), avoiding the
+    # symbolic dispatch chain that breaks Mooncake.
+    inner = getter(s)
+
+    sig = Tuple{typeof(inner), typeof(u), typeof(p)}
+    rule = build_rrule(sig)
+
+    u_fd = zero(u)
+    p_fd = fdata(zero_tangent(p))
+    inner_cd = CoDual(inner, fdata(zero_tangent(inner)))
+    u_cd = CoDual(u, u_fd)
+    p_cd = CoDual(p, p_fd)
+
+    _, pb = rule(inner_cd, u_cd, p_cd)
+    pb(dy)
+    return u_fd, p_fd
+end
+
+function _observable_pullback_no_t!(sol_fdata, NS, s, dy)
+    getter = getobserved(NS)
+    u = NS.u
+    p = parameter_values(NS.prob)
+
+    u_fd, p_fd = _run_observable_pullback_no_t(getter, s, u, p, dy)
+
+    # Scatter u-grad into sol_fdata.u (a single Vector for nonlinear sols).
+    u_dest = sol_fdata.data.u
+    if u_dest isa Vector{<:Real} && u_fd isa Vector{<:Real}
+        @. u_dest += u_fd
+    end
+
+    # Propagate p-grad into sol_fdata.prob.p (if accessible).
+    prob_fd = sol_fdata.data.prob
+    if prob_fd isa Mooncake.MutableTangent && hasfield(typeof(prob_fd.fields), :p)
+        _accumulate_p_fdata!(prob_fd.fields.p, p_fd)
+    end
+    return nothing
+end
+
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractNonlinearSolution},
+        sym::CoDual,
+    )
+    NS = sol.x
+    s = sym.x
+    y = NS[s]
+    sol_fdata = sol.dx
+
+    # Scalar nonlinear solutions return a scalar `y` for a scalar symbol;
+    # the gradient comes back via rdata (`dy`) since scalars use rdata.
+    function _scatter_pullback_ns(dy)
+        i = if symbolic_type(s) != NotSymbolic()
+            SII.is_variable(NS, s) ? variable_index(NS, s) : nothing
+        else
+            s
+        end
+        if i !== nothing
+            # State unknown of the nonlinear problem.
+            u_dest = sol_fdata.data.u
+            if u_dest isa Vector{<:Real}
+                u_dest[i] += dy
+            end
+        else
+            # Observable: differentiate via the inner observed function.
+            _observable_pullback_no_t!(sol_fdata, NS, s, dy)
+        end
+        return (NoRData(), NoRData(), NoRData())
+    end
+
+    return zero_fcodual(y), _scatter_pullback_ns
+end
 
 # NOTE: The ChainRules extension also defines rrules for constructors
 # (SDEProblem, ODESolution, RODESolution, IntervalNonlinearProblem,
