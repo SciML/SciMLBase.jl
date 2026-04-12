@@ -8,7 +8,7 @@ import SciMLBase:
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
     ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
     RecursiveArrayTools, totallength, sse, anyeltypedual, reduce_tup,
-    unitfulvalue
+    unitfulvalue, _promote_jac_p
 
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
@@ -458,6 +458,15 @@ sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) + sum(sse, ForwardDiff.part
 function SciMLBase.totallength(x::ForwardDiff.Dual)
     return SciMLBase.totallength(ForwardDiff.value(x)) +
         sum(SciMLBase.totallength, ForwardDiff.partials(x))
+end
+
+function _promote_jac_p(p::AbstractArray{<:ForwardDiff.Dual}, u::AbstractArray{<:ForwardDiff.Dual})
+    DualU = eltype(u)
+    DualP = eltype(p)
+    if !(DualP <: DualU)
+        return DualU.(p)
+    end
+    return p
 end
 
 end
