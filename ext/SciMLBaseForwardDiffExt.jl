@@ -460,7 +460,10 @@ function SciMLBase.totallength(x::ForwardDiff.Dual)
         sum(SciMLBase.totallength, ForwardDiff.partials(x))
 end
 
-function _promote_jac_p(p::AbstractArray{<:ForwardDiff.Dual}, u::AbstractArray{<:ForwardDiff.Dual})
+function _promote_jac_p(p::AbstractArray{<:ForwardDiff.Dual}, u::AbstractArray{<:ForwardDiff.Dual}, f)
+    if hasfield(typeof(f), :f) && getfield(f, :f) isa SciMLBase.FunctionWrappersWrappers.FunctionWrappersWrapper
+        return p
+    end
     DualU = eltype(u)
     DualP = eltype(p)
     if !(DualP <: DualU)

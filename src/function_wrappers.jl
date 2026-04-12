@@ -82,8 +82,8 @@ function UJacobianWrapper{iip}(f::F, t, p) where {F, iip}
 end
 UJacobianWrapper(f::F, t, p) where {F} = UJacobianWrapper{isinplace(f, 4)}(f, t, p)
 
-(ff::UJacobianWrapper{true})(du1, uprev) = ff.f(du1, uprev, _promote_jac_p(ff.p, uprev), ff.t)
-_promote_jac_p(p, u) = p
+(ff::UJacobianWrapper{true})(du1, uprev) = ff.f(du1, uprev, _promote_jac_p(ff.p, uprev, ff.f), ff.t)
+_promote_jac_p(p, u, f) = p
 function (ff::UJacobianWrapper{true})(uprev)
     (du1 = similar(uprev); ff.f(du1, uprev, ff.p, ff.t); du1)
 end
