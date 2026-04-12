@@ -75,15 +75,16 @@ mutable struct UJacobianWrapper{iip, fType, tType, P} <: AbstractWrappedFunction
     f::fType
     t::tType
     p::P
+    _promoted_p::Any
 end
 
 function UJacobianWrapper{iip}(f::F, t, p) where {F, iip}
-    return UJacobianWrapper{iip, F, typeof(t), typeof(p)}(f, t, p)
+    return UJacobianWrapper{iip, F, typeof(t), typeof(p)}(f, t, p, nothing)
 end
 UJacobianWrapper(f::F, t, p) where {F} = UJacobianWrapper{isinplace(f, 4)}(f, t, p)
 
-(ff::UJacobianWrapper{true})(du1, uprev) = ff.f(du1, uprev, _promote_jac_p(ff.p, uprev, ff.f), ff.t)
-_promote_jac_p(p, u, f) = p
+(ff::UJacobianWrapper{true})(du1, uprev) = ff.f(du1, uprev, _promote_jac_p!(ff, uprev), ff.t)
+_promote_jac_p!(ff, u) = ff.p
 function (ff::UJacobianWrapper{true})(uprev)
     (du1 = similar(uprev); ff.f(du1, uprev, ff.p, ff.t); du1)
 end

@@ -8,7 +8,7 @@ import SciMLBase:
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
     ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
     RecursiveArrayTools, totallength, sse, anyeltypedual, reduce_tup,
-    unitfulvalue, _promote_jac_p
+    unitfulvalue, _promote_jac_p!
 
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
@@ -460,16 +460,16 @@ function SciMLBase.totallength(x::ForwardDiff.Dual)
         sum(SciMLBase.totallength, ForwardDiff.partials(x))
 end
 
-function _promote_jac_p(p::AbstractArray{<:ForwardDiff.Dual}, u::AbstractArray{<:ForwardDiff.Dual}, f)
-    if hasfield(typeof(f), :f) && getfield(f, :f) isa SciMLBase.FunctionWrappersWrappers.FunctionWrappersWrapper
-        return p
-    end
+function _promote_jac_p!(ff::SciMLBase.UJacobianWrapper, u::AbstractArray{<:ForwardDiff.Dual})
+    p = ff.p
+    p isa AbstractArray{<:ForwardDiff.Dual} || return p
+    hasfield(typeof(ff.f), :f) && getfield(ff.f, :f) isa SciMLBase.FunctionWrappersWrappers.FunctionWrappersWrapper && return p
     DualU = eltype(u)
-    DualP = eltype(p)
-    if !(DualP <: DualU)
-        return DualU.(p)
-    end
-    return p
+    eltype(p) <: DualU && return p
+    cached = ff._promoted_p
+    cached isa AbstractArray{DualU} && return cached
+    ff._promoted_p = DualU.(p)
+    return ff._promoted_p
 end
 
 end
