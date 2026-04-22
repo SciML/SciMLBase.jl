@@ -210,14 +210,14 @@ function calculate_solution_errors!(
         if f isa RODEFunction && f.analytic_full == true
             f.analytic(sol)
         elseif sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
-            for i in 1:length(sol)
+            for i in eachindex(sol.t)
                 push!(
                     sol.u_analytic,
                     f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i])))
                 )
             end
         else
-            for i in 1:length(sol)
+            for i in eachindex(sol.t)
                 push!(
                     sol.u_analytic,
                     f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i])
