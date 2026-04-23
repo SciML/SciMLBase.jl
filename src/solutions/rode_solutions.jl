@@ -218,17 +218,6 @@ function calculate_solution_errors!(
             end
         else
             for i in eachindex(sol.t)
-                # Use `sol.W.u[i]` rather than `sol.W[:, i]` to avoid routing
-                # through `RecursiveArrayTools.size(::AbstractVectorOfArray)` on
-                # the `AbstractDiffEqArray` path. For scalar-valued noise the
-                # noise container can have `N == 0` (e.g. `NoiseGrid` built from
-                # a `Vector{<:Number}`), which causes `size` to call
-                # `ntuple(Val(N - 1))` — i.e. `ntuple(Val(-1))` — and throw
-                # `ArgumentError: tuple length should be ≥ 0, got -1` from the
-                # RAT v4 `size` definition. Direct `.u[i]` access returns the
-                # saved noise value for time `sol.t[i]` for both scalar and
-                # vector-valued noise and is equivalent to `sol.W[:, i]` on the
-                # vector-valued branch where the prior code was safe.
                 push!(
                     sol.u_analytic,
                     f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W.u[i])
