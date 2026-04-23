@@ -57,3 +57,18 @@ end
         @test sol([0.15, 0.25]; idxs = Int[]) == [Float64[], Float64[]]
     end
 end
+
+@testset "iterate uses AbstractArray fallback, not container-yielding" begin
+    using LinearAlgebra
+    f = (u, p, t) -> -u
+    ode = ODEProblem(f, [1.0, 2.0], (0.0, 1.0))
+    sol = SciMLBase.build_solution(
+        ode, :NoAlgorithm, collect(0.0:0.1:1.0),
+        [[exp(-t), 2exp(-t)] for t in 0.0:0.1:1.0]
+    )
+    first_elem, _ = iterate(sol)
+    @test !(first_elem isa typeof(sol))
+    # `LinearAlgebra.norm(sol)` must not throw `norm_recursive_check`.
+    @test isfinite(LinearAlgebra.norm(sol))
+    @test sol ≈ sol
+end

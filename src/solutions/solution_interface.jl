@@ -187,11 +187,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
 end
 
 
-function Base.iterate(sol::AbstractTimeseriesSolution, state = 0)
-    state >= length(sol) && return nothing
-    state += 1
-    return (solution_new_tslocation(sol, state), state)
-end
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     println(io, string("retcode: ", A.retcode))
