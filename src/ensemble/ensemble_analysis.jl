@@ -9,14 +9,18 @@ $(SIGNATURES)
 
 Returns an iterator of each simulation at time step i
 """
-get_timestep(sim, i) = (sol.u[i] for sol in sim)
+# Under RecursiveArrayTools v4, iterating an `AbstractVectorOfArray`
+# (and thus an `EnsembleSolution`) yields scalar column-major elements rather
+# than the per-trajectory solutions. Iterate `sim.u` explicitly so these
+# helpers continue to walk over each trajectory's solution object.
+get_timestep(sim, i) = (sol.u[i] for sol in sim.u)
 
 """
 $(SIGNATURES)
 
 Returns an iterator of each simulation at time point t
 """
-get_timepoint(sim, t) = (sol(t) for sol in sim)
+get_timepoint(sim, t) = (sol(t) for sol in sim.u)
 
 """
 $(SIGNATURES)
@@ -131,7 +135,7 @@ $(SIGNATURES)
 Computes the mean at each time step
 """
 function timeseries_steps_mean(sim)
-    return DiffEqArray([timestep_mean(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
+    return DiffEqArray([timestep_mean(sim, i) for i in 1:length(sim.u[1].t)], sim.u[1].t)
 end
 
 """
@@ -140,7 +144,7 @@ $(SIGNATURES)
 Computes the median at each time step
 """
 function timeseries_steps_median(sim)
-    return DiffEqArray([timestep_median(sim, i) for i in 1:length(sim.u[1])], sim.u[1].t)
+    return DiffEqArray([timestep_median(sim, i) for i in 1:length(sim.u[1].t)], sim.u[1].t)
 end
 
 """
@@ -149,7 +153,7 @@ $(SIGNATURES)
 Computes the quantile q at each time step
 """
 function timeseries_steps_quantile(sim, q)
-    return DiffEqArray([timestep_quantile(sim, q, i) for i in 1:length(sim.u[1])], sim.u[1].t)
+    return DiffEqArray([timestep_quantile(sim, q, i) for i in 1:length(sim.u[1].t)], sim.u[1].t)
 end
 
 """
@@ -161,7 +165,7 @@ function timeseries_steps_meanvar(sim)
     m, v = timestep_meanvar(sim, 1)
     means = [m]
     vars = [v]
-    for i in 2:length(sim.u[1])
+    for i in 2:length(sim.u[1].t)
         m, v = timestep_meanvar(sim, i)
         push!(means, m)
         push!(vars, v)
@@ -177,11 +181,11 @@ Computes the covariance matrix and means at each time step
 function timeseries_steps_meancov(sim)
     return reshape(
         [
-            timestep_meancov(sim, i, j) for i in 1:length(sim.u[1])
-                for j in 1:length(sim.u[1])
+            timestep_meancov(sim, i, j) for i in 1:length(sim.u[1].t)
+                for j in 1:length(sim.u[1].t)
         ],
-        length(sim.u[1]),
-        length(sim.u[1])
+        length(sim.u[1].t),
+        length(sim.u[1].t)
     )
 end
 
@@ -193,11 +197,11 @@ Computes the correlation matrix and means at each time step
 function timeseries_steps_meancor(sim)
     return reshape(
         [
-            timestep_meancor(sim, i, j) for i in 1:length(sim.u[1])
-                for j in 1:length(sim.u[1])
+            timestep_meancor(sim, i, j) for i in 1:length(sim.u[1].t)
+                for j in 1:length(sim.u[1].t)
         ],
-        length(sim.u[1]),
-        length(sim.u[1])
+        length(sim.u[1].t),
+        length(sim.u[1].t)
     )
 end
 
@@ -209,11 +213,11 @@ Computes the weighted covariance matrix and means at each time step
 function timeseries_steps_weighted_meancov(sim, W)
     return reshape(
         [
-            timestep_meancov(sim, W, i, j) for i in 1:length(sim.u[1])
-                for j in 1:length(sim.u[1])
+            timestep_meancov(sim, W, i, j) for i in 1:length(sim.u[1].t)
+                for j in 1:length(sim.u[1].t)
         ],
-        length(sim.u[1]),
-        length(sim.u[1])
+        length(sim.u[1].t),
+        length(sim.u[1].t)
     )
 end
 
@@ -290,7 +294,7 @@ function SciMLBase.EnsembleSummary(
         sim::SciMLBase.AbstractEnsembleSolution{T, N},
         t = sim.u[1].t; quantiles = [0.05, 0.95]
     ) where {T, N}
-    if sim.u[1] isa SciMLSolution
+    if sim.u[1] isa SciMLBase.AbstractSciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)
         qlow = timeseries_point_quantile(sim, quantiles[1], t)
@@ -302,7 +306,7 @@ function SciMLBase.EnsembleSummary(
         qhigh = timeseries_steps_quantile(sim, quantiles[2])
     end
 
-    trajectories = length(sim)
+    trajectories = length(sim.u)
     return EnsembleSummary{
         T, N, typeof(t), typeof(m), typeof(v), typeof(med), typeof(qlow),
         typeof(qhigh),

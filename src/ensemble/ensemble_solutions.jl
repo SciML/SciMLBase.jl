@@ -162,15 +162,18 @@ function calculate_ensemble_errors(
     res = norm(m_final - m_final_analytic)
     weak_errors[:weak_final] = res
     if weak_timeseries_errors
+        # Under RecursiveArrayTools v4, `length(sol)` for an `AbstractVectorOfArray`
+        # returns `prod(size(sol))` (total scalar count), not the number of
+        # timesteps. Use `length(sol.u)` to iterate over timesteps.
         if analyticvoa
             ts_weak_errors = [
                 mean([u[j].u[i] - u[j].u_analytic.u[i] for j in 1:length(u)])
-                    for i in 1:length(u[1])
+                    for i in 1:length(u[1].u)
             ]
         else
             ts_weak_errors = [
                 mean([u[j].u[i] - u[j].u_analytic[i] for j in 1:length(u)])
-                    for i in 1:length(u[1])
+                    for i in 1:length(u[1].u)
             ]
         end
         ts_l2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in ts_weak_errors]
