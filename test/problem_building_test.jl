@@ -73,6 +73,41 @@ prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
     end
 end
 
+@testset "DAEProblem{iip, specialize} two-parameter constructor" begin
+    function simple_dae!(resid, du, u, p, t)
+        resid[1] = du[1] - u[1]
+        resid[2] = u[1] + u[2] - 1.0
+        return nothing
+    end
+    du0 = [1.0, 0.0]
+    u0 = [1.0, 0.0]
+    tspan = (0.0, 1.0)
+
+    # Construction succeeds and locks in FullSpecialize
+    prob = DAEProblem{true, SciMLBase.FullSpecialize}(simple_dae!, du0, u0, tspan)
+    @test prob isa DAEProblem
+    @test prob.f isa DAEFunction{true, SciMLBase.FullSpecialize}
+    @test SciMLBase.specialization(prob.f) === SciMLBase.FullSpecialize
+    @test SciMLBase.isinplace(prob) === true
+    @test prob.du0 == du0
+    @test prob.u0 == u0
+    @test prob.tspan === (0.0, 1.0)
+
+    # With explicit parameters and kwargs
+    prob_p = DAEProblem{true, SciMLBase.FullSpecialize}(
+        simple_dae!, du0, u0, tspan, 1.0; differential_vars = [true, false]
+    )
+    @test prob_p.p === 1.0
+    @test prob_p.differential_vars == [true, false]
+    @test SciMLBase.specialization(prob_p.f) === SciMLBase.FullSpecialize
+
+    # f is callable through the wrapped DAEFunction
+    resid = zeros(2)
+    prob.f(resid, du0, u0, nothing, 0.0)
+    @test resid[1] ≈ du0[1] - u0[1]
+    @test resid[2] ≈ u0[1] + u0[2] - 1.0
+end
+
 # test for tspan promotion in DiscreteProblem
 let
     p = (0.1 / 1000, 0.01)

@@ -109,6 +109,15 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     function DAEProblem{iip}(f, du0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         return DAEProblem(DAEFunction{iip}(f), du0, u0, tspan, p; kwargs...)
     end
+
+    @add_kwonly function DAEProblem{iip, specialize}(
+            f, du0, u0, tspan, p = NullParameters();
+            kwargs...
+        ) where {iip, specialize}
+        return DAEProblem{iip}(
+            DAEFunction{iip, specialize}(f), du0, u0, tspan, p; kwargs...
+        )
+    end
 end
 
 function DAEProblem(f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(); kwargs...)
