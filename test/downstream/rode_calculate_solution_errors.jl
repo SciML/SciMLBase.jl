@@ -2,27 +2,6 @@ using StochasticDiffEq, DiffEqNoiseProcess, SciMLBase
 using Random
 using Test
 
-# Regression tests for `SciMLBase.calculate_solution_errors!(::AbstractRODESolution)`.
-#
-# Two separate failure modes were reported on RAT v4:
-#
-# 1. SciMLBase#1321: `for i in 1:length(sol)` overran `sol.t` / `sol.W` because
-#    RAT v4 dropped the `length(::AbstractVectorOfArray)` specialization, so
-#    `length(sol)` became the total scalar count rather than the number of
-#    saved time points. Fixed by switching to `for i in eachindex(sol.t)`.
-#
-# 2. This test file: even with the loop bounded correctly, the indexing
-#    expression `sol.W[:, i]` routes through
-#    `RecursiveArrayTools._getindex(::AbstractDiffEqArray, ::NotSymbolic,
-#    ::Colon, ::Int)` which calls `size(::AbstractVectorOfArray)`, which on
-#    RAT v4 computes `ntuple(Val(N - 1))`. For a scalar-valued `NoiseGrid`
-#    built from a `Vector{<:Number}`, `N == 0` (because `ndims(W[1]) == 0`),
-#    producing `ntuple(Val(-1))` and throwing
-#    `ArgumentError: tuple length should be ≥ 0, got -1`.
-#
-# The fix replaces `sol.W[:, i]` with `sol.W.u[i]`, which is equivalent on the
-# vector-valued branch and handles scalar-valued noise without consulting
-# `size`.
 # Scalar out-of-place SDE with analytic solution, matching SDEProblemLibrary's
 # `prob_sde_additive` shape.
 f_additive(u, p, t) = @. p[2] / sqrt(1 + t) - u / (2 * (1 + t))
