@@ -187,18 +187,14 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
 end
 
 
-# Iterate as the `AbstractArray{T,N}` the solution declares itself to be:
-# yield scalar elements via linear indexing, consistent with `eltype(sol)` and
-# `size(sol)`. The previous implementation returned copies of the solution
-# with successively larger `tslocation`, which violates the `AbstractArray`
-# contract (the element type equals the container type) and causes
-# `LinearAlgebra.norm(sol)` on Julia 1.12 to trip `norm_recursive_check`.
-# `solution_new_tslocation(sol, i)` is still exported for callers that want
-# the plotting `tslocation` stepping semantics directly.
-function Base.iterate(sol::AbstractTimeseriesSolution, state = 1)
-    state > length(sol) && return nothing
-    return (@inbounds sol[state], state + 1)
-end
+# No custom `iterate(::AbstractTimeseriesSolution)`: defer to the
+# `AbstractArray` fallback (iterate over `eachindex(sol)`), which is the
+# only iteration consistent with `eltype(sol)` / `size(sol)`. The previous
+# implementation returned copies of the solution with successively larger
+# `tslocation`, violating the AbstractArray contract and tripping Julia
+# 1.12's `LinearAlgebra.norm_recursive_check` whenever `norm(sol)` ran.
+# Callers that want the plotting `tslocation`-stepping behavior should
+# call `solution_new_tslocation(sol, i)` explicitly.
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     println(io, string("retcode: ", A.retcode))
