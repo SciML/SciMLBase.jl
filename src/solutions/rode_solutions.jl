@@ -220,7 +220,7 @@ function calculate_solution_errors!(
             for i in eachindex(sol.t)
                 push!(
                     sol.u_analytic,
-                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i])
+                    f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W.u[i])
                 )
             end
         end
