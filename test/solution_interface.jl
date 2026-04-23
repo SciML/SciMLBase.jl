@@ -66,16 +66,6 @@ end
         ode, :NoAlgorithm, collect(0.0:0.1:1.0),
         [[exp(-t), 2exp(-t)] for t in 0.0:0.1:1.0]
     )
-    # Previously `iterate(sol)` returned `solution_new_tslocation(sol, state)` —
-    # a fresh solution of the *same concrete type*. That violated the
-    # AbstractArray contract (first iterated element must not share the
-    # container's type) and tripped Julia 1.12's
-    # `LinearAlgebra.norm_recursive_check`, which guards exactly that case:
-    #   "cannot evaluate norm recursively if the type of the initial element
-    #    is identical to that of the container"
-    # The fix is to delete the custom `iterate` and defer to the AbstractArray
-    # fallback (iterate over `eachindex(sol)`), which the solution already
-    # supports correctly.
     first_elem, _ = iterate(sol)
     @test !(first_elem isa typeof(sol))
     # `LinearAlgebra.norm(sol)` must not throw `norm_recursive_check`.

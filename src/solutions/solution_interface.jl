@@ -187,14 +187,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
 end
 
 
-# No custom `iterate(::AbstractTimeseriesSolution)`: defer to the
-# `AbstractArray` fallback (iterate over `eachindex(sol)`), which is the
-# only iteration consistent with `eltype(sol)` / `size(sol)`. The previous
-# implementation returned copies of the solution with successively larger
-# `tslocation`, violating the AbstractArray contract and tripping Julia
-# 1.12's `LinearAlgebra.norm_recursive_check` whenever `norm(sol)` ran.
-# Callers that want the plotting `tslocation`-stepping behavior should
-# call `solution_new_tslocation(sol, i)` explicitly.
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     println(io, string("retcode: ", A.retcode))
