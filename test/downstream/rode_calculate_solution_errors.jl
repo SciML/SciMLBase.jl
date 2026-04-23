@@ -23,7 +23,6 @@ using Test
 # The fix replaces `sol.W[:, i]` with `sol.W.u[i]`, which is equivalent on the
 # vector-valued branch and handles scalar-valued noise without consulting
 # `size`.
-
 # Scalar out-of-place SDE with analytic solution, matching SDEProblemLibrary's
 # `prob_sde_additive` shape.
 f_additive(u, p, t) = @. p[2] / sqrt(1 + t) - u / (2 * (1 + t))
