@@ -131,6 +131,9 @@ end
         @time @safetestset "SplitODEProblem cache" begin
             include("downstream/splitodeproblem_cache.jl")
         end
+        @time @safetestset "Scalar RODESolution calculate_solution_errors!" begin
+            include("downstream/rode_calculate_solution_errors.jl")
+        end
     end
 
     if !is_APPVEYOR && GROUP == "SymbolicIndexingInterface"
