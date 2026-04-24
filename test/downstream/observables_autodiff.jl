@@ -295,3 +295,42 @@ end
         end
     end
 end
+
+@testset "Integer time-step indexing under AD (issue #1325)" begin
+    function lotka_volterra!(du, u, p, t)
+        x, y = u
+        du[1] = (p[1] - p[2] * y) * x
+        du[2] = (p[4] * x - p[3]) * y
+    end
+
+    lv_prob = ODEProblem(
+        lotka_volterra!, [1.0, 1.0], (0.0, 10.0), [1.5, 1.0, 3.0, 1.0]
+    )
+
+    function lv_logp(θ)
+        predicted = solve(
+            lv_prob, Tsit5(); p = θ, saveat = 0.1, abstol = 1.0e-6, reltol = 1.0e-6
+        )
+        lp = 0.0
+        for i in eachindex(predicted)
+            lp += sum(predicted[i])
+        end
+        return lp
+    end
+
+    θ0 = [1.5, 1.0, 3.0, 1.0]
+    grad_fd = DifferentiationInterface.gradient(lv_logp, AutoForwardDiff(), θ0)
+
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            grad = DifferentiationInterface.gradient(lv_logp, backend, θ0)
+            @test grad ≈ grad_fd rtol = 1.0e-4
+        end
+    end
+    for backend in ZYGOTE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            grad = DifferentiationInterface.gradient(lv_logp, backend, θ0)
+            @test grad ≈ grad_fd rtol = 1.0e-4
+        end
+    end
+end
