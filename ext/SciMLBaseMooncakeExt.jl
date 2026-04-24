@@ -275,6 +275,11 @@ end
 @is_primitive MinimalCtx Tuple{
     typeof(getindex), AbstractTimeseriesSolution, AbstractVector,
 }
+# `sol[i::Integer]` returns the state vector at time step `i` (a different
+# operation from `sol[sym]`). A dedicated, more-specific primitive routes
+# integer time-step indexing to the correct scatter so the generic symbolic
+# rrule above does not mis-treat `i` as a state-variable index (#1325).
+@is_primitive MinimalCtx Tuple{typeof(getindex), AbstractTimeseriesSolution, Integer}
 
 # Differentiate the observed function `getter(sym, u, p, t)` once with
 # Mooncake. The pullback `pb(dy)` mutates the fdata captured in the input
@@ -394,6 +399,30 @@ function rrule!!(
     end
 
     return CoDual(y, y_fdata), _scatter_pullback
+end
+
+# Integer time-step indexing: `sol[i::Integer]` returns the state vector at
+# time step `i`. The output cotangent is accumulated into `sol_fdata.u[i]`
+# in-place. More specific than the `sym::CoDual` rrule above, so Julia
+# dispatches here for integer arguments (#1325).
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractTimeseriesSolution},
+        i::CoDual{<:Integer},
+    )
+    VA = sol.x
+    ip = i.x
+    y = VA[ip]
+    y_fdata = zero(y)
+    sol_fdata = sol.dx
+
+    function _time_step_pullback(::NoRData)
+        u_dest = sol_fdata.data.u[ip]
+        @. u_dest += y_fdata
+        return (NoRData(), NoRData(), NoRData())
+    end
+
+    return CoDual(y, y_fdata), _time_step_pullback
 end
 
 # Vector of symbols: `sol[[sym1, sym2, ...]]` returns a `Vector{Vector{T}}`
