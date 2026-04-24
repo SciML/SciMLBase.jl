@@ -165,12 +165,12 @@ function calculate_ensemble_errors(
         if analyticvoa
             ts_weak_errors = [
                 mean([u[j].u[i] - u[j].u_analytic.u[i] for j in 1:length(u)])
-                    for i in 1:length(u[1])
+                    for i in 1:length(u[1].u)
             ]
         else
             ts_weak_errors = [
                 mean([u[j].u[i] - u[j].u_analytic[i] for j in 1:length(u)])
-                    for i in 1:length(u[1])
+                    for i in 1:length(u[1].u)
             ]
         end
         ts_l2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in ts_weak_errors]
