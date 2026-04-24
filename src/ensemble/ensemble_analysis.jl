@@ -9,10 +9,6 @@ $(SIGNATURES)
 
 Returns an iterator of each simulation at time step i
 """
-# Under RecursiveArrayTools v4, iterating an `AbstractVectorOfArray`
-# (and thus an `EnsembleSolution`) yields scalar column-major elements rather
-# than the per-trajectory solutions. Iterate `sim.u` explicitly so these
-# helpers continue to walk over each trajectory's solution object.
 get_timestep(sim, i) = (sol.u[i] for sol in sim.u)
 
 """
