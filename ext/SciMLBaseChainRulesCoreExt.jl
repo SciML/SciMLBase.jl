@@ -58,6 +58,19 @@ function ChainRulesCore.rrule(
     return VA[sym, j], ODESolution_getindex_pullback
 end
 
+# `sol[i::Integer]` returns the state vector at time step `i`, not a
+# state-variable slice. A dedicated rrule prevents the broader
+# `getindex(VA::ODESolution, sym)` rule below from mis-treating `i` as a
+# state index (#1325). Dispatch picks this more-specific method for
+# integer arguments.
+function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
+    function ODESolution_time_step_pullback(Δ)
+        Δ′ = [k == i ? Δ : zero(x) for (x, k) in zip(VA.u, 1:length(VA))]
+        return (NoTangent(), Δ′, NoTangent())
+    end
+    return VA.u[i], ODESolution_time_step_pullback
+end
+
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
