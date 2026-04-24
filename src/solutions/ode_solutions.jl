@@ -679,9 +679,22 @@ end
 function solution_new_original_retcode(
         sol::ODESolution{T, N}, original, retcode, resid
     ) where {T, N}
-    @reset sol.original = original
-    @reset sol.retcode = retcode
-    return @set sol.resid = resid
+    # Reconstruct the ODESolution directly rather than going through the
+    # `@reset` / `ConstructionBase.setproperties` chain. The `@reset` form
+    # expands into three sequential `setproperties` calls, each of which
+    # threads through `merge(getproperties(sol), patch)` and back through
+    # `ODESolution{T, N}(...)`. That call graph exceeds Julia's inference
+    # limits for non-trivial callers (e.g. a `::NonlinearSolution` bare
+    # annotation on the caller), causing the rebuilt solution's type to
+    # widen all the way to `ODESolution` (bare UnionAll). A single direct
+    # inner-constructor call preserves the concrete type parameters that
+    # inference can derive from `sol` plus the new `original`/`resid`.
+    return ODESolution{T, N}(
+        sol.u, sol.u_analytic, sol.errors, sol.t, sol.k,
+        sol.discretes, sol.prob, sol.alg, sol.interp, sol.dense,
+        sol.tslocation, sol.stats, sol.alg_choice, retcode,
+        resid, original, sol.saved_subsystem,
+    )
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}

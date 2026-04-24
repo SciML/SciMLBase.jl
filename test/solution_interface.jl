@@ -72,3 +72,45 @@ end
     @test isfinite(LinearAlgebra.norm(sol))
     @test sol ≈ sol
 end
+
+@testset "solution_new_original_retcode type inference" begin
+    # Regression test: `solution_new_original_retcode` must not widen the
+    # returned ODESolution's type parameters through the Accessors / setproperties
+    # rebuild chain even when callers annotate the `original` argument as the
+    # bare `NonlinearSolution` UnionAll (see BoundaryValueDiffEqCore.__build_solution).
+    # See https://github.com/SciML/BoundaryValueDiffEq.jl/issues/479.
+    f = (u, p, t) -> -u
+    ode = ODEProblem(f, [1.0, 2.0], (0.0, 1.0))
+    odesol = SciMLBase.build_solution(
+        ode, :NoAlgorithm, collect(0.0:0.1:1.0),
+        [[exp(-t), 2exp(-t)] for t in 0.0:0.1:1.0],
+    )
+
+    # Build a NonlinearSolution whose 7th (O = original) type parameter is
+    # pinned to `Any` --- matches NonlinearSolveBase.build_solution_less_specialize.
+    u = [1.0, 2.0]
+    resid = [0.0, 0.0]
+    nlsol = SciMLBase.NonlinearSolution{
+        Float64, 1, typeof(u), typeof(resid), Nothing, Nothing,
+        Any, Nothing, Nothing, Nothing,
+    }(u, resid, nothing, nothing, SciMLBase.ReturnCode.Success, [0.1, 0.2],
+      nothing, nothing, nothing, nothing)
+
+    # Direct concrete call: must be fully inferrable.
+    @inferred SciMLBase.solution_new_original_retcode(
+        odesol, nlsol, SciMLBase.ReturnCode.Success, resid,
+    )
+
+    # Caller with bare `::NonlinearSolution` annotation (mimicking BVDE's
+    # __build_solution): the inferred return type must NOT collapse to the
+    # bare `ODESolution` UnionAll.
+    bvde_like(o, n::SciMLBase.NonlinearSolution) = SciMLBase.solution_new_original_retcode(
+        o, n, SciMLBase.ReturnCode.Success, n.resid,
+    )
+    rt_bare = Base.return_types(bvde_like, (typeof(odesol), SciMLBase.NonlinearSolution))[1]
+    @test rt_bare !== SciMLBase.ODESolution
+
+    # And when the concrete nlsol type is known at the call site, inference
+    # must produce a fully concrete ODESolution type.
+    @inferred bvde_like(odesol, nlsol)
+end
