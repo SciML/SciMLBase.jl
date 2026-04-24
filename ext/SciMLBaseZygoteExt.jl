@@ -52,6 +52,22 @@ end
     out, EnsembleSolution_adjoint
 end
 
+# `sol[i::Integer]` returns the state vector at time step `i`, not a
+# state-variable slice. A dedicated adjoint prevents the broader
+# `Base.getindex(VA::ODESolution, sym)` method below from mis-treating `i`
+# as a state index (#1325). Dispatch prefers this more-specific method for
+# integer arguments.
+@adjoint function Base.getindex(VA::ODESolution, i::Integer)
+    function ODESolution_time_step_pullback(Δ)
+        Δ′ = [
+            k == i ? Δ : Zygote.FillArrays.Fill(zero(eltype(x)), size(x))
+                for (x, k) in zip(VA.u, 1:length(VA))
+        ]
+        return (Δ′, nothing)
+    end
+    return VA.u[i], ODESolution_time_step_pullback
+end
+
 @adjoint function Base.getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
