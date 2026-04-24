@@ -36,6 +36,7 @@ supply the common interface and allow for interexchange of mathematical problems
 - Removed `deprecated.jl`: old type aliases (`DEAlgorithm`, `DEProblem`, `DESolution`, etc.), constructors, deprecated accessors (#1291)
 - Removed backward compat shims in `remake.jl` and MLStyle extension (#1292)
 - Removed old iterators: `tuples`, `intervals`, `TimeChoiceIterator` (#1290)
+- Removed `Symbol`→`ReturnCode.T` conversion (`Base.convert(::Type{ReturnCode.T}, ::Symbol)` and `symbol_to_ReturnCode`) — deprecated for years across v1/v2 with a warning printed on every use. Comparing `sol.retcode == :Success` no longer works; use `SciMLBase.successful_retcode(sol)`, which correctly accepts every success-ish `ReturnCode` value (`Success`, `StalledSuccess`, `ExactSolutionLeft`, `ExactSolutionRight`, `FloatingPointLimit`, …), not just `Success`.
 
 #### Simplified getproperty
 - Removed redundant `getproperty` overloads on solution abstract types (#1293)
@@ -58,6 +59,7 @@ supply the common interface and allow for interexchange of mathematical problems
 | `prob_func(prob, i, repeat)` | `prob_func(prob, ctx)` — use `ctx.sim_id`, `ctx.repeat` |
 | `output_func(sol, i)` | `output_func(sol, ctx)` |
 | `sol.destats` | `sol.stats` |
+| `sol.retcode == :Success` | `SciMLBase.successful_retcode(sol)` |
 | `ODEFunction{true}(f)` (FullSpecialize) | Now uses AutoSpecialize by default |
 
 ## v2.0 Breaking Changes
