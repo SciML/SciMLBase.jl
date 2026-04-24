@@ -997,10 +997,12 @@ export isinplace
 
 export solve, solve!, init, discretize, symbolic_discretize
 
-export LinearProblem, IntervalNonlinearProblem,
-    IntegralProblem, SampledIntegralProblem, OptimizationProblem
+export LinearProblem, LinearSolution, IntervalNonlinearProblem,
+    IntegralProblem, IntegralSolution, SampledIntegralProblem,
+    OptimizationProblem, OptimizationSolution
 
-export NonlinearProblem, SCCNonlinearProblem, NonlinearLeastSquaresProblem
+export NonlinearProblem, NonlinearSolution,
+    SCCNonlinearProblem, NonlinearLeastSquaresProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution
@@ -1017,7 +1019,7 @@ export DDEProblem
 export DynamicalDDEFunction, DynamicalDDEProblem,
     SecondOrderDDEProblem
 export SDDEProblem
-export PDEProblem
+export PDEProblem, PDETimeSeriesSolution, PDENoTimeSolution
 export IncrementingODEProblem
 
 export BVProblem, TwoPointBVProblem, SecondOrderBVProblem, TwoPointSecondOrderBVProblem
