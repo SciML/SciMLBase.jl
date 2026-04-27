@@ -263,7 +263,7 @@ function compatible_problem_types(prob, alg)
         ODEProblem
     elseif alg isa AbstractSDEAlgorithm
         (SDEProblem, SDDEProblem)
-    elseif alg isa AbstractDDEAlgorithm # StochasticDelayDiffEq.jl just uses the SDE alg
+    elseif alg isa AbstractDDEAlgorithm
         DDEProblem
     elseif alg isa AbstractDAEAlgorithm
         DAEProblem
