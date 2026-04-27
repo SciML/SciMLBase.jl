@@ -48,7 +48,6 @@ jobs:
           - {user: SciML, repo: ModelingToolkit.jl, group: FMI}
           - {user: SciML, repo: ModelingToolkit.jl, group: Extensions}
           - {user: SciML, repo: ModelingToolkitStandardLibrary.jl, group: Core}
-          - {user: SciML, repo: StochasticDelayDiffEq.jl, group: All}
           - {user: SciML, repo: SimpleDiffEq.jl, group: All}
           - {user: SciML, repo: SciMLSensitivity.jl, group: Core1}
           - {user: SciML, repo: SciMLSensitivity.jl, group: Core2}
