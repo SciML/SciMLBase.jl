@@ -401,10 +401,13 @@ function rrule!!(
     return CoDual(y, y_fdata), _scatter_pullback
 end
 
-# Integer time-step indexing: `sol[i::Integer]` returns the state vector at
-# time step `i`. The output cotangent is accumulated into `sol_fdata.u[i]`
-# in-place. More specific than the `sym::CoDual` rrule above, so Julia
-# dispatches here for integer arguments (#1325).
+# Integer linear indexing: under RecursiveArrayTools v4
+# `AbstractVectorOfArray` subtypes `AbstractArray`, so `sol[i::Integer]`
+# returns the i-th scalar element in column-major order over the
+# state-by-time layout, NOT the i-th timestep vector. The forward returns
+# that scalar; the pullback accumulates the scalar cotangent into the
+# matching slot of `sol_fdata.data.u`. More specific than the `sym::CoDual`
+# rrule above, so Julia dispatches here for integer arguments (#1325).
 function rrule!!(
         ::CoDual{typeof(getindex)},
         sol::CoDual{<:AbstractTimeseriesSolution},
@@ -416,13 +419,17 @@ function rrule!!(
     y_fdata = zero(y)
     sol_fdata = sol.dx
 
-    function _time_step_pullback(::NoRData)
-        u_dest = sol_fdata.data.u[ip]
-        @. u_dest += y_fdata
+    inds = Tuple(CartesianIndices(size(VA))[ip])
+    front_inds = Base.front(inds)
+    step_idx = last(inds)
+
+    function _scalar_pullback(::NoRData)
+        u_dest = sol_fdata.data.u[step_idx]
+        u_dest[front_inds...] += y_fdata
         return (NoRData(), NoRData(), NoRData())
     end
 
-    return CoDual(y, y_fdata), _time_step_pullback
+    return CoDual(y, y_fdata), _scalar_pullback
 end
 
 # Vector of symbols: `sol[[sym1, sym2, ...]]` returns a `Vector{Vector{T}}`
