@@ -52,20 +52,33 @@ end
     out, EnsembleSolution_adjoint
 end
 
-# `sol[i::Integer]` returns the state vector at time step `i`, not a
-# state-variable slice. A dedicated adjoint prevents the broader
-# `Base.getindex(VA::ODESolution, sym)` method below from mis-treating `i`
-# as a state index (#1325). Dispatch prefers this more-specific method for
-# integer arguments.
+# `sol[i::Integer]`: under RecursiveArrayTools v4 `AbstractVectorOfArray`
+# subtypes `AbstractArray`, so linear integer indexing returns the i-th
+# scalar element in column-major order over the underlying state-by-time
+# layout (i.e. `VA[CartesianIndices(size(VA))[i]]`), NOT the i-th timestep
+# vector. A dedicated adjoint is still needed here to keep dispatch from
+# falling through to the broader `Base.getindex(VA::ODESolution, sym)`
+# rule below (which would mis-interpret `i` as a state-variable index;
+# #1325). The pullback scatters the scalar cotangent into the matching
+# slot of `VA.u`.
 @adjoint function Base.getindex(VA::ODESolution, i::Integer)
-    function ODESolution_time_step_pullback(Δ)
-        Δ′ = [
-            k == i ? Δ : Zygote.FillArrays.Fill(zero(eltype(x)), size(x))
-                for (x, k) in zip(VA.u, 1:length(VA))
-        ]
+    inds = Tuple(CartesianIndices(size(VA))[i])
+    front_inds = Base.front(inds)
+    step_idx = last(inds)
+    y = VA.u[step_idx][front_inds...]
+    function ODESolution_scalar_pullback(Δ)
+        Δ′ = map(enumerate(VA.u)) do (k, x)
+            if k == step_idx
+                δu = zero(x)
+                δu[front_inds...] = Δ
+                δu
+            else
+                Zygote.FillArrays.Fill(zero(eltype(x)), size(x))
+            end
+        end
         return (Δ′, nothing)
     end
-    return VA.u[i], ODESolution_time_step_pullback
+    return y, ODESolution_scalar_pullback
 end
 
 @adjoint function Base.getindex(VA::ODESolution, sym)
