@@ -29,6 +29,43 @@ end
     @test plot_vecs[2][:, 2] ≈ @. exp(-plot_vecs[1][:, 2])
 end
 
+# Regression test for #1335 / OrdinaryDiffEq.jl#3573: under
+# RecursiveArrayTools v4 / SciMLBase v3, `length(sol::ODESolution)` is
+# `prod(size(sol)) = state_dim * n_timesteps`, not the timestep count.
+# `diffeq_to_arrays` was using `end_idx = length(sol)` which then
+# blew up on `sol.t[end_idx]` for any multi-state solve. The scalar
+# "plot ODE solution" testset above doesn't catch this because
+# state_dim == 1. This exercises the multi-state path through the
+# Makie extension's `convert_arguments` entry (tspan === nothing,
+# denseplot = true).
+@testset "plot multi-state ODE solution (length(sol) != length(sol.t))" begin
+    f = ODEFunction((du, u, p, t) -> (du .= -u))
+    ode = ODEProblem(f, [1.0, 2.0, 3.0], (0.0, 1.0))
+    sol = SciMLBase.build_solution(
+        ode, :NoAlgorithm, [ode.tspan[begin]], [copy(ode.u0)]
+    )
+    for t in Iterators.drop(range(ode.tspan..., length = 8), 1)
+        push!(sol.t, t)
+        push!(sol.u, copy(ode.u0))
+    end
+    @test length(sol) != length(sol.t)  # 24 vs 8 — the precondition
+
+    int_vars = SciMLBase.interpret_vars(nothing, sol)
+    plot_vecs, labels = SciMLBase.diffeq_to_arrays(
+        sol,
+        false,                # plot_analytic
+        true,                 # denseplot — exercises the end_idx path
+        10 * length(sol.t),   # plotdensity (matches @recipe default shape)
+        nothing,              # tspan === nothing — triggers `end_idx = length(sol)`
+        int_vars,
+        :identity,
+        nothing               # plotat
+    )
+    @test length(plot_vecs) == 2
+    @test length(labels) == 3
+    @test all(size(v, 1) > 0 for v in plot_vecs)
+end
+
 @testset "interpolate empty ODE solution" begin
     f = (u, p, t) -> -u
     ode = ODEProblem(f, 1.0, (0.0, 1.0))
