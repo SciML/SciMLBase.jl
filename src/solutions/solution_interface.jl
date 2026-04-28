@@ -229,8 +229,8 @@ plottable_indices(x::Number) = 1
             sol.tslocation == 0 ?
                 (
                     sol.prob isa AbstractDiscreteProblem ?
-                    max(1000, 100 * length(sol)) :
-                    max(1000, 10 * length(sol))
+                    max(1000, 100 * length(sol.t)) :
+                    max(1000, 10 * length(sol.t))
                 ) :
                 1000 * sol.tslocation
         ), plotat = nothing,
@@ -420,7 +420,7 @@ function diffeq_to_arrays(
     )
     if tspan === nothing
         if sol.tslocation == 0
-            end_idx = length(sol)
+            end_idx = length(sol.t)
         else
             end_idx = sol.tslocation
         end

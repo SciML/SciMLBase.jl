@@ -101,6 +101,9 @@ end
         @time @safetestset "Solution Indexing" begin
             include("downstream/solution_interface.jl")
         end
+        @time @safetestset "Plots / Makie plot recipes on multi-state ODE" begin
+            include("downstream/plot_lines.jl")
+        end
         @time @safetestset "Unitful interpolations" begin
             include("downstream/unitful_interpolations.jl")
         end
