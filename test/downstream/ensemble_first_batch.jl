@@ -1,4 +1,4 @@
-using OrdinaryDiffEq, Test, Statistics
+using OrdinaryDiffEq, SciMLBase, Test, Statistics
 
 # test for https://github.com/SciML/SciMLBase.jl/issues/190
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))

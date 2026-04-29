@@ -1,4 +1,4 @@
-using Optimization, OptimizationOptimJL, ForwardDiff, Test
+using Optimization, OptimizationOptimJL, ForwardDiff, SciMLBase, Test
 
 x0 = zeros(2)
 rosenbrock(x, p = nothing) = (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2

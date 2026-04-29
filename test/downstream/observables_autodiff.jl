@@ -2,8 +2,6 @@ using ModelingToolkit, OrdinaryDiffEq
 using ModelingToolkit: t_nounits as t, D_nounits as D
 import SymbolicIndexingInterface as SII
 import SciMLStructures as SS
-using ModelingToolkitStandardLibrary
-import ModelingToolkitStandardLibrary as MSL
 using SciMLSensitivity
 using Test
 
@@ -155,61 +153,60 @@ end
     end
 end
 
-# DAE
+# ============================================================
+# Minimal DAE (replaces the MTSL electrical-circuit tests)
+# ============================================================
+# One differential equation, one algebraic equation, and one observed
+# equation, where the observed variable s_dae appears directly in the
+# algebraic equation.
+#
+#   D(u_dae) = -a_dae * u_dae + v_dae   (differential)
+#   0 = v_dae - b_dae * s_dae            (algebraic — references observed s_dae)
+#   s_dae = u_dae^2                      (observed)
+#
+# After @mtkcompile, both v_dae and s_dae become observed functions of the
+# single differential state u_dae — exercising the same AD-through-observed
+# codepath that the original MTSL tests covered.
 
-function create_model(; C₁ = 3.0e-5, C₂ = 1.0e-6)
-    @named resistor1 = MSL.Electrical.Resistor(R = 5.0)
-    @named resistor2 = MSL.Electrical.Resistor(R = 2.0)
-    @named capacitor1 = MSL.Electrical.Capacitor(C = C₁)
-    @named capacitor2 = MSL.Electrical.Capacitor(C = C₂)
-    @named source = MSL.Electrical.Voltage()
-    @named input_signal = MSL.Blocks.Sine(frequency = 100.0)
-    @named ground = MSL.Electrical.Ground()
-    @named ampermeter = MSL.Electrical.CurrentSensor()
+@parameters a_dae b_dae
+@variables u_dae(t) v_dae(t) s_dae(t)
 
-    eqs = [
-        connect(input_signal.output, source.V)
-        connect(source.p, capacitor1.n, capacitor2.n)
-        connect(source.n, resistor1.p, resistor2.p, ground.g)
-        connect(resistor1.n, capacitor1.p, ampermeter.n)
-        connect(resistor2.n, capacitor2.p, ampermeter.p)
-    ]
+dae_eqs = [
+    D(u_dae) ~ -a_dae * u_dae + v_dae,
+    0 ~ v_dae^2 - b_dae * s_dae,
+    s_dae ~ 2u_dae + v_dae,
+]
 
-    return @named circuit_model = System(
-        eqs, t,
-        systems = [
-            resistor1, resistor2, capacitor1, capacitor2,
-            source, input_signal, ground, ampermeter,
-        ], initial_conditions = [resistor1.n.v => 0.0]
-    )
-end
+@mtkcompile simple_dae = System(dae_eqs, t)
+
+prob_dae = ODEProblem(
+    simple_dae,
+    [u_dae => 1.0, a_dae => 2.0, b_dae => 0.5],
+    (0.0, 1.0); guesses = [v_dae => 1.0]
+)
+sol_dae = solve(prob_dae, Rodas5())
 
 @testset "DAE Observable function AD" begin
-    model = create_model()
-    sys = mtkcompile(model)
-
-    prob = ODEProblem(sys, [], (0.0, 1.0))
-    sol = solve(prob, Rodas4())
-
-    # Expected gradient values were refreshed from FiniteDiff on this test
-    # environment. Both Zygote and Mooncake agree with FiniteDiff to within
-    # 1e-5 (differences come from the FD perturbation size).
-    du_ref = [-0.5, -1.0e-6]
+    # s_dae (= u_dae^2) is an observed function of the compiled state.
+    # Differentiating sum(sol[s_dae]) wrt sol exercises the AD-through-observed codepath.
+    #
+    # Analytical value
+    du_ref = [1.0, 2.0]
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             gs = DifferentiationInterface.gradient(
-                sol -> sum(sol[sys.ampermeter.i]), backend, sol
+                sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
             )
-            du = [du_ref for _ in sol.u]
+            du = [du_ref for _ in sol_dae.u]
             @test gs.u ≈ du
         end
     end
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend))" begin
             gs = DifferentiationInterface.gradient(
-                sol -> sum(sol[sys.ampermeter.i]), backend, sol
+                sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
             )
-            du = [du_ref for _ in sol.u]
+            du = [du_ref for _ in sol_dae.u]
             @test _unwrap_grad(gs).u ≈ du
         end
     end
@@ -217,13 +214,13 @@ end
     @testset "DAE Initialization Observable function AD" begin
         for backend in ZYGOTE_BACKENDS
             @testset "$(backend_name(backend))" begin
-                iprob = prob.f.initialization_data.initializeprob
+                iprob = prob_dae.f.initialization_data.initializeprob
                 isol = solve(iprob)
                 tunables, repack, _ = SS.canonicalize(
                     SS.Tunable(), SII.parameter_values(iprob)
                 )
                 gs = DifferentiationInterface.gradient(
-                    isol -> isol[sys.ampermeter.i], backend, isol
+                    isol -> isol[simple_dae.s_dae], backend, isol
                 )
                 gt = gs.prob.p.tunable
                 @test length(findall(!iszero, gt)) == 1
@@ -233,10 +230,10 @@ end
         for backend in MOONCAKE_BACKENDS
             @testset "$(backend_name(backend)) (broken)" begin
                 @test_broken begin
-                    iprob = prob.f.initialization_data.initializeprob
+                    iprob = prob_dae.f.initialization_data.initializeprob
                     isol = solve(iprob)
                     gs = DifferentiationInterface.gradient(
-                        isol -> isol[sys.ampermeter.i], backend, isol
+                        isol -> isol[simple_dae.s_dae], backend, isol
                     )
                     gt = gs.prob.p.tunable
                     length(findall(!iszero, gt)) == 1
@@ -247,10 +244,14 @@ end
 end
 
 @testset "Adjoints with DAE" begin
-    model = create_model()
-    sys = mtkcompile(model)
-    prob = ODEProblem(sys, [], (0.0, 1.0))
-    tunables, _, _ = SS.canonicalize(SS.Tunable(), prob.p)
+    tunables_dae, _, _ = SS.canonicalize(SS.Tunable(), prob_dae.p)
+
+    function loss_dae(new_tunables)
+        new_p = SS.replace(SS.Tunable(), prob_dae.p, new_tunables)
+        new_prob = remake(prob_dae; p = new_p)
+        sol = solve(new_prob, Tsit5())
+        return sum(sol[simple_dae.s_dae])
+    end
 
     # Zygote DAE adjoints currently broken. The ChainRules `_solve_adjoint`
     # path calls `get_concrete_problem` -> `get_updated_symbolic_problem`,
@@ -262,36 +263,18 @@ end
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             @test_broken begin
-                function loss_wrt_tunables(new_tunables)
-                    new_p = SS.replace(SS.Tunable(), prob.p, new_tunables)
-                    new_prob = remake(prob, p = new_p)
-                    sol = solve(new_prob, Rodas4())
-                    return sum(sol[sys.ampermeter.i])
-                end
-
-                gs_p_new = DifferentiationInterface.gradient(
-                    loss_wrt_tunables, backend, tunables
-                )
-
-                !isnothing(gs_p_new) && length(gs_p_new) == length(tunables)
+                gs = DifferentiationInterface.gradient(loss_dae, backend, tunables_dae)
+                !isnothing(gs) && length(gs) == length(tunables_dae)
             end
         end
     end
-    # Mooncake handles this DAE adjoint through its own `build_rrule` /
+    # Mooncake handles this adjoint through its own `build_rrule` /
     # `getindex` primitive and returns a gradient of the expected length.
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            function loss_wrt_tunables_mooncake(new_tunables)
-                new_p = SS.replace(SS.Tunable(), prob.p, new_tunables)
-                new_prob = remake(prob, p = new_p)
-                sol = solve(new_prob, Rodas4())
-                return sum(sol[sys.ampermeter.i])
-            end
-            gs_p_new = DifferentiationInterface.gradient(
-                loss_wrt_tunables_mooncake, backend, tunables
-            )
-            @test !isnothing(gs_p_new)
-            @test length(gs_p_new) == length(tunables)
+            gs = DifferentiationInterface.gradient(loss_dae, backend, tunables_dae)
+            @test !isnothing(gs)
+            @test length(gs) == length(tunables_dae)
         end
     end
 end

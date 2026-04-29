@@ -46,13 +46,13 @@ sde_jump_prob = JumpProblem(
 # ============================================================
 
 # Extract endpoints from ensemble solution
-endpoints(sim) = [sol[end] for sol in sim]
+endpoints(sim) = [sol[end] for sol in sim.u]
 
 # Extract first positive time from each trajectory (jump time, skipping t=0 entries)
-first_jump_times(sim) = [sol.t[findfirst(>(0), sol.t)] for sol in sim]
+first_jump_times(sim) = [sol.t[findfirst(>(0), sol.t)] for sol in sim.u]
 
 # Extract all solution time arrays (continuous-valued, safe for != comparisons)
-all_timeseries(sim) = [sol.t for sol in sim]
+all_timeseries(sim) = [sol.t for sol in sim.u]
 
 # Build ensemble problem with default prob_func that perturbs u0.
 # JumpProblems use identity prob_func — stochasticity comes from the jump process itself.
@@ -434,8 +434,8 @@ end
 @testset "11. No seed graceful execution" begin
     eprob = EnsembleProblem(ode_prob)
     sim = solve(eprob, Tsit5(), EnsembleSerial(); trajectories = 4)
-    @test length(sim) == 4
-    @test all(sol.retcode == ReturnCode.Success for sol in sim)
+    @test length(sim.u) == 4
+    @test all(sol.retcode == ReturnCode.Success for sol in sim.u)
 end
 
 # ============================================================
@@ -527,7 +527,7 @@ end
             nl_eprob, NewtonRaphson(), EnsembleSerial();
             seed = UInt64(42), trajectories = 5,
         )
-        @test length(sim1) == 5
+        @test length(sim1.u) == 5
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = solve(
@@ -551,7 +551,7 @@ end
             opt_eprob, OptimizationOptimJL.BFGS(),
             EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
-        @test length(sim1) == 4
+        @test length(sim1.u) == 4
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = Optimization.solve(
