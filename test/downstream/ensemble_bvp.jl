@@ -1,4 +1,4 @@
-using BoundaryValueDiffEq, Random
+using BoundaryValueDiffEq, SciMLBase, Random
 
 function ode!(du, u, p, t)
     du[1] = u[2]

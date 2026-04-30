@@ -1,4 +1,4 @@
-using OrdinaryDiffEq
+using OrdinaryDiffEq, SciMLBase
 using Test
 
 f(u, p, t) = 1.01 * u
