@@ -26,10 +26,6 @@ prob1 = ODEProblem(sys1, [x => 1.0, y => 1.0], (0.0, 1.0))
 prob2 = ODEProblem(sys2, [x => 2.0, y => 2.0], (0.0, 1.0))
 prob3 = ODEProblem(sys3, [x => 3.0, y => 3.0], (0.0, 1.0))
 
-# Use the standard ensemble interface: single base problem + a prob_func that
-# selects the i-th underlying problem. The legacy `EnsembleProblem(::Vector)`
-# constructor is deprecated and its `init`/`solve` dispatch on a `Vector` of
-# problems no longer resolves.
 probs = [prob1, prob2, prob3]
 ensemble_prob = EnsembleProblem(prob1; prob_func = (prob, ctx) -> probs[ctx.sim_id])
 sol = solve(ensemble_prob, Tsit5(), EnsembleThreads(); trajectories = length(probs))
