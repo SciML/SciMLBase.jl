@@ -437,7 +437,6 @@ function rrule!!(
     VA = sol.x
     ip = i.x
     y = VA[ip]
-    y_fdata = zero(y)
     sol_fdata = sol.dx
 
     inds = Tuple(CartesianIndices(size(VA))[ip])
@@ -449,13 +448,19 @@ function rrule!!(
     # Julia 1.10 LTS Downstream).
     lzr_sol = lazy_zero_rdata(VA)
 
-    function _scalar_pullback(::NoRData)
+    # `y` is a scalar (`Float64`) under linear integer indexing. Scalar
+    # outputs use rdata, not fdata: their CoDual must be
+    # `CoDual{Float64, NoFData}` (via `zero_fcodual`) and the pullback
+    # signature receives the scalar cotangent `dy` (an rdata) directly.
+    # Returning `CoDual(y, zero(y))` produces `CoDual{Float64, Float64}`,
+    # which trips Mooncake's `typeassert`.
+    function _scalar_pullback(dy)
         u_dest = sol_fdata.data.u[step_idx]
-        u_dest[front_inds...] += y_fdata
+        u_dest[front_inds...] += dy
         return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
-    return CoDual(y, y_fdata), _scalar_pullback
+    return zero_fcodual(y), _scalar_pullback
 end
 
 # Vector of symbols: `sol[[sym1, sym2, ...]]` returns a `Vector{Vector{T}}`
