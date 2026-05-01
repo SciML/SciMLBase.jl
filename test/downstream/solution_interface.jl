@@ -1,5 +1,9 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
 using StochasticDiffEq
+# OrdinaryDiffEq v7 only re-exports a slim default solver set; `Rodas4` lives
+# in OrdinaryDiffEqRosenbrock and `DFBDF` in OrdinaryDiffEqBDF.
+using OrdinaryDiffEqRosenbrock: Rodas4
+using OrdinaryDiffEqBDF: DFBDF
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using Plots: Plots, plot
