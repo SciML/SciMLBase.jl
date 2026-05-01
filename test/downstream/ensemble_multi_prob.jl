@@ -1,4 +1,4 @@
-using ModelingToolkit, OrdinaryDiffEq, Test
+using ModelingToolkit, OrdinaryDiffEq, SciMLBase, Test
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 @variables x(t), y(t)
@@ -37,4 +37,4 @@ for i in 1:3
 end
 # Ensemble is a recursive array
 @test only.(sol(0.0, idxs = [x])) == sol[xidx, 1, :]
-@test only.(sol(1.0, idxs = [x])) ≈ [sol[i][xidx, end] for i in 1:3]
+@test only.(sol(1.0, idxs = [x])) ≈ [sol.u[i][xidx, end] for i in 1:3]

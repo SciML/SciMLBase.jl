@@ -1,4 +1,4 @@
-using OrdinaryDiffEq, Test, LinearAlgebra
+using OrdinaryDiffEq, SciMLBase, Test, LinearAlgebra
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0), save_start = false, save_end = false)
 function prob_func(prob, ctx)
     return remake(prob, u0 = rand() * prob.u0)

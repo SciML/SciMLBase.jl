@@ -308,7 +308,7 @@ end
 end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)
-    return [s(args...; kwargs...) for s in sol]
+    return [s(args...; kwargs...) for s in sol.u]
 end
 
 Base.@propagate_inbounds function Base.getindex(sol::WeightedEnsembleSolution, S)
