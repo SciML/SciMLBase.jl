@@ -187,7 +187,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractTimeseriesSolution)
 end
 
 
-
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     println(io, string("retcode: ", A.retcode))
     print(io, "t: ")

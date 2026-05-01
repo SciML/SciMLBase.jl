@@ -58,7 +58,7 @@ end
 # layout (i.e. `VA[CartesianIndices(size(VA))[i]]`), NOT the i-th timestep
 # vector. A dedicated adjoint is still needed here to keep dispatch from
 # falling through to the broader `Base.getindex(VA::ODESolution, sym)`
-# rule below (which would mis-interpret `i` as a state-variable index;
+# rule below (which would misinterpret `i` as a state-variable index;
 # #1325). The pullback scatters the scalar cotangent into the matching
 # slot of `VA.u`.
 @adjoint function Base.getindex(VA::ODESolution, i::Integer)

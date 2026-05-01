@@ -130,10 +130,12 @@ end
     nlsol = SciMLBase.NonlinearSolution{
         Float64, 1, typeof(u), typeof(resid), Nothing, Nothing,
         Any, Nothing, Nothing, Nothing,
-    }(u, resid, nothing, nothing, SciMLBase.ReturnCode.Success, [0.1, 0.2],
-      nothing, nothing, nothing, nothing)
+    }(
+        u, resid, nothing, nothing, SciMLBase.ReturnCode.Success, [0.1, 0.2],
+        nothing, nothing, nothing, nothing
+    )
 
-    # Direct concrete call: must be fully inferrable.
+    # Direct concrete call: must be fully inferable.
     @inferred SciMLBase.solution_new_original_retcode(
         odesol, nlsol, SciMLBase.ReturnCode.Success, resid,
     )
