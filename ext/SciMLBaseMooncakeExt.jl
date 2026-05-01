@@ -9,7 +9,8 @@ import SymbolicIndexingInterface as SII
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
     @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
     NoPullback, NoFData, NoRData, NoTangent, fdata, zero_tangent,
-    primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!
+    primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!,
+    lazy_zero_rdata, instantiate
 
 # OverrideInitData and ODENLStepData are solver/initialization infrastructure
 # embedded in ODEFunction type parameters. They are not differentiable, but their
@@ -28,15 +29,26 @@ Mooncake.tangent_type(::Type{<:SciMLBase.ODENLStepData}) = Mooncake.NoTangent
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any}
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any, Any}
 
+# `set_mooncakeoriginator_if_mooncake` may be called inside Mooncake-traced
+# code with either a `ChainRulesOriginator` (from a SciMLSensitivity
+# `_solve_adjoint` style path that constructed one literally) or with a
+# `MooncakeOriginator` (because the `@mooncake_overlay` rewrites the function
+# to return `MooncakeOriginator()` and that value can flow into a recursive
+# call). The Mooncake stack pre-allocates CoDual types from the rrule's
+# signature; if the rrule is constrained to `ChainRulesOriginator` only, a
+# runtime CoDual carrying `MooncakeOriginator` triggers a `typeassert` error
+# inside Mooncake's pullback-stack code (errors B & C in observables_autodiff
+# DAE adjoint and integer time-step indexing tests). Widen to any
+# `ADOriginator` so both originator types route to the identity transform.
 @is_primitive MinimalCtx Tuple{
-    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ChainRulesOriginator,
+    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ADOriginator,
 }
 
 @mooncake_overlay SciMLBase.set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = SciMLBase.MooncakeOriginator()
 
 function rrule!!(
         f::CoDual{typeof(SciMLBase.set_mooncakeoriginator_if_mooncake)},
-        X::CoDual{SciMLBase.ChainRulesOriginator}
+        X::CoDual{<:SciMLBase.ADOriginator}
     )
     return zero_fcodual(SciMLBase.MooncakeOriginator()), NoPullback(f, X)
 end
@@ -392,10 +404,19 @@ function rrule!!(
     # (e.g. `sum`) mutate this in-place to accumulate the output gradient.
     y_fdata = zero(y)
     sol_fdata = sol.dx
+    # ODESolution is an immutable struct so its rdata is a structured
+    # `RData{NamedTuple}` (one entry per field, including the post-#1339
+    # `resid`, `original`, `saved_subsystem`). Mooncake's pullback stack
+    # `increment!!`s the existing rdata with whatever we return; returning
+    # plain `NoRData()` here triggers
+    # `MethodError: no method matching increment!!(::Mooncake.RData{...}, ::Mooncake.NoRData)`
+    # (Error A in observables_autodiff DAE Observable function AD test).
+    # Hand back a zero-initialized structured RData via `lazy_zero_rdata`.
+    lzr_sol = lazy_zero_rdata(VA)
 
     function _scatter_pullback(::NoRData)
         _scatter_symbol_timeseries!(sol_fdata, VA, s, y_fdata)
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return CoDual(y, y_fdata), _scatter_pullback
@@ -422,11 +443,16 @@ function rrule!!(
     inds = Tuple(CartesianIndices(size(VA))[ip])
     front_inds = Base.front(inds)
     step_idx = last(inds)
+    # See note in the symbolic getindex rrule above: `sol`'s rdata slot must
+    # be a structured RData so Mooncake's `increment!!` works. Required for
+    # Error C (integer time-step indexing under AD, issue #1325 testset on
+    # Julia 1.10 LTS Downstream).
+    lzr_sol = lazy_zero_rdata(VA)
 
     function _scalar_pullback(::NoRData)
         u_dest = sol_fdata.data.u[step_idx]
         u_dest[front_inds...] += y_fdata
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return CoDual(y, y_fdata), _scalar_pullback
@@ -449,6 +475,8 @@ function rrule!!(
     # Preallocate per-element zero fdata matching the primal shape.
     y_fdata = [zero(yi) for yi in y]
     sol_fdata = sol.dx
+    # See note in the symbolic getindex rrule above.
+    lzr_sol = lazy_zero_rdata(VA)
 
     function _scatter_pullback_vec(::NoRData)
         nsyms = length(ss)
@@ -459,7 +487,7 @@ function rrule!!(
             dy_j = [y_fdata[k][j] for k in 1:nt]
             _scatter_symbol_timeseries!(sol_fdata, VA, s, dy_j)
         end
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return CoDual(y, y_fdata), _scatter_pullback_vec
@@ -476,6 +504,8 @@ function rrule!!(
     jp = j.x
     y = VA[s, jp]
     sol_fdata = sol.dx
+    # See note in the symbolic getindex rrule above.
+    lzr_sol = lazy_zero_rdata(VA)
 
     # Scalar output: gradient comes via dy (rdata).
     function _scatter_pullback_indexed(dy)
@@ -485,7 +515,7 @@ function rrule!!(
         else
             _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
         end
-        return (NoRData(), NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData(), NoRData())
     end
 
     return zero_fcodual(y), _scatter_pullback_indexed
@@ -570,6 +600,13 @@ function rrule!!(
     s = sym.x
     y = NS[s]
     sol_fdata = sol.dx
+    # `AbstractNonlinearSolution` is also an immutable struct in the
+    # SciMLBase v3 hierarchy, so its rdata is a structured `RData`. Return
+    # an instantiated zero rdata for the same reason as the timeseries
+    # rrules above (avoids the `increment!!(::RData, ::NoRData)` MethodError
+    # if the nonlinear-sol path becomes reachable from a Mooncake pullback
+    # stack that already has a structured rdata for `sol`).
+    lzr_sol = lazy_zero_rdata(NS)
 
     # Scalar nonlinear solutions return a scalar `y` for a scalar symbol;
     # the gradient comes back via rdata (`dy`) since scalars use rdata.
@@ -589,7 +626,7 @@ function rrule!!(
             # Observable: differentiate via the inner observed function.
             _observable_pullback_no_t!(sol_fdata, NS, s, dy)
         end
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return zero_fcodual(y), _scatter_pullback_ns
