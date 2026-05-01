@@ -628,7 +628,7 @@ end
 
             # The callback saves pre/post states at t_cb then terminates.
             # post_cb - pre_cb must equal the trajectory's scale.
-            for (idx, sol) in enumerate(sim)
+            for (idx, sol) in enumerate(sim.u)
                 pre_cb = sol.u[end - 1][1]
                 post_cb = sol.u[end][1]
                 @test post_cb - pre_cb == pscales[idx]

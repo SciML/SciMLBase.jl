@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq
+using OrdinaryDiffEqRosenbrock: Rodas5
 using ModelingToolkit: t_nounits as t, D_nounits as D
 import SymbolicIndexingInterface as SII
 import SciMLStructures as SS

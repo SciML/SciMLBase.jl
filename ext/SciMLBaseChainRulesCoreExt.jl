@@ -51,7 +51,8 @@ function ChainRulesCore.rrule(
         N = ndims(eltype(du)) + 1
         Δ′ = ODESolution{T, N}(
             du, nothing, nothing, VA.t, VA.k, nothing, dprob,
-            VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode
+            VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode,
+            nothing, nothing, nothing
         )
         return (NoTangent(), Δ′, NoTangent(), NoTangent())
     end
@@ -63,7 +64,7 @@ end
 # scalar element in column-major order over the underlying state-by-time
 # layout, NOT the i-th timestep vector. A dedicated rrule is still
 # needed to keep dispatch from falling through to the broader
-# `getindex(VA::ODESolution, sym)` rule below (which would mis-interpret
+# `getindex(VA::ODESolution, sym)` rule below (which would misinterpret
 # `i` as a state-variable index; #1325). The pullback scatters the
 # scalar cotangent into the matching slot of `VA.u`.
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)

@@ -278,7 +278,7 @@ end
 # `sol[i::Integer]` returns the state vector at time step `i` (a different
 # operation from `sol[sym]`). A dedicated, more-specific primitive routes
 # integer time-step indexing to the correct scatter so the generic symbolic
-# rrule above does not mis-treat `i` as a state-variable index (#1325).
+# rrule above does not mistreat `i` as a state-variable index (#1325).
 @is_primitive MinimalCtx Tuple{typeof(getindex), AbstractTimeseriesSolution, Integer}
 
 # Differentiate the observed function `getter(sym, u, p, t)` once with

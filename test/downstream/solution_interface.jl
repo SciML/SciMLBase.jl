@@ -1,5 +1,7 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq, Test
 using StochasticDiffEq
+using OrdinaryDiffEqRosenbrock: Rodas4
+using OrdinaryDiffEqBDF: DFBDF
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using Plots: Plots, plot
