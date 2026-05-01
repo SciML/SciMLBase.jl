@@ -628,10 +628,6 @@ end
 
             # The callback saves pre/post states at t_cb then terminates.
             # post_cb - pre_cb must equal the trajectory's scale.
-            # Iterate `sim.u` rather than `sim` itself: `EnsembleSolution
-            # <: AbstractVectorOfArray`, so iterating the ensemble flattens
-            # element-wise (yielding the underlying state eltype, e.g.
-            # `Int64`) instead of yielding per-trajectory `ODESolution`s.
             for (idx, sol) in enumerate(sim.u)
                 pre_cb = sol.u[end - 1][1]
                 post_cb = sol.u[end][1]
