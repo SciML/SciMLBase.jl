@@ -86,7 +86,10 @@ function make_symbolic_indexing_observed_u0(prob)
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
         )
-        return sum(soln[o, i] for i in 1:length(soln))
+        # Under RecursiveArrayTools v4, `AbstractVectorOfArray <: AbstractArray`
+        # so `length(soln)` is the total scalar count (state × time), not the
+        # number of timepoints. Iterate over `soln.t` (or `soln.u`) instead.
+        return sum(soln[o, i] for i in 1:length(soln.t))
     end
 end
 
@@ -97,7 +100,7 @@ function make_symbolic_indexing_observed_p(prob, u0_fixed)
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
         )
-        return sum(soln[o, i] for i in 1:length(soln))
+        return sum(soln[o, i] for i in 1:length(soln.t))
     end
 end
 
