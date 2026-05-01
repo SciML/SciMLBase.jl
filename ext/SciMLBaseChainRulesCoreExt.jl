@@ -49,11 +49,6 @@ function ChainRulesCore.rrule(
         end
         T = eltype(eltype(du))
         N = ndims(eltype(du)) + 1
-        # SciMLBase v3 ODESolution{T, N} constructor takes 17 positional
-        # arguments: u, u_analytic, errors, t, k, discretes, prob, alg, interp,
-        # dense, tslocation, stats, alg_choice, retcode, resid, original,
-        # saved_subsystem. The cotangent doesn't carry residuals or a saved
-        # subsystem, so pass `nothing` for the trailing three.
         Δ′ = ODESolution{T, N}(
             du, nothing, nothing, VA.t, VA.k, nothing, dprob,
             VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode,
