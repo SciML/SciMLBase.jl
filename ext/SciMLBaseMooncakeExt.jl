@@ -29,29 +29,29 @@ Mooncake.tangent_type(::Type{<:SciMLBase.ODENLStepData}) = Mooncake.NoTangent
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any}
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any, Any}
 
-# `set_mooncakeoriginator_if_mooncake` may be called inside Mooncake-traced
-# code with either a `ChainRulesOriginator` (from a SciMLSensitivity
-# `_solve_adjoint` style path that constructed one literally) or with a
-# `MooncakeOriginator` (because the `@mooncake_overlay` rewrites the function
-# to return `MooncakeOriginator()` and that value can flow into a recursive
-# call). The Mooncake stack pre-allocates CoDual types from the rrule's
-# signature; if the rrule is constrained to `ChainRulesOriginator` only, a
-# runtime CoDual carrying `MooncakeOriginator` triggers a `typeassert` error
-# inside Mooncake's pullback-stack code (errors B & C in observables_autodiff
-# DAE adjoint and integer time-step indexing tests). Widen to any
-# `ADOriginator` so both originator types route to the identity transform.
-@is_primitive MinimalCtx Tuple{
-    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ADOriginator,
-}
-
+# `set_mooncakeoriginator_if_mooncake` is the runtime "am I being differentiated
+# by Mooncake?" indicator: under non-Mooncake AD it's the identity, under
+# Mooncake the `@mooncake_overlay` rewrites the forward call to return
+# `MooncakeOriginator()` so downstream sensealg dispatch can branch.
+#
+# A previous explicit `rrule!!` returned `zero_fcodual(MooncakeOriginator())`,
+# which changed the runtime CoDual's value type. Mooncake's compiled pullback
+# for `DiffEqBase.var"##solve#28"` pre-allocates a `Mooncake.Stack` whose slot
+# for the `originator` kwarg's CoDual is typed at the *input* type
+# (`ChainRulesOriginator`); pushing the post-conversion `CoDual{MooncakeOriginator}`
+# tripped `typeassert` inside Mooncake's reverse-pass machinery (errors B & C
+# at `test/downstream/observables_autodiff.jl` lines 275 and 309).
+#
+# Treat the function as a zero-adjoint primitive instead. The `@mooncake_overlay`
+# above still drives the forward return value (so downstream code sees
+# `MooncakeOriginator()` as intended); `@zero_adjoint` tells Mooncake there is
+# no gradient contribution and avoids allocating a stack slot for the changed
+# return type, keeping the kwarg's pre-allocated stack typing consistent.
 @mooncake_overlay SciMLBase.set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = SciMLBase.MooncakeOriginator()
 
-function rrule!!(
-        f::CoDual{typeof(SciMLBase.set_mooncakeoriginator_if_mooncake)},
-        X::CoDual{<:SciMLBase.ADOriginator}
-    )
-    return zero_fcodual(SciMLBase.MooncakeOriginator()), NoPullback(f, X)
-end
+@zero_adjoint MinimalCtx Tuple{
+    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ADOriginator,
+}
 
 # ============================================================================
 # tmap and responsible_map rules for Ensemble AD
