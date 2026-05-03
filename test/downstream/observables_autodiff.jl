@@ -255,7 +255,12 @@ end
     function loss_dae(new_tunables)
         new_p = SS.replace(SS.Tunable(), prob_dae.p, new_tunables)
         new_prob = remake(prob_dae; p = new_p)
-        sol = solve(new_prob, Tsit5())
+        # `prob_dae` carries a non-trivial mass matrix (DAE), so the solver
+        # must be DAE-capable. The original test used `Rodas4()`; the recent
+        # AI rewrite (d3fa810) inadvertently swapped in `Tsit5()`, which
+        # raises `"This solver is not able to use mass matrices"` immediately
+        # in `_ode_init`. Match `prob_dae`'s top-level `solve(..., Rodas5())`.
+        sol = solve(new_prob, Rodas5())
         return sum(sol[simple_dae.s_dae])
     end
 
