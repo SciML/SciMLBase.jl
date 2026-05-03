@@ -463,6 +463,40 @@ function rrule!!(
     return zero_fcodual(y), _scalar_pullback
 end
 
+# CartesianIndex linear indexing: `eachindex(::AbstractVectorOfArray)` returns
+# `CartesianIndices` under RAT v4 (since the supertype is `AbstractArray`),
+# so user code like `for i in eachindex(predicted); ... predicted[i] ... end`
+# dispatches `getindex(::ODESolution, ::CartesianIndex{2})`. `CartesianIndex`
+# is not `<:Integer`, so without this method dispatch falls through to the
+# `sym::CoDual` rrule above, which treats the scalar `y::Float64` result as
+# an array — producing `CoDual{Float64, Float64}` and tripping Mooncake's
+# `typeassert` (`expected CoDual{Float64, NoFData}`, error C in
+# `test/downstream/observables_autodiff.jl:309` "Integer time-step indexing
+# under AD" testset under AutoMooncake).
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractTimeseriesSolution},
+        ci::CoDual{<:CartesianIndex},
+    )
+    VA = sol.x
+    cip = ci.x
+    y = VA[cip]
+    sol_fdata = sol.dx
+
+    inds = Tuple(cip)
+    front_inds = Base.front(inds)
+    step_idx = last(inds)
+    lzr_sol = lazy_zero_rdata(VA)
+
+    function _ci_pullback(dy)
+        u_dest = sol_fdata.data.u[step_idx]
+        u_dest[front_inds...] += dy
+        return (NoRData(), instantiate(lzr_sol), NoRData())
+    end
+
+    return zero_fcodual(y), _ci_pullback
+end
+
 # Vector of symbols: `sol[[sym1, sym2, ...]]` returns a `Vector{Vector{T}}`
 # where entry `k` is `[sol[sym1][k], sol[sym2][k], ...]`. We allocate a
 # matching zero-initialized fdata vector and, in the pullback, transpose the
