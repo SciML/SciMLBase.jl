@@ -1,4 +1,26 @@
 """
+    $TYPEDEF
+
+Simple wrapper struct for deprecated `update_A!`, `update_b!` API of `SymbolicLinearInterface`.
+"""
+struct UpdateABWrapper{A, B} <: Function
+    update_A!::A
+    update_b!::B
+end
+
+function (up::UpdateABWrapper)(A::AbstractMatrix, b::AbstractVector, p)
+    up.update_A!(A, p)
+    up.update_b!(b, p)
+    return (A, b)
+end
+
+function (up::UpdateABWrapper)(p)
+    A = up.update_A!(p)
+    b = up.update_b!(p)
+    return (A, b)
+end
+
+"""
     $(TYPEDEF)
 
 A utility struct stored inside `LinearProblem` to enable a symbolic interface. Intended for
@@ -8,13 +30,14 @@ use by ModelingToolkit.jl.
 
 $(TYPEDFIELDS)
 """
-struct SymbolicLinearInterface{F1, F2, S, O, M}
+@kwdef struct SymbolicLinearInterface{F, S, O, M}
     # the docstrings cannot start with a newline because otherwise the docs
     # builder fragments the list of fields into single-item lists (in TYPEDFIELDS)
-    """A function which takes `A` and the parameter object `p` and updates `A` in-place."""
-    update_A!::F1
-    """A function which takes `b` and the parameter object `p` and updates `b` in-place."""
-    update_b!::F2
+    """A function which takes `A`, `b` and the parameter object `p` and updates both `A`
+    and `b` in-place. For immutable `A` or `b`, this should only take `p` and return the
+    new `(A, b)`. Previously, this API used `update_A!` and `update_b!` as separate functions
+    with a similar contract. Supplying these individually is supported, but deprecated."""
+    update_Ab::F
     """The symbolic backend for the `LinearProblem`."""
     sys::S
     """A function which when given a symbolic expression returns a function `(u, p)`
@@ -22,6 +45,23 @@ struct SymbolicLinearInterface{F1, F2, S, O, M}
     observed::O
     """Arbitrary metadata useful for the symbolic backend."""
     metadata::M
+end
+
+# Separate `update_A!` and `update_b!` are deprecated in favor of a unified `update_Ab`.
+function SymbolicLinearInterface(update_A!, update_b!, sys, observed, metadata)
+    return SymbolicLinearInterface(;
+        update_Ab = UpdateABWrapper(update_A!, update_b!), sys, observed, metadata
+    )
+end
+
+@inline function Base.getproperty(sli::SymbolicLinearInterface, name::Symbol)
+    if name === :update_A!
+        return getfield(sli, :update_Ab).update_A!
+    elseif name === :update_b!
+        return getfield(sli, :update_Ab).update_b!
+    else
+        return getfield(sli, name)
+    end
 end
 
 __has_sys(::SymbolicLinearInterface) = true
@@ -136,8 +176,8 @@ function SymbolicIndexingInterface.set_parameter!(
         val, idx
     ) where {A, B, C, D, E}
     set_parameter!(parameter_values(valp), val, idx)
-    valp.f.update_A!(valp.A, valp.p)
-    return valp.f.update_b!(valp.b, valp.p)
+    valp.f.update_Ab(valp.A, valp.b, valp.p)
+    return nothing
 end
 
 @doc doc"""
