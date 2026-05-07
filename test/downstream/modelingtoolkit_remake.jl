@@ -410,7 +410,7 @@ end
 end
 
 @testset "SCCNonlinearProblem" begin
-    @mtkbuild fullsys = System(
+    @mtkcompile fullsys = System(
         [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
         [x, y, z], [σ, β, ρ]
     )

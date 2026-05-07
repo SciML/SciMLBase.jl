@@ -1,5 +1,6 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq,
     SymbolicIndexingInterface, Test
+using OrdinaryDiffEqRosenbrock
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using SciMLStructures: canonicalize, Tunable
 ### Tests on non-layered model (everything should work). ###
@@ -142,7 +143,7 @@ connections = [
     0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ,
 ]
-@mtkbuild sys = System(
+@mtkcompile sys = System(
     connections, t, [a, α], [γ], systems = [lorenz1, lorenz2]
 )
 

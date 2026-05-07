@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, SymbolicIndexingInterface, Test
+using OrdinaryDiffEqRosenbrock
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # DifferentiationInterface with version-dependent backends
