@@ -98,6 +98,9 @@ Contains a single callback whose `condition` is a continuous function. The callb
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
+  - `maybe_discontinuity = true`: Declares whether the condition time could have a discontinuity
+    or the `affect!` could introduce a discontinuity. Defaults to `true`. This is only used if
+    discontinuity detection is enabled in the controller (i.e. `discontinuity_handling = true`).
 
 !!! warning
 
@@ -386,6 +389,9 @@ DiscreteCallback(condition, affect!;
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
+  - `maybe_discontinuity = true`: Declares whether the condition time could have a discontinuity
+    or the `affect!` could introduce a discontinuity. Defaults to `true`. This is only used if
+    discontinuity detection is enabled in the controller (i.e. `discontinuity_handling = true`).
 
 !!! warning
 
