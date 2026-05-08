@@ -363,7 +363,7 @@ DiscreteCallback(condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     save_positions = (true, true),
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing)
 ```
 
 # Arguments
@@ -389,9 +389,6 @@ DiscreteCallback(condition, affect!;
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
-  - `maybe_discontinuity = true`: Declares whether the condition time could have a discontinuity
-    or the `affect!` could introduce a discontinuity. Defaults to `true`. This is only used if
-    discontinuity detection is enabled in the controller (i.e. `discontinuity_handling = true`).
 
 !!! warning
 
@@ -420,7 +417,6 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
     save_positions::BitArray{1}
     initializealg::F5
     saved_clock_partitions::SCP
-    maybe_discontinuity::Bool
     initialize_save_discretes::Bool
     function DiscreteCallback(
             condition::F1, affect!::F2,
@@ -428,7 +424,6 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
             save_positions,
             initializealg::F5 = nothing,
             saved_clock_partitions::SCP = (),
-            maybe_discontinuity::Bool = true,
             initialize_save_discretes = true
         ) where {F1, F2, F3, F4, F5, SCP}
         _condition = prepare_function(condition)
@@ -436,7 +431,7 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
             _condition,
             affect!, initialize, finalize,
             BitArray(collect(save_positions)),
-            initializealg, saved_clock_partitions, maybe_discontinuity,
+            initializealg, saved_clock_partitions,
             initialize_save_discretes
         )
     end
@@ -446,12 +441,11 @@ function DiscreteCallback(
         initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
         save_positions = (true, true),
         initializealg = nothing, saved_clock_partitions = (),
-        maybe_discontinuity = true,
         initialize_save_discretes = true
     )
     return DiscreteCallback(
         condition, affect!, initialize, finalize, save_positions, initializealg,
-        saved_clock_partitions, maybe_discontinuity,
+        saved_clock_partitions,
         initialize_save_discretes,
     )
 end
