@@ -116,6 +116,9 @@ end
         @time @safetestset "Autodiff Remake" begin
             include("downstream/remake_autodiff.jl")
         end
+        @time @safetestset "Ensemble + remake reverse-mode adjoints" begin
+            include("downstream/ensemble_remake_reverse_mode_adjoints.jl")
+        end
         @time @safetestset "Partial Functions" begin
             include("downstream/partial_functions.jl")
         end

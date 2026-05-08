@@ -35,16 +35,16 @@ end
                     for j in 1:size(p̄)[end - 1]
                 ] for i in 1:size(p̄)[end]
         ]
-        (EnsembleSolution(arrarr, 0.0, true, stats), nothing, nothing, nothing)
+        (arrarr, nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
-        (EnsembleSolution(p̄, 0.0, true, stats), nothing, nothing, nothing)
+        (p̄, nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::RecursiveArrayTools.AbstractVectorOfArray)
-        (EnsembleSolution(p̄, 0.0, true, stats), nothing, nothing, nothing)
+        (p̄.u, nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::EnsembleSolution)
-        (p̄, nothing, nothing, nothing)
+        (p̄.u, nothing, nothing, nothing)
     end
     function EnsembleSolution_adjoint(p̄::NamedTuple)
         (p̄.u, nothing, nothing, nothing)
@@ -190,24 +190,6 @@ end
     VA[sym], NonlinearSolution_getindex_pullback
 end
 
-@adjoint function ODESolution{
-        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15,
-    }(
-        u,
-        args...
-    ) where {
-        T1, T2, T3, T4, T5, T6, T7, T8,
-        T9, T10, T11, T12, T13, T14, T15,
-    }
-    function ODESolutionAdjoint(ȳ)
-        (ȳ, ntuple(_ -> nothing, length(args))...)
-    end
-
-    ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}(
-            u, args...
-        ),
-        ODESolutionAdjoint
-end
 
 @adjoint function SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND}(
         u,
