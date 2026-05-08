@@ -66,6 +66,9 @@ end
         @time @safetestset "Clocks" begin
             include("clock.jl")
         end
+        @time @safetestset "Callback constructors" begin
+            include("callback_constructors.jl")
+        end
     end
 
     if !is_APPVEYOR &&

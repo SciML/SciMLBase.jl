@@ -326,9 +326,8 @@ function VectorContinuousCallback(
         idxs,
         rootfind, interp_points,
         save_positions, dtrelax,
-        maybe_discontinuity,
         abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
-        initialize_save_discretes
+        maybe_discontinuity, initialize_save_discretes
     )
 end
 
