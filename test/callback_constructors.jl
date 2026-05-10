@@ -1,36 +1,42 @@
 using SciMLBase
 using Test
 
-# Regression: the 4-arg `VectorContinuousCallback` keyword constructor used to
-# forward arguments to the inner positional constructor in the wrong order,
-# placing `maybe_discontinuity` in the slot expected for `abstol`.
-@testset "VectorContinuousCallback 4-arg kwarg constructor" begin
-    cond(out, u, t, integ) = (out[1] = u[1]; out[2] = u[2])
+@testset "VectorContinuousCallback 3-arg kwarg constructor" begin
+    cond(out, u, t, integ) = (out[1] = u[1])
     aff!(integ, idx) = nothing
 
-    cb = VectorContinuousCallback(cond, aff!, nothing, 2)
-    @test cb isa VectorContinuousCallback
+    cb = VectorContinuousCallback(cond, aff!, 1; abstol = 1.0e-12)
+    @test cb.abstol == 1.0e-12
+    @test cb.maybe_discontinuity == true
 
-    cb_kw = VectorContinuousCallback(cond, aff!, nothing, 2;
+    cb_kw = VectorContinuousCallback(
+        cond, aff!, 2;
         save_positions = (true, false),
         rootfind = SciMLBase.LeftRootFind,
-        abstol = 1e-9, reltol = 0.0,
+        abstol = 1.0e-9, reltol = 0.0,
         saved_clock_partitions = (),
         maybe_discontinuity = false,
-        initialize_save_discretes = false)
+        initialize_save_discretes = false
+    )
     @test cb_kw.save_positions == BitVector([true, false])
-    @test cb_kw.abstol == 1e-9
+    @test cb_kw.abstol == 1.0e-9
     @test cb_kw.maybe_discontinuity == false
     @test cb_kw.initialize_save_discretes == false
     @test cb_kw.saved_clock_partitions == ()
 end
 
-# Sanity check: the 3-arg form (which already had the right order) still works.
-@testset "VectorContinuousCallback 3-arg kwarg constructor" begin
+# `VectorContinuousCallback` should not accept `affect_neg!`. The
+# 4-arg positional form was a leftover from the v6 `ContinuousCallback`
+# API that was supposed to be removed in the v7 update; downstream
+# code that passed `affect_neg!` had it silently ignored, so the
+# constructor itself is now removed (and so is the kwarg).
+@testset "VectorContinuousCallback rejects affect_neg!" begin
     cond(out, u, t, integ) = (out[1] = u[1])
     aff!(integ, idx) = nothing
+    aff_neg!(integ, idx) = nothing
 
-    cb = VectorContinuousCallback(cond, aff!, 1; abstol = 1e-12)
-    @test cb.abstol == 1e-12
-    @test cb.maybe_discontinuity == true
+    @test_throws MethodError VectorContinuousCallback(cond, aff!, aff_neg!, 1)
+    @test_throws MethodError VectorContinuousCallback(
+        cond, aff!, 1; affect_neg! = aff_neg!
+    )
 end
