@@ -145,7 +145,7 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R, abstol::T,
             reltol::T2, repeat_nudge::T3, initializealg::T4 = nothing,
-            saved_clock_partitions::SCP = (), maybe_discontinuity::Bool = true, 
+            saved_clock_partitions::SCP = (), maybe_discontinuity::Bool = true,
             initialize_save_discretes::Bool = true
         ) where {
             F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP,
@@ -158,7 +158,7 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             interp_points,
             BitArray(collect(save_positions)),
             dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
-            maybe_discontinuity, initialize_save_discretes 
+            maybe_discontinuity, initialize_save_discretes
         )
     end
 end
@@ -200,7 +200,7 @@ function ContinuousCallback(
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing, saved_clock_partitions = (), 
+        initializealg = nothing, saved_clock_partitions = (),
         maybe_discontinuity = true,
         initialize_save_discretes = true,
     )
@@ -215,25 +215,12 @@ end
 
 """
 ```julia
-VectorContinuousCallback(condition, affect!, affect_neg!, len;
-    initialize = INITIALIZE_DEFAULT,
-    finalize = FINALIZE_DEFAULT,
-    idxs = nothing,
-    rootfind = LeftRootFind,
-    save_positions = (true, true),
-    interp_points = 10,
-    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
-```
-
-```julia
 VectorContinuousCallback(condition, affect!, len;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
     rootfind = LeftRootFind,
     save_positions = (true, true),
-    affect_neg! = affect!,
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
     initializealg = nothing, maybe_discontinuity = true)
@@ -307,38 +294,12 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
 end
 
 function VectorContinuousCallback(
-        condition, affect!, affect_neg!, len;
-        initialize = INITIALIZE_DEFAULT,
-        finalize = FINALIZE_DEFAULT,
-        idxs = nothing,
-        rootfind = LeftRootFind,
-        save_positions = (true, true),
-        interp_points = 10,
-        dtrelax = 1,
-        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing, saved_clock_partitions = (), 
-        maybe_discontinuity = true,
-        initialize_save_discretes = true
-    )
-    return VectorContinuousCallback(
-        condition, affect!, affect_neg!, len,
-        initialize, finalize,
-        idxs,
-        rootfind, interp_points,
-        save_positions, dtrelax,
-        abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
-        maybe_discontinuity, initialize_save_discretes
-    )
-end
-
-function VectorContinuousCallback(
         condition, affect!, len;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
         rootfind = LeftRootFind,
         save_positions = (true, true),
-        affect_neg! = affect!,
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
@@ -347,7 +308,7 @@ function VectorContinuousCallback(
         initialize_save_discretes = true
     )
     return VectorContinuousCallback(
-        condition, affect!, affect_neg!, len, initialize, finalize,
+        condition, affect!, affect!, len, initialize, finalize,
         idxs,
         rootfind, interp_points,
         collect(save_positions),
