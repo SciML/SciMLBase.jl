@@ -110,6 +110,14 @@ end
     @test sol ≈ sol
 end
 
+@testset "AbstractOperatorSolution subtype joins AbstractSciMLSolution union" begin
+    struct OpSolTest <: SciMLBase.AbstractOperatorSolution end
+    sol = OpSolTest()
+    @test sol isa SciMLBase.AbstractSciMLSolution
+    @test isabstracttype(SciMLBase.AbstractOperatorSolution)
+    @test !(SciMLBase.AbstractOperatorSolution <: AbstractArray)
+end
+
 @testset "solution_new_original_retcode type inference" begin
     # Regression test: `solution_new_original_retcode` must not widen the
     # returned ODESolution's type parameters through the Accessors / setproperties

@@ -571,15 +571,31 @@ $(TYPEDEF)
 abstract type AbstractNoiseProcess{T, N, A, isinplace} <: AbstractDiffEqArray{T, N, A} end
 
 """
+$(TYPEDEF)
+
+Supertype for solutions whose primary content is a learned operator rather than
+a tabulated trajectory or array — e.g. physics-informed neural operator solvers
+(`PINOODE` in NeuralPDE.jl). Concrete subtypes are not `<: AbstractArray`; their
+call interface is solver-specific and is dispatched on the concrete type.
+
+Subtypes are still expected to expose `prob`, `alg`, `retcode`, and the
+`interp_summary`/`successful_retcode` interface used elsewhere in SciMLBase.
+"""
+abstract type AbstractOperatorSolution end
+
+"""
 Union of all base solution types.
 
-Uses a Union so that solution types can be `<: AbstractArray`
+Most branches of this union are `<: AbstractArray` (via `AbstractDiffEqArray` or
+`AbstractArray` directly); `AbstractOperatorSolution` is the exception — it
+covers operator-learning results that have no natural array shape.
 """
 const AbstractSciMLSolution = Union{
     AbstractTimeseriesSolution,
     AbstractNoTimeSolution,
     AbstractEnsembleSolution,
     AbstractNoiseProcess,
+    AbstractOperatorSolution,
 }
 
 """
@@ -1020,6 +1036,7 @@ export DynamicalDDEFunction, DynamicalDDEProblem,
     SecondOrderDDEProblem
 export SDDEProblem
 export PDEProblem, PDETimeSeriesSolution, PDENoTimeSolution
+export AbstractOperatorSolution
 export IncrementingODEProblem
 
 export BVProblem, TwoPointBVProblem, SecondOrderBVProblem, TwoPointSecondOrderBVProblem
