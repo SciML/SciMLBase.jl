@@ -78,6 +78,36 @@ end
     @test_throws ErrorException sol([0, -0.5, 0])
 end
 
+# Higher-dimensional `t` (e.g. `Matrix`, 3-D array) used to `MethodError` on
+# `sol(t, ...)`. PINOODE in NeuralPDE queries its solution with a
+# parameter-and-time array; SciMLBase now forwards array `t` straight to
+# `sol.interp` so these solvers can use the standard call interface.
+# See SciML/NeuralPDE.jl#1060.
+@testset "ODESolution call with AbstractArray t forwards to sol.interp" begin
+    struct ArrayInterp end
+    function (::ArrayInterp)(t, idxs, deriv, p, continuity)
+        # Marker payload: just echo back the shape, so we can assert reach.
+        return (t = t, idxs = idxs, deriv = deriv, p = p, continuity = continuity)
+    end
+
+    f = (u, p, t) -> -u
+    ode = ODEProblem(f, 1.0, (0.0, 1.0), 7.0)
+    sol = SciMLBase.build_solution(
+        ode, :NoAlgorithm, [0.0, 1.0], [1.0, exp(-1)]; interp = ArrayInterp()
+    )
+
+    t_mat = rand(2, 3)
+    out = sol(t_mat)
+    @test out.t === t_mat
+    @test out.idxs === nothing
+    @test out.deriv === Val{0}
+    @test out.p === 7.0
+
+    t_3d = rand(2, 3, 4)
+    out3 = sol(t_3d)
+    @test out3.t === t_3d
+end
+
 @testset "interpolate with empty idxs" begin
     f = (u, p, t) -> u
     sol1 = SciMLBase.build_solution(

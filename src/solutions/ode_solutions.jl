@@ -249,6 +249,20 @@ function (sol::AbstractODESolution)(
     return augment(sol.interp(t, idxs, deriv, sol.prob.p, continuity), sol; discretes)
 end
 
+# Higher-dimensional array inputs (e.g. `Matrix`, 3-D arrays) are not the
+# standard `t::Number` / `t::AbstractVector{<:Number}` shape supported by
+# the `augment`-wrapping path, but downstream solvers (notably PINOODE in
+# NeuralPDE) build solutions whose `interp` is queried with an array of
+# parameter-and-time samples. Forward straight to `sol.interp`; if the
+# concrete interpolation does not handle the input shape it will error
+# there with a clearer message than `MethodError` on `sol`.
+function (sol::AbstractODESolution)(
+        t::AbstractArray{<:Number}, ::Type{deriv},
+        idxs::Nothing, continuity
+    ) where {deriv}
+    return sol.interp(t, idxs, deriv, sol.prob.p, continuity)
+end
+
 function (sol::AbstractODESolution)(
         t::Number, ::Type{deriv}, idxs::Integer,
         continuity
