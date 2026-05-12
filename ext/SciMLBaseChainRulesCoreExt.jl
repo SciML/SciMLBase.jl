@@ -217,24 +217,6 @@ function ChainRulesCore.rrule(
         ::Type{EnsembleSolution}, sim, time, converged, stats = nothing
     )
     out = EnsembleSolution(sim, time, converged, stats)
-    function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
-        arrarr = [
-            [
-                    p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
-                    for j in 1:size(p̄)[end - 1]
-                ] for i in 1:size(p̄)[end]
-        ]
-        return (NoTangent(), arrarr, NoTangent(), NoTangent(), NoTangent())
-    end
-    function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
-        return (NoTangent(), p̄, NoTangent(), NoTangent(), NoTangent())
-    end
-    function EnsembleSolution_adjoint(p̄::AbstractVectorOfArray)
-        return (NoTangent(), p̄.u, NoTangent(), NoTangent(), NoTangent())
-    end
-    function EnsembleSolution_adjoint(p̄::EnsembleSolution)
-        return (NoTangent(), p̄.u, NoTangent(), NoTangent(), NoTangent())
-    end
     function EnsembleSolution_adjoint(p̄::NamedTuple)
         return (NoTangent(), p̄.u, NoTangent(), NoTangent(), NoTangent())
     end

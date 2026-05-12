@@ -28,24 +28,6 @@ end
 
 @adjoint function EnsembleSolution(sim, time, converged, stats)
     out = EnsembleSolution(sim, time, converged, stats)
-    function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
-        arrarr = [
-            [
-                    p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
-                    for j in 1:size(p̄)[end - 1]
-                ] for i in 1:size(p̄)[end]
-        ]
-        (arrarr, nothing, nothing, nothing)
-    end
-    function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
-        (p̄, nothing, nothing, nothing)
-    end
-    function EnsembleSolution_adjoint(p̄::RecursiveArrayTools.AbstractVectorOfArray)
-        (p̄.u, nothing, nothing, nothing)
-    end
-    function EnsembleSolution_adjoint(p̄::EnsembleSolution)
-        (p̄.u, nothing, nothing, nothing)
-    end
     function EnsembleSolution_adjoint(p̄::NamedTuple)
         (p̄.u, nothing, nothing, nothing)
     end

@@ -3,33 +3,25 @@ using SciMLBase: EnsembleProblem, EnsembleSerial, EnsembleSolution
 using Zygote, ForwardDiff
 import ChainRulesCore
 
-@testset "EnsembleSolution constructor cotangent shape" begin
+@testset "EnsembleSolution constructor pulls NamedTuple cotangent" begin
     f(u, p, t) = -u
     prob = ODEProblem(f, [1.0], (0.0, 1.0))
     sols = [solve(prob, Tsit5(); saveat = 0.5) for _ in 1:3]
-    es = EnsembleSolution(sols, 0.0, true, nothing)
-    arr = Array(es)
-    @test ndims(arr) == 3
+    arrarr = [[copy(s.u[j]) for j in eachindex(s.u)] for s in sols]
 
     _, back = Zygote.pullback(EnsembleSolution, sols, 0.0, true, nothing)
-    sim_cot, = back(ones(eltype(arr), size(arr)))
-
-    @test !(sim_cot isa EnsembleSolution)
-    @test length(sim_cot) == length(sols)
-    @test all(eltype(c) <: AbstractArray for c in sim_cot)
-end
-
-@testset "EnsembleSolution rrule cotangent shape" begin
-    f(u, p, t) = -u
-    prob = ODEProblem(f, [1.0], (0.0, 1.0))
-    sols = [solve(prob, Tsit5(); saveat = 0.5) for _ in 1:3]
-    es = EnsembleSolution(sols, 0.0, true, nothing)
-    arr = Array(es)
+    sim_cot, t_cot, c_cot, s_cot = back((u = arrarr,))
+    @test sim_cot == arrarr
+    @test t_cot === nothing && c_cot === nothing && s_cot === nothing
 
     _, pb = ChainRulesCore.rrule(EnsembleSolution, sols, 0.0, true, nothing)
-    sim_cot = pb(ones(eltype(arr), size(arr)))[2]
-    @test !(sim_cot isa EnsembleSolution)
-    @test length(sim_cot) == length(sols)
+    cot = pb((u = arrarr,))
+    @test cot[2] == arrarr
+    @test cot[1] === ChainRulesCore.NoTangent()
+    @test all(cot[i] === ChainRulesCore.NoTangent() for i in 3:5)
+
+    cot_t = pb(ChainRulesCore.Tangent{Any}(; u = arrarr))
+    @test cot_t[2] == arrarr
 end
 
 @testset "remake(::ODEProblem; u0) gradient parity" begin
