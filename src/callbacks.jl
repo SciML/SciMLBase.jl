@@ -245,11 +245,10 @@ Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
 
 - `saved_clock_partitions`: An iterable of `len` elements, where the `i`th element is an iterable of clock partition indices to save when the `i`th event triggers. MTK-only API.
 """
-struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
+struct VectorContinuousCallback{F1, F2, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     AbstractContinuousCallback
     condition::F1
     affect!::F2
-    affect_neg!::F3
     len::Int
     initialize::F4
     finalize::F5
@@ -266,7 +265,7 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     maybe_discontinuity::Bool
     initialize_save_discretes::Bool
     function VectorContinuousCallback(
-            condition::F1, affect!::F2, affect_neg!::F3, len::Int,
+            condition::F1, affect!::F2, len::Int,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R,
             abstol::T, reltol::T2, repeat_nudge::T3,
@@ -275,13 +274,13 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
             maybe_discontinuity::Bool = true,
             initialize_save_discretes = true
         ) where {
-            F1, F2, F3, F4, F5, T, T2,
+            F1, F2, F4, F5, T, T2,
             T3, T4, I, R, SCP,
         }
         _condition = prepare_function(condition)
-        return new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP}(
+        return new{typeof(_condition), F2, F4, F5, T, T2, T3, T4, I, R, SCP}(
             _condition,
-            affect!, affect_neg!, len,
+            affect!, len,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
@@ -308,7 +307,7 @@ function VectorContinuousCallback(
         initialize_save_discretes = true
     )
     return VectorContinuousCallback(
-        condition, affect!, affect!, len, initialize, finalize,
+        condition, affect!, len, initialize, finalize,
         idxs,
         rootfind, interp_points,
         collect(save_positions),
