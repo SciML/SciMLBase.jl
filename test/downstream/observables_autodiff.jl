@@ -213,7 +213,7 @@ sol_dae = solve(prob_dae, Rodas5())
                 nothing
             end
             du = [du_ref for _ in sol_dae.u]
-            @test _unwrap_grad(gs).u ≈ du broken=true
+            @test _unwrap_grad(gs).u ≈ du broken = true
         end
     end
 
