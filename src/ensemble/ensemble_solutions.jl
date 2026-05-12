@@ -226,7 +226,7 @@ end
         sim::AbstractEnsembleSolution;
         zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
             nothing,
-        trajectories = eachindex(sim)
+        trajectories = eachindex(sim.u)
     )
     for i in trajectories
         size(sim.u[i].u, 1) == 0 && continue
