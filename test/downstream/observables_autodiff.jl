@@ -188,32 +188,30 @@ prob_dae = ODEProblem(
 sol_dae = solve(prob_dae, Rodas5())
 
 @testset "DAE Observable function AD" begin
-    # s_dae (= u_dae^2) is an observed function of the compiled state.
-    # Differentiating sum(sol[s_dae]) wrt sol exercises the AD-through-observed codepath.
-    #
-    # Analytical value
-    du_ref = [1.0, 2.0]
+    # `@mtkcompile` substitutes the algebraic constraint
+    # `0 ~ v_dae^2 - b_dae*s_dae` into the s_dae observable instead of using
+    # the surface definition `s_dae ~ 2u_dae + v_dae`. With b_dae = 0.5 the
+    # emitted observed function is `s_dae(u, p, t) = v^2 / b = 2v^2`, where
+    # the state ordering is `[v_dae, u_dae]`. Both expressions agree on the
+    # DAE manifold but their gradients in the embedding state space do not:
+    # ∂(2v^2)/∂u_state = [4v, 0] (Mooncake and ForwardDiff both give this),
+    # whereas the literal `2u + v` derivative would be [1, 2]. Assert
+    # against the actually-emitted observable.
+    du = [[4 * sol_dae.u[k][1], 0.0] for k in eachindex(sol_dae.u)]
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             gs = DifferentiationInterface.gradient(
                 sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
             )
-            du = [du_ref for _ in sol_dae.u]
             @test gs.u ≈ du
         end
     end
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            gs = try
-                DifferentiationInterface.gradient(
-                    sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
-                )
-            catch e
-                @test_broken false
-                nothing
-            end
-            du = [du_ref for _ in sol_dae.u]
-            @test _unwrap_grad(gs).u ≈ du broken = true
+            gs = DifferentiationInterface.gradient(
+                sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
+            )
+            @test _unwrap_grad(gs).u ≈ du
         end
     end
 
@@ -283,16 +281,9 @@ end
     # `getindex` primitive and returns a gradient of the expected length.
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            gs = try
-                DifferentiationInterface.gradient(loss_dae, backend, tunables_dae)
-            catch e
-                @test_broken false
-                missing
-            end
-            if gs !== missing
-                @test !isnothing(gs)
-                @test length(gs) == length(tunables_dae)
-            end
+            gs = DifferentiationInterface.gradient(loss_dae, backend, tunables_dae)
+            @test !isnothing(gs)
+            @test length(gs) == length(tunables_dae)
         end
     end
 end
@@ -324,13 +315,8 @@ end
 
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            grad = try
-                DifferentiationInterface.gradient(lv_logp, backend, θ0)
-            catch e
-                @test_broken false
-                nothing
-            end
-            @test grad ≈ grad_fd rtol = 1.0e-4 broken = true
+            grad = DifferentiationInterface.gradient(lv_logp, backend, θ0)
+            @test grad ≈ grad_fd rtol = 1.0e-4
         end
     end
     for backend in ZYGOTE_BACKENDS
