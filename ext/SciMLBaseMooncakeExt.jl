@@ -9,7 +9,8 @@ import SymbolicIndexingInterface as SII
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
     @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
     NoPullback, NoFData, NoRData, NoTangent, fdata, zero_tangent,
-    primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!
+    primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!,
+    lazy_zero_rdata, instantiate
 
 # OverrideInitData and ODENLStepData are solver/initialization infrastructure
 # embedded in ODEFunction type parameters. They are not differentiable, but their
@@ -28,18 +29,29 @@ Mooncake.tangent_type(::Type{<:SciMLBase.ODENLStepData}) = Mooncake.NoTangent
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any}
 @zero_adjoint MinimalCtx Tuple{typeof(SciMLBase.isinplace), Any, Any, Any, Any}
 
-@is_primitive MinimalCtx Tuple{
-    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ChainRulesOriginator,
-}
-
+# `set_mooncakeoriginator_if_mooncake` is the runtime "am I being differentiated
+# by Mooncake?" indicator: under non-Mooncake AD it's the identity, under
+# Mooncake the `@mooncake_overlay` rewrites the forward call to return
+# `MooncakeOriginator()` so downstream sensealg dispatch can branch.
+#
+# A previous explicit `rrule!!` returned `zero_fcodual(MooncakeOriginator())`,
+# which changed the runtime CoDual's value type. Mooncake's compiled pullback
+# for `DiffEqBase.var"##solve#28"` pre-allocates a `Mooncake.Stack` whose slot
+# for the `originator` kwarg's CoDual is typed at the *input* type
+# (`ChainRulesOriginator`); pushing the post-conversion `CoDual{MooncakeOriginator}`
+# tripped `typeassert` inside Mooncake's reverse-pass machinery (errors B & C
+# at `test/downstream/observables_autodiff.jl` lines 275 and 309).
+#
+# Treat the function as a zero-adjoint primitive instead. The `@mooncake_overlay`
+# above still drives the forward return value (so downstream code sees
+# `MooncakeOriginator()` as intended); `@zero_adjoint` tells Mooncake there is
+# no gradient contribution and avoids allocating a stack slot for the changed
+# return type, keeping the kwarg's pre-allocated stack typing consistent.
 @mooncake_overlay SciMLBase.set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = SciMLBase.MooncakeOriginator()
 
-function rrule!!(
-        f::CoDual{typeof(SciMLBase.set_mooncakeoriginator_if_mooncake)},
-        X::CoDual{SciMLBase.ChainRulesOriginator}
-    )
-    return zero_fcodual(SciMLBase.MooncakeOriginator()), NoPullback(f, X)
-end
+@zero_adjoint MinimalCtx Tuple{
+    typeof(SciMLBase.set_mooncakeoriginator_if_mooncake), SciMLBase.ADOriginator,
+}
 
 # ============================================================================
 # tmap and responsible_map rules for Ensemble AD
@@ -392,10 +404,19 @@ function rrule!!(
     # (e.g. `sum`) mutate this in-place to accumulate the output gradient.
     y_fdata = zero(y)
     sol_fdata = sol.dx
+    # ODESolution is an immutable struct so its rdata is a structured
+    # `RData{NamedTuple}` (one entry per field, including the post-#1339
+    # `resid`, `original`, `saved_subsystem`). Mooncake's pullback stack
+    # `increment!!`s the existing rdata with whatever we return; returning
+    # plain `NoRData()` here triggers
+    # `MethodError: no method matching increment!!(::Mooncake.RData{...}, ::Mooncake.NoRData)`
+    # (Error A in observables_autodiff DAE Observable function AD test).
+    # Hand back a zero-initialized structured RData via `lazy_zero_rdata`.
+    lzr_sol = lazy_zero_rdata(VA)
 
     function _scatter_pullback(::NoRData)
         _scatter_symbol_timeseries!(sol_fdata, VA, s, y_fdata)
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return CoDual(y, y_fdata), _scatter_pullback
@@ -416,20 +437,64 @@ function rrule!!(
     VA = sol.x
     ip = i.x
     y = VA[ip]
-    y_fdata = zero(y)
     sol_fdata = sol.dx
 
     inds = Tuple(CartesianIndices(size(VA))[ip])
     front_inds = Base.front(inds)
     step_idx = last(inds)
+    # See note in the symbolic getindex rrule above: `sol`'s rdata slot must
+    # be a structured RData so Mooncake's `increment!!` works. Required for
+    # Error C (integer time-step indexing under AD, issue #1325 testset on
+    # Julia 1.10 LTS Downstream).
+    lzr_sol = lazy_zero_rdata(VA)
 
-    function _scalar_pullback(::NoRData)
+    # `y` is a scalar (`Float64`) under linear integer indexing. Scalar
+    # outputs use rdata, not fdata: their CoDual must be
+    # `CoDual{Float64, NoFData}` (via `zero_fcodual`) and the pullback
+    # signature receives the scalar cotangent `dy` (an rdata) directly.
+    # Returning `CoDual(y, zero(y))` produces `CoDual{Float64, Float64}`,
+    # which trips Mooncake's `typeassert`.
+    function _scalar_pullback(dy)
         u_dest = sol_fdata.data.u[step_idx]
-        u_dest[front_inds...] += y_fdata
-        return (NoRData(), NoRData(), NoRData())
+        u_dest[front_inds...] += dy
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
-    return CoDual(y, y_fdata), _scalar_pullback
+    return zero_fcodual(y), _scalar_pullback
+end
+
+# CartesianIndex linear indexing: `eachindex(::AbstractVectorOfArray)` returns
+# `CartesianIndices` under RAT v4 (since the supertype is `AbstractArray`),
+# so user code like `for i in eachindex(predicted); ... predicted[i] ... end`
+# dispatches `getindex(::ODESolution, ::CartesianIndex{2})`. `CartesianIndex`
+# is not `<:Integer`, so without this method dispatch falls through to the
+# `sym::CoDual` rrule above, which treats the scalar `y::Float64` result as
+# an array — producing `CoDual{Float64, Float64}` and tripping Mooncake's
+# `typeassert` (`expected CoDual{Float64, NoFData}`, error C in
+# `test/downstream/observables_autodiff.jl:309` "Integer time-step indexing
+# under AD" testset under AutoMooncake).
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractTimeseriesSolution},
+        ci::CoDual{<:CartesianIndex},
+    )
+    VA = sol.x
+    cip = ci.x
+    y = VA[cip]
+    sol_fdata = sol.dx
+
+    inds = Tuple(cip)
+    front_inds = Base.front(inds)
+    step_idx = last(inds)
+    lzr_sol = lazy_zero_rdata(VA)
+
+    function _ci_pullback(dy)
+        u_dest = sol_fdata.data.u[step_idx]
+        u_dest[front_inds...] += dy
+        return (NoRData(), instantiate(lzr_sol), NoRData())
+    end
+
+    return zero_fcodual(y), _ci_pullback
 end
 
 # Vector of symbols: `sol[[sym1, sym2, ...]]` returns a `Vector{Vector{T}}`
@@ -449,6 +514,8 @@ function rrule!!(
     # Preallocate per-element zero fdata matching the primal shape.
     y_fdata = [zero(yi) for yi in y]
     sol_fdata = sol.dx
+    # See note in the symbolic getindex rrule above.
+    lzr_sol = lazy_zero_rdata(VA)
 
     function _scatter_pullback_vec(::NoRData)
         nsyms = length(ss)
@@ -459,7 +526,7 @@ function rrule!!(
             dy_j = [y_fdata[k][j] for k in 1:nt]
             _scatter_symbol_timeseries!(sol_fdata, VA, s, dy_j)
         end
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return CoDual(y, y_fdata), _scatter_pullback_vec
@@ -476,6 +543,8 @@ function rrule!!(
     jp = j.x
     y = VA[s, jp]
     sol_fdata = sol.dx
+    # See note in the symbolic getindex rrule above.
+    lzr_sol = lazy_zero_rdata(VA)
 
     # Scalar output: gradient comes via dy (rdata).
     function _scatter_pullback_indexed(dy)
@@ -485,7 +554,7 @@ function rrule!!(
         else
             _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
         end
-        return (NoRData(), NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData(), NoRData())
     end
 
     return zero_fcodual(y), _scatter_pullback_indexed
@@ -570,6 +639,13 @@ function rrule!!(
     s = sym.x
     y = NS[s]
     sol_fdata = sol.dx
+    # `AbstractNonlinearSolution` is also an immutable struct in the
+    # SciMLBase v3 hierarchy, so its rdata is a structured `RData`. Return
+    # an instantiated zero rdata for the same reason as the timeseries
+    # rrules above (avoids the `increment!!(::RData, ::NoRData)` MethodError
+    # if the nonlinear-sol path becomes reachable from a Mooncake pullback
+    # stack that already has a structured rdata for `sol`).
+    lzr_sol = lazy_zero_rdata(NS)
 
     # Scalar nonlinear solutions return a scalar `y` for a scalar symbol;
     # the gradient comes back via rdata (`dy`) since scalars use rdata.
@@ -589,7 +665,7 @@ function rrule!!(
             # Observable: differentiate via the inner observed function.
             _observable_pullback_no_t!(sol_fdata, NS, s, dy)
         end
-        return (NoRData(), NoRData(), NoRData())
+        return (NoRData(), instantiate(lzr_sol), NoRData())
     end
 
     return zero_fcodual(y), _scatter_pullback_ns
