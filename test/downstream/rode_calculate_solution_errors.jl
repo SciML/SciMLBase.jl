@@ -10,9 +10,9 @@ additive_analytic(u0, p, t, W) = @. u0 / sqrt(1 + t) + p[2] * (t + p[1] * W) / s
 ff_additive = SDEFunction(f_additive, σ_additive, analytic = additive_analytic)
 p = (0.1, 0.05)
 
-@testset "Scalar RODESolution calculate_solution_errors! with NoiseGrid (N=0)" begin
-    # NoiseGrid built from a Vector{Float64} has N=0 — this is the path that
-    # used to hit `ntuple(Val(-1))`.
+@testset "Scalar RODESolution calculate_solution_errors! with scalar NoiseGrid" begin
+    # Exercises the `sol.W.u[i]` branch of calculate_solution_errors! on a
+    # scalar-valued NoiseGrid (the formerly-broken `ntuple(Val(-1))` path).
     dt = 1.0e-2
     n = round(Int, 1 / dt)
     Random.seed!(12345)
@@ -21,7 +21,7 @@ p = (0.1, 0.05)
     ts = collect(0:dt:(1 + dt))
 
     Wgrid = NoiseGrid(ts, Wvals, Zvals)
-    @test ndims(Wgrid) == 0  # scalar-valued NoiseGrid carries N=0
+    @test ndims(Wgrid) == 1
 
     prob = SDEProblem(ff_additive, σ_additive, 1.0, (0.0, 1.0), p; noise = Wgrid)
 
@@ -47,10 +47,9 @@ p = (0.1, 0.05)
     @test isfinite(sol.errors[:L2])
 end
 
-@testset "Scalar RODESolution calculate_solution_errors! with default NoiseProcess (N=1)" begin
-    # The default WienerProcess-based path lands in the same `else` branch
-    # of calculate_solution_errors! but with N=1. Ensure the fix doesn't
-    # regress it.
+@testset "Scalar RODESolution calculate_solution_errors! with default NoiseProcess" begin
+    # The default WienerProcess-based path lands in the `AbstractDiffEqArray{T,N,nothing}`
+    # branch of calculate_solution_errors!. Ensure the fix doesn't regress it.
     prob = SDEProblem(ff_additive, σ_additive, 1.0, (0.0, 1.0), p)
     sol = solve(prob, SRA(), dt = 0.01, adaptive = false)
     @test SciMLBase.successful_retcode(sol)
