@@ -595,14 +595,14 @@ end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{Nothing})
     return nothing
 end
-function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
+function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{T}) where {T}
     init = state_values(first(prob.probs))
     if ArrayInterface.ismutable(init)
         init = similar(init, 0)
     else
         init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
     end
-    return mapreduce(state_values, vcat, prob.probs; init)
+    return mapreduce(state_values, vcat, prob.probs; init)::T
 end
 
 function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, idx)
