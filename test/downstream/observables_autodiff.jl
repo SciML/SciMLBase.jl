@@ -288,6 +288,56 @@ end
     end
 end
 
+@testset "NonlinearSolution scalar getindex under AD (SciMLSensitivity#1446)" begin
+    using SteadyStateDiffEq
+    using OrdinaryDiffEqRosenbrock: Rodas5
+
+    # `save_idxs = i::Integer` makes `solve` return a NonlinearSolution{T,0,T,...}
+    # whose `u::Float64` is a scalar (vs `save_idxs = i:i` which keeps a 1-d
+    # Vector{T}). Indexing the scalar solution as `sol[1]` returns that scalar.
+    # Before the dedicated `Integer` rrule on `AbstractNonlinearSolution`, the
+    # generic symbolic-indexing rrule silently dropped the cotangent because
+    # `sol.u`'s fdata for a scalar field is `NoFData`, not a `Vector{<:Real}`.
+    function f_iip!(du, u, p, t)
+        du[1] = p[1] + p[2] * u[1]
+        du[2] = p[3] * u[1] + p[4] * u[2]
+        return nothing
+    end
+    u0_ss = zeros(2)
+    p_ss = [2.0, -2.0, 1.0, -4.0]
+    prob_ss = SteadyStateProblem(f_iip!, u0_ss, p_ss)
+
+    # Reference gradient: the same loss computed via a path that does not
+    # touch the buggy dispatch (full solve + index into the resulting array).
+    ref_loss = θ -> sum(
+        Array(
+            solve(
+                prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ,
+                sensealg = SteadyStateAdjoint(),
+            )
+        )[1]
+    )
+    grad_ref = DifferentiationInterface.gradient(ref_loss, AutoForwardDiff(), p_ss)
+
+    # Scalar `save_idxs` + `[1]` — this is the dispatch that used to return zero.
+    scalar_loss_ssa = θ -> solve(
+        prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ,
+        save_idxs = 1, sensealg = SteadyStateAdjoint(),
+    )[1]
+    scalar_loss_default = θ -> solve(
+        prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ, save_idxs = 1,
+    )[1]
+
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            grad_ssa = DifferentiationInterface.gradient(scalar_loss_ssa, backend, p_ss)
+            @test grad_ssa ≈ grad_ref rtol = 1.0e-6
+            grad_def = DifferentiationInterface.gradient(scalar_loss_default, backend, p_ss)
+            @test grad_def ≈ grad_ref rtol = 1.0e-6
+        end
+    end
+end
+
 @testset "Integer time-step indexing under AD (issue #1325)" begin
     function lotka_volterra!(du, u, p, t)
         x, y = u

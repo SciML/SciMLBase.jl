@@ -587,6 +587,19 @@ end
 # inner numeric function, which it handles in seconds.
 
 @is_primitive MinimalCtx Tuple{typeof(getindex), AbstractNonlinearSolution, Any}
+# Integer indexing on a NonlinearSolution returns `NS.u[i]`. For ordinary
+# vector-`u` solutions this is the i-th state. For 0-d / scalar-`u` solutions
+# (produced e.g. by `solve(prob; save_idxs = i::Integer)`, which yields a
+# `NonlinearSolution{T,0,T,...}` whose `u::T` is a scalar), `NS[i]` just
+# returns that scalar. Both cases need a dedicated, more-specific
+# `Integer`-tagged primitive so they bypass the symbolic-indexing rrule
+# below, which only writes the gradient into the `u` fdata when that fdata
+# is an `AbstractArray` and otherwise silently drops the cotangent
+# (SciMLSensitivity.jl#1446: `save_idxs = 1` returning a zero gradient
+# under Mooncake).
+@is_primitive MinimalCtx Tuple{
+    typeof(getindex), AbstractNonlinearSolution, Integer,
+}
 
 function _run_observable_pullback_no_t(getter, s, u, p, dy)
     # Resolve the inner observed function from the cache outside Mooncake's
@@ -669,6 +682,56 @@ function rrule!!(
     end
 
     return zero_fcodual(y), _scatter_pullback_ns
+end
+
+# Dedicated `Integer` rrule for `getindex(::AbstractNonlinearSolution, ::Int)`.
+# Two cases:
+#   (1) `NS.u` is an `AbstractArray` (the usual `NonlinearSolution{T,N>0,...}`):
+#       scatter the scalar cotangent `dy` into `sol_fdata.data.u[i]`.
+#   (2) `NS.u` is itself scalar (`NonlinearSolution{T,0,T,...}` from
+#       `save_idxs = i::Integer`): the `u` field has no fdata
+#       (`fdata_type(Float64) = NoFData`), so its gradient must travel back
+#       through the rdata channel. Build a structured `RData` with `u = dy`
+#       and return it in the pullback tuple.
+# Without this method the more-general `(AbstractNonlinearSolution, Any)`
+# primitive above catches integer indices, takes the `i !== nothing` branch
+# unconditionally, and only writes through fdata; the scalar-u case
+# silently drops the gradient (SciMLSensitivity.jl#1446).
+function rrule!!(
+        ::CoDual{typeof(getindex)},
+        sol::CoDual{<:AbstractNonlinearSolution},
+        i::CoDual{<:Integer},
+    )
+    NS = sol.x
+    ip = i.x
+    y = NS[ip]
+    sol_fdata = sol.dx
+    u_dest = sol_fdata isa NoFData ? nothing : sol_fdata.data.u
+    lzr_sol = lazy_zero_rdata(NS)
+
+    function _ns_int_pullback(dy)
+        if u_dest isa AbstractArray
+            u_dest[ip] += dy
+            return (NoRData(), instantiate(lzr_sol), NoRData())
+        else
+            # Scalar-u case: route the cotangent through rdata on the `u`
+            # field. `instantiate(lzr_sol)` returns a zero `RData` whose
+            # `data` is a NamedTuple of per-field rdata; replace the `u`
+            # entry with `dy` (the scalar cotangent) and reconstruct.
+            zr = instantiate(lzr_sol)
+            if zr isa Mooncake.RData && hasproperty(zr.data, :u)
+                new_data = merge(zr.data, (; u = dy))
+                return (NoRData(), typeof(zr)(new_data), NoRData())
+            else
+                # Unexpected rdata shape — return zero to stay sound rather
+                # than guess at the layout. This branch is not expected to
+                # be reached for the standard NonlinearSolution layout.
+                return (NoRData(), zr, NoRData())
+            end
+        end
+    end
+
+    return zero_fcodual(y), _ns_int_pullback
 end
 
 # NOTE: The ChainRules extension also defines rrules for constructors
