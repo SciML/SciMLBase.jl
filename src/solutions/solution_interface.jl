@@ -12,6 +12,7 @@ Base.getindex(A::AbstractTimeseriesSolution, I::AbstractArray{Int}) = solution_s
 Base.setindex!(A::AbstractNoTimeSolution, v, i::Int) = (A.u[i] = v)
 Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u[I] = v)
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
+Base.:*(A::AbstractMatrix, sol::AbstractNoTimeSolution) = A * sol.u
 
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
     if hasfield(typeof(A), :retcode)
