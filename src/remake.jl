@@ -335,6 +335,18 @@ function remake(
         lazy_initialization = nothing,
         _kwargs...
     )
+    return _remake_ode_inner(
+        prob, f, u0, tspan, p, kwargs,
+        interpret_symbolicmap, build_initializeprob, use_defaults,
+        lazy_initialization, values(_kwargs)
+    )
+end
+
+function _remake_ode_inner(
+        prob::ODEProblem, f, u0, tspan, p, kwargs,
+        interpret_symbolicmap, build_initializeprob, use_defaults,
+        lazy_initialization, _kwargs
+    )
     if tspan === missing
         tspan = prob.tspan
     end
@@ -382,9 +394,11 @@ function remake(
         ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -600,9 +614,11 @@ function remake(
         SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -667,9 +683,11 @@ function remake(
         )
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -764,9 +782,11 @@ function remake(
         )
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -826,9 +846,11 @@ function remake(
         DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, kwargs...)
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -953,9 +975,11 @@ function remake(
         )
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -1000,9 +1024,11 @@ function remake(
         SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; kwargs...)
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end
@@ -1048,9 +1074,11 @@ function remake(
         )
     end
 
-    u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
-    @reset prob.u0 = u0
-    @reset prob.p = p
+    if initialization_data !== nothing
+        u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
+        @reset prob.u0 = u0
+        @reset prob.p = p
+    end
 
     return prob
 end

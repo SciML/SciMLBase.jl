@@ -1,11 +1,61 @@
 module SciMLBaseChainRulesCoreExt
 
 using SciMLBase
-using SciMLBase: getobserved
+using SciMLBase: getobserved, ODEProblem, _remake_ode_inner
 import ChainRulesCore
-import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
+import ChainRulesCore: NoTangent, ZeroTangent, AbstractZero, Tangent,
+    @non_differentiable, zero_tangent, rrule_via_ad, backing
 using SymbolicIndexingInterface
 using RecursiveArrayTools: AbstractVectorOfArray
+
+@inline function _remake_ode_inner_split_cotangent(Δ, f, u0, tspan, p)
+    Δ_nt = if Δ isa Tangent
+        b = backing(Δ)
+        b isa NamedTuple ? b :
+            (b isa Tuple && length(b) == 1 && b[1] isa NamedTuple ? b[1] : NamedTuple())
+    elseif Δ isa NamedTuple
+        Δ
+    else
+        NamedTuple()
+    end
+    get_cot(field::Symbol) = (Δ_nt isa NamedTuple && haskey(Δ_nt, field)) ?
+        Δ_nt[field] : nothing
+    f_cot = (f === missing) ? NoTangent() : get_cot(:f)
+    u0_cot = (u0 === missing) ? NoTangent() : get_cot(:u0)
+    tspan_cot = (tspan === missing) ? NoTangent() : get_cot(:tspan)
+    p_cot = (p === missing) ? NoTangent() : get_cot(:p)
+    prob_cot = (
+        f = (f === missing) ? get_cot(:f) : nothing,
+        u0 = (u0 === missing) ? get_cot(:u0) : nothing,
+        tspan = (tspan === missing) ? get_cot(:tspan) : nothing,
+        p = (p === missing) ? get_cot(:p) : nothing,
+        kwargs = nothing,
+        problem_type = nothing,
+    )
+    return prob_cot, f_cot, u0_cot, tspan_cot, p_cot
+end
+
+function ChainRulesCore.rrule(
+        ::typeof(_remake_ode_inner),
+        prob::ODEProblem, f, u0, tspan, p, kwargs,
+        interpret_symbolicmap, build_initializeprob, use_defaults,
+        lazy_initialization, _kwargs
+    )
+    new_prob = _remake_ode_inner(
+        prob, f, u0, tspan, p, kwargs,
+        interpret_symbolicmap, build_initializeprob, use_defaults,
+        lazy_initialization, _kwargs
+    )
+    function _remake_ode_inner_pullback(Δ)
+        prob_cot, f_cot, u0_cot, tspan_cot, p_cot = _remake_ode_inner_split_cotangent(
+            Δ, f, u0, tspan, p
+        )
+        return (NoTangent(), prob_cot, f_cot, u0_cot, tspan_cot, p_cot,
+            NoTangent(), NoTangent(), NoTangent(), NoTangent(), NoTangent(),
+            NoTangent())
+    end
+    return new_prob, _remake_ode_inner_pullback
+end
 
 @non_differentiable SciMLBase.checkkwargs(kwargshandle)
 
@@ -163,50 +213,15 @@ function ChainRulesCore.rrule(
         RODESolutionAdjoint
 end
 
-# EnsembleSolution rrule with full support for various gradient types
-# Matches the Zygote extension implementation for consistency
 function ChainRulesCore.rrule(
         ::Type{EnsembleSolution}, sim, time, converged, stats = nothing
     )
     out = EnsembleSolution(sim, time, converged, stats)
-    function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
-        arrarr = [
-            [
-                    p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
-                    for j in 1:size(p̄)[end - 1]
-                ] for i in 1:size(p̄)[end]
-        ]
-        return (
-            NoTangent(),
-            EnsembleSolution(arrarr, 0.0, true, stats),
-            NoTangent(),
-            NoTangent(),
-            NoTangent(),
-        )
-    end
-    function EnsembleSolution_adjoint(p̄::AbstractArray{<:AbstractArray, 1})
-        return (
-            NoTangent(),
-            EnsembleSolution(p̄, 0.0, true, stats),
-            NoTangent(),
-            NoTangent(),
-            NoTangent(),
-        )
-    end
-    function EnsembleSolution_adjoint(p̄::AbstractVectorOfArray)
-        return (
-            NoTangent(),
-            EnsembleSolution(p̄, 0.0, true, stats),
-            NoTangent(),
-            NoTangent(),
-            NoTangent(),
-        )
-    end
-    function EnsembleSolution_adjoint(p̄::EnsembleSolution)
-        return (NoTangent(), p̄, NoTangent(), NoTangent(), NoTangent())
-    end
     function EnsembleSolution_adjoint(p̄::NamedTuple)
         return (NoTangent(), p̄.u, NoTangent(), NoTangent(), NoTangent())
+    end
+    function EnsembleSolution_adjoint(p̄::Tangent)
+        return (NoTangent(), backing(p̄).u, NoTangent(), NoTangent(), NoTangent())
     end
     return out, EnsembleSolution_adjoint
 end
