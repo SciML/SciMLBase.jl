@@ -3,8 +3,9 @@ module SciMLBaseStaticArraysExt
 using SciMLBase: AbstractNoTimeSolution
 using StaticArrays: StaticMatrix
 
-# Disambiguate against StaticArrays' `*(::StaticMatrix, ::AbstractVector)` and
-# SciMLBase's `*(::AbstractMatrix, ::AbstractNoTimeSolution)`.
-Base.:*(A::StaticMatrix, sol::AbstractNoTimeSolution{<:Any, 1}) = A * sol.u
+# Disambiguate `*(::StaticMatrix, ::AbstractVecOrMat)` against SciMLBase's
+# `*(::AbstractMatrix, ::AbstractNoTimeSolution)`. Forward to `A * sol.u` so the
+# StaticArrays fast path is preserved.
+Base.:*(A::StaticMatrix, sol::AbstractNoTimeSolution) = A * sol.u
 
 end
