@@ -95,7 +95,7 @@ const allowedkeywords = (
     # Parameter estimation with BVP
     :tune_parameters,
     # Optimizer kwargs passed via BVP solvers
-    :optimize_kwargs
+    :optimize_kwargs,
 )
 
 
