@@ -1,6 +1,6 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "3.15.0"
+version = "3.15.1"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
 
 [deps]
@@ -51,6 +51,7 @@ PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
 ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
@@ -69,6 +70,7 @@ SciMLBasePyCallExt = "PyCall"
 SciMLBasePythonCallExt = "PythonCall"
 SciMLBaseRCallExt = "RCall"
 SciMLBaseReverseDiffExt = "ReverseDiff"
+SciMLBaseStaticArraysExt = "StaticArrays"
 SciMLBaseTrackerExt = "Tracker"
 SciMLBaseZygoteExt = ["Zygote", "ChainRulesCore"]
 

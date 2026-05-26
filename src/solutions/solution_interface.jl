@@ -14,6 +14,41 @@ Base.setindex!(A::AbstractNoTimeSolution, v, I::Vararg{Int, N}) where {N} = (A.u
 Base.size(A::AbstractNoTimeSolution) = size(A.u)
 Base.:*(A::AbstractMatrix, sol::AbstractNoTimeSolution) = A * sol.u
 
+# Disambiguators for `*(A, sol::AbstractNoTimeSolution)` against LinearAlgebra's
+# structured-matrix and covector methods. Each forwards to `A * sol.u` so the
+# specialized fast path in LinearAlgebra is preserved.
+Base.:*(A::LinearAlgebra.Diagonal, sol::AbstractNoTimeSolution) = A * sol.u
+Base.:*(A::LinearAlgebra.AbstractTriangular, sol::AbstractNoTimeSolution) = A * sol.u
+
+# Covector A (Adjoint/Transpose of a vector) acting on a matrix-shape sol.
+Base.:*(
+    A::LinearAlgebra.Adjoint{<:Any, <:AbstractVector},
+    sol::AbstractNoTimeSolution{<:Any, 2}
+) = A * sol.u
+Base.:*(
+    A::LinearAlgebra.Transpose{<:Any, <:AbstractVector},
+    sol::AbstractNoTimeSolution{<:Any, 2}
+) = A * sol.u
+
+# Covector A acting on a vector-shape sol (dot product). One Union method handles
+# the general T case; tighter Number/Real variants disambiguate the LinearAlgebra
+# specializations for those element types.
+Base.:*(
+    A::Union{
+        LinearAlgebra.Adjoint{<:Any, <:AbstractVector},
+        LinearAlgebra.Transpose{<:Any, <:AbstractVector},
+    },
+    sol::AbstractNoTimeSolution{<:Any, 1}
+) = A * sol.u
+Base.:*(
+    A::LinearAlgebra.Adjoint{<:Number, <:AbstractVector},
+    sol::AbstractNoTimeSolution{<:Number, 1}
+) = A * sol.u
+Base.:*(
+    A::LinearAlgebra.Transpose{T, <:AbstractVector},
+    sol::AbstractNoTimeSolution{T, 1}
+) where {T <: Real} = A * sol.u
+
 function Base.show(io::IO, m::MIME"text/plain", A::AbstractNoTimeSolution)
     if hasfield(typeof(A), :retcode)
         println(io, string("retcode: ", A.retcode))

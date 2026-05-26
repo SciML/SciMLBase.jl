@@ -1,8 +1,38 @@
 using Test, SciMLBase
+using LinearAlgebra
+using StaticArrays
 
 @testset "getindex" begin
     u = rand(1)
     @test SciMLBase.build_linear_solution(nothing, u, zeros(1), nothing)[] == u[]
+end
+
+@testset "A * sol for AbstractNoTimeSolution" begin
+    u = [1.0, -1.0]
+    sol = SciMLBase.build_linear_solution(nothing, u, zero(u), nothing)
+
+    # Plain matrix * LinearSolution: forwards to A * sol.u
+    A = [1.0 2.0; 3.0 4.0]
+    @test A * sol == A * u
+    @test norm(A * sol .- A * u) < 1.0e-12
+
+    # Each disambiguator: result must match A * sol.u and not throw ambiguity.
+    @test Diagonal([2.0, 3.0]) * sol == Diagonal([2.0, 3.0]) * u
+    @test LowerTriangular([1.0 0.0; 2.0 3.0]) * sol ==
+        LowerTriangular([1.0 0.0; 2.0 3.0]) * u
+    @test UpperTriangular([1.0 2.0; 0.0 3.0]) * sol ==
+        UpperTriangular([1.0 2.0; 0.0 3.0]) * u
+    v = [0.5, 0.25]
+    @test v' * sol == v' * u
+    @test transpose(v) * sol == transpose(v) * u
+
+    # StaticMatrix * LinearSolution must not be ambiguous (regression: LinearSolve.jl
+    # static_arrays test was triggering MethodError between StaticArrays' and SciMLBase's
+    # *(::AbstractMatrix, ::AbstractNoTimeSolution)).
+    SA = @SMatrix [1.0 2.0; 3.0 4.0]
+    su = @SVector [1.0, -1.0]
+    ssol = SciMLBase.build_linear_solution(nothing, su, zero(su), nothing)
+    @test SA * ssol == SA * su
 end
 
 @testset "plot ODE solution" begin
