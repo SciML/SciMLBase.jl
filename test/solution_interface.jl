@@ -1,8 +1,27 @@
 using Test, SciMLBase
+using LinearAlgebra: norm
+using StaticArrays
 
 @testset "getindex" begin
     u = rand(1)
     @test SciMLBase.build_linear_solution(nothing, u, zeros(1), nothing)[] == u[]
+end
+
+@testset "A * sol for AbstractNoTimeSolution" begin
+    # Matrix * LinearSolution: forwards to A * sol.u
+    A = [1.0 2.0; 3.0 4.0]
+    u = [1.0, -1.0]
+    sol = SciMLBase.build_linear_solution(nothing, u, zero(u), nothing)
+    @test A * sol == A * u
+    @test norm(A * sol .- A * u) < 1e-12
+
+    # StaticMatrix * LinearSolution must not be ambiguous (regression: LinearSolve.jl
+    # static_arrays test was triggering MethodError between StaticArrays' and SciMLBase's
+    # *(::AbstractMatrix, ::AbstractNoTimeSolution)).
+    SA = @SMatrix [1.0 2.0; 3.0 4.0]
+    su = @SVector [1.0, -1.0]
+    ssol = SciMLBase.build_linear_solution(nothing, su, zero(su), nothing)
+    @test SA * ssol == SA * su
 end
 
 @testset "plot ODE solution" begin
