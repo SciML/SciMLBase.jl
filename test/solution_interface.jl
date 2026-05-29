@@ -183,3 +183,37 @@ end
     # must produce a fully concrete ODESolution type.
     @inferred bvde_like(odesol, nlsol)
 end
+
+# Mock cache that retains the original problem (mirrors OptimizationBase's
+# OptimizationCache.prob field). Defined at top level so it can be used below.
+struct ProbRetainingCache{P} <: SciMLBase.AbstractOptimizationCache
+    prob::P
+end
+
+@testset "OptimizationSolution: sol.prob / get_prob (issue #1191)" begin
+    prob = SciMLBase.OptimizationProblem(
+        SciMLBase.OptimizationFunction((x, p) -> sum(x), SciMLBase.NoAD()),
+        [1.0, 2.0]
+    )
+    cache = ProbRetainingCache(prob)
+    sol = SciMLBase.build_solution(
+        cache, nothing, [1.0, 2.0], 0.0; retcode = SciMLBase.ReturnCode.Success
+    )
+
+    @test SciMLBase.has_prob(sol)
+    @test SciMLBase.get_prob(sol) === prob
+    @test sol.prob === prob
+    @test sol.prob !== sol.cache
+
+    # A cache that does not retain the problem must error clearly, not silently
+    # hand back the cache.
+    nocache = SciMLBase.DefaultOptimizationCache(
+        SciMLBase.OptimizationFunction((x, p) -> sum(x), SciMLBase.NoAD()), nothing
+    )
+    nosol = SciMLBase.build_solution(
+        nocache, nothing, [1.0, 2.0], 0.0; retcode = SciMLBase.ReturnCode.Success
+    )
+    @test !SciMLBase.has_prob(nosol)
+    @test_throws ArgumentError SciMLBase.get_prob(nosol)
+    @test_throws ArgumentError nosol.prob
+end

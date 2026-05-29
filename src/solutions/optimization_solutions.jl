@@ -65,6 +65,12 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 
   - `cache::AbstractOptimizationCache`: the optimization cache that was solved.
 
+## Accessing the original problem
+
+  - `sol.prob` (equivalently `SciMLBase.get_prob(sol)`) returns the original
+    `OptimizationProblem` the solution was produced from, when the cache retains
+    it. Use `SciMLBase.has_prob(sol)` to check availability.
+
 ## Interface
 
 `OptimizationSolution` is a `SciMLBase.AbstractNoTimeSolution`. For more information on the SciML
@@ -191,6 +197,31 @@ has_observed(sol::OptimizationSolution) = get_observed(sol) !== nothing
 has_syms(sol::OptimizationSolution) = !isempty(variable_symbols(sol.cache.f))
 has_paramsyms(sol::OptimizationSolution) = !isempty(parameter_symbols(sol.cache.f))
 
+has_prob(sol::OptimizationSolution) = hasfield(typeof(getfield(sol, :cache)), :prob)
+
+"""
+    get_prob(sol::OptimizationSolution)
+
+Return the original `OptimizationProblem` that `sol` was solved from, as retained
+by the optimization cache (`sol.cache.prob`). This is the untouched problem the
+user constructed, so its objective, constraints, parameters, and bounds are the
+originals rather than the instantiated, `p`-baked versions held in `sol.cache.f`.
+
+Throws an `ArgumentError` if the solution's cache does not store the original
+problem (`has_prob(sol) == false`), as is the case for caches such as
+`DefaultOptimizationCache` that do not retain it.
+"""
+function get_prob(sol::OptimizationSolution)
+    cache = getfield(sol, :cache)
+    has_prob(sol) && return getfield(cache, :prob)
+    throw(
+        ArgumentError(
+            "The optimization cache of type `$(nameof(typeof(cache)))` does not store the " *
+                "original `OptimizationProblem`, so it cannot be recovered from the solution."
+        )
+    )
+end
+
 function Base.show(io::IO, A::AbstractOptimizationSolution)
     println(io, string("retcode: ", A.retcode))
     print(io, "u: ")
@@ -211,6 +242,8 @@ Base.@propagate_inbounds function Base.getproperty(
     )
     if s === :ps
         return ParameterIndexingProxy(x)
+    elseif s === :prob
+        return get_prob(x)
     end
     return getfield(x, s)
 end
