@@ -15,7 +15,6 @@ on:
 # making resolution impossible. See https://github.com/SciML/SciMLBase.jl/issues/1232
 jobs:
   test:
-    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -33,4 +32,4 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
-          ALLOW_RERESOLVE: false
+          allow_reresolve: true
