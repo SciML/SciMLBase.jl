@@ -115,7 +115,7 @@ themselves, for an example of how this can be confusing to a user see
 <https://discourse.julialang.org/t/typeerror-in-julia-turing-when-sampling-for-a-forced-differential-equation/82937>
 """
 @generated function anyeltypedual(x, ::Type{Val{counter}}) where {counter}
-    x = x.name === Core.Compiler.typename(Type) ? x.parameters[1] : x
+    x = Base.isType(x) ? x.parameters[1] : x
     return if isdualtype(x)
         :($x)
     elseif fieldnames(x) === ()
