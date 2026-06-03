@@ -87,7 +87,7 @@ Contains a single callback whose `condition` is a continuous function. The callb
     ignored.
   - `finalize`: This is a function `(c,u,t,integrator)` which can be used to finalize
     the state of the callback `c`. It can modify the argument `c` and the return is ignored.
-  - `abstol=10eps()`: Tolerance for repeted event prevention. If the callback was just triggered
+  - `abstol=10eps()`: Tolerance for repeated event prevention. If the callback was just triggered
     and the new starting condition is less than the tolerance from its value at the root,
     then the next testing point will be nudged to avoid repeats. If the callback does not
     mutate the integrator in a way that affect the condition, this can be safely set to `0.0`.
