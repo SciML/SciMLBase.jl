@@ -13,7 +13,7 @@ in the `stats` field of the `OptimizationResult`.
   - `hevals`: number of hessian evaluations
 
 Default values for all the field are set to 0 and hence even when
-you might expect non-zero values due to unavilability of the information
+you might expect non-zero values due to unavailability of the information
 from the solver it would be 0.
 """
 struct OptimizationStats

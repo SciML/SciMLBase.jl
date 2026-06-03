@@ -24,7 +24,7 @@ $(TYPEDEF)
 
 Uses `pmap` internally. It will use as many processors as you
 have Julia processes. To add more processes, use `addprocs(n)`. These processes
-can be placed onto multiple different machines in order to paralleize across
+can be placed onto multiple different machines in order to parallelize across
 an entire cluster via passwordless SSH. See Julia's
 documentation for more details.
 

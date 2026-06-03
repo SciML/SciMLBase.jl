@@ -10,26 +10,16 @@ on:
       - master
     paths-ignore:
       - 'docs/**'
-# Temporarily disabled: DifferentiationInterface 0.6-0.7 requires ADTypes >= ~1.6,
-# but julia-downgrade-compat pins ADTypes to 1.0.0 (minimum of compat "1"),
-# making resolution impossible. See https://github.com/SciML/SciMLBase.jl/issues/1232
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        downgrade_mode: ['alldeps']
-        julia-version: ['1.10']
-    steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: ${{ matrix.julia-version }}
-      - uses: julia-actions/julia-downgrade-compat@v2
-#        if: ${{ matrix.version == '1.6' }}
-        with:
-          skip: Pkg,TOML,DifferentiationInterface
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
-        with:
-          allow_reresolve: true
+  downgrade:
+    name: "Downgrade"
+    uses: "SciML/.github/.github/workflows/downgrade.yml@v1"
+    with:
+      julia-version: "1.10"
+      # DifferentiationInterface is skipped: DI 0.6-0.7 requires ADTypes >= ~1.6,
+      # but julia-downgrade-compat would pin ADTypes to 1.0.0 (minimum of compat "1"),
+      # making resolution impossible. See https://github.com/SciML/SciMLBase.jl/issues/1232
+      skip: "Pkg,TOML,DifferentiationInterface"
+      allow-reresolve: true
+    secrets: "inherit"
