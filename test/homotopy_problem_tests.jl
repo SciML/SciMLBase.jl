@@ -74,3 +74,19 @@ end
     @test rp2.homotopy_parameter == 1
     @test rp2.u0 == u0                        # unchanged
 end
+
+@testset "HomotopyProblem @reset to a raw f exercises constructorof else-branch" begin
+    # f_ode_oop is a plain (non-AbstractNonlinearFunction) 3-arg function.
+    # isinplace(f, 4) treats 3-arg as out-of-place, 4-arg as in-place.
+    # Passing it through @reset forces the else-branch of constructorof.
+    f_ode_oop(u, p, t) = [u[1] - p[1] * p[2]]
+    prob = HomotopyProblem(f_oop, u0, p; homotopy_parameter = 2)
+    # @reset prob.f to a RAW function (not an AbstractNonlinearFunction) so the
+    # `else` branch of constructorof (isinplace(f, 4)) runs and re-wraps it.
+    newprob = @reset prob.f = f_ode_oop
+    @test newprob isa HomotopyProblem
+    @test newprob.f isa SciMLBase.NonlinearFunction       # raw f got re-wrapped
+    @test SciMLBase.isinplace(newprob) == false           # 3-arg oop ⇒ not in-place
+    @test newprob.homotopy_parameter == 2                 # preserved
+    @test newprob.λspan == (0.0, 1.0)                     # preserved
+end
