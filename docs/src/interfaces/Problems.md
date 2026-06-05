@@ -197,3 +197,9 @@ SciMLBase.AbstractSDDEProblem
 SciMLBase.AbstractConstantLagSDDEProblem
 SciMLBase.AbstractPDEProblem
 ```
+
+## Concrete Nonlinear Problems
+
+```@docs
+SciMLBase.HomotopyProblem
+```
