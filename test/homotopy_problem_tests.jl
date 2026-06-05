@@ -36,3 +36,14 @@ f_iip(du, u, p) = (du[1] = u[1] - p[1] * p[2]; nothing)
     prob2 = SciMLBase.HomotopyProblem(nf, u0, p; homotopy_parameter = 2, λspan = (0.0, 2.0))
     @test prob2.λspan == (0.0, 2.0)
 end
+
+using Accessors: @reset
+
+@testset "HomotopyProblem ConstructionBase / @reset preserves type" begin
+    prob = SciMLBase.HomotopyProblem(f_oop, u0, p; homotopy_parameter = 2)
+    newprob = @reset prob.u0 = u0 .+ 1
+    @test typeof(newprob) == typeof(prob)
+    @test newprob.u0 == u0 .+ 1
+    @test newprob.homotopy_parameter == 2
+    @test newprob.λspan == (0.0, 1.0)
+end

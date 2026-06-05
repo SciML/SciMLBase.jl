@@ -795,3 +795,15 @@ end
 function HomotopyProblem(f, u0, p = NullParameters(); kwargs...)
     return HomotopyProblem(NonlinearFunction(f), u0, p; kwargs...)
 end
+
+function ConstructionBase.constructorof(::Type{P}) where {P <: HomotopyProblem}
+    return function ctor(f, u0, p, homotopy_parameter, λspan, kw)
+        if f isa AbstractNonlinearFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return HomotopyProblem{iip}(
+            f, u0, p; homotopy_parameter = homotopy_parameter, λspan = λspan, kw...)
+    end
+end
