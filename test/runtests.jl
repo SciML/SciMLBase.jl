@@ -60,6 +60,9 @@ end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+        @time @safetestset "HomotopyProblem tests" begin
+            include("homotopy_problem_tests.jl")
+        end
         @time @safetestset "Serialization tests" begin
             include("serialization_tests.jl")
         end
