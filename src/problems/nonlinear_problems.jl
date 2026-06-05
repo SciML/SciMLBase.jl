@@ -722,3 +722,68 @@ function Base.convert(
         prob.f, prob.u0, prob.p, prob.problem_type; prob.kwargs...
     )
 end
+
+@doc doc"""
+
+Defines a one-parameter homotopy nonlinear problem.
+
+## Mathematical Specification of a Homotopy Problem
+
+To define a Homotopy Problem, you give the residual function ``H``
+
+```math
+0 = H(u, p, \lambda)
+```
+
+where ``\lambda \in \texttt{λspan}`` is the continuation parameter embedded inside `p`.
+The solver sweeps ``\lambda`` from `λspan[1]` to `λspan[2]`, warm-starting each step
+from the previous solution, performing natural-parameter continuation.
+
+## Problem Type
+
+### Constructors
+
+```julia
+HomotopyProblem(f::NonlinearFunction, u0, p = NullParameters(); homotopy_parameter, λspan = (0.0, 1.0), kwargs...)
+HomotopyProblem{isinplace}(f, u0, p = NullParameters(); homotopy_parameter, λspan = (0.0, 1.0), kwargs...)
+```
+
+`isinplace` optionally sets whether the function is in-place or not. This is
+determined automatically, but not inferred.
+
+### Fields
+
+* `f`: The residual `H` as a `NonlinearFunction`.
+* `u0`: The initial guess.
+* `p`: The parameters; one entry, located by `homotopy_parameter`, is ``\lambda``.
+* `homotopy_parameter`: locator (symbol or index) of ``\lambda`` within `p`.
+* `λspan`: the `(start, stop)` continuation interval; the target system is at `stop`.
+* `kwargs`: The keyword arguments passed on to the solvers.
+"""
+mutable struct HomotopyProblem{uType, isinplace, P, F, K, Λ, S} <:
+               AbstractNonlinearProblem{uType, isinplace}
+    f::F
+    u0::uType
+    p::P
+    homotopy_parameter::Λ
+    λspan::S
+    kwargs::K
+
+    @add_kwonly function HomotopyProblem{iip}(
+            f::AbstractNonlinearFunction{iip}, u0, p = NullParameters();
+            homotopy_parameter = nothing, λspan = (0.0, 1.0), kwargs...) where {iip}
+        if haskey(kwargs, :p)
+            error("`p` specified as a keyword argument `p = $(kwargs[:p])` to " *
+                  "`HomotopyProblem`. This is not supported. Pass `p` as the third " *
+                  "positional argument instead.")
+        end
+        warn_paramtype(p)
+        new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs),
+            typeof(homotopy_parameter), typeof(λspan)}(
+            f, u0, p, homotopy_parameter, λspan, kwargs)
+    end
+
+    function HomotopyProblem{iip}(f, u0, p = NullParameters(); kwargs...) where {iip}
+        return HomotopyProblem{iip}(NonlinearFunction{iip}(f), u0, p; kwargs...)
+    end
+end
