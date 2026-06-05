@@ -494,3 +494,27 @@ end
     sol = DiffEqArray(vals, ts)
     @test SciMLBase.anyeltypedual(sol, Val{0}) == Any
 end
+
+@testset "`remake` preserves `lb`/`ub` on bounded nonlinear problems" begin
+    nlf(u, p) = u .^ 2 .- p
+    for P in (NonlinearProblem, NonlinearLeastSquaresProblem)
+        prob = P(nlf, [1.0, 1.0], [2.0, 3.0]; lb = [0.0, 0.0], ub = [5.0, 5.0])
+        @test prob.lb == [0.0, 0.0]
+        @test prob.ub == [5.0, 5.0]
+
+        # `remake` with no bounds override keeps the existing bounds
+        prob2 = remake(prob; u0 = [2.0, 2.0])
+        @test prob2.lb == [0.0, 0.0]
+        @test prob2.ub == [5.0, 5.0]
+
+        # explicit bounds override
+        prob3 = remake(prob; lb = [-1.0, -1.0], ub = [1.0, 1.0])
+        @test prob3.lb == [-1.0, -1.0]
+        @test prob3.ub == [1.0, 1.0]
+
+        # bounds can be cleared
+        prob4 = remake(prob; lb = nothing, ub = nothing)
+        @test prob4.lb === nothing
+        @test prob4.ub === nothing
+    end
+end

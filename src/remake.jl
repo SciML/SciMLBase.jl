@@ -910,6 +910,8 @@ function remake(
         u0 = missing,
         p = missing,
         problem_type = missing,
+        lb = missing,
+        ub = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -939,17 +941,23 @@ function remake(
     if problem_type === missing
         problem_type = prob.problem_type
     end
+    if lb === missing
+        lb = prob.lb
+    end
+    if ub === missing
+        ub = prob.ub
+    end
 
     prob = if kwargs === missing
         NonlinearProblem{isinplace(prob)}(
             f = f, u0 = newu0, p = newp,
-            problem_type = problem_type; prob.kwargs...,
+            problem_type = problem_type, lb = lb, ub = ub; prob.kwargs...,
             _kwargs...
         )
     else
         NonlinearProblem{isinplace(prob)}(
             f = f, u0 = newu0, p = newp,
-            problem_type = problem_type; kwargs...
+            problem_type = problem_type, lb = lb, ub = ub; kwargs...
         )
     end
 
@@ -1015,6 +1023,7 @@ Remake the given `NonlinearLeastSquaresProblem`.
 """
 function remake(
         prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
+        lb = missing, ub = missing,
         interpret_symbolicmap = true, use_defaults = false, kwargs = missing,
         lazy_initialization = nothing, build_initializeprob = Val{true}, _kwargs...
     )
@@ -1037,14 +1046,21 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
+    if lb === missing
+        lb = prob.lb
+    end
+    if ub === missing
+        ub = prob.ub
+    end
+
     prob = if kwargs === missing
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, prob.kwargs...,
+            f, u0 = newu0, p = newp, lb = lb, ub = ub, prob.kwargs...,
             _kwargs...
         )
     else
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, kwargs...
+            f, u0 = newu0, p = newp, lb = lb, ub = ub, kwargs...
         )
     end
 
