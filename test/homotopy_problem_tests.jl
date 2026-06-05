@@ -18,3 +18,21 @@ p = [2.0, 1.0]          # p[2] is λ
     @test prob.λspan == (0.0, 1.0)
     @test SciMLBase.isinplace(prob) == false
 end
+
+f_iip(du, u, p) = (du[1] = u[1] - p[1] * p[2]; nothing)
+
+@testset "HomotopyProblem outer constructors (raw function, oop + iip autodetect)" begin
+    # raw out-of-place function: isinplace must autodetect false
+    prob_oop = SciMLBase.HomotopyProblem(f_oop, u0, p; homotopy_parameter = 2)
+    @test SciMLBase.isinplace(prob_oop) == false
+    @test prob_oop.f isa SciMLBase.NonlinearFunction
+
+    # raw in-place function: isinplace must autodetect true
+    prob_iip = SciMLBase.HomotopyProblem(f_iip, u0, p; homotopy_parameter = 2)
+    @test SciMLBase.isinplace(prob_iip) == true
+
+    # explicit AbstractNonlinearFunction, no {iip} given
+    nf = NonlinearFunction{false}(f_oop)
+    prob2 = SciMLBase.HomotopyProblem(nf, u0, p; homotopy_parameter = 2, λspan = (0.0, 2.0))
+    @test prob2.λspan == (0.0, 2.0)
+end

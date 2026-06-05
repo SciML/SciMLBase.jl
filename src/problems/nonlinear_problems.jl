@@ -787,3 +787,11 @@ mutable struct HomotopyProblem{uType, isinplace, P, F, K, Λ, S} <:
         return HomotopyProblem{iip}(NonlinearFunction{iip}(f), u0, p; kwargs...)
     end
 end
+
+function HomotopyProblem(f::AbstractNonlinearFunction, u0, p = NullParameters(); kwargs...)
+    return HomotopyProblem{isinplace(f)}(f, u0, p; kwargs...)
+end
+
+function HomotopyProblem(f, u0, p = NullParameters(); kwargs...)
+    return HomotopyProblem(NonlinearFunction(f), u0, p; kwargs...)
+end
