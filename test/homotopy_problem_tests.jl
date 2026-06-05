@@ -58,3 +58,19 @@ import SymbolicIndexingInterface as SII
     @test SII.parameter_values(prob) == p
     @test SII.state_values(prob) == u0
 end
+
+@testset "HomotopyProblem remake" begin
+    prob = HomotopyProblem(f_oop, u0, p; homotopy_parameter = 2)
+    rp = SciMLBase.remake(prob; u0 = [5.0], p = [3.0, 0.5])
+    @test rp isa HomotopyProblem
+    @test rp.u0 == [5.0]
+    @test rp.p == [3.0, 0.5]
+    @test rp.homotopy_parameter == 2          # preserved
+    @test rp.λspan == (0.0, 1.0)              # preserved
+    @test SciMLBase.isinplace(rp) == false
+
+    rp2 = SciMLBase.remake(prob; λspan = (0.0, 2.0), homotopy_parameter = 1)
+    @test rp2.λspan == (0.0, 2.0)
+    @test rp2.homotopy_parameter == 1
+    @test rp2.u0 == u0                        # unchanged
+end
