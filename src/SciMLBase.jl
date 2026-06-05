@@ -1002,7 +1002,7 @@ export LinearProblem, LinearSolution, IntervalNonlinearProblem,
     OptimizationProblem, OptimizationSolution
 
 export NonlinearProblem, NonlinearSolution,
-    SCCNonlinearProblem, NonlinearLeastSquaresProblem
+    SCCNonlinearProblem, NonlinearLeastSquaresProblem, HomotopyProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
 export SteadyStateProblem, SteadyStateSolution

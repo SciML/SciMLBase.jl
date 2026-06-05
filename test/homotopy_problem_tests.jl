@@ -47,3 +47,14 @@ using Accessors: @reset
     @test newprob.homotopy_parameter == 2
     @test newprob.λspan == (0.0, 1.0)
 end
+
+import SymbolicIndexingInterface as SII
+
+@testset "HomotopyProblem export + inherited SII traits" begin
+    @test isdefined(SciMLBase, :HomotopyProblem)
+    @test :HomotopyProblem in names(SciMLBase)
+
+    prob = HomotopyProblem(f_oop, u0, p; homotopy_parameter = 2)   # bare name now works
+    @test SII.parameter_values(prob) == p
+    @test SII.state_values(prob) == u0
+end
