@@ -20,5 +20,4 @@ jobs:
       # DifferentiationInterface is skipped: DI 0.6-0.7 requires ADTypes >= ~1.6,
       # but julia-downgrade-compat would pin ADTypes to 1.0.0 (minimum of compat "1"),
       skip: "Pkg,TOML,DifferentiationInterface"
-      allow-reresolve: false
     secrets: "inherit"
