@@ -1,0 +1,22 @@
+[Core]
+versions = ["lts", "1", "pre"]
+num_threads = 11
+
+[Downstream]
+versions = ["lts", "1", "pre"]
+num_threads = 11
+continue_on_error = true
+
+[SymbolicIndexingInterface]
+versions = ["lts", "1", "pre"]
+num_threads = 11
+continue_on_error = true
+
+[QA]
+versions = ["lts", "1"]
+num_threads = 11
+
+[Python]
+versions = ["lts", "1", "pre"]
+num_threads = 11
+continue_on_error = true
