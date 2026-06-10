@@ -480,6 +480,7 @@ end
 
 __getindex(x, i) = x[i]
 __getindex(x::AbstractVectorOfArray, i) = x.u[i]
+__getindex(x::AbstractEnsembleSolution, i) = __getindex(x.u, i)
 
 function responsible_map(f, II...)
     batch_data = Vector{
