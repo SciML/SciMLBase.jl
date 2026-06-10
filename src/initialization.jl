@@ -50,6 +50,7 @@ struct OverrideInitData{
             Union{
             SCCNonlinearProblem, ImmutableNonlinearProblem,
             NonlinearProblem, NonlinearLeastSquaresProblem,
+            HomotopyProblem,
         }
         return new{I, J, K, L, M, O}(
             initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop
