@@ -726,61 +726,73 @@ end
 @doc doc"""
 
 Defines a one-parameter homotopy nonlinear problem.
+This is the embedding / natural-parameter continuation problem type. It is unrelated to
+`HomotopyNonlinearFunction`, which supports polynomial homotopy continuation
+(e.g. via HomotopyContinuation.jl).
 
 ## Mathematical Specification of a Homotopy Problem
 
-To define a Homotopy Problem, you give the residual function ``H``
+To define a Homotopy Problem, you give the residual function ``f``
 
 ```math
-0 = H(u, p, \lambda)
+0 = f(u, p, \lambda)
 ```
 
-where ``\lambda \in \texttt{λspan}`` is the continuation parameter embedded inside `p`.
-The solver sweeps ``\lambda`` from `λspan[1]` to `λspan[2]`, warm-starting each step
-from the previous solution, performing natural-parameter continuation.
+where ``\lambda \in \texttt{λspan}`` is the scalar continuation parameter, passed to
+`f` as a separate trailing argument after the parameters `p`. A continuation solver
+sweeps ``\lambda`` from `λspan[1]` to `λspan[2]`, warm-starting each step from the
+previous solution; the target system is the one at `λspan[2]`.
 
 ## Problem Type
 
 ### Constructors
 
 ```julia
-HomotopyProblem(f::NonlinearFunction, u0, p = NullParameters(); homotopy_parameter, λspan = (0.0, 1.0), kwargs...)
-HomotopyProblem{isinplace}(f, u0, p = NullParameters(); homotopy_parameter, λspan = (0.0, 1.0), kwargs...)
+HomotopyProblem(f::NonlinearFunction, u0, p = NullParameters(); λspan = (0.0, 1.0), kwargs...)
+HomotopyProblem{isinplace}(f, u0, p = NullParameters(); λspan = (0.0, 1.0), kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not. This is
-determined automatically, but not inferred.
+determined automatically, but not inferred. The residual follows the time-dependent
+argument convention with ``\lambda`` in place of `t`:
+
+- out-of-place: `f(u, p, λ)`
+- in-place: `f(du, u, p, λ)`
 
 ### Fields
 
-* `f`: The residual `H` as a `NonlinearFunction`.
-* `u0`: The initial guess.
-* `p`: The parameters; one entry, located by `homotopy_parameter`, is ``\lambda``.
-* `homotopy_parameter`: locator (symbol or index) of ``\lambda`` within `p`.
+* `f`: The residual function, called as `f(u, p, λ)` (or `f(du, u, p, λ)` in-place).
+  Optional derivative fields of the wrapped `NonlinearFunction` (e.g. `jac`), if
+  provided, must follow the same λ-extended argument convention; continuation solvers
+  do not consume them yet.
+* `u0`: The initial guess (a solution of the simplified system at `λspan[1]`).
+* `p`: The parameters, passed through to `f` unchanged; ``\lambda`` is not part of `p`.
 * `λspan`: the `(start, stop)` continuation interval; the target system is at `stop`.
 * `kwargs`: The keyword arguments passed on to the solvers.
 """
-mutable struct HomotopyProblem{uType, isinplace, P, F, K, Λ, S} <:
-               AbstractNonlinearProblem{uType, isinplace}
+struct HomotopyProblem{uType, isinplace, P, F, K, S} <:
+    AbstractNonlinearProblem{uType, isinplace}
     f::F
     u0::uType
     p::P
-    homotopy_parameter::Λ
     λspan::S
     kwargs::K
 
     @add_kwonly function HomotopyProblem{iip}(
             f::AbstractNonlinearFunction{iip}, u0, p = NullParameters();
-            homotopy_parameter = nothing, λspan = (0.0, 1.0), kwargs...) where {iip}
+            λspan = (0.0, 1.0), kwargs...
+        ) where {iip}
         if haskey(kwargs, :p)
-            error("`p` specified as a keyword argument `p = $(kwargs[:p])` to " *
-                  "`HomotopyProblem`. This is not supported. Pass `p` as the third " *
-                  "positional argument instead.")
+            error(
+                "`p` specified as a keyword argument `p = $(kwargs[:p])` to " *
+                    "`HomotopyProblem`. This is not supported. Pass `p` as the third " *
+                    "positional argument instead."
+            )
         end
         warn_paramtype(p)
-        new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs),
-            typeof(homotopy_parameter), typeof(λspan)}(
-            f, u0, p, homotopy_parameter, λspan, kwargs)
+        new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs), typeof(λspan)}(
+            f, u0, p, λspan, kwargs
+        )
     end
 
     function HomotopyProblem{iip}(f, u0, p = NullParameters(); kwargs...) where {iip}
@@ -793,17 +805,19 @@ function HomotopyProblem(f::AbstractNonlinearFunction, u0, p = NullParameters();
 end
 
 function HomotopyProblem(f, u0, p = NullParameters(); kwargs...)
-    return HomotopyProblem(NonlinearFunction(f), u0, p; kwargs...)
+    # The residual takes λ as a trailing argument (like `t` for ODEs), so in-place
+    # detection follows the 4-argument convention: f(du, u, p, λ) is in-place.
+    iip = isinplace(f, 4)
+    return HomotopyProblem(NonlinearFunction{iip}(f), u0, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: HomotopyProblem}
-    return function ctor(f, u0, p, homotopy_parameter, λspan, kw)
+    return function ctor(f, u0, p, λspan, kw)
         if f isa AbstractNonlinearFunction
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)
         end
-        return HomotopyProblem{iip}(
-            f, u0, p; homotopy_parameter = homotopy_parameter, λspan = λspan, kw...)
+        return HomotopyProblem{iip}(f, u0, p; λspan = λspan, kw...)
     end
 end
