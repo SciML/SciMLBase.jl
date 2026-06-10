@@ -225,21 +225,24 @@ end
 # `back` explicitly while already in a reverse pass causing a nested gradient call. The mutable struct
 # causes accumulation anytime `getfield/property` is called, accumulating multiple times. This tries to treat
 # AbstractDEProblem as immutable for the purposes of reverse mode AD.
+#
+# The cotangent must be a `Tangent` (not a single-field `NamedTuple`): Zygote canonicalizes
+# `Tangent`s to full-width NamedTuples over all struct fields, whereas a partial NamedTuple
+# like `(p = dp,)` cannot be `Zygote.accum`ed with cotangents for the same problem coming
+# from other pullbacks (which are full-width), throwing
+# `ArgumentError: ... keys must be a subset of ... keys`.
 function ChainRulesCore.rrule(
         ::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
         ::typeof(Base.getproperty), x::NonlinearProblem, f::Symbol
     )
     val = getfield(x, f)
     function back(der)
-        dx = if der === nothing
-            ChainRulesCore.zero_tangent(x)
+        dx = if der === nothing || der isa ChainRulesCore.AbstractZero
+            ChainRulesCore.ZeroTangent()
         else
-            NamedTuple{(f,)}((der,))
+            ChainRulesCore.Tangent{typeof(x)}(; NamedTuple{(f,)}((der,))...)
         end
-        return (
-            ChainRulesCore.NoTangent(), ChainRulesCore.ProjectTo(x)(dx),
-            ChainRulesCore.NoTangent(),
-        )
+        return (ChainRulesCore.NoTangent(), dx, ChainRulesCore.NoTangent())
     end
     return val, back
 end
