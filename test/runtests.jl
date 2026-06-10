@@ -7,13 +7,13 @@ const is_APPVEYOR = (Sys.iswindows() && haskey(ENV, "APPVEYOR"))
 
 function activate_downstream_env()
     Pkg.activate("downstream")
-    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
+    Pkg.develop(PackageSpec(path=dirname(@__DIR__)))
     return Pkg.instantiate()
 end
 
 function activate_python_env()
     Pkg.activate("python")
-    Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
+    Pkg.develop(PackageSpec(path=dirname(@__DIR__)))
     return Pkg.instantiate()
 end
 
@@ -72,7 +72,7 @@ end
     end
 
     if !is_APPVEYOR &&
-            (GROUP == "Core" || GROUP == "All" || GROUP == "SymbolicIndexingInterface")
+       (GROUP == "Core" || GROUP == "All" || GROUP == "SymbolicIndexingInterface")
         @time @safetestset "Remake" begin
             include("remake_tests.jl")
         end
@@ -139,6 +139,9 @@ end
         end
         @time @safetestset "Scalar RODESolution calculate_solution_errors!" begin
             include("downstream/rode_calculate_solution_errors.jl")
+        end
+        @time @safetestset "Ensemble per-trajectory loss AD" begin
+            include("downstream/ensemble_lossfn.jl")
         end
     end
 
