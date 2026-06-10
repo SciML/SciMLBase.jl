@@ -668,23 +668,15 @@ function check_error(integrator::DEIntegrator)
     # SDEIntegrator.
 
     if isnan(integrator.dt)
-        if verbose isa Bool
-            @warn "NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome."
-        else
-            @SciMLMessage("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.", verbose, :dt_NaN)
-        end
+        @SciMLMessage("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.", verbose, :dt_NaN)
         return ReturnCode.DtNaN
     end
     if integrator.iter > opts.maxiters
-        if verbose isa Bool
-            @warn "Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems)."
-        else
-            @SciMLMessage(
-                "Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).",
-                verbose,
-                :max_iters
-            )
-        end
+        @SciMLMessage(
+            "Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).",
+            verbose,
+            :max_iters
+        )
         return ReturnCode.MaxIters
     end
 
@@ -704,43 +696,24 @@ function check_error(integrator::DEIntegrator)
                         true
                 )
             )
-            diagnostic = verbose !== false ? log_instability(integrator) : ""
-            EEst = isdefined(integrator, :EEst) ?
-                lazy", step error estimate = $(integrator.EEst)" : ""
-            if verbose isa Bool
-                @warn lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic"
-            else
-                @SciMLMessage(lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic", verbose, :dt_min_unstable)
-            end
+            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? log_instability(integrator) : ""
+            EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
+            @SciMLMessage(lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic", verbose, :dt_min_unstable)
             return ReturnCode.DtLessThanMin
-        elseif !step_accepted && integrator.t isa AbstractFloat &&
-                abs(integrator.dt) <= abs(eps(integrator.t))
-            diagnostic = verbose !== false ? log_instability(integrator) : ""
-            EEst = isdefined(integrator, :EEst) ?
-                lazy", step error estimate = $(integrator.EEst)" : ""
-            if verbose isa Bool
-                @warn lazy"At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or it cannot be represented in $(eltype(integrator.u)) precision).$diagnostic"
-            else
-                @SciMLMessage(lazy"At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or it cannot be represented in $(eltype(integrator.u)) precision).$diagnostic", verbose, :dt_epsilon)
-            end
+        elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
+            diagnostic = verbosity_to_bool(verbose.dt_epsilon) ? log_instability(integrator) : ""
+            EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
+            @SciMLMessage(lazy"At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or it cannot be represented in $(eltype(integrator.u)) precision).$diagnostic", verbose, :dt_epsilon)
             return ReturnCode.Unstable
         end
     end
     if step_accepted &&
             opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        if verbose isa Bool
-            @warn "Instability detected. Aborting"
-        else
-            @SciMLMessage("Instability detected. Aborting", verbose, :instability)
-        end
+        @SciMLMessage("Instability detected. Aborting", verbose, :instability)
         return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
-        if verbose isa Bool
-            @warn "Newton steps could not converge and algorithm is not adaptive. Use a lower dt."
-        else
-            @SciMLMessage("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.", verbose, :newton_convergence)
-        end
+        @SciMLMessage("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.", verbose, :newton_convergence)
         return ReturnCode.ConvergenceFailure
     end
     return ReturnCode.Success
