@@ -704,7 +704,7 @@ function check_error(integrator::DEIntegrator)
                         true
                 )
             )
-            diagnostic = log_instability(integrator)
+            diagnostic = verbose !== false ? log_instability(integrator) : ""
             EEst = isdefined(integrator, :EEst) ?
                 lazy", step error estimate = $(integrator.EEst)" : ""
             if verbose isa Bool
@@ -715,7 +715,7 @@ function check_error(integrator::DEIntegrator)
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat &&
                 abs(integrator.dt) <= abs(eps(integrator.t))
-            diagnostic = log_instability(integrator)
+            diagnostic = verbose !== false ? log_instability(integrator) : ""
             EEst = isdefined(integrator, :EEst) ?
                 lazy", step error estimate = $(integrator.EEst)" : ""
             if verbose isa Bool
