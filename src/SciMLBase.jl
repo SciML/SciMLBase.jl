@@ -45,7 +45,7 @@ import SciMLOperators:
 
 using SciMLPublic: @public
 
-using SciMLLogging: @SciMLMessage
+using SciMLLogging: @SciMLMessage, verbosity_to_bool
 
 function __solve end
 function __init end
