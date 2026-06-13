@@ -32,7 +32,7 @@ using SciMLBase, Test
             sprint(showerror, e)
         end
         @test occursin("DomainError", output)
-        @test occursin("DomainError detected in the user", output)
+        @test occursin("DomainError with -1.0", output)
     end
 
     @testset "DomainError through in-place ODEFunction triggers hint" begin
@@ -45,7 +45,7 @@ using SciMLBase, Test
             sprint(showerror, e)
         end
         @test occursin("DomainError", output)
-        @test occursin("DomainError detected in the user", output)
+        @test occursin("DomainError with -1.0", output)
     end
 
     # Non-complex DomainError should never show the hint regardless of context
