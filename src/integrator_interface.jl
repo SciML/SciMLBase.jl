@@ -630,7 +630,7 @@ function Base.summary(io::IO, I::DEIntegrator)
     return print(
         io,
         type_color, nameof(typeof(I)),
-        no_color, " with uType ", 
+        no_color, " with uType ",
         type_color, typeof(I.u),
         no_color, " and tType ",
         type_color, typeof(I.t),
