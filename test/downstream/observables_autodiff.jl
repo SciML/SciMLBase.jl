@@ -307,13 +307,23 @@ end
     p_ss = [2.0, -2.0, 1.0, -4.0]
     prob_ss = SteadyStateProblem(f_iip!, u0_ss, p_ss)
 
+    # Tight solve tolerances so every gradient below is resolved to the true
+    # analytic value rather than to the steady-state solver's default error.
+    # The loss is `u₁` at steady state, where `p₁ + p₂ u₁ = 0`, so `u₁ = -p₁/p₂`
+    # and the exact gradient is `[-1/p₂, p₁/p₂², 0, 0] = [0.5, 0.5, 0, 0]`. At the
+    # default `DynamicSS` tolerance the ForwardDiff reference is only accurate to
+    # ~1.2e-6 — larger than the `rtol = 1e-6` compared against below — so the test
+    # was brittle to AD-backend accuracy drift. `abstol = reltol = 1e-10` brings
+    # every solve to ~1e-9 of the true gradient, well inside the tolerance.
+    ss_tol = (; abstol = 1.0e-10, reltol = 1.0e-10)
+
     # Reference gradient: the same loss computed via a path that does not
     # touch the buggy dispatch (full solve + index into the resulting array).
     ref_loss = θ -> sum(
         Array(
             solve(
                 prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ,
-                sensealg = SteadyStateAdjoint(),
+                sensealg = SteadyStateAdjoint(), ss_tol...,
             )
         )[1]
     )
@@ -322,10 +332,10 @@ end
     # Scalar `save_idxs` + `[1]` — this is the dispatch that used to return zero.
     scalar_loss_ssa = θ -> solve(
         prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ,
-        save_idxs = 1, sensealg = SteadyStateAdjoint(),
+        save_idxs = 1, sensealg = SteadyStateAdjoint(), ss_tol...,
     )[1]
     scalar_loss_default = θ -> solve(
-        prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ, save_idxs = 1,
+        prob_ss, DynamicSS(Rodas5()); u0 = u0_ss, p = θ, save_idxs = 1, ss_tol...,
     )[1]
 
     for backend in MOONCAKE_BACKENDS
