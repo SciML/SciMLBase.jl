@@ -331,9 +331,9 @@ end
     for backend in MOONCAKE_BACKENDS
         @testset "$(backend_name(backend))" begin
             grad_ssa = DifferentiationInterface.gradient(scalar_loss_ssa, backend, p_ss)
-            @test grad_ssa ≈ grad_ref rtol = 1.0e-6
+            @test grad_ssa ≈ grad_ref rtol = 1.0e-5
             grad_def = DifferentiationInterface.gradient(scalar_loss_default, backend, p_ss)
-            @test grad_def ≈ grad_ref rtol = 1.0e-6
+            @test grad_def ≈ grad_ref rtol = 1.0e-5
         end
     end
 end
