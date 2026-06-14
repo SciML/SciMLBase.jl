@@ -13,6 +13,33 @@ using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_
 using RecursiveArrayTools
 import SciMLStructures
 
+# SciML problem types are mutable structs, so Zygote routes their field-access
+# cotangents through the per-`Context` mutable-struct accumulator (`grad_mut`),
+# keyed on the problem instance. That accumulator is shared across all pullback
+# invocations of one context, so when several independent pullbacks read fields
+# of the *same* problem (one per trajectory in the ensemble `tmap`/
+# `responsible_map` adjoints below) and their structural tangents are then
+# `accum`ed, each tangent carries a snapshot of the *running* accumulator and the
+# earlier trajectories' contributions are double-counted. (Zygote's Ref-identity
+# protocol that normally prevents this is broken as soon as the cotangent is
+# materialized at a ChainRules boundary, which the per-trajectory solve rrules
+# guarantee.) Treat problems as immutable for reverse-mode AD instead, mirroring
+# the `getproperty(::NonlinearProblem)` rrule in SciMLBaseChainRulesCoreExt.
+# Scoped to `AbstractDEProblem` so that `AbstractNonlinearProblem` keeps its
+# existing behavior — its nested-AD path already produces partial-`NamedTuple`
+# problem cotangents (the `getproperty` rrule in the ChainRulesCore ext), which
+# this full-`NamedTuple` pullback would collide with in `Zygote.accum`.
+@adjoint function Zygote.literal_getfield(
+        prob::SciMLBase.AbstractDEProblem, ::Val{f}
+    ) where {f}
+    val = getfield(prob, f)
+    function problem_literal_getfield_pullback(Δ)
+        Zygote.accum_param(__context__, val, Δ) === nothing && return (nothing, nothing)
+        ((; Zygote.nt_nothing(prob)..., Zygote.pair(Val(f), Δ, prob)...), nothing)
+    end
+    val, problem_literal_getfield_pullback
+end
+
 @adjoint function SciMLBase.remake(prob::ODEFunction; kw...)
     y = remake(prob; kw...)
     function odefunction_remake_back(Δ)
@@ -270,6 +297,20 @@ end
     sol.u, solu_adjoint
 end
 
+# Under RecursiveArrayTools v4, `AbstractVectorOfArray` (including
+# `EnsembleSolution` and `VectorOfArray`) is an `AbstractArray` whose iteration
+# yields scalars in column-major order. Cotangents for `tmap`/`responsible_map`
+# outputs can arrive wrapped in those containers (e.g. from the
+# `EnsembleSolution` constructor adjoint above), so they must be unwrapped to
+# the plain vector of per-element tangents before zipping them with the
+# pullbacks.
+function unwrap_map_cotangent(Δ)
+    while Δ isa RecursiveArrayTools.AbstractVectorOfArray
+        Δ = Δ.u
+    end
+    return Δ
+end
+
 function ∇tmap(cx, f, args...)
     ys_and_backs = SciMLBase.tmap((args...) -> Zygote._pullback(cx, f, args...), args...)
     return if isempty(ys_and_backs)
@@ -277,6 +318,7 @@ function ∇tmap(cx, f, args...)
     else
         ys, backs = Zygote.unzip(ys_and_backs)
         function ∇tmap_internal(Δ)
+            Δ = unwrap_map_cotangent(Δ)
             Δf_and_args_zipped = SciMLBase.tmap((f, δ) -> f(δ), backs, Δ)
             Δf_and_args = Zygote.unzip(Δf_and_args_zipped)
             Δf = reduce(Zygote.accum, Δf_and_args[1])
@@ -297,6 +339,7 @@ function ∇responsible_map(cx, f, args...)
         ys, backs = Zygote.unzip(ys_and_backs)
         ys,
             function ∇responsible_map_internal(Δ)
+                Δ = unwrap_map_cotangent(Δ)
                 # Apply pullbacks in reverse order. Needed for correctness if `f` is stateful.
                 Δf_and_args_zipped = SciMLBase.responsible_map(
                     (f, δ) -> f(δ),

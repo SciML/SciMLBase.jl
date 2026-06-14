@@ -107,6 +107,9 @@ end
         @time @safetestset "Ensemble RNG reproducibility" begin
             include("downstream/ensemble_rng.jl")
         end
+        @time @safetestset "Ensemble adjoint gradient correctness" begin
+            include("downstream/ensemble_adjoints.jl")
+        end
         @time @safetestset "Solution Indexing" begin
             include("downstream/solution_interface.jl")
         end

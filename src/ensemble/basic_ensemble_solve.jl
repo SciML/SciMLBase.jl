@@ -478,20 +478,17 @@ function solve_batch(
     return tighten_container_eltype(batch_data)
 end
 
-__getindex(x, i) = x[i]
-__getindex(x::AbstractVectorOfArray, i) = x.u[i]
-
 function responsible_map(f, II...)
     batch_data = Vector{
         Core.Compiler.return_type(
-            f, Tuple{ntuple(i -> typeof(__getindex(II[i], 1)), Val(length(II)))...}
+            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
         ),
     }(
         undef,
         length(II[1])
     )
     for i in 1:length(II[1])
-        batch_data[i] = f(ntuple(ii -> __getindex(II[ii], i), Val(length(II)))...)
+        batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
     end
     return batch_data
 end
