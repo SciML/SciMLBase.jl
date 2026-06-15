@@ -243,6 +243,7 @@ use the `@everywhere` macro. Instead, the same problem can be implemented simply
 
 ```@example ensemble1_2
 using OrdinaryDiffEq
+using SciMLBase
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 function prob_func(prob, ctx)
     remake(prob, u0 = rand() * prob.u0)
@@ -364,6 +365,7 @@ Our `prob_func` will simply randomize the initial condition:
 
 ```@example ensemble3
 using OrdinaryDiffEq
+using SciMLBase
 # Linear ODE which starts at 0.5 and solves from t=0.0 to t=1.0
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 
