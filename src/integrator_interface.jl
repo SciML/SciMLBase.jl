@@ -709,7 +709,8 @@ function check_error(integrator::DEIntegrator)
     end
     if step_accepted &&
             opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        @SciMLMessage("Instability detected. Aborting", verbose, :instability)
+        diagnostic = verbosity_to_bool(verbose.instability) ? log_instability(integrator) : ""
+        @SciMLMessage("Instability detected. Aborting.$diagnostic", verbose, :instability)
         return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
