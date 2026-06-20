@@ -75,7 +75,12 @@ sol = solve(prob, Rodas4())
             true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
             true_grad_sym[idx_sym] = 1.0
 
-            @test all(map(x -> x == true_grad_sym, gs_sym))
+            # `gs_sym` is the cotangent `ODESolution`; iterate its per-timestep
+            # state vectors (`.u`), matching the other gradient testsets below.
+            # Under RecursiveArrayTools v4 raw iteration of an `ODESolution`
+            # yields scalars (column-major over the state×time array), not the
+            # per-timestep vectors this assertion compares against.
+            @test all(map(x -> x == true_grad_sym, gs_sym.u))
         end
     end
     # Mooncake does not support SymbolicIndexingInterface AD yet
@@ -89,7 +94,7 @@ sol = solve(prob, Rodas4())
                 idx_sym = SymbolicIndexingInterface.variable_index(sys, lorenz1.x)
                 true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
                 true_grad_sym[idx_sym] = 1.0
-                all(map(x -> x == true_grad_sym, gs_sym))
+                all(map(x -> x == true_grad_sym, gs_sym.u))
             end
         end
     end
