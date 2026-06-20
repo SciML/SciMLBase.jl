@@ -112,7 +112,7 @@ end
 # 2D `AbstractArray`, so `eachindex(sol)` yields `CartesianIndex`es and
 # `sol[CartesianIndex(state, step)]` returns the corresponding scalar. Without a
 # dedicated adjoint this falls through to `getindex(VA::ODESolution, sym)`,
-# which mis-treats the `CartesianIndex` as a state index and calls
+# which wrongly treats the `CartesianIndex` as a state index and calls
 # `view(VA, ::CartesianIndex, :)` — three indices into a 2D parent — failing
 # with "number of indices (3) must match the parent dimensionality (2)". The
 # cotangent is returned as a zeroed `ODESolution` (matching the input, as the
