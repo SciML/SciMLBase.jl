@@ -108,6 +108,30 @@ end
     return y, ODESolution_scalar_pullback
 end
 
+# `sol[I::CartesianIndex]`: under RecursiveArrayTools v4 an `ODESolution` is a
+# 2D `AbstractArray`, so `eachindex(sol)` yields `CartesianIndex`es and
+# `sol[CartesianIndex(state, step)]` returns the corresponding scalar. Without a
+# dedicated adjoint this falls through to `getindex(VA::ODESolution, sym)`,
+# which wrongly treats the `CartesianIndex` as a state index and calls
+# `view(VA, ::CartesianIndex, :)` — three indices into a 2D parent — failing
+# with "number of indices (3) must match the parent dimensionality (2)". The
+# cotangent is returned as a zeroed `ODESolution` (matching the input, as the
+# `sym` adjoint below does) with the scalar `Δ` scattered into the indexed slot,
+# so it has the shape `DifferentiationInterface`/`Zygote` expect for `sol`.
+@adjoint function Base.getindex(VA::ODESolution, I::CartesianIndex)
+    inds = Tuple(I)
+    front_inds = Base.front(inds)
+    step_idx = last(inds)
+    y = VA.u[step_idx][front_inds...]
+    function ODESolution_cartesian_pullback(Δ)
+        dVA = recursivecopy(VA)
+        recursivefill!(dVA, zero(eltype(dVA)))
+        dVA.u[step_idx][front_inds...] = Δ
+        return (dVA, nothing)
+    end
+    return y, ODESolution_cartesian_pullback
+end
+
 @adjoint function Base.getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
@@ -188,6 +212,23 @@ end
         (a, nothing)
     end
     VA[sym], ODESolution_getindex_pullback
+end
+
+# `sol[syms, :]` returns the same per-timestep values of the selected states as
+# `sol[syms]` (the trailing `:` selects all timesteps), so it reuses the
+# vector-symbol adjoint above. Without this method the call has no `@adjoint`
+# and falls through to ChainRules' generic array `getindex` rule, which tries to
+# `fill!` a `Matrix{Vector{Float64}}` zero array with the scalar `false` and
+# errors with "Cannot `convert` an object of type Bool to ...".
+@adjoint function Base.getindex(
+        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}, ::Colon
+    ) where {T}
+    y, pullback = Zygote.pullback(getindex, VA, sym)
+    function ODESolution_getindex_colon_pullback(Δ)
+        dVA, dsym = pullback(Δ)
+        return (dVA, dsym, nothing)
+    end
+    return y, ODESolution_getindex_colon_pullback
 end
 
 @adjoint function Base.getindex(VA::SciMLBase.AbstractNonlinearSolution, sym)

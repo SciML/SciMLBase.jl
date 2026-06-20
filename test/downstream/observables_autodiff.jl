@@ -262,19 +262,16 @@ end
         return sum(sol[simple_dae.s_dae])
     end
 
-    # Zygote DAE adjoints currently broken. The ChainRules `_solve_adjoint`
-    # path calls `get_concrete_problem` -> `get_updated_symbolic_problem`,
-    # which evaluates the initialization SCCNonlinearProblem's observable
-    # `TimeIndependentObservedFunction` with `u = nothing`, and the generated
-    # `RuntimeGeneratedFunction` then hits
-    # `MethodError: no method matching getindex(::Nothing, ::Int64)`.
-    # See https://github.com/SciML/SciMLBase.jl/issues/1233
+    # Previously the Zygote DAE adjoint was broken (#1233): the ChainRules
+    # `_solve_adjoint` path evaluated the initialization SCCNonlinearProblem's
+    # observable with `u = nothing` and hit
+    # `MethodError: no method matching getindex(::Nothing, ::Int64)`. That path
+    # now produces a gradient of the expected shape, so this is asserted with
+    # `@test` (leaving it `@test_broken` errors with an "Unexpected Pass").
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
-            @test_broken begin
-                gs = DifferentiationInterface.gradient(loss_dae, backend, tunables_dae)
-                !isnothing(gs) && length(gs) == length(tunables_dae)
-            end
+            gs = DifferentiationInterface.gradient(loss_dae, backend, tunables_dae)
+            @test !isnothing(gs) && length(gs) == length(tunables_dae)
         end
     end
     # Mooncake handles this adjoint through its own `build_rrule` /
