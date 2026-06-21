@@ -54,8 +54,9 @@ or the steady state solution to a differential equation defined by a SteadyState
   - `left`: if the solver is bracketing method, this is the final left bracket value.
   - `right`: if the solver is bracketing method, this is the final right bracket value.
   - `stats`: statistics of the solver, such as the number of function evaluations required.
-"""
-struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
+  - `timer_outputs`: timing information collected by the solver.
+  """
+struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr, TO} <:
     AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
@@ -67,18 +68,19 @@ struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
     right::uType2
     stats::S
     trace::Tr
+    timer_outputs::TO
 end
 
-function NonlinearSolution(u, resid, prob, alg, retcode, original, left, right, stats, trace)
+function NonlinearSolution(u, resid, prob, alg, retcode, original, left, right, stats, trace, timer_outputs = nothing)
     T = eltype(eltype(u))
     N = ndims(u)
 
     return NonlinearSolution{
         T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
-        typeof(original), typeof(left), typeof(stats), typeof(trace),
+        typeof(original), typeof(left), typeof(stats), typeof(trace), typeof(timer_outputs),
     }(
         u, resid, prob, alg,
-        retcode, original, left, right, stats, trace
+        retcode, original, left, right, stats, trace, timer_outputs
     )
 end
 
