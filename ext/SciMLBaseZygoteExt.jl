@@ -190,6 +190,19 @@ end
     VA[sym], ODESolution_getindex_pullback
 end
 
+# `sol[syms, :]` returns the same value as `sol[syms]` (the trailing `:`
+# selects all timesteps, which is already the default), but the 3-arg form
+# does not hit the rule above and would otherwise fall through to ChainRules'
+# generic `∇getindex`, which cannot build a zero cotangent for the
+# `AbstractVectorOfArray`-backed solution under RecursiveArrayTools v4. Reuse
+# the 2-arg rule and pass `nothing` for the trailing-index cotangent.
+@adjoint function Base.getindex(
+        VA::ODESolution, sym::Union{Tuple, AbstractVector}, ::Colon
+    )
+    y, back = Zygote.pullback(getindex, VA, sym)
+    return y, Δ -> (back(Δ)..., nothing)
+end
+
 @adjoint function Base.getindex(VA::SciMLBase.AbstractNonlinearSolution, sym)
     function NonlinearSolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
