@@ -93,7 +93,7 @@ Note that these vectors must be sized to match the number of constraints, with o
 ## Data handling
 
 As described above the second argument of the objective definition can take a full batch or a [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader) object for mini-batching which is useful for stochastic optimization solvers. Thus the data either as an Array or a `DataLoader` object should be passed as the third argument of the `OptimizationProblem` constructor.
-For an example of how to use this data handling, see the `Sophia` example in the [Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/optimization) or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
+For an example of how to use this data handling, see the `Sophia` example in the [Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/sophia/) or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
 """
 struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     AbstractOptimizationProblem{iip}
