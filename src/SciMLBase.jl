@@ -1066,4 +1066,21 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 @public has_init, has_step, successful_retcode
 
+# Abstract interface types
+@public AbstractSciMLProblem, AbstractSciMLSolution, AbstractDEAlgorithm,
+    AbstractODEProblem, AbstractODEAlgorithm, AbstractNonlinearProblem,
+    AbstractDynamicalODEProblem, AbstractIntegralAlgorithm
+
+# Solution / problem support types
+@public NLStats, NullParameters, AutoSpecialize
+
+# Core functions
+@public build_solution, numargs
+
+# SciMLFunction derivative traits
+@public has_jac, has_jvp, has_vjp
+
+# Function-argument validation errors
+@public FunctionArgumentsError, TooFewArgumentsError, TooManyArgumentsError
+
 end
