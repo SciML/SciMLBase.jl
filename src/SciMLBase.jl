@@ -1066,10 +1066,6 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 @public has_init, has_step, successful_retcode
 
-# Public API not exported to avoid namespace clashes with downstream packages.
-# Declaring these public lets downstream packages access them as
-# `SciMLBase.name` without ExplicitImports flagging them as non-public.
-
 # Abstract interface types
 @public AbstractSciMLProblem, AbstractSciMLSolution, AbstractDEAlgorithm,
     AbstractODEProblem, AbstractODEAlgorithm, AbstractNonlinearProblem,
