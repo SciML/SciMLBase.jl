@@ -63,6 +63,16 @@ const _ei_nonpublic_explicit_imports = (
     # Base type-introspection internal (`Base.typename(T).wrapper`); no public equivalent.
     :typename,
 )
+# Names explicitly imported so they are bindings in `SciMLBase` (enabling downstream
+# `function SciMLBase.name(...)` method extension), but never called as a bare name
+# inside SciMLBase itself, so ExplicitImports would otherwise report them as stale.
+const _ei_stale_allowed = (
+    # `ConstructionBase.setproperties` is extended for the solution types and accessed
+    # as `SciMLBase.setproperties` by downstream packages (e.g. OrdinaryDiffEqNonlinearSolve
+    # defines `function SciMLBase.setproperties(::DAEResidualJacobianWrapper, ...)`), so it
+    # must be a binding in SciMLBase even though SciMLBase only ever uses the qualified form.
+    :setproperties,
+)
 const _ei_nonpublic_qualified_accesses = (
     # Base/Core internals (no public equivalents).
     Symbol("@max_methods"), Symbol("@propagate_inbounds"), Symbol("@pure"),
@@ -97,7 +107,9 @@ run_qa(
     explicit_imports = true,
     ei_kwargs = (;
         no_implicit_imports = (; allow_unanalyzable = _ei_unanalyzable),
-        no_stale_explicit_imports = (; allow_unanalyzable = _ei_unanalyzable),
+        no_stale_explicit_imports = (;
+            allow_unanalyzable = _ei_unanalyzable, ignore = _ei_stale_allowed,
+        ),
         all_explicit_imports_are_public = (; ignore = _ei_nonpublic_explicit_imports),
         all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
     ),
