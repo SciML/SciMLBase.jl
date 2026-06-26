@@ -1,6 +1,6 @@
 module SciMLBaseEnzymeExt
 
-using SciMLBase: AbstractSensitivityAlgorithm, AbstractSciMLProblem,
+using SciMLBase: AbstractSensitivityAlgorithm, AbstractDEAlgorithm, AbstractSciMLProblem,
     AbstractSciMLFunction, remake
 import CommonSolve
 import Enzyme: EnzymeRules
@@ -16,6 +16,28 @@ import Enzyme: EnzymeRules
 
 # All sensitivity algorithm types should be inactive for Enzyme differentiation
 EnzymeRules.inactive_type(::Type{<:AbstractSensitivityAlgorithm}) = true
+
+# Solver algorithms (`Tsit5`, `Rodas5P`, the `CompositeAlgorithm` behind
+# `DefaultODEAlgorithm`, …) are pure configuration: they describe HOW to solve,
+# carry no derivative-carrying data, and are never differentiated with respect
+# to. Marking the whole hierarchy inactive keeps Enzyme from ever assigning them
+# an active activity.
+#
+# This is required for correctness on Julia 1.12+, whose "inline-roots" split
+# calling convention (JuliaLang/julia#55767) lowers a mixed immutable struct
+# (one holding both GC-tracked pointers and inline bits) into two LLVM
+# arguments: an inline-bits payload and a separate roots bundle. A nested
+# polyalgorithm like `CompositeAlgorithm` is exactly such a mixed struct, so it
+# gets split, whereas a leaf algorithm like `Tsit5` does not. When the split
+# algorithm reaches the `solve_up` custom rule in `DiffEqBaseEnzymeExt` with the
+# problem marked active (e.g. an MTK problem carrying differentiable
+# `MTKParameters` under `set_runtime_activity(Reverse)`), Enzyme can mark the
+# two halves with disagreeing activities and trips the
+# `roots_activep (DFT_CONSTANT) != activep (DFT_DUP_ARG)` assertion
+# (SciMLSensitivity.jl#1499). Forcing the algorithm inactive makes both halves
+# constant, so the assertion holds. This mirrors the `inactive_type` declaration
+# NonlinearSolveBase uses for `NonlinearSolvePolyAlgorithm`.
+EnzymeRules.inactive_type(::Type{<:AbstractDEAlgorithm}) = true
 
 # Solver-configuration keyword arguments to `solve`, `init`, and `solve!` on
 # SciML problems are never derivative-carrying — they are scalar tolerances,

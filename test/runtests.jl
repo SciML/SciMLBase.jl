@@ -70,6 +70,9 @@ run_tests(;
         @time @safetestset "NonlinearProblem Zygote cotangents" begin
             include("nonlinearproblem_zygote.jl")
         end
+        @time @safetestset "Enzyme inactive solver algorithms" begin
+            include("enzyme_inactive_algorithm.jl")
+        end
         return if !is_APPVEYOR
             @time @safetestset "Remake" begin
                 include("remake_tests.jl")
