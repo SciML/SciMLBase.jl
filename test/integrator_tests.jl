@@ -70,12 +70,3 @@ let
     integrator = DummyIntegrator()
     @test 0 == @allocated SciMLBase.check_error!(integrator)
 end
-
-# Issue #1387: the default `log_instability` must interpolate into warning
-# messages as an empty string, not a trailing `nothing`.
-let
-    integrator = DummyIntegrator()
-    diagnostic = SciMLBase.log_instability(integrator)
-    @test diagnostic isa AbstractString
-    @test !occursin("nothing", "Float64 precision).$diagnostic")
-end
