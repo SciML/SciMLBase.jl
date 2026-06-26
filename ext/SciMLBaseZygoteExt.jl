@@ -79,17 +79,18 @@ end
     out, EnsembleSolution_adjoint
 end
 
-# `sol[i::Integer]`: under RecursiveArrayTools v4 `AbstractVectorOfArray`
-# subtypes `AbstractArray`, so linear integer indexing returns the i-th
-# scalar element in column-major order over the underlying state-by-time
-# layout (i.e. `VA[CartesianIndices(size(VA))[i]]`), NOT the i-th timestep
-# vector. A dedicated adjoint is still needed here to keep dispatch from
-# falling through to the broader `Base.getindex(VA::ODESolution, sym)`
-# rule below (which would misinterpret `i` as a state-variable index;
-# #1325). The pullback scatters the scalar cotangent into the matching
-# slot of `VA.u`.
-@adjoint function Base.getindex(VA::ODESolution, i::Integer)
-    inds = Tuple(CartesianIndices(size(VA))[i])
+# `sol[i::Integer]` / `sol[I::CartesianIndex]`: under RecursiveArrayTools v4
+# `AbstractVectorOfArray` subtypes `AbstractArray`, so scalar indexing returns
+# the corresponding scalar element over the underlying state-by-time layout,
+# NOT the i-th timestep vector. Linear `i` maps through
+# `CartesianIndices(size(VA))[i]`; a `CartesianIndex` already is that tuple
+# (e.g. from `eachindex(VA)`, which is `IndexCartesian`). A dedicated adjoint is
+# needed in both cases to keep dispatch from falling through to the broader
+# `Base.getindex(VA::ODESolution, sym)` rule below (which would misinterpret the
+# index as a state-variable symbol; #1325). The pullback scatters the scalar
+# cotangent into the matching slot of `VA.u`.
+@adjoint function Base.getindex(VA::ODESolution, i::Union{Integer, CartesianIndex})
+    inds = i isa CartesianIndex ? Tuple(i) : Tuple(CartesianIndices(size(VA))[i])
     front_inds = Base.front(inds)
     step_idx = last(inds)
     y = VA.u[step_idx][front_inds...]
