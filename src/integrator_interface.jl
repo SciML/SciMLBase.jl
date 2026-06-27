@@ -621,7 +621,7 @@ end
 
 has_reinit(i::DEIntegrator) = false
 
-log_instability(integrator) = nothing
+log_instability(integrator) = ""
 
 ### Display
 
