@@ -1078,7 +1078,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public build_solution, numargs
 
 # SciMLFunction derivative traits
-@public has_jac, has_jvp, has_vjp, has_tgrad
+@public has_jac, has_jvp, has_vjp, has_tgrad, has_analytic, has_reinit,
+    has_initialization_data, has_stats
 
 # Function-argument validation errors
 @public FunctionArgumentsError, TooFewArgumentsError, TooManyArgumentsError
