@@ -1083,4 +1083,35 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Function-argument validation errors
 @public FunctionArgumentsError, TooFewArgumentsError, TooManyArgumentsError
 
+# Abstract problem types
+@public AbstractDEProblem, AbstractDAEProblem, AbstractSDEProblem, AbstractDDEProblem,
+    AbstractDiscreteProblem, AbstractNoiseProblem, AbstractJumpProblem,
+    AbstractEnsembleProblem
+
+# Abstract algorithm types
+@public AbstractNonlinearAlgorithm, AbstractDAEAlgorithm, AbstractSDEAlgorithm,
+    AbstractLinearAlgorithm, AbstractRODEAlgorithm, AbstractSteadyStateAlgorithm,
+    BasicEnsembleAlgorithm
+
+# Abstract solution types
+@public AbstractNoiseProcess, AbstractEnsembleSolution, AbstractNoTimeSolution,
+    AbstractRODESolution
+
+# Abstract function types
+@public AbstractDiffEqFunction, AbstractODEFunction, AbstractSciMLFunction
+
+# Algorithm / problem traits
+@public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,
+    is_diagonal_noise, forwarddiffs_model, forwarddiffs_model_time,
+    allows_late_binding_tstops, alg_order, allowsbounds, allowsconstraints
+
+# Initialization algorithms and interface
+@public NoInit, OverrideInit, get_initial_values
+
+# Solution / integrator interface
+@public DEStats, check_error!, promote_tspan
+
+# Problem types and alias specifiers
+@public ImmutableODEProblem, NonlinearAliasSpecifier
+
 end
