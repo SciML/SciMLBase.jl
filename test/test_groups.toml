@@ -7,6 +7,15 @@ versions = ["lts", "1", "pre"]
 num_threads = 11
 continue_on_error = true
 
+# AD/gradient downstream tests are split out so they can omit the "pre" Julia
+# version: Mooncake cannot differentiate through `Dict` growth (`rehash!` ->
+# `Core.memoryrefnew(::Memory{UInt8}, ::Int, ::Bool)`) on Julia 1.13, which the
+# symbolic observable-AD path hits. See chalk-lab/Mooncake.jl#1227.
+[DownstreamAD]
+versions = ["lts", "1"]
+num_threads = 11
+continue_on_error = true
+
 [SymbolicIndexingInterface]
 versions = ["lts", "1", "pre"]
 num_threads = 11
