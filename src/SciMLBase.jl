@@ -1078,7 +1078,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public build_solution, numargs
 
 # SciMLFunction derivative traits
-@public has_jac, has_jvp, has_vjp
+@public has_jac, has_jvp, has_vjp, has_tgrad, has_analytic, has_reinit,
+    has_initialization_data, has_stats
 
 # Function-argument validation errors
 @public FunctionArgumentsError, TooFewArgumentsError, TooManyArgumentsError
@@ -1091,14 +1092,19 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Abstract algorithm types
 @public AbstractNonlinearAlgorithm, AbstractDAEAlgorithm, AbstractSDEAlgorithm,
     AbstractLinearAlgorithm, AbstractRODEAlgorithm, AbstractSteadyStateAlgorithm,
-    BasicEnsembleAlgorithm
+    BasicEnsembleAlgorithm, EnsembleAlgorithm
+
+# Abstract integrator types
+@public DEIntegrator, AbstractODEIntegrator, AbstractSDEIntegrator,
+    AbstractRODEIntegrator, AbstractDDEIntegrator, AbstractDAEIntegrator
 
 # Abstract solution types
 @public AbstractNoiseProcess, AbstractEnsembleSolution, AbstractNoTimeSolution,
     AbstractRODESolution
 
 # Abstract function types
-@public AbstractDiffEqFunction, AbstractODEFunction, AbstractSciMLFunction
+@public AbstractDiffEqFunction, AbstractODEFunction, AbstractSciMLFunction,
+    AbstractParameterizedFunction
 
 # Algorithm / problem traits
 @public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,
