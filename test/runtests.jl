@@ -101,9 +101,6 @@ run_tests(;
                 @time @safetestset "Ensemble RNG reproducibility" begin
                     include("downstream/ensemble_rng.jl")
                 end
-                @time @safetestset "Ensemble adjoint gradient correctness" begin
-                    include("downstream/ensemble_adjoints.jl")
-                end
                 @time @safetestset "Solution Indexing" begin
                     include("downstream/solution_interface.jl")
                 end
@@ -116,14 +113,8 @@ run_tests(;
                 @time @safetestset "Integer idxs" begin
                     include("downstream/integer_idxs.jl")
                 end
-                @time @safetestset "Autodiff Remake" begin
-                    include("downstream/remake_autodiff.jl")
-                end
                 @time @safetestset "Partial Functions" begin
                     include("downstream/partial_functions.jl")
-                end
-                @time @safetestset "Autodiff Observable Functions" begin
-                    include("downstream/observables_autodiff.jl")
                 end
                 @time @safetestset "ODE Solution Stripping" begin
                     include("downstream/ode_stripping.jl")
@@ -142,6 +133,20 @@ run_tests(;
                 end
                 @time @safetestset "Scalar RODESolution calculate_solution_errors!" begin
                     include("downstream/rode_calculate_solution_errors.jl")
+                end
+            end
+        end,
+        "DownstreamAD" => function ()
+            return if !is_APPVEYOR
+                activate_downstream_env()
+                @time @safetestset "Autodiff Remake" begin
+                    include("downstream/remake_autodiff.jl")
+                end
+                @time @safetestset "Autodiff Observable Functions" begin
+                    include("downstream/observables_autodiff.jl")
+                end
+                @time @safetestset "Ensemble adjoint gradient correctness" begin
+                    include("downstream/ensemble_adjoints.jl")
                 end
             end
         end,
