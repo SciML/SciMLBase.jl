@@ -4,6 +4,14 @@ enable_interpolation_sensitivitymode(interp::Nothing) = nothing
 
 # Pass through should be deprecated in the future, made for backwards compat
 enable_interpolation_sensitivitymode(interp::AbstractDiffEqInterpolation) = interp
+
+"""
+$(TYPEDEF)
+
+Marker type indicating that the standard dense interpolation has been disabled because
+the solution was produced during sensitivity analysis. When a solution carries this
+interpolation, only linear and constant interpolations of the saved values are available.
+"""
 struct SensitivityInterpolation end
 
 """
@@ -58,6 +66,14 @@ function enable_interpolation_sensitivitymode(interp::ConstantInterpolation)
     return ConstantInterpolation(interp.t, interp.u, true)
 end
 
+"""
+    interp_summary(interp)
+
+Return a short human-readable `String` describing the interpolation used by a solution,
+e.g. `"3rd order Hermite"`. Accepts an [`AbstractDiffEqInterpolation`](@ref), an
+[`AbstractSciMLSolution`](@ref) (in which case its `interp` field is summarized), or
+`nothing` (no interpolation). Used when printing solutions.
+"""
 interp_summary(::AbstractDiffEqInterpolation) = "Unknown"
 interp_summary(::HermiteInterpolation) = "3rd order Hermite"
 interp_summary(::LinearInterpolation) = "1st order linear"

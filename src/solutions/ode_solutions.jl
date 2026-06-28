@@ -588,6 +588,16 @@ function build_solution(
     end
 end
 
+"""
+    calculate_solution_errors!(sol; fill_uanalytic = true, timeseries_errors = true, dense_errors = true)
+
+Compute the error estimates of a solution against the analytical solution of its problem
+(`sol.prob.f.analytic`) and store them in `sol.errors`. With `fill_uanalytic = true`, the
+analytical solution values are first filled into `sol.u_analytic`. `timeseries_errors`
+controls computation of errors at the saved time points and `dense_errors` controls
+computation of errors using the dense interpolation. Used by solutions that have a known
+analytic solution (e.g. for convergence testing).
+"""
 function calculate_solution_errors!(
         sol::AbstractODESolution; fill_uanalytic = true,
         timeseries_errors = true, dense_errors = true
