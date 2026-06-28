@@ -588,6 +588,16 @@ function build_solution(
     end
 end
 
+"""
+    calculate_solution_errors!(sol; fill_uanalytic = true, timeseries_errors = true, dense_errors = true)
+
+Compute the error estimates of a solution against the analytical solution of its problem
+(`sol.prob.f.analytic`) and store them in `sol.errors`. With `fill_uanalytic = true`, the
+analytical solution values are first filled into `sol.u_analytic`. `timeseries_errors`
+controls computation of errors at the saved time points and `dense_errors` controls
+computation of errors using the dense interpolation. Used by solutions that have a known
+analytic solution (e.g. for convergence testing).
+"""
 function calculate_solution_errors!(
         sol::AbstractODESolution; fill_uanalytic = true,
         timeseries_errors = true, dense_errors = true
@@ -668,6 +678,13 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
     return @set sol.errors = errors
 end
 
+"""
+    solution_new_retcode(sol, retcode)
+
+Return a copy of the solution `sol` with its return code replaced by `retcode`. The
+solution is otherwise left unchanged; this is used to update the `retcode` of an existing
+solution (e.g. when an integrator finishes and the final status becomes known).
+"""
 function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
     return @set sol.retcode = retcode
 end

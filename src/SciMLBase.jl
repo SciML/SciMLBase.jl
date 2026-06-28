@@ -47,7 +47,29 @@ using SciMLPublic: @public
 
 using SciMLLogging: @SciMLMessage, verbosity_to_bool
 
+"""
+    __solve(prob, alg, args...; kwargs...)
+
+The low-level entry point that `CommonSolve.solve` forwards to after performing the
+common pre-solve handling (such as argument checking and high-level error messages).
+Solver packages add methods to `SciMLBase.__solve` dispatched on their problem and
+algorithm types; this is the documented extension hook for implementing a solver.
+Defining `__solve` rather than `solve` directly allows `SciMLBase.solve` to keep a
+common implementation across all solvers. See also [`__init`](@ref).
+"""
 function __solve end
+
+"""
+    __init(prob, alg, args...; kwargs...)
+
+The low-level entry point that `CommonSolve.init` forwards to after performing the
+common pre-init handling (such as argument checking and high-level error messages).
+Solver packages add methods to `SciMLBase.__init` dispatched on their problem and
+algorithm types, returning the iterator/integrator object used by `solve!`; this is
+the documented extension hook for implementing a solver. Defining `__init` rather than
+`init` directly allows `SciMLBase.init` to keep a common implementation across all
+solvers. See also [`__solve`](@ref).
+"""
 function __init end
 
 """
@@ -115,6 +137,14 @@ AbstractNonlinearProblem{
     uType,
     isinplace,
 } end
+"""
+$(TYPEDEF)
+
+Base for types which define steady-state problems, i.e. finding the `u` for which
+`du/dt = f(u, p, t) = 0`. This is a type alias for [`AbstractNonlinearProblem`](@ref),
+since a steady state is the solution of the nonlinear system defined by the right-hand
+side of the differential equation.
+"""
 const AbstractSteadyStateProblem{
     uType, isinplace,
 } = AbstractNonlinearProblem{
@@ -765,6 +795,15 @@ include("scimlfunctions.jl")
 include("alg_traits.jl")
 include("debug.jl")
 
+"""
+    unwrapped_f(f)
+
+Return the underlying user function with any function-wrapper layers removed. When `f`
+has been wrapped (e.g. by `FunctionWrapperSpecialize` specialization, which specializes
+`f` to a fixed `(u, p, t)` signature via a `FunctionWrappersWrapper`), this recovers the
+original unwrapped function so it can be called on other argument types. If `f` is not
+wrapped, it is returned unchanged.
+"""
 unwrapped_f(f) = f
 unwrapped_f(f::Void) = unwrapped_f(f.f)
 function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
@@ -1119,5 +1158,28 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, NonlinearAliasSpecifier
+
+# Steady-state / problem support types
+@public AbstractSteadyStateProblem, StandardODEProblem
+
+# Abstract solution / discretization types
+@public AbstractTimeseriesSolution, AbstractDiscretization
+
+# Interpolation types
+@public AbstractDiffEqInterpolation, ConstantInterpolation, LinearInterpolation,
+    HermiteInterpolation, SensitivityInterpolation
+
+# Interpolation / symbolic / solution interface
+@public interp_summary, getindepsym, getindepsym_defaultt,
+    calculate_solution_errors!, initialize_dae!
+
+# Automatic differentiation markers
+@public NoAD
+
+# Function-wrapper / solution interface helpers
+@public unwrapped_f, solution_new_retcode
+
+# Low-level solver-author extension entry points
+@public __solve, __init
 
 end
