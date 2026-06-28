@@ -156,12 +156,21 @@ function obs_grads(VA, sym, ::Nothing, Δ)
     return Zygote.nt_nothing(VA)
 end
 
+# Index the `getindex` cotangent `Δ` for the `idx`-th selected variable at
+# timestep `t_idx`. `sol[syms]` produces a per-timestep vector-of-vectors
+# cotangent indexed as `Δ[t_idx][idx]`, whereas `sol[syms, :]` produces a
+# `length(syms) × ntime` matrix cotangent indexed as `Δ[idx, t_idx]`. An
+# `AbstractVectorOfArray` cotangent (column = timestep) satisfies the matrix
+# convention, so both reverse rules share this helper.
+_getindex_cotangent(Δ::AbstractMatrix, idx, t_idx) = Δ[idx, t_idx]
+_getindex_cotangent(Δ, idx, t_idx) = Δ[t_idx][idx]
+
 function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
     Δ′ = map(enumerate(VA.u)) do (t_idx, us)
         map(enumerate(us)) do (u_idx, u)
             if u_idx in i
                 idx = findfirst(isequal(u_idx), i)
-                Δ[t_idx][idx]
+                _getindex_cotangent(Δ, idx, t_idx)
             else
                 zero(T)
             end
@@ -171,37 +180,49 @@ function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
     return Δ′
 end
 
+# Shared reverse-pass body for `sol[syms]` and `sol[syms, :]`: map the
+# selection cotangent `Δ` back onto a structural cotangent for `VA` (its `u`
+# field plus observed-variable contributions). `Δ` may be a per-timestep
+# vector-of-vectors (`sol[syms]`) or a `length(syms) × ntime` matrix
+# (`sol[syms, :]`); `not_obs_grads`/`_getindex_cotangent` handle both.
+function odesolution_getindex_cotangent(VA, sym, Δ)
+    sym = sym isa Tuple ? collect(sym) : sym
+    i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
+
+    obs_idx = findall(s -> is_observed(VA, s), sym)
+    not_obs_idx = setdiff(1:length(sym), obs_idx)
+
+    gs_obs = obs_grads(VA, sym, isempty(obs_idx) ? nothing : obs_idx, Δ)
+    gs_not_obs = not_obs_grads(VA, sym, not_obs_idx, i, Δ)
+
+    return Zygote.accum(gs_obs[1], (u = gs_not_obs,))
+end
+
 @adjoint function Base.getindex(
         VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}
     ) where {T}
     function ODESolution_getindex_pullback(Δ)
-        sym = sym isa Tuple ? collect(sym) : sym
-        i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
-
-        obs_idx = findall(s -> is_observed(VA, s), sym)
-        not_obs_idx = setdiff(1:length(sym), obs_idx)
-
-        gs_obs = obs_grads(VA, sym, isempty(obs_idx) ? nothing : obs_idx, Δ)
-        gs_not_obs = not_obs_grads(VA, sym, not_obs_idx, i, Δ)
-
-        a = Zygote.accum(gs_obs[1], (u = gs_not_obs,))
-
-        (a, nothing)
+        (odesolution_getindex_cotangent(VA, sym, Δ), nothing)
     end
     VA[sym], ODESolution_getindex_pullback
 end
 
-# `sol[syms, :]` returns the same value as `sol[syms]` (the trailing `:`
-# selects all timesteps, which is already the default), but the 3-arg form
-# does not hit the rule above and would otherwise fall through to ChainRules'
-# generic `∇getindex`, which cannot build a zero cotangent for the
-# `AbstractVectorOfArray`-backed solution under RecursiveArrayTools v4. Reuse
-# the 2-arg rule and pass `nothing` for the trailing-index cotangent.
+# `sol[syms, :]` selects the chosen variables across every timestep. The 3-arg
+# form does not hit the rule above and would otherwise fall through to
+# ChainRules' generic `∇getindex`, which cannot build a zero cotangent for the
+# `AbstractVectorOfArray`-backed solution under RecursiveArrayTools v4. Its
+# primal is the `length(syms) × ntime` matrix `VA[sym, :]` (not the 2-arg
+# `VA[sym]`, which for integer indices time-slices the solution instead). The
+# pullback is built directly rather than reused from the 2-arg rule: routing the
+# `length(syms) × ntime` cotangent through `Zygote.pullback(getindex, VA, sym)`
+# would project it onto the (differently shaped) 2-arg primal and truncate it.
 @adjoint function Base.getindex(
-        VA::ODESolution, sym::Union{Tuple, AbstractVector}, ::Colon
-    )
-    y, back = Zygote.pullback(getindex, VA, sym)
-    return y, Δ -> (back(Δ)..., nothing)
+        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}, ::Colon
+    ) where {T}
+    function ODESolution_getindex_colon_pullback(Δ)
+        (odesolution_getindex_cotangent(VA, sym, Δ), nothing, nothing)
+    end
+    VA[sym, :], ODESolution_getindex_colon_pullback
 end
 
 @adjoint function Base.getindex(VA::SciMLBase.AbstractNonlinearSolution, sym)
