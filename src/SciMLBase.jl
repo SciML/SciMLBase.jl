@@ -47,7 +47,29 @@ using SciMLPublic: @public
 
 using SciMLLogging: @SciMLMessage, verbosity_to_bool
 
+"""
+    __solve(prob, alg, args...; kwargs...)
+
+The low-level entry point that `CommonSolve.solve` forwards to after performing the
+common pre-solve handling (such as argument checking and high-level error messages).
+Solver packages add methods to `SciMLBase.__solve` dispatched on their problem and
+algorithm types; this is the documented extension hook for implementing a solver.
+Defining `__solve` rather than `solve` directly allows `SciMLBase.solve` to keep a
+common implementation across all solvers. See also [`__init`](@ref).
+"""
 function __solve end
+
+"""
+    __init(prob, alg, args...; kwargs...)
+
+The low-level entry point that `CommonSolve.init` forwards to after performing the
+common pre-init handling (such as argument checking and high-level error messages).
+Solver packages add methods to `SciMLBase.__init` dispatched on their problem and
+algorithm types, returning the iterator/integrator object used by `solve!`; this is
+the documented extension hook for implementing a solver. Defining `__init` rather than
+`init` directly allows `SciMLBase.init` to keep a common implementation across all
+solvers. See also [`__solve`](@ref).
+"""
 function __init end
 
 """
@@ -1156,5 +1178,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Function-wrapper / solution interface helpers
 @public unwrapped_f, solution_new_retcode
+
+# Low-level solver-author extension entry points
+@public __solve, __init
 
 end
