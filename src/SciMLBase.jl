@@ -115,6 +115,14 @@ AbstractNonlinearProblem{
     uType,
     isinplace,
 } end
+"""
+$(TYPEDEF)
+
+Base for types which define steady-state problems, i.e. finding the `u` for which
+`du/dt = f(u, p, t) = 0`. This is a type alias for [`AbstractNonlinearProblem`](@ref),
+since a steady state is the solution of the nonlinear system defined by the right-hand
+side of the differential equation.
+"""
 const AbstractSteadyStateProblem{
     uType, isinplace,
 } = AbstractNonlinearProblem{
@@ -1119,5 +1127,22 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, NonlinearAliasSpecifier
+
+# Steady-state / problem support types
+@public AbstractSteadyStateProblem, StandardODEProblem
+
+# Abstract solution / discretization types
+@public AbstractTimeseriesSolution, AbstractDiscretization
+
+# Interpolation types
+@public AbstractDiffEqInterpolation, ConstantInterpolation, LinearInterpolation,
+    HermiteInterpolation, SensitivityInterpolation
+
+# Interpolation / symbolic / solution interface
+@public interp_summary, getindepsym, getindepsym_defaultt,
+    calculate_solution_errors!, initialize_dae!
+
+# Automatic differentiation markers
+@public NoAD
 
 end

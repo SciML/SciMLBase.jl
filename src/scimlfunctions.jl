@@ -4520,6 +4520,14 @@ function IntervalNonlinearFunction(f; kwargs...)
 end
 IntervalNonlinearFunction(f::IntervalNonlinearFunction; kwargs...) = f
 
+"""
+$(TYPEDEF)
+
+An `ADTypes.AbstractADType` marker indicating that no automatic differentiation backend
+has been selected. It is the default `adtype` of an `OptimizationFunction` constructed
+without specifying a backend, signaling that derivatives must be supplied manually or
+chosen by the solver rather than generated via automatic differentiation.
+"""
 struct NoAD <: AbstractADType end
 
 (f::OptimizationFunction)(args...) = f.f(args...)

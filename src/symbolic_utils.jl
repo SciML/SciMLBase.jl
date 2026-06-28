@@ -18,6 +18,13 @@ function getsyms(sol::AbstractOptimizationSolution)
     return syms
 end
 
+"""
+    getindepsym(prob_or_sol_or_integrator)
+
+Return the symbolic name(s) of the independent variable(s) of a problem, solution, or
+integrator, or `nothing` if no symbolic independent variables are defined. This queries
+`SymbolicIndexingInterface.independent_variable_symbols` on the underlying function.
+"""
 function getindepsym(prob::AbstractSciMLProblem)
     syms = independent_variable_symbols(prob.f)
     if isempty(syms)
@@ -47,7 +54,13 @@ function getparamsyms(sol::AbstractOptimizationSolution)
     return psyms
 end
 
-# Only for compatibility!
+"""
+    getindepsym_defaultt(sol)
+
+Like [`getindepsym`](@ref), but falls back to the default symbol `:t` when no symbolic
+independent variable is defined. Provided for backwards compatibility with code that
+assumes a time variable is always present.
+"""
 function getindepsym_defaultt(sol)
     return something(getindepsym(sol), :t)
 end
