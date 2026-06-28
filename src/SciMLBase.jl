@@ -773,6 +773,15 @@ include("scimlfunctions.jl")
 include("alg_traits.jl")
 include("debug.jl")
 
+"""
+    unwrapped_f(f)
+
+Return the underlying user function with any function-wrapper layers removed. When `f`
+has been wrapped (e.g. by `FunctionWrapperSpecialize` specialization, which specializes
+`f` to a fixed `(u, p, t)` signature via a `FunctionWrappersWrapper`), this recovers the
+original unwrapped function so it can be called on other argument types. If `f` is not
+wrapped, it is returned unchanged.
+"""
 unwrapped_f(f) = f
 unwrapped_f(f::Void) = unwrapped_f(f.f)
 function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
@@ -1144,5 +1153,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Automatic differentiation markers
 @public NoAD
+
+# Function-wrapper / solution interface helpers
+@public unwrapped_f, solution_new_retcode
 
 end

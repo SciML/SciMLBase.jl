@@ -678,6 +678,13 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
     return @set sol.errors = errors
 end
 
+"""
+    solution_new_retcode(sol, retcode)
+
+Return a copy of the solution `sol` with its return code replaced by `retcode`. The
+solution is otherwise left unchanged; this is used to update the `retcode` of an existing
+solution (e.g. when an integrator finishes and the final status becomes known).
+"""
 function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
     return @set sol.retcode = retcode
 end
