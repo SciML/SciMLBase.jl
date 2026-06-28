@@ -374,9 +374,11 @@ function remake(
     end
 
     prob = if kwargs === missing
+        # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
+        # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         ODEProblem{iip}(
-            f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
-            _kwargs...
+            f, newu0, tspan, newp, prob.problem_type;
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
@@ -414,7 +416,8 @@ function SciMLBase.remake(
     T = parameterless_type(typeof(prob))
 
     prob = if kwargs === missing
-        T(f, newu0, tspan, newp, wrapped_model; prob.kwargs..., _kwargs...)
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        T(f, newu0, tspan, newp, wrapped_model; (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
         T(f, newu0, tspan, newp, wrapped_model; kwargs...)
     end
@@ -515,9 +518,10 @@ function remake(
     end
 
     return if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         BVProblem{iip}(
-            _f, bc, u0, tspan, p; problem_type, nlls = Val(nlls), prob.kwargs...,
-            _kwargs...
+            _f, bc, u0, tspan, p; problem_type, nlls = Val(nlls),
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, nlls = Val(nlls), kwargs...)
@@ -585,6 +589,7 @@ function remake(
     iip = isinplace(prob)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         SDEProblem{iip}(
             f,
             newu0,
@@ -593,8 +598,8 @@ function remake(
             noise,
             noise_rate_prototype,
             seed,
-            prob.kwargs...,
-            _kwargs...
+            (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
@@ -647,6 +652,7 @@ function remake(
     iip = isinplace(prob)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         DDEProblem{iip}(
             f,
             newu0,
@@ -657,8 +663,8 @@ function remake(
             dependent_lags,
             order_discontinuity_t0,
             neutral,
-            prob.kwargs...,
-            _kwargs...
+            (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         DDEProblem{iip}(
@@ -740,6 +746,7 @@ function remake(
     neutral = coalesce(neutral, prob.neutral)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         SDDEProblem{iip}(
             f,
             g,
@@ -754,8 +761,8 @@ function remake(
             dependent_lags,
             order_discontinuity_t0,
             neutral,
-            prob.kwargs...,
-            _kwargs...
+            (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         SDDEProblem{iip}(
@@ -821,7 +828,8 @@ function remake(
     iip = isinplace(prob)
 
     prob = if kwargs === missing
-        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, prob.kwargs..., _kwargs...)
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
         DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, kwargs...)
     end
@@ -881,11 +889,12 @@ function remake(
     end
 
     return if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         OptimizationProblem{isinplace(prob)}(
             f = f, u0 = u0, p = p, lb = lb,
             ub = ub, int = int,
             lcons = lcons, ucons = ucons,
-            sense = sense; prob.kwargs..., _kwargs...
+            sense = sense; (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         OptimizationProblem{isinplace(prob)}(
@@ -949,10 +958,12 @@ function remake(
     end
 
     prob = if kwargs === missing
+        # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
+        # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         NonlinearProblem{isinplace(prob)}(
             f = f, u0 = newu0, p = newp,
-            problem_type = problem_type, lb = lb, ub = ub; prob.kwargs...,
-            _kwargs...
+            problem_type = problem_type, lb = lb, ub = ub;
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         NonlinearProblem{isinplace(prob)}(
@@ -1000,9 +1011,10 @@ function remake(
     f = remake(prob.f; f, initialization_data)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         SteadyStateProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp; prob.kwargs...,
-            _kwargs...
+            f = f, u0 = newu0, p = newp;
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; kwargs...)
@@ -1054,9 +1066,11 @@ function remake(
     end
 
     prob = if kwargs === missing
+        # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
+        # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, lb = lb, ub = ub, prob.kwargs...,
-            _kwargs...
+            f, u0 = newu0, p = newp, lb = lb, ub = ub,
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
@@ -1186,7 +1200,8 @@ function remake(
     A, b = _get_new_A_b(f, p, A, b)
 
     if kwargs === missing
-        return LinearProblem{isinplace(prob)}(A, b, p; u0, f, prob.kwargs..., _kwargs...)
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        return LinearProblem{isinplace(prob)}(A, b, p; u0, f, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
         return LinearProblem{isinplace(prob)}(A, b, p; u0, f, kwargs...)
     end
