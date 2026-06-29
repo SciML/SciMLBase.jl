@@ -96,6 +96,11 @@ solvers. See also [`__solve`](@ref).
 """
 function __init end
 
+# Local alias for the `Union{Function, Type}` callable bound (mirrors the
+# unexported `Base.Callable`), so problem constructors can dispatch on it
+# without a non-public qualified access to Base.
+const Callable = Union{Function, Type}
+
 """
 $(TYPEDEF)
 """

@@ -158,7 +158,7 @@ function DiscreteProblem(
 end
 
 function DiscreteProblem(
-        f::Base.Callable, u0, tspan, p = NullParameters();
+        f::Callable, u0, tspan, p = NullParameters();
         kwargs...
     )
     iip = isinplace(f, 4)
