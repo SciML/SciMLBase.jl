@@ -243,7 +243,7 @@ function DynamicalSDEProblem{iip}(
 end
 
 @doc doc"""
-    SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias = nothing)
+    SDEAliasSpecifier{P, F, U0, TS, J}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an SDEProblem. Conforms to the AbstractAliasSpecifier interface. 
@@ -251,31 +251,34 @@ when solving an SDEProblem. Conforms to the AbstractAliasSpecifier interface.
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array. Defaults to `false`.
-* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a `JumpProcess`.
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SDEAliasSpecifier` to `alias`
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the `u0` array. Defaults to `false`.
+* `alias_tstops`: alias the `tstops` array
+* `alias_jumps`: alias jump process if wrapped in a `JumpProcess`.
+* `alias`: sets all fields of the `SDEAliasSpecifier` to `alias`
 
 """
-struct SDEAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-    alias_tstops::Union{Bool, Nothing}
-    alias_jumps::Union{Bool, Nothing}
+struct SDEAliasSpecifier{P, F, U0, TS, J} <: AbstractAliasSpecifier
+    alias_p::P
+    alias_f::F
+    alias_u0::U0
+    alias_tstops::TS
+    alias_jumps::J
 
     function SDEAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing
         )
         return if alias == true
-            new(true, true, true, true, true)
+            new{Bool, Bool, Bool, Bool, Bool}(true, true, true, true, true)
         elseif alias == false
-            new(false, false, false, false, false)
+            new{Bool, Bool, Bool, Bool, Bool}(false, false, false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_tstops, alias_jumps)
+            new{
+                typeof(alias_p), typeof(alias_f), typeof(alias_u0),
+                typeof(alias_tstops), typeof(alias_jumps)
+            }(alias_p, alias_f, alias_u0, alias_tstops, alias_jumps)
         end
     end
 end

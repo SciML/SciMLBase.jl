@@ -627,7 +627,7 @@ function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val
 end
 
 @doc doc"""
-    NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    NonlinearAliasSpecifier{P, F, U0}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias when solving a `NonlinearProblem`. 
 Conforms to the AbstractAliasSpecifier interface. 
@@ -636,25 +636,25 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 ### Keywords
 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
-* `alias::Union{Bool, Nothing}`: sets all fields of the `NonlinearAliasSpecifier` to `alias`. 
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the `u0` array.
+* `alias`: sets all fields of the `NonlinearAliasSpecifier` to `alias`. 
 """
-struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
+struct NonlinearAliasSpecifier{P, F, U0} <: AbstractAliasSpecifier
+    alias_p::P
+    alias_f::F
+    alias_u0::U0
 
     function NonlinearAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
         )
         return if isnothing(alias)
-            new(alias_p, alias_f, alias_u0)
+            new{typeof(alias_p), typeof(alias_f), typeof(alias_u0)}(alias_p, alias_f, alias_u0)
         elseif alias
-            new(true, true, true)
+            new{Bool, Bool, Bool}(true, true, true)
         elseif !alias
-            new(false, false, false)
+            new{Bool, Bool, Bool}(false, false, false)
         end
     end
 end

@@ -163,32 +163,32 @@ isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
 @doc doc"""
-    OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias = nothing)
+    OptimizationAliasSpecifier{P, F, U0}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an OptimizationProblem. Conforms to the AbstractAliasSpecifier interface. 
 
 ### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `OptimizationAliasSpecifier` to `alias`
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the u0 array. Defaults to false .
+* `alias`: sets all fields of the `OptimizationAliasSpecifier` to `alias`
 
 """
-struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
+struct OptimizationAliasSpecifier{P, F, U0} <: AbstractAliasSpecifier
+    alias_p::P
+    alias_f::F
+    alias_u0::U0
 
     function OptimizationAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
         )
         return if alias == true
-            new(true, true, true)
+            new{Bool, Bool, Bool}(true, true, true)
         elseif alias == false
-            new(false, false, false)
+            new{Bool, Bool, Bool}(false, false, false)
         elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0)
+            new{typeof(alias_p), typeof(alias_f), typeof(alias_u0)}(alias_p, alias_f, alias_u0)
         end
     end
 end
