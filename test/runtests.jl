@@ -25,6 +25,9 @@ run_tests(;
         @time @safetestset "Display" begin
             include("display.jl")
         end
+        @time @safetestset "FunctionProperties extension" begin
+            include("function_properties_ext.jl")
+        end
         @time @safetestset "Existence functions" begin
             include("existence_functions.jl")
         end
