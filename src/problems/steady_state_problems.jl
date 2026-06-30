@@ -174,7 +174,7 @@ struct SteadyStateAliasSpecifier{P, F, U0, DU0, TS} <: AbstractAliasSpecifier
         elseif isnothing(alias)
             new{
                 typeof(alias_p), typeof(alias_f), typeof(alias_u0),
-                typeof(alias_du0), typeof(alias_tstops)
+                typeof(alias_du0), typeof(alias_tstops),
             }(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
         end
     end

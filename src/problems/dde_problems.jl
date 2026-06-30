@@ -462,7 +462,7 @@ struct DDEAliasSpecifier{P, F, U0, TS}
             new{Bool, Bool, Bool, Bool}(false, false, false, false)
         elseif isnothing(alias)
             new{
-                typeof(alias_p), typeof(alias_f), typeof(alias_u0), typeof(alias_tstops)
+                typeof(alias_p), typeof(alias_f), typeof(alias_u0), typeof(alias_tstops),
             }(alias_p, alias_f, alias_u0, alias_tstops)
         end
     end
