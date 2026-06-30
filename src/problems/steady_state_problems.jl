@@ -140,7 +140,7 @@ end
 SymbolicIndexingInterface.is_time_dependent(::SteadyStateProblem) = true
 
 @doc doc"""
-    SteadyStateAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+    SteadyStateAliasSpecifier{P, F, U0, DU0, TS}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving a SteadyStateProblem. Conforms to the AbstractAliasSpecifier interface. 
@@ -148,31 +148,34 @@ when solving a SteadyStateProblem. Conforms to the AbstractAliasSpecifier interf
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array. Defaults to `false`.
-* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array for DAEs. Defaults to `false`.
-* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SteadStateAliasSpecifier` to `alias`
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the `u0` array. Defaults to `false`.
+* `alias_du0`: alias the `du0` array for DAEs. Defaults to `false`.
+* `alias_tstops`: alias the `tstops` array
+* `alias`: sets all fields of the `SteadStateAliasSpecifier` to `alias`
 
 """
-struct SteadyStateAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-    alias_du0::Union{Bool, Nothing}
-    alias_tstops::Union{Bool, Nothing}
-
+struct SteadyStateAliasSpecifier{P, F, U0, DU0, TS} <: AbstractAliasSpecifier
     function SteadyStateAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias = nothing
         )
-        return if alias == true
-            new(true, true, true, true, true)
-        elseif alias == false
-            new(false, false, false, false, false)
-        elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
-        end
+        alias === true && return new{true, true, true, true, true}()
+        alias === false && return new{false, false, false, false, false}()
+        return new{alias_p, alias_f, alias_u0, alias_du0, alias_tstops}()
     end
 end
+
+function Base.getproperty(
+        ::SteadyStateAliasSpecifier{P, F, U0, DU0, TS}, s::Symbol
+    ) where {P, F, U0, DU0, TS}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    s === :alias_du0 && return DU0
+    s === :alias_tstops && return TS
+    throw(ArgumentError("SteadyStateAliasSpecifier has no field $s"))
+end
+Base.propertynames(::SteadyStateAliasSpecifier) =
+    (:alias_p, :alias_f, :alias_u0, :alias_du0, :alias_tstops)
