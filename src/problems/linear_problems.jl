@@ -198,16 +198,16 @@ Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothi
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
 """
 struct LinearAliasSpecifier{A, B} <: AbstractAliasSpecifier
-    alias_A::A
-    alias_b::B
-
     function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
-        return if alias == true
-            new{Bool, Bool}(true, true)
-        elseif alias == false
-            new{Bool, Bool}(false, false)
-        elseif isnothing(alias)
-            new{typeof(alias_A), typeof(alias_b)}(alias_A, alias_b)
-        end
+        alias === true && return new{true, true}()
+        alias === false && return new{false, false}()
+        return new{alias_A, alias_b}()
     end
 end
+
+function Base.getproperty(::LinearAliasSpecifier{A, B}, s::Symbol) where {A, B}
+    s === :alias_A && return A
+    s === :alias_b && return B
+    throw(ArgumentError("LinearAliasSpecifier has no field $s"))
+end
+Base.propertynames(::LinearAliasSpecifier) = (:alias_A, :alias_b)

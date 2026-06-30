@@ -567,43 +567,46 @@ end
 @doc doc"""
     ODEAliasSpecifier{P, F, U0, DU0, TS}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
+Holds information on what variables to alias when solving an ODE.
+Conforms to the AbstractAliasSpecifier interface.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+The choices are stored as the type parameters, so they are available at compile
+time. When a keyword argument is `nothing`, the default behaviour of the solver
+is used.
 
-### Keywords 
-* `alias_p`
-* `alias_f`
-* `alias_u0`: alias the u0 array. Defaults to false .
-* `alias_du0`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops`: alias the tstops array
-* `alias`: sets all fields of the `ODEAliasSpecifier` to `alias`
+### Keywords
+* `alias_p`: alias the parameters `p`.
+* `alias_f`: alias the function `f`.
+* `alias_u0`: alias the `u0` array.
+* `alias_du0`: alias the `du0` array for DAEs.
+* `alias_tstops`: alias the `tstops` array.
+* `alias`: sets all fields of the `ODEAliasSpecifier` to `alias`.
 
 """
 struct ODEAliasSpecifier{P, F, U0, DU0, TS} <: AbstractAliasSpecifier
-    alias_p::P
-    alias_f::F
-    alias_u0::U0
-    alias_du0::DU0
-    alias_tstops::TS
-
     function ODEAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias = nothing
         )
-        return if alias == true
-            new{Bool, Bool, Bool, Bool, Bool}(true, true, true, true, true)
-        elseif alias == false
-            new{Bool, Bool, Bool, Bool, Bool}(false, false, false, false, false)
-        elseif isnothing(alias)
-            new{
-                typeof(alias_p), typeof(alias_f), typeof(alias_u0),
-                typeof(alias_du0), typeof(alias_tstops),
-            }(alias_p, alias_f, alias_u0, alias_du0, alias_tstops)
-        end
+        alias === true && return new{true, true, true, true, true}()
+        alias === false && return new{false, false, false, false, false}()
+        return new{alias_p, alias_f, alias_u0, alias_du0, alias_tstops}()
     end
 end
+
+function Base.getproperty(
+        ::ODEAliasSpecifier{P, F, U0, DU0, TS}, s::Symbol
+    ) where {P, F, U0, DU0, TS}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    s === :alias_du0 && return DU0
+    s === :alias_tstops && return TS
+    throw(ArgumentError("ODEAliasSpecifier has no field $s"))
+end
+
+Base.propertynames(::ODEAliasSpecifier) =
+    (:alias_p, :alias_f, :alias_u0, :alias_du0, :alias_tstops)
 
 struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     AbstractODEProblem{uType, tType, isinplace}

@@ -176,19 +176,19 @@ when solving an OptimizationProblem. Conforms to the AbstractAliasSpecifier inte
 
 """
 struct OptimizationAliasSpecifier{P, F, U0} <: AbstractAliasSpecifier
-    alias_p::P
-    alias_f::F
-    alias_u0::U0
-
     function OptimizationAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
         )
-        return if alias == true
-            new{Bool, Bool, Bool}(true, true, true)
-        elseif alias == false
-            new{Bool, Bool, Bool}(false, false, false)
-        elseif isnothing(alias)
-            new{typeof(alias_p), typeof(alias_f), typeof(alias_u0)}(alias_p, alias_f, alias_u0)
-        end
+        alias === true && return new{true, true, true}()
+        alias === false && return new{false, false, false}()
+        return new{alias_p, alias_f, alias_u0}()
     end
 end
+
+function Base.getproperty(::OptimizationAliasSpecifier{P, F, U0}, s::Symbol) where {P, F, U0}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    throw(ArgumentError("OptimizationAliasSpecifier has no field $s"))
+end
+Base.propertynames(::OptimizationAliasSpecifier) = (:alias_p, :alias_f, :alias_u0)

@@ -447,23 +447,21 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 """
 struct DDEAliasSpecifier{P, F, U0, TS}
-    alias_p::P
-    alias_f::F
-    alias_u0::U0
-    alias_tstops::TS
-
     function DDEAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias = nothing
         )
-        return if alias == true
-            new{Bool, Bool, Bool, Bool}(true, true, true, true)
-        elseif alias == false
-            new{Bool, Bool, Bool, Bool}(false, false, false, false)
-        elseif isnothing(alias)
-            new{
-                typeof(alias_p), typeof(alias_f), typeof(alias_u0), typeof(alias_tstops),
-            }(alias_p, alias_f, alias_u0, alias_tstops)
-        end
+        alias === true && return new{true, true, true, true}()
+        alias === false && return new{false, false, false, false}()
+        return new{alias_p, alias_f, alias_u0, alias_tstops}()
     end
 end
+
+function Base.getproperty(::DDEAliasSpecifier{P, F, U0, TS}, s::Symbol) where {P, F, U0, TS}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    s === :alias_tstops && return TS
+    throw(ArgumentError("DDEAliasSpecifier has no field $s"))
+end
+Base.propertynames(::DDEAliasSpecifier) = (:alias_p, :alias_f, :alias_u0, :alias_tstops)

@@ -642,22 +642,22 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 * `alias`: sets all fields of the `NonlinearAliasSpecifier` to `alias`. 
 """
 struct NonlinearAliasSpecifier{P, F, U0} <: AbstractAliasSpecifier
-    alias_p::P
-    alias_f::F
-    alias_u0::U0
-
     function NonlinearAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
         )
-        return if isnothing(alias)
-            new{typeof(alias_p), typeof(alias_f), typeof(alias_u0)}(alias_p, alias_f, alias_u0)
-        elseif alias
-            new{Bool, Bool, Bool}(true, true, true)
-        elseif !alias
-            new{Bool, Bool, Bool}(false, false, false)
-        end
+        isnothing(alias) && return new{alias_p, alias_f, alias_u0}()
+        alias && return new{true, true, true}()
+        return new{false, false, false}()
     end
 end
+
+function Base.getproperty(::NonlinearAliasSpecifier{P, F, U0}, s::Symbol) where {P, F, U0}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    throw(ArgumentError("NonlinearAliasSpecifier has no field $s"))
+end
+Base.propertynames(::NonlinearAliasSpecifier) = (:alias_p, :alias_f, :alias_u0)
 
 struct ImmutableNonlinearProblem{uType, iip, P, F, K, PT} <:
     AbstractNonlinearProblem{uType, iip}

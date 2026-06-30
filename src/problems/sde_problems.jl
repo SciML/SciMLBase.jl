@@ -260,25 +260,25 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 """
 struct SDEAliasSpecifier{P, F, U0, TS, J} <: AbstractAliasSpecifier
-    alias_p::P
-    alias_f::F
-    alias_u0::U0
-    alias_tstops::TS
-    alias_jumps::J
-
     function SDEAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing
         )
-        return if alias == true
-            new{Bool, Bool, Bool, Bool, Bool}(true, true, true, true, true)
-        elseif alias == false
-            new{Bool, Bool, Bool, Bool, Bool}(false, false, false, false, false)
-        elseif isnothing(alias)
-            new{
-                typeof(alias_p), typeof(alias_f), typeof(alias_u0),
-                typeof(alias_tstops), typeof(alias_jumps),
-            }(alias_p, alias_f, alias_u0, alias_tstops, alias_jumps)
-        end
+        alias === true && return new{true, true, true, true, true}()
+        alias === false && return new{false, false, false, false, false}()
+        return new{alias_p, alias_f, alias_u0, alias_tstops, alias_jumps}()
     end
 end
+
+function Base.getproperty(
+        ::SDEAliasSpecifier{P, F, U0, TS, J}, s::Symbol
+    ) where {P, F, U0, TS, J}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    s === :alias_tstops && return TS
+    s === :alias_jumps && return J
+    throw(ArgumentError("SDEAliasSpecifier has no field $s"))
+end
+Base.propertynames(::SDEAliasSpecifier) =
+    (:alias_p, :alias_f, :alias_u0, :alias_tstops, :alias_jumps)

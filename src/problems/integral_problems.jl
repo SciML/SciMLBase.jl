@@ -153,16 +153,16 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 """
 struct IntegralAliasSpecifier{P, F} <: AbstractAliasSpecifier
-    alias_p::P
-    alias_f::F
-
     function IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
-        return if alias == true
-            new{Bool, Bool}(true, true)
-        elseif alias == false
-            new{Bool, Bool}(false, false)
-        elseif isnothing(alias)
-            new{typeof(alias_p), typeof(alias_f)}(alias_p, alias_f)
-        end
+        alias === true && return new{true, true}()
+        alias === false && return new{false, false}()
+        return new{alias_p, alias_f}()
     end
 end
+
+function Base.getproperty(::IntegralAliasSpecifier{P, F}, s::Symbol) where {P, F}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    throw(ArgumentError("IntegralAliasSpecifier has no field $s"))
+end
+Base.propertynames(::IntegralAliasSpecifier) = (:alias_p, :alias_f)
