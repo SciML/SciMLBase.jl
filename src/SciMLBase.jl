@@ -1182,4 +1182,35 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Low-level solver-author extension entry points
 @public __solve, __init
 
+# Round 5: DDE/SDE/RODE/BVP solver-author extension API
+# Abstract problem types solver packages subtype/dispatch on
+@public AbstractBVProblem, AbstractRODEProblem, AbstractSDDEProblem
+
+# Abstract algorithm / initialization-algorithm supertypes
+@public AbstractDDEAlgorithm, DAEInitializationAlgorithm
+
+# Abstract function types
+@public AbstractDDEFunction, AbstractSDEFunction, AbstractSDDEFunction
+
+# History function interface for delay equations
+@public AbstractHistoryFunction
+
+# Abstract integrator / solution types
+@public AbstractSDDEIntegrator, AbstractODESolution
+
+# Abstract solver cache supertype
+@public DECache
+
+# Specialization markers
+@public FullSpecialize, NoSpecialize, FunctionWrapperSpecialize
+
+# SDE interpretation trait
+@public AlgorithmInterpretation, alg_interpretation
+
+# AD / sensitivity function wrappers
+@public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper
+
+# Problem alias specifiers
+@public RODEAliasSpecifier, SDEAliasSpecifier
+
 end
