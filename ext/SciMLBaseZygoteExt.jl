@@ -53,6 +53,30 @@ end
     return res, Base.tail ∘ pullback
 end
 
+# `sol[:, j::Integer]` selects the whole state at timestep `j` (i.e. `VA.u[j]`).
+# Under RecursiveArrayTools v4 this getindex has no VectorOfArray-specific
+# adjoint, so it would fall through to ChainRules' generic `∇getindex`, whose
+# cotangent the solve reverse pass reads as zero — making `Zygote.gradient` of,
+# e.g., `sum(sol[:, end])` come back all zeros. Scatter `Δ` into the `j`-th slot
+# of a per-timestep cotangent, matching the `sol[i::Integer]` rule below. The
+# `::Colon` method is more specific than the `sym` method above, so `sol[:, j]`
+# dispatches here.
+@adjoint function Base.getindex(VA::ODESolution, ::Colon, j::Integer)
+    function ODESolution_colon_getindex_pullback(Δ)
+        Δ′ = map(enumerate(VA.u)) do (k, x)
+            if k == j
+                δu = zero(x)
+                copyto!(δu, Δ)
+                δu
+            else
+                Zygote.FillArrays.Fill(zero(eltype(x)), size(x))
+            end
+        end
+        return (Δ′, nothing, nothing)
+    end
+    return VA[:, j], ODESolution_colon_getindex_pullback
+end
+
 @adjoint function EnsembleSolution(sim, time, converged, stats)
     out = EnsembleSolution(sim, time, converged, stats)
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
