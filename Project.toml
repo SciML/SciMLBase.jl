@@ -1,6 +1,6 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "3.31.0"
+version = "3.31.1"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
 
 [deps]
@@ -101,7 +101,7 @@ Makie = "0.20, 0.21, 0.22, 0.23, 0.24"
 Markdown = "1.10"
 Measurements = "2"
 MonteCarloMeasurements = "1"
-Mooncake = "0.4, 0.5"
+Mooncake = "0.5.36"
 PartialFunctions = "1.1"
 PreallocationTools = "0.4.31, 1.0"
 PrecompileTools = "1.2.1"
