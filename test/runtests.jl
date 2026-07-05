@@ -193,8 +193,8 @@ run_tests(;
         end,
     ),
     qa = function ()
-        return @time @safetestset "Aqua" begin
-            include("aqua.jl")
+        return @time @safetestset "QA" begin
+            include("qa/qa.jl")
         end
     end,
     all = ["Core"],
