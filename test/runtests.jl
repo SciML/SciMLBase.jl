@@ -58,6 +58,9 @@ run_tests(;
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+        @time @safetestset "Eigenvalue problem tests" begin
+            include("eigenvalue_problem_tests.jl")
+        end
         @time @safetestset "HomotopyProblem tests" begin
             include("homotopy_problem_tests.jl")
         end
