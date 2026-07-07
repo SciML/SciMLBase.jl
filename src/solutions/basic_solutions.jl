@@ -54,6 +54,45 @@ end
 """
 $(TYPEDEF)
 
+Representation of the solution to an eigenvalue problem defined by an `EigenvalueProblem`.
+
+## Fields
+
+  - `u`: the computed eigenvalues.
+  - `vectors`: the corresponding eigenvectors, stored as the columns of a matrix.
+  - `prob`: the `EigenvalueProblem` that was solved.
+  - `alg`: the algorithm type used by the solver.
+  - `retcode`: the return code from the solver. Used to determine whether the solver solved
+    successfully or whether it exited due to an error. For more details, see
+    [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `resid`: the residual(s) of the computed eigenpairs, if provided by the solver.
+  - `stats`: statistics of the solver, if provided.
+"""
+struct EigenvalueSolution{T, N, U, V, P, A, R, S} <: AbstractEigenvalueSolution{T, N}
+    u::U
+    vectors::V
+    prob::P
+    alg::A
+    retcode::ReturnCode.T
+    resid::R
+    stats::S
+end
+
+function build_eigenvalue_solution(
+        prob, alg, values, vectors;
+        retcode = ReturnCode.Success, resid = nothing, stats = nothing
+    )
+    T = eltype(eltype(values))
+    N = length((size(values)...,))
+    return EigenvalueSolution{
+        T, N, typeof(values), typeof(vectors), typeof(prob), typeof(alg),
+        typeof(resid), typeof(stats),
+    }(values, vectors, prob, alg, retcode, resid, stats)
+end
+
+"""
+$(TYPEDEF)
+
 Representation of the solution to an quadrature integral_lb^ub f(x) dx defined by a `IntegralProblem`
 
 ## Fields

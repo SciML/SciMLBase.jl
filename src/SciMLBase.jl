@@ -136,6 +136,13 @@ abstract type AbstractLinearProblem{bType, isinplace} <: AbstractSciMLProblem en
 """
 $(TYPEDEF)
 
+Base for types which define eigenvalue problems.
+"""
+abstract type AbstractEigenvalueProblem <: AbstractSciMLProblem end
+
+"""
+$(TYPEDEF)
+
 Base for types which define integrals suitable for quadrature.
 """
 abstract type AbstractIntegralProblem{isinplace} <: AbstractSciMLProblem end
@@ -649,6 +656,11 @@ abstract type AbstractLinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 """
 $(TYPEDEF)
 """
+abstract type AbstractEigenvalueSolution{T, N} <: AbstractNoTimeSolution{T, N} end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractNonlinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
@@ -884,6 +896,7 @@ include("problems/implicit_discrete_problems.jl")
 include("problems/steady_state_problems.jl")
 include("problems/analytical_problems.jl")
 include("problems/linear_problems.jl")
+include("problems/eigenvalue_problems.jl")
 include("problems/nonlinear_problems.jl")
 include("problems/integral_problems.jl")
 include("problems/ode_problems.jl")
@@ -1068,6 +1081,8 @@ export solve, solve!, init, discretize, symbolic_discretize
 export LinearProblem, LinearSolution, IntervalNonlinearProblem,
     IntegralProblem, IntegralSolution, SampledIntegralProblem,
     OptimizationProblem, OptimizationSolution
+
+export EigenvalueProblem, EigenvalueSolution, EigenvalueTarget
 
 export NonlinearProblem, NonlinearSolution,
     SCCNonlinearProblem, NonlinearLeastSquaresProblem, HomotopyProblem
