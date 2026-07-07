@@ -9,32 +9,36 @@ A = [2.0 0.0; 0.0 3.0]
     prob = EigenvalueProblem(A)
     @test prob.A === A
     @test prob.B === nothing
-    @test prob.nev === nothing
-    @test prob.which === EigenvalueTarget.LargestMagnitude
-    @test prob.sigma === nothing
+    @test prob.num_eigenpairs === nothing
+    @test prob.eigentarget === EigenvalueTarget.LargestMagnitude
+    @test prob.shift === nothing
 end
 
-@testset "Symbol `which` normalizes to EigenvalueTarget" begin
-    @test EigenvalueProblem(A; which = :LM).which === EigenvalueTarget.LargestMagnitude
-    @test EigenvalueProblem(A; which = :SM).which === EigenvalueTarget.SmallestMagnitude
-    @test EigenvalueProblem(A; which = :LR).which === EigenvalueTarget.LargestRealPart
-    @test EigenvalueProblem(A; which = :SR).which === EigenvalueTarget.SmallestRealPart
-    @test EigenvalueProblem(A; which = :LI).which === EigenvalueTarget.LargestImaginaryPart
-    @test EigenvalueProblem(A; which = :SI).which === EigenvalueTarget.SmallestImaginaryPart
-    @test EigenvalueProblem(A; which = EigenvalueTarget.SmallestRealPart).which ===
+@testset "eigentarget accepts EigenvalueTarget values" begin
+    @test EigenvalueProblem(A; eigentarget = EigenvalueTarget.LargestMagnitude).eigentarget ===
+        EigenvalueTarget.LargestMagnitude
+    @test EigenvalueProblem(A; eigentarget = EigenvalueTarget.SmallestMagnitude).eigentarget ===
+        EigenvalueTarget.SmallestMagnitude
+    @test EigenvalueProblem(A; eigentarget = EigenvalueTarget.LargestRealPart).eigentarget ===
+        EigenvalueTarget.LargestRealPart
+    @test EigenvalueProblem(A; eigentarget = EigenvalueTarget.SmallestRealPart).eigentarget ===
         EigenvalueTarget.SmallestRealPart
+    @test EigenvalueProblem(A; eigentarget = EigenvalueTarget.LargestImaginaryPart).eigentarget ===
+        EigenvalueTarget.LargestImaginaryPart
+    @test EigenvalueProblem(A; eigentarget = EigenvalueTarget.SmallestImaginaryPart).eigentarget ===
+        EigenvalueTarget.SmallestImaginaryPart
 end
 
-@testset "Invalid `which` errors at construction" begin
-    @test_throws ArgumentError EigenvalueProblem(A; which = :XX)
-    @test_throws ArgumentError EigenvalueProblem(A; which = 5)
+@testset "Invalid `eigentarget` errors at construction" begin
+    @test_throws TypeError EigenvalueProblem(A; eigentarget = :LM)
+    @test_throws TypeError EigenvalueProblem(A; eigentarget = 5)
 end
 
 @testset "Generalized problem stores B" begin
     B = [1.0 0.0; 0.0 1.0]
-    prob = EigenvalueProblem(A, B; nev = 1)
+    prob = EigenvalueProblem(A, B; num_eigenpairs = 1)
     @test prob.B === B
-    @test prob.nev == 1
+    @test prob.num_eigenpairs == 1
 end
 
 @testset "build_eigenvalue_solution" begin
