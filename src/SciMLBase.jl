@@ -1389,14 +1389,42 @@ abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution
 """
 $(TYPEDEF)
 
-Base for types defining SciML functions.
+Base interface for callable model-function containers used by SciML problems.
+
+The `iip` type parameter records the in-place convention for the primary model
+function and is returned by [`isinplace`](@ref). Subtypes with `iip == true`
+write their result into the first argument and usually return `nothing`; subtypes
+with `iip == false` return the computed value. Concrete function wrappers should
+be callable with the same signature as their stored model function, and should
+store optional derivative, sparsity, symbolic, and initialization metadata in
+fields that the public `has_*` traits can query.
+
+Subtypes should document the primary call signature, any auxiliary callbacks such
+as Jacobians or vector-Jacobian products, the meaning of each prototype field,
+and which optional callbacks must follow the same in-place convention as the
+primary function. When optional data is unavailable, constructors should either
+omit the field for that subtype or store `nothing` so that the corresponding
+trait returns `false`.
 """
 abstract type AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
 
-Base for types defining differential equation functions.
+Base interface for function containers that define differential equation
+dynamics.
+
+Concrete subtypes describe right-hand sides, residuals, maps, boundary-condition
+systems, stochastic drift/diffusion pairs, or related decompositions used by
+[`AbstractDEProblem`](@ref) subtypes. They follow the [`AbstractSciMLFunction`](@ref)
+in-place contract and additionally standardize optional differential-equation
+metadata such as mass matrices, analytic solutions, Jacobians, time gradients,
+Jacobian-vector products, vector-Jacobian products, W-factorization callbacks,
+parameter Jacobians, sparsity/coloring prototypes, symbolic systems, and
+initialization data. The exact primary call signature is determined by the
+concrete subtype, for example ODE functions use `f(u, p, t)` or
+`f(du, u, p, t)`, while DAE functions use residual signatures involving
+`du`, `u`, `p`, and `t`.
 """
 abstract type AbstractDiffEqFunction{iip} <:
 AbstractSciMLFunction{iip} end
@@ -1404,7 +1432,13 @@ AbstractSciMLFunction{iip} end
 """
 $(TYPEDEF)
 
-Base for types defining integrand functions.
+Base interface for integral and quadrature integrand containers.
+
+Concrete subtypes wrap scalar, array-valued, or batched integrands. Out-of-place
+integrands return the integrand value, while in-place integrands write into an
+output container supplied by the algorithm. In-place integrands must carry an
+`integrand_prototype` so solvers can allocate correctly typed temporary storage;
+batched integrands reserve their last array dimension for the batch axis.
 """
 abstract type AbstractIntegralFunction{iip} <:
 AbstractSciMLFunction{iip} end
@@ -1412,14 +1446,28 @@ AbstractSciMLFunction{iip} end
 """
 $(TYPEDEF)
 
-Base for types defining optimization functions.
+Base interface for optimization objective containers.
+
+Concrete subtypes wrap scalar or multi-objective cost functions together with
+optional derivatives, Hessian-vector products, constraint callbacks, sparsity
+prototypes, coloring metadata, observed quantities, and symbolic systems. The
+`iip` parameter records whether auxiliary derivative/constraint callbacks mutate
+their first argument, while the objective itself follows the documented
+`OptimizationFunction` call convention.
 """
 abstract type AbstractOptimizationFunction{iip} <: AbstractSciMLFunction{iip} end
 
 """
 $(TYPEDEF)
 
-Base for types which define the history of a delay differential equation.
+Base interface for objects that provide delay-equation history values.
+
+History functions are queried for state values before the initial time and for
+delayed arguments during DDE/SDDE solves. Implementations should support the
+call signatures required by the corresponding problem type, commonly `h(p, t)`
+or `h(out, p, t)`, optional derivative queries such as `h(p, t, Val{i})`, and
+indexing keywords accepted by delay solvers. Returned values must match the
+state shape expected by the problem's function.
 """
 abstract type AbstractHistoryFunction end
 
@@ -1532,6 +1580,11 @@ specialization(f::AbstractSciMLFunction) = FullSpecialize
 
 """
 $(TYPEDEF)
+
+Compatibility supertype for ODE-like function containers that carry explicit
+parameterization metadata. New implementations should generally subtype a more
+specific [`AbstractODEFunction`](@ref) wrapper and expose symbolic or parameter
+metadata through public fields and `SymbolicIndexingInterface` methods.
 """
 abstract type AbstractParameterizedFunction{iip} <: AbstractODEFunction{iip} end
 

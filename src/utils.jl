@@ -241,23 +241,24 @@ end
               outofplace_param_number = inplace_param_number - 1)
     isinplace(f::AbstractSciMLFunction[, inplace_param_number])
 
-Check whether a function operates in place by comparing its number of arguments
-to the expected number. If `f` is an `AbstractSciMLFunction`, then the type
-parameter is assumed to be correct and is used. Otherwise `inplace_param_number`
-is checked against the methods table, where `inplace_param_number` is the number
-of arguments for the in-place dispatch. The out-of-place dispatch is assumed
-to have `outofplace_param_number` parameters (one less than the inplace version
-by default). If neither of these dispatches exist, an error is thrown.
-If the error is thrown, `fname` is used to tell the user which function has the
-incorrect dispatches.
+Check whether a user callback follows the in-place SciML convention.
 
-`iip_preferred` means that if `inplace_param_number=4` and methods of both 3 and
-for 4 args exist, then it will be chosen as in-place. `iip_dispatch` flips this
-decision.
+For an [`AbstractSciMLFunction`](@ref), `isinplace` returns the `iip` type
+parameter without inspecting methods. For an ordinary callable, it inspects the
+method table and compares available arities to the expected in-place and
+out-of-place signatures. `inplace_param_number` is the number of positional
+arguments for the in-place form, while `outofplace_param_number` defaults to one
+fewer argument. For example, an ODE right-hand side uses `4` for
+`f!(du, u, p, t)` and `3` for `f(u, p, t)`.
 
-If `has_two_dispatches = false`, then it is assumed that there is only one correct
-dispatch, i.e. `f(u,p)` for OptimizationFunction, and thus the check for the oop
-form is disabled and the 2-argument signature is ensured to be matched.
+If neither accepted arity is present, `isinplace` throws a function-argument
+error that uses `fname` to identify the offending callback. If both accepted
+arities are present, `iip_preferred = true` chooses the in-place interpretation
+and `iip_preferred = false` chooses the out-of-place interpretation.
+
+Set `has_two_dispatches = false` for interfaces that only accept one arity, such
+as optimization objective functions, so a shorter out-of-place form is not
+treated as valid.
 
 # See also
 

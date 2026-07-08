@@ -113,7 +113,7 @@ library documentations.
 ## Traits
 
 ```@docs
-SciMLBase.isinplace(f::SciMLBase.AbstractSciMLFunction)
+SciMLBase.isinplace
 SciMLBase.unwrapped_f
 SciMLBase.has_analytic
 SciMLBase.has_jac
@@ -138,6 +138,11 @@ SciMLBase.AbstractRODEFunction
 SciMLBase.AbstractDiscreteFunction
 SciMLBase.AbstractSDDEFunction
 SciMLBase.AbstractNonlinearFunction
+SciMLBase.AbstractIntervalNonlinearFunction
+SciMLBase.AbstractIntegralFunction
+SciMLBase.AbstractOptimizationFunction
+SciMLBase.AbstractODEInputFunction
+SciMLBase.AbstractBVPFunction
 SciMLBase.AbstractParameterizedFunction
 SciMLBase.AbstractHistoryFunction
 ```

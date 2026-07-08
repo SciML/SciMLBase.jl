@@ -236,6 +236,19 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for ODE right-hand-side containers.
+
+Subtypes represent equations of the form `du/dt = f(u, p, t)` or mass-matrix
+variants `M * du/dt = f(u, p, t)`. They should support either
+`f(du, u, p, t)` for in-place functions or `f(u, p, t)` for out-of-place
+functions according to the `iip` type parameter. Optional callbacks such as
+`jac`, `tgrad`, `jvp`, `vjp`, `Wfact`, `Wfact_t`, `paramjac`, and `vjp_p`
+must follow the same in-place convention as the primary function when present.
+Mass matrices, Jacobian prototypes, sparsity patterns, color vectors, symbolic
+systems, observed quantities, and initialization data are exposed through fields
+on concrete wrappers such as `ODEFunction`, `SplitFunction`, and
+`DynamicalODEFunction`.
 """
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -677,6 +690,16 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for delay differential equation function containers.
+
+Subtypes represent right-hand sides that depend on the current state and a
+history object, using `f(du, u, h, p, t)` for in-place functions or
+`f(u, h, p, t)` for out-of-place functions. The history object is supplied by
+the DDE/SDDE integrator and should be queried using the delay-problem history
+interface. Optional derivative, sparsity, mass-matrix, symbolic, and
+initialization fields follow the same conventions as [`AbstractODEFunction`](@ref),
+with callback signatures extended by the `h` argument.
 """
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -889,6 +912,15 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for discrete dynamical-system function containers.
+
+Explicit discrete functions update a state sequence through signatures such as
+`f(du, u, p, t)` or `f(u, p, t)`. Implicit discrete functions represent
+residual equations for the next state, commonly `f(resid, u_next, u, p, t)` or
+`f(u_next, u, p, t)`. Concrete subtypes should document which map or residual
+signature they implement, whether an analytic solution callback is available,
+and any residual prototype needed by solvers.
 """
 abstract type AbstractDiscreteFunction{iip} <:
 AbstractDiffEqFunction{iip} end
@@ -1003,6 +1035,16 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for stochastic differential equation function containers.
+
+Subtypes represent drift/diffusion systems such as
+`du = f(u, p, t) dt + g(u, p, t) dW`. The drift and diffusion callbacks must
+use a consistent in-place convention: `f(du, u, p, t)` and `g(du, u, p, t)` for
+in-place functions, or `f(u, p, t)` and `g(u, p, t)` for out-of-place functions.
+Optional Jacobian-like callbacks describe the drift unless the concrete subtype
+documents otherwise; Milstein-style diffusion derivatives are carried by
+`ggprime` when supported.
 """
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1334,6 +1376,14 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for random ordinary differential equation function containers.
+
+RODE functions use a solver-supplied noise/history value `W` in addition to the
+ODE arguments, with signatures `f(du, u, p, t, W)` or `f(u, p, t, W)`.
+Concrete subtypes should document whether analytic callbacks are pointwise in
+`W` or operate on the full solution/noise history, and which derivative
+callbacks are supported for the random input convention.
 """
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1443,6 +1493,17 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for fully implicit differential-algebraic equation function
+containers.
+
+DAE functions represent residuals `G(du, u, p, t) = 0`, using
+`f(resid, du, u, p, t)` for in-place functions or `f(du, u, p, t)` for
+out-of-place functions. Jacobian callbacks may provide the combined solver
+Jacobian `gamma * dG/d(du) + dG/du`, or separate `jac_du` and `jac_u`
+components when supported. Optional derivative, sparsity, symbolic, and
+initialization metadata follow the [`AbstractSciMLFunction`](@ref) trait
+contract.
 """
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1595,6 +1656,14 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for stochastic delay differential equation function containers.
+
+SDDE functions combine the SDE drift/diffusion convention with a delay history
+argument, using `f(du, u, h, p, t)` and `g(du, u, h, p, t)` for in-place
+functions or `f(u, h, p, t)` and `g(u, h, p, t)` for out-of-place functions.
+Concrete subtypes should document their history queries, noise-rate shape, and
+which optional derivative callbacks are defined for the delayed drift.
 """
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1700,6 +1769,15 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for nonlinear system function containers.
+
+Subtypes represent systems `f(u, p) = 0`, using `f(resid, u, p)` for in-place
+functions or `f(u, p)` for out-of-place functions. Optional callbacks include
+analytic solutions, Jacobians, Jacobian-vector and vector-Jacobian products,
+parameter Jacobians, mass-matrix-like metadata, residual prototypes, sparsity
+and coloring data, symbolic systems, observed quantities, and initialization
+data.
 """
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
@@ -1908,6 +1986,13 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for one-dimensional interval nonlinear function containers.
+
+Subtypes represent scalar or residual-valued equations over an interval
+variable, using `f(out, t, p)` for in-place functions or `f(t, p)` for
+out-of-place functions. Concrete wrappers should document their analytic
+callback and symbolic metadata conventions.
 """
 abstract type AbstractIntervalNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
@@ -2152,6 +2237,16 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for ODE right-hand sides with an explicit input/control argument.
+
+Concrete subtypes represent systems such as `dx/dt = f(x, u, p, t)`, where `x`
+is the state and `u` is an external input or control. In-place functions use
+`f(dx, x, u, p, t)` and out-of-place functions use `f(x, u, p, t)`. Optional
+`jac` callbacks differentiate with respect to `x`, while `controljac`
+callbacks differentiate with respect to the input/control argument. Other
+derivative, prototype, sparsity, symbolic, and initialization fields follow the
+ODE-function conventions.
 """
 abstract type AbstractODEInputFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -2254,6 +2349,17 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for boundary-value problem function containers.
+
+Concrete subtypes combine a differential equation callback with boundary
+condition residuals. The `iip` parameter records the in-place convention for the
+dynamic function, and the `twopoint` parameter records whether the boundary
+conditions are supplied as separate left/right endpoint callbacks. Boundary
+condition callbacks and their Jacobians must use a convention compatible with
+the stored prototypes. Concrete wrappers should document the signatures for
+`f`, `bc`, `bcjac`, optional least-squares/cost callbacks, boundary residual
+prototypes, and coloring metadata.
 """
 abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
@@ -5347,13 +5453,23 @@ has_invW(f::AbstractSciMLFunction) = false
 """
     has_analytic(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` analytic solution callback.
+Return whether `f` carries a non-`nothing` analytic solution callback.
+
+Analytic callbacks are optional and are mainly used by solvers and tests to
+compare numerical and exact solutions. The expected callback signature depends
+on the concrete function type, matching the independent variables described by
+that type's docstring.
 """
 has_analytic(f::AbstractSciMLFunction) = __has_analytic(f) && f.analytic !== nothing
 """
     has_jac(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian callback.
+Return whether `f` carries a non-`nothing` Jacobian callback.
+
+For differential equation functions this is usually the Jacobian with respect to
+the state variable. For implicit functions such as DAEs, the concrete function
+docstring defines the Jacobian convention. Solver code should query this trait
+before accessing `f.jac`.
 """
 has_jac(f::AbstractSciMLFunction) = __has_jac(f) && f.jac !== nothing
 has_jac_u(f::AbstractSciMLFunction) = __has_jac_u(f) && f.jac_u !== nothing
@@ -5361,19 +5477,31 @@ has_jac_du(f::AbstractSciMLFunction) = __has_jac_du(f) && f.jac_du !== nothing
 """
     has_jvp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian-vector product callback.
+Return whether `f` carries a non-`nothing` Jacobian-vector product callback.
+
+When true, solvers may use `f.jvp` to apply the Jacobian to a direction without
+materializing the full Jacobian. The callback must follow the in-place or
+out-of-place convention of the concrete function wrapper.
 """
 has_jvp(f::AbstractSciMLFunction) = __has_jvp(f) && f.jvp !== nothing
 """
     has_vjp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` vector-Jacobian product callback.
+Return whether `f` carries a non-`nothing` vector-Jacobian product callback.
+
+When true, solvers or sensitivity algorithms may use `f.vjp` to apply the
+adjoint Jacobian action without materializing the full Jacobian. The callback
+signature is defined by the concrete function type.
 """
 has_vjp(f::AbstractSciMLFunction) = __has_vjp(f) && f.vjp !== nothing
 """
     has_tgrad(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` time-gradient callback.
+Return whether `f` carries a non-`nothing` time-gradient callback.
+
+The time-gradient callback represents the derivative of the model function with
+respect to the independent variable while holding the state and parameters fixed.
+It is only meaningful for function types with an explicit independent variable.
 """
 has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
 has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
@@ -5398,6 +5526,10 @@ end
     has_initialization_data(f)
 
 Return whether `f` carries non-`nothing` initialization metadata.
+
+Initialization data stores problem-level initialization hooks such as an
+initialization problem, an updater for that problem, and parameter/state mapping
+functions. Solvers should query this trait before using those hooks.
 """
 function has_initialization_data(f)
     return __has_initialization_data(f) && f.initialization_data !== nothing
@@ -5405,32 +5537,58 @@ end
 @doc """
     has_analytic(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` analytic solution callback.
+Return whether `f` carries a non-`nothing` analytic solution callback.
+
+Analytic callbacks are optional and are mainly used by solvers and tests to
+compare numerical and exact solutions. The expected callback signature depends
+on the concrete function type, matching the independent variables described by
+that type's docstring.
 """ has_analytic
 @doc """
     has_jac(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian callback.
+Return whether `f` carries a non-`nothing` Jacobian callback.
+
+For differential equation functions this is usually the Jacobian with respect to
+the state variable. For implicit functions such as DAEs, the concrete function
+docstring defines the Jacobian convention. Solver code should query this trait
+before accessing `f.jac`.
 """ has_jac
 @doc """
     has_jvp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian-vector product callback.
+Return whether `f` carries a non-`nothing` Jacobian-vector product callback.
+
+When true, solvers may use `f.jvp` to apply the Jacobian to a direction without
+materializing the full Jacobian. The callback must follow the in-place or
+out-of-place convention of the concrete function wrapper.
 """ has_jvp
 @doc """
     has_vjp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` vector-Jacobian product callback.
+Return whether `f` carries a non-`nothing` vector-Jacobian product callback.
+
+When true, solvers or sensitivity algorithms may use `f.vjp` to apply the
+adjoint Jacobian action without materializing the full Jacobian. The callback
+signature is defined by the concrete function type.
 """ has_vjp
 @doc """
     has_tgrad(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` time-gradient callback.
+Return whether `f` carries a non-`nothing` time-gradient callback.
+
+The time-gradient callback represents the derivative of the model function with
+respect to the independent variable while holding the state and parameters fixed.
+It is only meaningful for function types with an explicit independent variable.
 """ has_tgrad
 @doc """
     has_initialization_data(f)
 
 Return whether `f` carries non-`nothing` initialization metadata.
+
+Initialization data stores problem-level initialization hooks such as an
+initialization problem, an updater for that problem, and parameter/state mapping
+functions. Solvers should query this trait before using those hooks.
 """ has_initialization_data
 has_polynomialize(f) = __has_polynomialize(f) && f.polynomialize !== nothing
 has_unpolynomialize(f) = __has_unpolynomialize(f) && f.unpolynomialize !== nothing
