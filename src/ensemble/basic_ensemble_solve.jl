@@ -1,12 +1,16 @@
 """
 $(TYPEDEF)
 
-The supertype of the CPU-parallelism ensemble algorithms provided by SciMLBase, i.e. the
-ensemble algorithms whose trajectory execution is handled by the generic
-`__solve(prob::AbstractEnsembleProblem, alg, ensemblealg::BasicEnsembleAlgorithm)`
-loop rather than by an external backend. Its subtypes select how the trajectories are
-distributed: [`EnsembleSerial`](@ref), [`EnsembleThreads`](@ref),
-[`EnsembleDistributed`](@ref), and [`EnsembleSplitThreads`](@ref).
+Base interface for built-in ensemble execution algorithms. A
+`BasicEnsembleAlgorithm` chooses how trajectories from an `EnsembleProblem` are
+scheduled: serially, on Julia threads, across Julia distributed workers, or with
+a split distributed/threaded strategy.
+
+Concrete subtypes should document their execution backend, worker setup
+requirements, serialization assumptions, and random number behavior. They are
+passed as the ensemble algorithm in calls such as
+`solve(ensembleprob, alg, ensemblealg; trajectories, kwargs...)`, while `alg`
+continues to select the numerical solver for each generated trajectory.
 """
 abstract type BasicEnsembleAlgorithm <: EnsembleAlgorithm end
 

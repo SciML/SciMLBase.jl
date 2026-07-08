@@ -57,6 +57,17 @@ choices of automatic differentiation are then selected by the `sensealg` keyword
 in `solve`, which is made into a positional argument in the `_solve_adjoint` and other
 functions in order to allow dispatch.
 
+## Sensitivity Algorithm Interfaces
+
+```@docs
+SciMLBase.AbstractSensitivityAlgorithm
+SciMLBase.AbstractOverloadingSensitivityAlgorithm
+SciMLBase.AbstractForwardSensitivityAlgorithm
+SciMLBase.AbstractAdjointSensitivityAlgorithm
+SciMLBase.AbstractSecondOrderSensitivityAlgorithm
+SciMLBase.AbstractShadowingSensitivityAlgorithm
+```
+
 ## SensitivityADPassThrough
 
 The special sensitivity algorithm `SensitivityADPassThrough` is used to ignore the

@@ -62,9 +62,9 @@ SciMLBase.AbstractLinearAlgorithm
 SciMLBase.AbstractNonlinearAlgorithm
 SciMLBase.AbstractIntervalNonlinearAlgorithm
 SciMLBase.AbstractIntegralAlgorithm
-SciMLBase.AbstractQuadratureAlgorithm
 SciMLBase.AbstractOptimizationAlgorithm
 SciMLBase.AbstractSteadyStateAlgorithm
+SciMLBase.AbstractBVPAlgorithm
 SciMLBase.AbstractODEAlgorithm
 SciMLBase.AbstractSecondOrderODEAlgorithm
 SciMLBase.AbstractRODEAlgorithm
@@ -72,13 +72,16 @@ SciMLBase.AbstractSDEAlgorithm
 SciMLBase.AbstractDAEAlgorithm
 SciMLBase.AbstractDDEAlgorithm
 SciMLBase.AbstractSDDEAlgorithm
+SciMLBase.EnsembleAlgorithm
 SciMLBase.DAEInitializationAlgorithm
 SciMLBase.AbstractDiscretization
+SciMLBase.AbstractDiscretizationMetadata
 ```
 
 ### DAE Initialization Algorithms
 
 ```@docs
 SciMLBase.NoInit
+SciMLBase.CheckInit
 SciMLBase.OverrideInit
 ```

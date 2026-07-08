@@ -27,7 +27,6 @@ The choice of ensemble algorithm allows for control over how the multiple trajec
 are handled. Currently, the ensemble algorithm types are:
 
 ```@docs
-SciMLBase.EnsembleAlgorithm
 SciMLBase.BasicEnsembleAlgorithm
 EnsembleSerial
 EnsembleThreads
@@ -143,13 +142,13 @@ The `meancov` and `meancor` return a matrix of tuples, where the tuples are the
 The available functions for the time steps are:
 
 ```@docs
-timeseries_steps_mean
-timeseries_steps_median
-timeseries_steps_quantile
-timeseries_steps_meanvar
-timeseries_steps_meancov
-timeseries_steps_meancor
-timeseries_steps_weighted_meancov
+SciMLBase.EnsembleAnalysis.timeseries_steps_mean
+SciMLBase.EnsembleAnalysis.timeseries_steps_median
+SciMLBase.EnsembleAnalysis.timeseries_steps_quantile
+SciMLBase.EnsembleAnalysis.timeseries_steps_meanvar
+SciMLBase.EnsembleAnalysis.timeseries_steps_meancov
+SciMLBase.EnsembleAnalysis.timeseries_steps_meancor
+SciMLBase.EnsembleAnalysis.timeseries_steps_weighted_meancov
 ```
 
 The available functions for the time points are:

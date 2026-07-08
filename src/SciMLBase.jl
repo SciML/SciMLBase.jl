@@ -513,133 +513,292 @@ abstract type AbstractPDEProblem <: AbstractDEProblem end
 # Algorithms
 """
 $(TYPEDEF)
+
+Base interface for solver algorithm objects. A concrete `AbstractSciMLAlgorithm`
+selects the numerical method used by `solve`, `init`, or lower-level extension
+methods for an `AbstractSciMLProblem`.
+
+## Interface
+
+Concrete algorithms should be lightweight configuration objects. Solver-specific
+options belong in the algorithm constructor, while options shared by a whole
+problem family stay as `solve` or `init` keyword arguments. Solver packages
+normally implement dispatches such as:
+
+```julia
+CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
+    kwargs...)
+```
+
+Algorithms should implement the relevant trait methods in `alg_traits.jl` when
+their behavior differs from the default, such as adaptivity, supported number
+types, automatic-differentiation behavior, solver order, stochastic integral
+interpretation, or support for the caching and stepping interfaces. `remake` can
+be used internally by solver packages to replace algorithm components such as
+automatic-differentiation chunk sizes, but it is not part of the public user API
+for choosing methods.
 """
 abstract type AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for differential equation solver algorithms. Concrete subtypes
+dispatch on differential equation problem types and should document the equation
+families, state types, callbacks, events, interpolation, and initialization
+features they support.
+
+Differential equation algorithms participate in common traits such as
+`isadaptive`, `isdiscrete`, `allowscomplex`, `alg_order`,
+`isautodifferentiable`, `forwarddiffs_model`, and
+`allows_late_binding_tstops`. The default trait values are conservative, so
+solver packages should override them for concrete algorithms where appropriate.
 """
 abstract type AbstractDEAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for linear solve algorithms. Concrete subtypes select methods for
+`AbstractLinearProblem` instances, including direct factorizations, iterative
+methods, preconditioner choices, and matrix-free operator handling.
+
+Algorithm-specific choices such as factorization strategy, Krylov options, or
+preconditioner configuration should be constructor fields on the concrete
+algorithm. Shared solve controls remain keyword arguments to the solve call.
 """
 abstract type AbstractLinearAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for nonlinear solve algorithms. Concrete subtypes select methods
+for `AbstractNonlinearProblem` instances and should document their support for
+in-place residuals, Jacobian information, bounds, line searches, trust regions,
+termination controls, and reusable caches.
 """
 abstract type AbstractNonlinearAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for interval nonlinear solve algorithms. Concrete subtypes solve
+`AbstractIntervalNonlinearProblem` instances by searching for zeros over a
+provided interval, commonly using bracketing or interval-based methods.
+
+Concrete algorithms should document whether they require a sign change, how they
+handle array-valued residuals, and which termination tolerances or bracketing
+assumptions they use.
 """
 abstract type AbstractIntervalNonlinearAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for integral and quadrature algorithms. Concrete subtypes solve
+`AbstractIntegralProblem` instances and should document their domain support,
+adaptive or fixed-sample behavior, batching semantics, random number usage, and
+whether in-place integrands are supported.
 """
 abstract type AbstractIntegralAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for optimization algorithms. Concrete subtypes solve
+`AbstractOptimizationProblem` instances and should document their support for
+bounds, nonlinear constraints, callbacks, gradients, Hessians, constraint
+Jacobians, and reusable caches.
+
+Optimization solver packages should override the optimization capability traits
+in `alg_traits.jl`, such as `allowsbounds`, `requiresgradient`, `allowsfg`,
+`allowsfgh`, `allowsconstraints`, and `allowscallback`, when the defaults do not
+describe a concrete algorithm.
 """
 abstract type AbstractOptimizationAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for steady-state algorithms. Concrete subtypes solve
+`AbstractSteadyStateProblem` instances, usually by reusing ODE time-stepping,
+nonlinear solve, or specialized fixed-point machinery to find `du/dt = 0`.
+
+Concrete algorithms should document whether they expect an ODE-style inner
+algorithm, a nonlinear solver, or a direct steady-state method, and how common
+termination tolerances are interpreted.
 """
 abstract type AbstractSteadyStateAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for boundary value problem algorithms. Concrete subtypes solve
+`AbstractBVProblem` instances and should document their collocation, shooting,
+mesh-adaptation, nonlinear-solver, and boundary-residual layout assumptions.
 """
 abstract type AbstractBVPAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for ordinary differential equation algorithms. Concrete subtypes
+solve `AbstractODEProblem` instances and should document their order, adaptivity,
+stiffness assumptions, dense-output support, callback/event support, and
+compatibility with mass matrices or split problem formulations.
 """
 abstract type AbstractODEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for algorithms that preserve second-order ODE structure. Concrete
+subtypes should document whether they operate on a native second-order
+formulation or on a first-order transformed problem, and which callback,
+interpolation, and mass-matrix features remain available.
 """
 abstract type AbstractSecondOrderODEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for random ordinary differential equation algorithms. Concrete
+subtypes solve `AbstractRODEProblem` instances and should document the noise
+process assumptions, interpolation behavior, and how random forcing is sampled
+or queried during a step.
 """
 abstract type AbstractRODEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for stochastic differential equation algorithms. Concrete
+subtypes solve `AbstractSDEProblem` instances and should document their
+stochastic integral interpretation, supported noise structures, adaptive behavior
+and any restrictions such as additive-noise or Wiener-only assumptions.
+
+SDE algorithms should override `alg_interpretation`, and may need to override
+`allows_non_wiener_noise` or `requires_additive_noise`.
 """
 abstract type AbstractSDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for differential-algebraic equation algorithms. Concrete subtypes
+solve `AbstractDAEProblem` instances and should document their DAE index
+assumptions, mass-matrix or residual form, consistent-initial-condition handling,
+and supported `DAEInitializationAlgorithm` choices.
 """
 abstract type AbstractDAEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for delay differential equation algorithms. Concrete subtypes
+solve `AbstractDDEProblem` instances and should document their lag support,
+history interpolation, discontinuity handling, and callback/event behavior.
 """
 abstract type AbstractDDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for stochastic delay differential equation algorithms. Concrete
+subtypes combine the delay and stochastic algorithm contracts, including support
+for lag metadata, history interpolation, noise structures, stochastic integral
+interpretation, and discontinuity handling.
 """
 abstract type AbstractSDDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
 
-The supertype of all ensemble algorithms, i.e. the algorithms passed as the
-`ensemblealg` argument to `solve(::EnsembleProblem, alg, ensemblealg; ...)` to control
-how the many trajectories of an [`EnsembleProblem`](@ref) are executed. Subtypes select
-the parallelization strategy (serial, threaded, distributed, GPU, ...); see
-[`BasicEnsembleAlgorithm`](@ref) for the CPU-parallelism implementations built into
-SciMLBase.
+Base interface for ensemble execution algorithms. These algorithms choose how
+many related problem solves are scheduled for an `AbstractEnsembleProblem`; they
+do not choose the numerical method for an individual trajectory.
+
+Concrete subtypes should document the execution backend, serialization
+requirements, random number behavior, task or process scheduling, and any
+limitations on callbacks, reductions, or output functions.
 """
 abstract type EnsembleAlgorithm <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for sensitivity algorithms passed through the `sensealg` keyword
+argument. Concrete subtypes are implemented by sensitivity packages and select
+how derivatives of `solve` are computed.
+
+The type parameters are part of the dispatch key for sensitivity packages.
+Concrete algorithms should document the meaning of those parameters, the
+supported problem families, the automatic-differentiation backends they use, and
+whether they implement forward, adjoint, second-order, or shadowing sensitivity
+methods.
 """
 abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: AbstractSciMLAlgorithm end
 
 """
 $(TYPEDEF)
+
+Base interface for sensitivity algorithms that differentiate through, or
+otherwise overload, solver behavior. Concrete subtypes should document the AD
+backend and solver features that remain differentiable.
 """
 abstract type AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractSensitivityAlgorithm{CS, AD, FDT} end
 
 """
 $(TYPEDEF)
+
+Base interface for forward sensitivity algorithms. Concrete subtypes should
+document how tangent information is initialized, propagated, and returned, and
+which problem, parameter, and callback features are supported.
 """
 abstract type AbstractForwardSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 
 """
 $(TYPEDEF)
+
+Base interface for adjoint sensitivity algorithms. Concrete subtypes should
+document their adjoint equation, checkpointing, interpolation, vector-Jacobian
+product, and callback/event assumptions.
 """
 abstract type AbstractAdjointSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 
 """
 $(TYPEDEF)
+
+Base interface for second-order sensitivity algorithms. Concrete subtypes should
+document how Hessian or Hessian-vector information is computed and which first
+order sensitivity backend they build on.
 """
 abstract type AbstractSecondOrderSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 
 """
 $(TYPEDEF)
+
+Base interface for shadowing sensitivity algorithms. Concrete subtypes should
+document the dynamical-systems assumptions, trajectory handling, and derivative
+quantities they expose.
 """
 abstract type AbstractShadowingSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 
 """
 $(TYPEDEF)
+
+Base interface for DAE initialization algorithms selected by the `initializealg`
+keyword. Concrete subtypes control how solvers check, skip, or repair initial
+conditions before integration starts.
+
+DAE initialization algorithms should document which problem metadata they need,
+whether they modify `u0` or `du0`, and which tolerances or inner nonlinear
+solvers they use.
 """
 abstract type DAEInitializationAlgorithm <: AbstractSciMLAlgorithm end
 
@@ -733,12 +892,28 @@ OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
 
 """
 $(TYPEDEF)
+
+Base interface for discretization algorithms. Concrete subtypes transform
+symbolic or high-level PDE/problem descriptions into solver-ready SciML
+problems, typically through `discretize` and optionally `symbolic_discretize`.
+
+Concrete discretizations should document the input problem or system types they
+accept, the numerical discretization they apply, the generated problem type, and
+the metadata needed to map the numerical solution back to the original variables
+and domains.
 """
 abstract type AbstractDiscretization <: AbstractSciMLAlgorithm end
 
 # Discretization metadata
 """
 $(TYPEDEF)
+
+Base interface for metadata produced by a discretization. The `hasTime` type
+parameter records whether the wrapped solution has an independent time axis.
+
+Concrete metadata types should store enough information for PDE solution wrappers
+to recover the original variables, domains, dependent-variable layout, and the
+solver-ready problem or solution generated by the discretizer.
 """
 abstract type AbstractDiscretizationMetadata{hasTime} end
 
