@@ -181,7 +181,7 @@ function SymbolicIndexingInterface.set_parameter!(
 end
 
 @doc doc"""
-    LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
+    LinearAliasSpecifier{A, B}(; alias_A = nothing, alias_b = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
@@ -190,24 +190,24 @@ When a keyword argument is `nothing`, the default behaviour of the solver is use
 
 ### Keywords
 
-* `alias_A::Union{Bool, Nothing}`: alias the `A` array.
-* `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
-* `alias::Union{Bool, Nothing}`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
+* `alias_A`: alias the `A` array.
+* `alias_b`: alias the `b` array. 
+* `alias`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
 
 Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
 When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
 """
-struct LinearAliasSpecifier <: AbstractAliasSpecifier
-    alias_A::Union{Bool, Nothing}
-    alias_b::Union{Bool, Nothing}
-
+struct LinearAliasSpecifier{A, B} <: AbstractAliasSpecifier
     function LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
-        return if alias == true
-            new(true, true)
-        elseif alias == false
-            new(false, false)
-        elseif isnothing(alias)
-            new(alias_A, alias_b)
-        end
+        alias === true && return new{true, true}()
+        alias === false && return new{false, false}()
+        return new{alias_A, alias_b}()
     end
 end
+
+function Base.getproperty(::LinearAliasSpecifier{A, B}, s::Symbol) where {A, B}
+    s === :alias_A && return A
+    s === :alias_b && return B
+    throw(ArgumentError("LinearAliasSpecifier has no field $s"))
+end
+Base.propertynames(::LinearAliasSpecifier) = (:alias_A, :alias_b)

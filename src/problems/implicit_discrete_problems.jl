@@ -144,7 +144,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteP
 end
 
 @doc doc"""
-    ImplicitDiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    ImplicitDiscreteAliasSpecifier{P, F, U0}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
@@ -152,27 +152,27 @@ when solving an ODE. Conforms to the AbstractAliasSpecifier interface.
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `ImplicitDiscreteAliasSpecifier` to `alias`
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the u0 array. Defaults to false .
+* `alias`: sets all fields of the `ImplicitDiscreteAliasSpecifier` to `alias`
 
 """
-struct ImplicitDiscreteAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-
+struct ImplicitDiscreteAliasSpecifier{P, F, U0}
     function ImplicitDiscreteAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias = nothing
         )
-        return if alias == true
-            new(true, true, true)
-        elseif alias == false
-            new(false, false, false)
-        elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0)
-        end
+        alias === true && return new{true, true, true}()
+        alias === false && return new{false, false, false}()
+        return new{alias_p, alias_f, alias_u0}()
     end
 end
+
+function Base.getproperty(::ImplicitDiscreteAliasSpecifier{P, F, U0}, s::Symbol) where {P, F, U0}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    throw(ArgumentError("ImplicitDiscreteAliasSpecifier has no field $s"))
+end
+Base.propertynames(::ImplicitDiscreteAliasSpecifier) = (:alias_p, :alias_f, :alias_u0)

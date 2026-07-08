@@ -98,7 +98,7 @@ function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 @doc doc"""
-    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+    RODEAliasSpecifier{P, F, U0, DU0, TS, N, J}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing, alias_jumps = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving an RODEProblem. Conforms to the AbstractAliasSpecifier interface. 
@@ -106,39 +106,41 @@ when solving an RODEProblem. Conforms to the AbstractAliasSpecifier interface.
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias_noise::Union{Bool,Nothing}`: alias the noise process
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
-* `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the u0 array. Defaults to false .
+* `alias_du0`: alias the du0 array for DAEs. Defaults to false.
+* `alias_tstops`: alias the tstops array
+* `alias_noise`: alias the noise process
+* `alias_jumps`: alias jump process if wrapped in a JumpProcess
+* `alias`: sets all fields of the `RODEAliasSpecifier` to `alias`
 
 """
-struct RODEAliasSpecifier <: AbstractAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-    alias_du0::Union{Bool, Nothing}
-    alias_tstops::Union{Bool, Nothing}
-    alias_noise::Union{Bool, Nothing}
-    alias_jumps::Union{Bool, Nothing}
-
+struct RODEAliasSpecifier{P, F, U0, DU0, TS, N, J} <: AbstractAliasSpecifier
     function RODEAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing,
             alias_jumps = nothing, alias = nothing
         )
-        return if alias == true
-            new(true, true, true, true, true, true, true)
-        elseif alias == false
-            new(false, false, false, false, false, false, false)
-        elseif isnothing(alias)
-            new(
-                alias_p, alias_f, alias_u0, alias_du0,
-                alias_tstops, alias_noise, alias_jumps
-            )
-        end
+        alias === true && return new{true, true, true, true, true, true, true}()
+        alias === false && return new{false, false, false, false, false, false, false}()
+        return new{
+            alias_p, alias_f, alias_u0, alias_du0, alias_tstops, alias_noise, alias_jumps,
+        }()
     end
 end
+
+function Base.getproperty(
+        ::RODEAliasSpecifier{P, F, U0, DU0, TS, N, J}, s::Symbol
+    ) where {P, F, U0, DU0, TS, N, J}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    s === :alias_du0 && return DU0
+    s === :alias_tstops && return TS
+    s === :alias_noise && return N
+    s === :alias_jumps && return J
+    throw(ArgumentError("RODEAliasSpecifier has no field $s"))
+end
+Base.propertynames(::RODEAliasSpecifier) =
+    (:alias_p, :alias_f, :alias_u0, :alias_du0, :alias_tstops, :alias_noise, :alias_jumps)

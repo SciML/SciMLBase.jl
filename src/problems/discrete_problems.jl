@@ -184,7 +184,7 @@ function DiscreteProblem(
 end
 
 @doc doc"""
-    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    DiscreteAliasSpecifier{P, F, U0}(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Holds information on what variables to alias
 when solving a DiscreteProblem. Conforms to the AbstractAliasSpecifier interface. 
@@ -192,27 +192,27 @@ when solving a DiscreteProblem. Conforms to the AbstractAliasSpecifier interface
 When a keyword argument is `nothing`, the default behaviour of the solver is used.
 
 ### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DiscreteAliasSpecifier` to `alias`
+* `alias_p`
+* `alias_f`
+* `alias_u0`: alias the u0 array. Defaults to false .
+* `alias`: sets all fields of the `DiscreteAliasSpecifier` to `alias`
 
 """
-struct DiscreteAliasSpecifier
-    alias_p::Union{Bool, Nothing}
-    alias_f::Union{Bool, Nothing}
-    alias_u0::Union{Bool, Nothing}
-
+struct DiscreteAliasSpecifier{P, F, U0}
     function DiscreteAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
             alias_du0 = nothing, alias = nothing
         )
-        return if alias == true
-            new(true, true, true)
-        elseif alias == false
-            new(false, false, false)
-        elseif isnothing(alias)
-            new(alias_p, alias_f, alias_u0)
-        end
+        alias === true && return new{true, true, true}()
+        alias === false && return new{false, false, false}()
+        return new{alias_p, alias_f, alias_u0}()
     end
 end
+
+function Base.getproperty(::DiscreteAliasSpecifier{P, F, U0}, s::Symbol) where {P, F, U0}
+    s === :alias_p && return P
+    s === :alias_f && return F
+    s === :alias_u0 && return U0
+    throw(ArgumentError("DiscreteAliasSpecifier has no field $s"))
+end
+Base.propertynames(::DiscreteAliasSpecifier) = (:alias_p, :alias_f, :alias_u0)
