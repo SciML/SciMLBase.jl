@@ -619,7 +619,17 @@ end
 
 ### Integrator traits
 
+"""
+    has_reinit(i::DEIntegrator)
+
+Return whether `i` supports reinitialization through `reinit!`.
+"""
 has_reinit(i::DEIntegrator) = false
+@doc """
+    has_reinit(i::DEIntegrator)
+
+Return whether `i` supports reinitialization through `reinit!`.
+""" has_reinit
 
 log_instability(integrator) = ""
 
@@ -925,7 +935,17 @@ function step!(integ::DEIntegrator, dt, stop_at_tdt = false)
     return
 end
 
+"""
+    has_stats(i::DEIntegrator)
+
+Return whether `i` stores solve statistics.
+"""
 has_stats(i::DEIntegrator) = false
+@doc """
+    has_stats(i::DEIntegrator)
+
+Return whether `i` stores solve statistics.
+""" has_stats
 
 """
     isadaptive(i::DEIntegrator)

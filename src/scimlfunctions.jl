@@ -5326,12 +5326,37 @@ __has_f_prototype(f) = hasfield(typeof(f), :f_prototype)
 
 # compatibility
 has_invW(f::AbstractSciMLFunction) = false
+"""
+    has_analytic(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` analytic solution callback.
+"""
 has_analytic(f::AbstractSciMLFunction) = __has_analytic(f) && f.analytic !== nothing
+"""
+    has_jac(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` Jacobian callback.
+"""
 has_jac(f::AbstractSciMLFunction) = __has_jac(f) && f.jac !== nothing
 has_jac_u(f::AbstractSciMLFunction) = __has_jac_u(f) && f.jac_u !== nothing
 has_jac_du(f::AbstractSciMLFunction) = __has_jac_du(f) && f.jac_du !== nothing
+"""
+    has_jvp(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` Jacobian-vector product callback.
+"""
 has_jvp(f::AbstractSciMLFunction) = __has_jvp(f) && f.jvp !== nothing
+"""
+    has_vjp(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` vector-Jacobian product callback.
+"""
 has_vjp(f::AbstractSciMLFunction) = __has_vjp(f) && f.vjp !== nothing
+"""
+    has_tgrad(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` time-gradient callback.
+"""
 has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
 has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
@@ -5351,9 +5376,44 @@ end
 function has_initializeprobpmap(f::AbstractSciMLFunction)
     return __has_initializeprobpmap(f) && f.initialization_data.initializeprobpmap !== nothing
 end
+"""
+    has_initialization_data(f)
+
+Return whether `f` carries non-`nothing` initialization metadata.
+"""
 function has_initialization_data(f)
     return __has_initialization_data(f) && f.initialization_data !== nothing
 end
+@doc """
+    has_analytic(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` analytic solution callback.
+""" has_analytic
+@doc """
+    has_jac(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` Jacobian callback.
+""" has_jac
+@doc """
+    has_jvp(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` Jacobian-vector product callback.
+""" has_jvp
+@doc """
+    has_vjp(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` vector-Jacobian product callback.
+""" has_vjp
+@doc """
+    has_tgrad(f::AbstractSciMLFunction)
+
+Return whether `f` has a non-`nothing` time-gradient callback.
+""" has_tgrad
+@doc """
+    has_initialization_data(f)
+
+Return whether `f` carries non-`nothing` initialization metadata.
+""" has_initialization_data
 has_polynomialize(f) = __has_polynomialize(f) && f.polynomialize !== nothing
 has_unpolynomialize(f) = __has_unpolynomialize(f) && f.unpolynomialize !== nothing
 has_denominator(f) = __has_denominator(f) && f.denominator !== nothing

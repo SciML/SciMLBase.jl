@@ -46,3 +46,34 @@ implementations across all solvers for doing things such as checking for common
 errors and throwing high level messages. Solvers can opt-out of the high level
 error handling by directly defining `SciMLBase.init` and `SciMLBase.solve` instead,
 though this is not recommended in order to allow for uniformity of the error messages.
+
+## Low-Level Integrator Interface
+
+```@docs
+SciMLBase.DEIntegrator
+SciMLBase.AbstractODEIntegrator
+SciMLBase.AbstractSDEIntegrator
+SciMLBase.AbstractRODEIntegrator
+SciMLBase.AbstractDDEIntegrator
+SciMLBase.AbstractDAEIntegrator
+SciMLBase.AbstractSDDEIntegrator
+SciMLBase.DECache
+SciMLBase.check_error!
+SciMLBase.initialize_dae!
+SciMLBase.has_reinit
+```
+
+## Initialization Interface
+
+```@docs
+SciMLBase.get_initial_values
+```
+
+## Argument Validation
+
+```@docs
+SciMLBase.numargs
+SciMLBase.FunctionArgumentsError
+SciMLBase.TooFewArgumentsError
+SciMLBase.TooManyArgumentsError
+```

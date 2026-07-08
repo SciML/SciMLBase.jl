@@ -119,6 +119,13 @@ end
 struct QuadratureSolution end
 @deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
 
+"""
+    build_solution(prob, alg, args...; kwargs...)
+
+Construct the solution object returned by a SciML solver for `prob` solved with `alg`.
+Solver implementations use this helper to attach standard fields such as the original
+problem, algorithm, return code, statistics, dense interpolation, and saved values.
+"""
 function build_solution(
         prob::AbstractIntegralProblem,
         alg, u, resid; chi = nothing,
@@ -140,6 +147,13 @@ function build_solution(
         stats
     )
 end
+@doc """
+    build_solution(prob, alg, args...; kwargs...)
+
+Construct the solution object returned by a SciML solver for `prob` solved with `alg`.
+Solver implementations use this helper to attach standard fields such as the original
+problem, algorithm, return code, statistics, dense interpolation, and saved values.
+""" build_solution
 
 function wrap_sol(sol)
     return if hasproperty(sol, :prob) && hasproperty(sol.prob, :problem_type)

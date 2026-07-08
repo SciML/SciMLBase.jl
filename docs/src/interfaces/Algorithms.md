@@ -40,7 +40,14 @@ SciMLBase.has_lazy_interpolation
 SciMLBase.allows_late_binding_tstops
 SciMLBase.has_init
 SciMLBase.has_step
+SciMLBase.alg_order
+SciMLBase.allowsbounds
+SciMLBase.allowsconstraints
+SciMLBase.alg_interpretation
 ```
+
+`SciMLBase.AlgorithmInterpretation` is the public enum namespace for stochastic integral
+interpretations used by `SciMLBase.alg_interpretation`.
 
 ### Abstract SciML Algorithms
 
@@ -50,6 +57,7 @@ SciMLBase.AbstractDEAlgorithm
 SciMLBase.AbstractLinearAlgorithm
 SciMLBase.AbstractNonlinearAlgorithm
 SciMLBase.AbstractIntervalNonlinearAlgorithm
+SciMLBase.AbstractIntegralAlgorithm
 SciMLBase.AbstractQuadratureAlgorithm
 SciMLBase.AbstractOptimizationAlgorithm
 SciMLBase.AbstractSteadyStateAlgorithm
@@ -60,4 +68,13 @@ SciMLBase.AbstractSDEAlgorithm
 SciMLBase.AbstractDAEAlgorithm
 SciMLBase.AbstractDDEAlgorithm
 SciMLBase.AbstractSDDEAlgorithm
+SciMLBase.DAEInitializationAlgorithm
+SciMLBase.AbstractDiscretization
+```
+
+### DAE Initialization Algorithms
+
+```@docs
+SciMLBase.NoInit
+SciMLBase.OverrideInit
 ```
