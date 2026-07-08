@@ -43,10 +43,13 @@ end
     # Aqua.test_piracy(SciMLBase) # failing
 end
 
-# `ReturnCode` and `AlgorithmInterpretation` are `EnumX.@enumx`-generated submodules;
+# `ReturnCode`, `AlgorithmInterpretation`, and `EigenvalueTarget` are
+# `EnumX.@enumx`-generated submodules;
 # their dynamically generated bodies are unanalyzable by ExplicitImports, so they are
 # explicitly allowed rather than analyzed (they import nothing, so nothing is hidden).
-const _ei_unanalyzable = (SciMLBase.ReturnCode, SciMLBase.AlgorithmInterpretation)
+const _ei_unanalyzable = (
+    SciMLBase.ReturnCode, SciMLBase.AlgorithmInterpretation, SciMLBase.EigenvalueTarget,
+)
 
 # Names explicitly imported from dependencies/Base that are not "public" by
 # ExplicitImports' measure, so the public-API import check would otherwise flag them.
