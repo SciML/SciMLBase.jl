@@ -141,6 +141,7 @@ SciMLBase.AbstractAliasSpecifier
 SciMLBase.LinearAliasSpecifier
 SciMLBase.NonlinearAliasSpecifier
 SciMLBase.ODEAliasSpecifier
+SciMLBase.RODEAliasSpecifier
 SciMLBase.SDEAliasSpecifier
 SciMLBase.DDEAliasSpecifier
 SciMLBase.SDDEAliasSpecifier
@@ -183,6 +184,7 @@ SciMLBase.AbstractIntegralProblem
 SciMLBase.AbstractOptimizationProblem
 SciMLBase.AbstractNoiseProblem
 SciMLBase.AbstractODEProblem
+SciMLBase.AbstractDynamicalODEProblem
 SciMLBase.AbstractDiscreteProblem
 SciMLBase.AbstractAnalyticalProblem
 SciMLBase.AbstractRODEProblem
@@ -196,10 +198,25 @@ SciMLBase.AbstractJumpProblem
 SciMLBase.AbstractSDDEProblem
 SciMLBase.AbstractConstantLagSDDEProblem
 SciMLBase.AbstractPDEProblem
+SciMLBase.AbstractSteadyStateProblem
 ```
 
 ## Concrete Nonlinear Problems
 
 ```@docs
 SciMLBase.HomotopyProblem
+```
+
+## Concrete ODE Problems
+
+```@docs
+SciMLBase.StandardODEProblem
+```
+
+`SciMLBase.ImmutableODEProblem` is the immutable ODE problem type.
+
+## Problem Utilities
+
+```@docs
+SciMLBase.promote_tspan
 ```

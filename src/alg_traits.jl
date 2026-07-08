@@ -280,7 +280,19 @@ Defaults to false
 """
 requires_additive_noise(alg::AbstractSDEAlgorithm) = false
 
+"""
+    AlgorithmInterpretation
+
+Enum of stochastic integral interpretations used by SDE algorithms. The values are
+`AlgorithmInterpretation.Ito` and `AlgorithmInterpretation.Stratonovich`.
+"""
 EnumX.@enumx AlgorithmInterpretation Ito Stratonovich
+@doc """
+    AlgorithmInterpretation
+
+Enum of stochastic integral interpretations used by SDE algorithms. The values are
+`AlgorithmInterpretation.Ito` and `AlgorithmInterpretation.Stratonovich`.
+""" AlgorithmInterpretation
 
 """
     alg_interpretation(alg)

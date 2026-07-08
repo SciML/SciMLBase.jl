@@ -96,6 +96,12 @@ struct TooManyArgumentsError <: Exception
     fname::String
     f::Any
 end
+@doc """
+    TooManyArgumentsError
+
+Exception thrown when a model function defines methods with more arguments than the
+SciML problem interface accepts.
+""" TooManyArgumentsError
 
 function Base.showerror(io::IO, e::TooManyArgumentsError)
     println(io, TOO_MANY_ARGUMENTS_ERROR_MESSAGE)
@@ -182,6 +188,12 @@ struct TooFewArgumentsError <: Exception
     f::Any
     isoptimization::Bool
 end
+@doc """
+    TooFewArgumentsError
+
+Exception thrown when a model function defines methods with fewer arguments than the
+SciML problem interface requires.
+""" TooFewArgumentsError
 
 function Base.showerror(io::IO, e::TooFewArgumentsError)
     if e.isoptimization
@@ -208,6 +220,12 @@ struct FunctionArgumentsError <: Exception
     fname::String
     f::Any
 end
+@doc """
+    FunctionArgumentsError
+
+Exception thrown when a model function's methods do not match the accepted SciML
+problem interface signatures.
+""" FunctionArgumentsError
 
 function Base.showerror(io::IO, e::FunctionArgumentsError)
     println(io, ARGUMENTS_ERROR_MESSAGE)

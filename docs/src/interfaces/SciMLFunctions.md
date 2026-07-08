@@ -114,6 +114,13 @@ library documentations.
 
 ```@docs
 SciMLBase.isinplace(f::SciMLBase.AbstractSciMLFunction)
+SciMLBase.unwrapped_f
+SciMLBase.has_analytic
+SciMLBase.has_jac
+SciMLBase.has_jvp
+SciMLBase.has_vjp
+SciMLBase.has_tgrad
+SciMLBase.has_initialization_data
 ```
 
 ## AbstractSciMLFunction API
@@ -130,4 +137,21 @@ SciMLBase.AbstractRODEFunction
 SciMLBase.AbstractDiscreteFunction
 SciMLBase.AbstractSDDEFunction
 SciMLBase.AbstractNonlinearFunction
+SciMLBase.AbstractParameterizedFunction
+SciMLBase.AbstractHistoryFunction
+```
+
+### Automatic Differentiation Markers
+
+```@docs
+SciMLBase.NoAD
+```
+
+### Function Wrappers
+
+```@docs
+SciMLBase.TimeDerivativeWrapper
+SciMLBase.TimeGradientWrapper
+SciMLBase.UDerivativeWrapper
+SciMLBase.UJacobianWrapper
 ```

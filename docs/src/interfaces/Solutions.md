@@ -147,6 +147,10 @@ result(0.5)                  # interpolate the sub-result
 
 ## Solution Traits
 
+```@docs
+SciMLBase.has_stats
+```
+
 ## AbstractSciMLSolution API
 
 ### Abstract SciML Solutions
@@ -166,4 +170,37 @@ SciMLBase.AbstractODESolution
 SciMLBase.AbstractDDESolution
 SciMLBase.AbstractRODESolution
 SciMLBase.AbstractDAESolution
+```
+
+### Solution Statistics
+
+```@docs
+SciMLBase.DEStats
+SciMLBase.NLStats
+```
+
+### Solution Construction and Errors
+
+```@docs
+SciMLBase.build_solution
+SciMLBase.calculate_solution_errors!
+SciMLBase.solution_new_retcode
+```
+
+### Interpolation Types
+
+```@docs
+SciMLBase.AbstractDiffEqInterpolation
+SciMLBase.ConstantInterpolation
+SciMLBase.LinearInterpolation
+SciMLBase.HermiteInterpolation
+SciMLBase.SensitivityInterpolation
+SciMLBase.interp_summary
+```
+
+### Symbolic Utilities
+
+```@docs
+SciMLBase.getindepsym
+SciMLBase.getindepsym_defaultt
 ```
