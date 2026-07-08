@@ -49,6 +49,10 @@ SciMLBase.alg_interpretation
 `SciMLBase.AlgorithmInterpretation` is the public enum namespace for stochastic integral
 interpretations used by `SciMLBase.alg_interpretation`.
 
+```@docs
+SciMLBase.AlgorithmInterpretation
+```
+
 ### Abstract SciML Algorithms
 
 ```@docs

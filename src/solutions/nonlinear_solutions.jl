@@ -82,6 +82,13 @@ function NonlinearSolution(u, resid, prob, alg, retcode, original, left, right, 
     )
 end
 
+"""
+    SteadyStateSolution
+
+Alias for `NonlinearSolution` used by steady-state solvers. A `SteadyStateProblem`
+is represented as the nonlinear equation `f(u, p, t) = 0`, so steady-state solves
+return the same solution fields and array interface as nonlinear solves.
+"""
 const SteadyStateSolution = NonlinearSolution
 
 get_p(p::AbstractNonlinearSolution) = p.prob.p

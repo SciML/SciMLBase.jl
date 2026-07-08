@@ -158,6 +158,17 @@ SciMLBase.isinplace(prob::SciMLBase.AbstractDEProblem)
 SciMLBase.is_diagonal_noise
 ```
 
+## Clock Domains
+
+```@docs
+SciMLBase.Clocks
+SciMLBase.TimeDomain
+SciMLBase.is_discrete_time_domain
+SciMLBase.isclock
+SciMLBase.issolverstepclock
+SciMLBase.iscontinuous
+```
+
 ## AbstractSciMLProblem API
 
 ### Defaults and Preferences
@@ -219,4 +230,5 @@ SciMLBase.StandardODEProblem
 
 ```@docs
 SciMLBase.promote_tspan
+SciMLBase.check_keywords
 ```

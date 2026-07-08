@@ -12,14 +12,26 @@ struct EventClock <: AbstractClock
     id::Symbol
 end
 
-# Namespace module for backwards-compatible Clocks.ContinuousClock etc.
+"""
+    Clocks
+
+Namespace for clock marker types used by hybrid and clocked SciML systems.
+The module exports `ContinuousClock`, `PeriodicClock`, `SolverStepClock`, and
+`EventClock` for backwards-compatible qualified access such as
+`SciMLBase.Clocks.PeriodicClock`.
+"""
 module Clocks
     using ..SciMLBase: AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock
     const Type = AbstractClock
     export ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 end
 
-# for backwards compatibility
+"""
+    TimeDomain
+
+Alias for `AbstractClock`, retained as the public clock-domain supertype for
+code that dispatches on continuous, periodic, solver-step, or event clocks.
+"""
 const TimeDomain = AbstractClock
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock

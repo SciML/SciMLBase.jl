@@ -177,6 +177,14 @@ Write the current derivative at `t` into `out`.
 function get_du!(out, i::DEIntegrator)
     error("get_du: method has not been implemented for the integrator")
 end
+
+"""
+    get_dt(i::DEIntegrator)
+
+Return the current time step size of `i`. Solver packages that implement the
+SciML integrator interface define this method for their concrete integrator
+types.
+"""
 function get_dt(i::DEIntegrator)
     error("get_dt: method has not been implemented for the integrator")
 end
@@ -237,9 +245,21 @@ function derivative_discontinuity!(i::DEIntegrator, bool)
     error("derivative_discontinuity!: method has not been implemented for the integrator")
 end
 
-# Already removed in a breaking release's release notes, thus this can be removed anytime without a major.
-# For upgrade simplicity, remove in 2028.
-@deprecate u_modified!(i::DEIntegrator, bool) derivative_discontinuity!(i, bool)
+"""
+    u_modified!(i::DEIntegrator, bool)
+
+Deprecated alias for `derivative_discontinuity!`. Use
+`derivative_discontinuity!(i, bool)` to tell the integrator whether the right-hand
+side data changed discontinuously.
+"""
+function u_modified!(i::DEIntegrator, bool)
+    Base.depwarn(
+        "`u_modified!(i::DEIntegrator, bool)` is deprecated, use " *
+            "`derivative_discontinuity!(i, bool)` instead.",
+        :u_modified!
+    )
+    return derivative_discontinuity!(i, bool)
+end
 
 """
     add_tstop!(i::DEIntegrator,t)
@@ -286,9 +306,22 @@ function add_saveat!(i::DEIntegrator, t)
     error("add_saveat!: method has not been implemented for the integrator")
 end
 
+"""
+    set_abstol!(i::DEIntegrator, abstol)
+
+Update the absolute tolerance used by `i`. Concrete integrators that support
+runtime tolerance changes provide the implementation.
+"""
 function set_abstol!(i::DEIntegrator, t)
     error("set_abstol!: method has not been implemented for the integrator")
 end
+
+"""
+    set_reltol!(i::DEIntegrator, reltol)
+
+Update the relative tolerance used by `i`. Concrete integrators that support
+runtime tolerance changes provide the implementation.
+"""
 function set_reltol!(i::DEIntegrator, t)
     error("set_reltol!: method has not been implemented for the integrator")
 end
@@ -400,6 +433,12 @@ function change_t_via_interpolation!(i::DEIntegrator, args...)
     error("change_t_via_interpolation!: method has not been implemented for the integrator")
 end
 
+"""
+    addsteps!(i::DEIntegrator, args...)
+
+Optional integrator hook for adding solver-specific step bookkeeping. The
+default implementation is a no-op.
+"""
 addsteps!(i::DEIntegrator, args...) = nothing
 
 """

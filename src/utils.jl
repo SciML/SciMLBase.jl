@@ -384,6 +384,12 @@ parameterless_type(::Type{T}) where {T} = __parameterless_type(T)
 
 # support functions
 export check_keywords, warn_compat
+"""
+    check_keywords(alg, kwargs, warnlist) -> Bool
+
+Warn when `kwargs` contains non-`nothing` keyword arguments that `alg` ignores.
+Returns `true` if at least one ignored keyword was present and `false` otherwise.
+"""
 function check_keywords(alg, kwargs, warnlist)
     flg = false
     for (kw, val) in kwargs

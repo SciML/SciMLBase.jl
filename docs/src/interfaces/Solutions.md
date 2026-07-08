@@ -179,6 +179,14 @@ SciMLBase.DEStats
 SciMLBase.NLStats
 ```
 
+### Solution Sentinels and Aliases
+
+```@docs
+SciMLBase.AllObserved
+SciMLBase.SteadyStateSolution
+SciMLBase.QuadratureSolution
+```
+
 ### Solution Construction and Errors
 
 ```@docs
