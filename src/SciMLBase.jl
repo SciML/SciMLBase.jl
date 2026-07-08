@@ -1793,19 +1793,33 @@ end
 """
     discretize(sys, discretizer, args...; kwargs...)
 
-Transform a symbolic or high-level PDE/system description into the numerical
-object consumed by solvers, commonly an `AbstractSciMLProblem` or a lower-level
-discretized system. Discretizer packages define methods for their concrete
-system and discretizer types.
+Transform a symbolic or high-level problem description into a solver-ready
+representation.
+
+Discretizer packages implement `SciMLBase.discretize` for the system/problem
+types and discretization algorithms they own. A method may return an
+[`AbstractSciMLProblem`](@ref), a lower-level symbolic system, or another
+documented object that downstream solver packages can consume. Implementations
+should document the accepted input system type, the meaning of `discretizer`, the
+generated problem family, and any metadata needed to map numerical solutions back
+to the original variables and domains.
+
+Use [`symbolic_discretize`](@ref) when the caller needs a diagnostic or symbolic
+view of the discretized system rather than the solver-ready problem.
 """
 function discretize end
 
 """
     symbolic_discretize(sys, discretizer, args...; kwargs...)
 
-Return the symbolic representation of a discretization when the discretizer can
-expose one. This is primarily used for inspecting or transforming the generated
-system before numeric problem construction.
+Return a symbolic or diagnostic representation of a discretization.
+
+Discretizer packages implement `SciMLBase.symbolic_discretize` when they can
+expose lowered equations, operators, grids, boundary-condition handling, or other
+intermediate artifacts without constructing only the final solver-ready problem.
+The result should correspond to the same mathematical discretization used by
+[`discretize`](@ref), but may preserve additional symbolic information useful for
+inspection, debugging, code generation, or downstream transformations.
 """
 function symbolic_discretize end
 
