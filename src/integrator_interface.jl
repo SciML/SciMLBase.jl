@@ -977,13 +977,27 @@ end
 """
     has_stats(i::DEIntegrator)
 
-Return whether `i` stores solve statistics.
+Return whether `i` exposes mutable solve statistics through its integrator
+interface.
+
+Solver integrators that maintain counters such as function evaluations, rejected
+steps, nonlinear iterations, or linear solves should overload this trait to
+return `true` and provide the corresponding statistics through their documented
+integrator fields. The default is `false`, which tells generic code not to assume
+that a `stats` field or stats update path exists.
 """
 has_stats(i::DEIntegrator) = false
 @doc """
     has_stats(i::DEIntegrator)
 
-Return whether `i` stores solve statistics.
+Return whether `i` exposes mutable solve statistics through its integrator
+interface.
+
+Solver integrators that maintain counters such as function evaluations, rejected
+steps, nonlinear iterations, or linear solves should overload this trait to
+return `true` and provide the corresponding statistics through their documented
+integrator fields. The default is `false`, which tells generic code not to assume
+that a `stats` field or stats update path exists.
 """ has_stats
 
 """

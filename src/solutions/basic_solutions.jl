@@ -120,9 +120,20 @@ end
 """
     build_solution(prob, alg, args...; kwargs...)
 
-Construct the solution object returned by a SciML solver for `prob` solved with `alg`.
-Solver implementations use this helper to attach standard fields such as the original
-problem, algorithm, return code, statistics, dense interpolation, and saved values.
+Construct the solution object returned by a SciML solver for `prob` solved with
+`alg`.
+
+Solver packages extend `build_solution` for the problem and algorithm families
+they own so that direct solver implementations can share the same solution
+construction path. Methods should attach the original problem, algorithm,
+[`ReturnCode`](@ref), residual or error information, solver statistics, dense
+interpolation data, and saved values expected by the corresponding
+[`AbstractSciMLSolution`](@ref) interface.
+
+The accepted positional arguments are problem-family specific. Implementations
+should document the argument order they expect and should preserve common SciML
+solution behavior such as array indexing, symbolic indexing, and retcode
+inspection.
 """
 function build_solution(
         prob::AbstractIntegralProblem,
@@ -148,9 +159,20 @@ end
 @doc """
     build_solution(prob, alg, args...; kwargs...)
 
-Construct the solution object returned by a SciML solver for `prob` solved with `alg`.
-Solver implementations use this helper to attach standard fields such as the original
-problem, algorithm, return code, statistics, dense interpolation, and saved values.
+Construct the solution object returned by a SciML solver for `prob` solved with
+`alg`.
+
+Solver packages extend `build_solution` for the problem and algorithm families
+they own so that direct solver implementations can share the same solution
+construction path. Methods should attach the original problem, algorithm,
+[`ReturnCode`](@ref), residual or error information, solver statistics, dense
+interpolation data, and saved values expected by the corresponding
+[`AbstractSciMLSolution`](@ref) interface.
+
+The accepted positional arguments are problem-family specific. Implementations
+should document the argument order they expect and should preserve common SciML
+solution behavior such as array indexing, symbolic indexing, and retcode
+inspection.
 """ build_solution
 
 function wrap_sol(sol)
