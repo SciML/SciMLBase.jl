@@ -1,5 +1,20 @@
 """
 $(TYPEDEF)
+
+Marker for the standard first-order ODE problem representation.
+
+`StandardODEProblem()` is the default `problem_type` metadata stored by
+`ODEProblem` and `ImmutableODEProblem` when a problem is represented directly as
+`du/dt = f(u, p, t)` or
+`M * du/dt = f(u, p, t)`. It distinguishes this layout from specialized ODE
+encodings, such as dynamical, split, second-order, or incrementing
+representations, while keeping all of them under the common
+[`AbstractODEProblem`](@ref) interface.
+
+Users normally do not need to construct this marker directly. Solver
+implementations may inspect `prob.problem_type isa StandardODEProblem` when
+they need behavior specific to the standard ODE layout; generic ODE code should
+prefer the [`AbstractODEProblem`](@ref) interface and problem fields.
 """
 struct StandardODEProblem end
 
