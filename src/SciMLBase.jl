@@ -940,17 +940,26 @@ abstract type AbstractDiscretizationMetadata{hasTime} end
 """
 $(TYPEDEF)
 
-The supertype of all ensemble problem types. An ensemble problem wraps a base
-`AbstractSciMLProblem` together with the functions (`prob_func`, `output_func`,
-`reduction`, ...) needed to generate, run, and reduce many related trajectories under
-the [parallel ensemble interface](@ref ensemble). The concrete implementation is
-[`EnsembleProblem`](@ref); solving one dispatches on the chosen
-[`EnsembleAlgorithm`](@ref).
+Base interface for ensemble problems.
+
+An `AbstractEnsembleProblem` describes many related solves generated from a
+template problem. Concrete subtypes should expose the template problem, a
+trajectory-generation hook, an output hook, a batch reduction hook, and any
+initial reduction state needed by ensemble solvers. The standard concrete
+implementation is [`EnsembleProblem`](@ref).
 """
 abstract type AbstractEnsembleProblem <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
+
+Base interface for algorithms that estimate ensemble quantities during an
+ensemble solve.
+
+Concrete estimator algorithms can be used by ensemble workflows to decide when a
+Monte Carlo estimate has converged, how many trajectories are required, or how
+batch reductions should be interpreted. Subtypes should document the statistic
+they estimate, the stopping criterion, and the reduction state they require.
 """
 abstract type AbstractEnsembleEstimator <: AbstractSciMLAlgorithm end
 

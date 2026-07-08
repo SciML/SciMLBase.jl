@@ -1,6 +1,16 @@
 """
 $(TYPEDEF)
 
+Container for a template problem and the user hooks used to run an ensemble of
+related SciML solves.
+
+An `EnsembleProblem` is solved by repeatedly calling `prob_func(prob, ctx)` to
+construct the trajectory-specific problem, solving that problem with the
+requested numerical algorithm, passing the result through `output_func(sol, ctx)`,
+and combining batches with `reduction(u, data, I)`. The `ctx` argument is an
+[`EnsembleContext`](@ref) that identifies the trajectory and carries
+per-trajectory RNG state when `rng` or `seed` is supplied to `solve`.
+
 ## Constructor
 
 ```julia
@@ -13,43 +23,25 @@ EnsembleProblem(prob::AbstractSciMLProblem;
 
 ## Positional Arguments
 
-  - `prob`: The canonical problem of the ensemble problem. This is the prob that is seeded
-    into each `prob_func` call to be used as the one that is manipulated/changed for each
-    run of the ensemble.
+  - `prob`: The canonical problem used as the template for each trajectory.
 
 ## Keyword Arguments
 
-  - `output_func`: A function `(sol, ctx)` that determines what is saved from the solution
-    to the output array. `ctx` is an [`EnsembleContext`](@ref) with fields like `ctx.sim_id`.
-    Defaults to saving the solution itself. The output is `(out, rerun)` where `out` is the
-    output and `rerun` is a boolean which designates whether to rerun.
   - `prob_func`: A function `(prob, ctx)` that modifies the problem for each trajectory.
     `ctx` is an [`EnsembleContext`](@ref) providing `ctx.sim_id` (unique id `1:trajectories`),
     `ctx.repeat` (rerun counter, starts at `1`), `ctx.rng` (per-trajectory RNG or `nothing`),
     `ctx.sim_seed`, and `ctx.master_rng`. `prob_func` must preserve the problem type
-    of `prob` — for example, a `JumpProblem` must remain a `JumpProblem`, an
+    of `prob`; for example, a `JumpProblem` must remain a `JumpProblem`, an
     `ODEProblem` must remain an `ODEProblem`.
-
-  - `reduction`: This function is used to aggregate the results in each simulation batch.
-    By default, it appends the `data` from the batch to `u`, which is initialized via `u_data`.
-    The `I` is a range of indices corresponding to the trajectories for the current batch.
-    ### Arguments:
-        - `u`: The solution from the current ensemble run. This is the accumulated data that gets
-          updated in each batch.
-        - `data`: The results from the current batch of simulations. This is typically some data
-          (e.g., variable values, time steps) that is merged with `u`.
-        - `I`: A range of indices corresponding to the simulations in the current batch. This provides
-          the trajectory indices for the batch.
-
-    ### Returns:
-        - `(new_data, has_converged)`: A tuple where:
-        - `new_data`: The updated accumulated data, typically the result of appending `data` to `u`.
-        - `has_converged`: A boolean indicating whether the simulation has converged and should terminate early.
-          If `true`, the simulation will stop early. If `false`, the simulation will continue. By default, this is
-          `false`, meaning the simulation will not stop early.
-
-  - `u_init`: The initial form of the object that gets updated in-place inside the
-    `reduction` function.
+  - `output_func`: A function `(sol, ctx)` that determines what is saved from each
+    trajectory. It returns `(out, rerun)`, where `out` is stored in the batch output
+    and `rerun` requests that the same trajectory be rerun with `ctx.repeat`
+    incremented.
+  - `reduction`: A function `(u, data, I)` that combines the current accumulator
+    `u` with the outputs `data` from the trajectory index range `I`. It returns
+    `(new_u, converged)`, where `converged=true` stops the ensemble early.
+  - `u_init`: The initial accumulator passed to `reduction`. When `nothing`, the
+    accumulator is initialized from the first batch output.
   - `safetycopy`: Determines whether a safety `deepcopy` is called on the `prob`
     before the `prob_func`. By default, this is true for any user-given `prob_func`,
     as without this, modifying the arguments of something in the `prob_func`, such
@@ -59,65 +51,16 @@ EnsembleProblem(prob::AbstractSciMLProblem;
     e.g., SDE problems with custom noise processes, `deepcopy` might be
     insufficient. In such cases, use a custom `prob_func`.
 
-## `prob_func` Specification
-
-One can specify a function `prob_func` which changes the problem. For example:
-
-```julia
-function prob_func(prob, ctx)
-    @. prob.u0 = randn() * prob.u0
-    prob
-end
-```
-
-modifies the initial condition for all of the problems by a standard normal
-random number (a different random number per simulation). Notice that since
-problem types are immutable, it uses `.=`. Otherwise, one can just create
-a new problem type:
-
-```julia
-function prob_func(prob, ctx)
-    @. prob.u0 = u0_arr[ctx.sim_id]
-    prob
-end
-```
-
-To access the per-trajectory RNG (available when `rng` or `seed` is passed to `solve`):
+## Example
 
 ```julia
 function prob_func(prob, ctx)
     remake(prob, u0 = randn(ctx.rng, length(prob.u0)))
 end
-```
 
-## `output_func` Specification
-
-The `output_func` is a reduction function. Its arguments are the generated solution and the
-[`EnsembleContext`](@ref). For example, if we wish to only save the 2nd coordinate
-at the end of each solution, we can do:
-
-```julia
 output_func(sol, ctx) = (sol[end, 2], false)
+ensemble_prob = EnsembleProblem(prob; prob_func, output_func)
 ```
-
-Thus, the ensemble simulation would return as its data an array which is the
-end value of the 2nd dependent variable for each of the runs.
-"""
-
-"""
-$(TYPEDEF)
-
-Defines a structure to manage an ensemble (batch) of problems.
-Each field controls how the ensemble behaves during simulation.
-
-## Arguments
-
-  - `prob`: The original base problem to replicate or modify.
-  - `prob_func`: A function that defines how to generate each subproblem.
-  - `output_func`: A function to post-process each individual simulation result.
-  - `reduction`: A function to combine results from all simulations.
-  - `u_init`: The initial container used to accumulate the results.
-  - `safetycopy`: Whether to copy the problem when creating subproblems (to avoid unintended modifications).
 """
 struct EnsembleProblem{T, T2, T3, T4, T5} <: AbstractEnsembleProblem
     prob::T
@@ -129,33 +72,42 @@ struct EnsembleProblem{T, T2, T3, T4, T5} <: AbstractEnsembleProblem
 end
 
 """
-Returns the same problem without modification.
+    DEFAULT_PROB_FUNC(prob, ctx)
+
+Default `prob_func` for [`EnsembleProblem`](@ref). It returns the template
+problem unchanged for every trajectory, so all trajectory-specific variation must
+come from solver randomness, callbacks, or other solve-time state.
 """
 DEFAULT_PROB_FUNC(prob, ctx) = prob
 
 """
-Returns the solution as-is, along with `false` indicating no rerun.
+    DEFAULT_OUTPUT_FUNC(sol, ctx)
+
+Default `output_func` for [`EnsembleProblem`](@ref). It stores the full solution
+object from each trajectory and returns `false` for the rerun flag, meaning the
+trajectory is accepted on the first completion.
 """
 DEFAULT_OUTPUT_FUNC(sol, ctx) = (sol, false)
 
 """
-Appends new data to the accumulated data and returns `false` to indicate no early termination.
+    DEFAULT_REDUCTION(u, data, I)
+
+Default ensemble reduction. It appends the current batch `data` to the
+accumulator `u` and returns `false` for the convergence flag, so the ensemble
+continues until all requested trajectories have been run.
 """
 DEFAULT_REDUCTION(u, data, I) = append!(u, data), false
 
 """
-$(TYPEDEF)
+$(SIGNATURES)
 
-Main constructor for `EnsembleProblem`.
+Construct an [`EnsembleProblem`](@ref) from a template problem and optional
+trajectory, output, and reduction hooks.
 
-## Keyword Arguments
-
-  - `prob`: The base problem.
-  - `prob_func`: Function to modify the base problem per trajectory.
-  - `output_func`: Function to extract output from a solution.
-  - `reduction`: Function to aggregate results.
-  - `u_init`: Initial value for aggregation.
-  - `safetycopy`: Whether to deepcopy the problem before modifying.
+User-supplied hooks are passed through `prepare_function`, and `u_init` is
+normalized through `prepare_initial_state`. The default `safetycopy` is `true`
+when a custom `prob_func` is supplied, since mutating shared objects inside
+`prob_func` is otherwise not thread-safe in threaded ensemble modes.
 """
 function EnsembleProblem(
         prob;
@@ -173,9 +125,10 @@ function EnsembleProblem(
 end
 
 """
-$(TYPEDEF)
+$(SIGNATURES)
 
-Alternate constructor that uses only keyword arguments.
+Keyword-only constructor for [`EnsembleProblem`](@ref). This is equivalent to
+`EnsembleProblem(prob; kwargs...)` with `prob` supplied as a keyword.
 """
 function EnsembleProblem(;
         prob,
@@ -189,9 +142,10 @@ function EnsembleProblem(;
 end
 
 """
-$(TYPEDEF)
+$(SIGNATURES)
 
-Constructor that is used for NOnlinearProblem.
+Deprecated constructor that builds an ensemble by selecting initial conditions
+from `u0s` by trajectory index.
 
 !!! warning
 
@@ -212,12 +166,16 @@ end
 """
 $(TYPEDEF)
 
-Defines a weighted version of an `EnsembleProblem`, where different simulations contribute unequally.
+Weighted ensemble problem wrapper.
 
-## Arguments
+`WeightedEnsembleProblem` associates an [`EnsembleProblem`](@ref) with a vector
+of trajectory weights. The weights are used by weighted ensemble analysis
+utilities and must match the number of underlying trajectories.
 
-  - `ensembleprob`: The base ensemble problem.
-  - `weights`: A vector of weights corresponding to each simulation.
+## Fields
+
+  - `ensembleprob`: The wrapped ensemble problem.
+  - `weights`: A vector of trajectory weights.
 """
 struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
     AbstractEnsembleProblem
@@ -226,16 +184,15 @@ struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVect
 end
 
 """
-Returns a list of all accessible properties, including those from the inner ensemble and `:weights`.
+Return the properties of the wrapped ensemble problem plus `:weights`.
 """
 function Base.propertynames(e::WeightedEnsembleProblem)
     return (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
 end
 
 """
-Accesses properties of a `WeightedEnsembleProblem`.
-
-Returns `weights` or delegates to the underlying ensemble.
+Access `:weights`, `:ensembleprob`, or a delegated property of the wrapped
+ensemble problem.
 """
 function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
     f === :weights && return getfield(e, :weights)
@@ -244,9 +201,10 @@ function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
 end
 
 """
-$(TYPEDEF)
+$(SIGNATURES)
 
-Constructor for `WeightedEnsembleProblem`. Ensures weights sum to 1 and matches problem count.
+Construct a [`WeightedEnsembleProblem`](@ref), asserting that the supplied
+`weights` sum to one and match the number of generated problems.
 """
 function WeightedEnsembleProblem(args...; weights, kwargs...)
     # TODO: allow skipping checks?

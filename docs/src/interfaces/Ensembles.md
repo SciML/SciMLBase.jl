@@ -13,12 +13,19 @@ down to specific answers, and compute summary statistics on the results.
 ```@docs
 SciMLBase.AbstractEnsembleProblem
 EnsembleProblem
+SciMLBase.WeightedEnsembleProblem
+SciMLBase.DEFAULT_PROB_FUNC
+SciMLBase.DEFAULT_OUTPUT_FUNC
+SciMLBase.DEFAULT_REDUCTION
 ```
 
 ### Solving the Problem
 
 ```@docs
 SciMLBase.__solve(prob::SciMLBase.AbstractEnsembleProblem, alg, ensemblealg::SciMLBase.BasicEnsembleAlgorithm)
+SciMLBase.EnsembleContext
+SciMLBase.generate_sim_seeds
+SciMLBase.default_rng_func
 ```
 
 ### EnsembleAlgorithms
@@ -32,6 +39,7 @@ EnsembleSerial
 EnsembleThreads
 EnsembleDistributed
 EnsembleSplitThreads
+SciMLBase.AbstractEnsembleEstimator
 ```
 
 #### DiffEq Only (ODEProblem, SDEProblem)
@@ -64,8 +72,14 @@ solve(ensembleprob, alg, EnsembleThreads(); trajectories = 1000)
 
 ### Solution Type
 
-The resulting type is a `EnsembleSimulation`, which includes the array of
-solutions.
+The resulting object is an `EnsembleSolution`, which includes the array of
+trajectory outputs.
+
+```@docs
+SciMLBase.EnsembleSolution
+SciMLBase.EnsembleTestSolution
+SciMLBase.WeightedEnsembleSolution
+```
 
 ### Plot Recipe
 

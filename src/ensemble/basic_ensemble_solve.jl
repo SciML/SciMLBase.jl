@@ -17,44 +17,58 @@ abstract type BasicEnsembleAlgorithm <: EnsembleAlgorithm end
 """
 $(TYPEDEF)
 
-Basic ensemble solver which uses no parallelism and runs
-the problems in serial
+Ensemble execution algorithm that runs trajectories serially in the current Julia
+process.
+
+`EnsembleSerial` has the lowest scheduling complexity and is useful for
+debugging, deterministic single-task execution, or small ensembles where
+parallel overhead dominates the solve time. Trajectories still receive distinct
+[`EnsembleContext`](@ref) values and can use per-trajectory RNG state when
+`seed` or `rng` is supplied to `solve`.
 """
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-The default. This uses multithreading. It's local (single computer, shared memory)
-parallelism only. Lowest parallelism overhead for small problems.
+Ensemble execution algorithm that schedules trajectories on Julia threads in the
+current process.
+
+`EnsembleThreads` is the default basic ensemble backend. It provides shared-memory
+parallelism with low overhead, but user hooks such as `prob_func`, `output_func`,
+and `rng_func` must be thread-safe. In particular, mutable objects captured by
+closures or shared through the template problem should not be mutated unless each
+trajectory receives independent storage.
 """
 struct EnsembleThreads <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-Uses `pmap` internally. It will use as many processors as you
-have Julia processes. To add more processes, use `addprocs(n)`. These processes
-can be placed onto multiple different machines in order to parallelize across
-an entire cluster via passwordless SSH. See Julia's
-documentation for more details.
+Ensemble execution algorithm that distributes trajectory batches with
+`Distributed.pmap`.
 
-Recommended for the case when each trajectory calculation isn't “too quick” (at least about
-a millisecond each?), where the calculations of a given problem allocate memory, or when
-you have a very large ensemble. This can be true even on a single shared memory system
-because distributed process use separate garbage collectors and thus can be even faster
-than EnsembleThreads if the computation is complex enough.
+`EnsembleDistributed` uses the available Julia worker processes; add workers
+with `Distributed.addprocs` before solving. The template problem, algorithms,
+callbacks, and ensemble hooks must be serializable and available on each worker.
+This backend is usually appropriate when each trajectory is relatively expensive,
+when trajectories allocate heavily, or when work should be spread across multiple
+machines. It can also help on a single machine when separate worker processes and
+garbage collectors outweigh distributed communication overhead.
 """
 struct EnsembleDistributed <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-A mixture of distributed computing with threading. The optimal version of this is to have
-a process on each node of a computer and then multithread on each system. However, this
-ensembler will simply use the node setup provided by the Julia Distributed processes, and
-thus it is recommended that you setup the processes in this fashion before using this
-ensembler. See Julia's Distributed documentation for more information
+Ensemble execution algorithm that combines distributed workers with threaded
+execution inside each worker process.
+
+`EnsembleSplitThreads` uses the Julia distributed worker setup provided by the
+caller and then runs threaded batches on each worker. It is intended for node-based
+cluster layouts, for example one Julia worker per node with multiple local threads
+per worker. The same serialization requirements as [`EnsembleDistributed`](@ref)
+apply, and threaded hooks must also be thread-safe.
 """
 struct EnsembleSplitThreads <: BasicEnsembleAlgorithm end
 
@@ -69,19 +83,25 @@ end
 """
     EnsembleContext{S, R, M}
 
-Contextual information about the current simulation within an ensemble solve.
-Passed to `rng_func`, `prob_func(prob, ctx)`, and `output_func(sol, ctx)`.
+Contextual information about the current trajectory within an ensemble solve.
+
+An `EnsembleContext` is passed to `rng_func`, `prob_func(prob, ctx)`, and
+`output_func(sol, ctx)`. It is the stable interface for selecting
+trajectory-specific data without relying on global counters or backend-specific
+worker state.
 
 ## Fields
-- `sim_id::Int` — Unique simulation index (1:trajectories)
-- `repeat::Int` — Rerun counter (starts at 1, increments if `output_func` requests rerun)
-- `worker_id::Int` — 0 for serial/threaded; `Distributed.myid()` for distributed
-- `sim_seed::S` — Pre-generated seed for this simulation, or `nothing`
-- `rng::R` — Per-simulation RNG created by `rng_func`, or `nothing`.
-  When `rng_func` has not yet been called (i.e. inside `rng_func` itself), this is `nothing`.
-- `master_rng::M` — User-provided master RNG, or `nothing`.
-  Set to `nothing` in distributed modes (`EnsembleDistributed`, `EnsembleSplitThreads`)
-  to avoid serialization issues.
+
+- `sim_id::Int`: Unique trajectory index in `1:trajectories`.
+- `repeat::Int`: Rerun counter, starting at `1` and incremented when
+  `output_func` requests a rerun.
+- `worker_id::Int`: `0` for serial and threaded execution, or
+  `Distributed.myid()` for distributed execution.
+- `sim_seed::S`: Pre-generated seed for this trajectory, or `nothing`.
+- `rng::R`: Per-trajectory RNG created by `rng_func`, or `nothing` while
+  `rng_func` itself is running.
+- `master_rng::M`: User-provided master RNG, or `nothing`. Distributed modes set
+  this to `nothing` to avoid serializing mutable RNG state to workers.
 
 !!! warning "Thread safety"
     In threaded ensemble modes (`EnsembleThreads`, `EnsembleSplitThreads`), `master_rng`
@@ -100,8 +120,12 @@ end
 """
     generate_sim_seeds(rng, seed, trajectories)
 
-Pre-generate an array of per-simulation seeds from a master RNG.
-If `rng` is provided it is used directly; otherwise `Xoshiro(seed)` is constructed.
+Pre-generate an array of per-trajectory seeds from a master RNG.
+
+If `rng` is provided it is used directly; otherwise `Random.Xoshiro(seed)` is
+constructed. The returned `UInt64` values are stored in each
+[`EnsembleContext`](@ref) as `ctx.sim_seed` so serial, threaded, and distributed
+ensemble execution can create reproducible per-trajectory RNG state.
 """
 function generate_sim_seeds(rng, seed, trajectories)
     master = rng !== nothing ? rng : Random.Xoshiro(seed)
@@ -111,11 +135,12 @@ end
 """
     default_rng_func(ctx::EnsembleContext)
 
-Default per-simulation RNG factory. Seeds `TaskLocalRNG` with the simulation seed
-(if available) and returns `Random.default_rng()`.
+Default per-trajectory RNG factory.
 
-Note: `ctx.rng` is `nothing` when this function is called, since its purpose is to
-create the RNG that will be stored in `ctx.rng` for `prob_func` and `output_func`.
+When `ctx.sim_seed` is available, this seeds Julia's task-local default RNG and
+returns `Random.default_rng()`. `ctx.rng` is `nothing` when this function is
+called, since the returned RNG is what will be stored as `ctx.rng` for
+`prob_func` and `output_func`.
 """
 function default_rng_func(ctx::EnsembleContext)
     if ctx.sim_seed !== nothing
@@ -228,23 +253,32 @@ end
 """
     sim = solve(enprob, alg, ensemblealg = EnsembleThreads(), kwargs...)
 
-Solves the ensemble problem `enprob` with the algorithm `alg` using the ensembler
-`ensemblealg`.
+Solve an [`AbstractEnsembleProblem`](@ref) by running many trajectories of the
+template problem.
 
-The keyword arguments take in the arguments for the common solver interface and will
-pass them to the solver. The `ensemblealg` is optional, and will
-default to `EnsembleThreads()`. The special keyword arguments to note are:
+`alg` is the numerical algorithm used for each generated trajectory, while
+`ensemblealg` chooses the scheduling backend. Keywords that are not consumed by
+the ensemble layer are forwarded to each inner `solve` call, so common solver
+keywords such as `saveat`, tolerances, callbacks, and progress options retain
+their usual meaning for each trajectory.
 
-  - `trajectories`: The number of simulations to run. This argument is required.
-  - `batch_size` : The size of the batches on which the reductions are applies. Defaults to `trajectories`.
-  - `pmap_batch_size`: The size of the `pmap` batches. Default is
-    `batch_size÷100 > 0 ? batch_size÷100 : 1`
-  - `seed`: Master seed for reproducible ensemble solves. Pre-generates per-trajectory seeds.
+The special ensemble keywords are:
+
+  - `trajectories`: Required number of trajectories to run.
+  - `batch_size`: Number of trajectories processed before `prob.reduction` is
+    called. Defaults to `trajectories`.
+  - `pmap_batch_size`: Batch size passed to `pmap` for distributed ensemble
+    algorithms. Defaults to `div(batch_size, 100) > 0 ? div(batch_size, 100) : 1`.
+  - `progress_aggregate`: Whether per-trajectory progress messages are
+    aggregated into a single total progress message. Defaults to `true`.
+  - `seed`: Master seed for reproducible ensemble solves. Pre-generates
+    per-trajectory seeds.
   - `rng`: Master RNG for reproducible ensemble solves. Takes priority over `seed`.
   - `rng_func`: Custom per-trajectory RNG factory `(ctx::EnsembleContext) -> AbstractRNG`.
     Defaults to `default_rng_func` which seeds the `TaskLocalRNG`.
-    Note: `ctx.master_rng` is shared across tasks in threaded modes. A custom `rng_func`
-    must not mutate it unless it is thread-safe.
+
+In threaded modes, `ctx.master_rng` is shared across tasks. A custom `rng_func`
+must not mutate it unless that mutation is thread-safe.
 """
 function __solve(
         prob::AbstractEnsembleProblem,
