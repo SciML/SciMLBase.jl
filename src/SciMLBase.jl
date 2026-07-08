@@ -747,14 +747,23 @@ abstract type EnsembleAlgorithm <: AbstractSciMLAlgorithm end
 $(TYPEDEF)
 
 Base interface for sensitivity algorithms passed through the `sensealg` keyword
-argument. Concrete subtypes are implemented by sensitivity packages and select
-how derivatives of `solve` are computed.
+argument to `solve`. A `sensealg` value chooses the method used to differentiate
+the solver call, such as forward sensitivity equations, adjoint sensitivity
+equations, direct AD through solver operations, second-order methods, or
+shadowing methods for long-time averages.
 
-The type parameters are part of the dispatch key for sensitivity packages.
-Concrete algorithms should document the meaning of those parameters, the
-supported problem families, the automatic-differentiation backends they use, and
-whether they implement forward, adjoint, second-order, or shadowing sensitivity
-methods.
+`SciMLBase` owns the lightweight dispatch interface and fallback errors, while
+sensitivity packages provide the concrete algorithms and ChainRules definitions
+that implement derivatives of `solve`. Concrete sensitivity algorithms should be
+small configuration objects: they should describe how derivatives are computed,
+not store the problem being differentiated.
+
+The type parameters are part of the dispatch key for downstream sensitivity
+packages. Concrete algorithms should document the meaning of those parameters,
+the supported problem families, the differentiable quantities (`u0`, `p`, save
+values, observables, or problem-specific data), the automatic-differentiation
+backends they use, and any restrictions on callbacks, events, mutation,
+interpolation, or saved output.
 """
 abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: AbstractSciMLAlgorithm end
 
@@ -762,8 +771,15 @@ abstract type AbstractSensitivityAlgorithm{CS, AD, FDT} <: AbstractSciMLAlgorith
 $(TYPEDEF)
 
 Base interface for sensitivity algorithms that differentiate through, or
-otherwise overload, solver behavior. Concrete subtypes should document the AD
-backend and solver features that remain differentiable.
+otherwise overload, solver behavior. Subtypes participate in the `solve`
+automatic-differentiation path by providing rules that replace the default
+fallbacks for forward-mode and/or reverse-mode differentiation.
+
+Concrete subtypes should document whether they differentiate the numerical solver
+directly, solve auxiliary sensitivity equations, or combine solver rules with an
+AD backend. They should also specify which solver features remain differentiable,
+how saved values and interpolation are treated, and what happens for unsupported
+problem or callback features.
 """
 abstract type AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractSensitivityAlgorithm{CS, AD, FDT} end
@@ -771,9 +787,17 @@ AbstractSensitivityAlgorithm{CS, AD, FDT} end
 """
 $(TYPEDEF)
 
-Base interface for forward sensitivity algorithms. Concrete subtypes should
-document how tangent information is initialized, propagated, and returned, and
-which problem, parameter, and callback features are supported.
+Base interface for forward sensitivity algorithms. Forward sensitivity methods
+propagate tangent information alongside the primal solve and are typically used
+when the derivative seed dimension is modest or when the caller needs full
+solution sensitivities.
+
+Concrete subtypes should document how tangent information is initialized,
+propagated, and returned; which inputs are differentiated; how parameters and
+initial conditions are seeded; and which problem, parameter, event, and callback
+features are supported. If the method relies on an AD backend for Jacobian-vector
+products or local derivative calculations, that backend and its limitations
+should be documented by the concrete algorithm.
 """
 abstract type AbstractForwardSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
@@ -781,9 +805,15 @@ AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 """
 $(TYPEDEF)
 
-Base interface for adjoint sensitivity algorithms. Concrete subtypes should
-document their adjoint equation, checkpointing, interpolation, vector-Jacobian
-product, and callback/event assumptions.
+Base interface for adjoint sensitivity algorithms. Adjoint methods implement the
+reverse-mode differentiation path for `solve`, propagating cotangents from saved
+solution values or user objectives back to differentiable problem data.
+
+Concrete subtypes should document their adjoint equation, what primal-solve data
+must be retained or recomputed, checkpointing behavior, interpolation
+requirements, vector-Jacobian product backend, and assumptions about callbacks,
+events, discontinuities, noise, and mutation. They should also state which
+solution outputs and problem fields may receive gradients.
 """
 abstract type AbstractAdjointSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
@@ -791,9 +821,14 @@ AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 """
 $(TYPEDEF)
 
-Base interface for second-order sensitivity algorithms. Concrete subtypes should
-document how Hessian or Hessian-vector information is computed and which first
-order sensitivity backend they build on.
+Base interface for second-order sensitivity algorithms. These algorithms compute
+Hessian, Hessian-vector, or related second-derivative information for solver
+outputs or objectives.
+
+Concrete subtypes should document the first-order sensitivity method or AD
+backend they build on, the supported second-derivative product or materialized
+array form, how seeds and cotangents are represented, and any restrictions on
+problem types, callbacks, saved output, or nested AD backends.
 """
 abstract type AbstractSecondOrderSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
@@ -801,9 +836,15 @@ AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
 """
 $(TYPEDEF)
 
-Base interface for shadowing sensitivity algorithms. Concrete subtypes should
-document the dynamical-systems assumptions, trajectory handling, and derivative
-quantities they expose.
+Base interface for shadowing sensitivity algorithms. Shadowing methods estimate
+derivatives of long-time statistics or trajectory-dependent quantities in
+dynamical systems where direct trajectory sensitivities may be unsuitable.
+
+Concrete subtypes should document the dynamical-systems assumptions required by
+the method, how trajectories and transients are selected, what objective or
+statistic is differentiated, how tangent or adjoint shadowing directions are
+computed, and which solver features, callbacks, and parameterizations are
+supported.
 """
 abstract type AbstractShadowingSensitivityAlgorithm{CS, AD, FDT} <:
 AbstractOverloadingSensitivityAlgorithm{CS, AD, FDT} end
