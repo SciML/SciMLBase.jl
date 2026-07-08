@@ -51,12 +51,16 @@ forwarddiff_chunksize(alg::AbstractSciMLAlgorithm) = Val(0)
 """
     allows_arbitrary_number_types(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm is compatible with
-direct automatic differentiation, i.e. can have algorithms like
-ForwardDiff or ReverseDiff attempt to differentiate directly
-through the solver.
+Trait declaration for whether an algorithm supports state, parameter, and time
+number types beyond the standard floating-point and complex floating-point
+types.
 
-Defaults to false as only pure-Julia algorithms can have this be true.
+Algorithms that return `true` should be implemented generically enough to work
+with SciML-compatible number and container types, subject to the additional rules
+in the [SciML container and number interface](@ref arrayandnumber). Wrapped
+C/Fortran solvers usually cannot support this and should keep the default.
+
+Defaults to `false`.
 """
 allows_arbitrary_number_types(alg::AbstractSciMLAlgorithm) = false
 
