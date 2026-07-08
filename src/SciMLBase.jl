@@ -103,6 +103,37 @@ const Callable = Union{Function, Type}
 
 """
 $(TYPEDEF)
+
+Base abstract type for all SciML problem definitions. A concrete
+`AbstractSciMLProblem` encodes the mathematical data that a solver consumes via
+`solve`, `init`, or lower-level extension methods.
+
+## Interface
+
+Concrete problem types should document the mathematical problem they encode, the
+accepted constructor forms, and the fields that solvers may use. Common fields
+are:
+
+  - `f`: the function, operator, or symbolic interface defining the equations.
+  - `u0`: the initial state, initial guess, or state-like data when one exists.
+  - `tspan`: the independent-variable interval for time-dependent problems.
+  - `p`: parameters, defaulting to `NullParameters` when omitted.
+  - `kwargs`: keyword arguments stored on the problem and forwarded to solves.
+  - `problem_type`: optional internal metadata preserving how a problem was
+    originally constructed when several constructors share one concrete type.
+
+Subtypes that expose state and parameters through symbolic indexing should
+implement or delegate the `SymbolicIndexingInterface` methods. By default,
+`prob[sym]` indexes state variables, `prob.ps[sym]` indexes parameters, and
+`current_time(prob)` is `prob.tspan[1]` for time-dependent problems. Parameter
+indexing through `prob[sym]` is reserved for state variables and errors so that
+parameter access remains explicit through `prob.ps`.
+
+Problem types with an in-place/out-of-place function distinction should encode
+that choice in their type parameters and support [`isinplace`](@ref). Problem
+types that allow solver aliasing should define a matching
+[`AbstractAliasSpecifier`](@ref) subtype and document which stored arrays may be
+aliased by solvers.
 """
 abstract type AbstractSciMLProblem end
 
@@ -110,64 +141,152 @@ abstract type AbstractSciMLProblem end
 """
 $(TYPEDEF)
 
-Base type for all DifferentialEquations.jl problems. Concrete subtypes of
-`AbstractDEProblem` contain the necessary information to fully define a differential
-equation of the corresponding type.
+Base type for differential equation problems. Concrete subtypes encode equations
+whose state is advanced, constrained, or sampled over an independent-variable
+domain.
+
+## Interface
+
+Differential equation problems generally provide `f`, `u0`, `tspan`, `p`, and
+`kwargs` fields, and follow the [`AbstractSciMLProblem`](@ref) symbolic indexing
+rules. The problem's function is usually a subtype of
+[`AbstractDiffEqFunction`](@ref), or is converted to one by the concrete
+constructor, and its in-place choice is returned by [`isinplace`](@ref).
+
+Subtypes should document the mathematical form of their equation, the expected
+call signatures of their functions, and any additional data such as mass
+matrices, delays, noise processes, jumps, callbacks, or boundary conditions.
 """
 abstract type AbstractDEProblem <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
+
+Marker supertype for auxiliary differential equation elements that are stored
+inside higher-level problem definitions rather than solved directly.
 """
 abstract type DEElement end
 
 """
 $(TYPEDEF)
+
+Marker supertype for sensitivity-problem metadata associated with differential
+equation definitions.
 """
 abstract type DESensitivity end
 
 """
 $(TYPEDEF)
 
-Base for types which define linear systems.
+Base interface for linear system problems.
+
+Concrete subtypes define systems such as `A * u = b`, optionally with an initial
+guess for iterative solvers. The `bType` parameter records the right-hand side
+type, and `isinplace` records whether the linear operator may mutate supplied
+storage.
+
+## Interface
+
+Linear problems should provide `A`, `b`, `u0`, `p`, and `kwargs` fields. Matrix
+and operator-backed definitions should use public matrix/operator interfaces
+such as `AbstractMatrix` or `AbstractSciMLOperator`. Symbolic linear problems can
+provide a symbolic container through an `f` or `symbolic_interface` field so that
+state, parameter, and observed-value indexing delegates through
+`SymbolicIndexingInterface`.
 """
 abstract type AbstractLinearProblem{bType, isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define eigenvalue problems.
+Base interface for eigenvalue problems.
+
+Concrete subtypes define standard eigenvalue problems `A * v = lambda * v` or
+generalized problems `A * v = lambda * B * v`.
+
+## Interface
+
+Eigenvalue problems should provide the operator `A`, an optional generalized
+operator `B`, parameter storage `p`, optional initial guess `u0`, solver
+selection metadata such as `num_eigenpairs`, `eigentarget`, and `shift`, plus
+stored solver `kwargs`. Extra keyword arguments are forwarded to solvers.
 """
 abstract type AbstractEigenvalueProblem <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define integrals suitable for quadrature.
+Base interface for integral and quadrature problems.
+
+The `isinplace` parameter records whether the integrand writes into supplied
+storage. Concrete subtypes should document the integration domain, measure, batch
+or sampled semantics, and whether the integrand has the call signature
+`f(x, p)` or an in-place equivalent.
+
+Integral problems commonly provide `f`, a domain or bounds field, `p`, and
+stored solver `kwargs`, and use `NullParameters` when parameters are omitted.
 """
 abstract type AbstractIntegralProblem{isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define equations for optimization.
+Base interface for optimization problems.
+
+The `isinplace` parameter records whether the objective or derivative callbacks
+write into supplied storage. Concrete subtypes encode an objective function, an
+initial optimizer, optional parameters, constraints, bounds, and solver keyword
+arguments.
+
+Optimization problems should provide symbolic indexing metadata through their
+optimization function or cache when constructed from a symbolic system. Solvers
+that support reusable caches should use [`AbstractOptimizationCache`](@ref).
 """
 abstract type AbstractOptimizationProblem{isinplace} <: AbstractSciMLProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define caches for optimization problems. Must at least hold the optimization
-function `f <: OptimizationFunction` and the parameters `p`.
+Base interface for reusable optimization solver caches.
+
+Concrete caches must at least hold the optimization function, typically
+`f <: OptimizationFunction`, and parameter values `p`. Caches that support
+reinitialization may additionally provide a `reinit_cache` with replacement `u0`
+and `p` values; `reinit!` and symbolic parameter access delegate through those
+fields when present.
 """
 abstract type AbstractOptimizationCache end
 
 """
 $(TYPEDEF)
 
-Base for types which define nonlinear solve problems (`f(u)=0`).
+Base interface for nonlinear solve problems `f(u, p) = 0`.
+
+The `uType` parameter records the initial guess type, and `isinplace` records
+whether the nonlinear function writes residuals into supplied storage.
+
+## Interface
+
+Concrete subtypes should provide `f`, `u0`, `p`, and `kwargs` fields, plus any
+solver-relevant bounds or problem metadata. State symbolic indexing reads and
+writes `u0`; parameter indexing is exposed through `prob.ps`. Constructors should
+wrap bare callables in an [`AbstractNonlinearFunction`](@ref) subtype when
+needed.
 """
 abstract type AbstractNonlinearProblem{uType, isinplace} <: AbstractSciMLProblem end
+
+"""
+$(TYPEDEF)
+
+Base interface for interval nonlinear problems. These problems search for a
+zero of `f(t, p)` over an interval `tspan` rather than for a root near an
+initial state `u0`.
+
+Concrete subtypes should provide `f`, `tspan`, `p`, and `kwargs` fields. The
+`isinplace` parameter records whether the function writes its value into supplied
+storage, and the `uType` parameter is available for array-valued interval
+residuals.
+"""
 abstract type AbstractIntervalNonlinearProblem{uType, isinplace} <:
 AbstractNonlinearProblem{
     uType,
@@ -190,20 +309,40 @@ const AbstractSteadyStateProblem{
 
 """
 $(TYPEDEF)
+
+Base interface for problems that directly solve or sample an
+[`AbstractNoiseProcess`](@ref). Concrete noise problems should provide a `noise`
+field, a `tspan`, and solver keyword arguments. Their in-place behavior delegates
+to the stored noise process through [`isinplace`](@ref).
 """
 abstract type AbstractNoiseProblem <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define ODE problems.
+Base interface for ordinary differential equation problems.
+
+Concrete ODE problems encode equations of the form `du/dt = f(u, p, t)`, or a
+mass-matrix variant represented by the function object. The `uType`, `tType`,
+and `isinplace` parameters record the initial state, promoted time span, and
+function mutation convention.
+
+## Interface
+
+ODE problems should provide `f`, `u0`, `tspan`, `p`, `kwargs`, and optionally
+`problem_type`. The function should support either `f(u, p, t)` or
+`f(du, u, p, t)` according to [`isinplace`](@ref). Stored keyword arguments such
+as callbacks or tolerances are forwarded to solvers.
 """
 abstract type AbstractODEProblem{uType, tType, isinplace} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define dynamical optimization problems.
+Base interface for dynamical optimization problems represented through the ODE
+problem hierarchy. Concrete subtypes follow the [`AbstractODEProblem`](@ref)
+contract and add optimization-specific objective, control, or constraint metadata
+in their concrete fields.
 """
 abstract type AbstractDynamicOptProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -211,13 +350,19 @@ AbstractODEProblem{uType, tType, isinplace} end
 """
 $(TYPEDEF)
 
-Base for types which define discrete problems.
+Base interface for discrete-time recurrence problems. Concrete subtypes follow
+the [`AbstractODEProblem`](@ref) field conventions but interpret `tspan` as the
+iteration or discrete independent-variable span and `f` as the state update map.
 """
 abstract type AbstractDiscreteProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
 
 """
 $(TYPEDEF)
+
+Base interface for analytical problems. Analytical problems follow the
+[`AbstractODEProblem`](@ref) contract while indicating that the solution is
+defined directly from an analytical function rather than numerical time stepping.
 """
 abstract type AbstractAnalyticalProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -225,14 +370,28 @@ AbstractODEProblem{uType, tType, isinplace} end
 """
 $(TYPEDEF)
 
-Base for types which define RODE problems.
+Base interface for random ordinary differential equation problems.
+
+RODE problems follow the differential equation problem conventions and add a
+noise process that is available to the dynamics, typically through a function
+signature involving `W(t)`. The `ND` parameter records the noise-rate prototype
+or dimensionality metadata used to determine diagonal versus non-diagonal noise.
 """
 abstract type AbstractRODEProblem{uType, tType, isinplace, ND} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define SDE problems.
+Base interface for stochastic differential equation problems.
+
+SDE problems provide a drift function, a noise function, an initial state,
+parameters, a time span, and noise-process metadata. Concrete subtypes commonly
+store the drift/noise pair as `f` and `g`, plus `noise`, `noise_rate_prototype`,
+`seed`, and `kwargs`.
+
+The `ND` parameter records the noise-rate prototype. When it is `Nothing`, the
+problem is treated as diagonal noise by [`is_diagonal_noise`](@ref); otherwise
+the prototype describes the shape of the noise-rate output.
 """
 abstract type AbstractSDEProblem{uType, tType, isinplace, ND} <:
 AbstractRODEProblem{uType, tType, isinplace, ND} end
@@ -240,25 +399,49 @@ AbstractRODEProblem{uType, tType, isinplace, ND} end
 """
 $(TYPEDEF)
 
-Base for types which define DAE problems.
+Base interface for differential-algebraic equation problems.
+
+Concrete DAE problems encode residual equations involving both `u` and `du`,
+with initial guesses for each. The `uType`, `duType`, `tType`, and `isinplace`
+parameters record the state, derivative state, time span, and residual mutation
+convention.
+
+DAE problem subtypes should document their residual signature, usually
+`f(resid, du, u, p, t)` for in-place functions or `f(du, u, p, t)` for
+out-of-place functions, and any initialization data used to make initial
+conditions consistent.
 """
 abstract type AbstractDAEProblem{uType, duType, tType, isinplace} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define DDE problems.
+Base interface for delay differential equation problems.
+
+Concrete DDE problems follow the differential equation problem conventions and
+add history data plus lag metadata. The `lType` parameter records the lag
+specification type, and the function should document how it queries the history
+function, commonly through `h(p, t)` or a solver-provided history interface.
 """
 abstract type AbstractDDEProblem{uType, tType, lType, isinplace} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
+
+Base interface for DDE problems whose delays are constant over the solve.
+Concrete subtypes follow the [`AbstractDDEProblem`](@ref) contract and should
+provide the constant lag collection used by discontinuity handling and method
+selection.
 """
 abstract type AbstractConstantLagDDEProblem{uType, tType, lType, isinplace} <:
 AbstractDDEProblem{uType, tType, lType, isinplace} end
 
 """
 $(TYPEDEF)
+
+Base interface for second-order ODE problems. These problems are represented in
+the ODE hierarchy for solver interoperability, but their constructors preserve
+second-order structure through concrete fields or `problem_type` metadata.
 """
 abstract type AbstractSecondOrderODEProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -266,7 +449,15 @@ AbstractODEProblem{uType, tType, isinplace} end
 """
 $(TYPEDEF)
 
-Base for types which define BVP problems.
+Base interface for boundary value problems.
+
+Concrete BVP problems follow the ODE problem conventions and add boundary
+condition functions and boundary data. The `nlls` parameter records whether the
+boundary conditions are interpreted in a nonlinear least-squares form.
+
+Subtypes should document their differential equation function, boundary condition
+signature, initial mesh or guess, parameter storage, and how boundary residuals
+are laid out.
 """
 abstract type AbstractBVProblem{uType, tType, isinplace, nlls} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -274,19 +465,34 @@ AbstractODEProblem{uType, tType, isinplace} end
 """
 $(TYPEDEF)
 
-Base for types which define jump problems.
+Base interface for jump process problems.
+
+Jump problems wrap an inner SciML problem and a jump collection. Symbolic
+indexing, parameter access, state access, and current time delegate to the inner
+problem. Concrete subtypes should provide the wrapped problem, jump definitions,
+aggregation metadata, RNG/seed handling, and solver keyword arguments.
 """
 abstract type AbstractJumpProblem{P, J} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
 
-Base for types which define SDDE problems.
+Base interface for stochastic delay differential equation problems.
+
+SDDE problems combine the SDE and DDE contracts: they provide drift and noise
+functions, history data, lag metadata, noise-process metadata, parameters, and a
+time span. The `ND` parameter records noise-rate prototype metadata and the
+`lType` parameter records delay metadata.
 """
 abstract type AbstractSDDEProblem{uType, tType, lType, isinplace, ND} <: AbstractDEProblem end
 
 """
 $(TYPEDEF)
+
+Base interface for SDDE problems whose delays are constant over the solve.
+Concrete subtypes follow the [`AbstractSDDEProblem`](@ref) contract and should
+provide the constant lag collection used by discontinuity handling and method
+selection.
 """
 abstract type AbstractConstantLagSDDEProblem{uType, tType, lType, isinplace, ND} <:
 AbstractSDDEProblem{uType, tType, lType, isinplace, ND} end
@@ -294,7 +500,13 @@ AbstractSDDEProblem{uType, tType, lType, isinplace, ND} end
 """
 $(TYPEDEF)
 
-Base for types which define PDE problems.
+Base interface for partial differential equation problems.
+
+SciMLBase only defines the high-level PDE problem interface. Concrete PDE
+problem types or discretization packages should document the symbolic or
+discrete PDE representation, independent/dependent variables, domains,
+parameters, boundary/initial conditions, and the discretization metadata needed
+to transform the PDE into solver-ready SciML problems.
 """
 abstract type AbstractPDEProblem <: AbstractDEProblem end
 

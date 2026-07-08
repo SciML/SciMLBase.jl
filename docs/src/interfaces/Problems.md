@@ -194,12 +194,15 @@ The default is `AutoSpecialize`.
 SciMLBase.AbstractSciMLProblem
 SciMLBase.AbstractDEProblem
 SciMLBase.AbstractLinearProblem
+SciMLBase.AbstractEigenvalueProblem
 SciMLBase.AbstractNonlinearProblem
+SciMLBase.AbstractIntervalNonlinearProblem
 SciMLBase.AbstractIntegralProblem
 SciMLBase.AbstractOptimizationProblem
 SciMLBase.AbstractNoiseProblem
 SciMLBase.AbstractODEProblem
 SciMLBase.AbstractDynamicalODEProblem
+SciMLBase.AbstractDynamicOptProblem
 SciMLBase.AbstractDiscreteProblem
 SciMLBase.AbstractAnalyticalProblem
 SciMLBase.AbstractRODEProblem
@@ -214,6 +217,12 @@ SciMLBase.AbstractSDDEProblem
 SciMLBase.AbstractConstantLagSDDEProblem
 SciMLBase.AbstractPDEProblem
 SciMLBase.AbstractSteadyStateProblem
+```
+
+### Problem Support Interfaces
+
+```@docs
+SciMLBase.AbstractOptimizationCache
 ```
 
 ## Concrete Nonlinear Problems
