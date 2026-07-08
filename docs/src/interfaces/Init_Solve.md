@@ -56,7 +56,9 @@ SciMLBase.__solve
 
 ```@docs
 SciMLBase.DEIntegrator
+SciMLBase.AbstractSteadyStateIntegrator
 SciMLBase.AbstractODEIntegrator
+SciMLBase.AbstractSecondOrderODEIntegrator
 SciMLBase.AbstractSDEIntegrator
 SciMLBase.AbstractRODEIntegrator
 SciMLBase.AbstractDDEIntegrator

@@ -940,6 +940,16 @@ export EnsembleSolution, EnsembleTestSolution, EnsembleSummary
 
 """
 $(TYPEDEF)
+
+Base interface for interpolation objects carried by SciML solutions. Concrete
+interpolation types describe how saved values are reconstructed between stored
+solution points.
+
+Concrete subtypes should document the interpolation order, whether derivatives
+are available, the cache data they need from the solution, and which
+`interpolation` or `interpolation!` methods they implement. Interpolation
+objects are usually solver-owned implementation details, but solution types use
+this supertype to expose consistent stripping and summary behavior.
 """
 abstract type AbstractDiffEqInterpolation end
 
@@ -950,6 +960,15 @@ abstract type AbstractDEOptions end
 
 """
 $(TYPEDEF)
+
+Base interface for solver caches used by differential equation integrators.
+Concrete caches hold reusable arrays, factorizations, random increments,
+temporary workspaces, or other mutable state needed across steps.
+
+Solver packages should keep cache fields internal to the concrete integrator and
+expose only the public cache accessors that are safe for users or callbacks,
+such as `get_tmp_cache`, `user_cache`, `full_cache`, and the state-specific cache
+helpers.
 """
 abstract type DECache end
 
@@ -971,48 +990,99 @@ abstract type AbstractDiscreteCallback <: DECallback end
 # Integrators
 """
 $(TYPEDEF)
+
+Base interface for differential equation integrators returned by `init`.
+Integrators are mutable iterator-like solver states that can be advanced by
+`step!`, finished by `solve!`, inspected or modified by callbacks, and
+reinitialized when the concrete solver supports it.
+
+The type parameters record the algorithm type `Alg`, the in-place/out-of-place
+function convention `IIP`, the state type `U`, and the independent-variable type
+`T`. Concrete integrators commonly expose fields such as `u`, `t`, `p`, `f`,
+`alg`, `opts`, and `sol`, and should implement the relevant methods from the
+integrator interface: stepping, cache access, state/time mutation, saving,
+symbolic indexing, error checking, and optional RNG/reinitialization support.
 """
 abstract type DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for steady-state integrators. These are returned by steady-state
+`init` methods when the solver supports an iterator or cache interface for
+finding an equilibrium.
+
+Concrete subtypes follow the `DEIntegrator` conventions, but their independent
+variable type is `Nothing` because the solve target is a terminal steady state
+rather than a time series.
 """
 abstract type AbstractSteadyStateIntegrator{Alg, IIP, U} <:
 DEIntegrator{Alg, IIP, U, Nothing} end
 
 """
 $(TYPEDEF)
+
+Base interface for ODE integrators. Concrete subtypes advance an
+`AbstractODEProblem` with an `AbstractODEAlgorithm` and should implement the
+standard differential equation integrator operations for stepping, interpolation,
+callback handling, saving, and cache access.
 """
 abstract type AbstractODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for second-order ODE integrators. Concrete subtypes preserve, or
+wrap, second-order problem structure while following the standard `DEIntegrator`
+stepping, callback, saving, and cache contracts.
 """
 abstract type AbstractSecondOrderODEIntegrator{Alg, IIP, U, T} <:
 DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for RODE integrators. Concrete subtypes advance random ordinary
+differential equation problems and should document how they expose or update the
+noise process during stepping and interpolation.
 """
 abstract type AbstractRODEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for SDE integrators. Concrete subtypes advance stochastic
+differential equation problems and should implement the standard integrator
+operations plus any RNG, noise-cache, stochastic-interpolation, and
+noise-process access required by the solver.
 """
 abstract type AbstractSDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for DDE integrators. Concrete subtypes advance delay differential
+equation problems and should document their history interpolation, lag handling,
+discontinuity tracking, callback behavior, and cache access.
 """
 abstract type AbstractDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for DAE integrators. Concrete subtypes advance differential-
+algebraic equation problems and should document their residual form, derivative
+state handling, initialization behavior, algebraic consistency checks, and
+callback reinitialization support.
 """
 abstract type AbstractDAEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
 """
 $(TYPEDEF)
+
+Base interface for SDDE integrators. Concrete subtypes combine the stochastic
+and delay integrator contracts, including RNG/noise handling, history
+interpolation, lag metadata, discontinuity tracking, and callback behavior.
 """
 abstract type AbstractSDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U, T} end
 
