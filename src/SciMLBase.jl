@@ -632,28 +632,115 @@ abstract type AbstractSDDEIntegrator{Alg, IIP, U, T} <: DEIntegrator{Alg, IIP, U
 # Solutions
 """
 $(TYPEDEF)
+
+Abstract supertype for solutions whose result has no saved independent-variable
+axis. Concrete subtypes represent terminal outputs such as linear solves,
+nonlinear solves, integrals, optimization solves, and other problems where the
+primary result is the object stored in `sol.u`.
+
+## Interface
+
+Concrete subtypes must provide a `u` field. The array interface forwards to this
+field: `size(sol) == size(sol.u)`, `sol[i] == sol.u[i]`, multidimensional
+integer indexing is forwarded to `sol.u`, `sol[:]` returns `sol.u[:]`, and
+`A * sol` forwards to `A * sol.u` for matrix-like `A`.
+
+Subtypes that support mutation through the solution object should make
+`sol[i] = value` update `sol.u[i]`. Symbolic state indexing is available when the
+associated problem or cache implements the `SymbolicIndexingInterface` metadata;
+parameter indexing should use `sol.ps`.
+
+Common optional fields are `retcode`, `prob`, `alg`, `resid`, `original`, and
+`stats`. Solver-specific solution types should document which of these fields
+they provide.
 """
 abstract type AbstractNoTimeSolution{T, N} <: AbstractArray{T, N} end
 
 """
 $(TYPEDEF)
+
+Abstract supertype for solutions that save a time series or another
+ordered independent-variable series. Concrete subtypes are array-like views of
+the saved states and store the raw saved values in `sol.u` with matching
+independent-variable values in `sol.t`.
+
+## Interface
+
+Concrete subtypes must provide `u` and `t` fields with matching saved-value
+indices. `sol[j]` is the saved state at `sol.t[j]`. Component indexing places
+state indices before the saved-value index, so `sol[i, j]` is the `i`th
+component of `sol.u[j]`, `sol[i, :]` is the time series of the `i`th component,
+and higher-dimensional states follow the same rule, e.g. `sol[i, k, j]`.
+
+The array dimensions describe the component axes plus the saved-value axis. For
+multi-component states this means `length(sol)` can differ from `length(sol.t)`;
+use `length(sol.t)` or `eachindex(sol.t)` when iterating over saved times.
+
+Time-series solutions should provide `prob`, `alg`, `interp`, `dense`,
+`retcode`, and `stats` fields when those concepts apply. Dense or piecewise
+interpolation is exposed through callable syntax such as `sol(t)` and
+`sol(t; idxs = idxs)` when the stored interpolation supports it. Symbolic state,
+observed-variable, and parameter access is delegated through the
+`SymbolicIndexingInterface` metadata on the solution's problem, with
+time-varying parameter support supplied through `sol.discretes` and
+`sol.saved_subsystem` when present.
 """
 abstract type AbstractTimeseriesSolution{T, N, A} <: AbstractDiffEqArray{T, N, A} end
 
 """
 $(TYPEDEF)
+
+Abstract supertype for solutions from ensemble solves. An ensemble solution
+stores a collection of trajectory results or summary trajectories in `sol.u` and
+uses the `RecursiveArrayTools.AbstractVectorOfArray` interface so trajectories
+can be indexed and plotted as a single array-like object.
+
+## Interface
+
+Concrete subtypes must provide a `u` field containing the trajectory solutions or
+trajectory-like arrays. Standard ensemble solutions also provide `elapsedTime`,
+`converged`, and optionally `stats`. Calling an ensemble solution forwards the
+call to each trajectory in `sol.u`, so `sol(args...; kwargs...)` returns the
+collection `[trajectory(args...; kwargs...) for trajectory in sol.u]` when the
+stored trajectories are callable.
+
+Analysis and plotting utilities assume that each element of `sol.u` is either an
+`AbstractSciMLSolution` or follows the corresponding array/callable solution
+interface closely enough for the requested operation.
 """
 abstract type AbstractEnsembleSolution{T, N, A} <: AbstractVectorOfArray{T, N, A} end
 
 """
 $(TYPEDEF)
+
+Abstract supertype for saved stochastic noise processes. Noise processes are
+`AbstractDiffEqArray`s so that saved noise values can be indexed consistently
+with differential equation solutions while also carrying enough state for
+stochastic solvers to replay, interpolate, or extend the noise path.
+
+## Interface
+
+Concrete subtypes are expected to expose the saved noise values through the
+`AbstractDiffEqArray` interface and to be callable at an independent-variable
+value when the process supports interpolation. The `isinplace` parameter records
+whether the process updates supplied storage in-place. Solver code may also rely
+on noise-process fields such as the current time and current noise value, so
+concrete noise process types should document their own state fields and
+mutation/reset semantics.
 """
 abstract type AbstractNoiseProcess{T, N, A, isinplace} <: AbstractDiffEqArray{T, N, A} end
 
 """
-Union of all base solution types.
+    AbstractSciMLSolution
 
-Uses a Union so that solution types can be `<: AbstractArray`
+Union of all base SciML solution interfaces:
+[`AbstractTimeseriesSolution`](@ref), [`AbstractNoTimeSolution`](@ref),
+[`AbstractEnsembleSolution`](@ref), and [`AbstractNoiseProcess`](@ref).
+
+This is a union rather than an abstract supertype so each solution family can
+subtype the appropriate array interface directly. Use it for dispatch that
+accepts any SciML solution, and use the narrower abstract solution types when a
+method requires a time-series, no-time, ensemble, or noise-process contract.
 """
 const AbstractSciMLSolution = Union{
     AbstractTimeseriesSolution,
@@ -664,74 +751,159 @@ const AbstractSciMLSolution = Union{
 
 """
 $(TYPEDEF)
+
+Abstract interface for no-time solutions of linear systems. Concrete subtypes
+store the computed solution in `u` and should follow the
+[`AbstractNoTimeSolution`](@ref) array-forwarding contract. Linear solve
+solutions commonly include `resid`, `alg`, `retcode`, `iters`, `cache`, and
+`stats` fields so callers can inspect convergence and reuse solver caches.
 """
 abstract type AbstractLinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for no-time eigenvalue problem solutions. Concrete subtypes
+store the computed eigenvalues in `u`, follow the
+[`AbstractNoTimeSolution`](@ref) contract, and should document where eigenvectors,
+residuals, the original problem, algorithm, return code, and solver statistics
+are stored.
 """
 abstract type AbstractEigenvalueSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for no-time nonlinear equation solutions. Concrete subtypes
+store the root or fixed point in `u` and the residual in a solver-specific
+`resid` field when available. These solutions follow the
+[`AbstractNoTimeSolution`](@ref) contract and commonly provide `prob`, `alg`,
+`retcode`, `original`, bracket endpoints for interval methods, and `stats`.
 """
 abstract type AbstractNonlinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for no-time integral or quadrature solutions. Concrete
+subtypes store the estimated integral in `u`, follow the
+[`AbstractNoTimeSolution`](@ref) contract, and commonly provide `resid`, `prob`,
+`alg`, `retcode`, `chi`, and `stats` fields for solver diagnostics.
 """
 abstract type AbstractIntegralSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for no-time optimization solutions. Concrete subtypes store
+the optimizer or minimizer in `u` and follow the
+[`AbstractNoTimeSolution`](@ref) contract. Optimization solutions commonly expose
+`alg`, `objective`, `retcode`, `original`, `stats`, and a cache that supplies the
+problem function and parameters for symbolic indexing.
 """
 abstract type AbstractOptimizationSolution{T, N} <: AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
+
+Alias for nonlinear solutions used by steady-state solvers. A steady-state
+solution represents a state `u` satisfying the nonlinear system induced by the
+differential equation right-hand side, and therefore follows the
+[`AbstractNonlinearSolution`](@ref) and [`AbstractNoTimeSolution`](@ref)
+contracts.
 """
 const AbstractSteadyStateSolution{T, N} = AbstractNonlinearSolution{T, N}
 
 """
 $(TYPEDEF)
+
+Abstract interface for analytical time-series solutions. These solutions follow
+the [`AbstractTimeseriesSolution`](@ref) contract and are used when the solution
+values are generated from or compared against an analytical representation of
+the problem. Plotting and error-calculation code may use analytical solution
+metadata stored on the concrete solution or its problem.
 """
 abstract type AbstractAnalyticalSolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for ordinary differential equation time-series solutions.
+Concrete subtypes follow the [`AbstractTimeseriesSolution`](@ref) contract and
+typically provide saved states `u`, saved times `t`, interpolation data `interp`,
+the original problem `prob`, the algorithm `alg`, solver `stats`, a `retcode`,
+and optional analytical values, dense-output data, discrete parameter
+time-series, residuals, and wrapped-solver output.
 """
 abstract type AbstractODESolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 
 # Needed for plot recipes
 """
 $(TYPEDEF)
+
+Abstract interface for delay differential equation time-series solutions. These
+solutions follow the [`AbstractODESolution`](@ref) contract and add delay-system
+semantics through their problem, history function, and interpolation data.
 """
 abstract type AbstractDDESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for random ordinary differential equation time-series
+solutions. These solutions follow the [`AbstractODESolution`](@ref) contract and
+also carry the saved or reconstructible noise path used by the RODE, commonly
+through a field or callable object such as `sol.W`.
 """
 abstract type AbstractRODESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for differential-algebraic equation time-series solutions.
+These solutions follow the [`AbstractODESolution`](@ref) contract while
+representing states that satisfy both differential and algebraic residual
+conditions. Concrete subtypes should document any stored residuals,
+initialization data, or consistent-initial-condition metadata they expose.
 """
 abstract type AbstractDAESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for PDE solutions with a saved time axis. These solutions
+follow the [`AbstractTimeseriesSolution`](@ref) contract and additionally carry
+discretization metadata. Concrete subtypes should provide `disc_data`,
+`original_sol`, `ivdomain`, `ivs`, and `dvs` fields so downstream discretizer
+packages can recover the PDE variables, domains, and original discretized solve.
+Callable interpolation is discretizer-specific and should be implemented by the
+package that owns the metadata type.
 """
 abstract type AbstractPDETimeSeriesSolution{T, N, S, D} <:
 AbstractTimeseriesSolution{T, N, S} end
 
 """
 $(TYPEDEF)
+
+Abstract interface for PDE solutions without a saved time axis. These solutions
+follow the [`AbstractNoTimeSolution`](@ref) contract and additionally carry
+discretization metadata. Concrete subtypes should provide `disc_data`,
+`original_sol`, `ivdomain`, `ivs`, and `dvs` fields so downstream discretizer
+packages can recover the PDE variables, domains, and original discretized solve.
+Callable evaluation is discretizer-specific and should be implemented by the
+package that owns the metadata type.
 """
 abstract type AbstractPDENoTimeSolution{T, N, S, D} <:
 AbstractNoTimeSolution{T, N} end
 
 """
 $(TYPEDEF)
+
+Union of PDE solution interfaces, covering both
+[`AbstractPDETimeSeriesSolution`](@ref) and [`AbstractPDENoTimeSolution`](@ref)
+with matching element, dimension, saved-value, and discretization metadata
+parameters. Dispatch on this union when code accepts either time-dependent or
+time-independent PDE wrapper solutions.
 """
 const AbstractPDESolution{
     T,
@@ -745,6 +917,13 @@ const AbstractPDESolution{
 
 """
 $(TYPEDEF)
+
+Abstract interface for time-series solutions that store sensitivity quantities.
+Sensitivity solutions follow the [`AbstractTimeseriesSolution`](@ref) contract,
+but their saved values represent derivatives or augmented sensitivity states
+rather than only the primal state. Concrete subtypes should document which
+sensitivity method produced the values, how the sensitivity axes are arranged in
+`u`, and whether interpolation supports derivative queries.
 """
 abstract type AbstractSensitivitySolution{T, N, S} <: AbstractTimeseriesSolution{T, N, S} end
 

@@ -162,14 +162,20 @@ SciMLBase.AbstractTimeseriesSolution
 SciMLBase.AbstractNoiseProcess
 SciMLBase.AbstractEnsembleSolution
 SciMLBase.AbstractLinearSolution
+SciMLBase.AbstractEigenvalueSolution
 SciMLBase.AbstractNonlinearSolution
 SciMLBase.AbstractIntegralSolution
+SciMLBase.AbstractOptimizationSolution
 SciMLBase.AbstractSteadyStateSolution
 SciMLBase.AbstractAnalyticalSolution
 SciMLBase.AbstractODESolution
 SciMLBase.AbstractDDESolution
 SciMLBase.AbstractRODESolution
 SciMLBase.AbstractDAESolution
+SciMLBase.AbstractPDETimeSeriesSolution
+SciMLBase.AbstractPDENoTimeSolution
+SciMLBase.AbstractPDESolution
+SciMLBase.AbstractSensitivitySolution
 ```
 
 ### Solution Statistics
