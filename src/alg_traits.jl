@@ -334,15 +334,27 @@ supports_opt_cache_interface(alg) = false
 """
     $(TYPEDSIGNATURES)
 
-Trait for specifying whether the passed algorithm supports `init`. Any `init`ed object can `solve!`.
+Trait declaring whether `alg` supports the caching/iterator interface through
+`init(prob, alg; kwargs...)`.
+
+Algorithms that return `true` should provide an `init`/`__init` path that
+constructs an object which can later be advanced or finished with `solve!`.
+Returning `false` means users should call `solve` directly, or that the package
+has not exposed a reusable cache for this algorithm. The default is `false`.
 """
 has_init(a) = false
 
 """
     $(TYPEDSIGNATURES)
 
-Trait for specifying whether the passed algorithm supports `step!`, specifying a more direct control over the internal solver process.
-See https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#init-and-the-Iterator-Interface for more details.
+Trait declaring whether an initialized object for `alg` supports direct
+advancement through `step!`.
+
+Algorithms that return `true` should have an `init` path whose returned iterator
+or integrator can be advanced by `step!`. This is stronger than supporting
+`solve!`: a cached solver may be finishable with `solve!` without exposing
+manual stepping. See the init/solve interface documentation for the solver-side
+contract. The default is `false`.
 """
 has_step(a) = false
 

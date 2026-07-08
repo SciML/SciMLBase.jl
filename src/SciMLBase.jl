@@ -79,7 +79,17 @@ common pre-solve handling (such as argument checking and high-level error messag
 Solver packages add methods to `SciMLBase.__solve` dispatched on their problem and
 algorithm types; this is the documented extension hook for implementing a solver.
 Defining `__solve` rather than `solve` directly allows `SciMLBase.solve` to keep a
-common implementation across all solvers. See also [`__init`](@ref).
+common implementation across all solvers.
+
+Implementations should accept the same positional and keyword arguments that the
+public `solve` method for the package accepts after `prob` and `alg`. They should
+return the package's solution object and are responsible for honoring common
+SciML keywords that apply to the problem family. Solver packages should dispatch
+on concrete problem and algorithm types that they own, or on documented abstract
+interfaces when that is the intended solver extension point, to avoid method
+ambiguity with other packages.
+
+See also [`__init`](@ref), which implements the reusable cache/iterator path.
 """
 function __solve end
 
@@ -92,7 +102,16 @@ Solver packages add methods to `SciMLBase.__init` dispatched on their problem an
 algorithm types, returning the iterator/integrator object used by `solve!`; this is
 the documented extension hook for implementing a solver. Defining `__init` rather than
 `init` directly allows `SciMLBase.init` to keep a common implementation across all
-solvers. See also [`__solve`](@ref).
+solvers.
+
+Implementations should construct and return the mutable cache, iterator, or
+integrator object associated with the solver. That object should support
+`solve!` and, when the corresponding algorithm trait returns `true`, direct
+stepping through `step!`. Solver packages should keep `__init` keyword handling
+consistent with `__solve` so that `solve(prob, alg; kwargs...)` and
+`solve!(init(prob, alg; kwargs...))` agree when both paths are supported.
+
+See also [`__solve`](@ref), which implements the direct solve path.
 """
 function __init end
 

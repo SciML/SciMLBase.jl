@@ -1,7 +1,14 @@
 """
 $(SIGNATURES)
 
-Returns the number of arguments of `f` for each method.
+Return the number of positional arguments accepted by each method of `f`.
+
+The returned collection is used by SciML constructors to validate model-function
+signatures and to infer in-place versus out-of-place conventions. The callable
+object itself is not counted, so a method `f(du, u, p, t)` contributes `4`.
+Specialized callables such as `RuntimeGeneratedFunction`, `ComposedFunction`,
+and supported foreign-function wrappers provide their underlying arity through
+specialized methods.
 """
 function numargs(f)
     if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
