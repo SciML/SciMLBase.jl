@@ -13,10 +13,14 @@ using FunctionProperties: FunctionProperties
 FunctionProperties.hasbranching(f::AbstractSciMLFunction, args...) =
     FunctionProperties.hasbranching(f.f, args...)
 
-FunctionProperties.islinear(f::AbstractSciMLFunction, args...; kwargs...) =
-    FunctionProperties.islinear(f.f, args...; kwargs...)
+if isdefined(FunctionProperties, :islinear)
+    FunctionProperties.islinear(f::AbstractSciMLFunction, args...; kwargs...) =
+        FunctionProperties.islinear(f.f, args...; kwargs...)
+end
 
-FunctionProperties.isautonomous(f::AbstractSciMLFunction, args...; kwargs...) =
-    FunctionProperties.isautonomous(f.f, args...; kwargs...)
+if isdefined(FunctionProperties, :isautonomous)
+    FunctionProperties.isautonomous(f::AbstractSciMLFunction, args...; kwargs...) =
+        FunctionProperties.isautonomous(f.f, args...; kwargs...)
+end
 
 end
