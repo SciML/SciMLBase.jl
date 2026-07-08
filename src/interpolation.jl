@@ -8,14 +8,36 @@ enable_interpolation_sensitivitymode(interp::AbstractDiffEqInterpolation) = inte
 """
 $(TYPEDEF)
 
-Marker type indicating that the standard dense interpolation has been disabled because
-the solution was produced during sensitivity analysis. When a solution carries this
-interpolation, only linear and constant interpolations of the saved values are available.
+Marker type indicating that a solution's standard dense interpolation was disabled
+because the solution was produced during sensitivity analysis.
+
+Some non-AD sensitivity algorithms cannot safely differentiate through the
+solver's native dense interpolation. Such solutions use `SensitivityInterpolation`
+as their `interp` field so interpolation attempts can produce a targeted error
+message instead of silently returning values from an unsupported interpolation
+path. Save the needed time points directly with `saveat`, use `dense = false`
+when linear or constant interpolation is sufficient, or choose a sensitivity
+algorithm that differentiates through the solver when dense interpolation is
+required.
 """
 struct SensitivityInterpolation end
 
 """
 $(TYPEDEF)
+
+Third-order Hermite interpolation data for time-series SciML solutions.
+
+`HermiteInterpolation` stores saved independent-variable values `t`, saved
+solution values `u`, and saved derivatives `du`. It is callable through the
+solution interpolation interface and supports derivative requests up to the
+cubic polynomial's third derivative. Differential equation solvers use this when
+they can provide derivative information at saved points and want solution calls
+such as `sol(t)` to use Hermite reconstruction.
+
+The `sensitivitymode` flag records whether the interpolation object has been
+marked for sensitivity-aware behavior. Sensitivity handling may restrict which
+interpolation paths are available; callers usually set this indirectly through
+solver or sensitivity-algorithm options rather than constructing it manually.
 """
 struct HermiteInterpolation{T1, T2, T3} <: AbstractDiffEqInterpolation
     t::T1
@@ -34,6 +56,18 @@ end
 
 """
 $(TYPEDEF)
+
+First-order linear interpolation data for time-series SciML solutions.
+
+`LinearInterpolation` stores saved independent-variable values `t` and saved
+solution values `u`. It reconstructs values between adjacent saved points with
+piecewise linear interpolation and supports first-derivative requests by
+returning the segment slope where that operation is defined.
+
+The `sensitivitymode` flag records whether sensitivity-aware behavior has been
+enabled for the interpolation object. Linear interpolation is the standard
+fallback when dense solver-specific interpolation is unavailable but saved values
+can still be connected between time points.
 """
 struct LinearInterpolation{T1, T2} <: AbstractDiffEqInterpolation
     t::T1
@@ -51,6 +85,19 @@ end
 
 """
 $(TYPEDEF)
+
+Piecewise constant interpolation data for time-series SciML solutions.
+
+`ConstantInterpolation` stores saved independent-variable values `t` and saved
+solution values `u`. It reconstructs values by holding the selected saved value
+constant across each interval, with the interval side controlled by the
+interpolation `continuity` argument. Derivative requests return zero for the
+piecewise constant reconstruction where supported.
+
+The `sensitivitymode` flag records whether sensitivity-aware behavior has been
+enabled for the interpolation object. Constant interpolation is useful for
+discrete-time states, zero-order-hold outputs, and solution objects whose saved
+values should not be smoothed between time points.
 """
 struct ConstantInterpolation{T1, T2} <: AbstractDiffEqInterpolation
     t::T1
