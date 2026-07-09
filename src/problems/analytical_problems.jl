@@ -1,5 +1,16 @@
 """
 $(TYPEDEF)
+
+Problem wrapper for systems solved by an analytical function.
+
+`AnalyticalProblem` stores the analytical function, initial state, time span,
+parameters, and solver keyword arguments. The function follows the same
+in-place or out-of-place convention as differential-equation functions, while
+the concrete analytical solver decides how to evaluate it across `tspan`.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
     AbstractAnalyticalProblem{uType, tType, isinplace}

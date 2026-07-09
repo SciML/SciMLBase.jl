@@ -2202,8 +2202,26 @@ end
 
 """
 $(TYPEDEF)
-"""
 
+Representation of a vector-valued objective for multi-objective optimization.
+
+`MultiObjectiveOptimizationFunction` is the multi-output analogue of
+`OptimizationFunction`. The objective `f(u, p)` returns one value per objective,
+and optional derivative callbacks describe derivatives of that vector-valued
+objective and any constraints. The `jac` field replaces the scalar-objective
+`grad` field, while the constraint, Hessian, Hessian-vector product, sparsity,
+color-vector, symbolic, and initialization fields follow the same conventions as
+`OptimizationFunction`.
+
+Constructors accept an ADTypes `adtype`, defaulting to `NoAD()`, plus optional
+manually supplied derivative callbacks and prototypes. Solver packages should
+query which fields are present rather than assuming every derivative is
+available.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 struct MultiObjectiveOptimizationFunction{
         iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
         EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV, ID,

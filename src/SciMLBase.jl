@@ -1024,6 +1024,13 @@ abstract type AbstractDiffEqInterpolation end
 
 """
 $(TYPEDEF)
+
+Reserved supertype for differential-equation solver option containers.
+
+SciMLBase currently stores most common solve options as keyword arguments rather
+than through concrete `AbstractDEOptions` subtypes. The abstract type remains as
+a compatibility hook for solver packages that need to share option-container
+types without introducing a dependency cycle.
 """
 abstract type AbstractDEOptions end
 
@@ -1043,16 +1050,38 @@ abstract type DECache end
 
 """
 $(TYPEDEF)
+
+Common supertype for callback objects accepted by differential-equation solvers.
+
+Concrete callbacks describe user or solver actions that run during integration,
+such as event handling, state modification, saving, or termination. Callback
+sets are represented by `CallbackSet`, while event callbacks generally subtype
+`AbstractContinuousCallback` or `AbstractDiscreteCallback`.
 """
 abstract type DECallback end
 
 """
 $(TYPEDEF)
+
+Base interface for callbacks that locate events inside a solver step.
+
+Continuous callbacks define a condition whose zero crossing is detected by the
+solver, optionally using interpolation and root finding, before applying an
+effect to the integrator. Concrete subtypes must document their condition and
+effect signatures and any assumptions about interpolation or event direction.
 """
 abstract type AbstractContinuousCallback <: DECallback end
 
 """
 $(TYPEDEF)
+
+Base interface for callbacks evaluated at solver-controlled points without
+continuous root finding.
+
+Discrete callbacks usually test a condition at accepted steps, initialization,
+or other solver-defined synchronization points, then apply an effect to the
+integrator. Concrete subtypes must document when their condition is evaluated
+and which integrator mutations their effects may perform.
 """
 abstract type AbstractDiscreteCallback <: DECallback end
 
@@ -1542,6 +1571,13 @@ abstract type AbstractHistoryFunction end
 
 """
 $(TYPEDEF)
+
+Compatibility hook for symbolic reaction-network containers.
+
+SciMLBase does not implement reaction-network modeling directly. This abstract
+type lets downstream packages identify reaction-network-like systems while still
+using SciMLBase problem and function wrappers without requiring SciMLBase to
+depend on a reaction-network package.
 """
 abstract type AbstractReactionNetwork end
 
