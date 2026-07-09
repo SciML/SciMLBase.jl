@@ -8,6 +8,7 @@ pages = [
         "interfaces/SciMLFunctions.md",
         "interfaces/Algorithms.md",
         "interfaces/Solutions.md",
+        "interfaces/Clocks.md",
         "interfaces/Init_Solve.md",
         "interfaces/Ensembles.md",
         "interfaces/Common_Keywords.md",

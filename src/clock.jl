@@ -1,14 +1,94 @@
+"""
+$(TYPEDEF)
+
+Base interface for time-domain clock objects.
+
+Clocks describe the independent-variable times at which discrete quantities are
+sampled or updated. SciMLBase defines periodic clocks, solver-step clocks,
+continuous clocks, and event clocks as lightweight descriptors. Downstream
+packages may store clocks in symbolic indexing metadata and solution discrete
+time-series data so callers can evaluate `sol(clock[idx])` at the corresponding
+times.
+
+Clock objects are scalar descriptors for broadcasting, callable as `clock()`
+for backwards-compatible code paths, and can be indexed to form an
+[`IndexedClock`](@ref). Use the trait helpers [`isclock`](@ref),
+[`issolverstepclock`](@ref), [`iscontinuous`](@ref), and
+[`is_discrete_time_domain`](@ref) when code needs to branch on clock semantics.
+"""
 abstract type AbstractClock end
 
+"""
+$(TYPEDEF)
+
+Clock representing the continuous independent-variable domain.
+
+`ContinuousClock()` is used when a quantity should be interpreted on the same
+continuous time axis as the solution itself. Indexing a continuous clock and
+canonicalizing it against a saved time-series solution selects entries from
+`sol.t`.
+"""
 struct ContinuousClock <: AbstractClock end
+
+"""
+$(TYPEDEF)
+
+Clock with nominal periodic ticks.
+
+`PeriodicClock(dt; phase = 0.0)` describes ticks separated by `dt`. A `dt` of
+`nothing` means the interval has not been fixed and may be inferred by
+downstream tooling. `phase` is stored as clock metadata for packages that need a
+phase offset.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 struct PeriodicClock <: AbstractClock
+    """
+    Nominal tick interval, or `nothing` when the interval is left for downstream
+    inference.
+    """
     dt::Union{Nothing, Float64, Rational{Int}}
+    """
+    Phase offset metadata for the periodic clock.
+    """
     phase::Float64
 end
 PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, Float64(phase))
 PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, Float64(phase))
+
+"""
+$(TYPEDEF)
+
+Clock that ticks at accepted solver steps.
+
+Solver-step clocks do not generally have equidistant ticks: adaptive step-size
+selection and event handling can change the tick times. They are useful for
+querying quantities saved on the solver's internal step sequence, but they are
+not a fixed-sample-rate clock unless the solver itself is fixed-step and has no
+events that alter the step sequence.
+"""
 struct SolverStepClock <: AbstractClock end
+
+"""
+$(TYPEDEF)
+
+Clock identified by a named event.
+
+`EventClock(id)` is a descriptor for event-triggered discrete time domains. The
+event identity is stored in `id`; concrete event detection and storage semantics
+are supplied by downstream packages that attach event-clock data to a solution
+or symbolic system.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 struct EventClock <: AbstractClock
+    """
+    Symbol identifying the event stream associated with this clock.
+    """
     id::Symbol
 end
 
@@ -26,13 +106,23 @@ module Clocks
     export ContinuousClock, PeriodicClock, SolverStepClock, EventClock
 end
 
+# for backwards compatibility
 """
     TimeDomain
 
-Alias for `AbstractClock`, retained as the public clock-domain supertype for
-code that dispatches on continuous, periodic, solver-step, or event clocks.
+Backwards-compatible alias for [`AbstractClock`](@ref).
+
+Use `TimeDomain` in old code paths that dispatch on clock-like time-domain
+descriptors. New interface documentation should refer to `AbstractClock` and the
+concrete clock types directly.
 """
 const TimeDomain = AbstractClock
+
+"""
+    Continuous
+
+Singleton [`ContinuousClock`](@ref) value for the continuous time domain.
+"""
 const Continuous = ContinuousClock()
 (clock::TimeDomain)() = clock
 
@@ -40,71 +130,73 @@ Base.Broadcast.broadcastable(d::TimeDomain) = Ref(d)
 
 """
     Clock(dt)
-    Clock()
+    Clock(; phase = 0.0)
 
-The default periodic clock with tick interval `dt`. If `dt` is left unspecified, it will
-be inferred (if possible).
+Construct the default [`PeriodicClock`](@ref).
+
+`Clock(dt; phase = 0.0)` converts numeric `dt` values to a periodic clock with
+that tick interval. Rational and `Float64` intervals are preserved, while other
+numeric intervals are converted to `Float64`. Calling `Clock(; phase = phase)`
+leaves `dt` as `nothing`, allowing downstream tooling to infer the interval when
+possible.
 """
 Clock(dt::Union{<:Rational, Float64}; phase = 0.0) = PeriodicClock(dt, phase)
 Clock(dt; phase = 0.0) = PeriodicClock(convert(Float64, dt), phase)
 Clock(; phase = 0.0) = PeriodicClock(nothing, phase)
 
-@doc """
-    SolverStepClock
-
-A clock that ticks at each solver step (sometimes referred to as "continuous sample time").
-This clock **does generally not have equidistant tick intervals**, instead, the tick
-interval depends on the adaptive step-size selection of the continuous solver, as well as
-any continuous event handling. If adaptivity of the solver is turned off and there are no
-continuous events, the tick interval will be given by the fixed solver time step `dt`.
-
-Due to possibly non-equidistant tick intervals, this clock should typically not be used with
-discrete-time systems that assume a fixed sample time, such as PID controllers and digital
-filters.
-""" SolverStepClock
-
 """
     isclock(clock)
 
-Returns `true` if the object is a valid clock type (specifically a `PeriodicClock`).
-This function is used for type checking in clock-dependent logic.
+Return `true` when `clock` is a periodic sampled clock.
+
+This legacy trait currently recognizes [`PeriodicClock`](@ref) values only. Use
+[`iscontinuous`](@ref), [`issolverstepclock`](@ref), and
+[`is_discrete_time_domain`](@ref) for the broader clock-family predicates.
 """
 isclock(@nospecialize(clk)) = clk isa PeriodicClock
 
 """
     issolverstepclock(clock)
 
-Returns `true` if the clock is a `SolverStepClock` that triggers at every solver step.
-This is useful for monitoring solver progress or implementing step-dependent logic.
+Return `true` if `clock` is a [`SolverStepClock`](@ref).
 """
 issolverstepclock(@nospecialize(clk)) = clk isa SolverStepClock
 
 """
     iscontinuous(clock)
 
-Returns `true` if the clock operates in continuous time (i.e., is a `ContinuousClock`).
-Continuous clocks allow events to occur at any real-valued time instant.
+Return `true` if `clock` is a [`ContinuousClock`](@ref).
 """
 iscontinuous(@nospecialize(clk)) = clk isa ContinuousClock
 
 """
     iseventclock(clock)
 
-Returns `true` if the clock is an `EventClock` that triggers based on specific events.
-Event clocks are used for condition-based triggering in hybrid systems.
+Return `true` if `clock` is an [`EventClock`](@ref).
 """
 iseventclock(@nospecialize(clk)) = clk isa EventClock
 
 """
     is_discrete_time_domain(clock)
 
-Returns `true` if the clock operates in discrete time (i.e., is not a continuous clock).
-Discrete time domains have specific sampling intervals or event-based triggering.
+Return `true` when `clock` represents a discrete time domain.
+
+`nothing` is treated as not discrete. Any clock that is not continuous is treated
+as discrete, including periodic, solver-step, and event clocks.
 """
 is_discrete_time_domain(::Nothing) = false
 is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 
 # public
+"""
+    first_clock_tick_time(clock, t0)
+
+Return the first tick time for a discrete clock at or after `t0`.
+
+For [`PeriodicClock`](@ref), this is the first multiple of `dt` at or after
+`t0`. For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and
+event clocks do not have a generic first tick time and throw an error.
+"""
 first_clock_tick_time(c::PeriodicClock, t0) = ceil(t0 / c.dt) * c.dt
 first_clock_tick_time(::SolverStepClock, t0) = t0
 first_clock_tick_time(::ContinuousClock, _) = error("ContinuousClock() is not a discrete clock")
