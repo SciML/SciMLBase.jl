@@ -2065,7 +2065,10 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Abstract function types
 @public AbstractDiffEqFunction, AbstractODEFunction, AbstractSciMLFunction,
-    AbstractParameterizedFunction
+    AbstractDAEFunction, AbstractRODEFunction, AbstractDiscreteFunction,
+    AbstractNonlinearFunction, AbstractIntervalNonlinearFunction,
+    AbstractIntegralFunction, AbstractOptimizationFunction, AbstractODEInputFunction,
+    AbstractBVPFunction, AbstractParameterizedFunction
 
 # Algorithm / problem traits
 @public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,

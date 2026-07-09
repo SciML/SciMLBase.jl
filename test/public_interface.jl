@@ -1,6 +1,30 @@
 using SciMLBase, Test
 
 if isdefined(Base, :ispublic)
+    @testset "SciMLFunctions manual public API" begin
+        for name in (
+                :AbstractSciMLFunction,
+                :AbstractDiffEqFunction,
+                :AbstractODEFunction,
+                :AbstractSDEFunction,
+                :AbstractDDEFunction,
+                :AbstractDAEFunction,
+                :AbstractRODEFunction,
+                :AbstractDiscreteFunction,
+                :AbstractSDDEFunction,
+                :AbstractNonlinearFunction,
+                :AbstractIntervalNonlinearFunction,
+                :AbstractIntegralFunction,
+                :AbstractOptimizationFunction,
+                :AbstractODEInputFunction,
+                :AbstractBVPFunction,
+                :AbstractParameterizedFunction,
+                :AbstractHistoryFunction,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
     @testset "Solutions manual public API" begin
         for name in (
                 :AbstractSciMLSolution,
