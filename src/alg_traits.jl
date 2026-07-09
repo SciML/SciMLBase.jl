@@ -287,12 +287,6 @@ Enum of stochastic integral interpretations used by SDE algorithms. The values a
 `AlgorithmInterpretation.Ito` and `AlgorithmInterpretation.Stratonovich`.
 """
 EnumX.@enumx AlgorithmInterpretation Ito Stratonovich
-@doc """
-    AlgorithmInterpretation
-
-Enum of stochastic integral interpretations used by SDE algorithms. The values are
-`AlgorithmInterpretation.Ito` and `AlgorithmInterpretation.Stratonovich`.
-""" AlgorithmInterpretation
 
 """
     alg_interpretation(alg)

@@ -116,8 +116,6 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
     stats::S
 end
 
-struct QuadratureSolution end
-@deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
 
 """
     build_solution(prob, alg, args...; kwargs...)

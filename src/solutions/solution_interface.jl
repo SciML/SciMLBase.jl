@@ -1,4 +1,11 @@
 ### Abstract Interface
+"""
+    AllObserved
+
+Sentinel value used with solution indexing and observation APIs to request all
+observed variables. This is the `RecursiveArrayTools.AllObserved` singleton
+re-exported through SciMLBase for solution-interface consumers.
+"""
 const AllObserved = RecursiveArrayTools.AllObserved
 
 # No Time Solution : Forward to `A.u`

@@ -1059,7 +1059,23 @@ PrecompileTools.@compile_workload begin
     CallbackSet(cb, ccb)
 end
 
+"""
+    discretize(sys, discretizer, args...; kwargs...)
+
+Transform a symbolic or high-level PDE/system description into the numerical
+object consumed by solvers, commonly an `AbstractSciMLProblem` or a lower-level
+discretized system. Discretizer packages define methods for their concrete
+system and discretizer types.
+"""
 function discretize end
+
+"""
+    symbolic_discretize(sys, discretizer, args...; kwargs...)
+
+Return the symbolic representation of a discretization when the discretizer can
+expose one. This is primarily used for inspecting or transforming the generated
+system before numeric problem construction.
+"""
 function symbolic_discretize end
 
 isfunctionwrapper(x) = false

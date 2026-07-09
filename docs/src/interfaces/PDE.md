@@ -65,6 +65,11 @@ The only functions which act on a PDESystem are the following:
   - `symbolic_discretize(sys,discretizer)`: produces a debugging symbolic description
     of the discretized problem.
 
+```@docs
+SciMLBase.discretize
+SciMLBase.symbolic_discretize
+```
+
 ## Boundary Conditions (WIP)
 
 ## Transformations
