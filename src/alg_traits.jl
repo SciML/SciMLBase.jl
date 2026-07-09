@@ -1,41 +1,57 @@
 """
     isautodifferentiable(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm is compatible with
-direct automatic differentiation, i.e. can have algorithms like
-ForwardDiff or ReverseDiff attempt to differentiate directly
-through the solver.
+Trait declaring whether direct automatic differentiation through a solver is
+supported.
 
-Defaults to false as only pure-Julia algorithms can have this be true.
+Return `true` only when the algorithm implementation is generic enough that AD
+systems such as ForwardDiff.jl, ReverseDiff.jl, or source-to-source AD can
+differentiate the solver itself. Wrapped foreign solvers and solvers that use
+non-differentiable mutation, callbacks, or external state should keep the
+default and instead rely on sensitivity algorithms or problem-level derivative
+interfaces.
+
+The default is `false`.
 """
 isautodifferentiable(alg::AbstractSciMLAlgorithm) = false
 
 """
     forwarddiffs_model(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm uses ForwardDiff.jl
-on the model function is called with ForwardDiff.jl
+Trait declaring whether an algorithm calls the user model with ForwardDiff dual
+numbers in the state or parameter arguments.
 
-Defaults to false as only pure-Julia algorithms can have this be true.
+Return `true` when the solver internally uses ForwardDiff.jl on the model
+function, for example to build Jacobians or local linearizations. Function
+wrapping and specialization code uses this information to prepare callable
+variants that accept dual-number inputs. Algorithms that never dualize the
+model through ForwardDiff should keep the default.
+
+The default is `false`.
 """
 forwarddiffs_model(alg::AbstractSciMLAlgorithm) = false
 
 """
     forwarddiffs_model_time(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm uses ForwardDiff.jl
-on the model `f(u,p,t)` function is called with ForwardDiff.jl on the `t` argument.
+Trait declaring whether an algorithm applies ForwardDiff to the model time
+argument.
 
-Defaults to false as only a few pure-Julia algorithms (Rosenbrock methods)
-have this as true
+Return `true` when the solver may call the model as `f(u, p, t)` with `t` as a
+ForwardDiff dual number. This is separate from [`forwarddiffs_model`](@ref)
+because some methods differentiate only with respect to state or parameters,
+while methods such as Rosenbrock-family ODE solvers may also differentiate with
+respect to time.
+
+The default is `false`.
 """
 forwarddiffs_model_time(alg::AbstractSciMLAlgorithm) = false
 
 """
     forwarddiff_chunksize(alg::AbstractSciMLAlgorithm)
 
-Trait declaration for the ForwardDiff chunk size used by the algorithm
-when calling the model function with ForwardDiff.Dual numbers.
+Trait declaring the ForwardDiff chunk size used by the algorithm when calling
+the model with `ForwardDiff.Dual` numbers.
 
 Returns a `Val{N}()`: `Val(0)` means unspecified (the framework will choose
 a default, typically 1 for FunctionWrapper compatibility). `Val(N)` for any
@@ -51,36 +67,45 @@ forwarddiff_chunksize(alg::AbstractSciMLAlgorithm) = Val(0)
 """
     allows_arbitrary_number_types(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm supports state, parameter, and time
-number types beyond the standard floating-point and complex floating-point
-types.
+Trait declaring whether an algorithm supports nonstandard numeric scalar types.
 
 Algorithms that return `true` should be implemented generically enough to work
-with SciML-compatible number and container types, subject to the additional rules
+with SciML-compatible state, parameter, and time number types beyond standard
+floating-point and complex floating-point types, subject to the additional rules
 in the [SciML container and number interface](@ref arrayandnumber). Wrapped
-C/Fortran solvers usually cannot support this and should keep the default.
+C/Fortran solvers and algorithms that assume a concrete floating-point storage
+format usually cannot support this and should keep the default.
 
-Defaults to `false`.
+The default is `false`.
 """
 allows_arbitrary_number_types(alg::AbstractSciMLAlgorithm) = false
 
 """
     allowscomplex(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm is compatible with
-having complex numbers as the state variables.
+Trait declaring whether an algorithm supports complex-valued states.
 
-Defaults to false.
+Return `true` when the solver can accept complex entries in the problem state
+and all internal linear algebra, error estimates, caches, and callbacks used by
+the algorithm preserve complex values correctly. Algorithms that require real
+states should keep the default.
+
+The default is `false`.
 """
 allowscomplex(alg::AbstractSciMLAlgorithm) = false
 
 """
     isadaptive(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm uses adaptivity,
-i.e. has a non-quasi-static compute graph.
+Trait declaring whether an algorithm uses adaptive stepping or adaptive work.
 
-Defaults to true.
+Return `true` when the algorithm may vary step sizes, iteration counts, or other
+internal work based on local error estimates or runtime convergence behavior.
+Return `false` for fixed-work algorithms with a quasi-static compute graph.
+Callers use this trait when deciding which keyword defaults and differentiable
+execution strategies are appropriate.
+
+The default is `true`, which is conservative for differential equation solvers.
 """
 isadaptive(alg::AbstractDEAlgorithm) = true
 # Default to assuming adaptive, safer error("Adaptivity algorithm trait not set.")
@@ -88,19 +113,27 @@ isadaptive(alg::AbstractDEAlgorithm) = true
 """
     isdiscrete(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm allows for
-discrete state values, such as integers.
+Trait declaring whether an algorithm supports discrete-valued states.
 
-Defaults to false.
+Return `true` when the solver can advance states whose entries are not elements
+of a continuous scalar field, such as integers or categorical encodings.
+Continuous numerical integrators should keep the default.
+
+The default is `false`.
 """
 isdiscrete(alg::AbstractDEAlgorithm) = false
 
 """
     has_lazy_interpolation(alg::AbstractDEAlgorithm)
 
-Trait declaration for whether an algorithm computes the solution interpolation lazily.
+Trait declaring whether an algorithm constructs solution interpolation lazily.
 
-Defaults to false.
+Return `true` when dense-output interpolation is computed on demand from saved
+solver data rather than fully materialized during the solve. Solution and save
+handling code can use this to avoid assuming that interpolation coefficients are
+eagerly available at solve completion.
+
+The default is `false`.
 """
 has_lazy_interpolation(alg::AbstractDEAlgorithm) = false
 """
@@ -304,8 +337,12 @@ allowscallback(opt) = true
 """
     alg_order(alg)
 
-The theoretic convergence order of the algorithm. If the method is adaptive order, this is treated
-as the maximum order of the algorithm.
+Return the theoretical convergence order of an ODE algorithm.
+
+For fixed-order methods this is the method order. For variable-order or
+adaptive-order methods, return the maximum order the algorithm can use. Solver
+packages should override this trait for algorithms where the order is part of
+the public method contract.
 """
 function alg_order(alg::AbstractODEAlgorithm)
     error("Order is not defined for this algorithm")
@@ -314,20 +351,27 @@ end
 """
     allows_non_wiener_noise(alg::AbstractSDEAlgorithm)
 
-Trait declaration for whether an algorithm allows for non-wiener noise.
-In general, this is false for any high order (that uses levy areas) or adaptive method.
+Trait declaring whether an SDE algorithm supports non-Wiener noise processes.
 
-Defaults to false.
+Return `true` when the algorithm can use an `AbstractNoiseProcess` that is not a
+standard Wiener process. Algorithms that rely on Brownian increments, Levy area
+approximations, or adaptivity assumptions specific to Wiener noise should keep
+the default.
+
+The default is `false`.
 """
 allows_non_wiener_noise(alg::AbstractSDEAlgorithm) = false
 
 """
     requires_additive_noise(alg::AbstractSDEAlgorithm)
 
-Trait declaration for whether an algorithm requires additive noise, i.e. the noise
-function is not a function of `u`.
+Trait declaring whether an SDE algorithm requires additive noise.
 
-Defaults to false
+Return `true` when the algorithm is valid only for noise functions that do not
+depend on the state `u`. Algorithms that support multiplicative noise should
+keep the default.
+
+The default is `false`.
 """
 requires_additive_noise(alg::AbstractSDEAlgorithm) = false
 
@@ -362,19 +406,28 @@ end
 """
     $(TYPEDSIGNATURES)
 
-Trait declaration for whether an algorithm supports specifying `tstops` as a function `tstops(p, tspan)` to be called after
-initialization.
+Trait declaring whether an ODE algorithm supports late-bound `tstops`.
 
-Defaults to false.
+Return `true` when the solver can accept `tstops` as a function
+`tstops(p, tspan)` and evaluate it after problem initialization has finalized
+the parameters and time span. Algorithms that require concrete time-stop values
+before initialization should keep the default.
+
+The default is `false`.
 """
 allows_late_binding_tstops(alg::AbstractODEAlgorithm) = false
 
 """
     $(TYPEDSIGNATURES)
 
-Trait declaration for whether the optimization algorithm supports the `init` interface.
+Deprecated trait for whether an optimization algorithm supports the `init`
+interface.
 
-Deprecated as this is not an optimization-specific idea and should use the traits for general caching.
+Use [`has_init`](@ref) and [`has_step`](@ref) for new code. This compatibility
+trait remains for older optimization solver integrations that queried cache
+support through an optimization-specific name.
+
+The default is `false`.
 """
 supports_opt_cache_interface(alg) = false
 

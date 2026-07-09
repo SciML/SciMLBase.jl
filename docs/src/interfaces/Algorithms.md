@@ -38,6 +38,7 @@ SciMLBase.forwarddiffs_model_time
 SciMLBase.forwarddiff_chunksize
 SciMLBase.has_lazy_interpolation
 SciMLBase.allows_late_binding_tstops
+SciMLBase.supports_opt_cache_interface
 SciMLBase.has_init
 SciMLBase.has_step
 SciMLBase.alg_order
@@ -55,6 +56,9 @@ SciMLBase.allowsconsvjp
 SciMLBase.requiresconshess
 SciMLBase.requireslagh
 SciMLBase.allowscallback
+SciMLBase.allows_non_wiener_noise
+SciMLBase.requires_additive_noise
+SciMLBase.AlgorithmInterpretation
 SciMLBase.alg_interpretation
 ```
 
