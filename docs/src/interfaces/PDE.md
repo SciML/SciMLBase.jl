@@ -32,10 +32,36 @@ Similar to the rest of the `AbstractSystem` types, transformation and analyses
 functions will allow for simplifying the PDE before solving it, and constructing
 block symbolic functions like Jacobians.
 
+## Problem and Discretization Contracts
+
+The common PDE interface has three layers:
+
+  - an [`AbstractPDEProblem`](@ref SciMLBase.AbstractPDEProblem) or concrete
+    [`PDEProblem`](@ref SciMLBase.PDEProblem) stores the pre-discretization PDE
+    representation and domain metadata;
+  - an [`AbstractDiscretization`](@ref SciMLBase.AbstractDiscretization)
+    describes the numerical transformation from the high-level PDE
+    representation to a solver-ready SciML problem; and
+  - an [`AbstractDiscretizationMetadata`](@ref SciMLBase.AbstractDiscretizationMetadata)
+    value records how the generated numerical solution maps back to the original
+    independent variables, dependent variables, and domains.
+
+Discretization metadata also determines how the final solver solution is wrapped.
+Use `AbstractDiscretizationMetadata{Val(true)}` when the generated PDE solution
+has a saved time axis and `AbstractDiscretizationMetadata{Val(false)}` when it
+does not. The generic `SciMLBase.wrap_sol(sol, metadata)` dispatch uses that flag
+to call either `PDETimeSeriesSolution(sol, metadata)` or
+`PDENoTimeSolution(sol, metadata)`. Downstream discretizer packages should define
+the corresponding outer constructor for their metadata type and should keep
+callable interpolation/evaluation methods in the package that owns the metadata.
+
 ## Constructors
 
+Symbolic PDE systems are constructed with `ModelingToolkit.PDESystem`, which is
+owned by ModelingToolkit.jl.
+
 ```@docs
-ModelingToolkit.PDESystem
+SciMLBase.PDEProblem
 ```
 
 ### Domains (WIP)
@@ -68,6 +94,14 @@ The only functions which act on a PDESystem are the following:
 ```@docs
 SciMLBase.discretize
 SciMLBase.symbolic_discretize
+```
+
+## PDE Solution Wrappers
+
+```@docs
+SciMLBase.PDETimeSeriesSolution
+SciMLBase.PDENoTimeSolution
+SciMLBase.wrap_sol
 ```
 
 ## Boundary Conditions (WIP)

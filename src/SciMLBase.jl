@@ -970,6 +970,11 @@ $(TYPEDEF)
 
 Base interface for metadata produced by a discretization. The `hasTime` type
 parameter records whether the wrapped solution has an independent time axis.
+Use `Val(true)` for time-dependent PDE solution wrappers and `Val(false)` for
+time-independent wrappers; this value parameter is what
+[`wrap_sol`](@ref SciMLBase.wrap_sol) uses to choose between
+[`PDETimeSeriesSolution`](@ref SciMLBase.PDETimeSeriesSolution) and
+[`PDENoTimeSolution`](@ref SciMLBase.PDENoTimeSolution).
 
 Concrete metadata types should store enough information for PDE solution wrappers
 to recover the original variables, domains, dependent-variable layout, and the
@@ -2056,7 +2061,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public AbstractSteadyStateProblem, StandardODEProblem
 
 # Abstract solution / discretization types
-@public AbstractTimeseriesSolution, AbstractDiscretization
+@public AbstractTimeseriesSolution, AbstractDiscretization, AbstractDiscretizationMetadata
 
 # Interpolation types
 @public AbstractDiffEqInterpolation, ConstantInterpolation, LinearInterpolation,

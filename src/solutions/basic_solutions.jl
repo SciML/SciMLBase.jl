@@ -175,6 +175,23 @@ solution behavior such as array indexing, symbolic indexing, and retcode
 inspection.
 """ build_solution
 
+"""
+    wrap_sol(sol)
+    wrap_sol(sol, problem_type_or_metadata)
+
+Return `sol` or wrap it in a higher-level SciML solution container.
+
+Solvers call `wrap_sol(sol)` after constructing a low-level solution. The
+default implementation checks `sol.prob.problem_type`, when present, and then
+dispatches to `wrap_sol(sol, problem_type_or_metadata)`. Problem-family packages
+extend the two-argument form when a generated solver solution should be returned
+as a more specific public solution type.
+
+The fallback two-argument method returns `sol` unchanged. PDE discretizer
+packages extend the metadata path by defining constructors such as
+`PDETimeSeriesSolution(sol, metadata::D)` or `PDENoTimeSolution(sol, metadata::D)`
+for their concrete discretization metadata type.
+"""
 function wrap_sol(sol)
     return if hasproperty(sol, :prob) && hasproperty(sol.prob, :problem_type)
         wrap_sol(sol, sol.prob.problem_type)

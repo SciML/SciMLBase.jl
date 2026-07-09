@@ -46,6 +46,9 @@ run_tests(;
         @time @safetestset "Solution interface" begin
             include("solution_interface.jl")
         end
+        @time @safetestset "PDE solutions" begin
+            include("pde_solutions.jl")
+        end
         @time @safetestset "DE function conversion" begin
             include("convert_tests.jl")
         end
