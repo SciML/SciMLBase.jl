@@ -1,6 +1,29 @@
 using SciMLBase, Test
 
 if isdefined(Base, :ispublic)
+    @testset "Clocks manual public API" begin
+        for name in (
+                :AbstractClock,
+                :ContinuousClock,
+                :PeriodicClock,
+                :SolverStepClock,
+                :EventClock,
+                :TimeDomain,
+                :Continuous,
+                :Clock,
+                :isclock,
+                :issolverstepclock,
+                :iscontinuous,
+                :iseventclock,
+                :is_discrete_time_domain,
+                :first_clock_tick_time,
+                :IndexedClock,
+                :canonicalize_indexed_clock,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
     @testset "SciMLFunctions manual public API" begin
         for name in (
                 :AbstractSciMLFunction,

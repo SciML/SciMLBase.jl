@@ -2138,6 +2138,11 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # SDE interpretation trait
 @public AlgorithmInterpretation, alg_interpretation
 
+# Clock interface
+@public AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock,
+    Continuous, Clock, iseventclock, first_clock_tick_time, IndexedClock,
+    canonicalize_indexed_clock
+
 # AD / sensitivity function wrappers
 @public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper
 
