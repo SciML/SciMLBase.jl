@@ -436,7 +436,7 @@ end
 """
     addsteps!(i::DEIntegrator, args...)
 
-Optional integrator hook for adding solver-specific step bookkeeping. The
+Optional integrator hook for recomputing steps for interpolations. The
 default implementation is a no-op.
 """
 addsteps!(i::DEIntegrator, args...) = nothing
