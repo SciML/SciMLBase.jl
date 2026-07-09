@@ -49,6 +49,9 @@ run_tests(;
         @time @safetestset "DE function conversion" begin
             include("convert_tests.jl")
         end
+        @time @safetestset "Function wrappers" begin
+            include("function_wrappers.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end

@@ -110,6 +110,21 @@ be specified directly via `colorvec`. For more information on how these argument
 control the differentiation process, see the aforementioned differentiation
 library documentations.
 
+### Function Wrapper Rules
+
+SciMLBase provides small wrapper types that turn an ODE-style model function
+into a one-variable callable for derivative code. These wrappers close over the
+fixed arguments and expose only the argument being differentiated.
+
+- Time wrappers fix `u` and `p`, then expose `t`.
+- State wrappers fix `t` and `p`, then expose `u`.
+- `isinplace(wrapper)` preserves the in-place convention detected from the
+  wrapped function.
+- In-place wrappers support caller-provided output arrays. Their one-argument
+  convenience calls allocate an output with `similar` to match the exposed state.
+- Wrapper trait queries forward to the underlying function where applicable, so
+  derivative code should query traits instead of inspecting wrapper fields.
+
 ## Traits
 
 ```@docs
