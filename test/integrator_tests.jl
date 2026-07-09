@@ -1,4 +1,4 @@
-using SciMLBase
+using Test, SciMLBase
 
 struct DummySolution
     retcode::SciMLBase.ReturnCode.T
@@ -15,11 +15,12 @@ mutable struct DummyIntegrator{Alg, IIP, U, T} <: SciMLBase.DEIntegrator{Alg, II
     tdir::Any
     tstops::Any
     sol::DummySolution
+    discontinuity::Bool
 
     function DummyIntegrator()
         return new{Bool, Bool, Vector{Float64}, Float64}(
             [0.0], 0, [0.0], 0, 1, 1, [],
-            DummySolution(ReturnCode.Default)
+            DummySolution(ReturnCode.Default), false
         )
     end
 end
@@ -51,6 +52,21 @@ function SciMLBase.done(integrator::DummyIntegrator)
     return integrator.t > 10
 end
 
+function SciMLBase.set_t!(integrator::DummyIntegrator, t)
+    integrator.t = t
+    return nothing
+end
+
+function SciMLBase.set_u!(integrator::DummyIntegrator, u)
+    integrator.u .= u
+    return nothing
+end
+
+function SciMLBase.derivative_discontinuity!(integrator::DummyIntegrator, discontinuity)
+    integrator.discontinuity = discontinuity
+    return nothing
+end
+
 SciMLBase.check_error(::DummyIntegrator) = ReturnCode.Success
 SciMLBase.postamble!(::DummyIntegrator) = nothing
 
@@ -59,6 +75,9 @@ integrator = DummyIntegrator()
 @test step_dt!(integrator, 1.5, true) == 1.5
 @test_throws ErrorException step!(integrator, -1)
 
+SciMLBase.set_ut!(integrator, [3.0], 2.0)
+@test integrator.u == [3.0]
+@test integrator.t == 2.0
 
 @test integrator.sol.retcode == ReturnCode.Default
 @test check_error(integrator) == ReturnCode.Success

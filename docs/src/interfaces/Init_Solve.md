@@ -54,6 +54,31 @@ SciMLBase.__solve
 
 ## Low-Level Integrator Interface
 
+Differential equation `init` methods return mutable `DEIntegrator` objects.
+Solver packages should expose state changes, callback effects, cache access, and
+manual stepping through this interface instead of requiring users or callbacks to
+reach into solver-specific internals.
+
+### Integrator Rules
+
+- `step!(integrator)` advances one accepted solver step. `step!(integrator, dt)`
+  advances by a signed time interval in the direction of `integrator.tdir`.
+- Callback code should mutate integrators through public hooks such as `set_u!`,
+  `set_t!`, `set_ut!`, `terminate!`, `add_tstop!`, and
+  `derivative_discontinuity!`.
+- `get_tmp_cache` returns scratch arrays whose contents may be reused by the
+  next integrator operation. Do not store them beyond the current callback or
+  method call.
+- `user_cache` exposes caches documented by the solver as safe for user
+  mutation. `full_cache`, `u_cache`, `du_cache`, and the non-user cache hooks are
+  for solver and generic-interface code that must keep internal caches aligned
+  with `integrator.u`.
+- Dynamic-size integrators that support `resize!`, `deleteat!`, or `addat!`
+  must update state, saved state, and non-user caches consistently.
+- Symbolic state access follows `SymbolicIndexingInterface`: `integrator[sym]`
+  reads state variables, `set_u!(integrator, sym, val)` writes state variables,
+  and parameter access should go through `integrator.ps[sym]`.
+
 ```@docs
 SciMLBase.DEIntegrator
 SciMLBase.AbstractSteadyStateIntegrator
@@ -65,6 +90,38 @@ SciMLBase.AbstractDDEIntegrator
 SciMLBase.AbstractDAEIntegrator
 SciMLBase.AbstractSDDEIntegrator
 SciMLBase.DECache
+SciMLBase.step!
+Base.resize!(::SciMLBase.DEIntegrator, ::Int)
+Base.deleteat!(::SciMLBase.DEIntegrator, ::Any)
+SciMLBase.addat!
+SciMLBase.get_tmp_cache
+SciMLBase.user_cache
+SciMLBase.u_cache
+SciMLBase.du_cache
+SciMLBase.full_cache
+SciMLBase.resize_non_user_cache!
+SciMLBase.deleteat_non_user_cache!
+SciMLBase.addat_non_user_cache!
+SciMLBase.terminate!
+SciMLBase.add_tstop!
+SciMLBase.has_tstop
+SciMLBase.first_tstop
+SciMLBase.pop_tstop!
+SciMLBase.add_saveat!
+SciMLBase.get_du
+SciMLBase.get_du!
+SciMLBase.get_proposed_dt
+SciMLBase.set_proposed_dt!
+SciMLBase.derivative_discontinuity!
+SciMLBase.savevalues!
+SciMLBase.reinit!
+SciMLBase.auto_dt_reset!
+SciMLBase.change_t_via_interpolation!
+SciMLBase.reeval_internals_due_to_modification!
+SciMLBase.set_t!
+SciMLBase.set_u!
+SciMLBase.set_ut!
+SciMLBase.get_sol
 SciMLBase.check_error!
 SciMLBase.initialize_dae!
 SciMLBase.has_reinit

@@ -1,12 +1,13 @@
 """
     step!(integ::DEIntegrator [, dt [, stop_at_tdt]])
 
-Perform one (successful) step on the integrator.
+Advance a differential equation integrator.
 
-Alternative, if a `dt` is given, then `step!` the integrator until
-there is a temporal difference `≥ dt` in `integ.t`.  When `true` is
-passed to the optional third argument, the integrator advances exactly
-`dt`.
+With one argument, perform one accepted solver step according to the concrete
+algorithm. With `dt`, repeatedly step until the signed time displacement from
+the starting time is at least `dt`. When `stop_at_tdt` is true, the generic
+fallback adds a temporary `tstop` so the integrator lands exactly at `t + dt`.
+Negative stepping relative to `integ.tdir` is rejected by the fallback.
 """
 function step!(d::DEIntegrator)
     error("Integrator stepping is not implemented")
@@ -15,8 +16,12 @@ end
 """
     resize!(integrator::DEIntegrator,k::Int)
 
-Resizes the DE to a size `k`. This chops off the end of the array, or adds blank values at the end, depending on whether
-`k > length(integrator.u)`.
+Resize the state dimension of an integrator to length `k`.
+
+Concrete integrators that support dynamic state sizes should resize `u`, saved
+state caches, user-facing caches, and any algorithm-specific non-user caches so
+future steps see a consistent state layout. Shrinking removes trailing state
+entries; growing appends solver-defined blank/default values.
 """
 function Base.resize!(i::DEIntegrator, ii::Int)
     error("resize!: method has not been implemented for the integrator")
@@ -25,7 +30,12 @@ end
 """
     deleteat!(integrator::DEIntegrator,idxs)
 
-Shrinks the ODE by deleting the `idxs` components.
+Delete state components from a dynamic-size integrator.
+
+Implementations should remove the selected entries from `integrator.u`, saved
+state caches, and any dependent non-user caches. Symbolic indexing metadata is
+assumed to remain valid only when the concrete solver documents support for
+dynamic state selection.
 """
 function Base.deleteat!(i::DEIntegrator, ii)
     error("deleteat!: method has not been implemented for the integrator")
@@ -34,7 +44,11 @@ end
 """
     addat!(integrator::DEIntegrator,idxs,val)
 
-Grows the ODE by adding the `idxs` components. Must be contiguous indices.
+Insert state components into a dynamic-size integrator.
+
+`idxs` must describe contiguous positions. Implementations should insert `val`
+or solver-defined defaults into `integrator.u`, saved state caches, and any
+dependent non-user caches so subsequent stepping uses the new state dimension.
 """
 function addat!(i::DEIntegrator, idxs, val = zeros(length(idxs)))
     error("addat!: method has not been implemented for the integrator")
@@ -43,9 +57,12 @@ end
 """
     get_tmp_cache(i::DEIntegrator)
 
-Returns a tuple of internal cache vectors which are safe to use as temporary arrays. This should be used
-for integrator interface and callbacks which need arrays to write into in order to be non-allocating.
-The length of the tuple is dependent on the method.
+Return temporary work arrays owned by the integrator.
+
+The returned tuple is intended for callbacks and integrator-interface code that
+needs non-allocating scratch storage. Callers may mutate these arrays during the
+current operation, but must not store them for later use or assume a fixed tuple
+length across algorithms.
 """
 function get_tmp_cache(i::DEIntegrator)
     error("get_tmp_cache!: method has not been implemented for the integrator")
@@ -53,8 +70,11 @@ end
 """
     user_cache(integrator::DEIntegrator)
 
-Returns user-accessible cache components from the integrator. These are cache arrays that users
-can safely access and modify without breaking the internal integrator state.
+Return user-accessible cache components from the integrator.
+
+These arrays are documented by the concrete solver as safe for user or callback
+mutation. They are distinct from temporary caches whose contents may be
+overwritten by the next integrator operation.
 """
 function user_cache(i::DEIntegrator)
     error("user_cache: method has not been implemented for the integrator")
@@ -63,8 +83,11 @@ end
 """
     u_cache(integrator::DEIntegrator)
 
-Returns the state variable cache arrays used by the integrator. These contain intermediate
-state values during the integration process.
+Return state-like cache arrays used by the integrator.
+
+Concrete solvers use these arrays for stage values, interpolation data, or other
+intermediate state storage. Generic resizing and callback code may use this
+interface when it needs to keep state-shaped caches consistent with `u`.
 """
 function u_cache(i::DEIntegrator)
     error("u_cache: method has not been implemented for the integrator")
@@ -73,8 +96,11 @@ end
 """
     du_cache(integrator::DEIntegrator)
 
-Returns the derivative cache arrays used by the integrator. These contain intermediate
-derivative values during the integration process.
+Return derivative-like cache arrays used by the integrator.
+
+These arrays store intermediate derivatives, residuals, or rate values whose
+shape follows the state. Concrete solvers should document whether users may
+mutate them directly or should treat them as internal storage.
 """
 function du_cache(i::DEIntegrator)
     error("du_cache: method has not been implemented for the integrator")
@@ -99,7 +125,12 @@ rand_cache(i::DEIntegrator) = ()
 """
     full_cache(i::DEIntegrator)
 
-Returns an iterator over the cache arrays of the method. This can be used to change internal values as needed.
+Return an iterator over all state-sized cache arrays managed by the method.
+
+`full_cache` is the broad cache interface used by generic resizing, adaptation,
+and callback utilities that need to keep every state-shaped cache synchronized.
+Concrete solvers should include user and non-user caches whose leading state
+dimension must track `integrator.u`.
 """
 function full_cache(i::DEIntegrator)
     error("full_cache: method has not been implemented for the integrator")
@@ -235,11 +266,16 @@ end
 """
     derivative_discontinuity!(i::DEIntegrator, bool)
 
-Sets `bool` which states whether a change to `f(u,p,t)` occurred, i.e. whether `u`, `p`, `t`, or something about the definition of `f`, has occurred in such a way that the integration process has introduced a discontinuity. By default,
-this is assumed to be true if a callback is used and is assumed to be false between steps in the integrator interface. A true will result trigger extra calculations, such as the re-calculation of the derivative the beginning of the next step or Jacobians, which is not necessary if the algorithm is FSAL and no discontinuous change is hit. 
+Record whether a callback or direct integrator mutation introduced a derivative
+discontinuity.
 
-Thus, if `(f,u,p,t)` is unmodified in a callback, a single call to the derivative calculation can be
-eliminated by `derivative_discontinuity!(integrator, false)`.
+The flag describes whether `f(u, p, t)` may have changed discontinuously because
+`u`, `p`, `t`, or the definition of `f` changed. Solvers use this to decide
+whether to recompute derivatives, interpolation data, FSAL caches, or Jacobians
+before the next step. Callback code should leave the default discontinuity
+behavior in place after state-changing effects, and may call
+`derivative_discontinuity!(integrator, false)` only when it did not change the
+state, parameters, time, or dynamics.
 """
 function derivative_discontinuity!(i::DEIntegrator, bool)
     error("derivative_discontinuity!: method has not been implemented for the integrator")
@@ -425,9 +461,13 @@ end
 """
     change_t_via_interpolation!(integrator::DEIntegrator,t,modify_save_endpoint=Val{false},reinitialize_alg=nothing)
 
-Modifies the current `t` and changes all of the corresponding values using the local interpolation. If the current solution
-has already been saved, one can provide the optional value `modify_save_endpoint` to also modify the endpoint of `sol` in the
-same manner.
+Move the integrator to time `t` using the method's local interpolation.
+
+Concrete solvers should update `integrator.t`, `integrator.u`, interpolation
+state, and any dependent caches consistently. If the current endpoint has
+already been saved, `modify_save_endpoint` controls whether the saved endpoint
+in `integrator.sol` is rewritten as well. `reinitialize_alg` is available for
+methods that must rerun initialization after the time/state change.
 """
 function change_t_via_interpolation!(i::DEIntegrator, args...)
     error("change_t_via_interpolation!: method has not been implemented for the integrator")
@@ -445,10 +485,13 @@ addsteps!(i::DEIntegrator, args...) = nothing
     reeval_internals_due_to_modification!(integrator::DEIntegrator, continuous_modification::Bool=true;
                                           callback_initializealg = nothing)
 
-Update DE integrator after changes by callbacks.
-For DAEs (either implicit or semi-explicit), this requires re-solving alebraic variables.
-If continuous_modification is true (or unspecified), this should also recalculate interpolation data.
-Otherwise the integrator is allowed to skip recalculating the interpolation.
+Update an integrator after callback-driven mutation.
+
+For DAEs, callback effects may require re-solving algebraic variables to restore
+consistency. If `continuous_modification` is true, solvers should also refresh
+interpolation data because the mutation can affect the current continuous
+segment. For discrete-only modifications, solvers may skip interpolation
+recalculation when their method permits it.
 
 # Arguments
 
@@ -474,7 +517,11 @@ end
 """
     set_t!(integrator::DEIntegrator, t)
 
-Set current time point of the `integrator` to `t`.
+Set the current time of `integrator` to `t`.
+
+Implementations should keep method-specific time caches consistent with the new
+time. Use [`change_t_via_interpolation!`](@ref) instead when changing time
+should also update `u` through interpolation.
 """
 function set_t!(integrator::DEIntegrator, t)
     error("set_t!: method has not been implemented for the integrator")
@@ -484,8 +531,14 @@ end
     set_u!(integrator::DEIntegrator, u)
     set_u!(integrator::DEIntegrator, sym, val)
 
-Set current state of the `integrator` to `u`. Alternatively, set the state of variable
-`sym` to value `val`.
+Set the current state of `integrator`.
+
+The two-argument form replaces the full state and must be implemented by
+concrete integrators that support direct state mutation. The three-argument form
+is the generic symbolic-state update path: it verifies that `sym` is a state
+variable, writes `val` into `integrator.u`, and marks a derivative discontinuity.
+Parameter updates should use `integrator.ps[sym]` or SymbolicIndexingInterface
+parameter setters instead of `set_u!`.
 """
 function set_u! end
 
@@ -513,7 +566,11 @@ end
 """
     set_ut!(integrator::DEIntegrator, u, t)
 
-Set current state of the `integrator` to `u` and `t`
+Set the current state and time of `integrator`.
+
+The fallback calls [`set_u!`](@ref) and then [`set_t!`](@ref), so concrete
+integrators can specialize either lower-level mutation hook or overload
+`set_ut!` directly when state/time changes must be applied atomically.
 """
 function set_ut!(integrator::DEIntegrator, u, t)
     set_u!(integrator, u)
