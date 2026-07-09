@@ -145,6 +145,13 @@ result = sol([0.0, 1.0])    # DiffEqArray with interp
 result(0.5)                  # interpolate the sub-result
 ```
 
+## Symbolic `save_idxs`
+
+Symbolic problems may save a subset of state variables or time-series
+parameters while still preserving symbolic indexing on the returned solution.
+The solver-author contract is documented in
+[Symbolic `save_idxs` and Saved Subsystems](@ref symbolic_save_idxs).
+
 ## Solution Traits
 
 ```@docs

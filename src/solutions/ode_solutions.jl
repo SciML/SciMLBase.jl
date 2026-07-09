@@ -437,9 +437,19 @@ end
 """
     create_parameter_timeseries_collection(sys, ps, tspan)
 
-Create a `SymbolicIndexingInterface.ParameterTimeseriesCollection` for the given system
-`sys` and parameter object `ps`. Return `nothing` if there are no timeseries parameters.
-Defaults to `nothing`. Falls back on the basis of `symbolic_container`.
+Create the discrete parameter time-series storage for a solution.
+
+`sys` is a symbolic index provider, `ps` is the parameter object used by the
+problem or integrator, and `tspan` is the solve time span. Return a
+`SymbolicIndexingInterface.ParameterTimeseriesCollection` when the system has
+time-series parameters that should be saved alongside the continuous state.
+Return `nothing` when there are no such parameters.
+
+Implementations should allocate one time-series buffer per discrete parameter
+partition and make `parameter_values(collection)` return the parameter object
+that should be updated during interpolation and symbolic indexing. The fallback
+delegates to `symbolic_container(sys)` when available and otherwise returns
+`nothing`.
 """
 function create_parameter_timeseries_collection(sys, ps, tspan)
     if hasmethod(symbolic_container, Tuple{typeof(sys)})
@@ -455,8 +465,13 @@ const PeriodicDiffEqArray = DiffEqArray{T, N, A, B} where {T, N, A, B <: Abstrac
 """
     get_saveable_values(sys, ps, timeseries_idx)
 
-Return the values to be saved in parameter object `ps` for timeseries index `timeseries_idx`. Called by
-`save_discretes!`. If this returns `nothing`, `save_discretes!` will not save anything.
+Return the values that should be appended to a discrete parameter time series.
+
+`timeseries_idx` selects the time-series partition to save from parameter object
+`ps`. The returned value must match the element type and shape of the buffer
+created by [`create_parameter_timeseries_collection`](@ref) for that partition.
+Return `nothing` when no value should be saved for `timeseries_idx`; in that
+case [`save_discretes!`](@ref) leaves the corresponding time series unchanged.
 """
 function get_saveable_values(sys, ps, timeseries_idx)
     return get_saveable_values(symbolic_container(sys), ps, timeseries_idx)
@@ -465,8 +480,14 @@ end
 """
     save_discretes!(integ::DEIntegrator, timeseries_idx)
 
-Save the parameter timeseries with index `timeseries_idx`. Calls `get_saveable_values` to
-get the values to save. If it returns `nothing`, then the save does not happen.
+Save one discrete parameter time-series partition at the integrator's current
+time.
+
+This obtains the current parameter object from `integ`, calls
+[`get_saveable_values`](@ref), and appends the returned values to the solution's
+discrete storage for `timeseries_idx`. If `get_saveable_values` returns
+`nothing`, no value is saved. When `skip_duplicates = true`, an implementation
+may avoid appending a second value at the same saved time.
 """
 function save_discretes!(integ::DEIntegrator, timeseries_idx; skip_duplicates = false)
     inner_sol = get_sol(integ)

@@ -41,6 +41,10 @@ section at the end of this page for some example usage.
     and given `save_idxs = [1, 3]`, only the first and third components of the
     solution will be outputted.
     Notice that of course in this case the outputted solution will be two-dimensional.
+    For symbolic problems, `save_idxs` may also use symbolic state variables or
+    time-series parameters. Solver implementations should preserve symbolic
+    indexing for subsetted solutions using the saved-subsystem interface described
+    in the [solution interface](@ref symbolic_save_idxs).
   - `tstops`: Denotes *extra* times that the timestepping algorithm must step to.
     This should be used to help the solver deal with discontinuities and
     singularities, since stepping exactly at the time of the discontinuity will
