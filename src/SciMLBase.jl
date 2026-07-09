@@ -2038,7 +2038,10 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Abstract algorithm types
 @public AbstractNonlinearAlgorithm, AbstractDAEAlgorithm, AbstractSDEAlgorithm,
     AbstractLinearAlgorithm, AbstractRODEAlgorithm, AbstractSteadyStateAlgorithm,
-    BasicEnsembleAlgorithm, EnsembleAlgorithm
+    BasicEnsembleAlgorithm, EnsembleAlgorithm, AbstractSensitivityAlgorithm,
+    AbstractOverloadingSensitivityAlgorithm, AbstractForwardSensitivityAlgorithm,
+    AbstractAdjointSensitivityAlgorithm, AbstractSecondOrderSensitivityAlgorithm,
+    AbstractShadowingSensitivityAlgorithm
 
 # Abstract integrator types
 @public DEIntegrator, AbstractODEIntegrator, AbstractSDEIntegrator,
