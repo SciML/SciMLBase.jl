@@ -2075,7 +2075,12 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Algorithm / problem traits
 @public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,
     is_diagonal_noise, forwarddiffs_model, forwarddiffs_model_time,
-    allows_late_binding_tstops, alg_order, allowsbounds, allowsconstraints
+    forwarddiff_chunksize, has_lazy_interpolation, allows_late_binding_tstops,
+    supports_opt_cache_interface, alg_order, allowsbounds, requiresbounds,
+    allowsconstraints, requiresconstraints, requiresgradient, allowsfg,
+    requireshessian, allowsfgh, requiresconsjac, allowsconsjvp, allowsconsvjp,
+    requiresconshess, requireslagh, allowscallback, allows_non_wiener_noise,
+    requires_additive_noise
 
 # Initialization algorithms and interface
 @public NoInit, OverrideInit, get_initial_values
