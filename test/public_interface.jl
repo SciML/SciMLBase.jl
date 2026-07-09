@@ -159,8 +159,55 @@ if isdefined(Base, :ispublic)
 
     @testset "Init-solve manual public API" begin
         for name in (
+                :DEIntegrator,
                 :AbstractSteadyStateIntegrator,
+                :AbstractODEIntegrator,
                 :AbstractSecondOrderODEIntegrator,
+                :AbstractSDEIntegrator,
+                :AbstractRODEIntegrator,
+                :AbstractDDEIntegrator,
+                :AbstractDAEIntegrator,
+                :AbstractSDDEIntegrator,
+                :DECache,
+                :step!,
+                :addat!,
+                :get_tmp_cache,
+                :user_cache,
+                :u_cache,
+                :du_cache,
+                :full_cache,
+                :resize_non_user_cache!,
+                :deleteat_non_user_cache!,
+                :addat_non_user_cache!,
+                :terminate!,
+                :add_tstop!,
+                :has_tstop,
+                :first_tstop,
+                :pop_tstop!,
+                :add_saveat!,
+                :get_du,
+                :get_du!,
+                :get_proposed_dt,
+                :set_proposed_dt!,
+                :derivative_discontinuity!,
+                :savevalues!,
+                :reinit!,
+                :auto_dt_reset!,
+                :change_t_via_interpolation!,
+                :reeval_internals_due_to_modification!,
+                :set_t!,
+                :set_u!,
+                :set_ut!,
+                :get_sol,
+                :check_error!,
+                :initialize_dae!,
+                :has_reinit,
+                :OverrideInitData,
+                :get_initial_values,
+                :numargs,
+                :FunctionArgumentsError,
+                :TooFewArgumentsError,
+                :TooManyArgumentsError,
             )
             @test Base.ispublic(SciMLBase, name)
         end
@@ -207,6 +254,35 @@ if isdefined(Base, :ispublic)
                 :EnsembleSolution,
                 :EnsembleTestSolution,
                 :WeightedEnsembleSolution,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
+    @testset "Symbolic save_idxs manual public API" begin
+        for name in (
+                :get_saved_subsystem,
+                :SavedSubsystem,
+                :get_saved_state_idxs,
+                :SavedSubsystemWithFallback,
+                :get_save_idxs_and_saved_subsystem,
+                :create_parameter_timeseries_collection,
+                :get_saveable_values,
+                :save_discretes!,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
+    @testset "PDE manual public API" begin
+        for name in (
+                :AbstractPDEProblem,
+                :PDEProblem,
+                :discretize,
+                :symbolic_discretize,
+                :PDETimeSeriesSolution,
+                :PDENoTimeSolution,
+                :wrap_sol,
             )
             @test Base.ispublic(SciMLBase, name)
         end

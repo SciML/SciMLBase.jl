@@ -2084,9 +2084,10 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Initialization algorithms and interface
 @public NoInit, OverrideInit, get_initial_values
+@public OverrideInitData
 
 # Solution / integrator interface
-@public DEStats, check_error!, promote_tspan
+@public DEStats, check_error!, promote_tspan, set_ut!, get_sol
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, NonlinearAliasSpecifier
@@ -2108,6 +2109,10 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Interpolation / symbolic / solution interface
 @public interp_summary, getindepsym, getindepsym_defaultt,
     calculate_solution_errors!, initialize_dae!
+@public get_saved_subsystem, SavedSubsystem, get_saved_state_idxs,
+    SavedSubsystemWithFallback, get_save_idxs_and_saved_subsystem,
+    create_parameter_timeseries_collection, get_saveable_values, save_discretes!,
+    wrap_sol
 
 # Automatic differentiation markers
 @public NoAD
