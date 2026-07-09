@@ -45,7 +45,7 @@ Contains a single callback whose `condition` is a continuous function. The callb
 
   - `condition`: This is a function `condition(u,t,integrator)` for declaring when
     the callback should be used. A callback is initiated if the condition hits
-    `0` within the time interval. See the [Integrator Interface](@ref integrator) documentation for information about `integrator`.
+    `0` within the time interval. See the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) documentation for information about `integrator`.
   - `affect!`: This is the function `affect!(integrator)` where one is allowed to
     modify the current state of the integrator. If you do not pass an `affect_neg!`
     function, it is called when `condition` is found to be `0` (at a root) and
@@ -53,16 +53,16 @@ Contains a single callback whose `condition` is a continuous function. The callb
     (from positive to negative). You need to explicitly pass `nothing` as the
     `affect_neg!` argument if it should only be called at upcrossings, e.g.
     `ContinuousCallback(condition, affect!, nothing)`. For more information on what can
-    be done, see the [Integrator Interface](@ref integrator) manual page. Modifications to
+    be done, see the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) manual page. Modifications to
     `u` are safe in this function.
   - `affect_neg!=affect!`: This is the function `affect_neg!(integrator)` where one is allowed to
     modify the current state of the integrator. This is called when `condition` is
     found to be `0` (at a root) and the cross is a downcrossing (from positive to
     negative). For more information on what can
-    be done, see the [Integrator Interface](@ref integrator) manual page. Modifications to
+    be done, see the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) manual page. Modifications to
     `u` are safe in this function.
   - `rootfind=LeftRootFind`: This is a flag to specify the type of rootfinding to do for finding
-    event location. If this is set to `LeftRootfind`, the solution will be backtracked to the point where
+    event location. If this is set to `LeftRootFind`, the solution will be backtracked to the point where
     `condition==0` and if the solution isn't exact, the left limit of root is used. If set to
     `RightRootFind`, the solution would be set to the right limit of the root. Otherwise, the systems and
     the `affect!` will occur at `t+dt`. Note that these enums are not exported, and thus one needs to
@@ -119,7 +119,10 @@ Contains a single callback whose `condition` is a continuous function. The callb
 # Extended help
 
 - `saved_clock_partitions`: An iterable of clock partition indices to save after the callback triggers. MTK-only
-  API
+  API.
+- `initialize_save_discretes = true`: Whether callback initialization should save
+  the discrete parameter partitions listed in `saved_clock_partitions` when
+  `save_positions[2]` is true.
 """
 struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     AbstractContinuousCallback
@@ -230,6 +233,10 @@ This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not fea
 as it doesn't scale well. For this reason, we have `VectorContinuousCallback` - it allows you to have a single callback for
 multiple events.
 
+`VectorContinuousCallback` intentionally does not have an `affect_neg!`
+callback. Its `affect!` receives the triggering event index and is responsible
+for applying the appropriate effect for that event.
+
 # Arguments
 
   - `condition`: This is a function `condition(out, u, t, integrator)` which should save the condition value in the array `out`
@@ -243,7 +250,11 @@ Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
 
 # Extended help
 
-- `saved_clock_partitions`: An iterable of `len` elements, where the `i`th element is an iterable of clock partition indices to save when the `i`th event triggers. MTK-only API.
+- `saved_clock_partitions`: An iterable of `len` elements, where the `i`th element is an iterable
+  of clock partition indices to save when the `i`th event triggers. MTK-only API.
+- `initialize_save_discretes = true`: Whether callback initialization should save
+  the discrete parameter partitions listed in `saved_clock_partitions` when
+  `save_positions[2]` is true.
 """
 struct VectorContinuousCallback{F1, F2, F4, F5, T, T2, T3, T4, I, R, SCP} <:
     AbstractContinuousCallback
@@ -329,10 +340,10 @@ DiscreteCallback(condition, affect!;
 
   - `condition`: This is a function `condition(u,t,integrator)` for declaring when
     the callback should be used. A callback is initiated if the condition evaluates
-    to `true`. See the [Integrator Interface](@ref integrator) documentation for information about `integrator`.
+    to `true`. See the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) documentation for information about `integrator`.
   - `affect!`: This is the function `affect!(integrator)` where one is allowed to
     modify the current state of the integrator. For more information on what can
-    be done, see the [Integrator Interface](@ref integrator) manual page.
+    be done, see the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) manual page.
   - `save_positions`: Boolean tuple for whether to save before and after the `affect!`.
     This saving will occur just before and after the event, only at event times, and
     does not depend on options like `saveat`, `save_everystep`, etc. (i.e. if
@@ -343,7 +354,7 @@ DiscreteCallback(condition, affect!;
     the state of the callback `c`. It should modify the argument `c` and the return is
     ignored.
   - `finalize`: This is a function `(c,u,t,integrator)` which can be used to finalize
-    the state of the callback `c`. It should can the argument `c` and the return is
+    the state of the callback `c`. It can modify the argument `c` and the return is
     ignored.
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
@@ -366,7 +377,10 @@ DiscreteCallback(condition, affect!;
 # Extended help
 
 - `saved_clock_partitions`: An iterable of clock partition indices to save after the callback
-  triggers. MTK-only API
+  triggers. MTK-only API.
+- `initialize_save_discretes = true`: Whether callback initialization should save
+  the discrete parameter partitions listed in `saved_clock_partitions` when
+  `save_positions[2]` is true.
 """
 struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
     condition::F1
@@ -412,14 +426,20 @@ end
 """
 $(TYPEDEF)
 
-Multiple callbacks can be chained together to form a `CallbackSet`. A `CallbackSet`
-is constructed by passing the constructor `ContinuousCallback`, `DiscreteCallback`,
-`VectorContinuousCallback` or other `CallbackSet` instances:
+Container for the callbacks attached to a differential equation solve.
+
+Multiple callbacks can be chained together to form a `CallbackSet`. A
+`CallbackSet` is constructed by passing `ContinuousCallback`,
+`DiscreteCallback`, `VectorContinuousCallback`, `nothing`, or other
+`CallbackSet` instances:
 
     CallbackSet(cb1,cb2,cb3)
 
-You can pass as many callbacks as you like. When the solvers encounter multiple
-callbacks, the following rules apply:
+You can pass as many callbacks as needed. Nested callback sets are flattened into
+two ordered tuples, `continuous_callbacks` and `discrete_callbacks`. Solvers
+should use these tuples instead of re-splitting callbacks themselves.
+
+When a solver encounters multiple callbacks, the following rules apply:
 
   - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s. (This is because
     they often implement event-finding that will backtrack the timestep to smaller
@@ -449,7 +469,12 @@ end
 """
     split_callbacks(cs, ds, args...)
 
-Split comma separated callbacks into sets of continuous and discrete callbacks.
+Split callbacks into continuous and discrete callback tuples.
+
+`cs` and `ds` are the tuples accumulated so far. Additional arguments may be
+`AbstractContinuousCallback`, `AbstractDiscreteCallback`, `CallbackSet`, or
+`nothing`. Nested callback sets are flattened while preserving the order within
+each category. This is the helper used by the vararg `CallbackSet` constructor.
 """
 @inline split_callbacks(cs, ds) = cs, ds
 @inline split_callbacks(cs, ds, c::Nothing, args...) = split_callbacks(cs, ds, args...)
@@ -467,9 +492,16 @@ end
 end
 
 """
-    $TYPEDSIGNATURES
+    $(TYPEDSIGNATURES)
 
-Save the discrete variables associated with callback `cb` in `integrator`.
+Save the discrete parameter partitions associated with callback `cb`.
+
+Callbacks created by ModelingToolkit may carry `saved_clock_partitions`
+metadata. When a callback triggers, this helper appends the corresponding
+time-series parameter values from `integrator` to the solution's discrete
+storage. For `VectorContinuousCallback`, the three-argument method saves only
+the partitions associated with event index `i`; the two-argument method saves
+all configured vector-event partitions.
 
 # Keyword arguments
 
@@ -511,11 +543,14 @@ function save_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
 end
 
 """
-    $TYPEDSIGNATURES
+    $(TYPEDSIGNATURES)
 
-Save the discrete variables associated with callback `cb` in `integrator` if the finalizer
-exists and `save_positions[2]` is `true`. Used to save the necessary values at the final
-time of the simulation, after the finalizer has run.
+Save callback-associated discrete parameter partitions after finalization.
+
+This helper is used at the final time of the simulation. It saves only when the
+callback has a non-default `finalize` hook and `save_positions[2]` is true, so
+finalizer-induced changes to time-series parameters are reflected in the
+solution's discrete storage.
 """
 function save_final_discretes!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback})
     cb.finalize === FINALIZE_DEFAULT && return
@@ -535,10 +570,15 @@ function save_final_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
 end
 
 """
-    $TYPEDSIGNATURES
+    $(TYPEDSIGNATURES)
 
-Save the discrete variables associated with callback `cb` in `integrator` if
-`save_positions[2] && initialize_save_discretes` is `true`.
+Save callback-associated discrete parameter partitions during initialization
+when enabled.
+
+Initialization saves occur only when both `save_positions[2]` and
+`initialize_save_discretes` are true. This lets callbacks participate in
+symbolic discrete-parameter saving while allowing solver authors or generated
+callbacks to opt out of the initial discrete save.
 
 # Keyword arguments
 

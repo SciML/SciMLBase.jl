@@ -10,6 +10,7 @@ pages = [
         "interfaces/Algorithms.md",
         "interfaces/Solutions.md",
         "interfaces/Symbolic_SaveIdxs.md",
+        "interfaces/Callbacks.md",
         "interfaces/Clocks.md",
         "interfaces/Init_Solve.md",
         "interfaces/Ensembles.md",

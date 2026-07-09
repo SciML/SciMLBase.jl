@@ -117,7 +117,11 @@ Note that if a method does not have adaptivity, the following rules apply:
 ## Miscellaneous
 
   - `maxiters`: Maximum number of iterations before stopping.
-  - `callback`: Specifies a callback function that is called between iterations.
+  - `callback`: Specifies callback actions that run during the solve, commonly
+    event handling through `ContinuousCallback`, `DiscreteCallback`,
+    `VectorContinuousCallback`, or a `CallbackSet`. See the
+    [callback interface](@ref callback_interface) for ordering, saving, and DAE
+    initialization rules.
   - `verbose`: Toggles whether warnings are thrown when the solver exits early.
     Defaults to true.
   - `rng`: Pass an `AbstractRNG` instance to be used by the integrator for any
