@@ -2020,7 +2020,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     AbstractBVPAlgorithm, AbstractSecondOrderODEAlgorithm, AbstractAliasSpecifier
 
 # Solution / problem support types
-@public NLStats, NullParameters, AutoSpecialize
+@public NLStats, NullParameters, AbstractSpecialization, AutoSpecialize,
+    AbstractOptimizationCache
 
 # Core functions
 @public build_solution, numargs
@@ -2035,7 +2036,11 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Abstract problem types
 @public AbstractDEProblem, AbstractDAEProblem, AbstractSDEProblem, AbstractDDEProblem,
     AbstractDiscreteProblem, AbstractNoiseProblem, AbstractJumpProblem,
-    AbstractEnsembleProblem
+    AbstractEnsembleProblem, AbstractLinearProblem, AbstractEigenvalueProblem,
+    AbstractIntervalNonlinearProblem, AbstractIntegralProblem,
+    AbstractOptimizationProblem, AbstractDynamicOptProblem,
+    AbstractConstantLagDDEProblem, AbstractSecondOrderODEProblem,
+    AbstractConstantLagSDDEProblem, AbstractPDEProblem
 
 # Abstract algorithm types
 @public AbstractNonlinearAlgorithm, AbstractDAEAlgorithm, AbstractSDEAlgorithm,
