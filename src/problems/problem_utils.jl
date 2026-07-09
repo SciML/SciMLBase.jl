@@ -172,6 +172,26 @@ function Base.summary(io::IO, prob::AbstractEnsembleProblem)
 end
 Base.show(io::IO, mime::MIME"text/plain", A::AbstractEnsembleProblem) = summary(io, A)
 
+"""
+$(TYPEDEF)
+
+A singleton type used as the default value of the parameter argument `p` in
+`AbstractSciMLProblem` constructors (for example `ODEProblem(f, u0, tspan)` with no
+`p` supplied). It marks the absence of parameters.
+
+`NullParameters` is deliberately not indexable or broadcastable: any attempt to index
+into it (such as `p[1]` or `x .+ p` inside a problem's function) throws an error with a
+message explaining that no parameters were passed to the problem. This turns the common
+mistake of forgetting to supply `p` (or using the wrong function signature) into an
+informative error rather than a confusing downstream failure.
+
+## Example
+
+```julia
+prob = ODEProblem(f, u0, tspan)      # prob.p === NullParameters()
+prob = ODEProblem(f, u0, tspan, p)   # prob.p === p
+```
+"""
 struct NullParameters end
 
 const NO_PARAMETERS_INDEX_ERROR_MESSAGE = """

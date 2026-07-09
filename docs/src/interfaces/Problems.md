@@ -78,6 +78,10 @@ informative error if the parameter is used or accessed within the user's functio
 for example, `p[1]` will throw an informative error about forgetting to pass
 parameters.
 
+```@docs
+SciMLBase.NullParameters
+```
+
 ### Keyword Argument Splatting
 
 All `AbstractSciMLProblem` types allow for passing keyword arguments that would get forwarded
@@ -222,6 +226,7 @@ SciMLBase.HomotopyProblem
 
 ```@docs
 SciMLBase.StandardODEProblem
+SciMLBase.ImmutableODEProblem
 ```
 
 `SciMLBase.ImmutableODEProblem` is the immutable ODE problem type.

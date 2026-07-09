@@ -47,6 +47,11 @@ errors and throwing high level messages. Solvers can opt-out of the high level
 error handling by directly defining `SciMLBase.init` and `SciMLBase.solve` instead,
 though this is not recommended in order to allow for uniformity of the error messages.
 
+```@docs
+SciMLBase.__init
+SciMLBase.__solve
+```
+
 ## Low-Level Integrator Interface
 
 ```@docs

@@ -381,6 +381,13 @@ abstract type AbstractSDDEAlgorithm <: AbstractDEAlgorithm end
 
 """
 $(TYPEDEF)
+
+The supertype of all ensemble algorithms, i.e. the algorithms passed as the
+`ensemblealg` argument to `solve(::EnsembleProblem, alg, ensemblealg; ...)` to control
+how the many trajectories of an [`EnsembleProblem`](@ref) are executed. Subtypes select
+the parallelization strategy (serial, threaded, distributed, GPU, ...); see
+[`BasicEnsembleAlgorithm`](@ref) for the CPU-parallelism implementations built into
+SciMLBase.
 """
 abstract type EnsembleAlgorithm <: AbstractSciMLAlgorithm end
 
@@ -526,6 +533,13 @@ abstract type AbstractDiscretizationMetadata{hasTime} end
 # Monte Carlo Simulations
 """
 $(TYPEDEF)
+
+The supertype of all ensemble problem types. An ensemble problem wraps a base
+`AbstractSciMLProblem` together with the functions (`prob_func`, `output_func`,
+`reduction`, ...) needed to generate, run, and reduce many related trajectories under
+the [parallel ensemble interface](@ref ensemble). The concrete implementation is
+[`EnsembleProblem`](@ref); solving one dispatches on the chosen
+[`EnsembleAlgorithm`](@ref).
 """
 abstract type AbstractEnsembleProblem <: AbstractSciMLProblem end
 

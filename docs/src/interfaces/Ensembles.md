@@ -11,6 +11,7 @@ down to specific answers, and compute summary statistics on the results.
 ### Building a Problem
 
 ```@docs
+SciMLBase.AbstractEnsembleProblem
 EnsembleProblem
 ```
 
@@ -26,6 +27,8 @@ The choice of ensemble algorithm allows for control over how the multiple trajec
 are handled. Currently, the ensemble algorithm types are:
 
 ```@docs
+SciMLBase.EnsembleAlgorithm
+SciMLBase.BasicEnsembleAlgorithm
 EnsembleSerial
 EnsembleThreads
 EnsembleDistributed
