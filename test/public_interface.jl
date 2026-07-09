@@ -74,11 +74,22 @@ if isdefined(Base, :ispublic)
 
     @testset "Algorithms manual public API" begin
         for name in (
+                :AbstractSciMLAlgorithm,
                 :AbstractIntervalNonlinearAlgorithm,
                 :AbstractOptimizationAlgorithm,
                 :AbstractBVPAlgorithm,
                 :AbstractSecondOrderODEAlgorithm,
+                :AbstractSDDEAlgorithm,
                 :CheckInit,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
+    @testset "Init-solve manual public API" begin
+        for name in (
+                :AbstractSteadyStateIntegrator,
+                :AbstractSecondOrderODEIntegrator,
             )
             @test Base.ispublic(SciMLBase, name)
         end

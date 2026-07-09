@@ -2043,16 +2043,18 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     AbstractConstantLagSDDEProblem, AbstractPDEProblem
 
 # Abstract algorithm types
-@public AbstractNonlinearAlgorithm, AbstractDAEAlgorithm, AbstractSDEAlgorithm,
-    AbstractLinearAlgorithm, AbstractRODEAlgorithm, AbstractSteadyStateAlgorithm,
-    BasicEnsembleAlgorithm, EnsembleAlgorithm, AbstractSensitivityAlgorithm,
+@public AbstractSciMLAlgorithm, AbstractNonlinearAlgorithm, AbstractDAEAlgorithm,
+    AbstractSDEAlgorithm, AbstractLinearAlgorithm, AbstractRODEAlgorithm,
+    AbstractSteadyStateAlgorithm, AbstractSDDEAlgorithm, BasicEnsembleAlgorithm,
+    EnsembleAlgorithm, AbstractSensitivityAlgorithm,
     AbstractOverloadingSensitivityAlgorithm, AbstractForwardSensitivityAlgorithm,
     AbstractAdjointSensitivityAlgorithm, AbstractSecondOrderSensitivityAlgorithm,
     AbstractShadowingSensitivityAlgorithm
 
 # Abstract integrator types
 @public DEIntegrator, AbstractODEIntegrator, AbstractSDEIntegrator,
-    AbstractRODEIntegrator, AbstractDDEIntegrator, AbstractDAEIntegrator
+    AbstractRODEIntegrator, AbstractDDEIntegrator, AbstractDAEIntegrator,
+    AbstractSteadyStateIntegrator, AbstractSecondOrderODEIntegrator
 
 # Abstract solution types
 @public AbstractNoiseProcess, AbstractEnsembleSolution, AbstractNoTimeSolution,
