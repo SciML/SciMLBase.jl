@@ -128,6 +128,7 @@ SciMLBase.has_initialization_data
 ### Abstract SciML Functions
 
 ```@docs
+SciMLBase.AbstractSciMLFunction
 SciMLBase.AbstractDiffEqFunction
 SciMLBase.AbstractODEFunction
 SciMLBase.AbstractSDEFunction

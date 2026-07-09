@@ -1,5 +1,12 @@
 """
 $(TYPEDEF)
+
+The supertype of the CPU-parallelism ensemble algorithms provided by SciMLBase, i.e. the
+ensemble algorithms whose trajectory execution is handled by the generic
+`__solve(prob::AbstractEnsembleProblem, alg, ensemblealg::BasicEnsembleAlgorithm)`
+loop rather than by an external backend. Its subtypes select how the trajectories are
+distributed: [`EnsembleSerial`](@ref), [`EnsembleThreads`](@ref),
+[`EnsembleDistributed`](@ref), and [`EnsembleSplitThreads`](@ref).
 """
 abstract type BasicEnsembleAlgorithm <: EnsembleAlgorithm end
 
