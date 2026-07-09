@@ -73,6 +73,47 @@ prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
     end
 end
 
+const ALIAS_SPECIFIER_TYPES = (
+    SciMLBase.LinearAliasSpecifier,
+    SciMLBase.NonlinearAliasSpecifier,
+    SciMLBase.ODEAliasSpecifier,
+    SciMLBase.RODEAliasSpecifier,
+    SciMLBase.SDEAliasSpecifier,
+    SciMLBase.DAEAliasSpecifier,
+    SciMLBase.DDEAliasSpecifier,
+    SciMLBase.SDDEAliasSpecifier,
+    SciMLBase.BVPAliasSpecifier,
+    SciMLBase.OptimizationAliasSpecifier,
+    SciMLBase.IntegralAliasSpecifier,
+    SciMLBase.DiscreteAliasSpecifier,
+    SciMLBase.ImplicitDiscreteAliasSpecifier,
+    SciMLBase.AnalyticalAliasSpecifier,
+    SciMLBase.SteadyStateAliasSpecifier,
+)
+
+function alias_specifier_with_policy(T, alias)
+    return if T === SciMLBase.IntegralAliasSpecifier
+        T(nothing, nothing, alias)
+    else
+        T(; alias = alias)
+    end
+end
+
+@testset "Alias specifier interface" begin
+    @testset "$(nameof(T))" for T in ALIAS_SPECIFIER_TYPES
+        @test T <: SciMLBase.AbstractAliasSpecifier
+
+        default_spec = alias_specifier_with_policy(T, nothing)
+        @test all(isnothing(getfield(default_spec, name)) for name in fieldnames(T))
+
+        alias_spec = alias_specifier_with_policy(T, true)
+        @test all(getfield(alias_spec, name) === true for name in fieldnames(T))
+
+        noalias_spec = alias_specifier_with_policy(T, false)
+        @test all(getfield(noalias_spec, name) === false for name in fieldnames(T))
+    end
+end
+
 @testset "DAEProblem{iip, specialize} two-parameter constructor" begin
     function simple_dae!(resid, du, u, p, t)
         resid[1] = du[1] - u[1]

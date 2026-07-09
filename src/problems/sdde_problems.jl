@@ -210,7 +210,7 @@ separate `du0` alias field.
 * `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
 * `alias::Union{Bool, Nothing}`: set every stored field of the `SDDEAliasSpecifier`.
 """
-struct SDDEAliasSpecifier
+struct SDDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

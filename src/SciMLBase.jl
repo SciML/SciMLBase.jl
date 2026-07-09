@@ -1609,6 +1609,15 @@ the concrete specifier.
 Aliasing is a performance and ownership hint. A solver may still copy data when
 the selected algorithm requires an internal layout or when preserving correctness
 requires solver-owned storage.
+
+## Interface
+
+Concrete subtypes should store one field per aliasable input, named with the
+`alias_` prefix and typed as `Union{Bool, Nothing}`. Problem constructors and
+solver caches should treat `nothing` as "use the algorithm default" rather than
+as either permission or prohibition. New problem families should document which
+inputs each field controls and should provide an `alias` convenience keyword
+when every stored field can share the same policy.
 """
 abstract type AbstractAliasSpecifier end
 
@@ -2056,6 +2065,10 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, NonlinearAliasSpecifier
+@public AbstractAliasSpecifier, AnalyticalAliasSpecifier, SteadyStateAliasSpecifier,
+    ImplicitDiscreteAliasSpecifier, DAEAliasSpecifier, DDEAliasSpecifier,
+    SDDEAliasSpecifier, BVPAliasSpecifier, OptimizationAliasSpecifier,
+    IntegralAliasSpecifier, DiscreteAliasSpecifier
 
 # Steady-state / problem support types
 @public AbstractSteadyStateProblem, StandardODEProblem

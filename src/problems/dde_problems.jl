@@ -479,7 +479,7 @@ separate `du0` alias field.
 * `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
 * `alias::Union{Bool, Nothing}`: set every stored field of the `DDEAliasSpecifier`.
 """
-struct DDEAliasSpecifier
+struct DDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

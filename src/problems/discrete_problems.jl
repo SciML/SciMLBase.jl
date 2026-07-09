@@ -204,7 +204,7 @@ store a separate `du0` alias field.
 * `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
 * `alias::Union{Bool, Nothing}`: set every stored field of the `DiscreteAliasSpecifier`.
 """
-struct DiscreteAliasSpecifier
+struct DiscreteAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

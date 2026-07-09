@@ -105,9 +105,9 @@ Note that if a method does not have adaptivity, the following rules apply:
 
 ## Memory Optimizations
 
-  - `alias`: an `AbstractAliasSpecifier` object that holds fields specifying which variables to alias
-    when solving. For example, to tell an ODE solver to alias the `u0` array, you can use an `ODEAliases` object,
-    and the `alias_u0` keyword argument, e.g. `solve(prob,alias = ODEAliases(alias_u0 = true))`.
+  - `alias`: an `AbstractAliasSpecifier` object that holds `Union{Bool, Nothing}` fields specifying which variables to alias
+    when solving. For example, to tell an ODE solver that it may alias the `u0` array, use
+    `solve(prob, alias = ODEAliasSpecifier(alias_u0 = true))`.
     For more information on what can be aliased for each problem type, see the documentation for the `AbstractAliasSpecifier`
     associated with that problem type. Set to `true` to alias every variable possible, or to `false` to disable aliasing.
     Defaults to an `AbstractAliasSpecifier` instance with `nothing` for all fields, which tells the solver to use the default behavior.
