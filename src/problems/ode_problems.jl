@@ -241,6 +241,13 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for structured ODE problem layouts.
+
+Subtypes identify ODE problems that are constructed from partitioned or
+second-order dynamics and then stored in the common `ODEProblem` representation.
+The concrete marker is carried in the problem's `problem_type` field so solvers
+can preserve structure when they support specialized methods.
 """
 abstract type AbstractDynamicalODEProblem end
 
@@ -445,6 +452,13 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for split ODE problem layouts.
+
+Subtypes identify ODEs whose right-hand side is supplied as a split function,
+usually to expose additive, linear, stiff, or nonstiff structure to solvers.
+Split constructors store this marker in `problem_type` metadata while using the
+ordinary `ODEProblem` storage layout.
 """
 abstract type AbstractSplitODEProblem end
 

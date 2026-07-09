@@ -1,5 +1,14 @@
 """
 $(TYPEDEF)
+
+Legacy marker for the standard SDE problem representation.
+
+The standard SDE layout is represented by `SDEProblem` itself: drift function,
+diffusion function, initial state, time span, parameters, noise metadata, and
+solver keywords. Current SDE constructors do not store a separate
+`problem_type` field for this marker, so solver implementations should dispatch
+on `AbstractSDEProblem` and the problem's function type instead of depending on
+`StandardSDEProblem`.
 """
 struct StandardSDEProblem end
 
@@ -152,11 +161,26 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for split SDE constructor tags.
+
+Concrete subtypes represent SDEs whose drift is supplied in split form, for
+example a linear or stiff part plus a nonlinear part. Constructors use these
+tags to route through the standard `SDEProblem` storage with a
+`SplitSDEFunction`; solvers should generally inspect the function object rather
+than dispatching on this abstract marker.
 """
 abstract type AbstractSplitSDEProblem end
 
 """
 $(TYPEDEF)
+
+Constructor tag for split SDE problems.
+
+`SplitSDEProblem{iip}` records the in-place convention of the split SDE
+function while building an `SDEProblem` whose function is a `SplitSDEFunction`.
+The tag is a construction helper, not a separate stored problem object returned
+by `solve`.
 """
 struct SplitSDEProblem{iip} <: AbstractSplitSDEProblem end
 # u' = Au + f
@@ -198,11 +222,24 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for dynamical SDE constructor tags.
+
+Dynamical SDE constructors preserve the partitioned `(v, u)` structure at
+construction time and then store the problem as an `SDEProblem` with an
+`ArrayPartition` state and `DynamicalSDEFunction`.
 """
 abstract type AbstractDynamicalSDEProblem end
 
 """
 $(TYPEDEF)
+
+Constructor tag for dynamical SDE problems.
+
+`DynamicalSDEProblem{iip}` records the in-place convention used when converting
+partitioned stochastic dynamics into the common `SDEProblem` representation.
+Solver code should normally work with the resulting `SDEProblem` and its
+`DynamicalSDEFunction`.
 """
 struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
 

@@ -1,5 +1,14 @@
 """
 $(TYPEDEF)
+
+Marker for standard nonlinear problem layouts.
+
+`StandardNonlinearProblem()` is the default `problem_type` metadata for
+nonlinear problems represented directly by a residual function and either an
+initial guess or an interval. Solver code may inspect this marker when it needs
+to distinguish the standard residual layout from specialized nonlinear problem
+encodings, while generic nonlinear code should rely on the
+`AbstractNonlinearProblem` fields and traits instead.
 """
 struct StandardNonlinearProblem end
 

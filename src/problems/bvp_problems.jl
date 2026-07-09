@@ -1,10 +1,23 @@
 """
 $(TYPEDEF)
+
+Marker for multi-point first-order BVP layouts.
+
+`StandardBVProblem()` identifies boundary value problems whose boundary
+condition is supplied as one residual function over the current solution values
+and mesh. It is stored in the `problem_type` field of `BVProblem` when the
+problem is not using separate endpoint boundary-condition functions.
 """
 struct StandardBVProblem end
 
 """
 $(TYPEDEF)
+
+Marker for two-point first-order BVP layouts.
+
+`TwoPointBVProblem{iip}` identifies BVPs whose boundary condition is supplied as
+a pair of endpoint residual functions. The `iip` parameter records the in-place
+convention of the associated `BVPFunction` used for type-stable construction.
 """
 struct TwoPointBVProblem{iip} end # The iip is needed to make type stable construction easier
 
@@ -282,11 +295,25 @@ end
 
 """
 $(TYPEDEF)
+
+Marker for multi-point second-order BVP layouts.
+
+`StandardSecondOrderBVProblem()` identifies second-order BVPs whose boundary
+condition is supplied as one residual function over derivative values, state
+values, parameters, and mesh points. It is stored in the `problem_type` field of
+`SecondOrderBVProblem` when endpoint residual functions are not used.
 """
 struct StandardSecondOrderBVProblem end
 
 """
 $(TYPEDEF)
+
+Marker for two-point second-order BVP layouts.
+
+`TwoPointSecondOrderBVProblem{iip}` identifies second-order BVPs whose boundary
+condition is supplied as a pair of endpoint residual functions. The `iip`
+parameter records the in-place convention of the associated `DynamicalBVPFunction`
+used for type-stable construction.
 """
 struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type stable construction easier
 
