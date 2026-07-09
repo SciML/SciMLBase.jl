@@ -2056,7 +2056,12 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Abstract solution types
 @public AbstractNoiseProcess, AbstractEnsembleSolution, AbstractNoTimeSolution,
-    AbstractRODESolution
+    AbstractLinearSolution, AbstractEigenvalueSolution, AbstractNonlinearSolution,
+    AbstractIntegralSolution, AbstractOptimizationSolution,
+    AbstractSteadyStateSolution, AbstractAnalyticalSolution, AbstractODESolution,
+    AbstractDDESolution, AbstractRODESolution, AbstractDAESolution,
+    AbstractPDETimeSeriesSolution, AbstractPDENoTimeSolution, AbstractPDESolution,
+    AbstractSensitivitySolution
 
 # Abstract function types
 @public AbstractDiffEqFunction, AbstractODEFunction, AbstractSciMLFunction,

@@ -1,6 +1,33 @@
 using SciMLBase, Test
 
 if isdefined(Base, :ispublic)
+    @testset "Solutions manual public API" begin
+        for name in (
+                :AbstractSciMLSolution,
+                :AbstractNoTimeSolution,
+                :AbstractTimeseriesSolution,
+                :AbstractNoiseProcess,
+                :AbstractEnsembleSolution,
+                :AbstractLinearSolution,
+                :AbstractEigenvalueSolution,
+                :AbstractNonlinearSolution,
+                :AbstractIntegralSolution,
+                :AbstractOptimizationSolution,
+                :AbstractSteadyStateSolution,
+                :AbstractAnalyticalSolution,
+                :AbstractODESolution,
+                :AbstractDDESolution,
+                :AbstractRODESolution,
+                :AbstractDAESolution,
+                :AbstractPDETimeSeriesSolution,
+                :AbstractPDENoTimeSolution,
+                :AbstractPDESolution,
+                :AbstractSensitivitySolution,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
     @testset "Problems manual public API" begin
         for name in (
                 :AbstractSpecialization,
