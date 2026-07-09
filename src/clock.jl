@@ -156,7 +156,14 @@ Base.getindex(c::AbstractClock, idx) = IndexedClock(c, idx)
 """
     $(TYPEDSIGNATURES)
 
-Return the time points in the interval
+Convert an indexed clock reference into concrete independent-variable values
+for a saved time-series solution.
+
+`IndexedClock` stores a clock and one or more tick indices, but the actual tick
+times depend on the solve. Periodic clocks are reconstructed from the problem
+start time and tick interval, solver-step clocks read the matching discrete
+time series stored on the solution, and continuous clocks index directly into
+`sol.t`. Unsupported clock types throw an error.
 """
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
