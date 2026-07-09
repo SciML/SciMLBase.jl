@@ -157,10 +157,10 @@ SciMLBase.DiscreteAliasSpecifier
 
 ## Problem Traits
 
-```@docs
-SciMLBase.isinplace(prob::SciMLBase.AbstractDEProblem)
-SciMLBase.is_diagonal_noise
-```
+Problem traits expose properties that are stored on concrete problem types and
+used by solver dispatch. Solver packages should query these traits instead of
+reconstructing the answer from fields or callback method tables. The detailed
+contract is documented in [Problem Traits](@ref problem_traits).
 
 ## Clock Domains
 
