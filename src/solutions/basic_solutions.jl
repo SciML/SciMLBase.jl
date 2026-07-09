@@ -116,15 +116,6 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
     stats::S
 end
 
-"""
-    QuadratureSolution
-
-Deprecated compatibility constructor for integral solutions. Use
-`IntegralSolution` for the public solution type returned by quadrature and
-integral solvers.
-"""
-struct QuadratureSolution end
-@deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
 
 """
     build_solution(prob, alg, args...; kwargs...)

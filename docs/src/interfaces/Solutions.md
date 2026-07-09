@@ -184,7 +184,6 @@ SciMLBase.NLStats
 ```@docs
 SciMLBase.AllObserved
 SciMLBase.SteadyStateSolution
-SciMLBase.QuadratureSolution
 ```
 
 ### Solution Construction and Errors
