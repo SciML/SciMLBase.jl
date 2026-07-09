@@ -31,6 +31,9 @@ run_tests(;
         @time @safetestset "Existence functions" begin
             include("existence_functions.jl")
         end
+        @time @safetestset "Public interface declarations" begin
+            include("public_interface.jl")
+        end
         @time @safetestset "Function Building Error Messages" begin
             include("function_building_error_messages.jl")
         end

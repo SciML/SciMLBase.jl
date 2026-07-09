@@ -2015,7 +2015,9 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Abstract interface types
 @public AbstractSciMLProblem, AbstractSciMLSolution, AbstractDEAlgorithm,
     AbstractODEProblem, AbstractODEAlgorithm, AbstractNonlinearProblem,
-    AbstractDynamicalODEProblem, AbstractIntegralAlgorithm, AbstractAliasSpecifier
+    AbstractDynamicalODEProblem, AbstractIntegralAlgorithm,
+    AbstractIntervalNonlinearAlgorithm, AbstractOptimizationAlgorithm,
+    AbstractBVPAlgorithm, AbstractSecondOrderODEAlgorithm, AbstractAliasSpecifier
 
 # Solution / problem support types
 @public NLStats, NullParameters, AutoSpecialize
