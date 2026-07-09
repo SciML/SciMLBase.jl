@@ -83,6 +83,7 @@ SciMLBase.addsteps!
 ## Initialization Interface
 
 ```@docs
+SciMLBase.OverrideInitData
 SciMLBase.get_initial_values
 ```
 

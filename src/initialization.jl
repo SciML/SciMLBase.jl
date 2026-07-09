@@ -1,44 +1,68 @@
 """
     $(TYPEDEF)
 
-A collection of all the data required for `OverrideInit`.
+Solver-author metadata for override-based initialization.
+
+`OverrideInitData` is stored on SciMLFunction wrappers in the
+`initialization_data` field. When `get_initial_values` is called with
+[`OverrideInit`](@ref), SciMLBase optionally updates `initializeprob` from the
+current value provider, solves that initialization problem, then maps the
+initialization solution back to the original problem's state and parameter
+objects.
+
+The initialization problem must be a nonlinear-style SciML problem accepted by
+the constructor below, such as `NonlinearProblem`,
+`NonlinearLeastSquaresProblem`, `SCCNonlinearProblem`, `ImmutableNonlinearProblem`,
+or `HomotopyProblem`. If the initialization problem is trivial, for example a
+nonlinear problem with no initial unknowns, no nonlinear solver algorithm or
+tolerances are required and the mapping hooks are applied directly.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct OverrideInitData{
         IProb, UIProb, IProbMap, IProbPmap, M, OOP <: Union{Val{true}, Val{false}},
     }
     """
-    The `AbstractNonlinearProblem` to solve for initialization.
+    Nonlinear-style SciML problem solved, or directly evaluated for trivial
+    initialization, to produce initialization values.
     """
     initializeprob::IProb
     """
-    A function which takes `(initializeprob, value_provider)` and updates
-    the parameters of the former with their values in the latter.
-    If absent (`nothing`) this will not be called, and the parameters
-    in `initializeprob` will be used without modification. `value_provider`
-    refers to a value provider as defined by SymbolicIndexingInterface.jl.
-    Usually this will refer to a problem or integrator.
+    Optional callable that synchronizes `initializeprob` with the current value
+    provider before solving. It is called as
+    `update_initializeprob!(initializeprob, value_provider)`.
+
+    If `is_update_oop === Val(false)`, the callable is expected to mutate
+    `initializeprob`. If `is_update_oop === Val(true)`, it must return the
+    updated initialization problem. If this field is `nothing`, the stored
+    `initializeprob` is used as-is.
     """
     update_initializeprob!::UIProb
     """
-    A function which takes the solution of `initializeprob` and returns
-    the state vector of the original problem. If absent, the existing state vector
-    will be used.
+    Optional callable that maps the solution of `initializeprob` to the state
+    object of the original problem. It is called as
+    `initializeprobmap(nlsol)`. If this field is `nothing`, the existing state
+    from the value provider is retained.
     """
     initializeprobmap::IProbMap
     """
-    A function which takes `value_provider` and the solution of `initializeprob` and returns
-    the parameter object of the original problem. If absent (`nothing`),
-    this will not be called and the parameters of the problem being
-    initialized will be returned as-is.
+    Optional callable that maps the solution of `initializeprob` to the
+    parameter object of the original problem. It is called as
+    `initializeprobpmap(value_provider, nlsol)`. If this field is `nothing`, the
+    existing parameter object from the value provider is retained.
     """
     initializeprobpmap::IProbPmap
     """
-    Additional metadata required by the creator of the initialization.
+    Additional metadata owned by the package that created the initialization
+    problem.
     """
     metadata::M
     """
-    If this flag is `Val{true}`, `update_initializeprob!` is treated as an out-of-place
-    function which returns the updated `initializeprob`.
+    Flag declaring whether `update_initializeprob!` mutates `initializeprob` or
+    returns an updated problem. Use `Val(false)` for in-place updates and
+    `Val(true)` for out-of-place updates.
     """
     is_update_oop::OOP
 
@@ -70,14 +94,23 @@ end
 """
     get_initial_values(prob, valp, f, alg, isinplace; kwargs...)
 
-Return the initial `u0` and `p` for the given SciMLProblem and initialization algorithm,
-and a boolean indicating whether the initialization process was successful. Keyword
-arguments to this function are dependent on the initialization algorithm. `prob` is only
-required for dispatching. `valp` refers the appropriate data structure from which the
-current state and parameter values should be obtained. `valp` is a non-timeseries value
-provider as defined by SymbolicIndexingInterface.jl. `f` is the SciMLFunction for the
-problem. `alg` is the initialization algorithm to use. `isinplace` is either `Val{true}`
-if `valp` and the SciMLFunction are inplace, and `Val{false}` otherwise.
+Return `(u0, p, success)` for the requested initialization algorithm.
+
+Solver packages call this hook when an initialized problem or integrator needs
+consistent initial state and parameter values before stepping or solving.
+`prob` is used for dispatch and problem-family-specific checks. `valp` is the
+current non-timeseries value provider, usually a problem or integrator, from
+which `state_values`, `parameter_values`, and `current_time` can be read. `f` is
+the SciMLFunction associated with `prob`, `alg` is the initialization algorithm,
+and `isinplace` is `Val(true)` when the value provider and SciMLFunction follow
+the in-place convention.
+
+Methods must return the initialized state object, the initialized parameter
+object, and a boolean indicating whether initialization succeeded. Keyword
+arguments are algorithm-specific: `CheckInit` requires an `abstol` for residual
+checks, while `OverrideInit` can require a NonlinearSolve algorithm and
+tolerances unless the stored [`OverrideInitData`](@ref) represents a trivial
+initialization problem.
 """
 function get_initial_values end
 
