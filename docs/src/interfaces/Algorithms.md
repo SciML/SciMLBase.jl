@@ -42,7 +42,19 @@ SciMLBase.has_init
 SciMLBase.has_step
 SciMLBase.alg_order
 SciMLBase.allowsbounds
+SciMLBase.requiresbounds
 SciMLBase.allowsconstraints
+SciMLBase.requiresconstraints
+SciMLBase.requiresgradient
+SciMLBase.allowsfg
+SciMLBase.requireshessian
+SciMLBase.allowsfgh
+SciMLBase.requiresconsjac
+SciMLBase.allowsconsjvp
+SciMLBase.allowsconsvjp
+SciMLBase.requiresconshess
+SciMLBase.requireslagh
+SciMLBase.allowscallback
 SciMLBase.alg_interpretation
 ```
 
