@@ -98,23 +98,27 @@ function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 @doc doc"""
-    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing, alias_jumps = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an RODEProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `RODEProblem` inputs, noise data, and solver option arrays may be
+aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_noise` controls the noise process or noise prototype data, and
+`alias_jumps` controls jump process data when the problem is wrapped in a jump
+problem. Other fields follow the differential-equation alias convention. A value
+of `nothing` delegates to the solver default. Set `alias = true` or
+`alias = false` to apply the same policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias_noise::Union{Bool,Nothing}`: alias the noise process
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
-* `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the RODE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_noise::Union{Bool, Nothing}`: alias the noise process.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every field of the `RODEAliasSpecifier`.
 """
 struct RODEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

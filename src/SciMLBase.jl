@@ -1555,7 +1555,19 @@ abstract type ADOriginator end
 """
 $(TYPEDEF)
 
-Used to specify which variables can be aliased in a solve.
+Base interface for solver aliasing policies.
+
+Alias specifiers are passed through the common `alias` keyword to tell a solver
+whether it may keep references to problem inputs instead of copying them into
+solver-owned storage. Concrete specifiers use `Union{Bool, Nothing}` fields:
+`true` permits aliasing, `false` requests non-aliasing behavior, and `nothing`
+delegates that decision to the solver's default. Constructors that accept
+`alias = true` or `alias = false` apply that value to every aliasable field of
+the concrete specifier.
+
+Aliasing is a performance and ownership hint. A solver may still copy data when
+the selected algorithm requires an internal layout or when preserving correctness
+requires solver-owned storage.
 """
 abstract type AbstractAliasSpecifier end
 

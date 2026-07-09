@@ -521,19 +521,23 @@ end
 @doc doc"""
     BVPAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an BVP. Conforms to the AbstractAliasSpecifier interface. 
+Control which BVP problem inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial mesh/state guess, `alias_du0` controls an
+initial derivative guess when the problem representation has one, `alias_p`
+controls the parameter object, `alias_f` controls the BVP function object, and
+`alias_tstops` controls the `tstops` vector. A value of `nothing` delegates to
+the solver default. Set `alias = true` or `alias = false` to apply the same
+policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `BVPAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the BVP function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `BVPAliasSpecifier`.
 """
 struct BVPAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

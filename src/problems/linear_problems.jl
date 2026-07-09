@@ -183,19 +183,18 @@ end
 @doc doc"""
     LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `LinearProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_A` controls whether the linear operator or matrix `A` may be stored by
+reference, and `alias_b` controls whether the right-hand side `b` may be stored
+by reference. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to both fields.
 
 ### Keywords
 
 * `alias_A::Union{Bool, Nothing}`: alias the `A` array.
-* `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
-* `alias::Union{Bool, Nothing}`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
-
-Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
-When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
+* `alias_b::Union{Bool, Nothing}`: alias the `b` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `LinearAliasSpecifier`.
 """
 struct LinearAliasSpecifier <: AbstractAliasSpecifier
     alias_A::Union{Bool, Nothing}

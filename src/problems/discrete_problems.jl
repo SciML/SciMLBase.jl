@@ -186,17 +186,23 @@ end
 @doc doc"""
     DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving a DiscreteProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `DiscreteProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+and `alias_f` controls the recurrence function object. A value of `nothing`
+delegates to the solver default. Set `alias = true` or `alias = false` to apply
+the same policy to all stored fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DiscreteAliasSpecifier` to `alias`
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `DiscreteAliasSpecifier` does not
+store a separate `du0` alias field.
 
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the discrete function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `DiscreteAliasSpecifier`.
 """
 struct DiscreteAliasSpecifier
     alias_p::Union{Bool, Nothing}

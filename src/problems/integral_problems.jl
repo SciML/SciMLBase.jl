@@ -139,18 +139,20 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
 end
 
 @doc doc"""
-    IntegralAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+    IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an IntegralProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `IntegralProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_p` controls the parameter object and `alias_f` controls the integrand
+function object. A value of `nothing` delegates to the solver default. Pass the
+third `alias` argument as `true` or `false` to apply the same policy to both
+fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias::Union{Bool, Nothing}`: sets all fields of the `IntegralAliasSpecifier` to `alias`
+### Arguments
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the integrand function object.
+* `alias::Union{Bool, Nothing}`: set every field of the `IntegralAliasSpecifier`.
 """
 struct IntegralAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
