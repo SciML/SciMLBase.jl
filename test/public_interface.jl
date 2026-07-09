@@ -117,4 +117,50 @@ if isdefined(Base, :ispublic)
             @test Base.ispublic(SciMLBase, name)
         end
     end
+
+    @testset "Callbacks manual public API" begin
+        for name in (
+                :DECallback,
+                :AbstractContinuousCallback,
+                :AbstractDiscreteCallback,
+                :ContinuousCallback,
+                :VectorContinuousCallback,
+                :DiscreteCallback,
+                :CallbackSet,
+                :NoRootFind,
+                :LeftRootFind,
+                :RightRootFind,
+                :split_callbacks,
+                :save_final_discretes!,
+                :save_discretes_if_enabled!,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
+    @testset "Ensembles manual public API" begin
+        for name in (
+                :AbstractEnsembleProblem,
+                :EnsembleProblem,
+                :WeightedEnsembleProblem,
+                :DEFAULT_PROB_FUNC,
+                :DEFAULT_OUTPUT_FUNC,
+                :DEFAULT_REDUCTION,
+                :__solve,
+                :EnsembleContext,
+                :generate_sim_seeds,
+                :default_rng_func,
+                :BasicEnsembleAlgorithm,
+                :EnsembleSerial,
+                :EnsembleThreads,
+                :EnsembleDistributed,
+                :EnsembleSplitThreads,
+                :AbstractEnsembleEstimator,
+                :EnsembleSolution,
+                :EnsembleTestSolution,
+                :WeightedEnsembleSolution,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
 end

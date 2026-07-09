@@ -2143,6 +2143,16 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     Continuous, Clock, iseventclock, first_clock_tick_time, IndexedClock,
     canonicalize_indexed_clock
 
+# Callback interface
+@public DECallback, AbstractContinuousCallback, AbstractDiscreteCallback,
+    NoRootFind, LeftRootFind, RightRootFind,
+    split_callbacks, save_final_discretes!, save_discretes_if_enabled!
+
+# Ensemble interface
+@public AbstractEnsembleEstimator, WeightedEnsembleProblem,
+    DEFAULT_PROB_FUNC, DEFAULT_OUTPUT_FUNC, DEFAULT_REDUCTION,
+    generate_sim_seeds, default_rng_func, WeightedEnsembleSolution
+
 # AD / sensitivity function wrappers
 @public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper
 
