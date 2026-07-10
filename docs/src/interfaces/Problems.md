@@ -76,14 +76,11 @@ SciMLBase.unwrap_fw
 ```
 
 !!! note
-    
-    The specialization level must be precompile snooped in the appropriate solver
-    package in order to enable the full precompilation and system image generation
-    for zero-latency usage. By default, this is only done with `AutoSpecialize` and
-    on types `u isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-    `p isa Union{Vector{Float64}, SciMLBase.NullParameters}`. Precompilation snooping
-    in the solvers can be done using the Preferences.jl setup on the appropriate
-    solver. See the solver library's documentation for more details.
+
+    Precompiled solver methods can be reused only for signatures that the selected
+    solver package precompiles. The covered state, time, parameter, and option types
+    are solver-specific. Use `FullSpecialize` when a model falls outside the wrapped
+    signatures supported by a solver or when runtime performance is the priority.
 
 ### Default Parameters
 
@@ -105,19 +102,18 @@ usage, a `AbstractSciMLProblem` might be associated with some solver configurati
 callback or tolerance. Thus, for flexibility the extra keyword arguments to the
 `AbstractSciMLProblem` are carried to the solver.
 
-### `problem_type`
+### Structured Constructors and Preservation
 
-`AbstractSciMLProblem` types include a non-public API definition of `problem_type` which holds
-a trait type corresponding to the way the `AbstractSciMLProblem` was constructed. For example,
-if a `SecondOrderODEProblem` constructor is used, the returned problem is simply a
-`ODEProblem` for interoperability with any `ODEProblem` algorithm. However, in this case
-the `problem_type` will be populated with the `SecondOrderODEProblem` type, indicating
-the original definition and extra structure.
+Convenience constructors may return a shared concrete problem representation while
+preserving enough construction metadata for dispatch and `remake`. Downstream packages
+must use documented constructors, problem traits, and accessors instead of inspecting
+or mutating internal storage. A convenience constructor's return type is therefore not
+by itself a complete description of the mathematical structure used to create it.
 
 ### Remake
 
 ```@docs
-remake
+SciMLBase.remake
 ```
 
 For problems that are created from a system (e.g. created through ModelingToolkit.jl) or
@@ -133,8 +129,8 @@ If the system's defaults contain an expression for the missing symbol, that expr
 will be used for the value (it is treated as a dependent initialization). Otherwise,
 the existing value of that symbol in the problem passed to `remake` is used.
 
-If `default_values = true` is passed as a keyword argument to `remake`, then the value
-contained in the system's defaults is always preferred over the value in the problem.
+If `use_defaults = true` is passed as a keyword argument to `remake`, then an available
+numeric system default is preferred over the value already stored in the problem.
 
 For example, consider a problem `prob` with parameters `:a`, `:b`, `:c` having values
 `1.0`, `2.0`, `3.0` respectively. Let us also assume that the system contains the
@@ -144,7 +140,7 @@ defaults `Dict(:a => :(2b), :c => 0.1)`. Then:
     `:a`, `:b` and `:c` respectively. Note how the numeric default for `:c` was not
     respected.
   - `remake(prob; p = [:b => 2.0], use_defaults = true)` will result in the values `4.0`,
-    `2.0`, `1.0` for `:a`, `:b` and `:c` respectively.
+    `2.0`, `0.1` for `:a`, `:b` and `:c` respectively.
   - `remake(prob; p = [:b => 2.0, :a => 3.0])` will result in the values `3.0`, `2.0`,
     `3.0` for `:a`, `:b` and `:c` respectively. Note how the explicitly specified value for
     `:a` overrides the dependent default.
@@ -238,9 +234,8 @@ SciMLBase.HomotopyProblem
 SciMLBase.StandardODEProblem
 SciMLBase.ImmutableODEProblem
 SciMLBase.IncrementingODEProblem
+SciMLBase.ImmutableODEProblem
 ```
-
-`SciMLBase.ImmutableODEProblem` is the immutable ODE problem type.
 
 ## Problem Utilities
 

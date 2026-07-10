@@ -56,6 +56,26 @@ end
     @test occursin("LinearProblem(A, b)", array_number_docs)
 end
 
+@testset "Problem and function interface documentation" begin
+    problem_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Problems.md"), String
+    )
+    function_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "SciMLFunctions.md"),
+        String
+    )
+
+    @test occursin("`use_defaults = true`", problem_docs)
+    @test !occursin("`default_values = true`", problem_docs)
+    @test occursin("`2.0`, `0.1`", problem_docs)
+    @test !occursin("### `problem_type`", problem_docs)
+    @test occursin("SciMLBase.ImmutableODEProblem", problem_docs)
+    @test !occursin("will always make a deep copy", function_docs)
+    @test occursin("selected differentiation and linear solver", function_docs)
+    @test occursin("`update_coefficients` for the out-of-place form", function_docs)
+    @test occursin("SciMLBase.ODEFunction", function_docs)
+end
+
 if isdefined(Base, :ispublic)
     @testset "Clocks manual public API" begin
         for name in (

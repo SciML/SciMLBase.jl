@@ -313,18 +313,18 @@ the usage of `f`. These include:
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
-  The default is `nothing`, which means a dense Jacobian.
+  It must support the operations required by the selected differentiation and linear solver.
+  The default is `nothing`, which means a dense Jacobian. Solvers may copy, allocate a similar
+  object, or convert the prototype, so callers must not rely on object identity or aliasing.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `vjp_p(Jpv,v,u,p,t)` or `Jpv=vjp_p(v,u,p,t)`: returns the parameter adjoint derivative
   ``\\frac{df}{dp}^∗ v``, i.e. the vector-Jacobian product with respect to parameters. This
   avoids materializing the full parameter Jacobian when only the VJP is needed (e.g. in adjoint
   sensitivity analysis). When not provided, falls back to `paramjac` or AD-based computation.
-- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
-  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
-  finite differences and automatic differentiation to be computed in an accelerated manner
-  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
-  internally computed on demand when required. The cost of this operation is highly dependent
-  on the sparsity pattern.
+- `colorvec`: a column-color vector compatible with the selected sparse differentiation
+  backend and the sparsity pattern of `jac_prototype`. This can accelerate Jacobian
+  construction with finite differences or automatic differentiation. Defaults to `nothing`,
+  which lets the selected backend compute coloring when required.
 ## iip: In-Place vs Out-Of-Place
 
 `iip` is the optional boolean for determining whether a given function is written to
@@ -378,13 +378,15 @@ jp = Diagonal(zeros(2))
 fun = ODEFunction(f; jac=jac, jac_prototype=jp)
 ```
 
-Note that the integrators will always make a deep copy of `fun.jac_prototype`, so
-there's no worry of aliasing.
+The prototype declares Jacobian shape, element type, and structure. It must support
+the operations required by the selected differentiation and linear solver, including
+writes for an in-place `jac` and any multiplication, diagonal-shift, or factorization
+operations that solver performs. Solvers may copy, allocate with `similar`, or convert
+the prototype, so code must not rely on its object identity or aliasing behavior.
 
-In general, the Jacobian prototype can be anything that has `mul!` defined, in
-particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractSciMLOperator`, in which case you
-do not need to supply `jac` as it is automatically set to `update_coefficients!`.
+When `jac_prototype` is an `AbstractSciMLOperator` and `jac` is omitted, the constructor
+creates a Jacobian update using `update_coefficients!` for the in-place form and
+`update_coefficients` for the out-of-place form.
 Refer to the AbstractSciMLOperators documentation for more information
 on setting up time/parameter dependent operators.
 
