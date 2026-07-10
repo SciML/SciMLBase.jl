@@ -75,6 +75,11 @@ const _ei_stale_allowed = (
     # defines `function SciMLBase.setproperties(::DAEResidualJacobianWrapper, ...)`), so it
     # must be a binding in SciMLBase even though SciMLBase only ever uses the qualified form.
     :setproperties,
+    # `ConstructionBase.constructorof` is extended for the problem, function, and solution
+    # types and accessed as `SciMLBase.constructorof` by downstream packages (e.g.
+    # OrdinaryDiffEqCore's `strip_cache` calls `SciMLBase.constructorof(typeof(cache))`), so
+    # it must be a binding in SciMLBase even though SciMLBase only uses the qualified form.
+    :constructorof,
 )
 const _ei_nonpublic_qualified_accesses = (
     # --- Genuine Base/Core internals: not public on any Julia version, no public
