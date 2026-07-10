@@ -250,14 +250,10 @@ Entry `(i, j)` contains the result of [`timestep_meancov`](@ref). This
 assumes saved step indices are comparable across trajectories.
 """
 function timeseries_steps_meancov(sim)
-    return reshape(
-        [
-            timestep_meancov(sim, i, j) for i in 1:length(sim.u[1].t)
-                for j in 1:length(sim.u[1].t)
-        ],
-        length(sim.u[1].t),
-        length(sim.u[1].t)
-    )
+    return [
+        timestep_meancov(sim, i, j) for i in 1:length(sim.u[1].t),
+            j in 1:length(sim.u[1].t)
+    ]
 end
 
 """
@@ -269,14 +265,10 @@ Entry `(i, j)` contains the result of [`timestep_meancor`](@ref). This
 assumes saved step indices are comparable across trajectories.
 """
 function timeseries_steps_meancor(sim)
-    return reshape(
-        [
-            timestep_meancor(sim, i, j) for i in 1:length(sim.u[1].t)
-                for j in 1:length(sim.u[1].t)
-        ],
-        length(sim.u[1].t),
-        length(sim.u[1].t)
-    )
+    return [
+        timestep_meancor(sim, i, j) for i in 1:length(sim.u[1].t),
+            j in 1:length(sim.u[1].t)
+    ]
 end
 
 """
@@ -288,14 +280,10 @@ Entry `(i, j)` contains the weighted mean/covariance summary for saved step
 indices `i` and `j` using trajectory weights `W`.
 """
 function timeseries_steps_weighted_meancov(sim, W)
-    return reshape(
-        [
-            timestep_meancov(sim, W, i, j) for i in 1:length(sim.u[1].t)
-                for j in 1:length(sim.u[1].t)
-        ],
-        length(sim.u[1].t),
-        length(sim.u[1].t)
-    )
+    return [
+        timestep_weighted_meancov(sim, W, i, j) for i in 1:length(sim.u[1].t),
+            j in 1:length(sim.u[1].t)
+    ]
 end
 
 """
@@ -493,10 +481,7 @@ Compute the time-point covariance summary matrix between two time collections.
 Entry `(i, j)` contains the result of `timepoint_meancov(sim, ts1[i], ts2[j])`.
 """
 function timeseries_point_meancov(sim, ts1, ts2)
-    return reshape(
-        [timepoint_meancov(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-        length(ts2)
-    )
+    return [timepoint_meancov(sim, t1, t2) for t1 in ts1, t2 in ts2]
 end
 
 """
@@ -519,10 +504,7 @@ Compute the time-point correlation summary matrix between two time collections.
 Entry `(i, j)` contains the result of `timepoint_meancor(sim, ts1[i], ts2[j])`.
 """
 function timeseries_point_meancor(sim, ts1, ts2)
-    return reshape(
-        [timepoint_meancor(sim, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-        length(ts2)
-    )
+    return [timepoint_meancor(sim, t1, t2) for t1 in ts1, t2 in ts2]
 end
 
 """
@@ -546,10 +528,7 @@ Entry `(i, j)` contains the weighted mean/covariance summary for `ts1[i]` and
 `ts2[j]` using trajectory weights `W`.
 """
 function timeseries_point_weighted_meancov(sim, W, ts1, ts2)
-    return reshape(
-        [timepoint_meancov(sim, W, t1, t2) for t1 in ts1 for t2 in ts2], length(ts1),
-        length(ts2)
-    )
+    return [timepoint_weighted_meancov(sim, W, t1, t2) for t1 in ts1, t2 in ts2]
 end
 
 function componentwise_mean(A)
