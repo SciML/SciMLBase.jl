@@ -1756,6 +1756,17 @@ the usage of `f`. These include:
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
 
+## lambda_extended: λ-Extended Argument Convention for `HomotopyProblem`
+
+When the function is destined for a [`HomotopyProblem`](@ref), every function follows
+the λ-extended argument convention with the scalar continuation parameter λ as a
+trailing argument: the residual is `f(u, p, λ)` / `f!(du, u, p, λ)` and the derivative
+functions gain the same trailing argument, e.g. `jac(u, p, λ)` / `jac(J, u, p, λ)`.
+Passing the keyword argument `lambda_extended = true` to the constructor validates
+`jac`, `jvp`, and `vjp` against these λ-extended arities instead of the standard
+nonlinear ones, so a bare λ-extended Jacobian is accepted. `lambda_extended` only
+affects constructor-time argument checking; it is not stored as a field.
+
 ## iip: In-Place vs Out-Of-Place
 
 For more details on this argument, see the ODEFunction documentation.
@@ -4357,7 +4368,8 @@ function NonlinearFunction{iip, specialize}(
         sys = __has_sys(f) ? f.sys : nothing,
         resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
-            nothing
+            nothing,
+        lambda_extended = false
     ) where {
         iip, specialize,
     }
@@ -4380,9 +4392,12 @@ function NonlinearFunction{iip, specialize}(
         _colorvec = colorvec
     end
 
-    jaciip = jac !== nothing ? isinplace(jac, 3, "jac", iip) : iip
-    jvpiip = jvp !== nothing ? isinplace(jvp, 4, "jvp", iip) : iip
-    vjpiip = vjp !== nothing ? isinplace(vjp, 4, "vjp", iip) : iip
+    # `lambda_extended` shifts every derivative-function arity by one for the trailing
+    # continuation parameter λ of `HomotopyProblem`: `jac(J, u, p, λ)` / `jac(u, p, λ)`.
+    argshift = lambda_extended ? 1 : 0
+    jaciip = jac !== nothing ? isinplace(jac, 3 + argshift, "jac", iip) : iip
+    jvpiip = jvp !== nothing ? isinplace(jvp, 4 + argshift, "jvp", iip) : iip
+    vjpiip = vjp !== nothing ? isinplace(vjp, 4 + argshift, "vjp", iip) : iip
 
     nonconforming = (jaciip, jvpiip, vjpiip) .!= iip
     if any(nonconforming)
@@ -4435,8 +4450,11 @@ function NonlinearFunction{iip}(f; kwargs...) where {iip}
     return NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where {iip} = f
-function NonlinearFunction(f; kwargs...)
-    return NonlinearFunction{isinplace(f, 3), DEFAULT_SPECIALIZATION}(f; kwargs...)
+function NonlinearFunction(f; lambda_extended = false, kwargs...)
+    iip = isinplace(f, lambda_extended ? 4 : 3)
+    return NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(
+        f; lambda_extended = lambda_extended, kwargs...
+    )
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 

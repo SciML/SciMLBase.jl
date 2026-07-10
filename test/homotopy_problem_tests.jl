@@ -89,3 +89,72 @@ end
     @test SciMLBase.isinplace(newprob) == false
     @test newprob.λspan == (0.0, 1.0)                     # preserved
 end
+
+# Derivative fields follow the λ-extended convention: jac(u, p, λ) / jac(J, u, p, λ).
+# `lambda_extended = true` makes the NonlinearFunction constructor validate jac/jvp/vjp
+# against these arities so a bare λ-extended jac (no λ-free dummy method) is accepted.
+j_oop(u, p, λ) = reshape([(1 - λ) + λ * 2 * u[1];;], 1, 1)
+j_iip(J, u, p, λ) = (J[1, 1] = (1 - λ) + λ * 2 * u[1]; nothing)
+
+@testset "λ-extended jac: bare 3-arg oop / 4-arg iip construct with lambda_extended" begin
+    # without the opt-in, the standard conformance check rejects them (unchanged)
+    @test_throws SciMLBase.NonconformingFunctionsError NonlinearFunction{false}(
+        f_oop; jac = j_oop
+    )
+    @test_throws SciMLBase.TooManyArgumentsError NonlinearFunction{true}(
+        f_iip; jac = j_iip
+    )
+
+    nf_oop = NonlinearFunction{false}(f_oop; jac = j_oop, lambda_extended = true)
+    @test SciMLBase.__has_jac(nf_oop)
+    @test nf_oop.jac === j_oop
+    prob_oop = HomotopyProblem(nf_oop, u0, p)
+    @test SciMLBase.isinplace(prob_oop) == false
+    @test prob_oop.f.jac === j_oop
+
+    nf_iip = NonlinearFunction{true}(f_iip; jac = j_iip, lambda_extended = true)
+    @test nf_iip.jac === j_iip
+    prob_iip = HomotopyProblem(nf_iip, u0, p)
+    @test SciMLBase.isinplace(prob_iip) == true
+    @test prob_iip.f.jac === j_iip
+end
+
+@testset "λ-extended autodetect: NonlinearFunction(f; lambda_extended = true)" begin
+    nf_oop = NonlinearFunction(f_oop; jac = j_oop, lambda_extended = true)
+    @test SciMLBase.isinplace(nf_oop) == false
+    nf_iip = NonlinearFunction(f_iip; jac = j_iip, lambda_extended = true)
+    @test SciMLBase.isinplace(nf_iip) == true
+end
+
+@testset "λ-extended jvp/vjp arities shift too" begin
+    jvp_oop(v, u, p, λ) = ((1 - λ) + λ * 2 * u[1]) .* v
+    vjp_iip(vJ, v, u, p, λ) = (vJ[1] = ((1 - λ) + λ * 2 * u[1]) * v[1]; nothing)
+    nf_oop = NonlinearFunction{false}(f_oop; jvp = jvp_oop, lambda_extended = true)
+    @test nf_oop.jvp === jvp_oop
+    nf_iip = NonlinearFunction{true}(f_iip; vjp = vjp_iip, lambda_extended = true)
+    @test nf_iip.vjp === vjp_iip
+end
+
+@testset "lambda_extended still rejects nonconforming derivative functions" begin
+    # an iip λ-extended jac with an oop residual is still nonconforming
+    @test_throws SciMLBase.NonconformingFunctionsError NonlinearFunction{false}(
+        f_oop; jac = j_iip, lambda_extended = true
+    )
+    j_toomany(J, u, p, λ, x) = nothing
+    @test_throws SciMLBase.TooManyArgumentsError NonlinearFunction{true}(
+        f_iip; jac = j_toomany, lambda_extended = true
+    )
+end
+
+@testset "λ-extended structure fields pass through" begin
+    import LinearAlgebra
+    proto = LinearAlgebra.Diagonal(ones(1))
+    nf = NonlinearFunction{true}(
+        f_iip; jac = j_iip, jac_prototype = proto, colorvec = [1],
+        lambda_extended = true
+    )
+    prob = HomotopyProblem(nf, u0, p)
+    @test prob.f.jac_prototype === proto
+    @test prob.f.sparsity === proto            # sparsity defaults to jac_prototype
+    @test prob.f.colorvec == [1]
+end

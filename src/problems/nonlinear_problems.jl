@@ -762,9 +762,12 @@ argument convention with ``\lambda`` in place of `t`:
 ### Fields
 
 * `f`: The residual function, called as `f(u, p, λ)` (or `f(du, u, p, λ)` in-place).
-  Optional derivative fields of the wrapped `NonlinearFunction` (e.g. `jac`), if
-  provided, must follow the same λ-extended argument convention; continuation solvers
-  do not consume them yet.
+  Optional derivative fields of the wrapped `NonlinearFunction` (`jac`, `jac_prototype`,
+  `sparsity`, `colorvec`, ...), if provided, must follow the same λ-extended argument
+  convention, e.g. `jac(u, p, λ)` (or `jac(J, u, p, λ)` in-place); they are consumed by
+  NonlinearSolve.jl's continuation solvers. Pass `lambda_extended = true` to the
+  `NonlinearFunction` constructor so that `jac`, `jvp`, and `vjp` are validated against
+  the λ-extended arities instead of the standard nonlinear ones.
 * `u0`: The initial guess (a solution of the simplified system at `λspan[1]`).
 * `p`: The parameters, passed through to `f` unchanged; ``\lambda`` is not part of `p`.
 * `λspan`: the `(start, stop)` continuation interval; the target system is at `stop`.
