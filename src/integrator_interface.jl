@@ -519,9 +519,21 @@ end
 
 Set the current time of `integrator` to `t`.
 
-Implementations should keep method-specific time caches consistent with the new
-time. Use [`change_t_via_interpolation!`](@ref) instead when changing time
-should also update `u` through interpolation.
+`set_t!` is the direct time-mutation hook used by callbacks and generic
+integrator utilities. It changes the independent variable without implying that
+the state should be interpolated to the new time.
+
+# Interface rules
+
+  - Implementations must keep `integrator.t`, method-specific time caches, and
+    any time-dependent controller state consistent with the new time.
+  - `set_t!` should not change `integrator.u` except for solver-specific
+    bookkeeping required to keep an already-mutated state valid.
+  - Use [`change_t_via_interpolation!`](@ref) when moving to `t` should also
+    recompute `u` from the method's interpolation.
+  - If changing time invalidates interpolation, error estimates, or dense output
+    caches, the implementation must refresh them or require callers to follow
+    with [`reeval_internals_due_to_modification!`](@ref).
 """
 function set_t!(integrator::DEIntegrator, t)
     error("set_t!: method has not been implemented for the integrator")
@@ -539,6 +551,19 @@ is the generic symbolic-state update path: it verifies that `sym` is a state
 variable, writes `val` into `integrator.u`, and marks a derivative discontinuity.
 Parameter updates should use `integrator.ps[sym]` or SymbolicIndexingInterface
 parameter setters instead of `set_u!`.
+
+# Interface rules
+
+  - Full-state updates must keep `integrator.u` and any solver-owned state caches
+    that mirror `u` consistent.
+  - Symbolic updates are only for state variables. They must reject parameters
+    and unknown symbols rather than silently adding new state.
+  - State mutation is treated as a derivative discontinuity because cached
+    derivatives, interpolation data, and step controllers may no longer describe
+    the current state.
+  - Solvers that need additional work after a state change should implement
+    [`reeval_internals_due_to_modification!`](@ref) and document when callbacks
+    or generic code must call it.
 """
 function set_u! end
 
@@ -571,6 +596,15 @@ Set the current state and time of `integrator`.
 The fallback calls [`set_u!`](@ref) and then [`set_t!`](@ref), so concrete
 integrators can specialize either lower-level mutation hook or overload
 `set_ut!` directly when state/time changes must be applied atomically.
+
+# Interface rules
+
+  - `set_ut!` is the preferred hook when a callback or initialization routine
+    changes state and time together.
+  - The default ordering is state first, then time. Integrators whose caches
+    require a different ordering must overload `set_ut!`.
+  - After returning, `state_values(integrator)` and `current_time(integrator)`
+    should observe the updated `u` and `t`.
 """
 function set_ut!(integrator::DEIntegrator, u, t)
     set_u!(integrator, u)
@@ -580,7 +614,21 @@ end
 """
     get_sol(integrator::DEIntegrator)
 
-Get the solution object contained in the integrator.
+Return the solution object contained in `integrator`.
+
+This is the public accessor for solver and generic-interface code that needs the
+live solution accumulator during integration. For example, delayed symbolic
+states may evaluate the current history through `get_sol(integrator)` instead of
+reaching into `integrator.sol` directly.
+
+# Interface rules
+
+  - The returned object is the integrator's current solution storage, not a
+    defensive copy.
+  - Solver implementations may update this object as stepping, saving, and
+    callback handling proceed.
+  - Code that only needs the final solve result should use `solve`/`solve!`
+    rather than relying on `get_sol` during integration.
 """
 function get_sol(integrator::DEIntegrator)
     return integrator.sol
