@@ -182,6 +182,8 @@ assumed to hold on the resulting matrix type:
     `@view(A[idxs]) = @view(A[idxs]) + λ::E` must be supported so that the shift
     used to form a Newton matrix can be applied.
 
+Ultimately, the generated system `LinearProblem(A, b)` must be accepted by the
+chosen linear solver, with `b` using the state-compatible right-hand-side type.
 Supplying `jac_prototype`, `linsolve`, or a mass matrix can therefore add
 requirements beyond those of the state container alone.
 
