@@ -159,17 +159,6 @@ used by solver dispatch. Solver packages should query these traits instead of
 reconstructing the answer from fields or callback method tables. The detailed
 contract is documented in [Problem Traits](@ref problem_traits).
 
-## Clock Domains
-
-```@docs
-SciMLBase.Clocks
-SciMLBase.TimeDomain
-SciMLBase.is_discrete_time_domain
-SciMLBase.isclock
-SciMLBase.issolverstepclock
-SciMLBase.iscontinuous
-```
-
 ## AbstractSciMLProblem API
 
 ### Defaults and Preferences
@@ -235,5 +224,4 @@ Concrete constructors, their stored data, and the layout markers returned by
 
 ```@docs
 SciMLBase.promote_tspan
-SciMLBase.check_keywords
 ```

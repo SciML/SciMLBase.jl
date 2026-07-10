@@ -138,16 +138,6 @@ SciMLBase.get_rng
 SciMLBase.set_rng!
 ```
 
-### Mutable Integrator Controls
-
-```@docs
-SciMLBase.get_dt
-SciMLBase.set_abstol!
-SciMLBase.set_reltol!
-SciMLBase.u_modified!
-SciMLBase.addsteps!
-```
-
 ## Initialization Interface
 
 ```@docs
