@@ -31,6 +31,9 @@ run_tests(;
         @time @safetestset "Existence functions" begin
             include("existence_functions.jl")
         end
+        @time @safetestset "Public interface declarations" begin
+            include("public_interface.jl")
+        end
         @time @safetestset "Function Building Error Messages" begin
             include("function_building_error_messages.jl")
         end
@@ -46,8 +49,14 @@ run_tests(;
         @time @safetestset "Solution interface" begin
             include("solution_interface.jl")
         end
+        @time @safetestset "PDE solutions" begin
+            include("pde_solutions.jl")
+        end
         @time @safetestset "DE function conversion" begin
             include("convert_tests.jl")
+        end
+        @time @safetestset "Function wrappers" begin
+            include("function_wrappers.jl")
         end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")

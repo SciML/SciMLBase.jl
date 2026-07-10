@@ -36,7 +36,7 @@ dt: the time step
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](@ref specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -49,7 +49,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](@ref scimlfunctions)
 page.
 
 ### Fields
@@ -146,19 +146,21 @@ end
 @doc doc"""
     ImplicitDiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
+Control which `ImplicitDiscreteProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+and `alias_f` controls the implicit discrete function object. A value of
+`nothing` delegates to the solver default. Set `alias = true` or
+`alias = false` to apply the same policy to all stored fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `ImplicitDiscreteAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the implicit discrete function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `ImplicitDiscreteAliasSpecifier`.
 """
-struct ImplicitDiscreteAliasSpecifier
+struct ImplicitDiscreteAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

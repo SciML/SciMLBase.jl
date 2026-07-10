@@ -163,17 +163,21 @@ isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
 @doc doc"""
-    OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias = nothing)
+    OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an OptimizationProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `OptimizationProblem` inputs a solver may alias.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `OptimizationAliasSpecifier` to `alias`
+`alias_u0` controls the initial optimizer state, `alias_p` controls the
+parameter or data object, and `alias_f` controls the optimization function
+object. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to all fields.
 
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the optimization function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `OptimizationAliasSpecifier`.
 """
 struct OptimizationAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

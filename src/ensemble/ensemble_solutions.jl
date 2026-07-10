@@ -1,5 +1,14 @@
 """
 $(TYPEDEF)
+
+Container for ensemble runs against problems with analytic reference solutions.
+
+`EnsembleTestSolution` extends the ordinary ensemble solution data with strong
+and weak error summaries computed by `calculate_ensemble_errors`. The `u` field
+stores the trajectory outputs, while `errors`, `weak_errors`, `error_means`, and
+`error_medians` store the per-error-key diagnostics collected across the
+ensemble. `elapsedTime` and `converged` carry the same meaning as in
+[`EnsembleSolution`](@ref).
 """
 struct EnsembleTestSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     u::S
@@ -32,6 +41,19 @@ end
 
 """
 $(TYPEDEF)
+
+Concrete solution container returned by ensemble solves.
+
+The `u` field stores the accepted output for each trajectory after applying the
+ensemble problem's `output_func`. When `output_func` returns full SciML
+solutions, `u` is a collection of solution objects; when it returns reduced
+values, `u` stores those reduced values instead. `elapsedTime` records the wall
+time spent in the ensemble solve, `converged` records whether the reduction
+reported early convergence, and `stats` stores merged inner-solver statistics
+when available.
+
+`EnsembleSolution` supports indexing and iteration through its stored `u`
+collection via the [`AbstractEnsembleSolution`](@ref) interface.
 """
 struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     u::S
@@ -68,6 +90,15 @@ function EnsembleSolution(
     )
 end
 
+"""
+$(TYPEDEF)
+
+Solution wrapper that associates an ensemble solution with trajectory weights.
+
+The number of weights must match the number of stored trajectories. Weighted
+ensemble analysis utilities use the weights to form weighted summary statistics
+without changing the underlying unweighted solution object.
+"""
 struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
     ensol::T1
     weights::Vector{T2}

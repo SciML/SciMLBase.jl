@@ -13,6 +13,31 @@ end
 prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
 @test prob_bvp.tspan === (0.0, 1.0)
 
+@testset "Structured ODE problem interfaces" begin
+    steady_prob = SteadyStateProblem((u, p, t) -> p * u, 1.0, 2.0)
+    @test current_time(steady_prob) === Inf
+
+    incrementing_model! = (du, u, p, t, alpha = true, beta = false) ->
+    (du .= alpha .* p .* u .+ beta .* du)
+    incrementing_f = IncrementingODEFunction{true}(incrementing_model!)
+    du = [10.0, 20.0]
+    incrementing_f(du, [2.0, 4.0], -0.5, 0.0, 2.0, 1.0)
+    @test du == [8.0, 16.0]
+
+    incrementing_prob = IncrementingODEProblem(
+        incrementing_f, [2.0, 4.0], (0.0, 1.0), -0.5
+    )
+    @test incrementing_prob isa ODEProblem
+    @test incrementing_prob.f === incrementing_f
+    @test incrementing_prob.problem_type isa IncrementingODEProblem{true}
+    @test isinplace(incrementing_prob)
+
+    specialized_incrementing_f = IncrementingODEFunction{
+        true, SciMLBase.NoSpecialize,
+    }(incrementing_model!)
+    @test SciMLBase.specialization(specialized_incrementing_f) === SciMLBase.NoSpecialize
+end
+
 @testset "`constructorof` tests" begin
     probs = []
 
@@ -70,6 +95,47 @@ prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
     @testset "$(SciMLBase.parameterless_type(typeof(prob)))" for prob in probs
         newprob = @reset prob.u0 = u0 .+ 1
         @test typeof(newprob) == typeof(prob)
+    end
+end
+
+const ALIAS_SPECIFIER_TYPES = (
+    SciMLBase.LinearAliasSpecifier,
+    SciMLBase.NonlinearAliasSpecifier,
+    SciMLBase.ODEAliasSpecifier,
+    SciMLBase.RODEAliasSpecifier,
+    SciMLBase.SDEAliasSpecifier,
+    SciMLBase.DAEAliasSpecifier,
+    SciMLBase.DDEAliasSpecifier,
+    SciMLBase.SDDEAliasSpecifier,
+    SciMLBase.BVPAliasSpecifier,
+    SciMLBase.OptimizationAliasSpecifier,
+    SciMLBase.IntegralAliasSpecifier,
+    SciMLBase.DiscreteAliasSpecifier,
+    SciMLBase.ImplicitDiscreteAliasSpecifier,
+    SciMLBase.AnalyticalAliasSpecifier,
+    SciMLBase.SteadyStateAliasSpecifier,
+)
+
+function alias_specifier_with_policy(T, alias)
+    return if T === SciMLBase.IntegralAliasSpecifier
+        T(nothing, nothing, alias)
+    else
+        T(; alias = alias)
+    end
+end
+
+@testset "Alias specifier interface" begin
+    @testset "$(nameof(T))" for T in ALIAS_SPECIFIER_TYPES
+        @test T <: SciMLBase.AbstractAliasSpecifier
+
+        default_spec = alias_specifier_with_policy(T, nothing)
+        @test all(isnothing(getfield(default_spec, name)) for name in fieldnames(T))
+
+        alias_spec = alias_specifier_with_policy(T, true)
+        @test all(getfield(alias_spec, name) === true for name in fieldnames(T))
+
+        noalias_spec = alias_specifier_with_policy(T, false)
+        @test all(getfield(noalias_spec, name) === false for name in fieldnames(T))
     end
 end
 

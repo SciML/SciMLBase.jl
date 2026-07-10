@@ -7,6 +7,23 @@ using StaticArrays
     @test SciMLBase.build_linear_solution(nothing, u, zeros(1), nothing)[] == u[]
 end
 
+@testset "ReturnCode success classification" begin
+    successful = (
+        ReturnCode.Success,
+        ReturnCode.Terminated,
+        ReturnCode.ExactSolutionLeft,
+        ReturnCode.ExactSolutionRight,
+        ReturnCode.FloatingPointLimit,
+        ReturnCode.StalledSuccess,
+    )
+    unsuccessful = filter(code -> code ∉ successful, instances(ReturnCode.T))
+
+    @test all(SciMLBase.successful_retcode, successful)
+    @test all(!SciMLBase.successful_retcode(code) for code in unsuccessful)
+    @test ReturnCode.Default in unsuccessful
+    @test ReturnCode.Stalled in unsuccessful
+end
+
 @testset "A * sol for AbstractNoTimeSolution" begin
     u = [1.0, -1.0]
     sol = SciMLBase.build_linear_solution(nothing, u, zero(u), nothing)

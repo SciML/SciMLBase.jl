@@ -22,3 +22,18 @@ struct Issue1499DAEAlg <: SciMLBase.AbstractDAEAlgorithm end
     @test EnzymeRules.inactive_type(Issue1499DAEAlg)
     @test EnzymeRules.inactive_type(SciMLBase.AbstractDEAlgorithm)
 end
+
+if isdefined(Base, :ispublic)
+    @testset "Sensitivity algorithm supertypes are public" begin
+        for name in (
+                :AbstractSensitivityAlgorithm,
+                :AbstractOverloadingSensitivityAlgorithm,
+                :AbstractForwardSensitivityAlgorithm,
+                :AbstractAdjointSensitivityAlgorithm,
+                :AbstractSecondOrderSensitivityAlgorithm,
+                :AbstractShadowingSensitivityAlgorithm,
+            )
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+end

@@ -1,34 +1,31 @@
 """
-    AbstractWrappedFunction{iip}
+$(TYPEDEF)
 
-Abstract base type for function wrappers used in automatic differentiation and sensitivity analysis.
-These wrappers provide specialized interfaces for computing derivatives with respect to different variables.
+Base interface for internal one-variable views of SciML model functions.
 
-# Type Parameter
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
+Wrapped functions close over all but one argument of a model function so
+automatic differentiation or finite-difference code can differentiate with
+respect to time, state, or parameters. The `iip` type parameter preserves the
+in-place convention of the wrapped function and is returned by [`isinplace`](@ref).
 """
 abstract type AbstractWrappedFunction{iip} end
 isinplace(f::AbstractWrappedFunction{iip}) where {iip} = iip
 
 """
-    TimeGradientWrapper{iip, fType, uType, P} <: AbstractWrappedFunction{iip}
+$(TYPEDEF)
 
-Wraps functions to compute gradients with respect to time. This wrapper is particularly useful for 
-sensitivity analysis and optimization problems where the time dependence of the solution is critical.
+Expose time as the only free argument of an ODE-style model function.
+
+`TimeGradientWrapper(f, uprev, p)` fixes the state and parameters of `f` and
+returns a callable object over `t`. For out-of-place functions it calls
+`f(uprev, p, t)`. For in-place functions, `wrapper(out, t)` calls
+`f(out, uprev, p, t)`, while `wrapper(t)` allocates `similar(uprev)` and returns
+the filled value. This form is used when AD code needs a one-argument function
+for the time gradient.
 
 # Fields
-- `f`: The function to wrap
-- `uprev`: Previous state value
-- `p`: Parameters
 
-# Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `uType`: Type of the state variables
-- `P`: Type of the parameters
-
-This wrapper enables automatic differentiation with respect to time by providing a consistent
-interface for computing `∂f/∂t` across different AD systems.
+$(TYPEDFIELDS)
 """
 mutable struct TimeGradientWrapper{iip, fType, uType, P} <: AbstractWrappedFunction{iip}
     f::fType
@@ -51,25 +48,21 @@ end
 (ff::TimeGradientWrapper{false})(t) = ff.f(ff.uprev, ff.p, t)
 
 """
-    UJacobianWrapper{iip, fType, tType, P} <: AbstractWrappedFunction{iip}
+$(TYPEDEF)
 
-Wraps functions to compute Jacobians with respect to state variables `u`. This is one of the most 
-commonly used wrappers in the SciML ecosystem for computing the derivative of the right-hand side 
-function with respect to the state variables.
+Expose the state as the free argument of an ODE-style model function.
+
+`UJacobianWrapper(f, t, p)` fixes time and parameters and returns a callable
+object over `u`. For out-of-place functions it calls `f(u, p, t)`. For in-place
+functions, `wrapper(out, u)` calls `f(out, u, p, t)`, while `wrapper(u)`
+allocates `similar(u)` and returns the filled value.
+
+The overloads `wrapper(u, p, t)` and `wrapper(out, u, p, t)` let callers reuse
+the same wrapper while overriding the closed-over parameters and time.
 
 # Fields
-- `f`: The function to wrap
-- `t`: Time value
-- `p`: Parameters
 
-# Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `tType`: Type of the time variable
-- `P`: Type of the parameters
-
-This wrapper enables efficient computation of `∂f/∂u` for Jacobian calculations in numerical solvers
-and automatic differentiation systems.
+$(TYPEDFIELDS)
 """
 mutable struct UJacobianWrapper{iip, fType, tType, P} <: AbstractWrappedFunction{iip}
     f::fType
@@ -95,24 +88,19 @@ end
 (ff::UJacobianWrapper{false})(uprev, p, t) = ff.f(uprev, p, t)
 
 """
-    TimeDerivativeWrapper{iip, F, uType, P} <: AbstractWrappedFunction{iip}
+$(TYPEDEF)
 
-Wraps functions to compute derivatives with respect to time. This wrapper is used when you need to 
-compute `∂f/∂t` for sensitivity analysis or when the function has explicit time dependence.
+Fix state and parameters while exposing time as the differentiated variable.
+
+`TimeDerivativeWrapper(f, u, p)` is the fixed-state, fixed-parameter view used
+by derivative code that expects a function of `t` alone. For out-of-place
+functions it calls `f(u, p, t)`. For in-place functions, `wrapper(out, t)` calls
+`f(out, u, p, t)`, while `wrapper(t)` allocates `similar(u)` and returns the
+filled value.
 
 # Fields
-- `f`: The function to wrap
-- `u`: State variables
-- `p`: Parameters
 
-# Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `F`: Type of the wrapped function
-- `uType`: Type of the state variables
-- `P`: Type of the parameters
-
-This wrapper provides a consistent interface for time derivative computations across different
-automatic differentiation backends.
+$(TYPEDFIELDS)
 """
 mutable struct TimeDerivativeWrapper{iip, F, uType, P} <: AbstractWrappedFunction{iip}
     f::F
@@ -132,24 +120,19 @@ end
 (ff::TimeDerivativeWrapper{true})(t) = (du1 = similar(ff.u); ff.f(du1, ff.u, ff.p, t); du1)
 
 """
-    UDerivativeWrapper{iip, F, tType, P} <: AbstractWrappedFunction{iip}
+$(TYPEDEF)
 
-Wraps functions to compute derivatives with respect to state variables. This wrapper is used for 
-computing `∂f/∂u` and is fundamental for Jacobian computations in numerical solvers.
+Fix time and parameters while exposing the state as the differentiated variable.
+
+`UDerivativeWrapper(f, t, p)` is the fixed-time, fixed-parameter view used by
+derivative code that expects a function of `u` alone. For out-of-place functions
+it calls `f(u, p, t)`. For in-place functions, `wrapper(out, u)` calls
+`f(out, u, p, t)`, while `wrapper(u)` allocates `similar(u)` and returns the
+filled value.
 
 # Fields
-- `f`: The function to wrap
-- `t`: Time value
-- `p`: Parameters
 
-# Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `F`: Type of the wrapped function
-- `tType`: Type of the time variable
-- `P`: Type of the parameters
-
-This wrapper enables efficient state derivative computations for use in automatic differentiation
-and numerical analysis algorithms.
+$(TYPEDFIELDS)
 """
 mutable struct UDerivativeWrapper{iip, F, tType, P} <: AbstractWrappedFunction{iip}
     f::F

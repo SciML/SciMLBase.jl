@@ -3,68 +3,76 @@ const RECOMPILE_BY_DEFAULT = true
 """
 $(TYPEDEF)
 
-Supertype for the specialization types. Controls the compilation and
-function specialization behavior of SciMLFunctions, ultimately controlling
-the runtime vs compile-time trade-off.
+Base interface for marker types that control how SciML function wrappers retain,
+erase, or type-restrict their callable fields.
+
+Specialization markers are passed as types, not values, usually as the second
+explicit parameter after the in-place flag:
+
+```julia
+ODEFunction{iip, specialize}(f)
+ODEProblem{iip, specialize}(f, u0, tspan, p)
+```
+
+Concrete SciML function types store the marker in their type parameters. Query it
+with [`specialization`](@ref) instead of relying on a particular parameter
+position. Problem construction and `remake` should preserve an explicitly chosen
+marker unless the caller requests a different function representation.
+
+The built-in markers are [`AutoSpecialize`](@ref), [`NoSpecialize`](@ref),
+[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior
+is implemented jointly by SciMLBase constructors and downstream solver packages:
+a marker alone does not automatically erase types or install callable wrappers.
+New `AbstractSpecialization` subtypes therefore require explicit support in every
+function constructor and solver path that is expected to honor them.
+
+Solver and transformation code must not assume that a type-restricted wrapped
+callable accepts new state, time, parameter, or AD types. Use
+[`unwrapped_f`](@ref) before calling it with a signature outside the documented
+wrapper set, then reconstruct a suitable SciML function, commonly with
+`FullSpecialize` for AD transformations.
 """
 abstract type AbstractSpecialization end
 
 """
 $(TYPEDEF)
 
-The default specialization level for problem functions. `AutoSpecialize`
-works by applying a function wrap just-in-time before the solve process
-to disable just-in-time re-specialization of the solver to the specific
-choice of model `f` and thus allow for using a cached solver compilation
-from a different `f`. This wrapping process can lead to a small decreased
-runtime performance with a benefit of a greatly decreased compile-time.
+The default specialization level for problem functions. `AutoSpecialize` asks
+the selected solver path to reuse compilation where it has a supported
+type-erasure or callable-wrapping strategy, while falling back to ordinary full
+specialization elsewhere.
+
+For the common in-place ODE path, wrapping is applied shortly before solving so
+`prob.f` remains convenient to inspect and the solver can reuse precompiled code
+across compatible model functions. Other problem families may implement their
+own AutoSpecialize strategy; for example, nonlinear solvers can install wrappers
+suited to their residual signatures. The exact supported state, parameter, time,
+callback, and AD types are therefore part of the concrete solver's contract.
 
 ## Note About Benchmarking and Runtime Optimality
 
-It is recommended that `AutoSpecialize` is not used in any benchmarking
-due to the potential effect of function wrapping on runtimes. `AutoSpecialize`'s
-use case is targeted at decreased latency for REPL performance and
-not for cases where where top runtime performance is required (such as in
-optimization loops). Generally, for non-stiff equations the cost will be minimal
-and potentially not even measurable. For stiff equations, function wrapping
-has the limitation that only chunk sized 1 Dual numbers are allowed, which
-can decrease Jacobian construction performance.
+It is recommended that `AutoSpecialize` is not used in benchmarking because
+callable wrapping can affect runtime. Its primary goal is lower latency for REPL
+and application workflows. Use [`FullSpecialize`](@ref) when measuring peak
+runtime or when repeatedly solving inside a long-running optimization loop.
 
 ## Limitations of `AutoSpecialize`
 
-The following limitations are not fundamental to the implementation of `AutoSpecialize`,
-but are instead chosen as a compromise between default precompilation times and
-ease of maintenance. Please open an issue to discuss lifting any potential
-limitations.
+Support is solver-specific, but common restrictions are:
 
-  - `AutoSpecialize` is only setup to wrap the functions from in-place ODEs. Other
-    cases are excluded for the time being due to time limitations.
-  - `AutoSpecialize` will only lead to compilation reuse if the ODEFunction's other
-    functions (such as jac and tgrad) are the default `nothing`. These could be
-    JIT wrapped as well in a future version.
-  - `AutoSpecialize`'d functions are only compatible with Jacobian calculations
-    performed with chunk size 1, and only with tag `DiffEqBase.OrdinaryDiffEqTag()`.
-    Thus ODE solvers written on the common interface must be careful to detect
-    the `AutoSpecialize` case and perform differentiation under these constraints,
-    use finite differencing, or manually unwrap before solving. This will lead
-    to decreased runtime performance for sufficiently large Jacobians.
-  - `AutoSpecialize` only wraps on Julia v1.8 and higher.
-  - `AutoSpecialize` does not handle cases with units. If unitful values are detected,
-    wrapping is automatically disabled.
-  - `AutoSpecialize` only wraps cases for which `promote_rule` is defined between `u0`
-    and dual numbers, `u0` and `t`, and for which `ArrayInterface.promote_eltype`
-    is defined on `u0` to dual numbers.
-  - `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
-    default.
-  - `AutoSpecialize` does not wrap cases where `f isa AbstractSciMLOperator`
-  - By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-    `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are specialized
-    by the solver libraries. Other forms can be specialized with
-    `AutoSpecialize`, but must be done in the precompilation of downstream libraries.
-  - `AutoSpecialize`d functions are manually unwrapped in adjoint methods in
-    SciMLSensitivity.jl in order to allow compiler support for automatic differentiation.
-    Improved versions of adjoints which decrease the recompilation surface will come
-    in non-breaking updates.
+  - Only signatures precompiled or installed by the solver's wrapper path can
+    reuse compilation. Unsupported problem forms fall back to full specialization.
+  - Type-restricted wrappers require concrete compatible state, parameter, time,
+    and return types. Unitful or unusual array types may disable wrapping when the
+    solver cannot construct matching signatures.
+  - Operators such as `AbstractSciMLOperator` are generally left unwrapped because
+    they provide their own callable and update interfaces.
+  - AD paths must either install wrapper signatures for their dual types and chunk
+    sizes or reconstruct the problem around [`unwrapped_f`](@ref). Sensitivity
+    packages commonly choose the latter for tracked, dual, or Enzyme values.
+  - Compilation reuse only exists for argument combinations that downstream solver
+    packages precompile. Common defaults cover `Vector{Float64}` state,
+    `Float64` time, and `Vector{Float64}` or `NullParameters` parameters.
 
 Cases where automatic wrapping is disabled are equivalent to `FullSpecialize`.
 
@@ -104,32 +112,32 @@ struct NoSpecialize <: AbstractSpecialization end
 $(TYPEDEF)
 
 `FunctionWrapperSpecialize` is an eager wrapping choice which
-performs a function wrapping during the `ODEProblem` construction.
+performs callable wrapping during problem construction.
 This performs the function wrapping at the earliest possible point,
 giving the best compile-time vs runtime performance, but with the
 difficulty that any usage of `prob.f` needs to account for the
-function wrapper's presence. While optimal in a performance sense,
-this method has many usability issues with nonstandard solvers
-and analyses as it requires unwrapping before re-wrapping for any
-type changes. Thus this method is not used by default. Given that
-the compile-time different is almost undetectable from AutoSpecialize,
-this method is mostly used as a benchmarking reference for speed
-of light for `AutoSpecialize`.
+function wrapper's presence. While useful as a performance reference, this method
+has interoperability costs: nonstandard solvers and analyses must unwrap and
+reconstruct the callable when state, parameter, time, or AD types change. It is
+therefore not the default, and the usually small compile-time difference from
+`AutoSpecialize` rarely justifies the stricter callable contract in application
+code.
 
 ## Limitations of `FunctionWrapperSpecialize`
 
-`FunctionWrapperSpecialize` has all of the limitations of `AutoSpecialize`,
-but also includes the limitations:
+`FunctionWrapperSpecialize` has the type-compatibility limitations of
+`AutoSpecialize`, plus the following stricter rules:
 
   - `prob.f` is directly specialized to the types of `(u,p,t)`, and any usage
     of `prob.f` on other types first requires using
     `SciMLBase.unwrapped_f(prob.f)` to remove the function wrapper.
-  - `FunctionWrapperSpecialize` can only be used by the `ODEProblem` constructor.
-    If an `ODEFunction` is being constructed, the user must manually use
-    `DiffEqBase.wrap_iip` on `f` before calling
-    `ODEFunction{true,FunctionWrapperSpecialize}(f)`. This is a fundamental
-    limitation of the approach as the types of `(u,p,t)` are required in the
-    construction process and not accessible in the `AbstractSciMLFunction` constructors.
+  - Prefer a problem constructor such as
+    `ODEProblem{iip, FunctionWrapperSpecialize}`, because it has the representative
+    `u`, `p`, and `t` values needed to define wrapper signatures.
+  - Constructing a SciML function directly with this marker requires an already
+    wrapped callable. Solver-integration packages use [`wrapfun_iip`](@ref) or
+    [`wrapfun_oop`](@ref) for this purpose; passing a bare callable when its input
+    types are unavailable is an error.
 
 ## Example
 
@@ -236,6 +244,19 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for ODE right-hand-side containers.
+
+Subtypes represent equations of the form `du/dt = f(u, p, t)` or mass-matrix
+variants `M * du/dt = f(u, p, t)`. They should support either
+`f(du, u, p, t)` for in-place functions or `f(u, p, t)` for out-of-place
+functions according to the `iip` type parameter. Optional callbacks such as
+`jac`, `tgrad`, `jvp`, `vjp`, `Wfact`, `Wfact_t`, `paramjac`, and `vjp_p`
+must follow the same in-place convention as the primary function when present.
+Mass matrices, Jacobian prototypes, sparsity patterns, color vectors, symbolic
+systems, observed quantities, and initialization data are exposed through fields
+on concrete wrappers such as `ODEFunction`, `SplitFunction`, and
+`DynamicalODEFunction`.
 """
 abstract type AbstractODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -292,18 +313,18 @@ the usage of `f`. These include:
   if the Jacobian is tridiagonal, then an appropriately sized `Tridiagonal` matrix can be used
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
-  The default is `nothing`, which means a dense Jacobian.
+  It must support the operations required by the selected differentiation and linear solver.
+  The default is `nothing`, which means a dense Jacobian. Solvers may copy, allocate a similar
+  object, or convert the prototype, so callers must not rely on object identity or aliasing.
 - `paramjac(pJ,u,p,t)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `vjp_p(Jpv,v,u,p,t)` or `Jpv=vjp_p(v,u,p,t)`: returns the parameter adjoint derivative
   ``\\frac{df}{dp}^∗ v``, i.e. the vector-Jacobian product with respect to parameters. This
   avoids materializing the full parameter Jacobian when only the VJP is needed (e.g. in adjoint
   sensitivity analysis). When not provided, falls back to `paramjac` or AD-based computation.
-- `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
-  pattern of the `jac_prototype`. This specializes the Jacobian construction when using
-  finite differences and automatic differentiation to be computed in an accelerated manner
-  based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
-  internally computed on demand when required. The cost of this operation is highly dependent
-  on the sparsity pattern.
+- `colorvec`: a column-color vector compatible with the selected sparse differentiation
+  backend and the sparsity pattern of `jac_prototype`. This can accelerate Jacobian
+  construction with finite differences or automatic differentiation. Defaults to `nothing`,
+  which lets the selected backend compute coloring when required.
 ## iip: In-Place vs Out-Of-Place
 
 `iip` is the optional boolean for determining whether a given function is written to
@@ -338,8 +359,7 @@ The available specialization levels are:
 * `SciMLBase.FunctionWrapperSpecialize`: this is an eager function wrapping form. It is
   unsafe with many solvers, and thus is mostly used for development testing.
 
-For more details, see the
-[specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels).
+For more details, see [Specialization Levels](@ref specialization_levels).
 
 ## Fields
 
@@ -357,13 +377,15 @@ jp = Diagonal(zeros(2))
 fun = ODEFunction(f; jac=jac, jac_prototype=jp)
 ```
 
-Note that the integrators will always make a deep copy of `fun.jac_prototype`, so
-there's no worry of aliasing.
+The prototype declares Jacobian shape, element type, and structure. It must support
+the operations required by the selected differentiation and linear solver, including
+writes for an in-place `jac` and any multiplication, diagonal-shift, or factorization
+operations that solver performs. Solvers may copy, allocate with `similar`, or convert
+the prototype, so code must not rely on its object identity or aliasing behavior.
 
-In general, the Jacobian prototype can be anything that has `mul!` defined, in
-particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractSciMLOperator`, in which case you
-do not need to supply `jac` as it is automatically set to `update_coefficients!`.
+When `jac_prototype` is an `AbstractSciMLOperator` and `jac` is omitted, the constructor
+creates a Jacobian update using `update_coefficients!` for the in-place form and
+`update_coefficients` for the out-of-place form.
 Refer to the AbstractSciMLOperators documentation for more information
 on setting up time/parameter dependent operators.
 
@@ -677,6 +699,16 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for delay differential equation function containers.
+
+Subtypes represent right-hand sides that depend on the current state and a
+history object, using `f(du, u, h, p, t)` for in-place functions or
+`f(u, h, p, t)` for out-of-place functions. The history object is supplied by
+the DDE/SDDE integrator and should be queried using the delay-problem history
+interface. Optional derivative, sparsity, mass-matrix, symbolic, and
+initialization fields follow the same conventions as [`AbstractODEFunction`](@ref),
+with callback signatures extended by the `h` argument.
 """
 abstract type AbstractDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -889,6 +921,15 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for discrete dynamical-system function containers.
+
+Explicit discrete functions update a state sequence through signatures such as
+`f(du, u, p, t)` or `f(u, p, t)`. Implicit discrete functions represent
+residual equations for the next state, commonly `f(resid, u_next, u, p, t)` or
+`f(u_next, u, p, t)`. Concrete subtypes should document which map or residual
+signature they implement, whether an analytic solution callback is available,
+and any residual prototype needed by solvers.
 """
 abstract type AbstractDiscreteFunction{iip} <:
 AbstractDiffEqFunction{iip} end
@@ -1003,6 +1044,16 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for stochastic differential equation function containers.
+
+Subtypes represent drift/diffusion systems such as
+`du = f(u, p, t) dt + g(u, p, t) dW`. The drift and diffusion callbacks must
+use a consistent in-place convention: `f(du, u, p, t)` and `g(du, u, p, t)` for
+in-place functions, or `f(u, p, t)` and `g(u, p, t)` for out-of-place functions.
+Optional Jacobian-like callbacks describe the drift unless the concrete subtype
+documents otherwise; Milstein-style diffusion derivatives are carried by
+`ggprime` when supported.
 """
 abstract type AbstractSDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1267,7 +1318,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/dae_solve/>.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -1334,6 +1385,14 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for random ordinary differential equation function containers.
+
+RODE functions use a solver-supplied noise/history value `W` in addition to the
+ODE arguments, with signatures `f(du, u, p, t, W)` or `f(u, p, t, W)`.
+Concrete subtypes should document whether analytic callbacks are pointwise in
+`W` or operate on the full solution/noise history, and which derivative
+callbacks are supported for the random input convention.
 """
 abstract type AbstractRODEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1443,6 +1502,17 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for fully implicit differential-algebraic equation function
+containers.
+
+DAE functions represent residuals `G(du, u, p, t) = 0`, using
+`f(resid, du, u, p, t)` for in-place functions or `f(du, u, p, t)` for
+out-of-place functions. Jacobian callbacks may provide the combined solver
+Jacobian `gamma * dG/d(du) + dG/du`, or separate `jac_du` and `jac_u`
+components when supported. Optional derivative, sparsity, symbolic, and
+initialization metadata follow the [`AbstractSciMLFunction`](@ref) trait
+contract.
 """
 abstract type AbstractDAEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1595,6 +1665,14 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for stochastic delay differential equation function containers.
+
+SDDE functions combine the SDE drift/diffusion convention with a delay history
+argument, using `f(du, u, h, p, t)` and `g(du, u, h, p, t)` for in-place
+functions or `f(u, h, p, t)` and `g(u, h, p, t)` for out-of-place functions.
+Concrete subtypes should document their history queries, noise-rate shape, and
+which optional derivative callbacks are defined for the delayed drift.
 """
 abstract type AbstractSDDEFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -1700,6 +1778,15 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for nonlinear system function containers.
+
+Subtypes represent systems `f(u, p) = 0`, using `f(resid, u, p)` for in-place
+functions or `f(u, p)` for out-of-place functions. Optional callbacks include
+analytic solutions, Jacobians, Jacobian-vector and vector-Jacobian products,
+parameter Jacobians, mass-matrix-like metadata, residual prototypes, sparsity
+and coloring data, symbolic systems, observed quantities, and initialization
+data.
 """
 abstract type AbstractNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
@@ -1908,6 +1995,13 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for one-dimensional interval nonlinear function containers.
+
+Subtypes represent scalar or residual-valued equations over an interval
+variable, using `f(out, t, p)` for in-place functions or `f(t, p)` for
+out-of-place functions. Concrete wrappers should document their analytic
+callback and symbolic metadata conventions.
 """
 abstract type AbstractIntervalNonlinearFunction{iip} <: AbstractSciMLFunction{iip} end
 
@@ -2067,8 +2161,8 @@ will use [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl) to define
 all of the necessary functions. Note that if any functions are defined
 directly, the auto-AD definition does not overwrite the user's choice.
 
-Each of the AD-based constructors are documented separately via their
-own dispatches below in the [Automatic Differentiation Construction Choice Recommendations](@ref ad) section.
+Each AD-based constructor is documented by the package that implements the
+corresponding [ADTypes.jl](https://github.com/SciML/ADTypes.jl) backend.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -2117,8 +2211,26 @@ end
 
 """
 $(TYPEDEF)
-"""
 
+Representation of a vector-valued objective for multi-objective optimization.
+
+`MultiObjectiveOptimizationFunction` is the multi-output analogue of
+`OptimizationFunction`. The objective `f(u, p)` returns one value per objective,
+and optional derivative callbacks describe derivatives of that vector-valued
+objective and any constraints. The `jac` field replaces the scalar-objective
+`grad` field, while the constraint, Hessian, Hessian-vector product, sparsity,
+color-vector, symbolic, and initialization fields follow the same conventions as
+`OptimizationFunction`.
+
+Constructors accept an ADTypes `adtype`, defaulting to `NoAD()`, plus optional
+manually supplied derivative callbacks and prototypes. Solver packages should
+query which fields are present rather than assuming every derivative is
+available.
+
+# Fields
+
+$(TYPEDFIELDS)
+"""
 struct MultiObjectiveOptimizationFunction{
         iip, AD, F, J, H, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
         EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV, ID,
@@ -2152,6 +2264,16 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for ODE right-hand sides with an explicit input/control argument.
+
+Concrete subtypes represent systems such as `dx/dt = f(x, u, p, t)`, where `x`
+is the state and `u` is an external input or control. In-place functions use
+`f(dx, x, u, p, t)` and out-of-place functions use `f(x, u, p, t)`. Optional
+`jac` callbacks differentiate with respect to `x`, while `controljac`
+callbacks differentiate with respect to the input/control argument. Other
+derivative, prototype, sparsity, symbolic, and initialization fields follow the
+ODE-function conventions.
 """
 abstract type AbstractODEInputFunction{iip} <: AbstractDiffEqFunction{iip} end
 
@@ -2254,6 +2376,17 @@ end
 
 """
 $(TYPEDEF)
+
+Interface for boundary-value problem function containers.
+
+Concrete subtypes combine a differential equation callback with boundary
+condition residuals. The `iip` parameter records the in-place convention for the
+dynamic function, and the `twopoint` parameter records whether the boundary
+conditions are supplied as separate left/right endpoint callbacks. Boundary
+condition callbacks and their Jacobians must use a convention compatible with
+the stored prototypes. Concrete wrappers should document the signatures for
+`f`, `bc`, `bcjac`, optional least-squares/cost callbacks, boundary residual
+prototypes, and coloring metadata.
 """
 abstract type AbstractBVPFunction{iip, twopoint} <: AbstractDiffEqFunction{iip} end
 
@@ -5347,13 +5480,23 @@ has_invW(f::AbstractSciMLFunction) = false
 """
     has_analytic(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` analytic solution callback.
+Return whether `f` carries a non-`nothing` analytic solution callback.
+
+Analytic callbacks are optional and are mainly used by solvers and tests to
+compare numerical and exact solutions. The expected callback signature depends
+on the concrete function type, matching the independent variables described by
+that type's docstring.
 """
 has_analytic(f::AbstractSciMLFunction) = __has_analytic(f) && f.analytic !== nothing
 """
     has_jac(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian callback.
+Return whether `f` carries a non-`nothing` Jacobian callback.
+
+For differential equation functions this is usually the Jacobian with respect to
+the state variable. For implicit functions such as DAEs, the concrete function
+docstring defines the Jacobian convention. Solver code should query this trait
+before accessing `f.jac`.
 """
 has_jac(f::AbstractSciMLFunction) = __has_jac(f) && f.jac !== nothing
 has_jac_u(f::AbstractSciMLFunction) = __has_jac_u(f) && f.jac_u !== nothing
@@ -5361,19 +5504,31 @@ has_jac_du(f::AbstractSciMLFunction) = __has_jac_du(f) && f.jac_du !== nothing
 """
     has_jvp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian-vector product callback.
+Return whether `f` carries a non-`nothing` Jacobian-vector product callback.
+
+When true, solvers may use `f.jvp` to apply the Jacobian to a direction without
+materializing the full Jacobian. The callback must follow the in-place or
+out-of-place convention of the concrete function wrapper.
 """
 has_jvp(f::AbstractSciMLFunction) = __has_jvp(f) && f.jvp !== nothing
 """
     has_vjp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` vector-Jacobian product callback.
+Return whether `f` carries a non-`nothing` vector-Jacobian product callback.
+
+When true, solvers or sensitivity algorithms may use `f.vjp` to apply the
+adjoint Jacobian action without materializing the full Jacobian. The callback
+signature is defined by the concrete function type.
 """
 has_vjp(f::AbstractSciMLFunction) = __has_vjp(f) && f.vjp !== nothing
 """
     has_tgrad(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` time-gradient callback.
+Return whether `f` carries a non-`nothing` time-gradient callback.
+
+The time-gradient callback represents the derivative of the model function with
+respect to the independent variable while holding the state and parameters fixed.
+It is only meaningful for function types with an explicit independent variable.
 """
 has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
 has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
@@ -5398,6 +5553,10 @@ end
     has_initialization_data(f)
 
 Return whether `f` carries non-`nothing` initialization metadata.
+
+Initialization data stores problem-level initialization hooks such as an
+initialization problem, an updater for that problem, and parameter/state mapping
+functions. Solvers should query this trait before using those hooks.
 """
 function has_initialization_data(f)
     return __has_initialization_data(f) && f.initialization_data !== nothing
@@ -5405,32 +5564,58 @@ end
 @doc """
     has_analytic(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` analytic solution callback.
+Return whether `f` carries a non-`nothing` analytic solution callback.
+
+Analytic callbacks are optional and are mainly used by solvers and tests to
+compare numerical and exact solutions. The expected callback signature depends
+on the concrete function type, matching the independent variables described by
+that type's docstring.
 """ has_analytic
 @doc """
     has_jac(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian callback.
+Return whether `f` carries a non-`nothing` Jacobian callback.
+
+For differential equation functions this is usually the Jacobian with respect to
+the state variable. For implicit functions such as DAEs, the concrete function
+docstring defines the Jacobian convention. Solver code should query this trait
+before accessing `f.jac`.
 """ has_jac
 @doc """
     has_jvp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` Jacobian-vector product callback.
+Return whether `f` carries a non-`nothing` Jacobian-vector product callback.
+
+When true, solvers may use `f.jvp` to apply the Jacobian to a direction without
+materializing the full Jacobian. The callback must follow the in-place or
+out-of-place convention of the concrete function wrapper.
 """ has_jvp
 @doc """
     has_vjp(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` vector-Jacobian product callback.
+Return whether `f` carries a non-`nothing` vector-Jacobian product callback.
+
+When true, solvers or sensitivity algorithms may use `f.vjp` to apply the
+adjoint Jacobian action without materializing the full Jacobian. The callback
+signature is defined by the concrete function type.
 """ has_vjp
 @doc """
     has_tgrad(f::AbstractSciMLFunction)
 
-Return whether `f` has a non-`nothing` time-gradient callback.
+Return whether `f` carries a non-`nothing` time-gradient callback.
+
+The time-gradient callback represents the derivative of the model function with
+respect to the independent variable while holding the state and parameters fixed.
+It is only meaningful for function types with an explicit independent variable.
 """ has_tgrad
 @doc """
     has_initialization_data(f)
 
 Return whether `f` carries non-`nothing` initialization metadata.
+
+Initialization data stores problem-level initialization hooks such as an
+initialization problem, an updater for that problem, and parameter/state mapping
+functions. Solvers should query this trait before using those hooks.
 """ has_initialization_data
 has_polynomialize(f) = __has_polynomialize(f) && f.polynomialize !== nothing
 has_unpolynomialize(f) = __has_unpolynomialize(f) && f.unpolynomialize !== nothing
@@ -5562,6 +5747,30 @@ islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)
 
+"""
+    IncrementingODEFunction{iip, specialize}(f)
+    IncrementingODEFunction{iip}(f)
+    IncrementingODEFunction(f)
+
+Wrap an ODE model that supports solver-specific incrementing evaluations.
+
+This is a thin [`AbstractODEFunction`](@ref) wrapper: calls and keyword
+arguments are forwarded directly to `f`, while `iip` records the mutation
+convention and `specialize` follows the SciML function specialization interface.
+It does not add derivative metadata or transform an ordinary ODE right-hand
+side into an incrementing one.
+
+Low-storage Runge-Kutta solvers commonly call an in-place wrapped function as
+`f(du, u, p, t, alpha, beta)` and require it to compute
+`du = alpha * F(u, p, t) + beta * du`. The selected solver owns the exact extra
+call forms and semantics, so the model must implement every form that solver
+uses. Use `IncrementingODEFunction{true}(f)` or
+`IncrementingODEFunction{false}(f)` when optional arguments or multiple methods
+make arity-based in-place inference ambiguous.
+
+See [`IncrementingODEProblem`](@ref) for the constructor that records the
+matching problem tag.
+"""
 struct IncrementingODEFunction{iip, specialize, F} <: AbstractODEFunction{iip}
     f::F
 end

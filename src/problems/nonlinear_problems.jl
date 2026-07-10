@@ -1,5 +1,14 @@
 """
 $(TYPEDEF)
+
+Marker for standard nonlinear problem layouts.
+
+`StandardNonlinearProblem()` is the default `problem_type` metadata for
+nonlinear problems represented directly by a residual function and either an
+initial guess or an interval. Solver code may inspect this marker through
+[`problem_type`](@ref) when it needs to distinguish the standard residual layout
+from specialized nonlinear problem encodings, while generic nonlinear code should rely on the
+`AbstractNonlinearProblem` fields and traits instead.
 """
 struct StandardNonlinearProblem end
 
@@ -150,7 +159,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
+[nonlinear function types](@ref nonlinear_optimization_boundary_function_types).
 
 ### Fields
 
@@ -310,7 +319,7 @@ will be used, which will throw nice errors if you try to index non-existent
 parameters.
 
 For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
+[nonlinear function types](@ref nonlinear_optimization_boundary_function_types).
 
 ### Fields
 
@@ -629,17 +638,19 @@ end
 @doc doc"""
     NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
-Holds information on what variables to alias when solving a `NonlinearProblem`. 
-Conforms to the AbstractAliasSpecifier interface. 
+Control which `NonlinearProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls whether the initial guess may be stored by reference,
+`alias_p` controls the parameter object, and `alias_f` controls the nonlinear
+function wrapper. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to all fields.
 
 ### Keywords
 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the nonlinear function object.
 * `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
-* `alias::Union{Bool, Nothing}`: sets all fields of the `NonlinearAliasSpecifier` to `alias`. 
+* `alias::Union{Bool, Nothing}`: set every field of the `NonlinearAliasSpecifier`.
 """
 struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

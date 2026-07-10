@@ -1,156 +1,241 @@
-# Common Keyword Arguments
+# [Common `solve` and `init` Keyword Arguments](@id common_solver_keywords)
 
-The following defines the keyword arguments which are meant to be preserved
-throughout all of the AbstractSciMLProblem cases (where applicable).
+SciML problem families share a vocabulary of keyword arguments for `solve` and
+`init`. This vocabulary is an interoperability contract, not a promise that
+every backend implements every option. Concrete solver packages must document
+unsupported keywords and any defaults that differ from the common behavior.
 
-## Default Algorithm Hinting
+Problem constructors may store solve keywords in `prob.kwargs`. High-level solve
+implementations merge those stored keywords before dispatching to the backend:
+keywords supplied directly to `solve` or `init` take precedence. When both the
+problem and the call provide callbacks, they are combined into a `CallbackSet`
+by default; `merge_callbacks = false` lets a backend disable that combination.
 
-To help choose the default algorithm, the keyword argument `alg_hints` is
-provided to `solve`. `alg_hints` is a `Vector{Symbol}` which describe the
-problem at a high level to the solver. The options are:
+Method-specific configuration belongs in the algorithm constructor. For
+example, an automatic differentiation backend used only by one algorithm should
+be selected by `MyAlgorithm(; autodiff = ...)`, while tolerances, saving, and
+callback controls that apply across a problem family belong in `solve` or
+`init`.
 
-This functionality is derived via the benchmarks in
-[SciMLBenchmarks.jl](https://docs.sciml.ai/SciMLBenchmarksOutput/stable/)
+## Default Algorithm Hints
 
-Currently this is only implemented for the differential equation solvers.
+When no algorithm is supplied, `alg_hints` gives the package that owns default
+selection high-level facts about the problem. It is a collection of symbols;
+the default selector decides which hints it supports.
+
+The common deterministic hints are:
+
+  - `:auto`: let the selector choose whether stiffness detection or switching is
+    appropriate. This is the usual default.
+  - `:nonstiff`: prefer an explicit nonstiff method.
+  - `:stiff`: prefer a method intended for stiff equations.
+
+Stochastic selectors additionally use:
+
+  - `:additive`: the diffusion is independent of the state.
+  - `:commutative`: the noise vector fields satisfy the commutativity assumptions
+    required by methods that avoid general iterated stochastic integrals.
+  - `:stratonovich`: select a solver with the Stratonovich interpretation rather
+    than the default Ito interpretation.
+
+`:interpolant` and `:memorybound` are reserved hints for interpolation quality
+and memory-bound workloads. Standard selectors may currently ignore them.
+Passing an explicit algorithm bypasses default selection, so `alg_hints` should
+not be used to configure an already selected method.
 
 ## Output Control
 
-These arguments control the output behavior of the solvers. It defaults to maximum
-output to give the best interactive user experience, but can be reduced all the
-way to only saving the solution at the final timepoint.
+Saving defaults favor interactive use. The OrdinaryDiffEq-style defaults below
+are the reference behavior; wrapped or non-time-stepping solvers may support a
+smaller subset.
 
-The following options are all related to output control. See the "Examples"
-section at the end of this page for some example usage.
+  - `dense`: Save method-specific data needed for continuous interpolation.
+    For algorithms with dense output, the default is
+    `save_everystep && isempty(saveat)` unless the algorithm uses linear
+    interpolation by default. With `dense = false`, callable time-series
+    solutions use interpolation supported by the stored points, commonly linear
+    interpolation.
+  - `saveat`: Save at specified independent-variable values. A scalar expands to
+    a regular range over `tspan`; a collection supplies the values directly.
+    Providing `saveat` alone changes the usual defaults of `save_everystep` and
+    `dense` to `false`. The default is an empty collection.
+  - `save_idxs`: Save only selected state components. It may be an integer,
+    collection of indices, or supported symbolic state/parameter selection.
+    Symbolically subsetted solutions must preserve the
+    [saved-subsystem interface](@ref symbolic_save_idxs).
+  - `tstops`: Require the integrator to stop at additional values. This is used
+    for discontinuities, singularities, and externally scheduled events. A
+    scalar or collection is known at initialization; a callable such as
+    `tstops(p, tspan)` is late-bound and requires an algorithm for which
+    [`allows_late_binding_tstops`](@ref SciMLBase.allows_late_binding_tstops) is
+    true. Fixed-step methods either take
+    a shorter step, interpolate, or reject incompatible stops according to their
+    documented capabilities.
+  - `d_discontinuities`: Mark discontinuities in low-order derivatives of the
+    vector field. Each value is also a stop. OrdinaryDiffEq advances one ULP in
+    the integration direction and refreshes derivative caches on the
+    post-discontinuity side. Its convention is right-continuous: `f` at the
+    marked value is the old regime and `f` just after it is the new regime.
+  - `save_everystep`: Save every accepted step. The usual default is
+    `isempty(saveat)`.
+  - `save_on`: Master switch for intermediate saving. When false it overrides
+    `dense`, `saveat`, and `save_everystep`. The default is `true`.
+  - `save_start`: Include the initial value. The OrdinaryDiffEq default is true
+    when every step is saved, `saveat` is empty or scalar, or the initial value
+    occurs in `saveat`. Explicit `false` suppresses the initial value even if it
+    appears in `saveat`.
+  - `save_end`: Force inclusion of the final value. The derived default follows
+    the same conditions as `save_start`, evaluated at `tspan[end]`.
+  - `initialize_save`: Save after callback initialization when initialization
+    modifies the state. The default is `true`.
+  - `save_discretes`: Save supported discrete/time-varying parameter partitions
+    alongside the state. The default for OrdinaryDiffEq integrators is `true`.
+  - `save_noise`: Preserve the stochastic noise path when the solver supports
+    it. The default is backend-specific and is `false` in the common
+    OrdinaryDiffEq initialization path.
 
-  - `dense`: Denotes whether to save the extra pieces required for dense (continuous)
-    output. Default is `save_everystep && !isempty(saveat)` for algorithms which have
-    the ability to produce dense output, i.e. by default it's `true` unless the user
-    has turned off saving on steps or has chosen a `saveat` value. If `dense=false`,
-    the solution still acts like a function, and `sol(t)` is a linear interpolation
-    between the saved time points.
-  - `saveat`: Denotes specific times to save the solution at, during the solving
-    phase. The solver will save at each of the timepoints in this array in the
-    most efficient manner available to the solver. If only `saveat` is given, then
-    the arguments `save_everystep` and `dense` are `false` by default.
-    If `saveat` is given a number, then it will automatically expand to
-    `tspan[1]:saveat:tspan[2]`. For methods where interpolation is not possible,
-    `saveat` may be equivalent to `tstops`. The default value is `[]`.
-  - `save_idxs`: Denotes the indices for the components of the equation to save.
-    Defaults to saving all indices. For example, if you are solving a 3-dimensional ODE,
-    and given `save_idxs = [1, 3]`, only the first and third components of the
-    solution will be outputted.
-    Notice that of course in this case the outputted solution will be two-dimensional.
-  - `tstops`: Denotes *extra* times that the timestepping algorithm must step to.
-    This should be used to help the solver deal with discontinuities and
-    singularities, since stepping exactly at the time of the discontinuity will
-    improve accuracy. If a method cannot change timesteps (fixed timestep
-    multistep methods), then `tstops` will use an interpolation,
-    matching the behavior of `saveat`. If a method cannot change timesteps and
-    also cannot interpolate, then `tstops` must be a multiple of `dt` or else an
-    error will be thrown. Default is `[]`.
-  - `d_discontinuities:` Denotes locations of discontinuities in low order derivatives.
-    This will force FSAL algorithms which assume derivative continuity to re-evaluate
-    the derivatives at the point of discontinuity. The default is `[]`.
-  - `save_everystep`: Saves the result at every step.
-    Default is true if `isempty(saveat)`.
-  - `save_on`: Denotes whether intermediate solutions are saved. This overrides the
-    settings of `dense`, `saveat` and `save_everystep` and is used by some applications
-    to manually turn off saving temporarily. Everyday use of the solvers should leave
-    this unchanged. Defaults to `true`.
-  - `save_start`: Denotes whether the initial condition should be included in
-    the solution type as the first timepoint. Defaults to `true`.
-  - `save_end`: Denotes whether the final timepoint is forced to be saved,
-    regardless of the other saving settings. Defaults to `true`.
-  - `initialize_save`: Denotes whether to save after the callback initialization
-    phase (when `u_modified=true`). Defaults to `true`.
+Do not combine `dense = true` with a nonempty `saveat` in OrdinaryDiffEq-style
+integrators. Dense output requires the data retained at every accepted step;
+use a saving callback when additional sampled output is needed at the same time.
 
-Note that `dense` requires `save_everystep=true` and `saveat=false`.
+## Step-Size Control
 
-## Stepsize Control
+Adaptive methods compare a normalized local error against one. The common
+componentwise scaling is equivalent to
 
-These arguments control the timestepping routines.
+```math
+\frac{\mathrm{error}}
+     {\mathrm{abstol} +
+      \max(\mathrm{internalnorm}(u_{prev}),
+           \mathrm{internalnorm}(u))\,\mathrm{reltol}}.
+```
 
-#### Basic Stepsize Control
+`abstol` controls error near zero; `reltol` controls error relative to the
+state magnitude. Either tolerance may be scalar or, when supported, shaped like
+the state for componentwise control.
 
-  - `adaptive`: Turns on adaptive timestepping for appropriate methods. Default
-    is true.
-  - `abstol`: Absolute tolerance in adaptive timestepping. This is the tolerance
-    on local error estimates, not necessarily the global error (though these quantities
-    are related).
-  - `reltol`: Relative tolerance in adaptive timestepping.  This is the tolerance
-    on local error estimates, not necessarily the global error (though these quantities
-    are related).
-  - `dt`: Sets the initial stepsize. This is also the stepsize for fixed
-    timestep methods. Defaults to an automatic choice if the method is adaptive.
-  - `dtmax`: Maximum dt for adaptive timestepping. Defaults are
-    package-dependent.
-  - `dtmin`: Minimum dt for adaptive timestepping. Defaults are
-    package-dependent.
+  - `adaptive`: Enable adaptive stepping for a method that supports it. The
+    usual default is true for adaptive algorithms.
+  - `abstol`, `reltol`: Absolute and relative local-error tolerances. Current
+    OrdinaryDiffEq defaults are `1e-6` and `1e-3` for deterministic equations;
+    stochastic solver families commonly use `1e-2` for both. Backends may choose
+    different defaults.
+  - `dt`: Initial step size for adaptive methods and nominal step size for
+    fixed-step methods. Adaptive methods choose it automatically when omitted.
+  - `dtmax`, `dtmin`: Bounds on adaptive step size. Defaults depend on the
+    problem time span and backend.
+  - `force_dtmin`: Continue at `dtmin` even when the local error test rejects
+    that step size. The default is `false`; setting it to true permits tolerance
+    violations and is unsupported by many wrapped solvers.
+  - `internalnorm`: Callable `internalnorm(u, t)` used to reduce state and error
+    quantities. Solver code may also call it on scalar state elements.
 
-#### Fixed Stepsize Usage
+For a nonadaptive method:
 
-Note that if a method does not have adaptivity, the following rules apply:
+  - With `dt`, ordinary steps use that size and may shorten a step to hit a
+    compatible `tstop`.
+  - With `tstops` but no `dt`, the stops define the step endpoints.
+  - With neither `dt` nor `tstops`, a solver that cannot infer a fixed step must
+    throw an error.
 
-  - If `dt` is set, then the algorithm will step with size `dt` each iteration.
-  - If `tstops` and `dt` are both set, then the algorithm will step with either a
-    size `dt`, or use a smaller step to hit the `tstops` point.
-  - If `tstops` is set without `dt`, then the algorithm will step directly to
-    each value in `tstops`
-  - If neither `dt` nor `tstops` are set, the solver will throw an error.
+### Advanced Adaptive Controls
 
-## Memory Optimizations
+The following controls are meaningful only for algorithms/controllers that use
+them. Their defaults are algorithm-specific.
 
-  - `alias`: an `AbstractAliasSpecifier` object that holds fields specifying which variables to alias
-    when solving. For example, to tell an ODE solver to alias the `u0` array, you can use an `ODEAliases` object,
-    and the `alias_u0` keyword argument, e.g. `solve(prob,alias = ODEAliases(alias_u0 = true))`.
-    For more information on what can be aliased for each problem type, see the documentation for the `AbstractAliasSpecifier`
-    associated with that problem type. Set to `true` to alias every variable possible, or to `false` to disable aliasing.
-    Defaults to an `AbstractAliasSpecifier` instance with `nothing` for all fields, which tells the solver to use the default behavior.
-  - `cache`: pass a solver cache to decrease the construction time. This is not implemented
-    for any of the problem interfaces at this moment.
+  - `controller`: Step-size controller object.
+  - `gamma`: Safety factor used by the controller.
+  - `beta1`, `beta2`: Stabilization parameters for PI/PID-like controllers.
+  - `qmax`, `qmin`: Bounds on the proposed step-size ratio.
+  - `qsteady_min`, `qsteady_max`: Ratio interval in which the current step size
+    is retained.
+  - `qoldinit`: Initial history value for stabilized controllers.
+  - `failfactor`: Factor used to reduce a step after an implicit solve failure.
 
-## Miscellaneous
+## Memory and Ownership
 
-  - `maxiters`: Maximum number of iterations before stopping.
-  - `callback`: Specifies a callback function that is called between iterations.
-  - `verbose`: Toggles whether warnings are thrown when the solver exits early.
-    Defaults to true.
-  - `rng`: Pass an `AbstractRNG` instance to be used by the integrator for any
-    stochastic operations (e.g., jump process sampling, noise generation). Can
-    also be used in user callbacks. When provided, `rng` takes priority over
-    `seed`. Defaults to `Random.default_rng()` when the solver supports it. The
-    integrator's RNG can be accessed via `get_rng(integrator)` and replaced via
-    `set_rng!(integrator, rng)`. Use `has_rng(integrator)` to check whether an
-    integrator supports the RNG interface.
+  - `calck`: Retain intermediate interpolation data needed during integration.
+    This is distinct from post-solve `dense` output. OrdinaryDiffEq enables it
+    for callbacks, dense output, or nonempty `saveat`; disabling it can reduce
+    memory only when no requested operation needs interpolation.
+  - `alias`: An [`AbstractAliasSpecifier`](@ref SciMLBase.AbstractAliasSpecifier)
+    or boolean convenience value
+    controlling whether solver caches may retain references to problem inputs.
+    See the [alias specifier interface](@ref alias_specifier_interface) for the
+    tri-state ownership rules.
+
+Reusable solver caches are problem- and backend-specific. They are not a common
+`cache` keyword contract; use the cache/init interface documented by the owning
+solver package.
+
+## Termination, Callbacks, and Overrides
+
+  - `maxiters`: Maximum solver iterations. OrdinaryDiffEq defaults to
+    `1_000_000` for adaptive algorithms and `typemax(Int)` for fixed-step
+    algorithms; other solver families choose their own limits.
+  - `maxtime`: Optional wall-clock limit for backends that support timed
+    termination.
+  - `callback`: Callback or `CallbackSet` executed by the solver. See the
+    [callback interface](@ref callback_interface) for condition/effect,
+    ordering, saving, and initialization rules.
+  - `initializealg`: Initialization algorithm for DAEs and constrained/mass-
+    matrix problems. The common marker interface includes
+    [`CheckInit`](@ref SciMLBase.CheckInit), [`NoInit`](@ref SciMLBase.NoInit),
+    and [`OverrideInit`](@ref SciMLBase.OverrideInit); solver packages may add
+    concrete initialization methods.
+  - `isoutofdomain`: Predicate `isoutofdomain(u, p, t)`. Returning true rejects a
+    proposed step. The default accepts every state.
+  - `unstable_check`: Predicate `unstable_check(dt, u, p, t)` used for early
+    termination after detected numerical instability. The default is
+    backend-specific.
+  - `termination_condition`: Solver-family-specific convergence or termination
+    condition.
+  - `verbose`: Boolean or verbosity policy controlling solver diagnostics.
+  - `u0`, `p`: Call-site replacements for the problem's initial state and
+    parameters. `nothing` means to use the values stored in the problem.
+  - `wrap`: Control whether a structured `problem_type(prob)` marker receives its preferred
+    solution wrapper. Ordinary differential equation solves use `Val(true)` by
+    default and accept `Val(false)` to keep the underlying solution.
+  - `rng`: Explicit random number generator for stochastic solver operations and
+    callbacks. When supported it takes precedence over `seed`; use
+    [`has_rng`](@ref), [`get_rng`](@ref), and [`set_rng!`](@ref) for an initialized
+    integrator.
+  - `seed`: Seed used by solver families that construct their own RNG/noise
+    process instead of accepting `rng` directly.
+  - `userdata`: Backend-owned object stored on an integrator for application or
+    callback use.
 
 ## Progress Monitoring
 
-These arguments control the usage of the progressbar in the logger.
+Progress uses the Julia logging interface and `ProgressLogging.jl`-compatible
+consumers; it is not tied to a particular IDE.
 
-  - `progress`: Turns on/off the Juno progressbar. Default is false.
-  - `progress_steps`: Numbers of steps between updates of the progress bar.
-    Default is 1000.
-  - `progress_name`: Controls the name of the progressbar. Default is the name
-    of the problem type.
-  - `progress_message`: Controls the message with the progressbar. Defaults to
-    showing `dt`, `t`, the maximum of `u`.
-
-The progress bars all use the Julia Logging interface in order to be generic
-to the IDE or programming tool that is used. For more information on how this
-is all put together, see [this discussion](https://github.com/FedeClaudi/Term.jl/discussions/67).
+  - `progress`: Enable progress events. Default is `false`.
+  - `progress_steps`: Accepted steps between events. Default is `1000` in
+    OrdinaryDiffEq.
+  - `progress_name`: Display name for the progress operation.
+  - `progress_message`: Callable used to build the message. The common
+    OrdinaryDiffEq callable reports `dt`, `t`, and a largest-magnitude state
+    component.
+  - `progress_id`: Logging identifier used to distinguish simultaneous solves.
 
 ## Error Calculations
 
-If you are using the test problems (i.e. `SciMLFunction`s where `f.analytic` is
-defined), then options control the errors which are calculated. By default,
-any cheap error estimates are always calculated. Extra keyword arguments include:
+When a problem function provides an analytical solution, solution construction
+can compute diagnostic errors:
 
-  - `timeseries_errors`
-  - `dense_errors`
+  - `timeseries_errors`: Compute errors at saved solution points. The common
+    differential-equation default is `true`.
+  - `dense_errors`: Compute interpolation errors on a denser reference grid.
+    The common default is `false` and the option requires analytical and
+    interpolation support.
 
-for specifying more expensive errors.
+These diagnostics populate solution error fields; they do not change adaptive
+step acceptance.
 
-## Automatic Differentiation Control
+## Automatic Differentiation
 
-See the [Automatic Differentiation page for a full description of `sensealg`](@ref sensealg)
+`sensealg` selects the sensitivity/automatic-differentiation strategy for a
+solve. It is passed through the high-level solve interface so differentiation
+rules can dispatch on it. See the
+[automatic differentiation and sensitivity interface](@ref sensealg).

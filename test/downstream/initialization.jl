@@ -298,6 +298,28 @@ end
 
             initprob.p[1] = 1.0
         end
+        @testset "with constructor tolerances in nonlinear least squares" begin
+            initfn = NonlinearFunction(; resid_prototype = ones(1)) do u, p
+                return [u[1] - 1.0]
+            end
+            nllsprob = NonlinearLeastSquaresProblem(initfn, [0.0])
+            nllsmap = nlsol -> [nlsol.u[1], nlsol.u[1]]
+            initdata = SciMLBase.OverrideInitData(nllsprob, nothing, nllsmap, nothing)
+            nllsfn = ODEFunction(rhs2; initialization_data = initdata)
+            nllsprob_outer = ODEProblem(nllsfn, [0.0, 0.0], (0.0, 1.0), 0.0)
+            nllsinteg = init(nllsprob_outer; initializealg = NoInit())
+
+            u0, p,
+                success = SciMLBase.get_initial_values(
+                nllsprob_outer, nllsinteg, nllsfn,
+                SciMLBase.OverrideInit(; nlsolve = LevenbergMarquardt(), abstol, reltol),
+                Val(false)
+            )
+
+            @test u0 ≈ [1.0, 1.0]
+            @test p ≈ 0.0
+            @test success
+        end
         @testset "with trivial problem and no alg" begin
             iprob = NonlinearProblem((u, p) -> 0.0, nothing, 1.0)
             iprobmap = (_) -> [1.0, 1.0]

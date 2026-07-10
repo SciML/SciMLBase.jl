@@ -67,7 +67,7 @@ SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](@ref specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
@@ -79,7 +79,8 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref performance_overloads) page.
+For specifying Jacobians and mass matrices, see the
+[SciMLFunctions interface](@ref scimlfunctions).
 
 ### Arguments
 
@@ -186,23 +187,31 @@ end
 SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
 
 @doc doc"""
-    SDDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+    SDDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an SDDEProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `SDDEProblem` inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the SDDE function object, `alias_tstops` controls the
+`tstops` vector, and `alias_jumps` controls jump process data when the problem is
+wrapped in a jump problem. A value of `nothing` delegates to the solver default.
+Set `alias = true` or `alias = false` to apply the same policy to all stored
+fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array. Defaults to `false`.
-* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a `JumpProcess`
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SDDEAliasSpecifier` to `alias`
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `SDDEAliasSpecifier` does not store a
+separate `du0` alias field.
 
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the SDDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `SDDEAliasSpecifier`.
 """
-struct SDDEAliasSpecifier
+struct SDDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

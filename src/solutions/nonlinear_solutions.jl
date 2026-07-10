@@ -1,14 +1,21 @@
 """
 $(TYPEDEF)
-Statistics from the nonlinear equation solver about the solution process.
+
+Counters collected by a nonlinear equation solver while constructing a solution.
+
+`NLStats` is stored in the `stats` field of nonlinear and steady-state solutions
+when the solver reports work counters. The fields are intended for diagnostics,
+benchmarking, and convergence analysis. Solver packages should document whether a
+counter is exact, unavailable, or accumulated across nested solves.
 
 ## Fields
 
   - `nf`: Number of function evaluations.
   - `njacs`: Number of Jacobians created during the solve.
-  - `nfactors`: Number of factorzations of the jacobian required for the solve.
-  - `nsolve`: Number of linear solves `W\\b` required for the solve.
-  - `nsteps`: Total number of iterations for the nonlinear solver.
+  - `nfactors`: Number of factorizations of Jacobians or linear-system matrices.
+  - `nsolve`: Number of linear solves required by the nonlinear method.
+  - `nsteps`: Total number of nonlinear solver iterations or accepted nonlinear
+    steps, according to the solver's iteration model.
 """
 mutable struct NLStats
     nf::Int
@@ -85,9 +92,10 @@ end
 """
     SteadyStateSolution
 
-Alias for `NonlinearSolution` used by steady-state solvers. A `SteadyStateProblem`
-is represented as the nonlinear equation `f(u, p, t) = 0`, so steady-state solves
-return the same solution fields and array interface as nonlinear solves.
+Alias for [`NonlinearSolution`](@ref), the concrete solution type returned for
+[`SteadyStateProblem`](@ref) solves. It follows the nonlinear solution field and
+array interfaces; the stored `prob` identifies the result as a steady-state
+solve.
 """
 const SteadyStateSolution = NonlinearSolution
 

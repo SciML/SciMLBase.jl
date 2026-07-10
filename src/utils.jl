@@ -1,7 +1,19 @@
 """
 $(SIGNATURES)
 
-Returns the number of arguments of `f` for each method.
+Return the number of positional arguments accepted by each method of `f`.
+
+The returned collection is used by SciML constructors to validate model-function
+signatures and to infer in-place versus out-of-place conventions. The callable
+object itself is not counted, so a method `f(du, u, p, t)` contributes `4`.
+The order follows Julia's method table and should not be treated as sorted; use
+queries such as `any`, `minimum`, or `maximum` when testing for supported
+arities.
+
+Specialized callables such as `RuntimeGeneratedFunction`, `ComposedFunction`,
+and supported foreign-function wrappers provide their underlying arity through
+specialized methods. Constructors use these arities only for signature
+validation; they do not call `f` during this check.
 """
 function numargs(f)
     if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
@@ -101,6 +113,16 @@ end
 
 Exception thrown when a model function defines methods with more arguments than the
 SciML problem interface accepts.
+
+SciML constructors raise this when every visible method of the offending
+callable has arity greater than the expected in-place signature. For example, an
+ODE right-hand side must be callable as `f(u, p, t)` or `f(du, u, p, t)`, not as
+`f(du, u, p1, p2, t)`.
+
+# Fields
+
+- `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
+- `f`: The offending callable; `showerror` prints its method table.
 """ TooManyArgumentsError
 
 function Base.showerror(io::IO, e::TooManyArgumentsError)
@@ -193,6 +215,18 @@ end
 
 Exception thrown when a model function defines methods with fewer arguments than the
 SciML problem interface requires.
+
+SciML constructors raise this when the offending callable has methods, but all
+candidate arities are shorter than the interface requires. For optimization
+objectives, the specialized message explains the required `f(u, p)` signature;
+for differential equations, the message explains the required state, parameter,
+and time arguments.
+
+# Fields
+
+- `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
+- `f`: The offending callable; `showerror` prints its method table.
+- `isoptimization`: Whether to use the optimization-specific explanation.
 """ TooFewArgumentsError
 
 function Base.showerror(io::IO, e::TooFewArgumentsError)
@@ -225,6 +259,17 @@ end
 
 Exception thrown when a model function's methods do not match the accepted SciML
 problem interface signatures.
+
+This is the mixed-arity validation failure: the callable has methods, but the
+method set is neither uniformly too short nor uniformly too long, and no method
+matches an accepted in-place or out-of-place signature. It commonly indicates
+that a function defines several dispatches, none of which match the selected
+problem or SciMLFunction interface.
+
+# Fields
+
+- `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
+- `f`: The offending callable; `showerror` prints its method table.
 """ FunctionArgumentsError
 
 function Base.showerror(io::IO, e::FunctionArgumentsError)
@@ -241,23 +286,24 @@ end
               outofplace_param_number = inplace_param_number - 1)
     isinplace(f::AbstractSciMLFunction[, inplace_param_number])
 
-Check whether a function operates in place by comparing its number of arguments
-to the expected number. If `f` is an `AbstractSciMLFunction`, then the type
-parameter is assumed to be correct and is used. Otherwise `inplace_param_number`
-is checked against the methods table, where `inplace_param_number` is the number
-of arguments for the in-place dispatch. The out-of-place dispatch is assumed
-to have `outofplace_param_number` parameters (one less than the inplace version
-by default). If neither of these dispatches exist, an error is thrown.
-If the error is thrown, `fname` is used to tell the user which function has the
-incorrect dispatches.
+Check whether a user callback follows the in-place SciML convention.
 
-`iip_preferred` means that if `inplace_param_number=4` and methods of both 3 and
-for 4 args exist, then it will be chosen as in-place. `iip_dispatch` flips this
-decision.
+For an [`AbstractSciMLFunction`](@ref), `isinplace` returns the `iip` type
+parameter without inspecting methods. For an ordinary callable, it inspects the
+method table and compares available arities to the expected in-place and
+out-of-place signatures. `inplace_param_number` is the number of positional
+arguments for the in-place form, while `outofplace_param_number` defaults to one
+fewer argument. For example, an ODE right-hand side uses `4` for
+`f!(du, u, p, t)` and `3` for `f(u, p, t)`.
 
-If `has_two_dispatches = false`, then it is assumed that there is only one correct
-dispatch, i.e. `f(u,p)` for OptimizationFunction, and thus the check for the oop
-form is disabled and the 2-argument signature is ensured to be matched.
+If neither accepted arity is present, `isinplace` throws a function-argument
+error that uses `fname` to identify the offending callback. If both accepted
+arities are present, `iip_preferred = true` chooses the in-place interpretation
+and `iip_preferred = false` chooses the out-of-place interpretation.
+
+Set `has_two_dispatches = false` for interfaces that only accept one arity, such
+as optimization objective functions, so a shorter out-of-place form is not
+treated as valid.
 
 # See also
 
@@ -387,8 +433,13 @@ export check_keywords, warn_compat
 """
     check_keywords(alg, kwargs, warnlist) -> Bool
 
-Warn when `kwargs` contains non-`nothing` keyword arguments that `alg` ignores.
-Returns `true` if at least one ignored keyword was present and `false` otherwise.
+Warn for each non-`nothing` keyword in `kwargs` whose name occurs in `warnlist`.
+The warning identifies `alg` as ignoring that keyword. Return `true` when at
+least one warning was emitted and `false` otherwise.
+
+Solver packages can use this helper to diagnose common `solve` keywords that a
+specific algorithm does not implement. It does not remove keywords or validate
+keywords outside `warnlist`.
 """
 function check_keywords(alg, kwargs, warnlist)
     flg = false
@@ -406,7 +457,9 @@ end
 """
 $(SIGNATURES)
 
-Emit a warning with a link to the solver compatibility chart in the documentation.
+Emit a warning with a link to the solver compatibility chart in the
+DifferentialEquations.jl documentation. This compatibility helper takes no
+arguments and always returns the result of `@warn`.
 """
 warn_compat() = @warn("https://docs.sciml.ai/DiffEqDocs/stable/basics/compatibility_chart/")
 

@@ -1,5 +1,20 @@
 """
 $(TYPEDEF)
+
+Marker for the standard first-order ODE problem representation.
+
+`StandardODEProblem()` is the default `problem_type` metadata stored by
+`ODEProblem` and `ImmutableODEProblem` when a problem is represented directly as
+`du/dt = f(u, p, t)` or
+`M * du/dt = f(u, p, t)`. It distinguishes this layout from specialized ODE
+encodings, such as dynamical, split, second-order, or incrementing
+representations, while keeping all of them under the common
+[`AbstractODEProblem`](@ref) interface.
+
+Users normally do not need to construct this marker directly. Solver
+implementations may test `problem_type(prob) isa StandardODEProblem` when they
+need behavior specific to the standard ODE layout; generic ODE code should
+prefer the [`AbstractODEProblem`](@ref) interface and problem traits.
 """
 struct StandardODEProblem end
 
@@ -40,7 +55,7 @@ are:
   Defines the ODE with the specified functions. `isinplace` optionally sets whether
   the function is inplace or not. This is determined automatically, but not inferred.
   `specialize` optionally controls the specialization level. See the
-  [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+  [Specialization Levels](@ref specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -226,6 +241,13 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for structured ODE problem layouts.
+
+Subtypes identify ODE problems that are constructed from partitioned or
+second-order dynamics and then stored in the common `ODEProblem` representation.
+The concrete marker is available through [`problem_type`](@ref) so solvers can
+preserve structure when they support specialized methods.
 """
 abstract type AbstractDynamicalODEProblem end
 
@@ -430,6 +452,13 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for split ODE problem layouts.
+
+Subtypes identify ODEs whose right-hand side is supplied as a split function,
+usually to expose additive, linear, stiff, or nonstiff structure to solvers.
+Split constructors expose this marker through [`problem_type`](@ref) while using
+the ordinary `ODEProblem` storage layout.
 """
 abstract type AbstractSplitODEProblem end
 
@@ -479,11 +508,11 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 Under the hood, a `SplitODEProblem` is just a regular `ODEProblem` whose `f` is a `SplitFunction`.
-Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
-dedicated to split problems, see [Split ODE Solvers](@ref split_ode_solve).
+Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`.
+Solver packages document which methods specialize on split structure.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](@ref scimlfunctions)
 page.
 
 ### Fields
@@ -528,12 +557,41 @@ function SplitODEProblem{iip}(
     return ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
 
+"""
+$(TYPEDEF)
+
+Internal supertype for incrementing ODE constructor tags. Concrete tags record
+the in-place convention while [`IncrementingODEProblem`](@ref) converts the
+input into an `ODEProblem` with an [`IncrementingODEFunction`](@ref).
+
+These tags are available from [`problem_type`](@ref) on the resulting problem;
+they are not standalone problem containers. Solvers that require incrementing
+evaluation may dispatch on the tag or the wrapped function, but ordinary ODE
+tooling should use the returned `ODEProblem` interface.
+"""
 abstract type AbstractIncrementingODEProblem end
 
 """
-$(SIGNATURES)
+    IncrementingODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
+    IncrementingODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...)
 
-Experimental
+Construct an experimental ODE problem for a model function that can update an
+existing derivative buffer in an incrementing form.
+
+The constructor wraps `f` in an [`IncrementingODEFunction`](@ref), exposes an
+`IncrementingODEProblem{iip}` tag through [`problem_type`](@ref), and returns a
+standard `ODEProblem`. The result therefore follows the ordinary ODE problem
+field, symbolic-indexing, keyword-forwarding, and solve interfaces.
+
+Low-storage solvers commonly use the in-place convention
+`f(du, u, p, t, alpha, beta)`, with the contract
+`du = alpha * F(u, p, t) + beta * du`. SciMLBase forwards these calls but does
+not synthesize the scaling operation; the wrapped model function must implement
+the call forms required by the selected solver.
+
+Use the explicit `IncrementingODEProblem{iip}` form when optional arguments or
+multiple methods make the mutation convention ambiguous to arity-based
+inference.
 """
 struct IncrementingODEProblem{iip} <: AbstractIncrementingODEProblem end
 
@@ -565,21 +623,25 @@ function IncrementingODEProblem{iip}(
 end
 
 @doc doc"""
-    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
+Control which ODE problem inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_du0` controls an initial
+derivative array when the problem representation has one, `alias_p` controls the
+parameter object, `alias_f` controls the function object, and `alias_tstops`
+controls the `tstops` vector passed to the solver. A value of `nothing`
+delegates to the solver default. Set `alias = true` or `alias = false` to apply
+the same policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `ODEAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the ODE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `ODEAliasSpecifier`.
 """
 struct ODEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

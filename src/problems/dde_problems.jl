@@ -1,5 +1,13 @@
 """
 $(TYPEDEF)
+
+Marker for standard DDE problem layouts.
+
+`StandardDDEProblem()` is the default `problem_type` metadata stored by
+`DDEProblem` when the problem is represented directly by a DDE function, history
+function, initial state, lags, time span, and parameters. Solver code may test
+`problem_type(prob) isa StandardDDEProblem` to distinguish this layout from
+dynamical or second-order DDE encodings.
 """
 struct StandardDDEProblem end
 
@@ -70,7 +78,7 @@ DDEProblem{isinplace,specialize}(f[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](@ref specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -82,7 +90,8 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref performance_overloads) page.
+For specifying Jacobians and mass matrices, see the
+[SciMLFunctions interface](@ref scimlfunctions).
 
 ### Arguments
 
@@ -100,7 +109,8 @@ For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref perfo
 
 ## Dynamical Delay Differential Equations
 
-Much like [Dynamical ODEs](@ref dynamical_prob), a Dynamical DDE is a Partitioned DDE
+Much like the [dynamical ODE problem](@ref differential_equation_problem_types), a
+Dynamical DDE is a partitioned DDE
 of the form:
 
 ```math
@@ -292,11 +302,24 @@ SymbolicIndexingInterface.get_history_function(prob::AbstractDDEProblem) = prob.
 
 """
 $(TYPEDEF)
+
+Marker supertype for structured DDE problem layouts.
+
+Subtypes identify DDE problems constructed from partitioned first-order dynamics
+or from second-order dynamics. These markers are available through
+[`problem_type`](@ref) on the common `DDEProblem` representation so solvers can
+preserve or recover the structured interpretation when needed.
 """
 abstract type AbstractDynamicalDDEProblem end
 
 """
 $(TYPEDEF)
+
+Marker for partitioned dynamical DDE problem layouts.
+
+`DynamicalDDEProblem{iip}` is returned by [`problem_type`](@ref) when a DDE is
+constructed from two coupled first-order components. The `iip` parameter records
+the in-place convention of the underlying `DynamicalDDEFunction`.
 """
 struct DynamicalDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 
@@ -355,6 +378,13 @@ end
 # u'' = f(du,u,h,p,t)
 """
 $(TYPEDEF)
+
+Marker for second-order DDE problem layouts.
+
+`SecondOrderDDEProblem{iip}` is returned by [`problem_type`](@ref) when a
+second-order delay equation is converted to the partitioned DDE form used by
+`DDEProblem`. The `iip` parameter records the in-place convention of the
+second-derivative function.
 """
 struct SecondOrderDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 function SecondOrderDDEProblem(f, args...; kwargs...)
@@ -432,21 +462,26 @@ end
 @doc doc"""
     DDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving a DDE. Conforms to the AbstractAliasSpecifier interface. 
+Control which `DDEProblem` inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the DDE function object, and `alias_tstops` controls the
+`tstops` vector. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to all stored fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DDEAliasSpecifier` to `alias`
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `DDEAliasSpecifier` does not store a
+separate `du0` alias field.
 
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the DDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `DDEAliasSpecifier`.
 """
-struct DDEAliasSpecifier
+struct DDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

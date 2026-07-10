@@ -66,16 +66,23 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
 end
 
 """
-    remake(prob::AbstractSciMLProblem; u0 = missing, p = missing, interpret_symbolicmap = true, use_defaults = false)
+    remake(prob::AbstractSciMLProblem; u0 = missing, p = missing,
+        interpret_symbolicmap = true, use_defaults = false, kwargs...)
 
-Remake the given problem `prob`. If `u0` or `p` are given, they will be used instead
-of the unknowns/parameters of the problem. Either of them can be a symbolic map if
-the problem has an associated system. If `interpret_symbolicmap == false`, `p` will never
-be interpreted as a symbolic map and used as-is for parameters. `use_defaults` allows
-controlling whether the default values from the system will be used to calculate missing
-values in the symbolic map passed to `u0` or `p`. It is only valid when either `u0` or
-`p` have been explicitly provided as a symbolic map and the problem has an associated
-system.
+Construct a problem of the same family as `prob`, replacing the supplied fields and
+preserving all other problem data. Extra keyword arguments are forwarded to the
+problem-family-specific remake implementation.
+
+When `u0` or `p` is a symbolic map and `prob` has an associated symbolic system,
+explicit entries take precedence. Missing entries with symbolic-expression defaults
+use those expressions so dependent values remain consistent. Other missing entries
+retain their values from `prob` unless `use_defaults = true`, in which case available
+numeric system defaults are preferred. `use_defaults` is meaningful only when an
+explicit symbolic map is supplied for a problem with an associated system.
+
+Set `interpret_symbolicmap = false` to use a pair-valued `p` directly instead of
+interpreting it as a symbolic parameter map. Pair-valued `u0` is still interpreted as
+a symbolic state map. Non-symbolic `u0` and `p` values are used directly.
 """
 function remake(
         prob::AbstractSciMLProblem; u0 = missing,

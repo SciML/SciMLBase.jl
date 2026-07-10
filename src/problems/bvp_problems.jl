@@ -1,10 +1,23 @@
 """
 $(TYPEDEF)
+
+Marker for multi-point first-order BVP layouts.
+
+`StandardBVProblem()` identifies boundary value problems whose boundary
+condition is supplied as one residual function over the current solution values
+and mesh. It is returned by [`problem_type`](@ref) for a `BVProblem` that does
+not use separate endpoint boundary-condition functions.
 """
 struct StandardBVProblem end
 
 """
 $(TYPEDEF)
+
+Marker for two-point first-order BVP layouts.
+
+`TwoPointBVProblem{iip}` identifies BVPs whose boundary condition is supplied as
+a pair of endpoint residual functions. The `iip` parameter records the in-place
+convention of the associated `BVPFunction` used for type-stable construction.
 """
 struct TwoPointBVProblem{iip} end # The iip is needed to make type stable construction easier
 
@@ -110,8 +123,8 @@ every solve call.
 * `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
 * `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
-* `problem_type`: The type of the problem, either `StandardBVProblem` or
-  `TwoPointBVProblem`.
+* Construction layout: Query [`problem_type`](@ref) to obtain either
+  `StandardBVProblem` or `TwoPointBVProblem`.
 * `singular_term`: The singular term of the problem. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
@@ -220,6 +233,20 @@ end
 
 # This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+"""
+    TwoPointBVPFunction(f, bc; kwargs...)
+    TwoPointBVPFunction{iip}(f, bc; kwargs...)
+
+Construct a [`BVPFunction`](@ref) for boundary conditions evaluated separately
+at the two endpoints. `bc` must contain exactly two callbacks with the same
+in-place convention. Out-of-place callbacks have signatures `bca(ua, p)` and
+`bcb(ub, p)`; in-place callbacks have signatures `bca!(resa, ua, p)` and
+`bcb!(resb, ub, p)` and require `bcresid_prototype = (resa, resb)`.
+
+All other keywords follow [`BVPFunction`](@ref). The returned wrapper has its
+two-point layout encoded in the type so boundary-value solvers can dispatch on
+it without inspecting the callbacks.
+"""
 struct TwoPointBVPFunction{iip} end
 
 @inline function TwoPointBVPFunction(args...; kwargs...)
@@ -282,11 +309,25 @@ end
 
 """
 $(TYPEDEF)
+
+Marker for multi-point second-order BVP layouts.
+
+`StandardSecondOrderBVProblem()` identifies second-order BVPs whose boundary
+condition is supplied as one residual function over derivative values, state
+values, parameters, and mesh points. It is returned by [`problem_type`](@ref)
+for a `SecondOrderBVProblem` when endpoint residual functions are not used.
 """
 struct StandardSecondOrderBVProblem end
 
 """
 $(TYPEDEF)
+
+Marker for two-point second-order BVP layouts.
+
+`TwoPointSecondOrderBVProblem{iip}` identifies second-order BVPs whose boundary
+condition is supplied as a pair of endpoint residual functions. The `iip`
+parameter records the in-place convention of the associated `DynamicalBVPFunction`
+used for type-stable construction.
 """
 struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type stable construction easier
 
@@ -393,8 +434,8 @@ every solve call.
 * `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
 * `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
-* `problem_type`: The type of the problem, either `StandardSecondOrderBVProblem` or
-  `TwoPointSecondOrderBVProblem`.
+* Construction layout: Query [`problem_type`](@ref) to obtain either
+  `StandardSecondOrderBVProblem` or `TwoPointSecondOrderBVProblem`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """
 struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
@@ -460,6 +501,20 @@ end
 
 # This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+"""
+    TwoPointDynamicalBVPFunction(f, bc; kwargs...)
+    TwoPointDynamicalBVPFunction{iip}(f, bc; kwargs...)
+
+Construct a [`DynamicalBVPFunction`](@ref) for second-order boundary conditions
+evaluated separately at the two endpoints. `bc` must contain exactly two
+callbacks with the same in-place convention. Out-of-place callbacks have
+signatures `bca(dua, ua, p)` and `bcb(dub, ub, p)`; in-place callbacks have
+signatures `bca!(resa, dua, ua, p)` and `bcb!(resb, dub, ub, p)` and require
+`bcresid_prototype = (resa, resb)`.
+
+All other keywords follow [`DynamicalBVPFunction`](@ref). The returned wrapper
+encodes the two-point layout in its type.
+"""
 struct TwoPointDynamicalBVPFunction{iip} end
 
 @inline function TwoPointDynamicalBVPFunction(args...; kwargs...)
@@ -521,19 +576,23 @@ end
 @doc doc"""
     BVPAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an BVP. Conforms to the AbstractAliasSpecifier interface. 
+Control which BVP problem inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial mesh/state guess, `alias_du0` controls an
+initial derivative guess when the problem representation has one, `alias_p`
+controls the parameter object, `alias_f` controls the BVP function object, and
+`alias_tstops` controls the `tstops` vector. A value of `nothing` delegates to
+the solver default. Set `alias = true` or `alias = false` to apply the same
+policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `BVPAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the BVP function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `BVPAliasSpecifier`.
 """
 struct BVPAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

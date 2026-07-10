@@ -1,26 +1,25 @@
 """
-    SciML.ReturnCode
+    SciMLBase.ReturnCode
 
-`SciML.ReturnCode` is the standard return code enum interface for the SciML interface.
+`SciMLBase.ReturnCode` is the standard return code enum interface for the SciML interface.
 Return codes are notes given by the solvers to indicate the state of the solution, for
 example whether it successfully solved the equations, whether it failed to solve the
 equations, and importantly, why it exited.
 
-## Using `SciML.ReturnCode`
+## Using `SciMLBase.ReturnCode`
 
-`SciML.ReturnCode` use the interface of [EnumX.jl](https://github.com/fredrikekre/EnumX.jl)
+`SciMLBase.ReturnCode` uses the interface of [EnumX.jl](https://github.com/fredrikekre/EnumX.jl)
 and thus inherits all of the behaviors of being an EnumX. This includes the Enum type itself
-being referred to as `SciML.ReturnCode.T`, and each of the constituent enum states being
-referred to via `getproperty`, i.e. `SciML.ReturnCode.Success`.
+being referred to as `SciMLBase.ReturnCode.T`, and each constituent enum state being
+accessed as a module property, for example `SciMLBase.ReturnCode.Success`.
 
 ## Note About Success Checking
 
-Previous iterations of the interface suggested using `sol.retcode == :Success`, however,
-that is now not advised instead should be replaced with ` SciMLBase.successful_retcode(sol)`. The reason is that there are many different
-codes that can be interpreted as successful, such as `ReturnCode.Terminated` which means
-successfully used `terminate!(integrator)` to end an integration at a user-specified
-condition. As such, `successful_retcode` is the most general way to query for if the solver
-did not error.
+Previous iterations of the interface suggested `sol.retcode == :Success`. Use
+`SciMLBase.successful_retcode(sol)` instead. Several informative codes represent
+successful outcomes, such as `ReturnCode.Terminated` after a requested callback
+termination. The predicate is the canonical way to distinguish successful and
+unsuccessful solver exits.
 
 ## Properties
 
@@ -469,7 +468,18 @@ end
     successful_retcode(retcode::ReturnCode.T)::Bool
     successful_retcode(sol::AbstractSciMLSolution)::Bool
 
-Returns a boolean for whether a return code should be interpreted as a form of success.
+Return whether a return code represents a successful solver outcome.
+
+The solution form forwards to `successful_retcode(sol.retcode)`. Use this
+predicate instead of comparing only with `ReturnCode.Success`, because requested
+termination and other informative terminal states can also be successful.
+
+The successful codes are `ReturnCode.Success`, `ReturnCode.Terminated`,
+`ReturnCode.ExactSolutionLeft`, `ReturnCode.ExactSolutionRight`,
+`ReturnCode.FloatingPointLimit`, and `ReturnCode.StalledSuccess`.
+`ReturnCode.Default` is not successful because it means the solve is unfinished
+or its outcome is unknown. `ReturnCode.Stalled` and all failure codes are also
+unsuccessful.
 """
 function successful_retcode end
 

@@ -1,5 +1,14 @@
 """
 $(TYPEDEF)
+
+Legacy marker for the standard SDE problem representation.
+
+The standard SDE layout is represented by `SDEProblem` itself: drift function,
+diffusion function, initial state, time span, parameters, noise metadata, and
+solver keywords. Current SDE constructors do not store a separate
+`problem_type` field for this marker, so solver implementations should dispatch
+on `AbstractSDEProblem` and the problem's function type instead of depending on
+`StandardSDEProblem`.
 """
 struct StandardSDEProblem end
 
@@ -40,7 +49,7 @@ with initial condition `u0`.
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
   determined automatically, but not inferred. `specialize` optionally controls
-  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+  the specialization level. See [Specialization Levels](@ref specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
@@ -50,7 +59,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](@ref scimlfunctions)
 page.
 
 ### Fields
@@ -62,7 +71,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process).
+  see the [noise process documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/).
 * `noise_rate_prototype`: A prototype type instance for the noise rates, that
   is the output `g`. It can be any type which overloads `A_mul_B!` with itself
   being the middle argument. Commonly, this is a matrix or sparse matrix. If
@@ -152,11 +161,26 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for split SDE constructor tags.
+
+Concrete subtypes represent SDEs whose drift is supplied in split form, for
+example a linear or stiff part plus a nonlinear part. Constructors use these
+tags to route through the standard `SDEProblem` storage with a
+`SplitSDEFunction`; solvers should generally inspect the function object rather
+than dispatching on this abstract marker.
 """
 abstract type AbstractSplitSDEProblem end
 
 """
 $(TYPEDEF)
+
+Constructor tag for split SDE problems.
+
+`SplitSDEProblem{iip}` records the in-place convention of the split SDE
+function while building an `SDEProblem` whose function is a `SplitSDEFunction`.
+The tag is a construction helper, not a separate stored problem object returned
+by `solve`.
 """
 struct SplitSDEProblem{iip} <: AbstractSplitSDEProblem end
 # u' = Au + f
@@ -198,11 +222,24 @@ end
 
 """
 $(TYPEDEF)
+
+Marker supertype for dynamical SDE constructor tags.
+
+Dynamical SDE constructors preserve the partitioned `(v, u)` structure at
+construction time and then store the problem as an `SDEProblem` with an
+`ArrayPartition` state and `DynamicalSDEFunction`.
 """
 abstract type AbstractDynamicalSDEProblem end
 
 """
 $(TYPEDEF)
+
+Constructor tag for dynamical SDE problems.
+
+`DynamicalSDEProblem{iip}` records the in-place convention used when converting
+partitioned stochastic dynamics into the common `SDEProblem` representation.
+Solver code should normally work with the resulting `SDEProblem` and its
+`DynamicalSDEFunction`.
 """
 struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
 
@@ -243,21 +280,29 @@ function DynamicalSDEProblem{iip}(
 end
 
 @doc doc"""
-    SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias = nothing)
+    SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an SDEProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `SDEProblem` inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the SDE function object, `alias_tstops` controls the
+`tstops` vector, and `alias_jumps` controls jump process data when the problem is
+wrapped in a jump problem. A value of `nothing` delegates to the solver default.
+Set `alias = true` or `alias = false` to apply the same policy to all stored
+fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array. Defaults to `false`.
-* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a `JumpProcess`.
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SDEAliasSpecifier` to `alias`
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `SDEAliasSpecifier` does not store a
+separate `du0` alias field.
 
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the SDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `SDEAliasSpecifier`.
 """
 struct SDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

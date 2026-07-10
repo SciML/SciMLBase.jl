@@ -17,6 +17,22 @@ the `SciMLProblem`'s `u0` as a reference, and updating the saved values in it.
 See the implementation for `ODESolution` as a reference.
 =#
 
+"""
+    get_saved_subsystem(sol) -> Union{SavedSubsystem, Nothing}
+
+Return the saved-subsystem metadata carried by a solution with symbolic or
+partial `save_idxs`.
+
+Concrete time-series solution types that store only a subset of symbolic states
+or time-series parameters should provide a `saved_subsystem` field or overload
+this function to return the corresponding [`SavedSubsystem`](@ref). Return
+`nothing` when the solution saved the full symbolic state, when the problem has
+no symbolic index provider, or when no symbolic subset metadata is required.
+
+Solution indexing code uses this hook to decide whether symbolic queries should
+be forwarded directly to `symbolic_container(sol)` or through
+[`SavedSubsystemWithFallback`](@ref).
+"""
 get_saved_subsystem(_) = nothing
 
 struct VectorTemplate
@@ -75,19 +91,33 @@ end
 """
     $(TYPEDSIGNATURES)
 
-A representation of the subsystem of a given system which is saved in a solution. Created
-by providing an index provider and the indexes of saved variables in the system. The indexes
-can also be symbolic variables. All indexes must refer to state variables, or timeseries
-parameters.
+A representation of the symbolic subsystem saved in a solution.
 
-The arguments to the constructor are an index provider, the parameter object and the indexes
-of variables to save.
+`SavedSubsystem(indp, pobj, saved_idxs)` records how the saved values relate to
+the original symbolic system described by the index provider `indp` and
+parameter object `pobj`. `saved_idxs` may contain integer state indexes,
+symbolic state variables, symbolic arrays of state variables, or symbolic
+time-series parameters. Every symbolic entry must resolve to either a state
+variable or a time-series parameter of `indp`; other symbolic entries are
+rejected.
 
-This object is stored in the solution object and used for symbolic indexing of the subsetted
-solution.
+The object is stored on solution types when `save_idxs` omits part of the
+symbolic state or time-series parameter set. It lets `sol[x]`, `state_values`,
+and time-series parameter queries keep using the original symbols even though
+the solution arrays contain only the saved subset.
 
-In case the provided `saved_idxs` is `nothing` or `isempty`, or if the provided
-`saved_idxs` includes all of the variables and timeseries parameters, returns `nothing`.
+The constructor returns `nothing` when no metadata is needed, including
+`saved_idxs === nothing`, unavailable symbolic metadata, or requests that save
+all state variables and all time-series parameters.
+
+Solver-author contract:
+
+  - Pass the returned object to `build_solution(...; saved_subsystem = ss)` when
+    constructing a solution from symbolic `save_idxs`.
+  - Store the object on concrete time-series solution types as
+    `saved_subsystem`, or overload [`get_saved_subsystem`](@ref).
+  - Forward symbolic time-series parameter operations through
+    [`SavedSubsystemWithFallback`](@ref) when `saved_subsystem !== nothing`.
 """
 struct SavedSubsystem{V, T, M, I, P, Q, C}
     """
@@ -280,8 +310,13 @@ end
 """
     $(TYPEDSIGNATURES)
 
-Given a `SavedSubsystem`, return the subset of state indexes of the original system that are
-saved, in the order they are saved.
+Return the original-system state indexes saved by a `SavedSubsystem`.
+
+The returned vector is ordered like the saved state portion of the solution. It
+does not include saved time-series parameters; when `save_idxs` selected only
+time-series parameters, this returns an empty vector. Solver setup uses this
+helper to translate symbolic `save_idxs` into the integer state indexes passed
+to low-level save machinery.
 """
 function get_saved_state_idxs(ss::SavedSubsystem)
     idxs = Vector{valtype(ss.state_map)}(undef, length(ss.state_map))
@@ -294,15 +329,27 @@ end
 """
     $(TYPEDEF)
 
-A combination of a `SavedSubsystem` and a fallback index provider. The provided fallback
-is used as the `symbolic_container` for the `SavedSubsystemWithFallback`. Manually
-implements `is_timeseries_parameter` and `timeseries_parameter_index` using the
-`SavedSubsystem` to return the appropriate indexes for the subset of saved variables,
-and `nothing`/`false` otherwise.
+A symbolic indexing adapter for subsetted solutions.
 
-Also implements `create_parameter_timeseries_collection`, `get_saveable_values` and
-`with_updated_parameter_timeseries_values` to appropriately handled subsetted timeseries
-parameters.
+`SavedSubsystemWithFallback(saved_subsystem, fallback)` combines the subset map
+with the original symbolic index provider. The `fallback` is returned from
+`symbolic_container`, while time-series parameter queries are filtered and
+renumbered through `saved_subsystem`.
+
+Use this wrapper whenever a solution saved only part of the symbolic state or
+time-series parameter set. It preserves the original symbolic names while
+ensuring:
+
+  - unsaved time-series parameters are reported as unavailable in the saved
+    solution,
+  - fully saved time-series partitions reuse the fallback representation, and
+  - partially saved partitions allocate compact saved buffers and map updates
+    back to the original parameter object.
+
+The wrapper implements the time-series parameter hooks used by the
+`SymbolicIndexingInterface`: `is_timeseries_parameter`,
+`timeseries_parameter_index`, `create_parameter_timeseries_collection`,
+`get_saveable_values`, and `with_updated_parameter_timeseries_values`.
 """
 struct SavedSubsystemWithFallback{S <: SavedSubsystem, T}
     saved_subsystem::S
@@ -394,11 +441,19 @@ end
 """
     $(TYPEDSIGNATURES)
 
-Given a SciMLProblem `prob` and (possibly symbolic) `save_idxs`, return the `save_idxs`
-corresponding to the state variables and a `SavedSubsystem` to pass to `build_solution`.
+Translate user-facing `save_idxs` into solver state indexes and subsystem
+metadata.
 
-The second return value (corresponding to the `SavedSubsystem`) may be `nothing` in case
-one is not required. `save_idxs` may be a scalar or `nothing`.
+Given a SciML problem `prob` and a possibly symbolic `save_idxs`, return
+`(state_save_idxs, saved_subsystem)`. `state_save_idxs` is the integer-only
+state selection that should be passed to solver save machinery, while
+`saved_subsystem` is the [`SavedSubsystem`](@ref) to pass to `build_solution`.
+
+The helper preserves the scalar/vector shape of the user's request where it
+matters: scalar state selections remain scalar, vector state selections remain
+vectors, and selections containing only time-series parameters return
+`Int[]` for the state portion. Either return value may be `nothing` when no
+subset handling is needed.
 """
 get_save_idxs_and_saved_subsystem(prob, ::Nothing) = nothing, nothing
 function get_save_idxs_and_saved_subsystem(prob, save_idxs::Vector{Int})

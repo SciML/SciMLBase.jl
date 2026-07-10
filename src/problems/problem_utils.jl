@@ -1,8 +1,20 @@
 """
     promote_tspan(tspan)
 
-Convert the `tspan` field of a `AbstractDEProblem` to a `(tmin, tmax)` tuple, where both
-elements are of the same type. If `tspan` is a function, returns it as-is.
+Normalize a differential equation time span into the representation stored on a
+problem.
+
+For a two-element tuple, `promote_tspan` returns `promote(t1, t2)` so both
+endpoints have a common type. A scalar `tspan` is interpreted as `(zero(tspan),
+tspan)`. A two-element array is accepted and converted through the same tuple
+path, while arrays of any other length throw an error because saved output times
+belong in `saveat`, not in `tspan`. `nothing` and function-valued time spans are
+returned unchanged.
+
+This function normalizes the stored value; it does not decide whether a solver
+supports the resulting time type. Adaptive solvers generally require a floating
+point independent variable, while non-adaptive solvers may support exact or
+custom time types when the chosen algorithm also supports them.
 """
 promote_tspan((t1, t2)::Tuple{T, S}) where {T, S} = promote(t1, t2)
 promote_tspan(tspan::Number) = (zero(tspan), tspan)
@@ -184,6 +196,9 @@ into it (such as `p[1]` or `x .+ p` inside a problem's function) throws an error
 message explaining that no parameters were passed to the problem. This turns the common
 mistake of forgetting to supply `p` (or using the wrong function signature) into an
 informative error rather than a confusing downstream failure.
+
+Model functions must still accept their documented `p` argument even when the
+problem stores `NullParameters()`.
 
 ## Example
 

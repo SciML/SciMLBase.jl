@@ -29,11 +29,11 @@ change the first value). This is automatically determined using the methods tabl
 but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
-Additionally, the functions are fully specialized to reduce the runtimes. If one
-would instead like to not specialize on the functions to reduce compile time,
-then one can set `recompile` to false.
+By default, problem functions use `AutoSpecialize` to balance latency and runtime.
+Choose another specialization marker explicitly when a workflow needs a different
+trade-off.
 
-### Specialization Levels
+### [Specialization Levels](@id specialization_levels)
 
 Specialization levels in problem definitions are used to control the amount of compilation
 specialization is performed on the model functions in order to trade off between runtime
@@ -41,8 +41,8 @@ performance, simplicity, and compile-time performance. The default choice of spe
 is `AutoSpecialize`, which seeks to allow for using fully precompiled solvers in common
 scenarios but falls back to a runtime-optimal approach when further customization is used.
 
-Specialization levels are given as the second type parameter in `AbstractSciMLProblem`
-constructors. For example, this is done via:
+Specialization levels are given as the second explicit type parameter, after the
+in-place flag, in concrete problem and function constructors. For example:
 
 ```julia
 ODEProblem{iip, specialization}(f, u0, tspan, p)
@@ -60,15 +60,27 @@ SciMLBase.FunctionWrapperSpecialize
 SciMLBase.FullSpecialize
 ```
 
+#### Specialization Interface Hooks
+
+Solver and modeling packages should query the marker rather than inspect concrete
+function type parameters. Packages that implement callable wrapping extend the
+wrapper hooks below; ordinary user code should normally select a marker on the
+problem constructor and let the selected solver perform any wrapping.
+
+```@docs
+SciMLBase.specialization
+SciMLBase.isfunctionwrapper
+SciMLBase.wrapfun_oop
+SciMLBase.wrapfun_iip
+SciMLBase.unwrap_fw
+```
+
 !!! note
-    
-    The specialization level must be precompile snooped in the appropriate solver
-    package in order to enable the full precompilation and system image generation
-    for zero-latency usage. By default, this is only done with `AutoSpecialize` and
-    on types `u isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-    `p isa Union{Vector{Float64}, SciMLBase.NullParameters}`. Precompilation snooping
-    in the solvers can be done using the Preferences.jl setup on the appropriate
-    solver. See the solver library's documentation for more details.
+
+    Precompiled solver methods can be reused only for signatures that the selected
+    solver package precompiles. The covered state, time, parameter, and option types
+    are solver-specific. Use `FullSpecialize` when a model falls outside the wrapped
+    signatures supported by a solver or when runtime performance is the priority.
 
 ### Default Parameters
 
@@ -90,19 +102,18 @@ usage, a `AbstractSciMLProblem` might be associated with some solver configurati
 callback or tolerance. Thus, for flexibility the extra keyword arguments to the
 `AbstractSciMLProblem` are carried to the solver.
 
-### `problem_type`
+### Structured Constructors and Preservation
 
-`AbstractSciMLProblem` types include a non-public API definition of `problem_type` which holds
-a trait type corresponding to the way the `AbstractSciMLProblem` was constructed. For example,
-if a `SecondOrderODEProblem` constructor is used, the returned problem is simply a
-`ODEProblem` for interoperability with any `ODEProblem` algorithm. However, in this case
-the `problem_type` will be populated with the `SecondOrderODEProblem` type, indicating
-the original definition and extra structure.
+Convenience constructors may return a shared concrete problem representation while
+preserving enough construction metadata for dispatch and `remake`. Downstream packages
+must query `problem_type(prob)` instead of inspecting or mutating internal storage. A
+convenience constructor's return type is therefore not by itself a complete description
+of the mathematical structure used to create it.
 
 ### Remake
 
 ```@docs
-remake
+SciMLBase.remake
 ```
 
 For problems that are created from a system (e.g. created through ModelingToolkit.jl) or
@@ -118,8 +129,8 @@ If the system's defaults contain an expression for the missing symbol, that expr
 will be used for the value (it is treated as a dependent initialization). Otherwise,
 the existing value of that symbol in the problem passed to `remake` is used.
 
-If `default_values = true` is passed as a keyword argument to `remake`, then the value
-contained in the system's defaults is always preferred over the value in the problem.
+If `use_defaults = true` is passed as a keyword argument to `remake`, then an available
+numeric system default is preferred over the value already stored in the problem.
 
 For example, consider a problem `prob` with parameters `:a`, `:b`, `:c` having values
 `1.0`, `2.0`, `3.0` respectively. Let us also assume that the system contains the
@@ -129,49 +140,24 @@ defaults `Dict(:a => :(2b), :c => 0.1)`. Then:
     `:a`, `:b` and `:c` respectively. Note how the numeric default for `:c` was not
     respected.
   - `remake(prob; p = [:b => 2.0], use_defaults = true)` will result in the values `4.0`,
-    `2.0`, `1.0` for `:a`, `:b` and `:c` respectively.
+    `2.0`, `0.1` for `:a`, `:b` and `:c` respectively.
   - `remake(prob; p = [:b => 2.0, :a => 3.0])` will result in the values `3.0`, `2.0`,
     `3.0` for `:a`, `:b` and `:c` respectively. Note how the explicitly specified value for
     `:a` overrides the dependent default.
 
 ### Aliasing Specification
 
-An `AbstractAliasSpecifier` is associated with each SciMLProblem type. Each holds fields specifying which variables to alias
-when solving. For example, to tell an ODE solver to alias the `u0` array, you can use an `ODEAliases` object,
-and the `alias_u0` keyword argument, e.g. `solve(prob,alias = ODEAliases(alias_u0 = true))`.
-
-```@docs
-SciMLBase.AbstractAliasSpecifier
-SciMLBase.LinearAliasSpecifier
-SciMLBase.NonlinearAliasSpecifier
-SciMLBase.ODEAliasSpecifier
-SciMLBase.RODEAliasSpecifier
-SciMLBase.SDEAliasSpecifier
-SciMLBase.DDEAliasSpecifier
-SciMLBase.SDDEAliasSpecifier
-SciMLBase.BVPAliasSpecifier
-SciMLBase.OptimizationAliasSpecifier
-SciMLBase.IntegralAliasSpecifier
-SciMLBase.DiscreteAliasSpecifier
-```
+An `AbstractAliasSpecifier` is associated with each SciML problem type that
+allows solver caches to reuse problem inputs. See the
+[alias specifier interface](@ref alias_specifier_interface) for the common
+tri-state rules and the problem-family-specific specifiers.
 
 ## Problem Traits
 
-```@docs
-SciMLBase.isinplace(prob::SciMLBase.AbstractDEProblem)
-SciMLBase.is_diagonal_noise
-```
-
-## Clock Domains
-
-```@docs
-SciMLBase.Clocks
-SciMLBase.TimeDomain
-SciMLBase.is_discrete_time_domain
-SciMLBase.isclock
-SciMLBase.issolverstepclock
-SciMLBase.iscontinuous
-```
+Problem traits expose properties that are stored on concrete problem types and
+used by solver dispatch. Solver packages should query these traits instead of
+reconstructing the answer from fields or callback method tables. The detailed
+contract is documented in [Problem Traits](@ref problem_traits).
 
 ## AbstractSciMLProblem API
 
@@ -194,12 +180,15 @@ The default is `AutoSpecialize`.
 SciMLBase.AbstractSciMLProblem
 SciMLBase.AbstractDEProblem
 SciMLBase.AbstractLinearProblem
+SciMLBase.AbstractEigenvalueProblem
 SciMLBase.AbstractNonlinearProblem
+SciMLBase.AbstractIntervalNonlinearProblem
 SciMLBase.AbstractIntegralProblem
 SciMLBase.AbstractOptimizationProblem
 SciMLBase.AbstractNoiseProblem
 SciMLBase.AbstractODEProblem
 SciMLBase.AbstractDynamicalODEProblem
+SciMLBase.AbstractDynamicOptProblem
 SciMLBase.AbstractDiscreteProblem
 SciMLBase.AbstractAnalyticalProblem
 SciMLBase.AbstractRODEProblem
@@ -216,24 +205,23 @@ SciMLBase.AbstractPDEProblem
 SciMLBase.AbstractSteadyStateProblem
 ```
 
-## Concrete Nonlinear Problems
+### Problem Support Interfaces
 
 ```@docs
-SciMLBase.HomotopyProblem
+SciMLBase.AbstractOptimizationCache
 ```
 
-## Concrete ODE Problems
+## Concrete Problem Reference
 
-```@docs
-SciMLBase.StandardODEProblem
-SciMLBase.ImmutableODEProblem
-```
+Concrete constructors, their stored data, and the layout markers returned by
+[`problem_type`](@ref SciMLBase.problem_type) are grouped by problem family:
 
-`SciMLBase.ImmutableODEProblem` is the immutable ODE problem type.
+  - [Algebraic Problem Types](@ref algebraic_problem_types)
+  - [Differential Equation Problem Types](@ref differential_equation_problem_types)
+  - [Delay, Boundary, and Noise Problem Types](@ref delay_boundary_noise_problem_types)
 
 ## Problem Utilities
 
 ```@docs
 SciMLBase.promote_tspan
-SciMLBase.check_keywords
 ```

@@ -116,13 +116,23 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
     stats::S
 end
 
-
 """
     build_solution(prob, alg, args...; kwargs...)
 
-Construct the solution object returned by a SciML solver for `prob` solved with `alg`.
-Solver implementations use this helper to attach standard fields such as the original
-problem, algorithm, return code, statistics, dense interpolation, and saved values.
+Construct the solution object returned by a SciML solver for `prob` solved with
+`alg`.
+
+Solver packages extend `build_solution` for the problem and algorithm families
+they own so that direct solver implementations can share the same solution
+construction path. Methods should attach the original problem, algorithm,
+[`ReturnCode`](@ref), residual or error information, solver statistics, dense
+interpolation data, and saved values expected by the corresponding
+[`AbstractSciMLSolution`](@ref) interface.
+
+The accepted positional arguments are problem-family specific. Implementations
+should document the argument order they expect and should preserve common SciML
+solution behavior such as array indexing, symbolic indexing, and retcode
+inspection.
 """
 function build_solution(
         prob::AbstractIntegralProblem,
@@ -148,17 +158,46 @@ end
 @doc """
     build_solution(prob, alg, args...; kwargs...)
 
-Construct the solution object returned by a SciML solver for `prob` solved with `alg`.
-Solver implementations use this helper to attach standard fields such as the original
-problem, algorithm, return code, statistics, dense interpolation, and saved values.
+Construct the solution object returned by a SciML solver for `prob` solved with
+`alg`.
+
+Solver packages extend `build_solution` for the problem and algorithm families
+they own so that direct solver implementations can share the same solution
+construction path. Methods should attach the original problem, algorithm,
+[`ReturnCode`](@ref), residual or error information, solver statistics, dense
+interpolation data, and saved values expected by the corresponding
+[`AbstractSciMLSolution`](@ref) interface.
+
+The accepted positional arguments are problem-family specific. Implementations
+should document the argument order they expect and should preserve common SciML
+solution behavior such as array indexing, symbolic indexing, and retcode
+inspection.
 """ build_solution
 
+"""
+    wrap_sol(sol)
+    wrap_sol(sol, problem_type_or_metadata)
+
+Return `sol` or wrap it in a higher-level SciML solution container.
+
+Solvers call `wrap_sol(sol)` after constructing a low-level solution. When
+`sol.prob` is an [`AbstractSciMLProblem`](@ref), the default implementation
+queries [`problem_type`](@ref) and dispatches to
+`wrap_sol(sol, problem_type_or_metadata)` when the result is not `nothing`.
+Problem-family packages extend the two-argument form when a generated solver
+solution should be returned as a more specific public solution type.
+
+The fallback two-argument method returns `sol` unchanged. PDE discretizer
+packages extend the metadata path by defining constructors such as
+`PDETimeSeriesSolution(sol, metadata::D)` or `PDENoTimeSolution(sol, metadata::D)`
+for their concrete discretization metadata type.
+"""
 function wrap_sol(sol)
-    return if hasproperty(sol, :prob) && hasproperty(sol.prob, :problem_type)
-        wrap_sol(sol, sol.prob.problem_type)
-    else
-        sol
-    end
+    hasproperty(sol, :prob) || return sol
+    prob = sol.prob
+    prob isa AbstractSciMLProblem || return sol
+    metadata = problem_type(prob)
+    return metadata === nothing ? sol : wrap_sol(sol, metadata)
 end
 
 # Define a default `wrap_sol` that does nothing

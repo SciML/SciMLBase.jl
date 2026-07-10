@@ -2,8 +2,8 @@
 
 Performing Monte Carlo simulations, solving with a predetermined set of initial conditions, and
 GPU-parallelizing a parameter search all fall under the ensemble simulation interface. This
-interface allows one to declare a template AbstractSciMLProblem to parallelize, tweak the template
-in `trajectories` for many trajectories, solve each in parallel batches, reduce the solutions
+interface allows one to declare a template `AbstractSciMLProblem`, customize it for each
+of `trajectories` runs, solve those trajectories in parallel batches, reduce the solutions
 down to specific answers, and compute summary statistics on the results.
 
 ## Performing an Ensemble Simulation
@@ -12,13 +12,20 @@ down to specific answers, and compute summary statistics on the results.
 
 ```@docs
 SciMLBase.AbstractEnsembleProblem
-EnsembleProblem
+SciMLBase.EnsembleProblem
+SciMLBase.WeightedEnsembleProblem
+SciMLBase.DEFAULT_PROB_FUNC
+SciMLBase.DEFAULT_OUTPUT_FUNC
+SciMLBase.DEFAULT_REDUCTION
 ```
 
 ### Solving the Problem
 
 ```@docs
 SciMLBase.__solve(prob::SciMLBase.AbstractEnsembleProblem, alg, ensemblealg::SciMLBase.BasicEnsembleAlgorithm)
+SciMLBase.EnsembleContext
+SciMLBase.generate_sim_seeds
+SciMLBase.default_rng_func
 ```
 
 ### EnsembleAlgorithms
@@ -27,33 +34,23 @@ The choice of ensemble algorithm allows for control over how the multiple trajec
 are handled. Currently, the ensemble algorithm types are:
 
 ```@docs
-SciMLBase.EnsembleAlgorithm
 SciMLBase.BasicEnsembleAlgorithm
-EnsembleSerial
-EnsembleThreads
-EnsembleDistributed
-EnsembleSplitThreads
+SciMLBase.EnsembleSerial
+SciMLBase.EnsembleThreads
+SciMLBase.EnsembleDistributed
+SciMLBase.EnsembleSplitThreads
+SciMLBase.AbstractEnsembleEstimator
 ```
 
-#### DiffEq Only (ODEProblem, SDEProblem)
+#### GPU Backends
 
-| GPU Manufacturer | GPU Kernel Language | Julia Support Package                              | Backend Type             |
-|:---------------- |:------------------- |:-------------------------------------------------- |:------------------------ |
-| NVIDIA           | CUDA                | [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl)     | `CUDA.CUDABackend()`     |
-| AMD              | ROCm                | [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl) | `AMDGPU.ROCBackend()`    |
-| Intel            | OneAPI              | [OneAPI.jl](https://github.com/JuliaGPU/oneAPI.jl) | `oneAPI.oneAPIBackend()` |
-| Apple (M-Series) | Metal               | [Metal.jl](https://github.com/JuliaGPU/Metal.jl)   | `Metal.MetalBackend()`   |
-
-  - `EnsembleGPUArray()` - Requires installing and `using DiffEqGPU`. This uses a GPU for computing the ensemble
-    with hyperparallelism. It will automatically recompile your Julia functions to the GPU. A standard GPU sees
-    a 5x performance increase over a 16 core Xeon CPU. However, there are limitations on what functions can
-    auto-compile in this fashion, please see [DiffEqGPU for more details](https://docs.sciml.ai/DiffEqGPU/stable/)
-  - `EnsembleGPUKernel()` - Requires installing and `using DiffEqGPU`. This uses a GPU for computing the ensemble
-    with hyperparallelism by building a custom GPU kernel. This can have drastically less overhead (for example,
-    achieving 15x accelerating against Jax and PyTorch, see
-    [this paper for more details](https://www.sciencedirect.com/science/article/abs/pii/S0045782523007156)) but
-    has limitations on what kinds of problems are compatible. See
-    [DiffEqGPU for more details](https://docs.sciml.ai/DiffEqGPU/stable/)
+GPU ensemble algorithms are extensions supplied by DiffEqGPU.jl rather than
+SciMLBase. `EnsembleGPUArray()` adapts trajectories to GPU arrays, while
+`EnsembleGPUKernel(backend)` compiles compatible solves into a device kernel.
+Supported problem features and backend constructors depend on DiffEqGPU and the
+selected GPU package; see the
+[DiffEqGPU documentation](https://docs.sciml.ai/DiffEqGPU/stable/) for the current
+compatibility rules.
 
 ### Choosing an Ensembler
 
@@ -65,12 +62,18 @@ solve(ensembleprob, alg, EnsembleThreads(); trajectories = 1000)
 
 ### Solution Type
 
-The resulting type is a `EnsembleSimulation`, which includes the array of
-solutions.
+The resulting object is an `EnsembleSolution`, which includes the array of
+trajectory outputs.
+
+```@docs
+SciMLBase.EnsembleSolution
+SciMLBase.EnsembleTestSolution
+SciMLBase.WeightedEnsembleSolution
+```
 
 ### Plot Recipe
 
-There is a plot recipe for a `AbstractEnsembleSimulation` which composes all
+There is a plot recipe for an `AbstractEnsembleSolution` which composes all
 of the plot recipes for the component solutions. The keyword arguments are passed
 along. A useful argument to use is `linealpha` which will change the transparency
 of the plots. An additional argument is `idxs` which allows you to choose which
@@ -83,12 +86,16 @@ you to pass a `zcolor` for each series. For details about `zcolor` see the
 ## Analyzing an Ensemble Experiment
 
 Analysis tools are included for generating summary statistics and summary plots
-for a `EnsembleSimulation`.
+for an `AbstractEnsembleSolution`.
 
 To use this functionality, import the analysis module via:
 
 ```julia
 using SciMLBase.EnsembleAnalysis
+```
+
+```@docs
+SciMLBase.EnsembleAnalysis
 ```
 
 ### Time steps vs time points
@@ -143,13 +150,13 @@ The `meancov` and `meancor` return a matrix of tuples, where the tuples are the
 The available functions for the time steps are:
 
 ```@docs
-timeseries_steps_mean
-timeseries_steps_median
-timeseries_steps_quantile
-timeseries_steps_meanvar
-timeseries_steps_meancov
-timeseries_steps_meancor
-timeseries_steps_weighted_meancov
+SciMLBase.EnsembleAnalysis.timeseries_steps_mean
+SciMLBase.EnsembleAnalysis.timeseries_steps_median
+SciMLBase.EnsembleAnalysis.timeseries_steps_quantile
+SciMLBase.EnsembleAnalysis.timeseries_steps_meanvar
+SciMLBase.EnsembleAnalysis.timeseries_steps_meancov
+SciMLBase.EnsembleAnalysis.timeseries_steps_meancor
+SciMLBase.EnsembleAnalysis.timeseries_steps_weighted_meancov
 ```
 
 The available functions for the time points are:
@@ -167,7 +174,7 @@ SciMLBase.EnsembleAnalysis.timeseries_point_weighted_meancov
 ### EnsembleSummary
 
 ```@docs
-EnsembleSummary
+SciMLBase.EnsembleAnalysis.EnsembleSummary
 ```
 
 ## Example 1: Solving an ODE With Different Initial Conditions
@@ -204,14 +211,15 @@ and modifies it to create the new problem that the trajectory actually solves.
 The `prob_func` has the signature `prob_func(prob, ctx)` where:
 
 - `prob` is the base problem to be modified
-- `ctx` is an `EnsembleContext` with fields `sim_id` (unique trajectory index, `1` to `trajectories`), `repeat` (rerun iteration, starts at `1`), `rng` (per-trajectory RNG), `sim_seed`, `worker_id`, and `master_rng`
+- `ctx` is an `EnsembleContext` with the trajectory index, rerun count,
+  trajectory-local RNG and seed, worker identifier, and optional master RNG.
 
-Here, we will take the base problem, multiply the initial condition by a `rand()`,
-and use that for calculating the trajectory:
+Here, we will take the base problem, multiply the initial condition by a random draw
+from the trajectory-local RNG, and use that for calculating the trajectory:
 
 ```julia
 @everywhere function prob_func(prob, ctx)
-    remake(prob, u0 = rand() * prob.u0)
+    remake(prob, u0 = rand(ctx.rng) * prob.u0)
 end
 ```
 
@@ -234,8 +242,9 @@ solution object. `sim[i].prob` is the problem that specific trajectory solved,
 and `sim[i].prob.u0` would then be the initial condition used in the `i`th
 trajectory.
 
-Note: If the problem has callbacks, the functions for the `condition` and
-`affect!` must be named functions (not anonymous functions).
+With distributed execution, every function and captured value used by `prob_func`,
+callbacks, and the model must be serializable and available on each worker. Top-level
+named definitions loaded with `@everywhere` are the simplest way to satisfy this rule.
 
 ### Using multithreading
 
@@ -249,7 +258,7 @@ using OrdinaryDiffEq
 using SciMLBase
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 function prob_func(prob, ctx)
-    remake(prob, u0 = rand() * prob.u0)
+    remake(prob, u0 = rand(ctx.rng) * prob.u0)
 end
 ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10)
@@ -257,8 +266,9 @@ using Plots;
 plot(sim);
 ```
 
-The number of threads to be used has to be defined outside of Julia, in
-the environmental variable `JULIA_NUM_THREADS` (see Julia's [documentation](https://docs.julialang.org/en/v1.1/manual/environment-variables/#JULIA_NUM_THREADS-1) for details).
+Set Julia's thread count when starting the process, for example with `julia --threads=auto`
+or the `JULIA_NUM_THREADS` environment variable. See Julia's
+[multithreading documentation](https://docs.julialang.org/en/v1/manual/multi-threading/).
 
 ### Pre-Determined Initial Conditions
 
@@ -268,7 +278,7 @@ index of each trajectory. So, if we have `trajectories=100`, then we have `ctx.s
 some index in `1:100`, and it's different for each trajectory.
 
 So, if we wanted to use a grid of evenly spaced initial conditions from `0` to `1`,
-we could simply index the `linspace` type:
+we can index an evenly spaced `range`:
 
 ```@example ensemble1_3
 initial_conditions = range(0, stop = 1, length = 100)
@@ -311,7 +321,7 @@ prob = SDEProblem(f, g, [1.0, 1.0], (0.0, 10.0), p)
 
 This is the base problem for our study. What would like to do with this experiment
 is keep the same parameters in the deterministic component each time, but vary
-the parameters for the amount of noise using `0.3rand(2)` as our parameters.
+the parameters for the amount of noise using `0.3rand(ctx.rng, 2)` as our parameters.
 Once again, we do this with a `prob_func`, and here we modify the parameters in
 `prob.p`:
 
@@ -322,7 +332,7 @@ Once again, we do this with a `prob_func`, and here we modify the parameters in
 # This allows it to be type stable.
 prob_func = let p = p
     (prob, ctx) -> begin
-        x = 0.3rand(2)
+        x = 0.3rand(ctx.rng, 2)
         remake(prob, p = [p[1], p[2], x[1], x[2]])
     end
 end
@@ -354,7 +364,7 @@ bounds using `ci_type=:SEM` in the plot recipe.
 ## Example 3: Using the Reduction to Halt When Estimator is Within Tolerance
 
 In this problem, we will solve the equation just as many times as needed to get
-the standard error of the mean for the final time point below our tolerance
+the relative standard error of the mean for the final time point below our tolerance
 `0.5`. Since we only care about the endpoint, we can tell the `output_func`
 to discard the rest of the data.
 
@@ -373,7 +383,7 @@ using SciMLBase
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 
 function prob_func(prob, ctx)
-    remake(prob, u0 = rand() * prob.u0)
+    remake(prob, u0 = rand(ctx.rng) * prob.u0)
 end
 ```
 
@@ -385,7 +395,8 @@ as sufficiently small:
 using Statistics
 function reduction(u, batch, I)
     u = append!(u, batch)
-    finished = (var(u) / sqrt(last(I))) / mean(u) < 0.5
+    relative_standard_error = sqrt(var(u) / last(I)) / abs(mean(u))
+    finished = relative_standard_error < 0.5
     u, finished
 end
 ```
@@ -399,10 +410,10 @@ sim = solve(prob2, Tsit5(), trajectories = 10000, batch_size = 20)
 ```
 
 Since `batch_size=20`, this means that every 20 simulations, it will take this batch,
-append the results to the previous batch, calculate `(var(u)/sqrt(last(I)))/mean(u)`,
-and if that's small enough, exit the simulation. In this case, the simulation
-exits only after 20 simulations (i.e. after calculating the first batch). This
-can save a lot of time!
+append the results to the previous batch, calculate the relative standard error,
+and exit the simulation once it is small enough. The criterion is first checked
+after 20 simulations and then after every subsequent batch. This can save a lot
+of time when convergence occurs before all requested trajectories are solved.
 
 In addition to saving time by checking convergence, we can save memory by reducing
 between batches. For example, say we only care about the mean at the end once
@@ -490,7 +501,7 @@ timeseries_steps_meancov(sim) # Use the time steps, assume fixed dt
 timeseries_point_meancov(sim, 0:(1 // 2 ^ (3)):1, 0:(1 // 2 ^ (3)):1) # Use time points, interpolate
 ```
 
-For general analysis, we can build a `EnsembleSummary` type.
+For general analysis, we can build an `EnsembleSummary`.
 
 ```@example ensemble4
 summ = EnsembleSummary(sim)

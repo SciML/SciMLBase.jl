@@ -25,7 +25,7 @@ to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary 
   Defines the RODE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
   determined automatically, but not inferred. `specialize` optionally controls
-  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+  the specialization level. See [Specialization Levels](@ref specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
@@ -37,7 +37,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](@ref scimlfunctions)
 page.
 
 ### Fields
@@ -48,7 +48,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process)
+  see the [noise process documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/).
 * `rand_prototype`: A prototype type instance for the noise vector. It defaults
   to `nothing`, which means the problem should be interpreted as having a noise
   vector whose size matches `u0`.
@@ -98,23 +98,27 @@ function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
 end
 
 @doc doc"""
-    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = false, alias_du0 = false, alias_tstops = false, alias = nothing)
+    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing, alias_jumps = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an RODEProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `RODEProblem` inputs, noise data, and solver option arrays may be
+aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_noise` controls the noise process or noise prototype data, and
+`alias_jumps` controls jump process data when the problem is wrapped in a jump
+problem. Other fields follow the differential-equation alias convention. A value
+of `nothing` delegates to the solver default. Set `alias = true` or
+`alias = false` to apply the same policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias_noise::Union{Bool,Nothing}`: alias the noise process
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
-* `alias::Union{Bool, Nothing}`: sets all fields of the `RODEAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the RODE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_noise::Union{Bool, Nothing}`: alias the noise process.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every field of the `RODEAliasSpecifier`.
 """
 struct RODEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
