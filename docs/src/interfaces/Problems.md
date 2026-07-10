@@ -29,9 +29,9 @@ change the first value). This is automatically determined using the methods tabl
 but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
-Additionally, the functions are fully specialized to reduce the runtimes. If one
-would instead like to not specialize on the functions to reduce compile time,
-then one can set `recompile` to false.
+By default, problem functions use `AutoSpecialize` to balance latency and runtime.
+Choose another specialization marker explicitly when a workflow needs a different
+trade-off.
 
 ### Specialization Levels
 
@@ -41,8 +41,8 @@ performance, simplicity, and compile-time performance. The default choice of spe
 is `AutoSpecialize`, which seeks to allow for using fully precompiled solvers in common
 scenarios but falls back to a runtime-optimal approach when further customization is used.
 
-Specialization levels are given as the second type parameter in `AbstractSciMLProblem`
-constructors. For example, this is done via:
+Specialization levels are given as the second explicit type parameter, after the
+in-place flag, in concrete problem and function constructors. For example:
 
 ```julia
 ODEProblem{iip, specialization}(f, u0, tspan, p)
@@ -58,6 +58,21 @@ SciMLBase.AutoSpecialize
 SciMLBase.NoSpecialize
 SciMLBase.FunctionWrapperSpecialize
 SciMLBase.FullSpecialize
+```
+
+#### Specialization Interface Hooks
+
+Solver and modeling packages should query the marker rather than inspect concrete
+function type parameters. Packages that implement callable wrapping extend the
+wrapper hooks below; ordinary user code should normally select a marker on the
+problem constructor and let the selected solver perform any wrapping.
+
+```@docs
+SciMLBase.specialization
+SciMLBase.isfunctionwrapper
+SciMLBase.wrapfun_oop
+SciMLBase.wrapfun_iip
+SciMLBase.unwrap_fw
 ```
 
 !!! note

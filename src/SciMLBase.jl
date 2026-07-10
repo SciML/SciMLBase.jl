@@ -1677,6 +1677,20 @@ function unwrapped_f(f::FunctionWrappersWrappers.FunctionWrappersWrapper)
     return unwrapped_f(f.fw[1].obj[])
 end
 
+"""
+    specialization(f::AbstractSciMLFunction) -> Type{<:AbstractSpecialization}
+
+Return the specialization marker carried by a SciML function wrapper.
+
+Known concrete SciML function types return their stored specialization type,
+such as [`AutoSpecialize`](@ref) or [`FullSpecialize`](@ref). The fallback for a
+custom [`AbstractSciMLFunction`](@ref) is `FullSpecialize`, meaning generic code
+must assume ordinary Julia specialization unless the type explicitly participates
+in the marker interface.
+
+Use this query instead of inspecting concrete type-parameter positions. The
+result is a marker type, not an instance, and can be compared with `===`.
+"""
 function specialization(
         ::Union{
             ODEFunction{iip, specialize},
@@ -1924,9 +1938,67 @@ inspection, debugging, code generation, or downstream transformations.
 """
 function symbolic_discretize end
 
+"""
+    isfunctionwrapper(x) -> Bool
+
+Return whether `x` is a low-level type-restricting callable wrapper used by a
+SciML specialization path.
+
+Wrapper-provider packages should extend this predicate for their concrete wrapper
+types. The default is `false`. Most model transformations should use
+[`unwrapped_f`](@ref), which recursively handles supported wrapper layers,
+instead of branching on this predicate directly.
+"""
 isfunctionwrapper(x) = false
+
+"""
+    wrapfun_oop(f, inputs)
+
+Wrap an out-of-place callable `f` for the concrete argument values in `inputs`.
+
+This is an extension hook for packages that provide the callable-wrapper backend
+used by [`AutoSpecialize`](@ref) or [`FunctionWrapperSpecialize`](@ref).
+`inputs` contains representative values in the same order as a call to `f`; the
+returned callable must accept that concrete signature and return the same type as
+`f(inputs...)`. Implementations may support additional precompiled signatures.
+
+The original callable must remain recoverable through [`unwrapped_f`](@ref).
+Calling this hook without loading a package that implements the requested wrapper
+path is unsupported.
+"""
 function wrapfun_oop end
+
+"""
+    wrapfun_iip(f, inputs)
+    wrapfun_iip(f, inputs, ::Val{chunksize})
+
+Wrap an in-place callable `f` for the concrete argument values in `inputs`.
+
+This is an extension hook for packages that provide the callable-wrapper backend
+used by [`AutoSpecialize`](@ref) or [`FunctionWrapperSpecialize`](@ref).
+`inputs` contains representative values in the same order as a call to `f`, such
+as `(du, u, p, t)` for an ODE right-hand side. The returned callable must support
+that signature and preserve the in-place convention that its return value is
+ignored.
+
+The optional `Val{chunksize}` form lets AD-aware implementations install matching
+dual-number signatures. Implementations may support additional precompiled
+signatures, and the original callable must remain recoverable through
+[`unwrapped_f`](@ref). Calling this hook without loading a package that implements
+the requested wrapper path is unsupported.
+"""
 function wrapfun_iip end
+
+"""
+    unwrap_fw(wrapper)
+
+Return the callable stored directly inside one low-level function wrapper.
+
+Wrapper-provider packages implement this hook for their raw wrapper types. It
+removes one wrapper layer and is mainly useful while implementing specialization
+backends. General solver and analysis code should prefer [`unwrapped_f`](@ref),
+which recursively removes the wrapper forms known to SciMLBase.
+"""
 function unwrap_fw end
 
 export ReturnCode
@@ -2116,7 +2188,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public NoAD
 
 # Function-wrapper / solution interface helpers
-@public unwrapped_f, solution_new_retcode
+@public unwrapped_f, specialization, solution_new_retcode
+@public isfunctionwrapper, wrapfun_oop, wrapfun_iip, unwrap_fw
 
 # Low-level solver-author extension entry points
 @public __solve, __init

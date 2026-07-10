@@ -78,6 +78,11 @@ if isdefined(Base, :ispublic)
     @testset "Problems manual public API" begin
         for name in (
                 :AbstractSpecialization,
+                :specialization,
+                :isfunctionwrapper,
+                :wrapfun_oop,
+                :wrapfun_iip,
+                :unwrap_fw,
                 :AbstractLinearProblem,
                 :AbstractEigenvalueProblem,
                 :AbstractIntervalNonlinearProblem,

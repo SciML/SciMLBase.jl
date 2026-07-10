@@ -3,68 +3,76 @@ const RECOMPILE_BY_DEFAULT = true
 """
 $(TYPEDEF)
 
-Supertype for the specialization types. Controls the compilation and
-function specialization behavior of SciMLFunctions, ultimately controlling
-the runtime vs compile-time trade-off.
+Base interface for marker types that control how SciML function wrappers retain,
+erase, or type-restrict their callable fields.
+
+Specialization markers are passed as types, not values, usually as the second
+explicit parameter after the in-place flag:
+
+```julia
+ODEFunction{iip, specialize}(f)
+ODEProblem{iip, specialize}(f, u0, tspan, p)
+```
+
+Concrete SciML function types store the marker in their type parameters. Query it
+with [`specialization`](@ref) instead of relying on a particular parameter
+position. Problem construction and `remake` should preserve an explicitly chosen
+marker unless the caller requests a different function representation.
+
+The built-in markers are [`AutoSpecialize`](@ref), [`NoSpecialize`](@ref),
+[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior
+is implemented jointly by SciMLBase constructors and downstream solver packages:
+a marker alone does not automatically erase types or install callable wrappers.
+New `AbstractSpecialization` subtypes therefore require explicit support in every
+function constructor and solver path that is expected to honor them.
+
+Solver and transformation code must not assume that a type-restricted wrapped
+callable accepts new state, time, parameter, or AD types. Use
+[`unwrapped_f`](@ref) before calling it with a signature outside the documented
+wrapper set, then reconstruct a suitable SciML function, commonly with
+`FullSpecialize` for AD transformations.
 """
 abstract type AbstractSpecialization end
 
 """
 $(TYPEDEF)
 
-The default specialization level for problem functions. `AutoSpecialize`
-works by applying a function wrap just-in-time before the solve process
-to disable just-in-time re-specialization of the solver to the specific
-choice of model `f` and thus allow for using a cached solver compilation
-from a different `f`. This wrapping process can lead to a small decreased
-runtime performance with a benefit of a greatly decreased compile-time.
+The default specialization level for problem functions. `AutoSpecialize` asks
+the selected solver path to reuse compilation where it has a supported
+type-erasure or callable-wrapping strategy, while falling back to ordinary full
+specialization elsewhere.
+
+For the common in-place ODE path, wrapping is applied shortly before solving so
+`prob.f` remains convenient to inspect and the solver can reuse precompiled code
+across compatible model functions. Other problem families may implement their
+own AutoSpecialize strategy; for example, nonlinear solvers can install wrappers
+suited to their residual signatures. The exact supported state, parameter, time,
+callback, and AD types are therefore part of the concrete solver's contract.
 
 ## Note About Benchmarking and Runtime Optimality
 
-It is recommended that `AutoSpecialize` is not used in any benchmarking
-due to the potential effect of function wrapping on runtimes. `AutoSpecialize`'s
-use case is targeted at decreased latency for REPL performance and
-not for cases where where top runtime performance is required (such as in
-optimization loops). Generally, for non-stiff equations the cost will be minimal
-and potentially not even measurable. For stiff equations, function wrapping
-has the limitation that only chunk sized 1 Dual numbers are allowed, which
-can decrease Jacobian construction performance.
+It is recommended that `AutoSpecialize` is not used in benchmarking because
+callable wrapping can affect runtime. Its primary goal is lower latency for REPL
+and application workflows. Use [`FullSpecialize`](@ref) when measuring peak
+runtime or when repeatedly solving inside a long-running optimization loop.
 
 ## Limitations of `AutoSpecialize`
 
-The following limitations are not fundamental to the implementation of `AutoSpecialize`,
-but are instead chosen as a compromise between default precompilation times and
-ease of maintenance. Please open an issue to discuss lifting any potential
-limitations.
+Support is solver-specific, but common restrictions are:
 
-  - `AutoSpecialize` is only setup to wrap the functions from in-place ODEs. Other
-    cases are excluded for the time being due to time limitations.
-  - `AutoSpecialize` will only lead to compilation reuse if the ODEFunction's other
-    functions (such as jac and tgrad) are the default `nothing`. These could be
-    JIT wrapped as well in a future version.
-  - `AutoSpecialize`'d functions are only compatible with Jacobian calculations
-    performed with chunk size 1, and only with tag `DiffEqBase.OrdinaryDiffEqTag()`.
-    Thus ODE solvers written on the common interface must be careful to detect
-    the `AutoSpecialize` case and perform differentiation under these constraints,
-    use finite differencing, or manually unwrap before solving. This will lead
-    to decreased runtime performance for sufficiently large Jacobians.
-  - `AutoSpecialize` only wraps on Julia v1.8 and higher.
-  - `AutoSpecialize` does not handle cases with units. If unitful values are detected,
-    wrapping is automatically disabled.
-  - `AutoSpecialize` only wraps cases for which `promote_rule` is defined between `u0`
-    and dual numbers, `u0` and `t`, and for which `ArrayInterface.promote_eltype`
-    is defined on `u0` to dual numbers.
-  - `AutoSpecialize` only wraps cases for which `f.mass_matrix isa UniformScaling`, the
-    default.
-  - `AutoSpecialize` does not wrap cases where `f isa AbstractSciMLOperator`
-  - By default, only the `u0 isa Vector{Float64}`, `eltype(tspan) isa Float64`, and
-    `typeof(p) isa Union{Vector{Float64},SciMLBase.NullParameters}` are specialized
-    by the solver libraries. Other forms can be specialized with
-    `AutoSpecialize`, but must be done in the precompilation of downstream libraries.
-  - `AutoSpecialize`d functions are manually unwrapped in adjoint methods in
-    SciMLSensitivity.jl in order to allow compiler support for automatic differentiation.
-    Improved versions of adjoints which decrease the recompilation surface will come
-    in non-breaking updates.
+  - Only signatures precompiled or installed by the solver's wrapper path can
+    reuse compilation. Unsupported problem forms fall back to full specialization.
+  - Type-restricted wrappers require concrete compatible state, parameter, time,
+    and return types. Unitful or unusual array types may disable wrapping when the
+    solver cannot construct matching signatures.
+  - Operators such as `AbstractSciMLOperator` are generally left unwrapped because
+    they provide their own callable and update interfaces.
+  - AD paths must either install wrapper signatures for their dual types and chunk
+    sizes or reconstruct the problem around [`unwrapped_f`](@ref). Sensitivity
+    packages commonly choose the latter for tracked, dual, or Enzyme values.
+  - Compilation reuse only exists for argument combinations that downstream solver
+    packages precompile. Common defaults cover `Vector{Float64}` state,
+    `Float64` time, and `Vector{Float64}` or `NullParameters` parameters.
 
 Cases where automatic wrapping is disabled are equivalent to `FullSpecialize`.
 
@@ -104,32 +112,32 @@ struct NoSpecialize <: AbstractSpecialization end
 $(TYPEDEF)
 
 `FunctionWrapperSpecialize` is an eager wrapping choice which
-performs a function wrapping during the `ODEProblem` construction.
+performs callable wrapping during problem construction.
 This performs the function wrapping at the earliest possible point,
 giving the best compile-time vs runtime performance, but with the
 difficulty that any usage of `prob.f` needs to account for the
-function wrapper's presence. While optimal in a performance sense,
-this method has many usability issues with nonstandard solvers
-and analyses as it requires unwrapping before re-wrapping for any
-type changes. Thus this method is not used by default. Given that
-the compile-time different is almost undetectable from AutoSpecialize,
-this method is mostly used as a benchmarking reference for speed
-of light for `AutoSpecialize`.
+function wrapper's presence. While useful as a performance reference, this method
+has interoperability costs: nonstandard solvers and analyses must unwrap and
+reconstruct the callable when state, parameter, time, or AD types change. It is
+therefore not the default, and the usually small compile-time difference from
+`AutoSpecialize` rarely justifies the stricter callable contract in application
+code.
 
 ## Limitations of `FunctionWrapperSpecialize`
 
-`FunctionWrapperSpecialize` has all of the limitations of `AutoSpecialize`,
-but also includes the limitations:
+`FunctionWrapperSpecialize` has the type-compatibility limitations of
+`AutoSpecialize`, plus the following stricter rules:
 
   - `prob.f` is directly specialized to the types of `(u,p,t)`, and any usage
     of `prob.f` on other types first requires using
     `SciMLBase.unwrapped_f(prob.f)` to remove the function wrapper.
-  - `FunctionWrapperSpecialize` can only be used by the `ODEProblem` constructor.
-    If an `ODEFunction` is being constructed, the user must manually use
-    `DiffEqBase.wrap_iip` on `f` before calling
-    `ODEFunction{true,FunctionWrapperSpecialize}(f)`. This is a fundamental
-    limitation of the approach as the types of `(u,p,t)` are required in the
-    construction process and not accessible in the `AbstractSciMLFunction` constructors.
+  - Prefer a problem constructor such as
+    `ODEProblem{iip, FunctionWrapperSpecialize}`, because it has the representative
+    `u`, `p`, and `t` values needed to define wrapper signatures.
+  - Constructing a SciML function directly with this marker requires an already
+    wrapped callable. Solver-integration packages use [`wrapfun_iip`](@ref) or
+    [`wrapfun_oop`](@ref) for this purpose; passing a bare callable when its input
+    types are unavailable is an error.
 
 ## Example
 
