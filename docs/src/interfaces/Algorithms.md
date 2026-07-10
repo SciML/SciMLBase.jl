@@ -18,12 +18,26 @@ handled via `Rodas5(autodiff=true)`.
 
 ### Remake
 
-Note that `remake` is applicable to `AbstractSciMLAlgorithm` types, but this is not used in the public API.
-It's used for solvers to swap out components like ForwardDiff chunk sizes.
+`remake` is applicable to `AbstractSciMLAlgorithm` values and lets solver
+packages replace constructor fields while preserving the concrete algorithm
+type. This is useful for internal transformations such as changing an automatic
+differentiation chunk size. User code should normally construct the desired
+algorithm directly because supported replacement fields are defined by each
+concrete algorithm.
 
 ## Common Algorithm Keyword Arguments
 
-Commonly used algorithm keyword arguments are:
+An algorithm constructor stores choices that are specific to that numerical
+method, such as an automatic differentiation backend, linear solver,
+preconditioner, stage limiter, or method variant. Options shared across methods
+for a problem family belong to `solve` and `init`: saving, tolerances, step-size
+control, callbacks, progress, initialization, and RNG handling use the
+[common keyword interface](@ref common_solver_keywords).
+
+Concrete algorithms must document constructor fields, supported common
+keywords, and any keyword whose meaning or default differs from the family
+contract. Solver code should reject or diagnose unsupported common keywords
+rather than silently treating an allow-listed name as proof of capability.
 
 ## Traits
 

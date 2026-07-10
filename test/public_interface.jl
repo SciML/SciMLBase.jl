@@ -1,5 +1,29 @@
 using SciMLBase, Test
 
+@testset "Common keyword interface documentation" begin
+    common_keywords = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Common_Keywords.md"),
+        String
+    )
+    algorithms = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Algorithms.md"),
+        String
+    )
+
+    for keyword in (
+            ":auto", ":nonstiff", ":stiff", ":additive", ":commutative",
+            ":stratonovich",
+        )
+        @test occursin("`$keyword`", common_keywords)
+    end
+    @test occursin("save_everystep && isempty(saveat)", common_keywords)
+    @test !occursin("save_everystep && !isempty(saveat)", common_keywords)
+    @test occursin("1_000_000", common_keywords)
+    @test occursin("ProgressLogging.jl", common_keywords)
+    @test occursin("common keyword interface", algorithms)
+    @test !occursin("Commonly used algorithm keyword arguments are:\n\n", algorithms)
+end
+
 if isdefined(Base, :ispublic)
     @testset "Clocks manual public API" begin
         for name in (
