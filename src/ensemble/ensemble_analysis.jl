@@ -1,3 +1,12 @@
+"""
+    EnsembleAnalysis
+
+Namespace for summary statistics over
+[`SciMLBase.AbstractEnsembleSolution`](@ref SciMLBase.AbstractEnsembleSolution)
+trajectories. Import it with `using SciMLBase.EnsembleAnalysis`; its functions
+provide componentwise, timestep, timepoint, and time-series summaries,
+including weighted covariance operations where supported.
+"""
 module EnsembleAnalysis
 
 using SciMLBase

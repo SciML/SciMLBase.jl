@@ -95,10 +95,10 @@ end
 """
     Clocks
 
-Namespace for clock marker types used by hybrid and clocked SciML systems.
-The module exports `ContinuousClock`, `PeriodicClock`, `SolverStepClock`, and
-`EventClock` for backwards-compatible qualified access such as
-`SciMLBase.Clocks.PeriodicClock`.
+Backwards-compatible namespace for `ContinuousClock`, `PeriodicClock`,
+`SolverStepClock`, and `EventClock`. New code can import these public clock
+types directly from `SciMLBase`; the namespace remains available for code that
+uses names such as `SciMLBase.Clocks.PeriodicClock`.
 """
 module Clocks
     using ..SciMLBase: AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock

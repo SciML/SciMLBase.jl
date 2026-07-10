@@ -6,6 +6,7 @@ ticks, such as `sol(Clock(0.1)[2:4]; idxs = :x)`. The indexed clock is converted
 to concrete independent-variable values for the solution before interpolation.
 
 ```@docs
+SciMLBase.Clocks
 SciMLBase.AbstractClock
 SciMLBase.ContinuousClock
 SciMLBase.PeriodicClock

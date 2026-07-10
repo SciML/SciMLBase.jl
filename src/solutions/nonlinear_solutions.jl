@@ -92,9 +92,10 @@ end
 """
     SteadyStateSolution
 
-Alias for `NonlinearSolution` used by steady-state solvers. A `SteadyStateProblem`
-is represented as the nonlinear equation `f(u, p, t) = 0`, so steady-state solves
-return the same solution fields and array interface as nonlinear solves.
+Alias for [`NonlinearSolution`](@ref), the concrete solution type returned for
+[`SteadyStateProblem`](@ref) solves. It follows the nonlinear solution field and
+array interfaces; the stored `prob` identifies the result as a steady-state
+solve.
 """
 const SteadyStateSolution = NonlinearSolution
 

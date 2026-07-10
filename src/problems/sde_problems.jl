@@ -71,7 +71,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process).
+  see the [noise process documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/).
 * `noise_rate_prototype`: A prototype type instance for the noise rates, that
   is the output `g`. It can be any type which overloads `A_mul_B!` with itself
   being the middle argument. Commonly, this is a matrix or sparse matrix. If

@@ -118,6 +118,7 @@ SciMLBase.set_proposed_dt!
 SciMLBase.set_abstol!
 SciMLBase.set_reltol!
 SciMLBase.derivative_discontinuity!
+SciMLBase.u_modified!
 SciMLBase.savevalues!
 SciMLBase.reinit!
 SciMLBase.auto_dt_reset!

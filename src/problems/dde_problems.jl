@@ -109,7 +109,8 @@ For specifying Jacobians and mass matrices, see the
 
 ## Dynamical Delay Differential Equations
 
-Much like [Dynamical ODEs](@ref dynamical_prob), a Dynamical DDE is a Partitioned DDE
+Much like the [dynamical ODE problem](@ref differential_equation_problem_types), a
+Dynamical DDE is a partitioned DDE
 of the form:
 
 ```math

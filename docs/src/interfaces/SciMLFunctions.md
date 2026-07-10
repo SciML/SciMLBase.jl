@@ -159,11 +159,14 @@ SciMLBase.AbstractParameterizedFunction
 SciMLBase.AbstractHistoryFunction
 ```
 
-### Concrete SciML Functions
+### Concrete SciML Function Reference
 
-```@docs
-SciMLBase.ODEFunction
-```
+Concrete function wrappers and their family-specific callback contracts are
+grouped in the following reference pages:
+
+  - [ODE and Discrete Function Types](@ref ode_discrete_function_types)
+  - [Stochastic, Delay, and DAE Function Types](@ref stochastic_delay_dae_function_types)
+  - [Nonlinear, Optimization, and Boundary Function Types](@ref nonlinear_optimization_boundary_function_types)
 
 ### Automatic Differentiation Markers
 
@@ -178,5 +181,4 @@ SciMLBase.TimeDerivativeWrapper
 SciMLBase.TimeGradientWrapper
 SciMLBase.UDerivativeWrapper
 SciMLBase.UJacobianWrapper
-SciMLBase.IncrementingODEFunction
 ```

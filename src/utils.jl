@@ -433,8 +433,13 @@ export check_keywords, warn_compat
 """
     check_keywords(alg, kwargs, warnlist) -> Bool
 
-Warn when `kwargs` contains non-`nothing` keyword arguments that `alg` ignores.
-Returns `true` if at least one ignored keyword was present and `false` otherwise.
+Warn for each non-`nothing` keyword in `kwargs` whose name occurs in `warnlist`.
+The warning identifies `alg` as ignoring that keyword. Return `true` when at
+least one warning was emitted and `false` otherwise.
+
+Solver packages can use this helper to diagnose common `solve` keywords that a
+specific algorithm does not implement. It does not remove keywords or validate
+keywords outside `warnlist`.
 """
 function check_keywords(alg, kwargs, warnlist)
     flg = false
@@ -452,7 +457,9 @@ end
 """
 $(SIGNATURES)
 
-Emit a warning with a link to the solver compatibility chart in the documentation.
+Emit a warning with a link to the solver compatibility chart in the
+DifferentialEquations.jl documentation. This compatibility helper takes no
+arguments and always returns the result of `@warn`.
 """
 warn_compat() = @warn("https://docs.sciml.ai/DiffEqDocs/stable/basics/compatibility_chart/")
 

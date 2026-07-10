@@ -94,6 +94,10 @@ To use this functionality, import the analysis module via:
 using SciMLBase.EnsembleAnalysis
 ```
 
+```@docs
+SciMLBase.EnsembleAnalysis
+```
+
 ### Time steps vs time points
 
 For the summary statistics, there are two types. You can either summarize by

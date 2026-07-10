@@ -197,6 +197,9 @@ message explaining that no parameters were passed to the problem. This turns the
 mistake of forgetting to supply `p` (or using the wrong function signature) into an
 informative error rather than a confusing downstream failure.
 
+Model functions must still accept their documented `p` argument even when the
+problem stores `NullParameters()`.
+
 ## Example
 
 ```julia

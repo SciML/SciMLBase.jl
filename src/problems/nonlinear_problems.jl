@@ -159,7 +159,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
+[nonlinear function types](@ref nonlinear_optimization_boundary_function_types).
 
 ### Fields
 
@@ -319,7 +319,7 @@ will be used, which will throw nice errors if you try to index non-existent
 parameters.
 
 For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
+[nonlinear function types](@ref nonlinear_optimization_boundary_function_types).
 
 ### Fields
 

@@ -330,11 +330,11 @@ function derivative_discontinuity!(i::DEIntegrator, bool)
 end
 
 """
-    u_modified!(i::DEIntegrator, bool)
+    u_modified!(integrator, modified)
 
-Deprecated alias for `derivative_discontinuity!`. Use
-`derivative_discontinuity!(i, bool)` to tell the integrator whether the right-hand
-side data changed discontinuously.
+Deprecated alias for [`derivative_discontinuity!`](@ref). Replace calls with
+`derivative_discontinuity!(integrator, modified)`; this alias is retained only
+for migration of older callback and integrator code.
 """
 function u_modified!(i::DEIntegrator, bool)
     Base.depwarn(

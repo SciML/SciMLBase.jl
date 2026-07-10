@@ -48,7 +48,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process)
+  see the [noise process documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/).
 * `rand_prototype`: A prototype type instance for the noise vector. It defaults
   to `nothing`, which means the problem should be interpreted as having a noise
   vector whose size matches `u0`.

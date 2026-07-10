@@ -1,4 +1,4 @@
-# SciMLSolutions
+# [SciMLSolutions](@id scimlsolutions)
 
 ## Definition of the AbstractSciMLSolution Interface
 
@@ -193,6 +193,13 @@ SciMLBase.AbstractPDENoTimeSolution
 SciMLBase.AbstractPDESolution
 SciMLBase.AbstractSensitivitySolution
 ```
+
+### Concrete Solution Reference
+
+See [Concrete Solution Types](@ref concrete_solution_types) for the concrete
+result containers returned by linear, nonlinear, integral, optimization, and
+differential-equation solvers. Ensemble and PDE solution types are documented
+with their respective interfaces.
 
 ### Solution Statistics
 

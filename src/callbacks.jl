@@ -9,6 +9,10 @@ FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
     RightRootFind = 2
 end
 
+@doc "Disable root localization and apply a continuous callback at the detected step endpoint." NoRootFind
+@doc "Locate a continuous-callback root and use the solution's left-limit value at the event." LeftRootFind
+@doc "Locate a continuous-callback root and use the solution's right-limit value at the event." RightRootFind
+
 function Base.convert(::Type{RootfindOpt}, b::Bool)
     return b ? LeftRootFind : NoRootFind
 end

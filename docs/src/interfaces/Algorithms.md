@@ -39,6 +39,13 @@ keywords, and any keyword whose meaning or default differs from the family
 contract. Solver code should reject or diagnose unsupported common keywords
 rather than silently treating an allow-listed name as proof of capability.
 
+### Compatibility Diagnostics
+
+```@docs
+SciMLBase.check_keywords
+SciMLBase.warn_compat
+```
+
 ## Traits
 
 ```@docs

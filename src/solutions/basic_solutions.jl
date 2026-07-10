@@ -116,7 +116,6 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
     stats::S
 end
 
-
 """
     build_solution(prob, alg, args...; kwargs...)
 

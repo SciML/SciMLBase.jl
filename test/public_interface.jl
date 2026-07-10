@@ -78,11 +78,13 @@ end
     @test !occursin("`default_values = true`", problem_docs)
     @test occursin("`2.0`, `0.1`", problem_docs)
     @test !occursin("### `problem_type`", problem_docs)
-    @test occursin("SciMLBase.ImmutableODEProblem", problem_docs)
+    @test occursin("Differential Equation Problem Types", problem_docs)
+    @test !occursin("SciMLBase.ImmutableODEProblem", problem_docs)
     @test !occursin("will always make a deep copy", function_docs)
     @test occursin("selected differentiation and linear solver", function_docs)
     @test occursin("`update_coefficients` for the out-of-place form", function_docs)
-    @test occursin("SciMLBase.ODEFunction", function_docs)
+    @test occursin("ODE and Discrete Function Types", function_docs)
+    @test !occursin("SciMLBase.ODEFunction\n", function_docs)
 end
 
 @testset "Problem layout marker interface" begin
@@ -101,9 +103,124 @@ end
     @test SciMLBase.problem_type(ProblemTypeTestProblem()) isa ProblemTypeTestMarker
     @test SciMLBase.wrap_sol(ProblemTypeTestSolution(ProblemTypeTestProblem())) === :wrapped
     @test occursin("SciMLBase.problem_type", problem_trait_docs)
-    @test occursin("SciMLBase.StandardDDEProblem", problem_docs)
-    @test occursin("SciMLBase.StandardBVProblem", problem_docs)
-    @test occursin("SciMLBase.StandardNonlinearProblem", problem_docs)
+    @test occursin("Delay, Boundary, and Noise Problem Types", problem_docs)
+    @test occursin("Algebraic Problem Types", problem_docs)
+end
+
+@testset "Concrete interface reference documentation" begin
+    interfaces_dir = joinpath(@__DIR__, "..", "docs", "src", "interfaces")
+    bindings = String[]
+    for path in filter(path -> endswith(path, ".md"), readdir(interfaces_dir; join = true))
+        append!(bindings, strip.(readlines(path)))
+    end
+
+    concrete_bindings = (
+        # Problems
+        "SciMLBase.LinearProblem",
+        "SciMLBase.EigenvalueProblem",
+        "SciMLBase.EigenvalueTarget",
+        "SciMLBase.EigenvalueTarget.LargestMagnitude",
+        "SciMLBase.EigenvalueTarget.SmallestMagnitude",
+        "SciMLBase.EigenvalueTarget.LargestRealPart",
+        "SciMLBase.EigenvalueTarget.SmallestRealPart",
+        "SciMLBase.EigenvalueTarget.LargestImaginaryPart",
+        "SciMLBase.EigenvalueTarget.SmallestImaginaryPart",
+        "SciMLBase.NonlinearProblem",
+        "SciMLBase.StandardNonlinearProblem",
+        "SciMLBase.IntervalNonlinearProblem",
+        "SciMLBase.NonlinearLeastSquaresProblem",
+        "SciMLBase.SCCNonlinearProblem",
+        "SciMLBase.HomotopyProblem",
+        "SciMLBase.IntegralProblem",
+        "SciMLBase.SampledIntegralProblem",
+        "SciMLBase.OptimizationProblem",
+        "SciMLBase.SteadyStateProblem",
+        "SciMLBase.AnalyticalProblem",
+        "SciMLBase.ODEProblem",
+        "SciMLBase.ImmutableODEProblem",
+        "SciMLBase.StandardODEProblem",
+        "SciMLBase.DynamicalODEProblem",
+        "SciMLBase.SecondOrderODEProblem",
+        "SciMLBase.AbstractSplitODEProblem",
+        "SciMLBase.SplitODEProblem",
+        "SciMLBase.IncrementingODEProblem",
+        "SciMLBase.DiscreteProblem",
+        "SciMLBase.ImplicitDiscreteProblem",
+        "SciMLBase.RODEProblem",
+        "SciMLBase.SDEProblem",
+        "SciMLBase.SplitSDEProblem",
+        "SciMLBase.DynamicalSDEProblem",
+        "SciMLBase.DAEProblem",
+        "SciMLBase.DDEProblem",
+        "SciMLBase.StandardDDEProblem",
+        "SciMLBase.AbstractDynamicalDDEProblem",
+        "SciMLBase.DynamicalDDEProblem",
+        "SciMLBase.SecondOrderDDEProblem",
+        "SciMLBase.SDDEProblem",
+        "SciMLBase.BVProblem",
+        "SciMLBase.StandardBVProblem",
+        "SciMLBase.TwoPointBVProblem",
+        "SciMLBase.SecondOrderBVProblem",
+        "SciMLBase.StandardSecondOrderBVProblem",
+        "SciMLBase.TwoPointSecondOrderBVProblem",
+        "SciMLBase.NoiseProblem",
+        # Functions
+        "SciMLBase.ODEFunction",
+        "SciMLBase.DynamicalODEFunction",
+        "SciMLBase.SplitFunction",
+        "SciMLBase.IncrementingODEFunction",
+        "SciMLBase.ODEInputFunction",
+        "SciMLBase.DiscreteFunction",
+        "SciMLBase.ImplicitDiscreteFunction",
+        "SciMLBase.SDEFunction",
+        "SciMLBase.SplitSDEFunction",
+        "SciMLBase.DynamicalSDEFunction",
+        "SciMLBase.RODEFunction",
+        "SciMLBase.DDEFunction",
+        "SciMLBase.DynamicalDDEFunction",
+        "SciMLBase.SDDEFunction",
+        "SciMLBase.DAEFunction",
+        "SciMLBase.NonlinearFunction",
+        "SciMLBase.HomotopyNonlinearFunction",
+        "SciMLBase.IntervalNonlinearFunction",
+        "SciMLBase.IntegralFunction",
+        "SciMLBase.BatchIntegralFunction",
+        "SciMLBase.OptimizationFunction",
+        "SciMLBase.MultiObjectiveOptimizationFunction",
+        "SciMLBase.BVPFunction",
+        "SciMLBase.TwoPointBVPFunction",
+        "SciMLBase.TwoPointDynamicalBVPFunction",
+        "SciMLBase.DynamicalBVPFunction",
+        # Solutions
+        "SciMLBase.LinearSolution",
+        "SciMLBase.EigenvalueSolution",
+        "SciMLBase.NonlinearSolution",
+        "SciMLBase.SteadyStateSolution",
+        "SciMLBase.IntegralSolution",
+        "SciMLBase.OptimizationSolution",
+        "SciMLBase.ODESolution",
+        "SciMLBase.RODESolution",
+        "SciMLBase.DAESolution",
+    )
+
+    for binding in concrete_bindings
+        @test count(==(binding), bindings) == 1
+    end
+
+    for binding in (
+            "SciMLBase.AllObserved",
+            "SciMLBase.Clocks",
+            "SciMLBase.EnsembleAnalysis",
+            "SciMLBase.NullParameters",
+            "SciMLBase.check_keywords",
+            "SciMLBase.warn_compat",
+            "SciMLBase.u_modified!",
+            "SciMLBase.NoRootFind",
+            "SciMLBase.LeftRootFind",
+            "SciMLBase.RightRootFind",
+        )
+        @test count(==(binding), bindings) == 1
+    end
 end
 
 @testset "Solution interface documentation" begin

@@ -1318,7 +1318,7 @@ the usage of `f`. These include:
 - `mass_matrix`: the mass matrix `M_i` represented in the ODE function. Can be used
   to determine that the equation is actually a differential-algebraic equation (DAE)
   if `M` is singular. Note that in this case special solvers are required, see the
-  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/dae_solve/>.
+  DAE solver page for more details: <https://docs.sciml.ai/DiffEqDocs/stable/solvers/dae_solve/>.
   Must be an AbstractArray or an AbstractSciMLOperator. Should be given as a tuple
   of mass matrices, i.e. `(M_1, M_2)` for the mass matrices of equations 1 and 2
   respectively.
@@ -2161,8 +2161,8 @@ will use [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl) to define
 all of the necessary functions. Note that if any functions are defined
 directly, the auto-AD definition does not overwrite the user's choice.
 
-Each of the AD-based constructors are documented separately via their
-own dispatches below in the [Automatic Differentiation Construction Choice Recommendations](@ref ad) section.
+Each AD-based constructor is documented by the package that implements the
+corresponding [ADTypes.jl](https://github.com/SciML/ADTypes.jl) backend.
 
 ## iip: In-Place vs Out-Of-Place
 

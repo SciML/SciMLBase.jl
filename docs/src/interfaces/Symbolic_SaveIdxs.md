@@ -1,5 +1,9 @@
 # [Symbolic `save_idxs` and Saved Subsystems](@id symbolic_save_idxs)
 
+```@docs
+SciMLBase.AllObserved
+```
+
 When a symbolic problem is solved with `save_idxs`, a solution may contain only a
 subset of the original state variables or time-series parameters. The solution
 interface still needs symbolic indexing to behave as if the original system were

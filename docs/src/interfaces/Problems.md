@@ -222,37 +222,14 @@ SciMLBase.AbstractSteadyStateProblem
 SciMLBase.AbstractOptimizationCache
 ```
 
-### Problem Layout Markers
+## Concrete Problem Reference
 
-```@docs
-SciMLBase.StandardODEProblem
-SciMLBase.DynamicalODEProblem
-SciMLBase.SecondOrderODEProblem
-SciMLBase.AbstractSplitODEProblem
-SciMLBase.SplitODEProblem
-SciMLBase.IncrementingODEProblem
-SciMLBase.StandardDDEProblem
-SciMLBase.AbstractDynamicalDDEProblem
-SciMLBase.DynamicalDDEProblem
-SciMLBase.SecondOrderDDEProblem
-SciMLBase.StandardNonlinearProblem
-SciMLBase.StandardBVProblem
-SciMLBase.TwoPointBVProblem
-SciMLBase.StandardSecondOrderBVProblem
-SciMLBase.TwoPointSecondOrderBVProblem
-```
+Concrete constructors, their stored data, and the layout markers returned by
+[`problem_type`](@ref SciMLBase.problem_type) are grouped by problem family:
 
-## Concrete Nonlinear Problems
-
-```@docs
-SciMLBase.HomotopyProblem
-```
-
-## Concrete ODE Problems
-
-```@docs
-SciMLBase.ImmutableODEProblem
-```
+  - [Algebraic Problem Types](@ref algebraic_problem_types)
+  - [Differential Equation Problem Types](@ref differential_equation_problem_types)
+  - [Delay, Boundary, and Noise Problem Types](@ref delay_boundary_noise_problem_types)
 
 ## Problem Utilities
 

@@ -233,6 +233,20 @@ end
 
 # This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+"""
+    TwoPointBVPFunction(f, bc; kwargs...)
+    TwoPointBVPFunction{iip}(f, bc; kwargs...)
+
+Construct a [`BVPFunction`](@ref) for boundary conditions evaluated separately
+at the two endpoints. `bc` must contain exactly two callbacks with the same
+in-place convention. Out-of-place callbacks have signatures `bca(ua, p)` and
+`bcb(ub, p)`; in-place callbacks have signatures `bca!(resa, ua, p)` and
+`bcb!(resb, ub, p)` and require `bcresid_prototype = (resa, resb)`.
+
+All other keywords follow [`BVPFunction`](@ref). The returned wrapper has its
+two-point layout encoded in the type so boundary-value solvers can dispatch on
+it without inspecting the callbacks.
+"""
 struct TwoPointBVPFunction{iip} end
 
 @inline function TwoPointBVPFunction(args...; kwargs...)
@@ -487,6 +501,20 @@ end
 
 # This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+"""
+    TwoPointDynamicalBVPFunction(f, bc; kwargs...)
+    TwoPointDynamicalBVPFunction{iip}(f, bc; kwargs...)
+
+Construct a [`DynamicalBVPFunction`](@ref) for second-order boundary conditions
+evaluated separately at the two endpoints. `bc` must contain exactly two
+callbacks with the same in-place convention. Out-of-place callbacks have
+signatures `bca(dua, ua, p)` and `bcb(dub, ub, p)`; in-place callbacks have
+signatures `bca!(resa, dua, ua, p)` and `bcb!(resb, dub, ub, p)` and require
+`bcresid_prototype = (resa, resb)`.
+
+All other keywords follow [`DynamicalBVPFunction`](@ref). The returned wrapper
+encodes the two-point layout in its type.
+"""
 struct TwoPointDynamicalBVPFunction{iip} end
 
 @inline function TwoPointDynamicalBVPFunction(args...; kwargs...)
