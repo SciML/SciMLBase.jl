@@ -1,103 +1,169 @@
 # [SciML Container (Array) and Number Interfaces](@id arrayandnumber)
 
-We live in a society, and therefore there are rules. In this tutorial we outline
-the rules which are required on container and number types which are allowable
-in SciML tools.
+SciML problems separate the mathematical model from the numerical algorithm,
+so compatibility is a property of the complete problem-algorithm pair. A type
+that is sufficient for an explicit out-of-place method may be insufficient for
+an in-place, adaptive, implicit, sparse, GPU, or directly differentiated solve.
+This page defines the shared contracts and identifies the features that add
+further requirements.
 
-!!! warning
-    
-    In general as of 2023, strict adherence to this interface is an early work-in-progress.
-    If anything does not conform to the documented interface, please open an issue.
+## Algorithm Capabilities
 
-!!! note
-    
-    There are many types which can work with a specific solver that do satisfy this
-    interface. Many times as part of prototyping you may want to side-step the
-    high level interface checks in order to simply test whether a new type is working.
-    To do this, set `interface_checks = false` as a keyword argument to `init`/`solve`
-    to bypass any of the internal interface checks. This means you will no longer get
-    a nice high-level error message and instead it will attempt to use the type
-    without restrictions. Note that not every problem/solver has implemented this
-    new keyword argument as of 2023.
+Before relying on a nonstandard scalar or container, check the selected solver
+package and algorithm. SciMLBase defines traits that solver packages extend:
 
-## Note About Wrapped Solvers
+  - [`allows_arbitrary_number_types(alg)`](@ref SciMLBase.allows_arbitrary_number_types)
+    declares support for scalar types beyond standard floating-point and complex
+    floating-point types.
+  - [`allowscomplex(alg)`](@ref SciMLBase.allowscomplex) declares support for
+    complex-valued states. Complex-valued time spans are not supported.
+  - [`isautodifferentiable(alg)`](@ref SciMLBase.isautodifferentiable) declares
+    whether automatic differentiation may pass directly through the solver.
 
-Due to limitations of wrapped solvers, any solver that is a wrapped solver from an existing C/Fortran
-code is inherently limited to `Float64` and `Vector{Float64}` for its operations. This includes packages
-like Sundials.jl, LSODA.jl, DASKR.jl, MINPACK.jl, and many more. This is fundamental to these solvers
-and it is not expected that they will allow the full set of SciML types in the future. If more abstract
-number/container definitions are required, then these are not the appropriate solvers to use.
+These traits describe algorithm implementations, not just the user model. A
+solver can accept a model that evaluates on dual numbers without supporting
+direct differentiation through all of its caches, callbacks, and linear solves.
+Likewise, an algorithm that supports arbitrary scalar types may still require a
+specific array layout or linear solver for a particular configuration.
 
-## SciML Number Types
+## Wrapped Solvers
 
-The number types are the types used to define the dependent variables (i.e. `u0`) and the
-independent variables (`t` or `tspan`). These two types can be different, and can have
-different restrictions depending on the type of solver which is employed. The following
-rules for a Number type are held in general:
+Solvers that call C, Fortran, or another external runtime inherit that library's
+ABI and storage constraints. These commonly include a fixed real scalar type,
+contiguous host storage, or a specific vector representation. The precise
+restriction belongs to the wrapper: it is not a universal rule that every
+wrapped solver accepts only `Vector{Float64}`, and callers should consult the
+selected package's documented problem and algorithm support.
 
-  - Number types can be used in SciML directly or in containers. If a problem defines a value like `u0`
-    using a Number type, the out-of-place form must be used for the problem definition.
-  - `x::T + y::T = z::T`
-  - `x::T * y::T = z::T`
-  - `oneunit(x::T)::T`
-  - `(one(x::T) * oneunit(x::T))::T`
-  - `t::T2 * x::T + y::T = z::T` for `T2` a time type and `T` the dependent variable type (this includes the
-    `muladd` equivalent form).
+A wrapper may copy or convert compatible inputs to its native representation.
+Such conversion does not imply support for units, dual numbers, arbitrary
+precision, GPU arrays, custom axes, or preservation of the input container type.
+Use an algorithm that advertises the required capabilities when those properties
+must survive the solve.
 
-Additionally, the following rules apply to subsets of uses:
+## Scalar Number Types
 
-### Adaptive Number Types
+State scalars and array element types must support the arithmetic performed by
+the selected algorithm. The common baseline is:
 
-  - `x::T / y::T = z::T`
-  - Default choices of norms can assume `sqrt(x::T)::T` exists. If `internalnorm` is overridden then this
-    may not be required (for example, changing the norm to inf-norm).
-  - `x::T ^ y::T = z::T`
+  - additive and multiplicative identities through `zero`, `one`, and
+    `oneunit` where dimensionful quantities require it;
+  - addition, subtraction, multiplication, and the required division between
+    states, rates, time steps, tableau coefficients, and parameters;
+  - promotion or conversion that preserves the intended scalar type when solver
+    coefficients and problem values interact; and
+  - magnitude and comparison operations needed by the chosen norm, stopping
+    conditions, and error checks.
 
-### Time Types (Independent Variables)
+The model must return rates with dimensions compatible with state divided by
+time. It should not allocate hard-coded `Float64` work arrays when it is expected
+to support `Float32`, `BigFloat`, unitful quantities, dual numbers, measurements,
+or another scalar type. Use values and storage derived from the model arguments,
+such as `zero(u)`, `similar(u)`, and `oneunit(t)`.
 
-  - If a solver is time adaptive, the time type must be a floating point number. `Rational` is only allowed
-    for non-adaptive solves.
+A scalar state is compatible with an out-of-place model. An in-place model needs
+a writable state and derivative container; SciMLBase rejects scalar and immutable
+`SArray` initial states for in-place differential equation problems.
 
-## SciML Container (Array) Types
+### Adaptive Error Control
 
-Container types are types which hold number types. They can be used to define objects like the state vector
-(`u0`) of a problem. The following operations are required in a container type to be used with SciML
-solvers:
+Adaptive algorithms impose additional operations. Their error estimate and
+`internalnorm` must produce a finite, ordered, effectively dimensionless value
+that can be compared with tolerances. Step-size controllers may apply division,
+fractional powers or roots, minima and maxima, and conversion between controller
+coefficients and the time-step type.
 
-  - Broadcast is defined [according to the Julia broadcast interface](https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting).
-  - The container type correctly defines [interface overloads to satisfy the ArrayInterface.jl specification](https://docs.sciml.ai/ArrayInterface/stable/).
-  - `ArrayInterface.zeromatrix(x::T)::T2` defines a compatible matrix type (see below)
-  - `eltype(x::T)::T2` is a compatible Number type.
-  - `x::T .+ y::T = z::T` (i.e. broadcast similar is defined to be type-presurving)
-  - Indexing is only required if `ArrayInterface.fast_scalar_indexing(x::T)==true`. If true,
-    scalar indexing `x[i]` is assumed to be defined and run through all variables.
+Overriding `internalnorm` can make a custom scalar or container usable when the
+default norm is inappropriate, but it does not remove the other arithmetic
+requirements of the algorithm. Tolerances must also be dimensionally compatible
+with the scaled error calculation.
 
-!!! note
-    
-    "`eltype(x::T)::T2` is a compatible Number type" excludes `Array{Array{T}}` types of types. However, recursive
-    vectors can conformed to the interface with zero overhead using tools from RecursiveArrayTools.jl such as
-    `VectorOfArray(x)`. Since this greatly simplifies the interfaces and the ability to check for correctness,
-    doing this wrapping is highly recommended and there are no plans to relax this requirement.
+### Time Types
 
-Additionally, the following rules apply to subsets of uses:
+Time is real and ordered. A supported time type must provide subtraction between
+times, addition of a time step, direction and zero tests, ordering, and scaling
+by the dimensionless values used by the algorithm. Adaptive methods require the
+extra controller operations described above.
 
-### SciML Mutable Array Types
+Exact types such as `Rational` can be preserved by compatible fixed-step methods;
+they are not a general promise for adaptive methods. Pure-Julia algorithms may
+also support `BigFloat`, dual-valued time, or Unitful time when all selected
+features remain generic. The algorithm traits and package tests are authoritative
+for a specific combination.
 
-  - `similar(x::T)::T`
-  - `zero(x::T)::T`
-  - `z::T .= x::T .+ y::T` is defined
-  - `z::T .= x::T .* y::T` is defined
-  - `z::T .= t::T2 .* x::T` where `T2` is the time type (a Number) and `T` is the container type.
-  - (Optional) `Base.resize!(x,i)` is required for `resize!(integrator,i)` to be supported.
+## State Container Types
 
-### SciML Matrix (Operator) Type
+Array states should implement Julia's
+[array interface](https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-array)
+and [broadcasting interface](https://docs.julialang.org/en/v1/manual/interfaces/#man-interfaces-broadcasting).
+At minimum, the solver must be able to inspect the state geometry and scalar
+type through operations such as `size`, `axes`, `length`, `eltype`, and
+`eachindex`, and out-of-place arithmetic must construct a result with compatible
+geometry.
 
-Note that the matrix type may not match the type of the initial container `u0`. An example is `ComponentMatrix`
-as the matrix structure corresponding to a `ComponentArray`. However, the following actions are assumed
-to hold on the resulting matrix type:
+For an ordinary Julia `Array`, the differential equation solve path requires a
+concrete recursive unitless scalar type and a `Number` element type. A plain
+`Array{Array{T}}` is therefore not a general SciML state representation. Use a
+container with defined recursive array semantics, such as `ArrayPartition` or
+`VectorOfArray` from RecursiveArrayTools.jl, or a structured flat container such
+as a `ComponentArray`. Boundary value problems have additional documented forms
+for arrays of state guesses.
 
-  - `solve(LinearProblem(A::T,b::T2),linsolve)` must be defined for a solver to work on a given SciML matrix
-    type `T2`.
-  - If the matrix is an operator, i.e. a lazy construct, it should conform to the
-    [SciMLOperators](https://docs.sciml.ai/SciMLOperators/stable/) interface.
-  - If not a SciMLOperator, `diagind(W::T)` should be defined and `@view(A[idxs])=@view(A[idxs]) + λ::T`
+Container packages should define the relevant public
+[ArrayInterface.jl](https://docs.sciml.ai/ArrayInterface/stable/) traits. In
+particular, `ArrayInterface.ismutable` must agree with whether solver caches may
+write into the value. If `ArrayInterface.fast_scalar_indexing` is `false`, the
+container and selected algorithm need compatible bulk operations; declaring the
+trait does not by itself make scalar-indexing solver code GPU-compatible.
+
+### Mutable Containers
+
+In-place models and mutable solver caches require writable values with
+type-preserving operations. Depending on the algorithm, this includes:
+
+  - `similar` for the same geometry and for requested element types or axes;
+  - `copy`, `copyto!`, `fill!`, and `zero`;
+  - fused and unfused broadcast assignment for state-state and scalar-state
+    arithmetic; and
+  - `getindex` and `setindex!` when the algorithm uses scalar indexing.
+
+`resize!` is optional and is needed only for workflows that change the state
+dimension through the integrator interface. Immutable containers such as
+`SVector` instead use out-of-place model and cache paths. GPU arrays require an
+algorithm, differentiation backend, callback set, and linear solver that all
+avoid unsupported host scalar indexing.
+
+## Matrix and Operator Types
+
+The matrix or operator type used by an implicit algorithm need not match the
+state container type. When a solver constructs a Jacobian from the state,
+`ArrayInterface.zeromatrix(u)` should return a compatible matrix with the correct
+dimensions and storage location. This is how recursive and GPU-aware containers
+can select an appropriate default matrix representation.
+
+The selected differentiation and linear-solver paths determine the remaining
+contract. A concrete matrix may need matrix-vector products, `mul!`, compatible
+`similar` and copy operations, diagonal access through `diagind`, and writable
+diagonal views for shifts used to form a Newton matrix. A lazy operator should
+implement the public
+[SciMLOperators.jl](https://docs.sciml.ai/SciMLOperators/stable/) interface
+instead of imitating a dense array.
+
+Ultimately, the generated system `LinearProblem(A, b)` must be accepted by the
+chosen linear solver, with `b` using the state-compatible right-hand-side type.
+Supplying `jac_prototype`, `linsolve`, or a mass matrix can therefore add
+requirements beyond those of the state container alone.
+
+## Validating a New Type
+
+There is no supported keyword that bypasses all type and interface validation.
+Test the exact problem-algorithm pair and every feature that will be used:
+`init`, `solve`, interpolation, callbacks, adaptivity, Jacobian construction,
+linear solves, device execution, and differentiation can exercise different
+parts of the contract. A successful constructor call alone does not establish
+solver compatibility.
+
+Type authors should keep these tests in the package that owns the container or
+number type and cover both result correctness and preservation of scalar,
+container, axes, and device properties where those are part of the type's public
+contract.

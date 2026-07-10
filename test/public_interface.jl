@@ -40,6 +40,22 @@ end
     @test occursin("`OptimizationProblem`", pde_docs)
 end
 
+@testset "Array and number interface documentation" begin
+    array_number_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Array_and_Number.md"),
+        String
+    )
+
+    @test !occursin("interface_checks", array_number_docs)
+    @test !occursin("as of 2023", array_number_docs)
+    @test occursin("problem-algorithm pair", array_number_docs)
+    @test occursin("allows_arbitrary_number_types", array_number_docs)
+    @test occursin("allowscomplex", array_number_docs)
+    @test occursin("ArrayInterface.zeromatrix", array_number_docs)
+    @test occursin("SciMLOperators.jl", array_number_docs)
+    @test occursin("LinearProblem(A, b)", array_number_docs)
+end
+
 if isdefined(Base, :ispublic)
     @testset "Clocks manual public API" begin
         for name in (
