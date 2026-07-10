@@ -24,6 +24,22 @@ using SciMLBase, Test
     @test !occursin("Commonly used algorithm keyword arguments are:\n\n", algorithms)
 end
 
+@testset "PDE interface documentation" begin
+    pde_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "PDE.md"), String
+    )
+    normalized_pde_docs = join(split(pde_docs), " ")
+
+    @test !occursin("WIP", pde_docs)
+    @test occursin("does not require subtyping", normalized_pde_docs)
+    @test occursin("SciMLBase.discretize(sys, discretizer", pde_docs)
+    @test occursin("SciMLBase.symbolic_discretize(sys, discretizer", pde_docs)
+    @test occursin("AbstractDiscretizationMetadata{Val(true)}", pde_docs)
+    @test occursin("AbstractDiscretizationMetadata{Val(false)}", pde_docs)
+    @test occursin("`NonlinearProblem`", pde_docs)
+    @test occursin("`OptimizationProblem`", pde_docs)
+end
+
 if isdefined(Base, :ispublic)
     @testset "Clocks manual public API" begin
         for name in (

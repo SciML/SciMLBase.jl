@@ -1,102 +1,111 @@
 # The PDE Definition Interface
 
-While ODEs ``u' = f(u,p,t)`` can be defined by a user-function `f`, for PDEs the
-function form can be different for every PDE. How many functions, and how many
-inputs? This can always change. The SciML ecosystem solves this problem by
-using [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) to define `PDESystem`,
-a high-level symbolic description of the PDE to be consumed by other packages.
+PDE discretization packages bridge high-level equation descriptions to the
+solver-ready problems used throughout the SciML ecosystem. The shared interface
+is based on dispatch: a package extends [`discretize`](@ref SciMLBase.discretize)
+for each supported pair of PDE representation and discretizer, and may also
+extend [`symbolic_discretize`](@ref SciMLBase.symbolic_discretize) to expose the
+intermediate representation.
 
-The vision for the common PDE interface is that a user should only have to specify
-their PDE once, mathematically, and have instant access to everything as simple
-as a finite difference method with constant grid spacing, to something as complex
-as a distributed multi-GPU discontinuous Galerkin method.
+SciMLBase does not prescribe one PDE equation language, domain type, boundary
+condition syntax, or spatial discretization. Those semantics belong to the
+packages that own the high-level representation and discretizer. This keeps the
+result of discretization compatible with ordinary ODE, nonlinear,
+optimization, linear, and other SciML solvers without requiring those solvers to
+understand PDE-specific syntax.
 
-The key to the common PDE interface is a separation of the symbolic handling from
-the numerical world. All of the discretizers should not "solve" the PDE, but
-instead be a conversion of the mathematical specification to a numerical problem.
-Preferably, the transformation should be to another ModelingToolkit.jl `AbstractSystem`
-via a `symbolic_discretize` dispatch, but in some cases this cannot be done or will
-not be performant. Thus in some cases, only a `discretize` definition is given to a
-`AbstractSciMLProblem`, with `symbolic_discretize` simply providing diagnostic or lower level
-information about the construction process.
+## Core Extension Contract
 
-These elementary problems, such as solving linear systems `Ax=b`, solving nonlinear
-systems `f(x)=0`, ODEs, etc. are all defined by SciMLBase.jl, which then numerical
-solvers can all target these common forms. Thus someone who works on linear solvers
-doesn't necessarily need to be working on a Discontinuous Galerkin or finite element
-library, but instead "linear solvers that are good for matrices A with
-properties ..." which are then accessible by every other discretization method
-in the common PDE interface.
+A discretizer package implements:
 
-Similar to the rest of the `AbstractSystem` types, transformation and analyses
-functions will allow for simplifying the PDE before solving it, and constructing
-block symbolic functions like Jacobians.
+```julia
+SciMLBase.discretize(sys, discretizer, args...; kwargs...)
+```
 
-## Problem and Discretization Contracts
+for each supported `sys` and `discretizer` pair. The method must return a
+solver-ready SciML problem, such as an `ODEProblem`, `NonlinearProblem`, or
+`OptimizationProblem`, or another documented problem type accepted by the
+intended solver. It should forward relevant problem-construction keyword
+arguments, validate unsupported equations, domains, and boundary conditions,
+and preserve enough metadata to reconstruct the PDE solution.
 
-The common PDE interface has three layers:
+[`AbstractDiscretization`](@ref SciMLBase.AbstractDiscretization) is an optional
+common marker for discretizer algorithms. Implementing the interface does not
+require subtyping it: a package may own a more specific public algorithm
+hierarchy and still participate by extending `SciMLBase.discretize`.
 
-  - an [`AbstractPDEProblem`](@ref SciMLBase.AbstractPDEProblem) or concrete
-    [`PDEProblem`](@ref SciMLBase.PDEProblem) stores the pre-discretization PDE
-    representation and domain metadata;
-  - an [`AbstractDiscretization`](@ref SciMLBase.AbstractDiscretization)
-    describes the numerical transformation from the high-level PDE
-    representation to a solver-ready SciML problem; and
-  - an [`AbstractDiscretizationMetadata`](@ref SciMLBase.AbstractDiscretizationMetadata)
-    value records how the generated numerical solution maps back to the original
-    independent variables, dependent variables, and domains.
+A package may additionally implement:
 
-Discretization metadata also determines how the final solver solution is wrapped.
-Use `AbstractDiscretizationMetadata{Val(true)}` when the generated PDE solution
-has a saved time axis and `AbstractDiscretizationMetadata{Val(false)}` when it
-does not. The generic `SciMLBase.wrap_sol(sol, metadata)` dispatch uses that flag
-to call either `PDETimeSeriesSolution(sol, metadata)` or
-`PDENoTimeSolution(sol, metadata)`. Downstream discretizer packages should define
-the corresponding outer constructor for their metadata type and should keep
-callable interpolation/evaluation methods in the package that owns the metadata.
+```julia
+SciMLBase.symbolic_discretize(sys, discretizer, args...; kwargs...)
+```
 
-## Constructors
+The return type is part of the discretizer's public contract. It may be a
+lowered symbolic system, a tuple containing a system and time span, a collection
+of generated operators, or a diagnostic representation such as loss functions.
+It need not be a ModelingToolkit `AbstractSystem`, but it should describe the
+same discretization used by `discretize` and retain the information needed for
+inspection or downstream transformations.
 
-Symbolic PDE systems are constructed with `ModelingToolkit.PDESystem`, which is
-owned by ModelingToolkit.jl.
+## PDE Representations
+
+SciMLBase defines [`AbstractPDEProblem`](@ref SciMLBase.AbstractPDEProblem) and
+the lightweight [`PDEProblem`](@ref SciMLBase.PDEProblem) wrapper. `PDEProblem`
+stores a package-specific PDE representation together with extrapolation and
+spatial metadata; SciMLBase does not interpret those fields.
+
+High-level packages may instead define their own representation and dispatch
+directly on it. For example, ModelingToolkit owns `PDESystem`, including its
+equations, independent and dependent variables, parameters, domains, and
+boundary or initial conditions. A downstream discretizer should document which
+representation types it accepts rather than assuming every PDE enters through
+`PDEProblem`.
 
 ```@docs
 SciMLBase.PDEProblem
 ```
 
-### Domains (WIP)
+## Domains and Boundary Conditions
 
-Domains are specifying by saying `indepvar in domain`, where `indepvar` is a
-single or a collection of independent variables, and `domain` is the chosen
-domain type. A 2-tuple can be used to indicate an `Interval`.
-Thus forms for the `indepvar` can be like:
+Domain and boundary-condition syntax is owned by the high-level PDE and
+discretizer packages. SciMLBase does not require a universal interval, mesh,
+geometry, or boundary-condition type. A discretizer's public interface should
+document:
 
-```julia
-t ∈ (0.0, 1.0)
-(t, x) ∈ UnitDisk()
-[v, w, x, y, z] ∈ VectorUnitBall(5)
-```
+  - supported domain dimensions, geometries, coordinate systems, and grid or
+    sampling specifications;
+  - supported initial, Dirichlet, Neumann, Robin, periodic, interface, and other
+    boundary-condition classes;
+  - how conditions are validated, eliminated, embedded, or transformed; and
+  - restrictions imposed by the selected discretization, including required
+    regularity, compatible derivative orders, and unsupported combinations.
 
-#### Domain Types (WIP)
+Invalid or unsupported input should produce an actionable error before the
+generated numerical problem is passed to a solver.
 
-  - `Interval(a,b)`: Defines the domain of an interval from `a` to `b` (requires explicit
-    import from `DomainSets.jl`, but a 2-tuple can be used instead)
-
-## `discretize` and `symbolic_discretize`
-
-The only functions which act on a PDESystem are the following:
-
-  - `discretize(sys,discretizer)`: produces the outputted `AbstractSystem` or
-    `AbstractSciMLProblem`.
-  - `symbolic_discretize(sys,discretizer)`: produces a debugging symbolic description
-    of the discretized problem.
+## Discretization Functions
 
 ```@docs
 SciMLBase.discretize
 SciMLBase.symbolic_discretize
 ```
 
-## PDE Solution Wrappers
+## Discretization Metadata and Solution Wrapping
+
+Discretizers that return PDE-aware solutions can subtype
+[`AbstractDiscretizationMetadata`](@ref SciMLBase.AbstractDiscretizationMetadata).
+Use `AbstractDiscretizationMetadata{Val(true)}` when the generated solution has a
+saved time axis and `AbstractDiscretizationMetadata{Val(false)}` when it does
+not. [`wrap_sol(sol, metadata)`](@ref SciMLBase.wrap_sol) routes these to
+`PDETimeSeriesSolution(sol, metadata)` and `PDENoTimeSolution(sol, metadata)`,
+respectively.
+
+The package that owns the metadata must define the corresponding outer solution
+constructor. Its metadata should retain the original variables and domains, the
+layout of generated state variables, and any grids, transformations, or
+interpolants needed to map the solver output back to the PDE representation. If
+the wrapper is callable, metadata-specific methods should define the supported
+evaluation coordinates, interpolation behavior, and extrapolation behavior.
 
 ```@docs
 SciMLBase.PDETimeSeriesSolution
@@ -104,23 +113,28 @@ SciMLBase.PDENoTimeSolution
 SciMLBase.wrap_sol
 ```
 
-## Boundary Conditions (WIP)
+## Transformations and Analysis
 
-## Transformations
+Equation simplification, index reduction, domain decomposition, coordinate
+transformations, sparsity analysis, and operator construction belong to the
+packages that own the PDE representation or discretizer. When such a
+transformation changes variables or state layout, the discretizer must preserve
+the map needed for solution reconstruction. `symbolic_discretize` is the common
+inspection hook for exposing the lowered equations, operators, grids, loss
+functions, or other package-defined intermediate data.
 
-## Analyses
+## Downstream Patterns
 
-## Discretizer Ecosystem
+[MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/) extends the
+interface for `MOLFiniteDifference`. Its symbolic path returns a semi-discrete
+system and time span; its solver-ready path constructs an `ODEProblem` for
+time-dependent systems or a `NonlinearProblem` for stationary systems. Its
+metadata records the discrete space and maps the numerical solution back to the
+original PDE variables and grids.
 
-### NeuralPDE.jl: PhysicsInformedNN
-
-[NeuralPDE.jl](https://docs.sciml.ai/NeuralPDE/stable/) defines the `PhysicsInformedNN`
-discretizer which uses a [DiffEqFlux.jl](https://docs.sciml.ai/DiffEqFlux/stable/)
-neural network to solve the differential equation.
-
-### MethodOfLines.jl: MOLFiniteDifference (WIP)
-
-[MethodOfLines.jl](https://docs.sciml.ai/MethodOfLines/stable/) defines the
-`MOLFiniteDifference` discretizer which performs a finite difference discretization
-using the DiffEqOperators.jl stencils. These stencils make use of NNLib.jl for
-fast operations on semi-linear domains.
+[NeuralPDE.jl](https://docs.sciml.ai/NeuralPDE/stable/) extends the interface for
+`PhysicsInformedNN`. Its symbolic path returns a representation containing the
+generated loss functions and parameters, while `discretize` constructs an
+`OptimizationProblem`. This demonstrates why `symbolic_discretize` has a
+package-defined return type and why the shared contract is dispatch-based rather
+than tied to a single discretizer hierarchy.

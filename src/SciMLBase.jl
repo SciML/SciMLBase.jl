@@ -957,9 +957,12 @@ OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
 """
 $(TYPEDEF)
 
-Base interface for discretization algorithms. Concrete subtypes transform
-symbolic or high-level PDE/problem descriptions into solver-ready SciML
-problems, typically through `discretize` and optionally `symbolic_discretize`.
+Optional common base for discretization algorithms. Packages participate in the
+discretization interface by extending [`discretize`](@ref) and optionally
+[`symbolic_discretize`](@ref) for the high-level representation and algorithm
+types they support. A package may instead subtype a more specific public
+algorithm hierarchy that it owns; subtyping `AbstractDiscretization` is not
+required to extend those functions.
 
 Concrete discretizations should document the input problem or system types they
 accept, the numerical discretization they apply, the generated problem type, and
@@ -1916,15 +1919,15 @@ end
     discretize(sys, discretizer, args...; kwargs...)
 
 Transform a symbolic or high-level problem description into a solver-ready
-representation.
+problem.
 
 Discretizer packages implement `SciMLBase.discretize` for the system/problem
-types and discretization algorithms they own. A method may return an
-[`AbstractSciMLProblem`](@ref), a lower-level symbolic system, or another
-documented object that downstream solver packages can consume. Implementations
-should document the accepted input system type, the meaning of `discretizer`, the
-generated problem family, and any metadata needed to map numerical solutions back
-to the original variables and domains.
+types and discretization algorithms they own. A method should return an
+[`AbstractSciMLProblem`](@ref) or another documented problem type accepted by
+the intended solver. Implementations should document the accepted input system
+type, the meaning of `discretizer`, the generated problem family, forwarded
+problem-construction keywords, and any metadata needed to map numerical
+solutions back to the original variables and domains.
 
 Use [`symbolic_discretize`](@ref) when the caller needs a diagnostic or symbolic
 view of the discretized system rather than the solver-ready problem.
@@ -1940,8 +1943,9 @@ Discretizer packages implement `SciMLBase.symbolic_discretize` when they can
 expose lowered equations, operators, grids, boundary-condition handling, or other
 intermediate artifacts without constructing only the final solver-ready problem.
 The result should correspond to the same mathematical discretization used by
-[`discretize`](@ref), but may preserve additional symbolic information useful for
-inspection, debugging, code generation, or downstream transformations.
+[`discretize`](@ref), but may preserve additional information useful for
+inspection, debugging, code generation, or downstream transformations. Its type
+is package-defined and need not subtype a symbolic-system abstraction.
 """
 function symbolic_discretize end
 
