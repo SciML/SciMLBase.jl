@@ -378,26 +378,63 @@ requires_additive_noise(alg::AbstractSDEAlgorithm) = false
 """
     AlgorithmInterpretation
 
-Enum of stochastic integral interpretations used by SDE algorithms. The values are
-`AlgorithmInterpretation.Ito` and `AlgorithmInterpretation.Stratonovich`.
+Stochastic integral interpretation implemented by an SDE algorithm.
+
+The two values are [`AlgorithmInterpretation.Ito`](@ref) and
+[`AlgorithmInterpretation.Stratonovich`](@ref). For multiplicative noise these
+interpretations generally define different solutions and different statistics;
+they coincide for additive noise because the diffusion does not depend on the
+state.
+
+Concrete SDE algorithms report their interpretation through
+[`alg_interpretation`](@ref). Problem transformations, sensitivity methods, and
+solver-selection code should query that trait instead of inferring the
+interpretation from an algorithm name.
 """
-EnumX.@enumx AlgorithmInterpretation Ito Stratonovich
+EnumX.@enumx AlgorithmInterpretation begin
+    """
+        AlgorithmInterpretation.Ito
+
+    Itô interpretation, defined by non-anticipating stochastic sums whose
+    diffusion coefficient is evaluated at the left endpoint of each interval.
+
+    Itô integrals are adapted to the information available before each noise
+    increment. Nonlinear changes of variables follow Itô's formula and include
+    the quadratic-variation correction term.
+    """
+    Ito
+
+    """
+        AlgorithmInterpretation.Stratonovich
+
+    Stratonovich interpretation, defined by symmetric or midpoint stochastic
+    sums.
+
+    Stratonovich integrals obey the ordinary chain rule. For multiplicative noise,
+    converting an SDE between Stratonovich and Itô form requires a drift correction;
+    changing only the algorithm interpretation without transforming the drift
+    generally changes the mathematical problem.
+    """
+    Stratonovich
+end
 
 """
     alg_interpretation(alg)
 
-Integral interpolation for the SDE solver algorithm. SDEs solutions depend on the chosen definition of the stochastic integral. In the Ito calculus,
-the left-hand rule is taken, while Stratonovich calculus uses the right-hand rule. Unlike in standard Riemannian integration, these integral rules do
-not converge to the same answer. In the context of a stochastic differential equation, the underlying solution (and its mean, variance, etc.) is dependent
-on the integral rule that is chosen. This trait describes which interpretation the solver algorithm subscribes to, and thus whether the solution should
-be interpreted as the solution to the SDE under the Ito or Stratonovich interpretation.
+Return the [`AlgorithmInterpretation`](@ref) implemented by `alg`.
 
-For more information, see <https://oatml.cs.ox.ac.uk/blog/2022/03/22/ito-strat.html> as a good high-level explanation.
+Concrete SDE algorithms must return either `AlgorithmInterpretation.Ito` or
+`AlgorithmInterpretation.Stratonovich`. Itô methods approximate non-anticipating
+left-endpoint stochastic sums, while Stratonovich methods approximate symmetric
+or midpoint sums. There is deliberately no default for arbitrary SciML
+algorithms: omitting the trait is an error because silently choosing an
+interpretation can change the mathematical solution.
 
-!!! note
-
-    The expected solution statistics are dependent on this output. Solutions from solvers with different
-    interpretations are expected to have different answers on almost all SDEs without additive noise.
+Algorithms parameterized by an interpretation should return the selected marker;
+algorithms with a fixed interpretation should define a method for their concrete
+type. Downstream code uses this trait for solver selection, drift transformations,
+and stochastic sensitivity equations. The distinction affects multiplicative
+noise; additive-noise equations have the same solution under both interpretations.
 """
 function alg_interpretation(alg::AbstractSciMLAlgorithm)
     error("Algorithm interpretation is not defined for this algorithm. It can be either `AlgorithmInterpretation.Ito` or `AlgorithmInterpretation.Stratonovich`")

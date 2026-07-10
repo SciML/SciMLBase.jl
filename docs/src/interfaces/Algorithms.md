@@ -60,6 +60,8 @@ SciMLBase.allowscallback
 SciMLBase.allows_non_wiener_noise
 SciMLBase.requires_additive_noise
 SciMLBase.AlgorithmInterpretation
+SciMLBase.AlgorithmInterpretation.Ito
+SciMLBase.AlgorithmInterpretation.Stratonovich
 SciMLBase.alg_interpretation
 ```
 

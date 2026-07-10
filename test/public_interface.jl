@@ -162,6 +162,16 @@ if isdefined(Base, :ispublic)
         end
     end
 
+    @testset "Algorithm interpretation enum" begin
+        @test instances(SciMLBase.AlgorithmInterpretation.T) ==
+            (
+            SciMLBase.AlgorithmInterpretation.Ito,
+            SciMLBase.AlgorithmInterpretation.Stratonovich,
+        )
+        @test Int(SciMLBase.AlgorithmInterpretation.Ito) == 0
+        @test Int(SciMLBase.AlgorithmInterpretation.Stratonovich) == 1
+    end
+
     @testset "Init-solve manual public API" begin
         for name in (
                 :DEIntegrator,
