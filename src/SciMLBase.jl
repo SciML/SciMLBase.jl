@@ -318,6 +318,12 @@ Base for types which define steady-state problems, i.e. finding the `u` for whic
 `du/dt = f(u, p, t) = 0`. This is a type alias for [`AbstractNonlinearProblem`](@ref),
 since a steady state is the solution of the nonlinear system defined by the right-hand
 side of the differential equation.
+
+Steady-state problem types therefore follow the nonlinear problem interface: they
+provide `f`, `u0`, `p`, and `kwargs`, encode the in-place convention in the
+`isinplace` parameter, and expose state and parameter data through the same
+symbolic indexing rules. They do not have a finite independent-variable value;
+`SymbolicIndexingInterface.current_time(prob)` returns `Inf`.
 """
 const AbstractSteadyStateProblem{
     uType, isinplace,
@@ -1711,6 +1717,7 @@ function specialization(
             DynamicalBVPFunction{iip, specialize},
             IntegralFunction{iip, specialize},
             BatchIntegralFunction{iip, specialize},
+            IncrementingODEFunction{iip, specialize},
         }
     ) where {
         iip,

@@ -557,12 +557,41 @@ function SplitODEProblem{iip}(
     return ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
 end
 
+"""
+$(TYPEDEF)
+
+Internal supertype for incrementing ODE constructor tags. Concrete tags record
+the in-place convention while [`IncrementingODEProblem`](@ref) converts the
+input into an `ODEProblem` with an [`IncrementingODEFunction`](@ref).
+
+These tags are stored in the resulting problem's `problem_type` field; they are
+not standalone problem containers. Solvers that require incrementing evaluation
+may inspect the tag or the wrapped function, but ordinary ODE tooling should use
+the returned `ODEProblem` interface.
+"""
 abstract type AbstractIncrementingODEProblem end
 
 """
-$(SIGNATURES)
+    IncrementingODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
+    IncrementingODEProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...)
 
-Experimental
+Construct an experimental ODE problem for a model function that can update an
+existing derivative buffer in an incrementing form.
+
+The constructor wraps `f` in an [`IncrementingODEFunction`](@ref), stores an
+`IncrementingODEProblem{iip}` tag as `problem_type`, and returns a standard
+`ODEProblem`. The result therefore follows the ordinary ODE problem
+field, symbolic-indexing, keyword-forwarding, and solve interfaces.
+
+Low-storage solvers commonly use the in-place convention
+`f(du, u, p, t, alpha, beta)`, with the contract
+`du = alpha * F(u, p, t) + beta * du`. SciMLBase forwards these calls but does
+not synthesize the scaling operation; the wrapped model function must implement
+the call forms required by the selected solver.
+
+Use the explicit `IncrementingODEProblem{iip}` form when optional arguments or
+multiple methods make the mutation convention ambiguous to arity-based
+inference.
 """
 struct IncrementingODEProblem{iip} <: AbstractIncrementingODEProblem end
 

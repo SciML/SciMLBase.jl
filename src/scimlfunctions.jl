@@ -5746,6 +5746,30 @@ islinear(::AbstractDiffEqFunction) = false
 islinear(f::ODEFunction) = islinear(f.f)
 islinear(f::SplitFunction) = islinear(f.f1)
 
+"""
+    IncrementingODEFunction{iip, specialize}(f)
+    IncrementingODEFunction{iip}(f)
+    IncrementingODEFunction(f)
+
+Wrap an ODE model that supports solver-specific incrementing evaluations.
+
+This is a thin [`AbstractODEFunction`](@ref) wrapper: calls and keyword
+arguments are forwarded directly to `f`, while `iip` records the mutation
+convention and `specialize` follows the SciML function specialization interface.
+It does not add derivative metadata or transform an ordinary ODE right-hand
+side into an incrementing one.
+
+Low-storage Runge-Kutta solvers commonly call an in-place wrapped function as
+`f(du, u, p, t, alpha, beta)` and require it to compute
+`du = alpha * F(u, p, t) + beta * du`. The selected solver owns the exact extra
+call forms and semantics, so the model must implement every form that solver
+uses. Use `IncrementingODEFunction{true}(f)` or
+`IncrementingODEFunction{false}(f)` when optional arguments or multiple methods
+make arity-based in-place inference ambiguous.
+
+See [`IncrementingODEProblem`](@ref) for the constructor that records the
+matching problem tag.
+"""
 struct IncrementingODEFunction{iip, specialize, F} <: AbstractODEFunction{iip}
     f::F
 end

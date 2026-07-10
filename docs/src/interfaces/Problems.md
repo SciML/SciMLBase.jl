@@ -237,6 +237,7 @@ SciMLBase.HomotopyProblem
 ```@docs
 SciMLBase.StandardODEProblem
 SciMLBase.ImmutableODEProblem
+SciMLBase.IncrementingODEProblem
 ```
 
 `SciMLBase.ImmutableODEProblem` is the immutable ODE problem type.

@@ -13,6 +13,31 @@ end
 prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
 @test prob_bvp.tspan === (0.0, 1.0)
 
+@testset "Structured ODE problem interfaces" begin
+    steady_prob = SteadyStateProblem((u, p, t) -> p * u, 1.0, 2.0)
+    @test current_time(steady_prob) === Inf
+
+    incrementing_model! = (du, u, p, t, alpha = true, beta = false) ->
+    (du .= alpha .* p .* u .+ beta .* du)
+    incrementing_f = IncrementingODEFunction{true}(incrementing_model!)
+    du = [10.0, 20.0]
+    incrementing_f(du, [2.0, 4.0], -0.5, 0.0, 2.0, 1.0)
+    @test du == [8.0, 16.0]
+
+    incrementing_prob = IncrementingODEProblem(
+        incrementing_f, [2.0, 4.0], (0.0, 1.0), -0.5
+    )
+    @test incrementing_prob isa ODEProblem
+    @test incrementing_prob.f === incrementing_f
+    @test incrementing_prob.problem_type isa IncrementingODEProblem{true}
+    @test isinplace(incrementing_prob)
+
+    specialized_incrementing_f = IncrementingODEFunction{
+        true, SciMLBase.NoSpecialize,
+    }(incrementing_model!)
+    @test SciMLBase.specialization(specialized_incrementing_f) === SciMLBase.NoSpecialize
+end
+
 @testset "`constructorof` tests" begin
     probs = []
 

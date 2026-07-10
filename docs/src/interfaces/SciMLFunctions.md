@@ -175,4 +175,5 @@ SciMLBase.TimeDerivativeWrapper
 SciMLBase.TimeGradientWrapper
 SciMLBase.UDerivativeWrapper
 SciMLBase.UJacobianWrapper
+SciMLBase.IncrementingODEFunction
 ```

@@ -43,6 +43,7 @@ if isdefined(Base, :ispublic)
                 :AbstractBVPFunction,
                 :AbstractParameterizedFunction,
                 :AbstractHistoryFunction,
+                :IncrementingODEFunction,
             )
             @test Base.ispublic(SciMLBase, name)
         end
@@ -95,6 +96,7 @@ if isdefined(Base, :ispublic)
                 :AbstractConstantLagSDDEProblem,
                 :AbstractPDEProblem,
                 :AbstractOptimizationCache,
+                :IncrementingODEProblem,
             )
             @test Base.ispublic(SciMLBase, name)
         end
