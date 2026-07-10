@@ -98,6 +98,8 @@ SciMLBase.get_tmp_cache
 SciMLBase.user_cache
 SciMLBase.u_cache
 SciMLBase.du_cache
+SciMLBase.ratenoise_cache
+SciMLBase.rand_cache
 SciMLBase.full_cache
 SciMLBase.resize_non_user_cache!
 SciMLBase.deleteat_non_user_cache!
@@ -110,21 +112,29 @@ SciMLBase.pop_tstop!
 SciMLBase.add_saveat!
 SciMLBase.get_du
 SciMLBase.get_du!
+SciMLBase.get_dt
 SciMLBase.get_proposed_dt
 SciMLBase.set_proposed_dt!
+SciMLBase.set_abstol!
+SciMLBase.set_reltol!
 SciMLBase.derivative_discontinuity!
 SciMLBase.savevalues!
 SciMLBase.reinit!
 SciMLBase.auto_dt_reset!
 SciMLBase.change_t_via_interpolation!
+SciMLBase.addsteps!
 SciMLBase.reeval_internals_due_to_modification!
 SciMLBase.set_t!
 SciMLBase.set_u!
 SciMLBase.set_ut!
 SciMLBase.get_sol
+SciMLBase.check_error
 SciMLBase.check_error!
 SciMLBase.initialize_dae!
 SciMLBase.has_reinit
+SciMLBase.has_rng
+SciMLBase.get_rng
+SciMLBase.set_rng!
 ```
 
 ### Mutable Integrator Controls

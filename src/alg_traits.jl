@@ -461,10 +461,18 @@ has_step(a) = false
 """
     supports_solve_rng(prob, alg) -> Bool
 
-Whether `solve(prob, alg; rng=...)` is supported for this problem/algorithm path.
+Return whether the selected problem/algorithm path accepts
+`solve(prob, alg; rng = rng)` and uses that RNG to initialize its stochastic
+state.
 
 Pass `alg = nothing` to query support for the default solver-selection path
-(i.e., `solve(prob; rng=...)`).
+(i.e., `solve(prob; rng = rng)`). The trait is defined on the pair because RNG
+support can depend on both the problem family and the concrete solver.
+
+Ensemble solvers use a `true` result to pass an independently seeded RNG to each
+trajectory. A solver that returns `true` must consume the supplied RNG rather
+than silently falling back to global randomness. The conservative default is
+`false`.
 """
 supports_solve_rng(::AbstractSciMLProblem, alg) = false
 supports_solve_rng(prob, alg) = false  # fallback for non-problem types (e.g., Vector of problems)

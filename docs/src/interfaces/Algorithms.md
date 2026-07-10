@@ -41,6 +41,7 @@ SciMLBase.allows_late_binding_tstops
 SciMLBase.supports_opt_cache_interface
 SciMLBase.has_init
 SciMLBase.has_step
+SciMLBase.supports_solve_rng
 SciMLBase.alg_order
 SciMLBase.allowsbounds
 SciMLBase.requiresbounds
