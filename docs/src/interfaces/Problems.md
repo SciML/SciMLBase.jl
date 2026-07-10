@@ -33,7 +33,7 @@ By default, problem functions use `AutoSpecialize` to balance latency and runtim
 Choose another specialization marker explicitly when a workflow needs a different
 trade-off.
 
-### Specialization Levels
+### [Specialization Levels](@id specialization_levels)
 
 Specialization levels in problem definitions are used to control the amount of compilation
 specialization is performed on the model functions in order to trade off between runtime
@@ -106,9 +106,9 @@ callback or tolerance. Thus, for flexibility the extra keyword arguments to the
 
 Convenience constructors may return a shared concrete problem representation while
 preserving enough construction metadata for dispatch and `remake`. Downstream packages
-must use documented constructors, problem traits, and accessors instead of inspecting
-or mutating internal storage. A convenience constructor's return type is therefore not
-by itself a complete description of the mathematical structure used to create it.
+must query `problem_type(prob)` instead of inspecting or mutating internal storage. A
+convenience constructor's return type is therefore not by itself a complete description
+of the mathematical structure used to create it.
 
 ### Remake
 
@@ -222,6 +222,26 @@ SciMLBase.AbstractSteadyStateProblem
 SciMLBase.AbstractOptimizationCache
 ```
 
+### Problem Layout Markers
+
+```@docs
+SciMLBase.StandardODEProblem
+SciMLBase.DynamicalODEProblem
+SciMLBase.SecondOrderODEProblem
+SciMLBase.AbstractSplitODEProblem
+SciMLBase.SplitODEProblem
+SciMLBase.IncrementingODEProblem
+SciMLBase.StandardDDEProblem
+SciMLBase.AbstractDynamicalDDEProblem
+SciMLBase.DynamicalDDEProblem
+SciMLBase.SecondOrderDDEProblem
+SciMLBase.StandardNonlinearProblem
+SciMLBase.StandardBVProblem
+SciMLBase.TwoPointBVProblem
+SciMLBase.StandardSecondOrderBVProblem
+SciMLBase.TwoPointSecondOrderBVProblem
+```
+
 ## Concrete Nonlinear Problems
 
 ```@docs
@@ -231,9 +251,6 @@ SciMLBase.HomotopyProblem
 ## Concrete ODE Problems
 
 ```@docs
-SciMLBase.StandardODEProblem
-SciMLBase.ImmutableODEProblem
-SciMLBase.IncrementingODEProblem
 SciMLBase.ImmutableODEProblem
 ```
 

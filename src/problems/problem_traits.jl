@@ -1,4 +1,27 @@
 """
+    problem_type(prob::AbstractSciMLProblem)
+
+Return the construction-layout marker associated with `prob`, or `nothing` when
+the problem has no separate layout metadata.
+
+Several convenience constructors share a concrete problem representation while
+preserving structure in a marker value. Solver packages should dispatch on
+`problem_type(prob)` instead of reading a concrete problem's internal fields. For
+example, `problem_type(prob) isa StandardODEProblem` identifies the standard ODE
+layout, while split and second-order constructors return their corresponding
+public marker values.
+
+The fallback reads a `problem_type` field when a concrete problem provides one
+and otherwise returns `nothing`. Custom problem types whose marker is stored or
+computed differently should extend this function. A `remake` implementation must
+preserve the returned marker unless the requested change intentionally alters the
+problem layout.
+"""
+function problem_type(prob::AbstractSciMLProblem)
+    return hasfield(typeof(prob), :problem_type) ? getfield(prob, :problem_type) : nothing
+end
+
+"""
     is_diagonal_noise(prob::AbstractSciMLProblem)
 
 Return whether a stochastic or random problem should be treated as diagonal

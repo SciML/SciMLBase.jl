@@ -49,7 +49,7 @@ with initial condition `u0`.
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
   determined automatically, but not inferred. `specialize` optionally controls
-  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+  the specialization level. See [Specialization Levels](@ref specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
@@ -59,7 +59,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](@ref scimlfunctions)
 page.
 
 ### Fields

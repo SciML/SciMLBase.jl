@@ -5,8 +5,8 @@ Marker for multi-point first-order BVP layouts.
 
 `StandardBVProblem()` identifies boundary value problems whose boundary
 condition is supplied as one residual function over the current solution values
-and mesh. It is stored in the `problem_type` field of `BVProblem` when the
-problem is not using separate endpoint boundary-condition functions.
+and mesh. It is returned by [`problem_type`](@ref) for a `BVProblem` that does
+not use separate endpoint boundary-condition functions.
 """
 struct StandardBVProblem end
 
@@ -123,8 +123,8 @@ every solve call.
 * `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
 * `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
-* `problem_type`: The type of the problem, either `StandardBVProblem` or
-  `TwoPointBVProblem`.
+* Construction layout: Query [`problem_type`](@ref) to obtain either
+  `StandardBVProblem` or `TwoPointBVProblem`.
 * `singular_term`: The singular term of the problem. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
@@ -300,8 +300,8 @@ Marker for multi-point second-order BVP layouts.
 
 `StandardSecondOrderBVProblem()` identifies second-order BVPs whose boundary
 condition is supplied as one residual function over derivative values, state
-values, parameters, and mesh points. It is stored in the `problem_type` field of
-`SecondOrderBVProblem` when endpoint residual functions are not used.
+values, parameters, and mesh points. It is returned by [`problem_type`](@ref)
+for a `SecondOrderBVProblem` when endpoint residual functions are not used.
 """
 struct StandardSecondOrderBVProblem end
 
@@ -420,8 +420,8 @@ every solve call.
 * `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
 * `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
-* `problem_type`: The type of the problem, either `StandardSecondOrderBVProblem` or
-  `TwoPointSecondOrderBVProblem`.
+* Construction layout: Query [`problem_type`](@ref) to obtain either
+  `StandardSecondOrderBVProblem` or `TwoPointSecondOrderBVProblem`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """
 struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:

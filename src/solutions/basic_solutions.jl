@@ -181,11 +181,12 @@ inspection.
 
 Return `sol` or wrap it in a higher-level SciML solution container.
 
-Solvers call `wrap_sol(sol)` after constructing a low-level solution. The
-default implementation checks `sol.prob.problem_type`, when present, and then
-dispatches to `wrap_sol(sol, problem_type_or_metadata)`. Problem-family packages
-extend the two-argument form when a generated solver solution should be returned
-as a more specific public solution type.
+Solvers call `wrap_sol(sol)` after constructing a low-level solution. When
+`sol.prob` is an [`AbstractSciMLProblem`](@ref), the default implementation
+queries [`problem_type`](@ref) and dispatches to
+`wrap_sol(sol, problem_type_or_metadata)` when the result is not `nothing`.
+Problem-family packages extend the two-argument form when a generated solver
+solution should be returned as a more specific public solution type.
 
 The fallback two-argument method returns `sol` unchanged. PDE discretizer
 packages extend the metadata path by defining constructors such as
@@ -193,11 +194,11 @@ packages extend the metadata path by defining constructors such as
 for their concrete discretization metadata type.
 """
 function wrap_sol(sol)
-    return if hasproperty(sol, :prob) && hasproperty(sol.prob, :problem_type)
-        wrap_sol(sol, sol.prob.problem_type)
-    else
-        sol
-    end
+    hasproperty(sol, :prob) || return sol
+    prob = sol.prob
+    prob isa AbstractSciMLProblem || return sol
+    metadata = problem_type(prob)
+    return metadata === nothing ? sol : wrap_sol(sol, metadata)
 end
 
 # Define a default `wrap_sol` that does nothing

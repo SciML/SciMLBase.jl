@@ -138,8 +138,8 @@ are:
   - `tspan`: the independent-variable interval for time-dependent problems.
   - `p`: parameters, defaulting to `NullParameters` when omitted.
   - `kwargs`: keyword arguments stored on the problem and forwarded to solves.
-  - `problem_type`: optional internal metadata preserving how a problem was
-    originally constructed when several constructors share one concrete type.
+  - construction-layout metadata available through [`problem_type`](@ref) when
+    several constructors share one concrete representation.
 
 Subtypes that expose state and parameters through symbolic indexing should
 implement or delegate the `SymbolicIndexingInterface` methods. By default,
@@ -354,8 +354,9 @@ function mutation convention.
 
 ## Interface
 
-ODE problems should provide `f`, `u0`, `tspan`, `p`, `kwargs`, and optionally
-`problem_type`. The function should support either `f(u, p, t)` or
+ODE problems should provide `f`, `u0`, `tspan`, `p`, and `kwargs`. A problem that
+preserves an alternate construction layout should extend [`problem_type`](@ref).
+The function should support either `f(u, p, t)` or
 `f(du, u, p, t)` according to [`isinplace`](@ref). Stored keyword arguments such
 as callbacks or tolerances are forwarded to solvers.
 """
@@ -466,7 +467,7 @@ $(TYPEDEF)
 
 Base interface for second-order ODE problems. These problems are represented in
 the ODE hierarchy for solver interoperability, but their constructors preserve
-second-order structure through concrete fields or `problem_type` metadata.
+second-order structure through concrete fields or [`problem_type`](@ref) metadata.
 """
 abstract type AbstractSecondOrderODEProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -2155,7 +2156,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Algorithm / problem traits
 @public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,
-    is_diagonal_noise, forwarddiffs_model, forwarddiffs_model_time,
+    problem_type, is_diagonal_noise, forwarddiffs_model, forwarddiffs_model_time,
     forwarddiff_chunksize, has_lazy_interpolation, allows_late_binding_tstops,
     supports_opt_cache_interface, alg_order, allowsbounds, requiresbounds,
     allowsconstraints, requiresconstraints, requiresgradient, allowsfg,
@@ -2178,7 +2179,9 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     IntegralAliasSpecifier, DiscreteAliasSpecifier
 
 # Steady-state / problem support types
-@public AbstractSteadyStateProblem, StandardODEProblem
+@public AbstractSteadyStateProblem, StandardODEProblem, StandardDDEProblem,
+    StandardNonlinearProblem, StandardBVProblem, StandardSecondOrderBVProblem,
+    AbstractSplitODEProblem, AbstractDynamicalDDEProblem
 
 # Abstract solution / discretization types
 @public AbstractTimeseriesSolution, AbstractDiscretization, AbstractDiscretizationMetadata

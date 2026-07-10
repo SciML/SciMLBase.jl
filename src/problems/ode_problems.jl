@@ -12,9 +12,9 @@ representations, while keeping all of them under the common
 [`AbstractODEProblem`](@ref) interface.
 
 Users normally do not need to construct this marker directly. Solver
-implementations may inspect `prob.problem_type isa StandardODEProblem` when
-they need behavior specific to the standard ODE layout; generic ODE code should
-prefer the [`AbstractODEProblem`](@ref) interface and problem fields.
+implementations may test `problem_type(prob) isa StandardODEProblem` when they
+need behavior specific to the standard ODE layout; generic ODE code should
+prefer the [`AbstractODEProblem`](@ref) interface and problem traits.
 """
 struct StandardODEProblem end
 
@@ -55,7 +55,7 @@ are:
   Defines the ODE with the specified functions. `isinplace` optionally sets whether
   the function is inplace or not. This is determined automatically, but not inferred.
   `specialize` optionally controls the specialization level. See the
-  [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+  [Specialization Levels](@ref specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -246,8 +246,8 @@ Marker supertype for structured ODE problem layouts.
 
 Subtypes identify ODE problems that are constructed from partitioned or
 second-order dynamics and then stored in the common `ODEProblem` representation.
-The concrete marker is carried in the problem's `problem_type` field so solvers
-can preserve structure when they support specialized methods.
+The concrete marker is available through [`problem_type`](@ref) so solvers can
+preserve structure when they support specialized methods.
 """
 abstract type AbstractDynamicalODEProblem end
 
@@ -457,8 +457,8 @@ Marker supertype for split ODE problem layouts.
 
 Subtypes identify ODEs whose right-hand side is supplied as a split function,
 usually to expose additive, linear, stiff, or nonstiff structure to solvers.
-Split constructors store this marker in `problem_type` metadata while using the
-ordinary `ODEProblem` storage layout.
+Split constructors expose this marker through [`problem_type`](@ref) while using
+the ordinary `ODEProblem` storage layout.
 """
 abstract type AbstractSplitODEProblem end
 
@@ -508,11 +508,11 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 Under the hood, a `SplitODEProblem` is just a regular `ODEProblem` whose `f` is a `SplitFunction`.
-Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`. For solvers
-dedicated to split problems, see [Split ODE Solvers](@ref split_ode_solve).
+Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProblem`.
+Solver packages document which methods specialize on split structure.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](@ref scimlfunctions)
 page.
 
 ### Fields
@@ -564,10 +564,10 @@ Internal supertype for incrementing ODE constructor tags. Concrete tags record
 the in-place convention while [`IncrementingODEProblem`](@ref) converts the
 input into an `ODEProblem` with an [`IncrementingODEFunction`](@ref).
 
-These tags are stored in the resulting problem's `problem_type` field; they are
-not standalone problem containers. Solvers that require incrementing evaluation
-may inspect the tag or the wrapped function, but ordinary ODE tooling should use
-the returned `ODEProblem` interface.
+These tags are available from [`problem_type`](@ref) on the resulting problem;
+they are not standalone problem containers. Solvers that require incrementing
+evaluation may dispatch on the tag or the wrapped function, but ordinary ODE
+tooling should use the returned `ODEProblem` interface.
 """
 abstract type AbstractIncrementingODEProblem end
 
@@ -578,9 +578,9 @@ abstract type AbstractIncrementingODEProblem end
 Construct an experimental ODE problem for a model function that can update an
 existing derivative buffer in an incrementing form.
 
-The constructor wraps `f` in an [`IncrementingODEFunction`](@ref), stores an
-`IncrementingODEProblem{iip}` tag as `problem_type`, and returns a standard
-`ODEProblem`. The result therefore follows the ordinary ODE problem
+The constructor wraps `f` in an [`IncrementingODEFunction`](@ref), exposes an
+`IncrementingODEProblem{iip}` tag through [`problem_type`](@ref), and returns a
+standard `ODEProblem`. The result therefore follows the ordinary ODE problem
 field, symbolic-indexing, keyword-forwarding, and solve interfaces.
 
 Low-storage solvers commonly use the in-place convention

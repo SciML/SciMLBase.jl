@@ -193,7 +193,7 @@ solver package.
   - `verbose`: Boolean or verbosity policy controlling solver diagnostics.
   - `u0`, `p`: Call-site replacements for the problem's initial state and
     parameters. `nothing` means to use the values stored in the problem.
-  - `wrap`: Control whether a structured `problem_type` receives its preferred
+  - `wrap`: Control whether a structured `problem_type(prob)` marker receives its preferred
     solution wrapper. Ordinary differential equation solves use `Val(true)` by
     default and accept `Val(false)` to keep the underlying solution.
   - `rng`: Explicit random number generator for stochastic solver operations and

@@ -5,9 +5,9 @@ Marker for standard DDE problem layouts.
 
 `StandardDDEProblem()` is the default `problem_type` metadata stored by
 `DDEProblem` when the problem is represented directly by a DDE function, history
-function, initial state, lags, time span, and parameters. Solver code may
-inspect `prob.problem_type` to distinguish this layout from dynamical or
-second-order DDE encodings.
+function, initial state, lags, time span, and parameters. Solver code may test
+`problem_type(prob) isa StandardDDEProblem` to distinguish this layout from
+dynamical or second-order DDE encodings.
 """
 struct StandardDDEProblem end
 
@@ -78,7 +78,7 @@ DDEProblem{isinplace,specialize}(f[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](@ref specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -90,7 +90,8 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref performance_overloads) page.
+For specifying Jacobians and mass matrices, see the
+[SciMLFunctions interface](@ref scimlfunctions).
 
 ### Arguments
 
@@ -304,9 +305,9 @@ $(TYPEDEF)
 Marker supertype for structured DDE problem layouts.
 
 Subtypes identify DDE problems constructed from partitioned first-order dynamics
-or from second-order dynamics. These markers are stored as `problem_type`
-metadata inside the common `DDEProblem` representation so solvers can preserve
-or recover the structured interpretation when needed.
+or from second-order dynamics. These markers are available through
+[`problem_type`](@ref) on the common `DDEProblem` representation so solvers can
+preserve or recover the structured interpretation when needed.
 """
 abstract type AbstractDynamicalDDEProblem end
 
@@ -315,7 +316,7 @@ $(TYPEDEF)
 
 Marker for partitioned dynamical DDE problem layouts.
 
-`DynamicalDDEProblem{iip}` is stored as `problem_type` metadata when a DDE is
+`DynamicalDDEProblem{iip}` is returned by [`problem_type`](@ref) when a DDE is
 constructed from two coupled first-order components. The `iip` parameter records
 the in-place convention of the underlying `DynamicalDDEFunction`.
 """
@@ -379,7 +380,7 @@ $(TYPEDEF)
 
 Marker for second-order DDE problem layouts.
 
-`SecondOrderDDEProblem{iip}` is stored as `problem_type` metadata when a
+`SecondOrderDDEProblem{iip}` is returned by [`problem_type`](@ref) when a
 second-order delay equation is converted to the partitioned DDE form used by
 `DDEProblem`. The `iip` parameter records the in-place convention of the
 second-derivative function.

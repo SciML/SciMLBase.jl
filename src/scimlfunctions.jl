@@ -359,8 +359,7 @@ The available specialization levels are:
 * `SciMLBase.FunctionWrapperSpecialize`: this is an eager function wrapping form. It is
   unsafe with many solvers, and thus is mostly used for development testing.
 
-For more details, see the
-[specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels).
+For more details, see [Specialization Levels](@ref specialization_levels).
 
 ## Fields
 

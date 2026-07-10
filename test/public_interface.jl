@@ -1,5 +1,14 @@
 using SciMLBase, Test
 
+struct ProblemTypeTestProblem <: SciMLBase.AbstractSciMLProblem end
+struct ProblemTypeTestMarker end
+struct ProblemTypeTestSolution
+    prob::ProblemTypeTestProblem
+end
+
+SciMLBase.problem_type(::ProblemTypeTestProblem) = ProblemTypeTestMarker()
+SciMLBase.wrap_sol(::ProblemTypeTestSolution, ::ProblemTypeTestMarker) = :wrapped
+
 @testset "Common keyword interface documentation" begin
     common_keywords = read(
         joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Common_Keywords.md"),
@@ -74,6 +83,27 @@ end
     @test occursin("selected differentiation and linear solver", function_docs)
     @test occursin("`update_coefficients` for the out-of-place form", function_docs)
     @test occursin("SciMLBase.ODEFunction", function_docs)
+end
+
+@testset "Problem layout marker interface" begin
+    problem_trait_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Problem_Traits.md"),
+        String
+    )
+    problem_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Problems.md"), String
+    )
+
+    ode_prob = ODEProblem((u, p, t) -> u, 1.0, (0.0, 1.0))
+    linear_prob = LinearProblem(ones(1, 1), ones(1))
+    @test SciMLBase.problem_type(ode_prob) isa SciMLBase.StandardODEProblem
+    @test SciMLBase.problem_type(linear_prob) === nothing
+    @test SciMLBase.problem_type(ProblemTypeTestProblem()) isa ProblemTypeTestMarker
+    @test SciMLBase.wrap_sol(ProblemTypeTestSolution(ProblemTypeTestProblem())) === :wrapped
+    @test occursin("SciMLBase.problem_type", problem_trait_docs)
+    @test occursin("SciMLBase.StandardDDEProblem", problem_docs)
+    @test occursin("SciMLBase.StandardBVProblem", problem_docs)
+    @test occursin("SciMLBase.StandardNonlinearProblem", problem_docs)
 end
 
 @testset "Solution interface documentation" begin
@@ -190,6 +220,7 @@ if isdefined(Base, :ispublic)
                 :wrapfun_oop,
                 :wrapfun_iip,
                 :unwrap_fw,
+                :problem_type,
                 :AbstractLinearProblem,
                 :AbstractEigenvalueProblem,
                 :AbstractIntervalNonlinearProblem,
@@ -203,6 +234,13 @@ if isdefined(Base, :ispublic)
                 :AbstractPDEProblem,
                 :AbstractOptimizationCache,
                 :IncrementingODEProblem,
+                :StandardDDEProblem,
+                :StandardNonlinearProblem,
+                :StandardBVProblem,
+                :StandardSecondOrderBVProblem,
+                :AbstractDynamicalODEProblem,
+                :AbstractSplitODEProblem,
+                :AbstractDynamicalDDEProblem,
             )
             @test Base.ispublic(SciMLBase, name)
         end

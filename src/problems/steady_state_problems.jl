@@ -34,7 +34,7 @@ SteadyStateProblem{isinplace, specialize}(f, u0, p = NullParameters(); kwargs...
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](@ref specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given, a `NullParameters()` singleton
