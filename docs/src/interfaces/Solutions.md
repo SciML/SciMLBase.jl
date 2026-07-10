@@ -223,6 +223,7 @@ SciMLBase.AbstractDiffEqInterpolation
 SciMLBase.ConstantInterpolation
 SciMLBase.LinearInterpolation
 SciMLBase.HermiteInterpolation
+SciMLBase.BasicInterpolation
 SciMLBase.SensitivityInterpolation
 SciMLBase.interp_summary
 ```

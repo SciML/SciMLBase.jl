@@ -49,6 +49,9 @@ run_tests(;
         @time @safetestset "Solution interface" begin
             include("solution_interface.jl")
         end
+        @time @safetestset "Interpolation types" begin
+            include("interpolation_tests.jl")
+        end
         @time @safetestset "PDE solutions" begin
             include("pde_solutions.jl")
         end

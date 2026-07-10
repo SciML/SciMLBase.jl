@@ -114,6 +114,69 @@ function enable_interpolation_sensitivitymode(interp::ConstantInterpolation)
 end
 
 """
+$(TYPEDEF)
+
+Runtime-switched fallback interpolation for time-series SciML solutions.
+
+`BasicInterpolation` is a single concrete type that covers both dense and
+non-dense solutions, choosing the reconstruction at *runtime* through the
+`dense` field rather than by the object's type: when `dense` is `true` it
+reconstructs values with third-order Hermite interpolation (using the stored
+derivatives `du`), and when `dense` is `false` it uses piecewise linear
+interpolation. It stores saved independent-variable values `t`, saved solution
+values `u`, and saved derivatives `du`, and it is callable through the standard
+solution interpolation interface.
+
+The point of this type is *type invariance*: the concrete type of a
+`BasicInterpolation` does not depend on whether the solve was dense. A solver
+wrapper that emits `BasicInterpolation` for both dense and non-dense solves
+produces solutions whose concrete type is identical across those save settings,
+so downstream code can hold a concretely-typed solution field and reassign it
+across re-solves with different save arguments (for example checkpointing in
+adjoint sensitivity analysis) without a type change.
+
+Preserving that invariance requires that `du` always be the **same container
+type** regardless of `dense`. When constructing a non-dense `BasicInterpolation`,
+pass an empty container of the same type that a dense solve would use (e.g. an
+empty `Vector` of the derivative element type) rather than `nothing`, so that
+`typeof` is stable across dense and non-dense solutions of the same problem. The
+non-dense path never reads `du`, so its contents are irrelevant when
+`dense = false`; only its type matters.
+
+The `sensitivitymode` flag records whether sensitivity-aware behavior has been
+enabled; as with the other interpolation types it is normally set indirectly
+through solver or sensitivity-algorithm options rather than manually.
+
+The actual numerics are delegated to [`HermiteInterpolation`](@ref) and
+[`LinearInterpolation`](@ref), so results are identical to using those types
+directly in the corresponding mode.
+"""
+struct BasicInterpolation{tType, uType, duType} <: AbstractDiffEqInterpolation
+    t::tType
+    u::uType
+    du::duType
+    dense::Bool
+    sensitivitymode::Bool
+end
+
+function BasicInterpolation(t, u, du, dense; sensitivitymode = false)
+    return BasicInterpolation(t, u, du, dense, sensitivitymode)
+end
+
+function enable_interpolation_sensitivitymode(interp::BasicInterpolation)
+    return BasicInterpolation(interp.t, interp.u, interp.du, interp.dense, true)
+end
+
+# Delegate the actual reconstruction to the Hermite/Linear interpolants so the
+# numerics are identical to those types. The temporary interpolant only wraps
+# references to the already-stored arrays (no data copy).
+@inline function as_hermite_or_linear(id::BasicInterpolation)
+    return id.dense ?
+        HermiteInterpolation(id.t, id.u, id.du; sensitivitymode = id.sensitivitymode) :
+        LinearInterpolation(id.t, id.u; sensitivitymode = id.sensitivitymode)
+end
+
+"""
     interp_summary(interp)
 
 Return a short human-readable `String` describing the interpolation used by a solution,
@@ -125,6 +188,7 @@ interp_summary(::AbstractDiffEqInterpolation) = "Unknown"
 interp_summary(::HermiteInterpolation) = "3rd order Hermite"
 interp_summary(::LinearInterpolation) = "1st order linear"
 interp_summary(::ConstantInterpolation) = "Piecewise constant interpolation"
+interp_summary(id::BasicInterpolation) = id.dense ? "3rd order Hermite" : "1st order linear"
 interp_summary(::Nothing) = "No interpolation"
 interp_summary(sol::AbstractSciMLSolution) = interp_summary(sol.interp)
 
@@ -155,6 +219,12 @@ function (id::ConstantInterpolation)(tvals, idxs, deriv, p, continuity::Symbol =
 end
 function (id::ConstantInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
+end
+function (id::BasicInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+    return as_hermite_or_linear(id)(tvals, idxs, deriv, p, continuity)
+end
+function (id::BasicInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+    return as_hermite_or_linear(id)(val, tvals, idxs, deriv, p, continuity)
 end
 
 @inline function interpolation(
@@ -780,3 +850,4 @@ strip_interpolation(id::AbstractDiffEqInterpolation) = id
 strip_interpolation(id::HermiteInterpolation) = id
 strip_interpolation(id::LinearInterpolation) = id
 strip_interpolation(id::ConstantInterpolation) = id
+strip_interpolation(id::BasicInterpolation) = id
