@@ -856,86 +856,84 @@ Base interface for DAE initialization algorithms selected by the `initializealg`
 keyword. Concrete subtypes control how solvers check, skip, or repair initial
 conditions before integration starts.
 
-DAE initialization algorithms should document which problem metadata they need,
-whether they modify `u0` or `du0`, and which tolerances or inner nonlinear
-solvers they use.
+Solver packages implement initialization by passing these algorithms to
+[`get_initial_values`](@ref). That hook returns `(u0, p, success)`, where `u0`
+and `p` are the state and parameter objects that should be used for the
+initialized problem. Concrete algorithms should document which problem metadata
+they require, whether they leave current values unchanged or solve an auxiliary
+problem, and which tolerances or inner nonlinear solvers they use.
 """
 abstract type DAEInitializationAlgorithm <: AbstractSciMLAlgorithm end
 
 """
     struct NoInit <: DAEInitializationAlgorithm
 
-An initialization algorithm that completely skips the initialization phase. The solver
-will use the provided initial conditions directly without any consistency checks or
-modifications.
+An initialization algorithm that skips consistency checks and auxiliary
+initialization solves.
+
+`get_initial_values(prob, value_provider, f, NoInit(), isinplace)` returns
+`(state_values(value_provider), parameter_values(value_provider), true)`.
+It does not inspect residuals, does not mutate `u0`, `du0`, or `p`, and does
+not require tolerances or nonlinear solver algorithms.
 
 !!! warning
     Using `NoInit()` with inconsistent initial conditions will likely cause
-    solver failures or incorrect results. Only use this when you are absolutely certain
-    your initial conditions satisfy all DAE constraints.
-
-This is useful when:
-- You know your initial conditions are already perfectly consistent
-- You want to avoid the computational cost of initialization
-- You are debugging solver issues and want to isolate initialization from integration
-
-## Example
-```julia
-prob = DAEProblem(f, du0_consistent, u0_consistent, tspan)
-sol = solve(prob, IDA(), initializealg = NoInit())
-```
+    solver failures or incorrect results. Use it only when the caller has
+    already established that the supplied values satisfy the problem's
+    initialization constraints.
 """
 struct NoInit <: DAEInitializationAlgorithm end
 
 """
     struct CheckInit <: DAEInitializationAlgorithm
 
-An initialization algorithm that only checks if the initial conditions are consistent
-with the DAE constraints, without attempting to modify them. If the conditions are not
-consistent within the solver's tolerance, an error will be thrown.
+An initialization algorithm that verifies the current values without attempting
+to repair them.
 
-This is useful when:
-- You have already computed consistent initial conditions
-- You want to verify the consistency of your initial guess
-- You want to ensure no automatic modifications are made to your initial conditions
+`get_initial_values` methods for `CheckInit` require the keyword `abstol`. For
+mass-matrix differential problems, only algebraic equations are checked. For
+DAE problems, the full DAE residual is checked. Residual norms use
+`integrator.opts.internalnorm` when available and `LinearAlgebra.norm`
+otherwise.
 
-## Example
-```julia
-prob = DAEProblem(f, du0, u0, tspan)
-sol = solve(prob, IDA(), initializealg = CheckInit())
-```
+If the residual norm is at most `abstol`, the current
+`state_values(integrator)` and `parameter_values(integrator)` are returned with
+`success == true`. If the residual norm is larger than `abstol`, a
+`CheckInitFailureError` is thrown. `CheckInit` never changes the current state,
+derivative state, or parameters.
 """
 struct CheckInit <: DAEInitializationAlgorithm end
 
 """
     struct OverrideInit <: DAEInitializationAlgorithm
 
-An initialization algorithm that uses a separate initialization problem to find
-consistent initial conditions. This is typically used with ModelingToolkit.jl
-which can generate specialized initialization problems based on the model structure.
+An initialization algorithm that uses initialization metadata stored on a
+SciMLFunction to compute replacement state and parameter values.
 
-When using `OverrideInit`, the problem must have `initialization_data` that contains
-an `initializeprob` field with the initialization problem to solve.
+When `f` has non-`nothing` [`OverrideInitData`](@ref), `get_initial_values`
+updates the stored initialization problem from the current value provider,
+solves it when it is nontrivial, and maps the initialization result back to the
+original problem's `u0` and `p`. If `f` has no initialization data,
+`OverrideInit` is a successful no-op and returns the current state and
+parameters.
 
-This algorithm is particularly useful for:
-- High-index DAEs that have been index-reduced
-- Systems with complex initialization requirements
-- ModelingToolkit models with custom initialization equations
+Nontrivial initialization problems require `abstol` and `reltol`; values stored
+in the `OverrideInit` object take priority over keywords passed to
+`get_initial_values`. A nonlinear solver algorithm can be supplied either as
+`OverrideInit(; nlsolve = alg)` or as the `nlsolve_alg` keyword to
+`get_initial_values`, with the call keyword taking priority. Additional keywords
+are forwarded to the inner `solve`.
+
+Trivial initialization problems are not solved and therefore do not require
+`nlsolve_alg`, `abstol`, or `reltol`; their mapping hooks are applied directly.
+For nonlinear least-squares initialization, `success` requires both a successful
+solver return code and a final residual norm no larger than `abstol`.
 
 ## Fields
-- `abstol`: Absolute tolerance for the initialization solver
-- `reltol`: Relative tolerance for the initialization solver
-- `nlsolve`: Nonlinear solver to use for initialization
 
-## Example
-```julia
-# Typically used automatically with ModelingToolkit
-@named sys = ODESystem(eqs, t, vars, params)
-sys = structural_simplify(sys)
-prob = DAEProblem(sys, [], (0.0, 1.0), [])
-# Will automatically use OverrideInit if initialization_data exists
-sol = solve(prob, IDA())
-```
+- `abstol`: Default absolute tolerance for the initialization solver.
+- `reltol`: Default relative tolerance for the initialization solver.
+- `nlsolve`: Default nonlinear solver algorithm for initialization.
 """
 struct OverrideInit{T1, T2, F} <: DAEInitializationAlgorithm
     abstol::T1

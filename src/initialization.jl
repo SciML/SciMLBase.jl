@@ -346,7 +346,7 @@ function get_initial_values(
             # A good local minima is not a success
             resid = nlsol.resid
             normresid = norm(resid)
-            SciMLBase.successful_retcode(nlsol) && normresid <= abstol
+            SciMLBase.successful_retcode(nlsol) && normresid <= _abstol
         else
             SciMLBase.successful_retcode(nlsol)
         end
