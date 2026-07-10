@@ -2,10 +2,16 @@
 
 ## Definition of the AbstractSciMLSolution Interface
 
-All `AbstractSciMLSolution` types are a subset of some `AbstractArray`. Types with time series
-(like `ODESolution`) are subtypes of `RecursiveArrayTools.AbstractVectorOfArray` and
-`RecursiveArrayTools.AbstractDiffEqArray` where appropriate. Types without a time series
-(like `OptimizationSolution`) are directly subsets of `AbstractArray`.
+`AbstractSciMLSolution` is a union of four array-like solution families. Time-series
+solutions and noise processes use `RecursiveArrayTools.AbstractDiffEqArray`, ensemble
+solutions use `RecursiveArrayTools.AbstractVectorOfArray`, and solutions without an
+independent-variable series subtype `AbstractArray` directly.
+
+Concrete no-time solutions must expose their result as `u`. Concrete time-series
+solutions must expose saved states as `u` and matching independent-variable values as
+`t`; they provide `prob`, `alg`, `interp`, `dense`, `retcode`, and `stats` when those
+concepts apply. Ensemble and noise-process subtypes follow the contracts in their
+rendered abstract-type docstrings below.
 
 ### Array Interface
 
@@ -47,6 +53,9 @@ sol[i, :]
 gives the timeseries for the `i`th component.
 
 ### Common Field Names
+
+Fields are required only when they apply to the solution family and solver. Concrete
+solution types must document which optional fields they provide.
 
   - `u`: the solution values
   - `t`: the independent variable values, matching the length of the solution, if applicable
@@ -113,8 +122,8 @@ recipe:
 
 | Keyword | Default | Description |
 |---------|---------|-------------|
-| `denseplot` | auto-detected from `sol.dense` and problem type | Whether to use dense interpolation. Disabled for `AbstractRODESolution` and sensitivity interpolation. |
-| `plotdensity` | `max(1000, 10 * length(sol))` | Automatically scaled; uses `100 *` for discrete problems. |
+| `denseplot` | automatic | Enabled when `sol.dense` is true or the problem is discrete, except for `AbstractRODESolution` and `SensitivityInterpolation`. |
+| `plotdensity` | `min(100_000, max(1000, 10 * length(sol.t)))` | For a complete continuous solution. The multiplier is `100` for a discrete problem; when `sol.tslocation != 0`, the uncapped density is `1000 * sol.tslocation`. |
 | `plot_analytic` | `false` | Overlay the analytical solution (requires `prob.f.analytic`). |
 
 Additionally, solutions support:

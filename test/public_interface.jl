@@ -76,6 +76,36 @@ end
     @test occursin("SciMLBase.ODEFunction", function_docs)
 end
 
+@testset "Solution interface documentation" begin
+    solution_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Solutions.md"), String
+    )
+
+    @test occursin("a union of four array-like solution families", solution_docs)
+    @test occursin("length(sol.t)", solution_docs)
+    @test !occursin("length(sol))", solution_docs)
+    @test occursin("100_000", solution_docs)
+    @test occursin("`100` for a discrete problem", solution_docs)
+    @test occursin("sol.tslocation != 0", solution_docs)
+    @test occursin("1000 * sol.tslocation", solution_docs)
+    @test occursin("`SensitivityInterpolation`", solution_docs)
+end
+
+@testset "Ensemble interface documentation" begin
+    ensemble_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Ensembles.md"), String
+    )
+
+    @test !occursin("AbstractEnsembleSimulation", ensemble_docs)
+    @test !occursin("EnsembleSimulation", ensemble_docs)
+    @test !occursin("`linspace`", ensemble_docs)
+    @test occursin("rand(ctx.rng)", ensemble_docs)
+    @test occursin("rand(ctx.rng, 2)", ensemble_docs)
+    @test occursin("sqrt(var(u) / last(I))", ensemble_docs)
+    @test occursin("julia --threads=auto", ensemble_docs)
+    @test occursin("SciMLBase.EnsembleAnalysis.EnsembleSummary", ensemble_docs)
+end
+
 if isdefined(Base, :ispublic)
     @testset "Clocks manual public API" begin
         for name in (

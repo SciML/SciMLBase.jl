@@ -13,7 +13,7 @@ CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm; kwarg
 Note that because the keyword arguments of `solve` are designed to be common across the whole
 problem type, algorithms should have the algorithm-specific keyword arguments defined as part
 of the algorithm constructor. For example, `Rodas5` has a choice of `autodiff::Bool` which is
-not common across all ODE solvers, and thus `autodiff` is a algorithm-specific keyword argument
+not common across all ODE solvers, and thus `autodiff` is an algorithm-specific keyword argument
 handled via `Rodas5(autodiff=true)`.
 
 ### Remake
