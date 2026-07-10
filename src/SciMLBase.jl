@@ -3,7 +3,7 @@ if isdefined(Base, :Experimental) &&
         isdefined(Base.Experimental, Symbol("@max_methods"))
     @eval Base.Experimental.@max_methods 1
 end
-using ConstructionBase: ConstructionBase, getproperties, setproperties
+using ConstructionBase: ConstructionBase, constructorof, getfields, getproperties, setproperties
 using RecipesBase: RecipesBase, @recipe, @series
 using RecursiveArrayTools: RecursiveArrayTools, AbstractDiffEqArray,
     AbstractVectorOfArray, ArrayPartition, DiffEqArray,

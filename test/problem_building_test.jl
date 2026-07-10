@@ -1,4 +1,7 @@
-using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays
+using Test, SciMLBase, SymbolicIndexingInterface, Accessors, ConstructionBase, StaticArrays
+
+@test SciMLBase.constructorof === ConstructionBase.constructorof
+@test SciMLBase.getfields === ConstructionBase.getfields
 
 function simplependulum!(du, u, p, t)
     θ = u[1]

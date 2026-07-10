@@ -70,11 +70,10 @@ const _ei_nonpublic_explicit_imports = (
 # `function SciMLBase.name(...)` method extension), but never called as a bare name
 # inside SciMLBase itself, so ExplicitImports would otherwise report them as stale.
 const _ei_stale_allowed = (
-    # `ConstructionBase.setproperties` is extended for the solution types and accessed
-    # as `SciMLBase.setproperties` by downstream packages (e.g. OrdinaryDiffEqNonlinearSolve
-    # defines `function SciMLBase.setproperties(::DAEResidualJacobianWrapper, ...)`), so it
-    # must be a binding in SciMLBase even though SciMLBase only ever uses the qualified form.
-    :setproperties,
+    # These ConstructionBase exports remain bindings in SciMLBase for compatibility with
+    # downstream qualified accesses and method extensions. SciMLBase itself uses their
+    # owner-qualified forms, so ExplicitImports otherwise reports the bindings as stale.
+    :constructorof, :getfields, :setproperties,
 )
 const _ei_nonpublic_qualified_accesses = (
     # --- Genuine Base/Core internals: not public on any Julia version, no public
