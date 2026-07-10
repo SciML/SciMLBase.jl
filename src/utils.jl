@@ -6,9 +6,14 @@ Return the number of positional arguments accepted by each method of `f`.
 The returned collection is used by SciML constructors to validate model-function
 signatures and to infer in-place versus out-of-place conventions. The callable
 object itself is not counted, so a method `f(du, u, p, t)` contributes `4`.
+The order follows Julia's method table and should not be treated as sorted; use
+queries such as `any`, `minimum`, or `maximum` when testing for supported
+arities.
+
 Specialized callables such as `RuntimeGeneratedFunction`, `ComposedFunction`,
 and supported foreign-function wrappers provide their underlying arity through
-specialized methods.
+specialized methods. Constructors use these arities only for signature
+validation; they do not call `f` during this check.
 """
 function numargs(f)
     if hasfield(typeof(f), :r) && typeof(f.r).name.name == :RObject ||
@@ -108,6 +113,16 @@ end
 
 Exception thrown when a model function defines methods with more arguments than the
 SciML problem interface accepts.
+
+SciML constructors raise this when every visible method of the offending
+callable has arity greater than the expected in-place signature. For example, an
+ODE right-hand side must be callable as `f(u, p, t)` or `f(du, u, p, t)`, not as
+`f(du, u, p1, p2, t)`.
+
+# Fields
+
+- `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
+- `f`: The offending callable; `showerror` prints its method table.
 """ TooManyArgumentsError
 
 function Base.showerror(io::IO, e::TooManyArgumentsError)
@@ -200,6 +215,18 @@ end
 
 Exception thrown when a model function defines methods with fewer arguments than the
 SciML problem interface requires.
+
+SciML constructors raise this when the offending callable has methods, but all
+candidate arities are shorter than the interface requires. For optimization
+objectives, the specialized message explains the required `f(u, p)` signature;
+for differential equations, the message explains the required state, parameter,
+and time arguments.
+
+# Fields
+
+- `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
+- `f`: The offending callable; `showerror` prints its method table.
+- `isoptimization`: Whether to use the optimization-specific explanation.
 """ TooFewArgumentsError
 
 function Base.showerror(io::IO, e::TooFewArgumentsError)
@@ -232,6 +259,17 @@ end
 
 Exception thrown when a model function's methods do not match the accepted SciML
 problem interface signatures.
+
+This is the mixed-arity validation failure: the callable has methods, but the
+method set is neither uniformly too short nor uniformly too long, and no method
+matches an accepted in-place or out-of-place signature. It commonly indicates
+that a function defines several dispatches, none of which match the selected
+problem or SciMLFunction interface.
+
+# Fields
+
+- `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
+- `f`: The offending callable; `showerror` prints its method table.
 """ FunctionArgumentsError
 
 function Base.showerror(io::IO, e::FunctionArgumentsError)
