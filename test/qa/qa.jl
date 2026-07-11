@@ -125,4 +125,6 @@ run_qa(
     ),
 )
 
+include("alloccheck.jl")
+
 nothing

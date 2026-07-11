@@ -1,5 +1,6 @@
 using SciMLBase
 using Test
+using Random: Xoshiro, shuffle
 
 # Synthetic saved data for a two-state trajectory.
 t = [0.0, 1.0, 2.0, 3.0]
@@ -168,9 +169,63 @@ end
     @test !snondense.dense
     # type still invariant after enabling sensitivity mode
     @test typeof(sdense) == typeof(snondense)
+    # the warm-start state survives the reconstruction (same ts, same guesses)
+    @test sdense.guesser === basic_dense.guesser
     # exact node lookups still work under sensitivity mode
     @test getu(oop(sdense, 1.0, nothing, Val{0}, :left)) == u[2]
     # interpolating between nodes must error under sensitivity mode
     @test_throws ErrorException oop(sdense, 1.5, nothing, Val{0}, :left)
     @test_throws ErrorException oop(snondense, 1.5, nothing, Val{0}, :left)
+end
+
+# The scalar paths warm-start their interval search from the Guesser stored in
+# BasicInterpolation. Pin that this is a pure speedup: scalar results equal the
+# hint-free legacy types' results exactly, for correlated (ascending /
+# descending) and uncorrelated (shuffled) access orders, on evenly spaced grids
+# (linear-extrapolation guess) and geometrically stretched grids (previous-hit
+# guess), in both time directions, for both continuities.
+@testset "Guesser warm-started scalar search" begin
+    npts = 401
+    uniform_t = collect(range(0.0, 10.0; length = npts))
+    r = 1.015 .^ (0:(npts - 2))
+    geometric_t = vcat(0.0, 10.0 .* cumsum(r) ./ sum(r))
+    @test SciMLBase.BasicInterpolation(
+        uniform_t, [[0.0]], [[0.0]], true
+    ).guesser.linear_lookup
+    @test !SciMLBase.BasicInterpolation(
+        geometric_t, [[0.0]], [[0.0]], true
+    ).guesser.linear_lookup
+    for base_t in (uniform_t, geometric_t), reverse_time in (false, true)
+        tg = reverse_time ? reverse(base_t) : base_t
+        ug = [[sin(x), cos(x)] for x in tg]
+        dug = [[cos(x), -sin(x)] for x in tg]
+        bd = SciMLBase.BasicInterpolation(tg, ug, dug, true)
+        bn = SciMLBase.BasicInterpolation(tg, ug, similar(dug, 0), false)
+        h = SciMLBase.HermiteInterpolation(tg, ug, dug)
+        l = SciMLBase.LinearInterpolation(tg, ug)
+        tq = collect(range(0.005, 9.995; length = 499))
+        for tvals in (tq, reverse(tq), shuffle(Xoshiro(1), tq)),
+                cont in (:left, :right)
+
+            @test all(
+                bd(tv, nothing, Val{0}, nothing, cont) ==
+                    h(tv, nothing, Val{0}, nothing, cont) for tv in tvals
+            )
+            @test all(
+                bn(tv, nothing, Val{0}, nothing, cont) ==
+                    l(tv, nothing, Val{0}, nothing, cont) for tv in tvals
+            )
+        end
+        # node values are hit exactly through the hinted path too
+        @test all(
+            bd(tg[k], nothing, Val{0}, nothing, :left) == ug[k]
+                for k in eachindex(tg)
+        )
+        # the warm start engages: a scalar query records a previous hit
+        if !bd.guesser.linear_lookup
+            bd.guesser.idx_prev[] = 1
+            bd(tg[end ÷ 2] + 1.0e-3, nothing, Val{0}, nothing, :left)
+            @test bd.guesser.idx_prev[] != 1
+        end
+    end
 end
