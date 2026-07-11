@@ -1,3 +1,13 @@
+"""
+    enable_interpolation_sensitivitymode(interp)
+
+Return a copy of the interpolation object `interp` with sensitivity-analysis mode
+enabled, sharing the original's data arrays (and interval-search state where
+applicable) rather than copying them. Sensitivity mode restricts interpolation to
+the behavior that is correct on a solution rebuilt during adjoint/sensitivity
+analysis. `nothing` passes through as `nothing`; interpolation types without a
+sensitivity mode pass through unchanged.
+"""
 function enable_interpolation_sensitivitymode end
 
 enable_interpolation_sensitivitymode(interp::Nothing) = nothing

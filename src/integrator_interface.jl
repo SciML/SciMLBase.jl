@@ -197,7 +197,7 @@ end
     terminate!(i::DEIntegrator[, retcode = :Terminated])
 
 Terminates the integrator by emptying `tstops`. This can be used in events and callbacks to immediately
-end the solution process.  Optionally, `retcode` may be specified (see: [Return Codes (RetCodes)](@ref retcodes)).
+end the solution process.  Optionally, `retcode` may be specified (see: [Return Codes (RetCodes)](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes)).
 """
 function terminate!(i::DEIntegrator)
     error("terminate!: method has not been implemented for the integrator")

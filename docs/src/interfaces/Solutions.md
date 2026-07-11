@@ -226,6 +226,7 @@ SciMLBase.HermiteInterpolation
 SciMLBase.BasicInterpolation
 SciMLBase.SensitivityInterpolation
 SciMLBase.interp_summary
+SciMLBase.enable_interpolation_sensitivitymode
 ```
 
 ### Symbolic Utilities

@@ -72,7 +72,7 @@ Trait declaring whether an algorithm supports nonstandard numeric scalar types.
 Algorithms that return `true` should be implemented generically enough to work
 with SciML-compatible state, parameter, and time number types beyond standard
 floating-point and complex floating-point types, subject to the additional rules
-in the [SciML container and number interface](@ref arrayandnumber). Wrapped
+in the [SciML container and number interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/Array_and_Number/). Wrapped
 C/Fortran solvers and algorithms that assume a concrete floating-point storage
 format usually cannot support this and should keep the default.
 
