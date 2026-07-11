@@ -2188,7 +2188,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Interpolation types
 @public AbstractDiffEqInterpolation, ConstantInterpolation, LinearInterpolation,
-    HermiteInterpolation, SensitivityInterpolation
+    HermiteInterpolation, BasicInterpolation, SensitivityInterpolation
 
 # Interpolation / symbolic / solution interface
 @public interp_summary, getindepsym, getindepsym_defaultt,
