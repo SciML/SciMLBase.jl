@@ -1,5 +1,6 @@
 using SciMLBase
 using Test
+using Random: Xoshiro, shuffle
 
 # Synthetic saved data for a two-state trajectory.
 t = [0.0, 1.0, 2.0, 3.0]
@@ -117,24 +118,25 @@ end
         end
     end
 
-    # The dense branch happens inside the interpolation method — no wrapper
-    # object may be constructed per call. The scalar in-place path is not
-    # allocation-free even for the legacy types on master (~80-96 bytes from
-    # shared machinery, e.g. `searchsortedfirst(...; rev = tdir < 0)` with a
-    # runtime Bool creating a small ordering-union box), so the assertion that
-    # locks out per-call wrapper construction is allocation PARITY: the
-    # switched type must allocate no more than the legacy type it corresponds
-    # to on the identical call.
-    function scalar_inplace_allocs(itp, out)
-        itp(out, 1.5, nothing, Val{0}, nothing, :left)
-        itp(out, 1.5, nothing, Val{0}, nothing, :left)
-        return @allocated itp(out, 1.5, nothing, Val{0}, nothing, :left)
+    # The scalar in-place path must be allocation-free post-warmup for the
+    # switched type in both modes AND the legacy types: no per-call wrapper
+    # construction, no dynamic dispatch from the Type-argument
+    # non-specialization heuristic on `deriv` (hence `deriv::D where {D}` in
+    # this harness too — an unannotated Type slot would re-box in the harness
+    # itself and be misattributed to the library), and no boxed ordering from
+    # a runtime-`rev` sorted search.
+    function scalar_inplace_allocs(itp, out, deriv::D) where {D}
+        itp(out, 1.5, nothing, deriv, nothing, :left)
+        itp(out, 1.5, nothing, deriv, nothing, :left)
+        return @allocated itp(out, 1.5, nothing, deriv, nothing, :left)
     end
     out = zeros(2)
-    @test scalar_inplace_allocs(basic_dense, out) <=
-        scalar_inplace_allocs(hermite, out)
-    @test scalar_inplace_allocs(basic_nondense, out) <=
-        scalar_inplace_allocs(linear, out)
+    for deriv in (Val{0}, Val{1})
+        @test scalar_inplace_allocs(basic_dense, out, deriv) == 0
+        @test scalar_inplace_allocs(basic_nondense, out, deriv) == 0
+        @test scalar_inplace_allocs(hermite, out, deriv) == 0
+        @test scalar_inplace_allocs(linear, out, deriv) == 0
+    end
 
     # Vector-tvals calls return a DiffEqArray whose two SymbolCache metadata
     # type parameters are not inferred for ANY interpolation type (a
@@ -167,9 +169,63 @@ end
     @test !snondense.dense
     # type still invariant after enabling sensitivity mode
     @test typeof(sdense) == typeof(snondense)
+    # the warm-start state survives the reconstruction (same ts, same guesses)
+    @test sdense.guesser === basic_dense.guesser
     # exact node lookups still work under sensitivity mode
     @test getu(oop(sdense, 1.0, nothing, Val{0}, :left)) == u[2]
     # interpolating between nodes must error under sensitivity mode
     @test_throws ErrorException oop(sdense, 1.5, nothing, Val{0}, :left)
     @test_throws ErrorException oop(snondense, 1.5, nothing, Val{0}, :left)
+end
+
+# The scalar paths warm-start their interval search from the Guesser stored in
+# BasicInterpolation. Pin that this is a pure speedup: scalar results equal the
+# hint-free legacy types' results exactly, for correlated (ascending /
+# descending) and uncorrelated (shuffled) access orders, on evenly spaced grids
+# (linear-extrapolation guess) and geometrically stretched grids (previous-hit
+# guess), in both time directions, for both continuities.
+@testset "Guesser warm-started scalar search" begin
+    npts = 401
+    uniform_t = collect(range(0.0, 10.0; length = npts))
+    r = 1.015 .^ (0:(npts - 2))
+    geometric_t = vcat(0.0, 10.0 .* cumsum(r) ./ sum(r))
+    @test SciMLBase.BasicInterpolation(
+        uniform_t, [[0.0]], [[0.0]], true
+    ).guesser.linear_lookup
+    @test !SciMLBase.BasicInterpolation(
+        geometric_t, [[0.0]], [[0.0]], true
+    ).guesser.linear_lookup
+    for base_t in (uniform_t, geometric_t), reverse_time in (false, true)
+        tg = reverse_time ? reverse(base_t) : base_t
+        ug = [[sin(x), cos(x)] for x in tg]
+        dug = [[cos(x), -sin(x)] for x in tg]
+        bd = SciMLBase.BasicInterpolation(tg, ug, dug, true)
+        bn = SciMLBase.BasicInterpolation(tg, ug, similar(dug, 0), false)
+        h = SciMLBase.HermiteInterpolation(tg, ug, dug)
+        l = SciMLBase.LinearInterpolation(tg, ug)
+        tq = collect(range(0.005, 9.995; length = 499))
+        for tvals in (tq, reverse(tq), shuffle(Xoshiro(1), tq)),
+                cont in (:left, :right)
+
+            @test all(
+                bd(tv, nothing, Val{0}, nothing, cont) ==
+                    h(tv, nothing, Val{0}, nothing, cont) for tv in tvals
+            )
+            @test all(
+                bn(tv, nothing, Val{0}, nothing, cont) ==
+                    l(tv, nothing, Val{0}, nothing, cont) for tv in tvals
+            )
+        end
+        # node values are hit exactly through the hinted path too
+        @test all(
+            bd(tg[k], nothing, Val{0}, nothing, :left) == ug[k]
+                for k in eachindex(tg)
+        )
+        # the warm start engages: a scalar query records a previous hit
+        if !bd.guesser.linear_lookup
+            bd.guesser.idx_prev[] = 1
+            bd(tg[end ÷ 2] + 1.0e-3, nothing, Val{0}, nothing, :left)
+            @test bd.guesser.idx_prev[] != 1
+        end
+    end
 end

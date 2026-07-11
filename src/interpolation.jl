@@ -153,6 +153,18 @@ identical to using those types directly in the corresponding mode. The `dense`
 branch happens inside the interpolation methods — no wrapper object is
 constructed and both branches return values of the same type, so calls are
 type-stable and allocation-free on the in-place paths.
+
+The `guesser` field holds a `FindFirstFunctions.Guesser` over `t` that
+warm-starts the interval search of scalar interpolation calls (its only state
+is a `Ref`, so the struct stays immutable and the concrete type still depends
+only on the container types). Correlated access patterns — adjoint solves
+sweeping time monotonically, `saveat` post-processing — thereby skip the
+per-call bisection. The guesser decides at construction whether `t` is evenly
+spaced enough for a linear-extrapolation guess; either way every lookup
+returns exact `searchsortedfirst` results, so the guess quality only affects
+speed, never values. Constructors build it automatically; pass one explicitly
+only to share state across reconstructions (as
+[`enable_interpolation_sensitivitymode`](@ref) does).
 """
 struct BasicInterpolation{tType, uType, duType} <: AbstractDiffEqInterpolation
     t::tType
@@ -160,14 +172,21 @@ struct BasicInterpolation{tType, uType, duType} <: AbstractDiffEqInterpolation
     du::duType
     dense::Bool
     sensitivitymode::Bool
+    guesser::Guesser{tType}
 end
 
 function BasicInterpolation(t, u, du, dense; sensitivitymode = false)
-    return BasicInterpolation(t, u, du, dense, sensitivitymode)
+    return BasicInterpolation(t, u, du, dense, sensitivitymode, Guesser(t))
+end
+
+function BasicInterpolation(t, u, du, dense::Bool, sensitivitymode::Bool)
+    return BasicInterpolation(t, u, du, dense, sensitivitymode, Guesser(t))
 end
 
 function enable_interpolation_sensitivitymode(interp::BasicInterpolation)
-    return BasicInterpolation(interp.t, interp.u, interp.du, interp.dense, true)
+    return BasicInterpolation(
+        interp.t, interp.u, interp.du, interp.dense, true, interp.guesser
+    )
 end
 
 """
@@ -196,30 +215,84 @@ or use the keyword argument sensealg=SensitivityADPassThrough() to revert
 to AD-based derivatives.
 """
 
-function (id::HermiteInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+# `deriv` is passed as a `Type` (e.g. `Val{1}`), which Julia heuristically does
+# not specialize on for an unannotated slot; the `::D ... where {D}` forces
+# specialization so the inner interpolation call is statically dispatched
+# instead of boxing its arguments on every call.
+function (id::HermiteInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::HermiteInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::HermiteInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
-function (id::LinearInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::LinearInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::LinearInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::LinearInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
-function (id::ConstantInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::ConstantInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::ConstantInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::ConstantInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
-function (id::BasicInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::BasicInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::BasicInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::BasicInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
+
+# Interval search routed through FindFirstFunctions, mirroring what
+# SciML/OrdinaryDiffEq.jl#3826 did for OrdinaryDiffEqCore. Branching on the
+# direction keeps each call on a concrete const ordering — a runtime
+# `rev::Bool` kwarg would box a value-dependent ordering union on every call.
+# Every strategy returns exact `Base.searchsortedfirst` results; only lookup
+# speed differs.
+@inline function fff_searchsortedfirst(t, tval, guess::Integer, tdir)
+    return if tdir < 0
+        searchsorted_first(KIND_BRACKET_GALLOP, t, tval, guess; order = Base.Order.Reverse)
+    else
+        searchsorted_first(KIND_BRACKET_GALLOP, t, tval, guess; order = Base.Order.Forward)
+    end
+end
+
+# Scalar-path search. `BasicInterpolation` warm-starts from its `Guesser`
+# (linear-extrapolation guess on evenly spaced grids, previous hit otherwise),
+# which turns the correlated lookups of adjoint sweeps and `saveat`
+# post-processing into O(1) instead of a fresh bisection. The legacy types
+# carry no hint state (their positional constructors and field layouts are
+# public API constructed across the ecosystem) and use the plain search.
+@inline function scalar_searchsortedfirst(g::Guesser, t, tval, tdir)
+    return if tdir < 0
+        searchsorted_first(GuesserHint(g), t, tval; order = Base.Order.Reverse)
+    else
+        searchsorted_first(GuesserHint(g), t, tval; order = Base.Order.Forward)
+    end
+end
+@inline function scalar_searchsortedfirst(::Nothing, t, tval, tdir)
+    return fff_searchsortedfirst(t, tval, firstindex(t), tdir)
+end
+
+@inline interp_search_hint(id) = nothing
+@inline interp_search_hint(id::BasicInterpolation) = id.guesser
 
 @inline function interpolation(
         tvals, id::I, idxs, deriv::D, p,
@@ -246,7 +319,9 @@ end
     end
     for j in idx
         tval = tvals[j]
-        i = searchsortedfirst(@view(t[i:end]), tval, rev = tdir < 0) + i - 1 # It's in the interval t[i-1] to t[i]
+        # `max` reproduces the previous view-based search's lower bound of `i`
+        # exactly (the sorted-`tvals` sweep never moves backward)
+        i = max(i, fff_searchsortedfirst(t, tval, clamp(i, firstindex(t), lastindex(t)), tdir)) # It's in the interval t[i-1] to t[i]
         avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
         avoid_constant_ends && i == 1 && (i += 1)
         if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
@@ -314,7 +389,9 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     for j in idx
         tval = tvals[j]
-        i = searchsortedfirst(@view(t[i:end]), tval, rev = tdir < 0) + i - 1 # It's in the interval t[i-1] to t[i]
+        # `max` reproduces the previous view-based search's lower bound of `i`
+        # exactly (the sorted-`tvals` sweep never moves backward)
+        i = max(i, fff_searchsortedfirst(t, tval, clamp(i, firstindex(t), lastindex(t)), tdir)) # It's in the interval t[i-1] to t[i]
         avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
         avoid_constant_ends && i == 1 && (i += 1)
         if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
@@ -400,7 +477,7 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
-    @inbounds i = searchsortedfirst(t, tval, rev = tdir < 0) # It's in the interval t[i-1] to t[i]
+    i = scalar_searchsortedfirst(interp_search_hint(id), t, tval, tdir) # It's in the interval t[i-1] to t[i]
     avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
     avoid_constant_ends && i == 1 && (i += 1)
     if !avoid_constant_ends && t[i] == tval
@@ -462,22 +539,28 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
-    @inbounds i = searchsortedfirst(t, tval, rev = tdir < 0) # It's in the interval t[i-1] to t[i]
+    i = scalar_searchsortedfirst(interp_search_hint(id), t, tval, tdir) # It's in the interval t[i-1] to t[i]
     avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
     avoid_constant_ends && i == 1 && (i += 1)
+    # `copyto!`, not `copy!`: the between-node kernel path has always required
+    # a correctly-sized `out` (it broadcasts into it), so the exact-node
+    # branches match that contract instead of silently resizing — and `copy!`'s
+    # `resize!` branches are reachable allocations that would break the static
+    # no-allocation guarantee of this path (`copyto!` is also alias-safe
+    # without broadcast's defensive-copy machinery).
     return if !avoid_constant_ends && t[i] == tval
         lasti = lastindex(t)
         k = continuity == :right && i + 1 <= lasti && t[i + 1] == tval ? i + 1 : i
         if idxs === nothing
-            copy!(out, u[k])
+            copyto!(out, u[k])
         else
-            copy!(out, u[k][idxs])
+            copyto!(out, view(u[k], idxs))
         end
     elseif !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
         if idxs === nothing
-            copy!(out, u[i - 1])
+            copyto!(out, u[i - 1])
         else
-            copy!(out, u[i - 1][idxs])
+            copyto!(out, view(u[i - 1], idxs))
         end
     else
         id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)

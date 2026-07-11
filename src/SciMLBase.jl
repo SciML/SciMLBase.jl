@@ -40,6 +40,7 @@ using Markdown: Markdown, @doc_str
 using Printf: Printf, @printf
 import Preferences
 using PreallocationTools: get_tmp, DiffCache, FixedSizeDiffCache
+using FindFirstFunctions: Guesser, GuesserHint, KIND_BRACKET_GALLOP, searchsorted_first
 
 import Logging, ArrayInterface, Random
 import IteratorInterfaceExtensions
