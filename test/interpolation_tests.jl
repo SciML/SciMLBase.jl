@@ -106,6 +106,57 @@ end
     @test SciMLBase.strip_interpolation(basic_nondense) === basic_nondense
 end
 
+@testset "Inference and allocations" begin
+    for interp in (basic_dense, basic_nondense)
+        for deriv in (Val{0}, Val{1})
+            @inferred interp(1.5, nothing, deriv, nothing, :left)
+            @inferred interp(1.5, 1, deriv, nothing, :left)
+            @inferred interp(1.5, [1, 2], deriv, nothing, :left)
+            out = zeros(2)
+            @inferred interp(out, 1.5, nothing, deriv, nothing, :left)
+        end
+    end
+
+    # The dense branch happens inside the interpolation method — no wrapper
+    # object may be constructed per call. The scalar in-place path is not
+    # allocation-free even for the legacy types on master (~80-96 bytes from
+    # shared machinery, e.g. `searchsortedfirst(...; rev = tdir < 0)` with a
+    # runtime Bool creating a small ordering-union box), so the assertion that
+    # locks out per-call wrapper construction is allocation PARITY: the
+    # switched type must allocate no more than the legacy type it corresponds
+    # to on the identical call.
+    function scalar_inplace_allocs(itp, out)
+        itp(out, 1.5, nothing, Val{0}, nothing, :left)
+        itp(out, 1.5, nothing, Val{0}, nothing, :left)
+        return @allocated itp(out, 1.5, nothing, Val{0}, nothing, :left)
+    end
+    out = zeros(2)
+    @test scalar_inplace_allocs(basic_dense, out) <=
+        scalar_inplace_allocs(hermite, out)
+    @test scalar_inplace_allocs(basic_nondense, out) <=
+        scalar_inplace_allocs(linear, out)
+
+    # Vector-tvals calls return a DiffEqArray whose two SymbolCache metadata
+    # type parameters are not inferred for ANY interpolation type (a
+    # pre-existing property of the DiffEqArray constructor; verified identical
+    # for HermiteInterpolation/LinearInterpolation on master). The data
+    # parameters ARE fully inferred. So for the vector path, pin inference
+    # PARITY: the runtime dense branch must add zero inference degradation
+    # over the legacy type it corresponds to.
+    argtypes(idxs) = (Vector{Float64}, idxs, Type{Val{0}}, Nothing, Symbol)
+    for idxs_T in (Nothing, Int)
+        rt_basic_dense = Base.return_types(basic_dense, argtypes(idxs_T))
+        rt_basic_nondense = Base.return_types(basic_nondense, argtypes(idxs_T))
+        rt_hermite = Base.return_types(hermite, argtypes(idxs_T))
+        rt_linear = Base.return_types(linear, argtypes(idxs_T))
+        @test only(rt_basic_dense) == only(rt_hermite)
+        @test only(rt_basic_nondense) == only(rt_linear)
+        # and the inferred type is a DiffEqArray, not Any or a Union
+        @test only(rt_basic_dense) <: SciMLBase.AbstractDiffEqArray
+        @test only(rt_basic_nondense) <: SciMLBase.AbstractDiffEqArray
+    end
+end
+
 @testset "sensitivitymode toggling" begin
     sdense = SciMLBase.enable_interpolation_sensitivitymode(basic_dense)
     snondense = SciMLBase.enable_interpolation_sensitivitymode(basic_nondense)

@@ -147,9 +147,12 @@ The `sensitivitymode` flag records whether sensitivity-aware behavior has been
 enabled; as with the other interpolation types it is normally set indirectly
 through solver or sensitivity-algorithm options rather than manually.
 
-The actual numerics are delegated to [`HermiteInterpolation`](@ref) and
-[`LinearInterpolation`](@ref), so results are identical to using those types
-directly in the corresponding mode.
+Both modes evaluate the same interpolation kernels used by
+[`HermiteInterpolation`](@ref) and [`LinearInterpolation`](@ref), so results are
+identical to using those types directly in the corresponding mode. The `dense`
+branch happens inside the interpolation methods — no wrapper object is
+constructed and both branches return values of the same type, so calls are
+type-stable and allocation-free on the in-place paths.
 """
 struct BasicInterpolation{tType, uType, duType} <: AbstractDiffEqInterpolation
     t::tType
@@ -165,15 +168,6 @@ end
 
 function enable_interpolation_sensitivitymode(interp::BasicInterpolation)
     return BasicInterpolation(interp.t, interp.u, interp.du, interp.dense, true)
-end
-
-# Delegate the actual reconstruction to the Hermite/Linear interpolants so the
-# numerics are identical to those types. The temporary interpolant only wraps
-# references to the already-stored arrays (no data copy).
-@inline function as_hermite_or_linear(id::BasicInterpolation)
-    return id.dense ?
-        HermiteInterpolation(id.t, id.u, id.du; sensitivitymode = id.sensitivitymode) :
-        LinearInterpolation(id.t, id.u; sensitivitymode = id.sensitivitymode)
 end
 
 """
@@ -221,10 +215,10 @@ function (id::ConstantInterpolation)(val, tvals, idxs, deriv, p, continuity::Sym
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
 function (id::BasicInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
-    return as_hermite_or_linear(id)(tvals, idxs, deriv, p, continuity)
+    return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
 function (id::BasicInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
-    return as_hermite_or_linear(id)(val, tvals, idxs, deriv, p, continuity)
+    return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
 
 @inline function interpolation(
@@ -233,7 +227,7 @@ end
     ) where {I, D}
     t = id.t
     u = id.u
-    id isa HermiteInterpolation && (du = id.du)
+    (id isa HermiteInterpolation || id isa BasicInterpolation) && (du = id.du)
     tdir = sign(t[end] - t[1])
     idx = sortperm(tvals, rev = tdir < 0)
     i = 2 # Start the search thinking it's between t[1] and t[2]
@@ -279,6 +273,15 @@ end
                     Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i],
                     idxs_internal, deriv
                 )
+            elseif id isa BasicInterpolation
+                vals[j] = if id.dense
+                    hermite_interpolant(
+                        Θ, dt, u[i - 1], u[i], du[i - 1], du[i],
+                        idxs_internal, deriv
+                    )
+                else
+                    linear_interpolant(Θ, dt, u[i - 1], u[i], idxs_internal, deriv)
+                end
             else
                 vals[j] = interpolant(Θ, id, dt, u[i - 1], u[i], idxs_internal, deriv)
             end
@@ -299,7 +302,7 @@ times t (sorted), with values u and derivatives ks
     ) where {I, D}
     t = id.t
     u = id.u
-    id isa HermiteInterpolation && (du = id.du)
+    (id isa HermiteInterpolation || id isa BasicInterpolation) && (du = id.du)
     tdir = sign(t[end] - t[1])
     idx = sortperm(tvals, rev = tdir < 0)
     i = 2 # Start the search thinking it's between t[1] and t[2]
@@ -339,6 +342,17 @@ times t (sorted), with values u and derivatives ks
                         vals[j], Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i],
                         idxs_internal, deriv
                     )
+                elseif id isa BasicInterpolation
+                    if id.dense
+                        hermite_interpolant!(
+                            vals[j], Θ, dt, u[i - 1], u[i], du[i - 1], du[i],
+                            idxs_internal, deriv
+                        )
+                    else
+                        linear_interpolant!(
+                            vals[j], Θ, dt, u[i - 1], u[i], idxs_internal, deriv
+                        )
+                    end
                 else
                     interpolant!(vals[j], Θ, id, dt, u[i - 1], u[i], idxs_internal, deriv)
                 end
@@ -348,6 +362,15 @@ times t (sorted), with values u and derivatives ks
                         Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i],
                         idxs_internal, deriv
                     )
+                elseif id isa BasicInterpolation
+                    vals[j] = if id.dense
+                        hermite_interpolant(
+                            Θ, dt, u[i - 1], u[i], du[i - 1], du[i],
+                            idxs_internal, deriv
+                        )
+                    else
+                        linear_interpolant(Θ, dt, u[i - 1], u[i], idxs_internal, deriv)
+                    end
                 else
                     vals[j] = interpolant(Θ, id, dt, u[i - 1], u[i], idxs_internal, deriv)
                 end
@@ -369,7 +392,7 @@ times t (sorted), with values u and derivatives ks
     ) where {I, D}
     t = id.t
     u = id.u
-    id isa HermiteInterpolation && (du = id.du)
+    (id isa HermiteInterpolation || id isa BasicInterpolation) && (du = id.du)
     tdir = sign(t[end] - t[1])
     t[end] == t[1] && tval != t[end] &&
         error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
@@ -404,6 +427,14 @@ times t (sorted), with values u and derivatives ks
                 Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i], idxs_internal,
                 deriv
             )
+        elseif id isa BasicInterpolation
+            val = if id.dense
+                hermite_interpolant(
+                    Θ, dt, u[i - 1], u[i], du[i - 1], du[i], idxs_internal, deriv
+                )
+            else
+                linear_interpolant(Θ, dt, u[i - 1], u[i], idxs_internal, deriv)
+            end
         else
             val = interpolant(Θ, id, dt, u[i - 1], u[i], idxs_internal, deriv)
         end
@@ -423,7 +454,7 @@ times t (sorted), with values u and derivatives ks
     ) where {I, D}
     t = id.t
     u = id.u
-    id isa HermiteInterpolation && (du = id.du)
+    (id isa HermiteInterpolation || id isa BasicInterpolation) && (du = id.du)
     tdir = sign(t[end] - t[1])
     t[end] == t[1] && tval != t[end] &&
         error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
@@ -458,6 +489,14 @@ times t (sorted), with values u and derivatives ks
                 out, Θ, id, dt, u[i - 1], u[i], du[i - 1], du[i], idxs_internal,
                 deriv
             )
+        elseif id isa BasicInterpolation
+            if id.dense
+                hermite_interpolant!(
+                    out, Θ, dt, u[i - 1], u[i], du[i - 1], du[i], idxs_internal, deriv
+                )
+            else
+                linear_interpolant!(out, Θ, dt, u[i - 1], u[i], idxs_internal, deriv)
+            end
         else
             interpolant!(out, Θ, id, dt, u[i - 1], u[i], idxs_internal, deriv)
         end
@@ -477,8 +516,8 @@ Hairer Norsett Wanner Solving Ordinary Differential Equations I - Nonstiff Probl
 
 Hermite Interpolation
 """
-@inline function interpolant(
-        Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant(
+        Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{0}}
     )
     if idxs === nothing
@@ -506,8 +545,8 @@ end
 """
 Hermite Interpolation
 """
-@inline function interpolant(
-        Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant(
+        Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{1}}
     )
     if idxs === nothing
@@ -544,8 +583,8 @@ end
 """
 Hermite Interpolation
 """
-@inline function interpolant(
-        Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant(
+        Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{2}}
     )
     if idxs === nothing
@@ -578,8 +617,8 @@ end
 """
 Hermite Interpolation
 """
-@inline function interpolant(
-        Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant(
+        Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{3}}
     )
     if idxs === nothing
@@ -604,8 +643,8 @@ Hairer Norsett Wanner Solving Ordinary Differential Euations I - Nonstiff Proble
 
 Hermite Interpolation
 """
-@inline function interpolant!(
-        out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant!(
+        out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{0}}
     )
     if out === nothing
@@ -631,8 +670,8 @@ end
 """
 Hermite Interpolation
 """
-@inline function interpolant!(
-        out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant!(
+        out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{1}}
     )
     if out === nothing
@@ -664,8 +703,8 @@ end
 """
 Hermite Interpolation
 """
-@inline function interpolant!(
-        out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant!(
+        out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{2}}
     )
     if out === nothing
@@ -695,8 +734,8 @@ end
 """
 Hermite Interpolation
 """
-@inline function interpolant!(
-        out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+@inline function hermite_interpolant!(
+        out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{3}}
     )
     if out === nothing
@@ -712,12 +751,38 @@ Hermite Interpolation
     end
 end
 
+@inline function hermite_interpolant(Θ, dt, y₀, y₁, dy₀, dy₁, idxs, ::Type{Val{D}}) where {D}
+    error("Hermite interpolation for the $(D)th order derivative is not implemented")
+end
+
+@inline function hermite_interpolant!(
+        out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs, ::Type{Val{D}}
+    ) where {D}
+    error("Hermite interpolation for the $(D)th order derivative is not implemented")
+end
+
+# HermiteInterpolation dispatches into the shared Hermite kernels, which
+# BasicInterpolation's dense branch also calls.
+@inline function interpolant(
+        Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+        T::Type{Val{D}}
+    ) where {D}
+    return hermite_interpolant(Θ, dt, y₀, y₁, dy₀, dy₁, idxs, T)
+end
+
+@inline function interpolant!(
+        out, Θ, id::HermiteInterpolation, dt, y₀, y₁, dy₀, dy₁, idxs,
+        T::Type{Val{D}}
+    ) where {D}
+    return hermite_interpolant!(out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs, T)
+end
+
 ############################### Linear Interpolants
 
 """
 Linear Interpolation
 """
-@inline function interpolant(Θ, id::LinearInterpolation, dt, y₀, y₁, idxs, T::Type{Val{0}})
+@inline function linear_interpolant(Θ, dt, y₀, y₁, idxs, T::Type{Val{0}})
     Θm1 = (1 - Θ)
     if idxs === nothing
         out = @. Θm1 * y₀ + Θ * y₁
@@ -730,7 +795,7 @@ Linear Interpolation
     return out
 end
 
-@inline function interpolant(Θ, id::LinearInterpolation, dt, y₀, y₁, idxs, T::Type{Val{1}})
+@inline function linear_interpolant(Θ, dt, y₀, y₁, idxs, T::Type{Val{1}})
     if idxs === nothing
         out = @. (y₁ - y₀) / dt
     elseif idxs isa Number
@@ -745,8 +810,8 @@ end
 """
 Linear Interpolation
 """
-@inline function interpolant!(
-        out, Θ, id::LinearInterpolation, dt, y₀, y₁, idxs,
+@inline function linear_interpolant!(
+        out, Θ, dt, y₀, y₁, idxs,
         T::Type{Val{0}}
     )
     Θm1 = (1 - Θ)
@@ -762,8 +827,8 @@ end
 """
 Linear Interpolation
 """
-@inline function interpolant!(
-        out, Θ, id::LinearInterpolation, dt, y₀, y₁, idxs,
+@inline function linear_interpolant!(
+        out, Θ, dt, y₀, y₁, idxs,
         T::Type{Val{1}}
     )
     if out === nothing
@@ -775,7 +840,31 @@ Linear Interpolation
     end
 end
 
-############################### Linear Interpolants
+@inline function linear_interpolant(Θ, dt, y₀, y₁, idxs, ::Type{Val{D}}) where {D}
+    error("Linear interpolation for the $(D)th order derivative is not implemented")
+end
+
+@inline function linear_interpolant!(out, Θ, dt, y₀, y₁, idxs, ::Type{Val{D}}) where {D}
+    error("Linear interpolation for the $(D)th order derivative is not implemented")
+end
+
+# LinearInterpolation dispatches into the shared linear kernels, which
+# BasicInterpolation's non-dense branch also calls.
+@inline function interpolant(
+        Θ, id::LinearInterpolation, dt, y₀, y₁, idxs,
+        T::Type{Val{D}}
+    ) where {D}
+    return linear_interpolant(Θ, dt, y₀, y₁, idxs, T)
+end
+
+@inline function interpolant!(
+        out, Θ, id::LinearInterpolation, dt, y₀, y₁, idxs,
+        T::Type{Val{D}}
+    ) where {D}
+    return linear_interpolant!(out, Θ, dt, y₀, y₁, idxs, T)
+end
+
+############################### Constant Interpolants
 
 """
 Constant Interpolation
