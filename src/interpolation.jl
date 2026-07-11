@@ -196,29 +196,60 @@ or use the keyword argument sensealg=SensitivityADPassThrough() to revert
 to AD-based derivatives.
 """
 
-function (id::HermiteInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+# `deriv` is passed as a `Type` (e.g. `Val{1}`), which Julia heuristically does
+# not specialize on for an unannotated slot; the `::D ... where {D}` forces
+# specialization so the inner interpolation call is statically dispatched
+# instead of boxing its arguments on every call.
+function (id::HermiteInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::HermiteInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::HermiteInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
-function (id::LinearInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::LinearInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::LinearInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::LinearInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
-function (id::ConstantInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::ConstantInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::ConstantInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::ConstantInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
 end
-function (id::BasicInterpolation)(tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::BasicInterpolation)(
+        tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation(tvals, id, idxs, deriv, p, continuity)
 end
-function (id::BasicInterpolation)(val, tvals, idxs, deriv, p, continuity::Symbol = :left)
+function (id::BasicInterpolation)(
+        val, tvals, idxs, deriv::D, p, continuity::Symbol = :left
+    ) where {D}
     return interpolation!(val, tvals, id, idxs, deriv, p, continuity)
+end
+
+# `searchsortedfirst(t, tval; rev = tdir < 0)` with a runtime `Bool` makes the
+# ordering value-dependent (a boxed union from `Base.Order.ord`); branching on
+# the direction keeps each call concretely ordered and allocation-free.
+@inline function tdir_searchsortedfirst(t, tval, tdir)
+    return if tdir < 0
+        searchsortedfirst(t, tval, Base.Order.Reverse)
+    else
+        searchsortedfirst(t, tval, Base.Order.Forward)
+    end
 end
 
 @inline function interpolation(
@@ -246,7 +277,7 @@ end
     end
     for j in idx
         tval = tvals[j]
-        i = searchsortedfirst(@view(t[i:end]), tval, rev = tdir < 0) + i - 1 # It's in the interval t[i-1] to t[i]
+        i = tdir_searchsortedfirst(@view(t[i:end]), tval, tdir) + i - 1 # It's in the interval t[i-1] to t[i]
         avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
         avoid_constant_ends && i == 1 && (i += 1)
         if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
@@ -314,7 +345,7 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     for j in idx
         tval = tvals[j]
-        i = searchsortedfirst(@view(t[i:end]), tval, rev = tdir < 0) + i - 1 # It's in the interval t[i-1] to t[i]
+        i = tdir_searchsortedfirst(@view(t[i:end]), tval, tdir) + i - 1 # It's in the interval t[i-1] to t[i]
         avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
         avoid_constant_ends && i == 1 && (i += 1)
         if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
@@ -400,7 +431,7 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
-    @inbounds i = searchsortedfirst(t, tval, rev = tdir < 0) # It's in the interval t[i-1] to t[i]
+    @inbounds i = tdir_searchsortedfirst(t, tval, tdir) # It's in the interval t[i-1] to t[i]
     avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
     avoid_constant_ends && i == 1 && (i += 1)
     if !avoid_constant_ends && t[i] == tval
@@ -462,7 +493,7 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate past the final timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
-    @inbounds i = searchsortedfirst(t, tval, rev = tdir < 0) # It's in the interval t[i-1] to t[i]
+    @inbounds i = tdir_searchsortedfirst(t, tval, tdir) # It's in the interval t[i-1] to t[i]
     avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
     avoid_constant_ends && i == 1 && (i += 1)
     return if !avoid_constant_ends && t[i] == tval

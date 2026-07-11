@@ -117,24 +117,25 @@ end
         end
     end
 
-    # The dense branch happens inside the interpolation method — no wrapper
-    # object may be constructed per call. The scalar in-place path is not
-    # allocation-free even for the legacy types on master (~80-96 bytes from
-    # shared machinery, e.g. `searchsortedfirst(...; rev = tdir < 0)` with a
-    # runtime Bool creating a small ordering-union box), so the assertion that
-    # locks out per-call wrapper construction is allocation PARITY: the
-    # switched type must allocate no more than the legacy type it corresponds
-    # to on the identical call.
-    function scalar_inplace_allocs(itp, out)
-        itp(out, 1.5, nothing, Val{0}, nothing, :left)
-        itp(out, 1.5, nothing, Val{0}, nothing, :left)
-        return @allocated itp(out, 1.5, nothing, Val{0}, nothing, :left)
+    # The scalar in-place path must be allocation-free post-warmup for the
+    # switched type in both modes AND the legacy types: no per-call wrapper
+    # construction, no dynamic dispatch from the Type-argument
+    # non-specialization heuristic on `deriv` (hence `deriv::D where {D}` in
+    # this harness too — an unannotated Type slot would re-box in the harness
+    # itself and be misattributed to the library), and no boxed ordering from
+    # a runtime-`rev` sorted search.
+    function scalar_inplace_allocs(itp, out, deriv::D) where {D}
+        itp(out, 1.5, nothing, deriv, nothing, :left)
+        itp(out, 1.5, nothing, deriv, nothing, :left)
+        return @allocated itp(out, 1.5, nothing, deriv, nothing, :left)
     end
     out = zeros(2)
-    @test scalar_inplace_allocs(basic_dense, out) <=
-        scalar_inplace_allocs(hermite, out)
-    @test scalar_inplace_allocs(basic_nondense, out) <=
-        scalar_inplace_allocs(linear, out)
+    for deriv in (Val{0}, Val{1})
+        @test scalar_inplace_allocs(basic_dense, out, deriv) == 0
+        @test scalar_inplace_allocs(basic_nondense, out, deriv) == 0
+        @test scalar_inplace_allocs(hermite, out, deriv) == 0
+        @test scalar_inplace_allocs(linear, out, deriv) == 0
+    end
 
     # Vector-tvals calls return a DiffEqArray whose two SymbolCache metadata
     # type parameters are not inferred for ANY interpolation type (a
