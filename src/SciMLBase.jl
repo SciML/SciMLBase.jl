@@ -337,7 +337,7 @@ const AbstractSteadyStateProblem{
 $(TYPEDEF)
 
 Base interface for problems that directly solve or sample an
-[`AbstractNoiseProcess`](@ref). Concrete noise problems should provide a `noise`
+[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess). Concrete noise problems should provide a `noise`
 field, a `tspan`, and solver keyword arguments. Their in-place behavior delegates
 to the stored noise process through [`isinplace`](@ref).
 """
@@ -1303,8 +1303,8 @@ abstract type AbstractNoiseProcess{T, N, A, isinplace} <: AbstractDiffEqArray{T,
     AbstractSciMLSolution
 
 Union of all base SciML solution interfaces:
-[`AbstractTimeseriesSolution`](@ref), [`AbstractNoTimeSolution`](@ref),
-[`AbstractEnsembleSolution`](@ref), and [`AbstractNoiseProcess`](@ref).
+[`AbstractTimeseriesSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractTimeseriesSolution), [`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution),
+[`AbstractEnsembleSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractEnsembleSolution), and [`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess).
 
 This is a union rather than an abstract supertype so each solution family can
 subtype the appropriate array interface directly. Use it for dispatch that
@@ -1323,7 +1323,7 @@ $(TYPEDEF)
 
 Abstract interface for no-time solutions of linear systems. Concrete subtypes
 store the computed solution in `u` and should follow the
-[`AbstractNoTimeSolution`](@ref) array-forwarding contract. Linear solve
+[`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution) array-forwarding contract. Linear solve
 solutions commonly include `resid`, `alg`, `retcode`, `iters`, `cache`, and
 `stats` fields so callers can inspect convergence and reuse solver caches.
 """
@@ -1334,7 +1334,7 @@ $(TYPEDEF)
 
 Abstract interface for no-time eigenvalue problem solutions. Concrete subtypes
 store the computed eigenvalues in `u`, follow the
-[`AbstractNoTimeSolution`](@ref) contract, and should document where eigenvectors,
+[`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution) contract, and should document where eigenvectors,
 residuals, the original problem, algorithm, return code, and solver statistics
 are stored.
 """
@@ -1346,7 +1346,7 @@ $(TYPEDEF)
 Abstract interface for no-time nonlinear equation solutions. Concrete subtypes
 store the root or fixed point in `u` and the residual in a solver-specific
 `resid` field when available. These solutions follow the
-[`AbstractNoTimeSolution`](@ref) contract and commonly provide `prob`, `alg`,
+[`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution) contract and commonly provide `prob`, `alg`,
 `retcode`, `original`, bracket endpoints for interval methods, and `stats`.
 """
 abstract type AbstractNonlinearSolution{T, N} <: AbstractNoTimeSolution{T, N} end
@@ -1356,7 +1356,7 @@ $(TYPEDEF)
 
 Abstract interface for no-time integral or quadrature solutions. Concrete
 subtypes store the estimated integral in `u`, follow the
-[`AbstractNoTimeSolution`](@ref) contract, and commonly provide `resid`, `prob`,
+[`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution) contract, and commonly provide `resid`, `prob`,
 `alg`, `retcode`, `chi`, and `stats` fields for solver diagnostics.
 """
 abstract type AbstractIntegralSolution{T, N} <: AbstractNoTimeSolution{T, N} end
@@ -1366,7 +1366,7 @@ $(TYPEDEF)
 
 Abstract interface for no-time optimization solutions. Concrete subtypes store
 the optimizer or minimizer in `u` and follow the
-[`AbstractNoTimeSolution`](@ref) contract. Optimization solutions commonly expose
+[`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution) contract. Optimization solutions commonly expose
 `alg`, `objective`, `retcode`, `original`, `stats`, and a cache that supplies the
 problem function and parameters for symbolic indexing.
 """
@@ -1378,7 +1378,7 @@ $(TYPEDEF)
 Alias for nonlinear solutions used by steady-state solvers. A steady-state
 solution represents a state `u` satisfying the nonlinear system induced by the
 differential equation right-hand side, and therefore follows the
-[`AbstractNonlinearSolution`](@ref) and [`AbstractNoTimeSolution`](@ref)
+[`AbstractNonlinearSolution`](@ref) and [`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution)
 contracts.
 """
 const AbstractSteadyStateSolution{T, N} = AbstractNonlinearSolution{T, N}
@@ -1387,7 +1387,7 @@ const AbstractSteadyStateSolution{T, N} = AbstractNonlinearSolution{T, N}
 $(TYPEDEF)
 
 Abstract interface for analytical time-series solutions. These solutions follow
-the [`AbstractTimeseriesSolution`](@ref) contract and are used when the solution
+the [`AbstractTimeseriesSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractTimeseriesSolution) contract and are used when the solution
 values are generated from or compared against an analytical representation of
 the problem. Plotting and error-calculation code may use analytical solution
 metadata stored on the concrete solution or its problem.
@@ -1398,7 +1398,7 @@ abstract type AbstractAnalyticalSolution{T, N, S} <: AbstractTimeseriesSolution{
 $(TYPEDEF)
 
 Abstract interface for ordinary differential equation time-series solutions.
-Concrete subtypes follow the [`AbstractTimeseriesSolution`](@ref) contract and
+Concrete subtypes follow the [`AbstractTimeseriesSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractTimeseriesSolution) contract and
 typically provide saved states `u`, saved times `t`, interpolation data `interp`,
 the original problem `prob`, the algorithm `alg`, solver `stats`, a `retcode`,
 and optional analytical values, dense-output data, discrete parameter
@@ -1441,7 +1441,7 @@ abstract type AbstractDAESolution{T, N, S} <: AbstractODESolution{T, N, S} end
 $(TYPEDEF)
 
 Abstract interface for PDE solutions with a saved time axis. These solutions
-follow the [`AbstractTimeseriesSolution`](@ref) contract and additionally carry
+follow the [`AbstractTimeseriesSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractTimeseriesSolution) contract and additionally carry
 discretization metadata. Concrete subtypes should provide `disc_data`,
 `original_sol`, `ivdomain`, `ivs`, and `dvs` fields so downstream discretizer
 packages can recover the PDE variables, domains, and original discretized solve.
@@ -1455,7 +1455,7 @@ AbstractTimeseriesSolution{T, N, S} end
 $(TYPEDEF)
 
 Abstract interface for PDE solutions without a saved time axis. These solutions
-follow the [`AbstractNoTimeSolution`](@ref) contract and additionally carry
+follow the [`AbstractNoTimeSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoTimeSolution) contract and additionally carry
 discretization metadata. Concrete subtypes should provide `disc_data`,
 `original_sol`, `ivdomain`, `ivs`, and `dvs` fields so downstream discretizer
 packages can recover the PDE variables, domains, and original discretized solve.
@@ -1488,7 +1488,7 @@ const AbstractPDESolution{
 $(TYPEDEF)
 
 Abstract interface for time-series solutions that store sensitivity quantities.
-Sensitivity solutions follow the [`AbstractTimeseriesSolution`](@ref) contract,
+Sensitivity solutions follow the [`AbstractTimeseriesSolution`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractTimeseriesSolution) contract,
 but their saved values represent derivatives or augmented sensitivity states
 rather than only the primal state. Concrete subtypes should document which
 sensitivity method produced the values, how the sensitivity axes are arranged in

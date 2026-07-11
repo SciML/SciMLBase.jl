@@ -78,7 +78,7 @@ DDEProblem{isinplace,specialize}(f[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See [Specialization Levels](@ref specialization_levels)
+the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -91,7 +91,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[SciMLFunctions interface](@ref scimlfunctions).
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/).
 
 ### Arguments
 
@@ -109,7 +109,7 @@ For specifying Jacobians and mass matrices, see the
 
 ## Dynamical Delay Differential Equations
 
-Much like the [dynamical ODE problem](@ref differential_equation_problem_types), a
+Much like the dynamical ODE problem (see the Differential Equation Problem Types page of the SciMLBase interface documentation), a
 Dynamical DDE is a partitioned DDE
 of the form:
 

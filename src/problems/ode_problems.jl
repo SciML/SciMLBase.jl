@@ -55,7 +55,7 @@ are:
   Defines the ODE with the specified functions. `isinplace` optionally sets whether
   the function is inplace or not. This is determined automatically, but not inferred.
   `specialize` optionally controls the specialization level. See the
-  [Specialization Levels](@ref specialization_levels)
+  [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -512,7 +512,7 @@ Therefore, you can solve a `SplitODEProblem` using the same solvers for `ODEProb
 Solver packages document which methods specialize on split structure.
 
 For specifying Jacobians and mass matrices, see the
-[SciMLFunctions interface](@ref scimlfunctions)
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/)
 page.
 
 ### Fields
