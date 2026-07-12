@@ -14,6 +14,7 @@ SciMLBase.NonlinearSolution
 SciMLBase.SteadyStateSolution
 SciMLBase.IntegralSolution
 SciMLBase.OptimizationSolution
+SciMLBase.ConvexOptimizationSolution
 ```
 
 ## Differential Equation Solutions

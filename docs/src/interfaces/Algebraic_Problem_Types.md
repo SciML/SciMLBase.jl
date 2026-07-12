@@ -36,6 +36,7 @@ SciMLBase.HomotopyProblem
 SciMLBase.IntegralProblem
 SciMLBase.SampledIntegralProblem
 SciMLBase.OptimizationProblem
+SciMLBase.ConvexOptimizationProblem
 ```
 
 ## Steady-State and Analytical Problems

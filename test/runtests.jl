@@ -73,6 +73,9 @@ run_tests(;
         @time @safetestset "Eigenvalue problem tests" begin
             include("eigenvalue_problem_tests.jl")
         end
+        @time @safetestset "ConvexOptimization problem/solution tests" begin
+            include("convex_optimization_tests.jl")
+        end
         @time @safetestset "HomotopyProblem tests" begin
             include("homotopy_problem_tests.jl")
         end

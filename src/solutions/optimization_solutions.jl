@@ -102,6 +102,62 @@ function build_solution(
     )
 end
 
+@doc doc"""
+    ConvexOptimizationSolution
+
+**Experimental.** Solution of a [`ConvexOptimizationProblem`](@ref). It carries
+the primal minimizer `u` and objective value like an [`OptimizationSolution`](@ref),
+plus the distinguishing feature of convex optimization: `dual`, the vector of
+**dual multipliers** (one per constraint), expressed in the original problem's
+variables. Because the problem is convex, `u` is a global optimum and `dual` is a
+certificate of optimality.
+
+## Fields
+
+  - `u`: the primal minimizer.
+  - `dual`: the dual multipliers, one entry per constraint of the originating
+    `ConvexOptimizationProblem` (`nothing` if the backend did not return duals).
+  - `objective`: the objective value at `u`.
+  - `retcode`: the return code (see [`ReturnCode`](@ref)).
+  - `cache`, `alg`, `original`, `stats`: as for [`OptimizationSolution`](@ref).
+
+!!! warning
+    Experimental; layout may change alongside `ConvexOptimizationProblem`.
+"""
+struct ConvexOptimizationSolution{
+        T, N, uType, DType, C <: AbstractOptimizationCache, A, OV, O, ST,
+    } <: AbstractOptimizationSolution{T, N}
+    u::uType         # primal minimizer
+    dual::DType      # dual multipliers, one per constraint
+    cache::C
+    alg::A
+    objective::OV
+    retcode::ReturnCode.T
+    original::O
+    stats::ST
+end
+
+function build_convex_solution(
+        cache::AbstractOptimizationCache,
+        alg, u, objective;
+        dual = nothing,
+        retcode = ReturnCode.Default,
+        original = nothing,
+        stats = nothing,
+        kwargs...
+    )
+    T = eltype(eltype(u))
+    N = ndims(u)
+
+    return ConvexOptimizationSolution{
+        T, N, typeof(u), typeof(dual), typeof(cache), typeof(alg),
+        typeof(objective), typeof(original), typeof(stats),
+    }(
+        u, dual, cache,
+        alg, objective, retcode, original, stats
+    )
+end
+
 """
 $(TYPEDEF)
 
