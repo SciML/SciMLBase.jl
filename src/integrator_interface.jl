@@ -625,7 +625,7 @@ log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
 has_mtk_sys(integrator) = false
 
-diagnose_symbolic_instability(integrator) = ""
+diagnose_symbolic_instability(sys, u, uprev) = ""
 
 ### Display
 
@@ -700,14 +700,16 @@ function check_error(integrator::DEIntegrator)
                         true
                 )
             )
-            symbolic_diagnostic = has_mtk_sys(integrator) ? diagnose_symbolic_instability(integrator) : ""
+            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
+            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
             numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
             diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
             EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
             @SciMLMessage(lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic", verbose, :dt_min_unstable)
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
-            symbolic_diagnostic = has_mtk_sys(integrator) ? diagnose_symbolic_instability(integrator) : ""
+            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
+            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
             numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
             diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
             EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
@@ -717,7 +719,8 @@ function check_error(integrator::DEIntegrator)
     end
     if step_accepted &&
             opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        symbolic_diagnostic = has_mtk_sys(integrator) ? diagnose_symbolic_instability(integrator) : ""
+        sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
+        symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
         numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
         diagnostic = verbosity_to_bool(verbose.instability) ? numeric_diagnostic * symbolic_diagnostic : ""
         @SciMLMessage("Instability detected. Aborting.$diagnostic", verbose, :instability)
