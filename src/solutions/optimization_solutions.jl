@@ -60,6 +60,12 @@ Representation of the solution to a non-linear optimization defined by an Optimi
   - `original`: if the solver is wrapped from a external solver, e.g.
     Optim.jl, then this is the original return from said solver library.
   - `stats`: statistics of the solver, such as the number of function evaluations required.
+  - `dual`: dual multipliers, one vector per constraint in constraint order, or
+    `nothing`. General `OptimizationProblem` solves leave this `nothing`; a
+    `ConvexOptimizationProblem` solved by a conic backend populates it as the
+    optimality certificate. Its type is fixed at solve time by the `calculate_dual`
+    keyword (`Val(true)`/`Val(false)`/`Val(nothing)`) so switching problem types
+    stays type-stable — see [`default_calculate_dual`](@ref).
 
 ## Internal Fields
 
@@ -71,7 +77,7 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 solution interfaces, check out the
 [SciML Solution Interface documentation page](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/)
 """
-struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST} <:
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST, DType} <:
     AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
@@ -80,7 +86,40 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
     retcode::ReturnCode.T
     original::O # original output of the optimizer
     stats::ST
+    dual::DType # dual multipliers (one vector per constraint), or nothing
 end
+
+# `calculate_dual` (a `Val`) fixes the *type* of the `dual` field at compile time
+# instead of letting it be inferred from the runtime dual value — this is what
+# keeps `solve` type-stable while still allowing duals to be present or absent:
+#   Val(true)    -> Vector{Vector{T}}                 (duals present; precise type)
+#   Val(false)   -> Nothing                           (duals suppressed; precise type)
+#   Val(nothing) -> Union{Nothing, Vector{Vector{T}}} (auto: the type-stable Union a
+#                                                       DCP router uses when it cannot
+#                                                       know statically whether a routed
+#                                                       problem yields duals)
+_dual_type(::Val{true}, ::Type{T}) where {T} = Vector{Vector{T}}
+_dual_type(::Val{false}, ::Type{T}) where {T} = Nothing
+_dual_type(::Val{nothing}, ::Type{T}) where {T} = Union{Nothing, Vector{Vector{T}}}
+
+_coerce_dual(::Val{false}, dual, ::Type{T}) where {T} = nothing
+_coerce_dual(::Val{true}, dual, ::Type{T}) where {T} = convert(Vector{Vector{T}}, dual)
+function _coerce_dual(::Val{nothing}, dual, ::Type{T}) where {T}
+    return dual === nothing ? nothing : convert(Vector{Vector{T}}, dual)
+end
+
+"""
+    default_calculate_dual(prob)
+
+Whether `solve` computes dual multipliers by default for problem `prob`, returned
+as a `Val`: `Val(false)` for a general [`OptimizationProblem`](@ref) (a local NLP
+solve has no duals to report), and `Val(true)` for a
+[`ConvexOptimizationProblem`](@ref) (convex duals are a first-class optimality
+certificate, so they are on by default). A DCP router that decides convex-vs-NLP at
+runtime should pass `Val(nothing)` to get the type-stable `Union` dual field.
+"""
+default_calculate_dual(::AbstractOptimizationProblem) = Val(false)
+default_calculate_dual(::ConvexOptimizationProblem) = Val(true)
 
 function build_solution(
         cache::AbstractOptimizationCache,
@@ -88,73 +127,38 @@ function build_solution(
         retcode = ReturnCode.Default,
         original = nothing,
         stats = nothing,
+        dual = nothing,
+        calculate_dual::Val = Val(false),
         kwargs...
     )
     T = eltype(eltype(u))
     N = ndims(u)
+    DType = _dual_type(calculate_dual, T)
+    dualval = _coerce_dual(calculate_dual, dual, T)
 
     return OptimizationSolution{
         T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original), typeof(stats),
+        typeof(objective), typeof(original), typeof(stats), DType,
     }(
-        u, cache,
-        alg, objective, retcode, original, stats
+        u, cache, alg, objective, retcode, original, stats, dualval
     )
 end
 
-@doc doc"""
-    ConvexOptimizationSolution
-
-**Experimental.** Solution of a [`ConvexOptimizationProblem`](@ref). It carries
-the primal minimizer `u` and objective value like an [`OptimizationSolution`](@ref),
-plus the distinguishing feature of convex optimization: `dual`, the vector of
-**dual multipliers** (one per constraint), expressed in the original problem's
-variables. Because the problem is convex, `u` is a global optimum and `dual` is a
-certificate of optimality.
-
-## Fields
-
-  - `u`: the primal minimizer.
-  - `dual`: the dual multipliers, one entry per constraint of the originating
-    `ConvexOptimizationProblem` (`nothing` if the backend did not return duals).
-  - `objective`: the objective value at `u`.
-  - `retcode`: the return code (see [`ReturnCode`](@ref)).
-  - `cache`, `alg`, `original`, `stats`: as for [`OptimizationSolution`](@ref).
-
-!!! warning
-    Experimental; layout may change alongside `ConvexOptimizationProblem`.
-"""
-struct ConvexOptimizationSolution{
-        T, N, uType, DType, C <: AbstractOptimizationCache, A, OV, O, ST,
-    } <: AbstractOptimizationSolution{T, N}
-    u::uType         # primal minimizer
-    dual::DType      # dual multipliers, one per constraint
-    cache::C
-    alg::A
-    objective::OV
-    retcode::ReturnCode.T
-    original::O
-    stats::ST
-end
-
+# Thin convenience for conic backends: builds the one `OptimizationSolution` with
+# duals on (`Val(true)`). `dual` is one vector per constraint, in constraint order.
 function build_convex_solution(
         cache::AbstractOptimizationCache,
         alg, u, objective;
         dual = nothing,
+        calculate_dual::Val = Val(true),
         retcode = ReturnCode.Default,
         original = nothing,
         stats = nothing,
         kwargs...
     )
-    T = eltype(eltype(u))
-    N = ndims(u)
-
-    return ConvexOptimizationSolution{
-        T, N, typeof(u), typeof(dual), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original), typeof(stats),
-    }(
-        u, dual, cache,
-        alg, objective, retcode, original, stats
+    return build_solution(
+        cache, alg, u, objective;
+        retcode, original, stats, dual, calculate_dual
     )
 end
 

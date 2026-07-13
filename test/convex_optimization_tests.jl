@@ -1,5 +1,6 @@
 using SciMLBase, Test
-using SciMLBase: MinSense, MaxSense, build_convex_solution, DefaultOptimizationCache,
+using SciMLBase: MinSense, MaxSense, build_convex_solution, build_solution,
+    default_calculate_dual, DefaultOptimizationCache,
     NullParameters, ReturnCode, OptimizationFunction
 
 @testset "ConvexOptimizationProblem construction" begin
@@ -34,22 +35,44 @@ using SciMLBase: MinSense, MaxSense, build_convex_solution, DefaultOptimizationC
     @test ConvexOptimizationProblem(of, [1.0]) isa ConvexOptimizationProblem
 end
 
-@testset "ConvexOptimizationSolution carries duals" begin
+@testset "OptimizationSolution carries duals (one unified struct)" begin
     cache = DefaultOptimizationCache(
         OptimizationFunction((u, p) -> sum(abs2, u)), NullParameters()
     )
+    # Convex backend: duals on by default (Val(true)); one vector per constraint.
     sol = build_convex_solution(
         cache, :ConicBackend, [0.5, -0.5], 0.5;
-        dual = [1.0, 2.0], retcode = ReturnCode.Success
+        dual = [[1.0], [2.0]], retcode = ReturnCode.Success
     )
-    @test sol isa ConvexOptimizationSolution
+    @test sol isa OptimizationSolution            # the ONE solution struct, not a separate type
     @test sol isa SciMLBase.AbstractOptimizationSolution
     @test sol.u == [0.5, -0.5]
-    @test sol.dual == [1.0, 2.0]
+    @test sol.dual == [[1.0], [2.0]]
+    @test sol.dual isa Vector{Vector{Float64}}    # precise dual type under Val(true)
     @test sol.objective == 0.5
     @test sol.retcode == ReturnCode.Success
 
-    # dual defaults to nothing when a backend returns no multipliers.
-    sol2 = build_convex_solution(cache, :ConicBackend, [0.0], 0.0)
-    @test sol2.dual === nothing
+    # Per-problem-type defaults: NLP off, convex on.
+    @test default_calculate_dual(OptimizationProblem((u, p) -> sum(u), [0.0])) === Val(false)
+    @test default_calculate_dual(ConvexOptimizationProblem((u, p) -> sum(u), [0.0])) === Val(true)
+
+    # Val(false): duals suppressed, precise `Nothing` type (the NLP default).
+    nlp = build_solution(cache, :NLP, [0.0], 0.0; calculate_dual = Val(false))
+    @test nlp isa OptimizationSolution
+    @test nlp.dual === nothing
+    @test fieldtype(typeof(nlp), :dual) === Nothing
+
+    # Two convex solves are the SAME concrete type (type-stable).
+    solb = build_convex_solution(cache, :ConicBackend, [1.0, 1.0], 2.0; dual = [[3.0], [4.0]])
+    @test typeof(sol) === typeof(solb)
+
+    # Val(nothing) "auto": a populated dual and an absent dual share ONE concrete
+    # type — the type-stable Union a DCP router relies on when it cannot know
+    # statically whether the routed problem yields duals.
+    autop = build_solution(cache, :Auto, [0.0], 0.0; dual = [[1.0]], calculate_dual = Val(nothing))
+    auton = build_solution(cache, :Auto, [0.0], 0.0; dual = nothing, calculate_dual = Val(nothing))
+    @test typeof(autop) === typeof(auton)
+    @test fieldtype(typeof(autop), :dual) === Union{Nothing, Vector{Vector{Float64}}}
+    @test autop.dual == [[1.0]]
+    @test auton.dual === nothing
 end

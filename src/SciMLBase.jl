@@ -2027,7 +2027,7 @@ export solve, solve!, init, discretize, symbolic_discretize
 export LinearProblem, LinearSolution, IntervalNonlinearProblem,
     IntegralProblem, IntegralSolution, SampledIntegralProblem,
     OptimizationProblem, OptimizationSolution,
-    ConvexOptimizationProblem, ConvexOptimizationSolution
+    ConvexOptimizationProblem
 
 export EigenvalueProblem, EigenvalueSolution, EigenvalueTarget
 

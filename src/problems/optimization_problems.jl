@@ -174,7 +174,8 @@ nonlinear function solved to a local optimum — the objective and constraints o
 a `ConvexOptimizationProblem` are certified convex, so a conic backend (for
 example ConvexOptimization.jl, lowering each atom to a MathOptInterface cone and
 calling a solver such as Clarabel) can return a **global optimum together with
-dual multipliers** (see [`ConvexOptimizationSolution`](@ref)).
+dual multipliers** — the `dual` field of the returned [`OptimizationSolution`](@ref),
+which convex solves populate by default (see [`default_calculate_dual`](@ref)).
 
 ## Fields / keyword arguments
 
