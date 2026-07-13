@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq
+using LinearAlgebra: dot
 using OrdinaryDiffEqRosenbrock: Rodas5
 using ModelingToolkit: t_nounits as t, D_nounits as D
 import SymbolicIndexingInterface as SII
@@ -60,6 +61,8 @@ prob = ODEProblem(sys, [u0; p], tspan)
 sol = solve(prob, Tsit5())
 
 @testset "AutoDiff Observable Functions" begin
+    # Keep symbolic metadata outside AD while differentiating the numeric indexing result.
+    observable_symbols = [sys.w, sys.x]
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             gs = DifferentiationInterface.gradient(sol -> sum(sol[sys.w]), backend, sol)
@@ -67,15 +70,12 @@ sol = solve(prob, Tsit5())
             du = [du_ for _ in sol[[D(x), x, y, z]]]
             @test du == gs.u
 
-            # Observable in a vector
-            # Zygote returns incorrect gradient on Julia 1.10 (elements swapped)
-            # See https://github.com/SciML/SciMLBase.jl/issues/1233
             gs2 = DifferentiationInterface.gradient(
-                sol -> sum(sum.(sol[[sys.w, sys.x]])), backend, sol
+                sol -> sum(sum.(sol[observable_symbols])), backend, sol
             )
             du_ = [1.0, 1.0, 2.0, 0.0]
             du = [du_ for _ in sol[[D(x), x, y, z]]]
-            @test_broken du == gs2.u
+            @test du == gs2.u
         end
     end
     for backend in MOONCAKE_BACKENDS
@@ -87,37 +87,31 @@ sol = solve(prob, Tsit5())
             du = [du_ for _ in sol[[D(x), x, y, z]]]
             @test du == _unwrap_grad(gs).u
 
-            # Vector observable not yet supported by the Mooncake getindex
-            # primitive — falls back to differentiating the [...] AbstractArray
-            # constructor and hits the dispatch chain.
-            @test_broken begin
-                gs2 = DifferentiationInterface.gradient(
-                    sol -> sum(sum.(sol[[sys.w, sys.x]])), backend, sol
-                )
-                du_v = [1.0, 1.0, 2.0, 0.0]
-                duv = [du_v for _ in sol[[D(x), x, y, z]]]
-                duv == _unwrap_grad(gs2).u
-            end
+            gs2 = DifferentiationInterface.gradient(
+                sol -> sum(sum.(sol[observable_symbols])), backend, sol
+            )
+            du_v = [1.0, 1.0, 2.0, 0.0]
+            duv = [du_v for _ in sol[[D(x), x, y, z]]]
+            @test duv == _unwrap_grad(gs2).u
         end
     end
 end
 
+# `w` is not required by the generated initialization subsystem. `x` is retained
+# there as the explicit observable `x ~ Initial(x)` and exercises the same rule.
 @testset "AD Observable Functions for Initialization" begin
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             iprob = prob.f.initialization_data.initializeprob
             isol = solve(iprob)
-            gs = DifferentiationInterface.gradient(isol -> isol[w], backend, isol)
+            gs = DifferentiationInterface.gradient(isol -> isol[sys.x], backend, isol)
 
             @test gs isa NamedTuple
             @test isempty(setdiff(fieldnames(typeof(gs)), fieldnames(typeof(isol))))
 
             # Compare gradient for parameters match from observed function
             # to ensure parameter gradients are passed through the observed function
-            f = SII.observed(iprob.f.sys, w)
-            gu0 = DifferentiationInterface.gradient(
-                u0 -> f(u0, SII.parameter_values(iprob)), backend, SII.state_values(iprob)
-            )
+            f = SII.observed(iprob, sys.x)
             gp = DifferentiationInterface.gradient(
                 p -> f(SII.state_values(iprob), p), backend, SII.parameter_values(iprob)
             )
@@ -129,26 +123,19 @@ end
         @testset "$(backend_name(backend))" begin
             iprob = prob.f.initialization_data.initializeprob
             isol = solve(iprob)
-            # Note: `isol[w]` with the bare global `w` trips Mooncake's
-            # `__verify_const(::Num, ...)` check for non-const globals, which
-            # uses `==` on a `Num` and hits the symbolic-in-bool error. That
-            # is unrelated to the SciMLBase rrule — use `sys.w` (a fresh
-            # getproperty) so the symbol isn't a GlobalRef, matching the
-            # timeseries tests above.
             gs = DifferentiationInterface.gradient(
-                isol -> isol[sys.w], backend, isol
+                isol -> isol[sys.x], backend, isol
             )
             @test gs isa Mooncake.Tangent
 
-            # Compare the Mooncake parameter gradient against ForwardDiff
-            # applied to the same inner observed function. Both should
-            # agree exactly on a linear expression (`w ~ x + y + z + 2β`).
-            f = SII.observed(iprob.f.sys, sys.w)
+            f = SII.observed(iprob, sys.x)
             p = SII.parameter_values(iprob)
             tun, repack, _ = SS.canonicalize(SS.Tunable(), p)
             gp_ref = ForwardDiff.gradient(tun) do t
                 f(SII.state_values(iprob), repack(t))
             end
+            @test count(!iszero, gp_ref) == 1
+            @test only(filter(!iszero, gp_ref)) == 1.0
             @test _unwrap_grad(gs).prob.fields.p.fields.tunable ≈ gp_ref
         end
     end
@@ -188,22 +175,32 @@ prob_dae = ODEProblem(
 sol_dae = solve(prob_dae, Rodas5())
 
 @testset "DAE Observable function AD" begin
-    # `@mtkcompile` substitutes the algebraic constraint
-    # `0 ~ v_dae^2 - b_dae*s_dae` into the s_dae observable instead of using
-    # the surface definition `s_dae ~ 2u_dae + v_dae`. With b_dae = 0.5 the
-    # emitted observed function is `s_dae(u, p, t) = v^2 / b = 2v^2`, where
-    # the state ordering is `[v_dae, u_dae]`. Both expressions agree on the
-    # DAE manifold but their gradients in the embedding state space do not:
-    # ∂(2v^2)/∂u_state = [4v, 0] (Mooncake and ForwardDiff both give this),
-    # whereas the literal `2u + v` derivative would be [1, 2]. Assert
-    # against the actually-emitted observable.
-    du = [[4 * sol_dae.u[k][1], 0.0] for k in eachindex(sol_dae.u)]
+    # MTK may emit either `s = 2u + v` or the constraint-equivalent `s = v²/b`.
+    # Their off-manifold gradients differ, but both have derivative `4v` along
+    # the constraint tangent `(dv, du) = (2b, 2v - b)`.
+    b_value = 0.5
+    v_values = sol_dae[simple_dae.v_dae]
+    v_index = SII.variable_index(sol_dae, simple_dae.v_dae)
+    u_index = SII.variable_index(sol_dae, simple_dae.u_dae)
+    expected_tangent_derivatives = 4 .* v_values
+
+    function tangent_derivatives(gradients)
+        return map(eachindex(gradients)) do k
+            tangent = zeros(length(gradients[k]))
+            tangent[v_index] = 2 * b_value
+            tangent[u_index] = 2 * v_values[k] - b_value
+            dot(gradients[k], tangent)
+        end
+    end
+
+    @test sol_dae[simple_dae.s_dae] ≈
+        2 .* sol_dae[simple_dae.u_dae] .+ v_values
     for backend in ZYGOTE_BACKENDS
         @testset "$(backend_name(backend))" begin
             gs = DifferentiationInterface.gradient(
                 sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
             )
-            @test gs.u ≈ du
+            @test tangent_derivatives(gs.u) ≈ expected_tangent_derivatives
         end
     end
     for backend in MOONCAKE_BACKENDS
@@ -211,36 +208,37 @@ sol_dae = solve(prob_dae, Rodas5())
             gs = DifferentiationInterface.gradient(
                 sol -> sum(sol[simple_dae.s_dae]), backend, sol_dae
             )
-            @test _unwrap_grad(gs).u ≈ du
+            @test tangent_derivatives(_unwrap_grad(gs).u) ≈
+                expected_tangent_derivatives
         end
     end
 
     @testset "DAE Initialization Observable function AD" begin
+        # `s_dae` can be eliminated from the generated initialization subsystem;
+        # `u_dae ~ Initial(u_dae)` is an observable that the subsystem exposes.
         for backend in ZYGOTE_BACKENDS
             @testset "$(backend_name(backend))" begin
                 iprob = prob_dae.f.initialization_data.initializeprob
                 isol = solve(iprob)
-                tunables, repack, _ = SS.canonicalize(
-                    SS.Tunable(), SII.parameter_values(iprob)
-                )
                 gs = DifferentiationInterface.gradient(
-                    isol -> isol[simple_dae.s_dae], backend, isol
+                    isol -> isol[simple_dae.u_dae], backend, isol
                 )
                 gt = gs.prob.p.tunable
                 @test length(findall(!iszero, gt)) == 1
             end
         end
-        # Mooncake does not support SymbolicIndexingInterface AD yet
+        # Mooncake fails while copying the nonempty initialization-solution tangent.
         for backend in MOONCAKE_BACKENDS
             @testset "$(backend_name(backend)) (broken)" begin
                 @test_broken begin
                     iprob = prob_dae.f.initialization_data.initializeprob
                     isol = solve(iprob)
                     gs = DifferentiationInterface.gradient(
-                        isol -> isol[simple_dae.s_dae], backend, isol
+                        isol -> isol[simple_dae.u_dae], backend, isol
                     )
-                    gt = gs.prob.p.tunable
-                    length(findall(!iszero, gt)) == 1
+                    gt = _unwrap_grad(gs).prob.fields.p.fields.tunable
+                    length(findall(!iszero, gt)) == 1 &&
+                        only(filter(!iszero, gt)) == 1.0
                 end
             end
         end
