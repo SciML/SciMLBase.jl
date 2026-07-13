@@ -163,6 +163,83 @@ isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
 @doc doc"""
+    ConvexOptimizationProblem{iip}(f, u0, p = NullParameters();
+        constraints = nothing, lb = nothing, ub = nothing, int = nothing,
+        sense = MinSense, kwargs...)
+
+**Experimental.** A disciplined-convex-programming problem: minimize (or
+maximize) a *convex* objective subject to *convex* cone constraints. Unlike a
+general [`OptimizationProblem`](@ref) — where the objective is an arbitrary
+nonlinear function solved to a local optimum — the objective and constraints of
+a `ConvexOptimizationProblem` are certified convex, so a conic backend (for
+example ConvexOptimization.jl, lowering each atom to a MathOptInterface cone and
+calling a solver such as Clarabel) can return a **global optimum together with
+dual multipliers** — the `dual` field of the returned [`OptimizationSolution`](@ref),
+which convex solves populate by default (see [`default_calculate_dual`](@ref)).
+
+## Fields / keyword arguments
+
+  - `f`: an [`OptimizationFunction`](@ref) or a callable `f(u, p)` giving the
+    convex objective. A symbolic objective lets the backend certify curvature and
+    reformulate each atom into a cone.
+  - `u0`: the decision variables / initial point.
+  - `p`: parameters, treated as first-class affine data. A problem that is affine
+    in `p` can be re-solved cheaply (and differentiated) by updating `p` through
+    `remake` without re-running canonicalization.
+  - `constraints`: the convex constraints as cone memberships (equalities,
+    inequalities, second-order / positive-semidefinite / exponential / power
+    cones). The concrete representation is defined by the solving backend;
+    `nothing` denotes an unconstrained (or bound-only) problem.
+  - `lb`, `ub`: elementwise lower/upper bounds on `u0`. If either is supplied,
+    both must be.
+  - `int`: boolean mask marking integer-valued decision variables
+    (mixed-integer convex programming).
+  - `sense`: `MinSense` (default) or `MaxSense`.
+
+!!! warning
+    This type is experimental; its field set may change until a solving backend
+    has validated the interface — in particular the dual round-trip — end to end.
+"""
+struct ConvexOptimizationProblem{iip, F, uType, P, C, LB, UB, I, S, K} <:
+    AbstractOptimizationProblem{iip}
+    f::F
+    u0::uType
+    p::P
+    constraints::C
+    lb::LB
+    ub::UB
+    int::I
+    sense::S
+    kwargs::K
+    @add_kwonly function ConvexOptimizationProblem{iip}(
+            f::OptimizationFunction{iip}, u0,
+            p = NullParameters();
+            constraints = nothing, lb = nothing, ub = nothing, int = nothing,
+            sense = MinSense, kwargs...
+        ) where {iip}
+        if xor(lb === nothing, ub === nothing)
+            error("If any of `lb` or `ub` is provided, both must be provided.")
+        end
+        warn_paramtype(p)
+        new{
+            iip, typeof(f), typeof(u0), typeof(p), typeof(constraints),
+            typeof(lb), typeof(ub), typeof(int), typeof(sense), typeof(kwargs),
+        }(
+            f, u0, p, constraints, lb, ub, int, sense, kwargs
+        )
+    end
+end
+
+function ConvexOptimizationProblem(f::OptimizationFunction, args...; kwargs...)
+    return ConvexOptimizationProblem{isinplace(f)}(f, args...; kwargs...)
+end
+function ConvexOptimizationProblem(f, args...; kwargs...)
+    return ConvexOptimizationProblem(OptimizationFunction(f), args...; kwargs...)
+end
+
+isinplace(f::ConvexOptimizationProblem{iip}) where {iip} = iip
+
+@doc doc"""
     OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Control which `OptimizationProblem` inputs a solver may alias.
