@@ -245,3 +245,31 @@ end
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}
 end
+
+@testset "NonlinearFunction precondition/postcondition hooks" begin
+    f = (u, p) -> u .^ 2 .- p
+    fn = NonlinearFunction(f)
+    @test fn.precondition === nothing
+    @test fn.postcondition === nothing
+
+    G = (fu, u, p) -> asinh.(fu)
+    H = (up, uprev, p) -> clamp.(up, uprev .- 1, uprev .+ 1)
+    fn = NonlinearFunction(f; precondition = G, postcondition = H)
+    @test fn.precondition === G
+    @test fn.postcondition === H
+
+    fniip = NonlinearFunction{true}(
+        (du, u, p) -> (du .= u .^ 2 .- p; nothing);
+        precondition = (fu, u, p) -> (fu .= asinh.(fu); nothing)
+    )
+    @test fniip.precondition !== nothing
+    @test SciMLBase.isinplace(fniip)
+
+    prob = NonlinearProblem(fn, [1.0], 2.0)
+    prob2 = remake(prob; p = 3.0)
+    @test prob2.f.precondition === G
+    @test prob2.f.postcondition === H
+
+    fn2 = NonlinearFunction{false, SciMLBase.FullSpecialize}(fn.f; precondition = fn.precondition)
+    @test fn2.precondition === G
+end
