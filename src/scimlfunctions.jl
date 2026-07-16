@@ -1815,7 +1815,9 @@ NonlinearFunction{iip, specialize}(f;
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            paramjac = __has_paramjac(f) ? f.paramjac : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+                           sys = __has_sys(f) ? f.sys : nothing,
+                           precondition = __has_precondition(f) ? f.precondition : nothing,
+                           postcondition = __has_postcondition(f) ? f.postcondition : nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1843,6 +1845,52 @@ the usage of `f`. These include:
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
 
+## Nonlinear Preconditioning: `precondition` and `postcondition`
+
+The `precondition` and `postcondition` hooks declare a nonlinear preconditioner for the
+system, i.e. functions `G` (left) and `H` (right) such that the solver works with the
+composed root-equivalent problem
+
+```math
+G(f(H(\\tilde{u}, u_k), p), \\tilde{u}, p) = 0
+```
+
+following the solver-composition framework of Brune, Knepley, Smith & Tu,
+*Composing Scalable Nonlinear Algebraic Solvers* (SIAM Review 57(4), 2015).
+
+- `precondition`: a residual transformation `G` with signature `Gfu = precondition(fu, u, p)`
+  where `fu = f(u, p)` is the residual and `u` is the point at which it was evaluated
+  (in-place functions overwrite `fu` with the transformed residual:
+  `precondition(fu, u, p) -> nothing`). Solvers replace the residual with the composed map
+  `u -> G(f(u, p), u, p)` everywhere — function evaluations, Jacobians (via automatic
+  differentiation of the composition), line-search merit functions, and termination
+  criteria. `G` must be root-preserving: `G(r, u, p) = 0` if and only if `r = 0`. If `jac`,
+  `jvp`, `vjp`, `jac_prototype`, or `sparsity` are provided together with `precondition`,
+  they must describe the derivatives/structure of the *composed* residual, not of the raw
+  `f`.
+- `postcondition`: an iterate correction `H` with signature
+  `u_corrected = postcondition(u_proposed, u_prev, p)` where `u_proposed` is the iterate a
+  solver is about to accept and `u_prev` is the previous accepted iterate (in-place
+  functions overwrite `u_proposed`: `postcondition(u_proposed, u_prev, p) -> nothing`).
+  Solvers apply `H` to every accepted iterate (including the initial guess, as
+  `H(u0, u0, p)`) *before* evaluating the residual or testing convergence at it, so
+  residuals and Jacobians are always consistent with the corrected iterates. This is the
+  hook for iterate limiting (e.g. SPICE-style junction-voltage limiting / the
+  predictor-corrector Newton-Raphson (PCNR) method of Aadithya, Keiter & Mei),
+  projections onto constraints, and Dirichlet-type condensation. `H` must satisfy
+  `H(u, u, p) = u` at fixed points so that solutions are unchanged; the Jacobian does not
+  chain through `H` (it acts as a corrector between steps, analogous to PETSc SNES
+  post-check). Hooks may additionally accept the solver's cache as a fourth argument,
+  `postcondition(u_proposed, u_prev, p, cache)` — analogous to PETSc post-check receiving
+  the `SNES` — for solver-state-aware corrections (e.g. iteration-staged limiting).
+  When methods for both arities exist, solvers prefer the four-argument form. Only the
+  documented public accessors of the cache should be used, and the argument is `nothing`
+  for the initial-guess correction (which runs before any cache exists), so
+  four-argument hooks must accept `nothing` there.
+
+Support for these hooks is solver-dependent; see the NonlinearSolve.jl documentation on
+nonlinear preconditioning for details.
+
 ## lambda_extended: λ-Extended Argument Convention for `HomotopyProblem`
 
 When the function is destined for a [`HomotopyProblem`](@ref), every function follows
@@ -1868,7 +1916,7 @@ The fields of the NonlinearFunction type directly match the names of the inputs.
 """
 struct NonlinearFunction{
         iip, specialize, F, TMM, Ta, Tt, TJ, JVP, VJP, JP, SP, TW, TWt,
-        TPJ, O, TCV, SYS, RP, ID,
+        TPJ, O, TCV, SYS, RP, ID, PC, POC,
     } <: AbstractNonlinearFunction{iip}
     f::F
     mass_matrix::TMM
@@ -1887,6 +1935,8 @@ struct NonlinearFunction{
     sys::SYS
     resid_prototype::RP
     initialization_data::ID
+    precondition::PC
+    postcondition::POC
 end
 
 """
@@ -3194,8 +3244,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
         return NonlinearFunction{
             isinplace(f), specialization(f), Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any,
-            typeof(f.colorvec), Any, Any, Any,
+            Any, Any, Any, Any,
+            typeof(f.colorvec), Any, Any, Any, Any, Any,
         }(
             newf, f.mass_matrix,
             f.analytic, f.tgrad, f.jac,
@@ -3203,7 +3253,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
             f.sparsity, f.Wfact,
             f.Wfact_t, f.paramjac,
             f.observed, f.colorvec, f.sys,
-            f.resid_prototype, f.initialization_data
+            f.resid_prototype, f.initialization_data,
+            f.precondition, f.postcondition
         )
     else
         return NonlinearFunction{
@@ -3214,6 +3265,7 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
             typeof(f.paramjac),
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys), typeof(f.resid_prototype), typeof(f.initialization_data),
+            typeof(f.precondition), typeof(f.postcondition),
         }(
             newf, f.mass_matrix,
             f.analytic, f.tgrad, f.jac,
@@ -3221,7 +3273,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
             f.sparsity, f.Wfact,
             f.Wfact_t, f.paramjac,
             f.observed, f.colorvec, f.sys,
-            f.resid_prototype, f.initialization_data
+            f.resid_prototype, f.initialization_data,
+            f.precondition, f.postcondition
         )
     end
 end
@@ -4502,6 +4555,8 @@ function NonlinearFunction{iip, specialize}(
         resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
             nothing,
+        precondition = __has_precondition(f) ? f.precondition : nothing,
+        postcondition = __has_postcondition(f) ? f.postcondition : nothing,
         lambda_extended = false
     ) where {
         iip, specialize,
@@ -4547,7 +4602,7 @@ function NonlinearFunction{iip, specialize}(
             Any, Any, Any, Any, Any,
             Any, Any, Any, Any, Any,
             Any, Any, Any,
-            typeof(_colorvec), Any, Any, Any,
+            typeof(_colorvec), Any, Any, Any, Any, Any,
         }(
             _f, mass_matrix,
             analytic, tgrad, jac,
@@ -4556,7 +4611,8 @@ function NonlinearFunction{iip, specialize}(
             sparsity, Wfact,
             Wfact_t, paramjac,
             observed,
-            _colorvec, sys, resid_prototype, initialization_data
+            _colorvec, sys, resid_prototype, initialization_data,
+            precondition, postcondition
         )
     else
         NonlinearFunction{
@@ -4567,14 +4623,15 @@ function NonlinearFunction{iip, specialize}(
             typeof(Wfact_t), typeof(paramjac),
             typeof(observed),
             typeof(_colorvec), typeof(sys), typeof(resid_prototype),
-            typeof(initialization_data),
+            typeof(initialization_data), typeof(precondition), typeof(postcondition),
         }(
             _f, mass_matrix,
             analytic, tgrad, jac,
             jvp, vjp, jac_prototype, sparsity,
             Wfact,
             Wfact_t, paramjac,
-            observed, _colorvec, sys, resid_prototype, initialization_data
+            observed, _colorvec, sys, resid_prototype, initialization_data,
+            precondition, postcondition
         )
     end
 end
@@ -5467,6 +5524,8 @@ function __has_initializeprobpmap(f)
         hasfield(typeof(f.initialization_data), :initializeprobpmap)
 end
 __has_initialization_data(f) = hasfield(typeof(f), :initialization_data)
+__has_precondition(f) = hasfield(typeof(f), :precondition)
+__has_postcondition(f) = hasfield(typeof(f), :postcondition)
 __has_polynomialize(f) = hasfield(typeof(f), :polynomialize)
 __has_unpolynomialize(f) = hasfield(typeof(f), :unpolynomialize)
 __has_denominator(f) = hasfield(typeof(f), :denominator)
