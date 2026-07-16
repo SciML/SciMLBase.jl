@@ -273,3 +273,17 @@ end
     fn2 = NonlinearFunction{false, SciMLBase.FullSpecialize}(fn.f; precondition = fn.precondition)
     @test fn2.precondition === G
 end
+
+@testset "unwrapped_f reconstructs NonlinearFunction including hook fields" begin
+    G = (fu, u, p) -> fu
+    H = (up, uprev, p) -> up
+    for spec in (SciMLBase.FullSpecialize, SciMLBase.NoSpecialize, SciMLBase.AutoSpecialize)
+        nf = NonlinearFunction{true, spec}(
+            (du, u, p) -> (du .= u .^ 2 .- p; nothing); precondition = G, postcondition = H
+        )
+        nf2 = SciMLBase.unwrapped_f(nf)
+        @test nf2 isa NonlinearFunction
+        @test nf2.precondition === G
+        @test nf2.postcondition === H
+    end
+end

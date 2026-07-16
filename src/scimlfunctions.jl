@@ -3244,8 +3244,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
         return NonlinearFunction{
             isinplace(f), specialization(f), Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
-            Any, Any, Any, Any, Any,
-            typeof(f.colorvec), Any, Any, Any,
+            Any, Any, Any, Any,
+            typeof(f.colorvec), Any, Any, Any, Any, Any,
         }(
             newf, f.mass_matrix,
             f.analytic, f.tgrad, f.jac,
@@ -3253,7 +3253,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
             f.sparsity, f.Wfact,
             f.Wfact_t, f.paramjac,
             f.observed, f.colorvec, f.sys,
-            f.resid_prototype, f.initialization_data
+            f.resid_prototype, f.initialization_data,
+            f.precondition, f.postcondition
         )
     else
         return NonlinearFunction{
@@ -3264,6 +3265,7 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
             typeof(f.paramjac),
             typeof(f.observed), typeof(f.colorvec),
             typeof(f.sys), typeof(f.resid_prototype), typeof(f.initialization_data),
+            typeof(f.precondition), typeof(f.postcondition),
         }(
             newf, f.mass_matrix,
             f.analytic, f.tgrad, f.jac,
@@ -3271,7 +3273,8 @@ function unwrapped_f(f::NonlinearFunction, newf = unwrapped_f(f.f))
             f.sparsity, f.Wfact,
             f.Wfact_t, f.paramjac,
             f.observed, f.colorvec, f.sys,
-            f.resid_prototype, f.initialization_data
+            f.resid_prototype, f.initialization_data,
+            f.precondition, f.postcondition
         )
     end
 end
