@@ -1880,7 +1880,13 @@ following the solver-composition framework of Brune, Knepley, Smith & Tu,
   projections onto constraints, and Dirichlet-type condensation. `H` must satisfy
   `H(u, u, p) = u` at fixed points so that solutions are unchanged; the Jacobian does not
   chain through `H` (it acts as a corrector between steps, analogous to PETSc SNES
-  post-check).
+  post-check). Hooks may additionally accept the solver's cache as a fourth argument,
+  `postcondition(u_proposed, u_prev, p, cache)` — analogous to PETSc post-check receiving
+  the `SNES` — for solver-state-aware corrections (e.g. iteration-staged limiting).
+  When methods for both arities exist, solvers prefer the four-argument form. Only the
+  documented public accessors of the cache should be used, and the argument is `nothing`
+  for the initial-guess correction (which runs before any cache exists), so
+  four-argument hooks must accept `nothing` there.
 
 Support for these hooks is solver-dependent; see the NonlinearSolve.jl documentation on
 nonlinear preconditioning for details.
