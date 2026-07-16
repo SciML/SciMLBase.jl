@@ -12,33 +12,33 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - {user: SciML, repo: DelayDiffEq.jl, group: Interface}
-          - {user: SciML, repo: DelayDiffEq.jl, group: Integrators}
-          - {user: SciML, repo: DelayDiffEq.jl, group: Regression}
-          - {user: SciML, repo: DiffEqBase.jl, group: Core}
-          - {user: SciML, repo: DiffEqDevTools.jl, group: Core}
-          - {user: SciML, repo: DiffEqBase.jl, group: Downstream}
-          - {user: SciML, repo: DiffEqBase.jl, group: Downstream2}
-          - {user: SciML, repo: DiffEqFlux.jl, group: DiffEqFlux}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DelayDiffEq, group: Interface}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DelayDiffEq, group: Integrators}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DelayDiffEq, group: Regression}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DiffEqBase, group: Core}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DiffEqDevTools, group: Core}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DiffEqBase, group: Downstream}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DiffEqBase, group: Downstream2}
+          - {user: SciML, repo: DiffEqFlux.jl, group: All}
           - {user: SciML, repo: JumpProcesses.jl, group: All}
           - {user: SciML, repo: OrdinaryDiffEq.jl, group: Interface}
           - {user: SciML, repo: OrdinaryDiffEq.jl, group: Integrators}
           - {user: SciML, repo: OrdinaryDiffEq.jl, group: Regression}
-          - {user: SciML, repo: StochasticDiffEq.jl, group: Interface1}
-          - {user: SciML, repo: StochasticDiffEq.jl, group: Interface2}
-          - {user: SciML, repo: StochasticDiffEq.jl, group: Interface3}
-          - {user: SciML, repo: StochasticDiffEq.jl, group: AlgConvergence}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: Interface1}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: Interface2}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: Interface3}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: AlgConvergence}
           - {user: SciML, repo: Sundials.jl, group: All}
           - {user: SciML, repo: LinearSolve.jl, group: All}
           - {user: SciML, repo: NonlinearSolve.jl, group: Core}
-          - {user: SciML, repo: Optimization.jl, group: All}
+          - {user: SciML, repo: Optimization.jl, group: Core}
           - {user: SciML, repo: Integrals.jl, group: All}
           - {user: SciML, repo: BoundaryValueDiffEq.jl, group: All}
           - {user: SciML, repo: ModelingToolkit.jl, group: InterfaceI}
           - {user: SciML, repo: ModelingToolkit.jl, group: Initialization}
           - {user: SciML, repo: ModelingToolkit.jl, group: InterfaceII}
           - {user: SciML, repo: ModelingToolkit.jl, group: SymbolicIndexingInterface}
-          - {user: SciML, repo: ModelingToolkit.jl, group: Extended}
+          - {user: SciML, repo: ModelingToolkit.jl, subdir: lib/ModelingToolkitBase, group: Extended}
           - {user: SciML, repo: ModelingToolkit.jl, group: Downstream}
           - {user: SciML, repo: ModelingToolkit.jl, group: FMI}
           - {user: SciML, repo: ModelingToolkit.jl, group: Extensions}
@@ -57,6 +57,7 @@ jobs:
     with:
       owner: "${{ matrix.package.user }}"
       repo: "${{ matrix.package.repo }}"
+      subdir: "${{ matrix.package.subdir }}"
       group: "${{ matrix.package.group }}"
       julia-version: "1.10"
       julia-arch: "x64"
