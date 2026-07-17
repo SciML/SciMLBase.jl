@@ -60,7 +60,7 @@ end
 
 # `sol[i::Integer]` returns the state vector at time step `i`, not a
 # state-variable slice. A dedicated rrule prevents the broader
-# `getindex(VA::ODESolution, sym)` rule below from mis-treating `i` as a
+# `getindex(VA::ODESolution, sym)` rule below from mistaking `i` for a
 # state index (#1325). Dispatch picks this more-specific method for
 # integer arguments.
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
