@@ -4,6 +4,13 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     first_clock_tick_time, IndexedClock, canonicalize_indexed_clock
 using MLStyle: @match
 
+@testset "Clock definitions are deprecation-free" begin
+    project = dirname(Base.active_project())
+    @test success(
+        `$(Base.julia_cmd()) --startup-file=no --compiled-modules=no --depwarn=error --project=$project -e "using SciMLBase"`,
+    )
+end
+
 @testset "Clock" begin
     @test PeriodicClock(nothing, 0.2) isa TimeDomain
     @test SolverStepClock() isa TimeDomain
