@@ -162,6 +162,12 @@ function LinearProblem(A, b, args...; kwargs...)
         LinearProblem{true}(A, b, args...; kwargs...)
     elseif A isa Number
         LinearProblem{false}(A, b, args...; kwargs...)
+    elseif A isa AbstractSciMLOperator
+        # `isinplace` reflects on the operator's call methods, which infers as
+        # `Union{Missing, Bool}` and makes the whole constructor infer to `Any`.
+        # Every `AbstractSciMLOperator` defines the 4-arg in-place call, so this
+        # is the value the reflection already computes -- just statically.
+        LinearProblem{true}(A, b, args...; kwargs...)
     else
         LinearProblem{isinplace(A, 4)}(A, b, args...; kwargs...)
     end
