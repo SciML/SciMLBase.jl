@@ -111,6 +111,19 @@ const _ei_nonpublic_qualified_accesses = (
     :fast_matrix_colors, :ismutable, :matrix_colors, :restructure, # ArrayInterface (1.11+)
 )
 
+const _api_docs_rendered_ignore = (
+    # Dependency-owned reexports documented at their defining packages.
+    :AddVector, :AffineOperator, :BlockDiagonalOperator, :DiagonalOperator,
+    :FunctionOperator, :IdentityOperator, :InvertibleOperator, :MatrixOperator,
+    :NullOperator, :ScalarOperator, :SciMLOperators, :StaticWOperator,
+    :TensorProductOperator, :TensorSumOperator, :WOperator, :cache_operator,
+    :concretize, :has_adjoint, :has_concretization, :has_exp, :has_expmv,
+    :has_expmv!, :has_ldiv, :has_ldiv!, :has_mul, :has_mul!, :iscached,
+    :isconstant, :isconvertible, :islinear, :issquare, :kronsum,
+    :update_coefficients, :update_coefficients!,
+    :init, :solve, :solve!,
+)
+
 run_qa(
     SciMLBase;
     aqua = false,
@@ -122,6 +135,10 @@ run_qa(
         ),
         all_explicit_imports_are_public = (; ignore = _ei_nonpublic_explicit_imports),
         all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
+    ),
+    api_docs_kwargs = (;
+        rendered = true,
+        rendered_ignore = _api_docs_rendered_ignore,
     ),
 )
 
