@@ -169,10 +169,52 @@ ODEProblem{true, SciMLBase.FullSpecialize}(f, [1.0], (0.0, 1.0))
 """
 struct FullSpecialize <: AbstractSpecialization end
 
+"""
+$(TYPEDEF)
+
+`AutoDePSpecialize` extends [`AutoSpecialize`](@ref) by additionally
+*de-specializing the parameter object*. Solver paths with a supported
+opaque-parameter strategy pack an `isbits`, non-`NullParameters` `p` into a
+fixed-type opaque container (e.g. `RespecializeParams.OpaqueParams`) and
+install callable wrappers whose signatures carry the opaque container type in
+the `p` slot instead of `typeof(p)`. The concretized problem type — and with
+it the solver's compilation — then becomes independent of the user's
+parameter struct type, so a single compiled (and precompiled) solve is shared
+across all `isbits` parameter types. Inside the user's `f`, `p` is recovered
+at its original concrete type via a type-stable, allocation-free unpack, so
+the model function itself remains fully specialized.
+
+`AutoDePSpecialize` is the recommended choice for latency-sensitive workflows
+that construct many problems with differently-typed parameter structs
+(parameter studies over configuration structs, package test suites,
+teaching setups).
+
+Support is solver-specific, like all specialization levels. Where a solver
+path has no opaque-parameter strategy — or where `p` is not `isbits` or is
+`NullParameters` — behavior falls back to plain `AutoSpecialize`. Solvers
+that apply the packing keep the opaque container in the concretized problem
+(e.g. `sol.prob.p`), since installed wrappers may be re-invoked with it;
+consult the solver's documentation for how to recover the original value.
+
+## Example
+
+```julia
+struct MyParams
+    k::Float64
+end
+f(du, u, p, t) = (du .= p.k .* u)
+ODEProblem{true, SciMLBase.AutoDePSpecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
+```
+"""
+struct AutoDePSpecialize <: AbstractSpecialization end
+
 specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize")
 if specstring ∉
-        ("NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize")
-    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize).")
+        (
+        "NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize",
+        "AutoDePSpecialize",
+    )
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDePSpecialize).")
 end
 
 const DEFAULT_SPECIALIZATION = getproperty(SciMLBase, Symbol(specstring))
