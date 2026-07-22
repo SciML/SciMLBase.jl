@@ -245,3 +245,34 @@ end
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}
 end
+
+@testset "AutoDePSpecialize specialization marker" begin
+    struct DePParams
+        k::Float64
+    end
+    f_dep!(du, u, p, t) = (du[1] = -p.k * u[1]; nothing)
+
+    prob = ODEProblem{true, SciMLBase.AutoDePSpecialize}(
+        f_dep!, [1.0], (0.0, 1.0), DePParams(0.5)
+    )
+    @test prob isa ODEProblem
+    @test prob.f isa ODEFunction{true, SciMLBase.AutoDePSpecialize}
+    @test SciMLBase.specialization(prob.f) === SciMLBase.AutoDePSpecialize
+    # The marker alone performs no wrapping or packing in SciMLBase: fields stay
+    # concretely typed like FullSpecialize/AutoSpecialize construction, and p is
+    # the user's struct until a solver path installs an opaque-parameter wrapper.
+    @test prob.f.f === f_dep!
+    @test prob.p === DePParams(0.5)
+    du = [0.0]
+    prob.f(du, [2.0], prob.p, 0.0)
+    @test du[1] ≈ -1.0
+
+    # Available for other function families, e.g. nonlinear problems.
+    f_nl!(res, u, p) = (res[1] = u[1] - p.k; nothing)
+    nlfun = NonlinearFunction{true, SciMLBase.AutoDePSpecialize}(f_nl!)
+    @test SciMLBase.specialization(nlfun) === SciMLBase.AutoDePSpecialize
+
+    # unwrapped_f reconstruction keeps the marker
+    uf = SciMLBase.unwrapped_f(prob.f)
+    @test SciMLBase.specialization(uf) === SciMLBase.AutoDePSpecialize
+end
