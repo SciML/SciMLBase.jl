@@ -80,6 +80,8 @@ SciMLBase.ReturnCode
 
 ```@docs
 SciMLBase.successful_retcode
+SciMLBase.isdenseplot
+SciMLBase.plottable_indices
 ```
 
 ### Specific Return Codes

@@ -254,6 +254,12 @@ end
 end
 
 if isdefined(Base, :ispublic)
+    @testset "Extension hooks public API" begin
+        for name in (:parameterless_type, :updated_u0_p, :isdenseplot, :plottable_indices)
+            @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
     @testset "Clocks manual public API" begin
         for name in (
                 :AbstractClock,

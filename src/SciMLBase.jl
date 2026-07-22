@@ -2205,6 +2205,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Function-wrapper / solution interface helpers
 @public unwrapped_f, specialization, solution_new_retcode
+@public parameterless_type, updated_u0_p, isdenseplot, plottable_indices
 @public isfunctionwrapper, wrapfun_oop, wrapfun_iip, unwrap_fw
 
 # Low-level solver-author extension entry points

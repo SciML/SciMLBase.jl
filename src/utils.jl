@@ -424,6 +424,14 @@ end
 
 using Base: typename
 
+"""
+    parameterless_type(x)
+
+Return the parameterless type constructor associated with `x` or a concrete type.
+
+This is intended for package authors implementing `remake`-style reconstruction of
+parametric SciML objects.
+"""
 Base.@pure __parameterless_type(T) = typename(T).wrapper
 parameterless_type(x) = __parameterless_type(typeof(x))
 parameterless_type(::Type{T}) where {T} = __parameterless_type(T)
