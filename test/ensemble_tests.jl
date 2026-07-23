@@ -55,3 +55,32 @@ mx, my,
         )
     )
 end
+
+# https://github.com/SciML/DifferentialEquations.jl/issues/632
+@testset "EnsembleSummary rejects complex-valued trajectories" begin
+    prob = ODEProblem((u, p, t) -> u, 1.0 + 0.0im, (0.0, 1.0))
+    ts = [0.0, 0.5, 1.0]
+    vals = [
+        [1.0 + 0.0im, 1.5 + 0.2im, 2.0 + 0.4im],
+        [0.5 + 0.1im, 1.0 + 0.3im, 1.5 + 0.5im],
+        [1.2 - 0.1im, 1.4 + 0.0im, 1.8 + 0.2im],
+    ]
+    sols = [
+        SciMLBase.build_solution(
+                prob, :NoAlgorithm, ts, u; retcode = SciMLBase.ReturnCode.Success
+            )
+            for u in vals
+    ]
+    sim = EnsembleSolution(sols, 0.0, true)
+    err = try
+        EnsembleSummary(sim, ts)
+        nothing
+    catch e
+        e
+    end
+    @test err isa SciMLBase.ComplexEnsembleSummaryError
+    @test occursin("Complex-valued ensemble", sprint(showerror, err))
+    # mean/var path remains available without ordering
+    m, v = EA.timeseries_point_meanvar(sim, ts)
+    @test length(m.u) == length(ts)
+end

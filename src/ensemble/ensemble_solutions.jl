@@ -129,6 +129,11 @@ a `(mean,var)` summary at each time point `t` in `ts`. This requires the ability
 to interpolate the solution. Quantile is used to determine the `qlow` and `qhigh`
 quantiles at each timepoint. It defaults to the 5% and 95% quantiles.
 
+Complex-valued trajectories are rejected with a
+`ComplexEnsembleSummaryError`: medians and quantiles require a total
+order, which complex numbers do not have. Summarize real/imaginary parts or
+magnitudes separately, or use mean/variance helpers that do not need ordering.
+
 ## Plot Recipe
 
 The `EnsembleSummary` comes with a plot recipe for visualizing the summary

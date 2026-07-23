@@ -231,6 +231,18 @@ function ODEProblem(f::AbstractODEFunction, u0, tspan, args...; kwargs...)
     return ODEProblem{isinplace(f)}(f, u0, tspan, args...; kwargs...)
 end
 
+# In-place `SplitFunction` evaluation needs a temporary buffer (`_func_cache`).
+# `SplitODEProblem` always allocates it from `u0`; bare `ODEProblem(sf, u0, tspan)`
+# must do the same so `f(du,u,p,t)` does not call `get_tmp(nothing, du)`.
+function ODEProblem(f::SplitFunction, u0, tspan, args...; kwargs...)
+    iip = isinplace(f)
+    if iip && f._func_cache === nothing
+        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(u0) : u0
+        f = remake(f; _func_cache)
+    end
+    return ODEProblem{iip}(f, u0, tspan, args...; kwargs...)
+end
+
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
     _u0 = prepare_initial_state(u0)

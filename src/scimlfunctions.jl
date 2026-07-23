@@ -2868,6 +2868,18 @@ end
 
 (f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
 function (f::SplitFunction)(du, u, p, t)
+    if f._func_cache === nothing
+        throw(
+            ArgumentError(
+                string(
+                    "In-place SplitFunction evaluation requires `_func_cache`. ",
+                    "Build the problem with `SplitODEProblem(f1, f2, u0, tspan)` or ",
+                    "`ODEProblem(split_function, u0, tspan)` so the cache is allocated ",
+                    "from `u0`. A bare `SplitFunction(f1, f2)` has no buffer until then."
+                )
+            )
+        )
+    end
     tmp = get_tmp(f._func_cache, du)
     f.f1(tmp, u, p, t)
     f.f2(du, u, p, t)

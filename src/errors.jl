@@ -395,6 +395,33 @@ function Base.showerror(io::IO, e::ComplexTspanError)
     return println(io, COMPLEX_TSPAN_ERROR_MESSAGE)
 end
 
+const COMPLEX_ENSEMBLE_SUMMARY_ERROR_MESSAGE = """
+Complex-valued ensemble trajectories detected when building an
+`EnsembleSummary`.
+
+`EnsembleSummary` computes componentwise medians and quantiles, which
+require a total order (`isless`). Complex numbers have no natural
+ordering, so quantiles (and medians) are undefined on ℂ.
+
+Supported options:
+  - Summarize real and imaginary parts separately (e.g. map each
+    trajectory to `real.(u)` / `imag.(u)` before summarizing).
+  - Summarize magnitudes with `abs.(u)` if a polar summary is enough.
+  - Use only mean/variance helpers such as `timeseries_point_meanvar`,
+    which do not require ordering.
+
+See https://github.com/SciML/DifferentialEquations.jl/issues/632.
+"""
+
+struct ComplexEnsembleSummaryError <: Exception
+    eltype::Any
+end
+
+function Base.showerror(io::IO, e::ComplexEnsembleSummaryError)
+    println(io, COMPLEX_ENSEMBLE_SUMMARY_ERROR_MESSAGE)
+    return println(io, "Detected element type: $(e.eltype)")
+end
+
 const TUPLE_STATE_ERROR_MESSAGE = """
 Tuple type used as a state. Since a tuple does not have vector
 properties, it will not work as a state type in equation solvers.
