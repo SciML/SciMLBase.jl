@@ -482,7 +482,55 @@ function get_save_idxs_and_saved_subsystem(prob, save_idxs)
         else
             save_idxs = _save_idxs
         end
+    else
+        # `SavedSubsystem` also returns `nothing` when the selection saves every
+        # state variable (and every time-series parameter), in which case
+        # symbolic `save_idxs` must still be translated to integer state indexes,
+        # preserving the requested order, so raw symbols never leak into integer
+        # indexing. Non-symbolic `save_idxs` (e.g. `Colon`) pass through untouched.
+        save_idxs = translate_symbolic_save_idxs(prob, save_idxs)
     end
 
     return save_idxs, saved_subsystem
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Translate symbolic `save_idxs` into integer state indexes, preserving the
+requested order and scalarizing symbolic arrays. Non-symbolic `save_idxs` (an
+integer, `Colon`, etc.) are returned unchanged. A single symbolic entry that
+resolves to one state is returned as a scalar so it is saved as a scalar
+timeseries rather than a single-element array.
+"""
+function translate_symbolic_save_idxs(indp, save_idxs)
+    if save_idxs isa AbstractArray && symbolic_type(save_idxs) == NotSymbolic()
+        translated = Int[]
+        for sym in save_idxs
+            _append_state_indices!(translated, indp, sym)
+        end
+        return translated
+    elseif symbolic_type(save_idxs) == NotSymbolic()
+        return save_idxs
+    else
+        translated = Int[]
+        _append_state_indices!(translated, indp, save_idxs)
+        return length(translated) == 1 ? only(translated) : translated
+    end
+end
+
+function _append_state_indices!(translated, indp, sym)
+    if symbolic_type(sym) == NotSymbolic()
+        push!(translated, sym)
+    elseif sym isa AbstractArray && is_variable(indp, sym)
+        for s in collect(sym)
+            push!(translated, variable_index(indp, s))
+        end
+    else
+        idx = variable_index(indp, sym)
+        idx === nothing &&
+            throw(ArgumentError("Can only save variables. Got $sym."))
+        push!(translated, idx)
+    end
+    return translated
 end

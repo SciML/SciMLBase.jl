@@ -414,6 +414,58 @@ end
         @test _idxs == Int[]
         @test _ss isa SciMLBase.SavedSubsystem
     end
+
+    # https://github.com/SciML/SciMLBase.jl/issues/1454
+    @testset "symbolic save_idxs selecting all states" begin
+        @variables x(t) = 1.0 y(t) = 1.0 z(t) = 1.0
+        @parameters a = 1.5 b = 1.0 c = 3.0 d = 1.0
+        @mtkcompile sys = System(
+            [D(x) ~ a * x - b * x * y, D(y) ~ -c * y + d * x * z, D(z) ~ x - z], t
+        )
+        prob = ODEProblem(sys, [], (0.0, 1.0))
+        xidx = variable_index(sys, x)
+        yidx = variable_index(sys, y)
+        zidx = variable_index(sys, z)
+
+        # `SavedSubsystem` returns `nothing` for a save-everything request, but
+        # `get_save_idxs_and_saved_subsystem` must still translate the symbols to
+        # integer state indexes preserving the requested order.
+        for (si, expected) in (
+                ([:x, :y, :z], [xidx, yidx, zidx]),
+                ([:z, :y, :x], [zidx, yidx, xidx]),
+                ([x, y, z], [xidx, yidx, zidx]),
+                ([z, y, x], [zidx, yidx, xidx]),
+            )
+            _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, si)
+            @test _idxs == expected
+            @test eltype(_idxs) == Int
+            @test _ss === nothing
+        end
+
+        full = solve(prob, Tsit5(); saveat = 0.1)
+        # all states, natural order
+        sol = solve(prob, Tsit5(); saveat = 0.1, save_idxs = [:x, :y, :z])
+        @test sol.u[end] == [full[x][end], full[y][end], full[z][end]]
+        # all states, permuted order must be preserved
+        solr = solve(prob, Tsit5(); saveat = 0.1, save_idxs = [:z, :y, :x])
+        @test solr.u[end] == [full[z][end], full[y][end], full[x][end]]
+        # `Num` selection of all states
+        soln = solve(prob, Tsit5(); saveat = 0.1, save_idxs = [x, y, z])
+        @test soln.u[end] == [full[x][end], full[y][end], full[z][end]]
+
+        # regressions: subset, single symbol, and integer selections still work
+        subset = solve(prob, Tsit5(); saveat = 0.1, save_idxs = [:x, :z])
+        @test subset.u[end] == [full[x][end], full[z][end]]
+        single = solve(prob, Tsit5(); saveat = 0.1, save_idxs = :x)
+        @test single.u[end] == full[x][end]
+        ints = solve(prob, Tsit5(); saveat = 0.1, save_idxs = [1, 2, 3])
+        @test ints.u[end] == full.u[end]
+
+        # non-state expression is still rejected
+        @test_throws Exception SciMLBase.get_save_idxs_and_saved_subsystem(
+            prob, [x + y]
+        )
+    end
 end
 
 @testset "Interpolation after final discrete save" begin
