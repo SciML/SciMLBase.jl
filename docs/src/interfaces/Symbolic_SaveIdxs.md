@@ -23,6 +23,12 @@ breaking symbolic queries.
   time-series parameters only when that parameter's time series was saved.
 - Saving only time-series parameters is valid; the state `save_idxs` passed to a
   low-level solver is then `Int[]`.
+- **Observed variables are not supported in `save_idxs`.** Selecting an observed
+  quantity raises an `ArgumentError` that names the limitation and lists
+  workarounds (full-state solve + `sol[obs]`, `DiffEqCallbacks.SavingCallback`,
+  or saving the dependent states). Supporting observed `save_idxs` requires
+  evaluating observed functions at save points and extending `SavedSubsystem`
+  with an observed-column map; see SciML/DifferentialEquations.jl#1036.
 
 ## Solver-Author Flow
 

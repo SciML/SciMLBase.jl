@@ -1,6 +1,7 @@
 using Test, SciMLBase
 using LinearAlgebra
 using StaticArrays
+using SymbolicIndexingInterface
 
 @testset "getindex" begin
     u = rand(1)
@@ -199,4 +200,49 @@ end
     # And when the concrete nlsol type is known at the call site, inference
     # must produce a fully concrete ODESolution type.
     @inferred bvde_like(odesol, nlsol)
+end
+
+@testset "save_idxs rejects observed quantities" begin
+    # SymbolCache treats Expr as observed (SII). Full MTK observed coverage is
+    # in test/downstream/solution_interface.jl.
+    sc = SymbolCache([:x, :y], [:p], :t)
+    p = [0.5]
+    obs = :(x + y)
+    @test is_observed(sc, obs)
+    @test !is_variable(sc, obs)
+
+    err = try
+        SciMLBase.SavedSubsystem(sc, p, [obs])
+        nothing
+    catch e
+        e
+    end
+    @test err isa ArgumentError
+    msg = sprint(showerror, err)
+    @test occursin("observed", msg)
+    @test occursin("1036", msg)
+    @test occursin("SavingCallback", msg)
+
+    # Direct helper used by both SavedSubsystem and translate_symbolic_save_idxs.
+    err_helper = SciMLBase._invalid_save_idxs_symbol_error(sc, obs)
+    @test err_helper isa ArgumentError
+    @test occursin("observed", sprint(showerror, err_helper))
+
+    # Non-observed garbage still uses the generic rejection path.
+    err3 = try
+        SciMLBase.SavedSubsystem(sc, p, [:not_a_state])
+        nothing
+    catch e
+        e
+    end
+    @test err3 isa ArgumentError
+    @test occursin(
+        "Can only save variables and timeseries parameters", sprint(showerror, err3)
+    )
+    @test !occursin("observed variables via `save_idxs`", sprint(showerror, err3))
+
+    # State selection still works.
+    ss = SciMLBase.SavedSubsystem(sc, p, [:x])
+    @test ss isa SciMLBase.SavedSubsystem
+    @test SciMLBase.get_saved_state_idxs(ss) == [1]
 end

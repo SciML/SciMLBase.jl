@@ -99,7 +99,10 @@ parameter object `pobj`. `saved_idxs` may contain integer state indexes,
 symbolic state variables, symbolic arrays of state variables, or symbolic
 time-series parameters. Every symbolic entry must resolve to either a state
 variable or a time-series parameter of `indp`; other symbolic entries are
-rejected.
+rejected. Observed variables (quantities computed from the full state via
+`observed`, not stored in `u`) are **not** supported in `save_idxs` yet and
+raise a dedicated `ArgumentError` pointing at workarounds and
+DifferentialEquations.jl#1036.
 
 The object is stored on solution types when `save_idxs` omits part of the
 symbolic state or time-series parameter set. It lets `sol[x]`, `state_values`,
@@ -224,7 +227,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
             cnt = get(ts_idx_to_count, idx.timeseries_idx, 0)
             ts_idx_to_count[idx.timeseries_idx] = cnt + 1
         else
-            throw(ArgumentError("Can only save variables and timeseries parameters. Got $var."))
+            throw(_invalid_save_idxs_symbol_error(indp, var))
         end
     end
 
@@ -528,9 +531,39 @@ function _append_state_indices!(translated, indp, sym)
         end
     else
         idx = variable_index(indp, sym)
-        idx === nothing &&
-            throw(ArgumentError("Can only save variables. Got $sym."))
+        if idx === nothing
+            throw(_invalid_save_idxs_symbol_error(indp, sym; allow_timeseries_params = false))
+        end
         push!(translated, idx)
     end
     return translated
+end
+
+"""
+    _invalid_save_idxs_symbol_error(indp, var; allow_timeseries_params=true)
+
+Build the `ArgumentError` for a symbolic entry that cannot be used in
+`save_idxs`. Observed quantities get a dedicated message (DifferentialEquations.jl#1036);
+other non-state / non-timeseries-parameter symbols keep a generic rejection.
+"""
+function _invalid_save_idxs_symbol_error(indp, var; allow_timeseries_params::Bool = true)
+    if is_observed(indp, var)
+        return ArgumentError(
+            string(
+                "Saving observed variables via `save_idxs` is not yet supported (got $var). ",
+                "Observed quantities are computed from the full state and are not stored in `u`, ",
+                "so the solver cannot select them with integer state indices. ",
+                "Workarounds: (1) omit `save_idxs` and index the full solution with `sol[$var]`; ",
+                "(2) use `DiffEqCallbacks.SavingCallback` to record observed values at save times; ",
+                "(3) pass the state variables the observed quantity depends on in `save_idxs`. ",
+                "See SciML/DifferentialEquations.jl#1036."
+            )
+        )
+    elseif allow_timeseries_params
+        return ArgumentError(
+            "Can only save variables and timeseries parameters. Got $var."
+        )
+    else
+        return ArgumentError("Can only save variables. Got $var.")
+    end
 end

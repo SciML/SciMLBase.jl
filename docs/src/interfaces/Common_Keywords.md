@@ -60,9 +60,11 @@ smaller subset.
     Providing `saveat` alone changes the usual defaults of `save_everystep` and
     `dense` to `false`. The default is an empty collection.
   - `save_idxs`: Save only selected state components. It may be an integer,
-    collection of indices, or supported symbolic state/parameter selection.
-    Symbolically subsetted solutions must preserve the
-    [saved-subsystem interface](@ref symbolic_save_idxs).
+    collection of indices, or supported symbolic state/time-series-parameter
+    selection. Observed variables are not supported (see
+    [symbolic save_idxs](@ref symbolic_save_idxs) and
+    SciML/DifferentialEquations.jl#1036). Symbolically subsetted solutions must
+    preserve the [saved-subsystem interface](@ref symbolic_save_idxs).
   - `tstops`: Require the integrator to stop at additional values. This is used
     for discontinuities, singularities, and externally scheduled events. A
     scalar or collection is known at initialization; a callable such as
