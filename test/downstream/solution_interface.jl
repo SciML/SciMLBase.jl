@@ -465,6 +465,16 @@ end
         @test_throws Exception SciMLBase.get_save_idxs_and_saved_subsystem(
             prob, [x + y]
         )
+
+        # Mixed integer + symbol selection of all states must still translate,
+        # preserving order (adjacent path to pure-symbolic all-vars; #1454).
+        mixed = [:x, yidx, :z]
+        _idxs, _ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, mixed)
+        @test _idxs == [xidx, yidx, zidx]
+        @test eltype(_idxs) == Int
+        @test _ss === nothing
+        solm = solve(prob, Tsit5(); saveat = 0.1, save_idxs = mixed)
+        @test solm.u[end] == [full[x][end], full[y][end], full[z][end]]
     end
 end
 
