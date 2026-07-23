@@ -115,6 +115,8 @@ of the mathematical structure used to create it.
 
 ```@docs
 SciMLBase.remake
+SciMLBase.updated_u0_p
+SciMLBase.parameterless_type
 ```
 
 For problems that are created from a system (e.g. created through ModelingToolkit.jl) or

@@ -243,6 +243,13 @@ end
 DEFAULT_PLOT_FUNC(x, y) = (x, y)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
+"""
+    isdenseplot(sol)
+
+Return whether plotting `sol` should evaluate its interpolation densely.
+
+Solution packages may extend this for a concrete solution type.
+"""
 function isdenseplot(sol)
     return (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
         !(sol isa AbstractRODESolution) &&

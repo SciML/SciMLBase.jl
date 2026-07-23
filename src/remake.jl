@@ -1497,6 +1497,15 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
         remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 end
 
+"""
+    updated_u0_p(prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
+        use_defaults = false)
+
+Resolve replacement initial conditions and parameters for a SciML problem.
+
+Package authors implementing a `remake` method for a wrapper problem can use this to
+preserve the symbolic-map and default-value behavior of [`remake`](@ref).
+"""
 function updated_u0_p(
         prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
         use_defaults = false
