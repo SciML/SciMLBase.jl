@@ -121,8 +121,16 @@ const _api_docs_rendered_ignore = (
     :has_expmv!, :has_ldiv, :has_ldiv!, :has_mul, :has_mul!, :iscached,
     :isconstant, :isconvertible, :islinear, :issquare, :kronsum,
     :update_coefficients, :update_coefficients!,
-    :init, :solve, :solve!,
+    :init, :solve, :solve!, :step!,
+    # RecursiveArrayTools symbolic-indexing sentinel reexported for solution UI.
+    :AllObserved,
+    # Base name reexported as the DEIntegrator resizing verb (methods live on Base).
+    :deleteat!,
 )
+
+# Intentional public reexports: SciMLOperators via `@reexport`, CommonSolve verbs
+# reexported for the SciML solve interface, and `AllObserved` from RecursiveArrayTools.
+const _reexports_allow = _api_docs_rendered_ignore
 
 run_qa(
     SciMLBase;
@@ -140,6 +148,7 @@ run_qa(
         rendered = true,
         rendered_ignore = _api_docs_rendered_ignore,
     ),
+    reexports_allow = _reexports_allow,
 )
 
 include("alloccheck.jl")
