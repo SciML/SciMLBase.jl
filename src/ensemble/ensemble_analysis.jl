@@ -392,6 +392,13 @@ function SciMLBase.EnsembleSummary(
         sim::SciMLBase.AbstractEnsembleSolution{T, N},
         t = sim.u[1].t; quantiles = [0.05, 0.95]
     ) where {T, N}
+    # Medians/quantiles need a total order; complex states have none (DE #632).
+    sample = sim.u[1] isa SciMLBase.AbstractSciMLSolution ? sim.u[1].u[1] : sim.u[1]
+    et = RecursiveArrayTools.recursive_unitless_eltype(sample)
+    if et <: Complex
+        throw(SciMLBase.ComplexEnsembleSummaryError(et))
+    end
+
     if sim.u[1] isa SciMLBase.AbstractSciMLSolution
         m, v = timeseries_point_meanvar(sim, t)
         med = timeseries_point_median(sim, t)

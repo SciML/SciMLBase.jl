@@ -38,6 +38,39 @@ prob_bvp = BVProblem(simplependulum!, bc!, [pi / 2, pi / 2], (0, 1.0))
     @test SciMLBase.specialization(specialized_incrementing_f) === SciMLBase.NoSpecialize
 end
 
+# Bare ODEProblem(SplitFunction, u0, tspan) must allocate `_func_cache` for iip,
+# matching SplitODEProblem (otherwise f(du,u,p,t) hits ndims(::Type{Nothing})).
+@testset "ODEProblem(SplitFunction) allocates _func_cache" begin
+    f1! = (du, u, p, t) -> (du .= u)
+    f2! = (du, u, p, t) -> (du .= -u)
+    u0 = [1.0, 2.0]
+    sf = SplitFunction(f1!, f2!)
+    @test sf._func_cache === nothing
+    @test_throws ArgumentError sf(similar(u0), u0, nothing, 0.0)
+
+    prob = ODEProblem(sf, u0, (0.0, 1.0))
+    @test prob.f._func_cache !== nothing
+    du = zeros(2)
+    # combined rhs is f1 + f2 = u + (-u) = 0
+    prob.f(du, u0, nothing, 0.0)
+    @test du ≈ zeros(2)
+
+    # SplitODEProblem path still works and keeps a cache
+    prob_split = SplitODEProblem(f1!, f2!, u0, (0.0, 1.0))
+    @test prob_split.f._func_cache !== nothing
+    du2 = zeros(2)
+    prob_split.f(du2, u0, nothing, 0.0)
+    @test du2 ≈ zeros(2)
+
+    # out-of-place SplitFunction needs no cache
+    f1 = (u, p, t) -> u
+    f2 = (u, p, t) -> -u
+    sf_oop = SplitFunction(f1, f2)
+    @test sf_oop._func_cache === nothing
+    prob_oop = ODEProblem(sf_oop, 1.0, (0.0, 1.0))
+    @test prob_oop.f(1.0, nothing, 0.0) == 0.0
+end
+
 @testset "`constructorof` tests" begin
     probs = []
 
