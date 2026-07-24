@@ -5,7 +5,7 @@ Marker for multi-point first-order BVP layouts.
 
 `StandardBVProblem()` identifies boundary value problems whose boundary
 condition is supplied as one residual function over the current solution values
-and mesh. It is returned by [`problem_type`](@ref) for a `BVProblem` that does
+and mesh. It is returned by [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) for a `BVProblem` that does
 not use separate endpoint boundary-condition functions.
 """
 struct StandardBVProblem end
@@ -123,7 +123,7 @@ every solve call.
 * `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
 * `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
-* Construction layout: Query [`problem_type`](@ref) to obtain either
+* Construction layout: Query [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) to obtain either
   `StandardBVProblem` or `TwoPointBVProblem`.
 * `singular_term`: The singular term of the problem. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
@@ -314,7 +314,7 @@ Marker for multi-point second-order BVP layouts.
 
 `StandardSecondOrderBVProblem()` identifies second-order BVPs whose boundary
 condition is supplied as one residual function over derivative values, state
-values, parameters, and mesh points. It is returned by [`problem_type`](@ref)
+values, parameters, and mesh points. It is returned by [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/)
 for a `SecondOrderBVProblem` when endpoint residual functions are not used.
 """
 struct StandardSecondOrderBVProblem end
@@ -434,7 +434,7 @@ every solve call.
 * `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
 * `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
 * `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
-* Construction layout: Query [`problem_type`](@ref) to obtain either
+* Construction layout: Query [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) to obtain either
   `StandardSecondOrderBVProblem` or `TwoPointSecondOrderBVProblem`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """

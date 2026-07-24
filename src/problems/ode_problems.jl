@@ -258,7 +258,7 @@ Marker supertype for structured ODE problem layouts.
 
 Subtypes identify ODE problems that are constructed from partitioned or
 second-order dynamics and then stored in the common `ODEProblem` representation.
-The concrete marker is available through [`problem_type`](@ref) so solvers can
+The concrete marker is available through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) so solvers can
 preserve structure when they support specialized methods.
 """
 abstract type AbstractDynamicalODEProblem end
@@ -469,7 +469,7 @@ Marker supertype for split ODE problem layouts.
 
 Subtypes identify ODEs whose right-hand side is supplied as a split function,
 usually to expose additive, linear, stiff, or nonstiff structure to solvers.
-Split constructors expose this marker through [`problem_type`](@ref) while using
+Split constructors expose this marker through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) while using
 the ordinary `ODEProblem` storage layout.
 """
 abstract type AbstractSplitODEProblem end
@@ -576,7 +576,7 @@ Internal supertype for incrementing ODE constructor tags. Concrete tags record
 the in-place convention while [`IncrementingODEProblem`](@ref) converts the
 input into an `ODEProblem` with an [`IncrementingODEFunction`](@ref).
 
-These tags are available from [`problem_type`](@ref) on the resulting problem;
+These tags are available from [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) on the resulting problem;
 they are not standalone problem containers. Solvers that require incrementing
 evaluation may dispatch on the tag or the wrapped function, but ordinary ODE
 tooling should use the returned `ODEProblem` interface.
@@ -591,7 +591,7 @@ Construct an experimental ODE problem for a model function that can update an
 existing derivative buffer in an incrementing form.
 
 The constructor wraps `f` in an [`IncrementingODEFunction`](@ref), exposes an
-`IncrementingODEProblem{iip}` tag through [`problem_type`](@ref), and returns a
+`IncrementingODEProblem{iip}` tag through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/), and returns a
 standard `ODEProblem`. The result therefore follows the ordinary ODE problem
 field, symbolic-indexing, keyword-forwarding, and solve interfaces.
 

@@ -648,7 +648,7 @@ the state should be interpolated to the new time.
     recompute `u` from the method's interpolation.
   - If changing time invalidates interpolation, error estimates, or dense output
     caches, the implementation must refresh them or require callers to follow
-    with [`reeval_internals_due_to_modification!`](@ref).
+    with [`reeval_internals_due_to_modification!`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/).
 """
 function set_t!(integrator::DEIntegrator, t)
     error("set_t!: method has not been implemented for the integrator")
@@ -677,7 +677,7 @@ parameter setters instead of `set_u!`.
     derivatives, interpolation data, and step controllers may no longer describe
     the current state.
   - Solvers that need additional work after a state change should implement
-    [`reeval_internals_due_to_modification!`](@ref) and document when callbacks
+    [`reeval_internals_due_to_modification!`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/) and document when callbacks
     or generic code must call it.
 """
 function set_u! end
@@ -940,7 +940,7 @@ last_step_failed(integrator::DEIntegrator) = false
 """
     check_error(integrator)
 
-Inspect `integrator` and return the [`ReturnCode`](@ref) that describes whether
+Inspect `integrator` and return the [`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes) that describes whether
 integration may continue.
 
 The common implementation preserves an existing terminal return code and checks
