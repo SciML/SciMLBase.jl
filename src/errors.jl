@@ -96,6 +96,9 @@ const allowedkeywords = (
     :tune_parameters,
     # Optimizer kwargs passed via BVP solvers
     :optimize_kwargs,
+    # Solve-level stage/step limiters (OrdinaryDiffEq solver kwargs)
+    :step_limiter,
+    :stage_limiter,
 )
 
 

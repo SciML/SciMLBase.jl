@@ -1025,3 +1025,15 @@ BatchIntegralFunction(biip, Float64[], max_batch = 20)
 @test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1)
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo)
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[])
+
+@testset "solve-level limiter kwargs are allowed" begin
+    # OrdinaryDiffEq solve-level step/stage limiters must pass keyword validation.
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; step_limiter = identity)
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; stage_limiter = identity)
+    SciMLBase.checkkwargs(
+        SciMLBase.KeywordArgError; step_limiter = identity, stage_limiter = identity
+    )
+    @test_throws SciMLBase.CommonKwargError SciMLBase.checkkwargs(
+        SciMLBase.KeywordArgError; not_a_real_kwarg = 1
+    )
+end
