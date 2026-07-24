@@ -219,6 +219,20 @@ _vec(v::Number) = v
 _vec(v::SciMLOperators.AbstractSciMLScalarOperator) = v
 _vec(v::AbstractVector) = v
 
+# Check residual against abstol. Scalar abstol uses the usual scalar residual
+# norm; array abstol uses a weighted residual (componentwise / abstol) so vector
+# tolerances do not MethodError on `normresid > abstol` (OrdinaryDiffEq #1214).
+@inline function exceeds_checkinit_abstol(resid, abstol::Number, integrator, t)
+    normresid = isdefined(integrator.opts, :internalnorm) ?
+        integrator.opts.internalnorm(resid, t) : norm(resid)
+    return normresid > abstol
+end
+@inline function exceeds_checkinit_abstol(resid, abstol, integrator, t)
+    weighted = isdefined(integrator.opts, :internalnorm) ?
+        integrator.opts.internalnorm(resid ./ abstol, t) : norm(resid ./ abstol)
+    return weighted > 1
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -249,9 +263,9 @@ function get_initial_values(
     tmp = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
-    normresid = isdefined(integrator.opts, :internalnorm) ?
-        integrator.opts.internalnorm(tmp, t) : norm(tmp)
-    if normresid > abstol
+    if exceeds_checkinit_abstol(tmp, abstol, integrator, t)
+        normresid = isdefined(integrator.opts, :internalnorm) ?
+            integrator.opts.internalnorm(tmp, t) : norm(tmp)
         throw(CheckInitFailureError(normresid, abstol, true))
     end
     return u0, p, true
@@ -266,10 +280,10 @@ function get_initial_values(
     t = current_time(integrator)
 
     resid = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
-    normresid = isdefined(integrator.opts, :internalnorm) ?
-        integrator.opts.internalnorm(resid, t) : norm(resid)
 
-    if normresid > abstol
+    if exceeds_checkinit_abstol(resid, abstol, integrator, t)
+        normresid = isdefined(integrator.opts, :internalnorm) ?
+            integrator.opts.internalnorm(resid, t) : norm(resid)
         throw(CheckInitFailureError(normresid, abstol, false))
     end
     return u0, p, true

@@ -84,6 +84,27 @@ using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterfac
                 Val(SciMLBase.isinplace(f)); abstol = 1.0e-10
             )
         end
+
+        # Vector abstol must not MethodError on `normresid > abstol`
+        # (OrdinaryDiffEq.jl #1214 / DifferentialEquations path via CheckInit).
+        @testset "Vector abstol" begin
+            f = iipfn
+            prob = DAEProblem(f, [1.0, 0.0], [1.0, 1.0], (0.0, 1.0), 1.0)
+            integ = init(prob, DImplicitEuler(); abstol = [1.0e-6, 1.0e-6])
+            u0, _,
+                success = SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(true); abstol = [1.0e-6, 1.0e-6]
+            )
+            @test success
+            @test u0 == prob.u0
+
+            integ.u[2] = 2.0
+            @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(true); abstol = [1.0e-6, 1.0e-6]
+            )
+        end
     end
 
     @testset "SDEProblem" begin
