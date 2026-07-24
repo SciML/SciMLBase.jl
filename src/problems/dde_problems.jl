@@ -307,7 +307,7 @@ Marker supertype for structured DDE problem layouts.
 
 Subtypes identify DDE problems constructed from partitioned first-order dynamics
 or from second-order dynamics. These markers are available through
-[`problem_type`](@ref) on the common `DDEProblem` representation so solvers can
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) on the common `DDEProblem` representation so solvers can
 preserve or recover the structured interpretation when needed.
 """
 abstract type AbstractDynamicalDDEProblem end
@@ -317,7 +317,7 @@ $(TYPEDEF)
 
 Marker for partitioned dynamical DDE problem layouts.
 
-`DynamicalDDEProblem{iip}` is returned by [`problem_type`](@ref) when a DDE is
+`DynamicalDDEProblem{iip}` is returned by [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) when a DDE is
 constructed from two coupled first-order components. The `iip` parameter records
 the in-place convention of the underlying `DynamicalDDEFunction`.
 """
@@ -381,7 +381,7 @@ $(TYPEDEF)
 
 Marker for second-order DDE problem layouts.
 
-`SecondOrderDDEProblem{iip}` is returned by [`problem_type`](@ref) when a
+`SecondOrderDDEProblem{iip}` is returned by [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) when a
 second-order delay equation is converted to the partitioned DDE form used by
 `DDEProblem`. The `iip` parameter records the in-place convention of the
 second-derivative function.

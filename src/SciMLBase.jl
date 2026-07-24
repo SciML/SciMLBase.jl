@@ -139,7 +139,7 @@ are:
   - `tspan`: the independent-variable interval for time-dependent problems.
   - `p`: parameters, defaulting to `NullParameters` when omitted.
   - `kwargs`: keyword arguments stored on the problem and forwarded to solves.
-  - construction-layout metadata available through [`problem_type`](@ref) when
+  - construction-layout metadata available through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) when
     several constructors share one concrete representation.
 
 Subtypes that expose state and parameters through symbolic indexing should
@@ -356,7 +356,7 @@ function mutation convention.
 ## Interface
 
 ODE problems should provide `f`, `u0`, `tspan`, `p`, and `kwargs`. A problem that
-preserves an alternate construction layout should extend [`problem_type`](@ref).
+preserves an alternate construction layout should extend [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/).
 The function should support either `f(u, p, t)` or
 `f(du, u, p, t)` according to [`isinplace`](@ref). Stored keyword arguments such
 as callbacks or tolerances are forwarded to solvers.
@@ -468,7 +468,7 @@ $(TYPEDEF)
 
 Base interface for second-order ODE problems. These problems are represented in
 the ODE hierarchy for solver interoperability, but their constructors preserve
-second-order structure through concrete fields or [`problem_type`](@ref) metadata.
+second-order structure through concrete fields or [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) metadata.
 """
 abstract type AbstractSecondOrderODEProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -918,7 +918,7 @@ struct CheckInit <: DAEInitializationAlgorithm end
 An initialization algorithm that uses initialization metadata stored on a
 SciMLFunction to compute replacement state and parameter values.
 
-When `f` has non-`nothing` [`OverrideInitData`](@ref), `get_initial_values`
+When `f` has non-`nothing` [`OverrideInitData`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/), `get_initial_values`
 updates the stored initialization problem from the current value provider,
 solves it when it is nontrivial, and maps the initialization result back to the
 original problem's `u0` and `p`. If `f` has no initialization data,

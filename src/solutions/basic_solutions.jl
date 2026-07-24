@@ -125,7 +125,7 @@ Construct the solution object returned by a SciML solver for `prob` solved with
 Solver packages extend `build_solution` for the problem and algorithm families
 they own so that direct solver implementations can share the same solution
 construction path. Methods should attach the original problem, algorithm,
-[`ReturnCode`](@ref), residual or error information, solver statistics, dense
+[`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes), residual or error information, solver statistics, dense
 interpolation data, and saved values expected by the corresponding
 [`AbstractSciMLSolution`](@ref) interface.
 
@@ -164,7 +164,7 @@ Construct the solution object returned by a SciML solver for `prob` solved with
 Solver packages extend `build_solution` for the problem and algorithm families
 they own so that direct solver implementations can share the same solution
 construction path. Methods should attach the original problem, algorithm,
-[`ReturnCode`](@ref), residual or error information, solver statistics, dense
+[`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes), residual or error information, solver statistics, dense
 interpolation data, and saved values expected by the corresponding
 [`AbstractSciMLSolution`](@ref) interface.
 
@@ -182,7 +182,7 @@ Return `sol` or wrap it in a higher-level SciML solution container.
 
 Solvers call `wrap_sol(sol)` after constructing a low-level solution. When
 `sol.prob` is an [`AbstractSciMLProblem`](@ref), the default implementation
-queries [`problem_type`](@ref) and dispatches to
+queries [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) and dispatches to
 `wrap_sol(sol, problem_type_or_metadata)` when the result is not `nothing`.
 Problem-family packages extend the two-argument form when a generated solver
 solution should be returned as a more specific public solution type.

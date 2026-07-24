@@ -109,7 +109,7 @@ Methods must return the initialized state object, the initialized parameter
 object, and a boolean indicating whether initialization succeeded. Keyword
 arguments are algorithm-specific: `CheckInit` requires an `abstol` for residual
 checks, while `OverrideInit` can require a NonlinearSolve algorithm and
-tolerances unless the stored [`OverrideInitData`](@ref) represents a trivial
+tolerances unless the stored [`OverrideInitData`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/) represents a trivial
 initialization problem.
 """
 function get_initial_values end
