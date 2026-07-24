@@ -476,6 +476,58 @@ end
         solm = solve(prob, Tsit5(); saveat = 0.1, save_idxs = mixed)
         @test solm.u[end] == [full[x][end], full[y][end], full[z][end]]
     end
+
+    # https://github.com/SciML/DifferentialEquations.jl/issues/1036
+    @testset "observed save_idxs is rejected with a dedicated error" begin
+        @variables x(t) = 1.0 y(t) = 1.0 obs(t)
+        @parameters p = 0.5
+        @mtkcompile sys = System(
+            [D(x) ~ x + p * y, D(y) ~ 2p + x, obs ~ x + y], t
+        )
+        @test is_observed(sys, obs)
+        @test !is_variable(sys, obs)
+        prob = ODEProblem(sys, [], (0.0, 1.0))
+        @test is_observed(prob, obs)
+
+        err = try
+            SciMLBase.get_save_idxs_and_saved_subsystem(prob, [obs])
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        msg = sprint(showerror, err)
+        @test occursin("observed", msg)
+        @test occursin("1036", msg)
+        @test occursin("SavingCallback", msg)
+
+        err_solve = try
+            solve(prob, Tsit5(); save_idxs = [obs], saveat = 0.1)
+            nothing
+        catch e
+            e
+        end
+        @test err_solve isa ArgumentError
+        @test occursin("observed", sprint(showerror, err_solve))
+
+        # Mixed observed + state is also rejected (no silent partial save).
+        err_mixed = try
+            SciMLBase.get_save_idxs_and_saved_subsystem(prob, [x, obs])
+            nothing
+        catch e
+            e
+        end
+        @test err_mixed isa ArgumentError
+        @test occursin("observed", sprint(showerror, err_mixed))
+
+        # Full-state solve still exposes observed via solution indexing.
+        full = solve(prob, Tsit5(); saveat = 0.1)
+        @test full[obs] ≈ full[x] .+ full[y]
+
+        # Symbolic state save_idxs still works.
+        sol = solve(prob, Tsit5(); save_idxs = [x], saveat = 0.1)
+        @test sol[x] ≈ full[x]
+    end
 end
 
 @testset "Interpolation after final discrete save" begin
