@@ -172,7 +172,9 @@ struct FullSpecialize <: AbstractSpecialization end
 """
 $(TYPEDEF)
 
-`AutoDePSpecialize` extends [`AutoSpecialize`](@ref) by additionally
+`AutoDePSpecialize` extends
+[`AutoSpecialize`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+by additionally
 *de-specializing the parameter object*. Solver paths with a supported
 opaque-parameter strategy pack an `isbits`, non-`NullParameters` `p` into a
 fixed-type opaque container (e.g. `RespecializeParams.OpaqueParams`) and
