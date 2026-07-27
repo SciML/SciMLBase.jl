@@ -140,12 +140,17 @@ function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution
     return ODESolution{T, N}
 end
 
-function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
+function ConstructionBase.setproperties(
+        sol::ODESolution{T, N}, patch::NamedTuple
+    ) where {T, N}
     u = get(patch, :u, sol.u)
-    N = u === nothing ? 2 : ndims(eltype(u)) + 1
-    T = eltype(eltype(u))
+    new_T, new_N = if haskey(patch, :u)
+        eltype(eltype(u)), u === nothing || eltype(u) === Nothing ? 2 : ndims(eltype(u)) + 1
+    else
+        T, N
+    end
     patch = merge(getproperties(sol), patch)
-    return ODESolution{T, N}(
+    return ODESolution{new_T, new_N}(
         patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
         patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
         patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem

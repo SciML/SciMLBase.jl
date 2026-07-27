@@ -1,4 +1,5 @@
 using Test, SciMLBase
+using ConstructionBase: setproperties
 using LinearAlgebra
 using RecursiveArrayTools: DiffEqArray
 using StaticArrays
@@ -50,6 +51,45 @@ SymbolicIndexingInterface.get_parameter_timeseries_collection(
     SciMLBase.save_discretes!(sol, 1.0, [2.0], 1)
     @test discrete.t == [0.0, 1.0]
     @test discrete.u == [[1.0], [2.0]]
+end
+
+@testset "ODESolution property replacement preserves state metadata" begin
+    f = (u, p, t) -> nothing
+
+    null_prob = ODEProblem(f, nothing, (0.0, 1.0))
+    null_sol = SciMLBase.build_solution(
+        null_prob, :NoAlgorithm, [0.0, 1.0], [nothing, nothing]; interp = nothing
+    )
+    @test null_sol isa ODESolution{Any, 2}
+
+    for updated in (
+            setproperties(null_sol, (retcode = ReturnCode.Success,)),
+            SciMLBase.solution_new_retcode(null_sol, ReturnCode.Success),
+        )
+        @test typeof(updated) === typeof(null_sol)
+        @test updated.u === null_sol.u
+        @test updated.retcode == ReturnCode.Success
+    end
+    @test typeof(setproperties(null_sol, (u = copy(null_sol.u),))) === typeof(null_sol)
+    no_saved_states = setproperties(null_sol, (u = nothing,))
+    @test no_saved_states isa ODESolution{Any, 2}
+    @test no_saved_states.u === nothing
+
+    for u0 in (1.0, [1.0, 2.0])
+        prob = ODEProblem(f, u0, (0.0, 1.0))
+        sol = SciMLBase.build_solution(
+            prob, :NoAlgorithm, [0.0], [deepcopy(u0)]; interp = nothing
+        )
+        for updated in (
+                setproperties(sol, (retcode = ReturnCode.Success,)),
+                SciMLBase.solution_new_retcode(sol, ReturnCode.Success),
+            )
+            @test typeof(updated) === typeof(sol)
+            @test updated.u === sol.u
+            @test updated.retcode == ReturnCode.Success
+        end
+        @test typeof(setproperties(sol, (u = copy(sol.u),))) === typeof(sol)
+    end
 end
 
 @testset "A * sol for AbstractNoTimeSolution" begin
