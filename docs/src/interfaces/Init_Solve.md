@@ -138,6 +138,18 @@ SciMLBase.get_rng
 SciMLBase.set_rng!
 ```
 
+### Solver author termination hooks
+
+!!! warning "Developer API, not user API"
+    `done` and `postamble!` are versioned extension hooks for differential
+    equation solver packages. Application code should use the iterator and
+    solve interfaces above instead of calling either hook.
+
+```@docs
+SciMLBase.done
+SciMLBase.postamble!
+```
+
 ## Initialization Interface
 
 ```@docs

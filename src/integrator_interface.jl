@@ -1021,6 +1021,26 @@ function check_error(integrator::DEIntegrator)
     return ReturnCode.Success
 end
 
+"""
+    postamble!(integrator)
+
+Finalize a differential-equation integrator after its solve loop terminates.
+Solver packages specialize this hook to perform final bookkeeping that must run
+on normal completion and on an error return. The default generic function has no
+method; an integrator implementation that requires finalization must provide one.
+
+!!! warning "Developer API, not user API"
+    Application code must not call this hook. Use `solve!`, `step!`, or
+    `terminate!` to control an integrator lifecycle.
+
+# Example
+```julia
+function SciMLBase.postamble!(integrator::MyIntegrator)
+    flush_pending_save!(integrator)
+    return nothing
+end
+```
+"""
 function postamble! end
 
 """
@@ -1044,6 +1064,28 @@ function check_error!(integrator::DEIntegrator)
 end
 
 ### Default Iterator Interface
+"""
+    done(integrator) -> Bool
+
+Return whether a differential-equation integrator has finished iteration.
+Solver packages may specialize this hook for their `DEIntegrator` subtype when
+their termination protocol differs from the common return-code and time-stop
+logic. A specialization must ensure [`postamble!`](@ref) has finalized the
+integrator before it reports a completed solve.
+
+!!! warning "Developer API, not user API"
+    Application code should iterate an integrator or call `solve!`; it should
+    not drive a solver by calling `done` directly.
+
+# Example
+```julia
+function SciMLBase.done(integrator::MyIntegrator)
+    integrator.finished || return false
+    SciMLBase.postamble!(integrator)
+    return true
+end
+```
+"""
 function done(integrator::DEIntegrator)
     if !(integrator.sol.retcode in (ReturnCode.Default, ReturnCode.Success))
         return true
