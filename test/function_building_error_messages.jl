@@ -1037,3 +1037,46 @@ BatchIntegralFunction(biip, Float64[], max_batch = 20)
         SciMLBase.KeywordArgError; not_a_real_kwarg = 1
     )
 end
+
+@testset "controller kwargs are rejected" begin
+    # These moved onto the controller objects (PIController/PIDController/IController/
+    # PredictiveController). They were left in `allowedkeywords` after the controller
+    # refactor, so `solve` accepted them and silently dropped them -- see
+    # SciML/OrdinaryDiffEq.jl#4027. They must now be rejected.
+    for kw in SciMLBase.controller_kwargs
+        @test kw ∉ SciMLBase.allowedkeywords
+        @test_throws SciMLBase.CommonKwargError SciMLBase.checkkwargs(
+            SciMLBase.KeywordArgError; (kw => 0.9,)...
+        )
+    end
+
+    # `controller` itself is the replacement and stays allowed.
+    @test :controller ∈ SciMLBase.allowedkeywords
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; controller = nothing)
+
+    # `failfactor` sat directly after the removed block; guard against over-deletion.
+    @test :failfactor ∈ SciMLBase.allowedkeywords
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; failfactor = 2)
+
+    # The error must point at the migration, not just list every allowed keyword.
+    err = try
+        SciMLBase.checkkwargs(SciMLBase.KeywordArgError; gamma = 0.9)
+        nothing
+    catch e
+        e
+    end
+    @test err isa SciMLBase.CommonKwargError
+    msg = sprint(showerror, err)
+    @test occursin("controller", msg)
+    @test occursin("PIController", msg)
+    @test occursin("gamma", msg)
+
+    # A plain unknown keyword must NOT get the controller advice.
+    err2 = try
+        SciMLBase.checkkwargs(SciMLBase.KeywordArgError; not_a_real_kwarg = 1)
+        nothing
+    catch e
+        e
+    end
+    @test !occursin("PIController", sprint(showerror, err2))
+end

@@ -20,14 +20,6 @@ const allowedkeywords = (
     :force_dtmin,
     :internalnorm,
     :controller,
-    :gamma,
-    :beta1,
-    :beta2,
-    :qmax,
-    :qmin,
-    :qsteady_min,
-    :qsteady_max,
-    :qoldinit,
     :failfactor,
     :calck,
     :alias_u0,
@@ -121,6 +113,41 @@ $allowedkeywords
 See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more details.
 """
 
+"""
+    controller_kwargs
+
+Step size controller keyword arguments that were moved onto the controller objects
+(`PIController`, `PIDController`, `IController`, `PredictiveController`). They are no
+longer accepted by `solve`/`init`; passing one produces a `CommonKwargError` carrying
+[`CONTROLLER_KWARG_MESSAGE`](@ref) rather than the generic unrecognized-keyword text.
+"""
+const controller_kwargs = (
+    :gamma,
+    :beta1,
+    :beta2,
+    :qmax,
+    :qmin,
+    :qsteady_min,
+    :qsteady_max,
+    :qoldinit,
+)
+
+const CONTROLLER_KWARG_MESSAGE = """
+
+These are step size controller options, which are no longer set as keyword arguments to
+`solve`. They are now fields of the controller object, passed via the `controller` keyword:
+
+    # old
+    solve(prob, alg; gamma = 0.9, beta1 = 0.7, beta2 = -0.4)
+
+    # new
+    using OrdinaryDiffEqCore: PIController
+    solve(prob, alg; controller = PIController(0.7, -0.4))
+
+`PIController`, `PIDController`, `IController`, and `PredictiveController` all live in
+OrdinaryDiffEqCore. Omit `controller` entirely to use the algorithm's default.
+"""
+
 struct CommonKwargError <: Exception
     kwargs::Any
 end
@@ -130,7 +157,13 @@ function Base.showerror(io::IO, e::CommonKwargError)
     notin = collect(map(x -> x ∉ allowedkeywords, keys(e.kwargs)))
     unrecognized = collect(keys(e.kwargs))[notin]
     print(io, "Unrecognized keyword arguments: ")
-    return printstyled(io, unrecognized; bold = true, color = :red)
+    printstyled(io, unrecognized; bold = true, color = :red)
+    controller_passed = filter(in(controller_kwargs), unrecognized)
+    if !isempty(controller_passed)
+        print(io, "\n")
+        printstyled(io, CONTROLLER_KWARG_MESSAGE; color = :cyan)
+    end
+    return nothing
 end
 
 @enum KeywordArgError KeywordArgWarn KeywordArgSilent
