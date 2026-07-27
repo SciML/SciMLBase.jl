@@ -1,7 +1,11 @@
 using Test, SciMLBase
 using LinearAlgebra
+using RecursiveArrayTools: DiffEqArray
 using StaticArrays
-using SymbolicIndexingInterface
+import SymbolicIndexingInterface
+using SymbolicIndexingInterface:
+    ParameterTimeseriesCollection, SymbolCache, Timeseries, get_parameter_timeseries_collection,
+    is_observed, is_parameter_timeseries, is_variable
 
 @testset "getindex" begin
     u = rand(1)
@@ -23,6 +27,29 @@ end
     @test all(!SciMLBase.successful_retcode(code) for code in unsuccessful)
     @test ReturnCode.Default in unsuccessful
     @test ReturnCode.Stalled in unsuccessful
+end
+
+struct MockParameterTimeseriesSolution <:
+    SciMLBase.AbstractODESolution{Float64, 2, Vector{Vector{Float64}}}
+    discretes::ParameterTimeseriesCollection
+end
+
+SymbolicIndexingInterface.is_parameter_timeseries(::Type{MockParameterTimeseriesSolution}) =
+    Timeseries()
+SymbolicIndexingInterface.get_parameter_timeseries_collection(
+    sol::MockParameterTimeseriesSolution
+) = sol.discretes
+
+@testset "Discrete parameter storage uses the SII interface" begin
+    discrete = DiffEqArray([[1.0]], [0.0])
+    sol = MockParameterTimeseriesSolution(ParameterTimeseriesCollection((discrete,), ()))
+
+    @test is_parameter_timeseries(sol) == Timeseries()
+    @test get_parameter_timeseries_collection(sol) === sol.discretes
+
+    SciMLBase.save_discretes!(sol, 1.0, [2.0], 1)
+    @test discrete.t == [0.0, 1.0]
+    @test discrete.u == [[1.0], [2.0]]
 end
 
 @testset "A * sol for AbstractNoTimeSolution" begin

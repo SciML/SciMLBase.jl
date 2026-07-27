@@ -60,6 +60,27 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
+"""
+    get_root_indp(x)
+
+Return the innermost symbolic index provider associated with `x`, or `nothing`
+when no provider is available.
+
+Solver and symbolic-problem wrappers use this query before dispatching symbolic
+`remake` and initialization behavior. A wrapper that introduces a symbolic
+container may specialize it to forward to the underlying problem or function.
+The fallback returns `x`, which lets an explicit index provider participate
+directly.
+
+!!! warning "Developer API, not user API"
+    This is a versioned hook for solver and symbolic-wrapper packages.
+
+# Example
+```julia
+SciMLBase.get_root_indp(wrapper::MyProblemWrapper) =
+    SciMLBase.get_root_indp(wrapper.prob)
+```
+"""
 function get_root_indp(prob::AbstractSciMLProblem)
     return get_root_indp(prob.f)
 end
@@ -208,7 +229,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
         if (idx = variable_index(indp, var)) !== nothing
             push!(saved_state_idxs, idx)
         elseif (idx = timeseries_parameter_index(indp, var)) !== nothing
-            TParammapKeys = Base.promote_typejoin(TParammapKeys, typeof(idx))
+            TParammapKeys = typejoin(TParammapKeys, typeof(idx))
             # increment total number of ts params
             num_ts_params += 1
             # get dict mapping type to idxs for this timeseries_idx
@@ -216,7 +237,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
             # get type of parameter
             pidx = parameter_index(indp, var)
             timeseries_idx_to_param_idx[idx] = pidx
-            TParamIdx = Base.promote_typejoin(TParamIdx, typeof(pidx))
+            TParamIdx = typejoin(TParamIdx, typeof(pidx))
             val = parameter_values(pobj, pidx)
             T = typeof(val)
             # get vector of idxs for this type
@@ -234,7 +255,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     # type of timeseries_idxs
     Ttsidx = Union{}
     for k in keys(ts_idx_to_type_to_param_idx)
-        Ttsidx = Base.promote_typejoin(Ttsidx, typeof(k))
+        Ttsidx = typejoin(Ttsidx, typeof(k))
     end
 
     # timeseries_idx to timeseries_parameter_index for all params

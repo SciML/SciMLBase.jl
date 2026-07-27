@@ -1,12 +1,25 @@
 """
     enable_interpolation_sensitivitymode(interp)
 
-Return a copy of the interpolation object `interp` with sensitivity-analysis mode
-enabled, sharing the original's data arrays (and interval-search state where
-applicable) rather than copying them. Sensitivity mode restricts interpolation to
-the behavior that is correct on a solution rebuilt during adjoint/sensitivity
-analysis. `nothing` passes through as `nothing`; interpolation types without a
-sensitivity mode pass through unchanged.
+Return an interpolation object configured for sensitivity analysis.
+
+Solver packages that own a concrete [`AbstractDiffEqInterpolation`](@ref) subtype
+may specialize this hook when sensitivity analysis requires a different
+interpolation behavior. Preserve the interpolation data where possible, but mark
+or replace paths that are invalid for a reconstructed adjoint solution. The
+fallback leaves interpolation types without sensitivity-specific behavior
+unchanged; `nothing` passes through as `nothing`.
+
+!!! warning "Developer API, not user API"
+    Sensitivity implementations may extend this hook. Application code should
+    select a sensitivity algorithm rather than call it directly.
+
+# Example
+```julia
+function SciMLBase.enable_interpolation_sensitivitymode(interp::MyInterpolation)
+    return MyInterpolation(interp.t, interp.u; sensitivitymode = true)
+end
+```
 """
 function enable_interpolation_sensitivitymode end
 
@@ -1025,8 +1038,24 @@ end
 """
     strip_interpolation(id::AbstractDiffEqInterpolation)
 
-Returns a copy of the interpolation stripped of its function, to accommodate serialization.
-If the interpolation object has no function, returns the interpolation object as is.
+Return an interpolation suitable for serialization or a solution detached from
+solver working state.
+
+Solver packages may specialize this hook for interpolation types that retain a
+model function, AD configuration, or other non-serializable working state. The
+returned object must preserve evaluation from the saved solution data while
+discarding only data that cannot be retained. The default leaves an interpolation
+unchanged.
+
+!!! warning "Developer API, not user API"
+    Solution and solver implementations may extend this hook. Application code
+    should serialize solutions through its normal serialization mechanism.
+
+# Example
+```julia
+SciMLBase.strip_interpolation(interp::MyInterpolation) =
+    MyInterpolation(interp.t, interp.u, nothing)
+```
 """
 strip_interpolation(id::AbstractDiffEqInterpolation) = id
 strip_interpolation(id::HermiteInterpolation) = id

@@ -73,9 +73,7 @@ apply, and threaded hooks must also be thread-safe.
 struct EnsembleSplitThreads <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
-    st = Iterators.filter(
-        !isnothing, (hasproperty(x, :stats) ? x.stats : nothing for x in us)
-    )
+    st = (x.stats for x in us if hasproperty(x, :stats) && !isnothing(x.stats))
     isempty(st) && return nothing
     return reduce(merge, st)
 end
@@ -149,7 +147,7 @@ function default_rng_func(ctx::EnsembleContext)
     return Random.default_rng()
 end
 
-mutable struct AggregateLogger{T <: Logging.AbstractLogger} <: Logging.AbstractLogger
+mutable struct AggregateProgressState{T <: Logging.AbstractLogger}
     progress::Dict{Symbol, Float64}
     done_counter::Int
     total::Float64
@@ -157,61 +155,52 @@ mutable struct AggregateLogger{T <: Logging.AbstractLogger} <: Logging.AbstractL
     lock::ReentrantLock
     logger::T
 end
-function AggregateLogger(logger::Logging.AbstractLogger)
-    return AggregateLogger(Dict{Symbol, Float64}(), 0, 0.0, 0.0, ReentrantLock(), logger)
-end
-
-function Logging.handle_message(
-        l::AggregateLogger, level, message, _module, group, id, file, line; kwargs...
-    )
-    if convert(Logging.LogLevel, level) == Logging.LogLevel(-1) && haskey(kwargs, :progress)
-        pr = kwargs[:progress]
-        if trylock(l.lock) || (pr == "done" && lock(l.lock) === nothing)
+function _aggregate_progress_filter!(state::AggregateProgressState, args)
+    if convert(Logging.LogLevel, args.level) == Logging.LogLevel(-1) &&
+            haskey(args.kwargs, :progress)
+        progress = args.kwargs[:progress]
+        if trylock(state.lock) || (progress == "done" && lock(state.lock) === nothing)
             try
-                if pr == "done"
-                    pr = 1.0
-                    l.done_counter += 1
+                if progress == "done"
+                    progress = 1.0
+                    state.done_counter += 1
                 end
-                len = length(l.progress)
-                if haskey(l.progress, id)
-                    l.total += (pr - l.progress[id]) / len
+                len = length(state.progress)
+                if haskey(state.progress, args.id)
+                    state.total += (progress - state.progress[args.id]) / len
                 else
-                    l.total = l.total * (len / (len + 1)) + pr / (len + 1)
+                    state.total = state.total * (len / (len + 1)) + progress / (len + 1)
                     len += 1
                 end
-                l.progress[id] = pr
-                # validation check (slow)
-                # tot = sum(values(l.progress))/length(l.progress)
-                # @show tot l.total l.total ≈ tot
+                state.progress[args.id] = progress
                 curr_time = time()
-                if l.done_counter >= len
-                    tot = "done"
-                    empty!(l.progress)
-                    l.done_counter = 0
-                    l.print_time = 0.0
-                elseif curr_time - l.print_time > 0.1
-                    tot = l.total
-                    l.print_time = curr_time
+                total = if state.done_counter >= len
+                    empty!(state.progress)
+                    state.done_counter = 0
+                    state.print_time = 0.0
+                    "done"
+                elseif curr_time - state.print_time > 0.1
+                    state.print_time = curr_time
+                    state.total
                 else
-                    return
+                    nothing
                 end
-                id = :total
-                message = "Total"
-                kwargs = merge(values(kwargs), (progress = tot,))
+                total === nothing || Logging.with_logger(state.logger) do
+                    Logging.@logmsg args.level "Total" progress = total
+                end
             finally
-                unlock(l.lock)
+                unlock(state.lock)
             end
-        else
-            return
         end
+        return false
     end
-    return Logging.handle_message(
-        l.logger, level, message, _module, group, id, file, line; kwargs...
-    )
+    return true
 end
-Logging.shouldlog(l::AggregateLogger, args...) = Logging.shouldlog(l.logger, args...)
-Logging.min_enabled_level(l::AggregateLogger) = Logging.min_enabled_level(l.logger)
-Logging.catch_exceptions(l::AggregateLogger) = Logging.catch_exceptions(l.logger)
+
+function aggregate_progress_logger(logger::Logging.AbstractLogger)
+    state = AggregateProgressState(Dict{Symbol, Float64}(), 0, 0.0, 0.0, ReentrantLock(), logger)
+    return ActiveFilteredLogger(args -> _aggregate_progress_filter!(state, args), logger)
+end
 
 function __solve(
         prob::AbstractEnsembleProblem,
@@ -291,7 +280,7 @@ function __solve(
         rng_func = default_rng_func,
         kwargs...
     ) where {A}
-    logger = progress_aggregate ? AggregateLogger(Logging.current_logger()) :
+    logger = progress_aggregate ? aggregate_progress_logger(Logging.current_logger()) :
         Logging.current_logger()
 
     # Pre-generate simulation seeds if rng or seed is provided
@@ -524,14 +513,7 @@ function solve_batch(
 end
 
 function responsible_map(f, II...)
-    batch_data = Vector{
-        Core.Compiler.return_type(
-            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
-        ),
-    }(
-        undef,
-        length(II[1])
-    )
+    batch_data = Vector{Any}(undef, length(II[1]))
     for i in 1:length(II[1])
         batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
     end
@@ -588,12 +570,7 @@ function solve_batch(
 end
 
 function tmap(f, args...)
-    batch_data = Vector{
-        Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...}),
-    }(
-        undef,
-        length(args[1])
-    )
+    batch_data = Vector{Any}(undef, length(args[1]))
     Threads.@threads for i in 1:length(args[1])
         batch_data[i] = f(getindex.(args, i)...)
     end

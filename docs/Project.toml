@@ -1,4 +1,5 @@
 [deps]
+CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
@@ -7,9 +8,10 @@ SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 
 [compat]
+CommonSolve = "0.2"
 Documenter = "1"
 ModelingToolkit = "10, 11.0"
 OrdinaryDiffEq = "6, 7.0"
 Plots = "1"
-SciMLBase = "1.74, 2, 3.1"
+SciMLBase = "1.74, 2, 3.1, 4"
 StochasticDiffEq = "6, 7.0"

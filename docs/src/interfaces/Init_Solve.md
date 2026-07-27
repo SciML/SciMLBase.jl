@@ -41,11 +41,11 @@ which is designed for caching efficiency with reusing factorizations.
 
 While `init` and `solve` are the common entry point for users, solver packages will
 mostly define dispatches on `SciMLBase.__init` and `SciMLBase.__solve`. The reason is
-because this allows for `SciMLBase.init` and `SciMLBase.solve` to have common
+because this allows `CommonSolve.init` and `CommonSolve.solve` to have common
 implementations across all solvers for doing things such as checking for common
-errors and throwing high level messages. Solvers can opt-out of the high level
-error handling by directly defining `SciMLBase.init` and `SciMLBase.solve` instead,
-though this is not recommended in order to allow for uniformity of the error messages.
+errors and throwing high level messages. Solvers can opt out of the high-level
+error handling by directly defining `CommonSolve.init` and `CommonSolve.solve`
+instead, though this is not recommended because it loses the uniform error messages.
 
 ```@docs
 SciMLBase.__init
@@ -90,7 +90,7 @@ SciMLBase.AbstractDDEIntegrator
 SciMLBase.AbstractDAEIntegrator
 SciMLBase.AbstractSDDEIntegrator
 SciMLBase.DECache
-SciMLBase.step!
+CommonSolve.step!
 Base.resize!(::SciMLBase.DEIntegrator, ::Int)
 Base.deleteat!(::SciMLBase.DEIntegrator, ::Any)
 SciMLBase.addat!

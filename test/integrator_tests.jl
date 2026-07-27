@@ -1,3 +1,4 @@
+using CommonSolve: step!
 using Test, SciMLBase
 
 struct DummySolution
@@ -16,11 +17,13 @@ mutable struct DummyIntegrator{Alg, IIP, U, T} <: SciMLBase.DEIntegrator{Alg, II
     tstops::Any
     sol::DummySolution
     discontinuity::Bool
+    check_code::SciMLBase.ReturnCode.T
+    postamble_calls::Int
 
     function DummyIntegrator()
         return new{Bool, Bool, Vector{Float64}, Float64}(
             [0.0], 0, [0.0], 0, 1, 1, [],
-            DummySolution(ReturnCode.Default), false
+            DummySolution(ReturnCode.Default), false, ReturnCode.Success, 0
         )
     end
 end
@@ -67,8 +70,11 @@ function SciMLBase.derivative_discontinuity!(integrator::DummyIntegrator, discon
     return nothing
 end
 
-SciMLBase.check_error(::DummyIntegrator) = ReturnCode.Success
-SciMLBase.postamble!(::DummyIntegrator) = nothing
+SciMLBase.check_error(integrator::DummyIntegrator) = integrator.check_code
+function SciMLBase.postamble!(integrator::DummyIntegrator)
+    integrator.postamble_calls += 1
+    return nothing
+end
 
 integrator = DummyIntegrator()
 @test step_dt!(integrator, 1.5) == 2
@@ -84,6 +90,10 @@ SciMLBase.set_ut!(integrator, [3.0], 2.0)
 @test integrator.sol.retcode == ReturnCode.Default
 @test SciMLBase.check_error!(integrator) == ReturnCode.Success
 @test integrator.sol.retcode == ReturnCode.Success
+
+integrator.check_code = ReturnCode.ConvergenceFailure
+@test SciMLBase.check_error!(integrator) == ReturnCode.ConvergenceFailure
+@test integrator.postamble_calls == 1
 
 let
     integrator = DummyIntegrator()

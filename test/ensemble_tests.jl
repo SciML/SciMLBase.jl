@@ -1,6 +1,23 @@
 using Test, SciMLBase, SciMLBase.EnsembleAnalysis
+using Logging
 
 EA = SciMLBase.EnsembleAnalysis
+
+@testset "ensemble progress aggregation" begin
+    io = IOBuffer()
+    logger = ConsoleLogger(io, LogLevel(-1))
+    state = SciMLBase.AggregateProgressState(
+        Dict{Symbol, Float64}(), 0, 0.0, 0.0, ReentrantLock(), logger
+    )
+    args = (
+        ; level = LogLevel(-1), message = "trajectory", _module = Main,
+        group = :test, id = :trajectory, file = "test", line = 1,
+        kwargs = (; progress = 0.5),
+    )
+
+    @test !SciMLBase._aggregate_progress_filter!(state, args)
+    @test occursin("Total", String(take!(io)))
+end
 
 # tests for https://github.com/SciML/DifferentialEquations.jl/issues/731
 # make sure integer inputs work

@@ -829,7 +829,11 @@ function Base.getproperty(A::DEIntegrator, sym::Symbol)
 end
 
 Base.@propagate_inbounds function Base.getindex(A::DEIntegrator, sym)
-    if is_parameter(A, sym)
+    if sym === solvedvariables
+        return getindex(A, variable_symbols(A))
+    elseif sym === allvariables
+        return getindex(A, all_variable_symbols(A))
+    elseif is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `integrator.ps[$sym]` for parameter indexing.")
     end
     return getsym(A, sym)(A)
@@ -843,18 +847,6 @@ Base.@propagate_inbounds function Base.getindex(
         error("Indexing with parameters is deprecated. Use `integrator.ps[$sym]` for parameter indexing.")
     end
     return getsym(A, sym)(A)
-end
-
-Base.@propagate_inbounds function Base.getindex(
-        A::DEIntegrator, ::SymbolicIndexingInterface.SolvedVariables
-    )
-    return getindex(A, variable_symbols(A))
-end
-
-Base.@propagate_inbounds function Base.getindex(
-        A::DEIntegrator, ::SymbolicIndexingInterface.AllVariables
-    )
-    return getindex(A, all_variable_symbols(A))
 end
 
 function observed(A::DEIntegrator, sym)
@@ -935,6 +927,25 @@ end
 
 ### Error check (retcode)
 
+"""
+    last_step_failed(integrator) -> Bool
+
+Return whether the preceding attempted solver step failed to converge.
+
+Concrete differential-equation integrators may specialize this hook when their
+step controller tracks a recoverable failed attempt. [`check_error`](@ref) uses
+it to convert a non-adaptive repeated failure into
+`ReturnCode.ConvergenceFailure`. The default is `false`.
+
+!!! warning "Developer API, not user API"
+    This is a versioned integrator implementation hook. Application code should
+    inspect a solve result's return code instead.
+
+# Example
+```julia
+SciMLBase.last_step_failed(integrator::MyIntegrator) = integrator.last_step_failed
+```
+"""
 last_step_failed(integrator::DEIntegrator) = false
 
 """
@@ -1110,7 +1121,6 @@ function Base.iterate(integrator::DEIntegrator, state = 0)
 end
 
 Base.eltype(::Type{T}) where {T <: DEIntegrator} = T
-Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
 
 
 @recipe function f(

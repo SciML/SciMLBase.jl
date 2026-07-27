@@ -1,4 +1,4 @@
-using Documenter, SciMLBase
+using CommonSolve, Documenter, SciMLBase
 
 cp("./docs/Manifest.toml", "./docs/src/assets/Manifest.toml", force = true)
 cp("./docs/Project.toml", "./docs/src/assets/Project.toml", force = true)
@@ -9,7 +9,7 @@ makedocs(
     sitename = "SciMLBase.jl",
     authors = "Chris Rackauckas",
     modules = [SciMLBase],
-    clean = true, doctest = false, linkcheck = true,
+    clean = true, doctest = true, linkcheck = true,
     warnonly = [:docs_block, :missing_docs],
     format = Documenter.HTML(
         assets = ["assets/favicon.ico"],

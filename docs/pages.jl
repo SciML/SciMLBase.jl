@@ -21,6 +21,7 @@ pages = [
         "interfaces/Callbacks.md",
         "interfaces/Clocks.md",
         "interfaces/Init_Solve.md",
+        "interfaces/Developer_API.md",
         "interfaces/Ensembles.md",
         "interfaces/Common_Keywords.md",
         "interfaces/Differentiation.md",

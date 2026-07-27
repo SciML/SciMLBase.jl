@@ -13,7 +13,7 @@ using SciMLBase
 using Statistics: Statistics, cov, median, quantile
 using RecursiveArrayTools: RecursiveArrayTools, DiffEqArray, VectorOfArray,
     vecarr_to_vectors
-using StaticArraysCore: StaticArraysCore
+using StaticArraysCore: SArray
 using DocStringExtensions: DocStringExtensions, SIGNATURES
 
 # Getters
@@ -553,13 +553,13 @@ function componentwise_mean(A)
     mean = zero(x0) ./ 1
     for x in A
         n += 1
-        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa SArray)
             mean .+= x
         else
             mean += x
         end
     end
-    if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+    if x0 isa AbstractArray && !(x0 isa SArray)
         mean ./= n
     else
         mean /= n
@@ -578,7 +578,7 @@ function componentwise_meanvar(A; bessel = true)
     delta2 = zero(x0) ./ 1
     for x in A
         n += 1
-        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa SArray)
             delta .= x .- mean
             mean .+= delta ./ n
             delta2 .= x .- mean
@@ -594,13 +594,13 @@ function componentwise_meanvar(A; bessel = true)
         return NaN
     else
         if bessel
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 M2 .= M2 ./ (n .- 1)
             else
                 M2 = M2 ./ (n .- 1)
             end
         else
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 M2 .= M2 ./ n
             else
                 M2 = M2 ./ n
@@ -620,7 +620,7 @@ function componentwise_meancov(A, B; bessel = true)
     dx = zero(x0) ./ 1
     for (x, y) in zip(A, B)
         n += 1
-        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa SArray)
             dx .= x .- meanx
             meanx .+= dx ./ n
             meany .+= (y .- meany) ./ n
@@ -636,13 +636,13 @@ function componentwise_meancov(A, B; bessel = true)
         return NaN
     else
         if bessel
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 C .= C ./ (n .- 1)
             else
                 C = C ./ (n .- 1)
             end
         else
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 C .= C ./ n
             else
                 C = C ./ n
@@ -679,7 +679,7 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
     dx = zero(x0) ./ 1
     for (x, y, w) in zip(A, B, W)
         n += 1
-        if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+        if x0 isa AbstractArray && !(x0 isa SArray)
             wsum .+= w
             wsum2 .+= w .* w
             dx .= x .- meanx
@@ -699,19 +699,19 @@ function componentwise_weighted_meancov(A, B, W; weight_type = :reliability)
         return NaN
     else
         if weight_type == :population
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 C .= C ./ wsum
             else
                 C = C ./ wsum
             end
         elseif weight_type == :reliability
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 C .= C ./ (wsum .- wsum2 ./ wsum)
             else
                 C = C ./ (wsum .- wsum2 ./ wsum)
             end
         elseif weight_type == :frequency
-            if x0 isa AbstractArray && !(x0 isa StaticArraysCore.SArray)
+            if x0 isa AbstractArray && !(x0 isa SArray)
                 C .= C ./ (wsum .- 1)
             else
                 C = C ./ (wsum .- 1)

@@ -5592,6 +5592,29 @@ has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothin
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
 has_vjp_p(f::AbstractSciMLFunction) = __has_vjp_p(f) && f.vjp_p !== nothing
 has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
+"""
+    has_initializeprob(f::AbstractSciMLFunction) -> Bool
+
+Return whether `f` supplies an initialization problem through its initialization
+metadata.
+
+Solver packages use this trait before selecting a DAE or nonlinear
+initialization path. Function-container implementations that follow the
+`AbstractSciMLFunction` initialization-data layout inherit the default method;
+custom function containers may specialize it only when they provide an
+equivalent initialization-problem contract.
+
+!!! warning "Developer API, not user API"
+    Application code should select initialization through problem and solver
+    keywords rather than query this trait.
+
+# Example
+```julia
+if SciMLBase.has_initializeprob(prob.f)
+    initialize_with_problem!(integrator)
+end
+```
+"""
 function has_initializeprob(f::AbstractSciMLFunction)
     return __has_initializeprob(f) && f.initialization_data.initializeprob !== nothing
 end

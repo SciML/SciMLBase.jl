@@ -1,14 +1,3 @@
-### Abstract Interface
-"""
-    AllObserved
-
-Selector requesting every observed variable available through a solution's
-symbolic indexing interface. `AllObserved` is reexported from
-RecursiveArrayTools so SciML solution code can use the same selector without
-depending on its storage location.
-"""
-const AllObserved = RecursiveArrayTools.AllObserved
-
 # No Time Solution : Forward to `A.u`
 Base.getindex(A::AbstractNoTimeSolution) = A.u[]
 Base.getindex(A::AbstractNoTimeSolution, i::Int) = A.u[i]
@@ -162,7 +151,11 @@ Base.@propagate_inbounds function Base.getindex(A::AbstractTimeseriesSolution, :
 end
 
 Base.@propagate_inbounds function Base.getindex(A::AbstractNoTimeSolution, sym)
-    if is_parameter(A, sym)
+    if sym === solvedvariables
+        return getindex(A, variable_symbols(A))
+    elseif sym === allvariables
+        return getindex(A, all_variable_symbols(A))
+    elseif is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `sol.ps[$sym]` for parameter indexing.")
     end
     return getsym(A, sym)(A)
@@ -176,18 +169,6 @@ Base.@propagate_inbounds function Base.getindex(
         error("Indexing with parameters is deprecated. Use `sol.ps[$sym]` for parameter indexing.")
     end
     return getsym(A, sym)(A)
-end
-
-Base.@propagate_inbounds function Base.getindex(
-        A::AbstractNoTimeSolution, ::SymbolicIndexingInterface.SolvedVariables
-    )
-    return getindex(A, variable_symbols(A))
-end
-
-Base.@propagate_inbounds function Base.getindex(
-        A::AbstractNoTimeSolution, ::SymbolicIndexingInterface.AllVariables
-    )
-    return getindex(A, all_variable_symbols(A))
 end
 
 function observed(A::AbstractTimeseriesSolution, sym, i::Int)

@@ -3,10 +3,16 @@
     return Expr(:tuple, A...)
 end
 
-Base.@pure function remaker_of(prob::T) where {T <: AbstractSciMLProblem}
-    parameterless_type(T){isinplace(prob)}
+@generated function _without_args(nt::NamedTuple{names}) where {names}
+    kept = Tuple(filter(!=(:args), names))
+    values = [:(nt.$name) for name in kept]
+    return :(NamedTuple{$kept}(($(values...),)))
 end
-Base.@pure remaker_of(alg::T) where {T} = parameterless_type(T)
+
+function remaker_of(prob::T) where {T <: AbstractSciMLProblem}
+    return parameterless_type(T){isinplace(prob)}
+end
+remaker_of(alg::T) where {T} = parameterless_type(T)
 
 # Define `remaker_of` for the types that does not (make sense to)
 # implement `isinplace` trait:
@@ -33,16 +39,16 @@ function _remake_internal(thing; kwargs...)
     named_thing = struct_as_namedtuple(thing)
     return if :kwargs ∈ fieldnames(typeof(thing))
         if :args ∈ fieldnames(typeof(thing))
-            named_thing = Base.structdiff(named_thing, (; args = ()))
+            named_thing = _without_args(named_thing)
             if :args ∉ keys(kwargs)
-                k = Base.structdiff(named_thing, (; args = ()))
+                k = _without_args(named_thing)
                 if :kwargs ∉ keys(kwargs)
                     T(; named_thing..., thing.kwargs..., kwargs...)
                 else
                     T(; named_thing..., kwargs[:kwargs]...)
                 end
             else
-                kwargs2 = Base.structdiff((; kwargs...), (; args = ()))
+                kwargs2 = _without_args((; kwargs...))
                 if :kwargs ∉ keys(kwargs)
                     T(kwargs[:args]...; named_thing..., thing.kwargs..., kwargs2...)
                 else
@@ -1092,18 +1098,19 @@ function remake(
     return prob
 end
 
+_scc_state_slice(newu0, offset, ::Val{N}) where {N} = newu0[(offset + 1):(offset + N)]
+
+function _scc_state_slice(newu0::SVector, offset, ::Val{N}) where {N}
+    values = ntuple(i -> newu0[offset + i], Val(N))
+    return SVector{N, eltype(newu0)}(values)
+end
+
 function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
     offset = Ref(0)
     return map(probs) do subprob
-        # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
+        # N should be inferred if `prob` and `subprob.u0` are type-stable.
         N = length(state_values(subprob))
-        if ArrayInterface.ismutable(newu0)
-            _u0 = newu0[(offset[] + 1):(offset[] + N)]
-        else
-            _u0 = StaticArraysCore.similar_type(
-                newu0, StaticArraysCore.Size(N)
-            )(newu0[(offset[] + 1):(offset[] + N)])
-        end
+        _u0 = _scc_state_slice(newu0, offset[], Val(N))
         subprob = if parameters_alias === Val(true)
             remake(subprob; u0 = _u0, p = newp)
         else
@@ -1122,13 +1129,7 @@ end
     u0 = state_values(subprob)
     if u0 !== nothing
         N = length(state_values(subprob))
-        if ArrayInterface.ismutable(newu0)
-            _u0 = newu0[(offset + 1):(offset + N)]
-        else
-            _u0 = StaticArraysCore.similar_type(
-                newu0, StaticArraysCore.Size(N)
-            )(newu0[(offset + 1):(offset + N)])
-        end
+        _u0 = _scc_state_slice(newu0, offset, Val(N))
         if parameters_alias
             subprob = remake(subprob; u0 = _u0, p = newp)
         else
@@ -1552,22 +1553,39 @@ implementors. Currently does not contain any fields.
 struct LateBindingUpdateU0PContext end
 
 """
-    $(TYPEDSIGNATURES)
+    late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx) -> (u0, p)
 
-A function to perform custom modifications to `newu0` and/or `newp` after they have been
-constructed in `remake`. `root_indp` is the innermost index provider found by recursively
-calling `SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns
-the updated `newu0` and `newp`. 
+Customize the state and parameter values produced by symbolic `remake`.
+
+Symbolic-system packages may specialize this hook for their problem and root
+index-provider types. `newu0` and `newp` have already been assembled from the
+requested symbolic map; return their replacement pair after applying any
+late-bound defaults or consistency rules. The generic method returns them
+unchanged. `root_indp` is supplied for dispatch and is obtained by
+[`get_root_indp`](@ref).
+
+!!! warning "Developer API, not user API"
+    This is a versioned symbolic-remake extension hook. Application code should
+    call [`remake`](@ref), not this function.
+
+# Example
+```julia
+function SciMLBase.late_binding_update_u0_p(
+        prob::MyProblem, root::MySystem, u0, p, t0, newu0, newp, ctx)
+    return fill_missing_defaults(root, newu0, newp)
+end
+```
 """
 function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx::LateBindingUpdateU0PContext = LateBindingUpdateU0PContext())
     return newu0, newp
 end
 
 """
-    $(TYPEDSIGNATURES)
+    late_binding_update_u0_p(prob, u0, p, t0, newu0, newp, ctx) -> (u0, p)
 
-Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx)` after finding
-`root_indp`.
+Call the symbolic-remake extension hook after deriving the root index provider
+with [`get_root_indp`](@ref). Solver code that does not already hold a root
+provider should use this form.
 """
 function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp, ctx::LateBindingUpdateU0PContext = LateBindingUpdateU0PContext())
     root_indp = get_root_indp(prob)

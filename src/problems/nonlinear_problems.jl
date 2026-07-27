@@ -6,7 +6,7 @@ Marker for standard nonlinear problem layouts.
 `StandardNonlinearProblem()` is the default `problem_type` metadata for
 nonlinear problems represented directly by a residual function and either an
 initial guess or an interval. Solver code may inspect this marker through
-[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) when it needs to distinguish the standard residual layout
+[`problem_type`](@ref) when it needs to distinguish the standard residual layout
 from specialized nonlinear problem encodings, while generic nonlinear code should rely on the
 `AbstractNonlinearProblem` fields and traits instead.
 """
@@ -553,11 +553,7 @@ mutable struct SCCNonlinearProblem{
             @assert first(probs) isa LinearProblem
             init = first(probs).A
         end
-        if ArrayInterface.ismutable(init)
-            init = similar(init, 0)
-        else
-            init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
-        end
+        init = _scc_empty_state(init)
         if has_no_u0
             uType = Nothing
         else
@@ -569,6 +565,9 @@ mutable struct SCCNonlinearProblem{
         return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
+
+_scc_empty_state(init) = similar(init, 0)
+_scc_empty_state(init::SVector) = SVector{0, eltype(init)}()
 
 function SCCNonlinearProblem(
         probs, explicitfuns!, parameter_object = nothing,
@@ -606,11 +605,7 @@ function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{Nothin
 end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{T}) where {T}
     init = state_values(first(prob.probs))
-    if ArrayInterface.ismutable(init)
-        init = similar(init, 0)
-    else
-        init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
-    end
+    init = _scc_empty_state(init)
     return mapreduce(state_values, vcat, prob.probs; init)::T
 end
 
