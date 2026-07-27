@@ -2171,7 +2171,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public OverrideInitData
 
 # Solution / integrator interface
-@public DEStats, check_error!, promote_tspan, set_ut!, get_sol
+@public DEStats, check_error!, promote_tspan, set_ut!, get_sol, done, postamble!
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, NonlinearAliasSpecifier

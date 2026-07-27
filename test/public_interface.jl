@@ -255,7 +255,10 @@ end
 
 if isdefined(Base, :ispublic)
     @testset "Extension hooks public API" begin
-        for name in (:parameterless_type, :updated_u0_p, :isdenseplot, :plottable_indices)
+        for name in (
+                :parameterless_type, :updated_u0_p, :isdenseplot, :plottable_indices,
+                :done, :postamble!,
+            )
             @test Base.ispublic(SciMLBase, name)
         end
     end
