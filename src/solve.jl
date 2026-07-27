@@ -93,6 +93,13 @@ function get_concrete_u0(prob::BVProblem, isadapt, t0, kwargs)
     return _u0
 end
 
+function warn_controller_kwargs(unrecognized)
+    return if any(in(controller_kwargs), unrecognized)
+        printstyled(CONTROLLER_KWARG_MESSAGE; color = :cyan)
+        print("\n")
+    end
+end
+
 function checkkwargs(kwargshandle; kwargs...)
     return if any(x -> x ∉ allowedkeywords, keys(kwargs))
         if kwargshandle == KeywordArgError
@@ -103,6 +110,7 @@ function checkkwargs(kwargshandle; kwargs...)
             print("Unrecognized keyword arguments: ")
             printstyled(unrecognized; bold = true, color = :red)
             print("\n\n")
+            warn_controller_kwargs(unrecognized)
         else
             @assert kwargshandle == KeywordArgSilent
         end
@@ -119,6 +127,7 @@ function checkkwargs(kwargshandle, allowed; kwargs...)
             print("Unrecognized keyword arguments: ")
             printstyled(unrecognized; bold = true, color = :red)
             print("\n\n")
+            warn_controller_kwargs(unrecognized)
         else
             @assert kwargshandle == KeywordArgSilent
         end
