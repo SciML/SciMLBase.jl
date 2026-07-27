@@ -1121,6 +1121,7 @@ function Base.iterate(integrator::DEIntegrator, state = 0)
 end
 
 Base.eltype(::Type{T}) where {T <: DEIntegrator} = T
+Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
 
 
 @recipe function f(

@@ -43,7 +43,10 @@ end
     # Aqua.test_piracy(SciMLBase) # failing
 end
 
-run_qa(SciMLBase)
+# `AllObserved` is the RecursiveArrayTools symbolic-indexing selector, reexported so
+# solution indexing code shares one selector rather than depending on its storage
+# location.
+run_qa(SciMLBase; reexports_allow = (:AllObserved,))
 
 include("alloccheck.jl")
 

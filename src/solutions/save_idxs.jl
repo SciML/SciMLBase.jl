@@ -229,7 +229,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
         if (idx = variable_index(indp, var)) !== nothing
             push!(saved_state_idxs, idx)
         elseif (idx = timeseries_parameter_index(indp, var)) !== nothing
-            TParammapKeys = typejoin(TParammapKeys, typeof(idx))
+            TParammapKeys = Base.promote_typejoin(TParammapKeys, typeof(idx))
             # increment total number of ts params
             num_ts_params += 1
             # get dict mapping type to idxs for this timeseries_idx
@@ -237,7 +237,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
             # get type of parameter
             pidx = parameter_index(indp, var)
             timeseries_idx_to_param_idx[idx] = pidx
-            TParamIdx = typejoin(TParamIdx, typeof(pidx))
+            TParamIdx = Base.promote_typejoin(TParamIdx, typeof(pidx))
             val = parameter_values(pobj, pidx)
             T = typeof(val)
             # get vector of idxs for this type
@@ -255,7 +255,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     # type of timeseries_idxs
     Ttsidx = Union{}
     for k in keys(ts_idx_to_type_to_param_idx)
-        Ttsidx = typejoin(Ttsidx, typeof(k))
+        Ttsidx = Base.promote_typejoin(Ttsidx, typeof(k))
     end
 
     # timeseries_idx to timeseries_parameter_index for all params

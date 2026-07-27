@@ -53,7 +53,7 @@ function num_types_in_tuple(sig)
 end
 
 function num_types_in_tuple(sig::UnionAll)
-    return num_types_in_tuple(sig.body)
+    return length(Base.unwrap_unionall(sig).parameters)
 end
 
 const NO_METHODS_ERROR_MESSAGE = """
@@ -330,7 +330,7 @@ function isinplace(
             # Find if there's a `f(args...)` dispatch
             # If so, no error
             _parameters = if methods(f).ms[1].sig isa UnionAll
-                _unwrap_unionall(methods(f).ms[1].sig).parameters
+                Base.unwrap_unionall(methods(f).ms[1].sig).parameters
             else
                 methods(f).ms[1].sig.parameters
             end
@@ -422,14 +422,11 @@ macro def(name, definition)
     end
 end
 
-function _unwrap_unionall(T)
-    while T isa UnionAll
-        T = T.body
-    end
-    return T
+# `remaker_of` and the `remake` reconstruction paths dispatch on the result, so this
+# must resolve during inference rather than at runtime.
+@generated function __parameterless_type(::Type{T}) where {T}
+    return :($(Base.typename(T).wrapper))
 end
-
-__parameterless_type(T) = T.name.wrapper
 
 """
     parameterless_type(x)

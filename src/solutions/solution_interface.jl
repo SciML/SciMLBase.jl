@@ -1,3 +1,14 @@
+### Abstract Interface
+"""
+    AllObserved
+
+Selector requesting every observed variable available through a solution's
+symbolic indexing interface. `AllObserved` is reexported from
+RecursiveArrayTools so SciML solution code can use the same selector without
+depending on its storage location.
+"""
+const AllObserved = RecursiveArrayTools.AllObserved
+
 # No Time Solution : Forward to `A.u`
 Base.getindex(A::AbstractNoTimeSolution) = A.u[]
 Base.getindex(A::AbstractNoTimeSolution, i::Int) = A.u[i]

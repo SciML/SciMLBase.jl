@@ -34,6 +34,9 @@ run_tests(;
         @time @safetestset "Public interface declarations" begin
             include("public_interface.jl")
         end
+        @time @safetestset "Compile-time trait inference" begin
+            include("inference_tests.jl")
+        end
         @time @safetestset "Function Building Error Messages" begin
             include("function_building_error_messages.jl")
         end

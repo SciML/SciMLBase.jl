@@ -38,7 +38,10 @@ promote_u0(::Nothing, p, t0) = nothing
 isdualtype(::Type{T}) where {T} = false
 
 has_kwargs(_prob::AbstractSciMLProblem) = has_kwargs(typeof(_prob))
-__has_kwargs(::Type{T}) where {T} = :kwargs ∈ fieldnames(T)
+# Branched on in `solve`/`init` argument handling, so it has to fold at compile time.
+@generated function __has_kwargs(::Type{T}) where {T}
+    return :($(:kwargs ∈ fieldnames(T)))
+end
 has_kwargs(::Type{T}) where {T} = __has_kwargs(T)
 
 @inline function extract_alg(solve_args, solve_kwargs, prob_kwargs)
@@ -319,6 +322,11 @@ struct DualEltypeChecker{T, T2}
 end
 
 @inline __sum(f::F, args...; init, kwargs...) where {F} = sum(f, args...; init, kwargs...)
+@inline function __sum(
+        f::F, a::StaticArraysCore.StaticArray...; init, kwargs...
+    ) where {F}
+    return mapreduce(f, +, a...; init, kwargs...)
+end
 
 totallength(x::Number) = 1
 totallength(x::AbstractArray) = __sum(totallength, x; init = 0)

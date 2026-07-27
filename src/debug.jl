@@ -80,5 +80,22 @@ function _has_sciml_in_stacktrace()
 end
 
 function __init__()
-    return nothing
+    Base.Experimental.register_error_hint(DomainError) do io, e
+        if e isa DomainError &&
+                occursin("will only return a complex result if called with a complex argument. Try ", e.msg) &&
+                _has_sciml_in_stacktrace()
+            println(io, DOMAINERROR_COMPLEX_MSG)
+        end
+    end
+
+    Base.Experimental.register_error_hint(MethodError) do io, e, args, kwargs
+        if e isa MethodError && NullParameters in args
+            println(io, NO_PARAMETERS_ARITHMETIC_ERROR_MESSAGE)
+        end
+    end
+
+    return Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
+            e
+        println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
+    end
 end

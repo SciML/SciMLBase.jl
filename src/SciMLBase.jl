@@ -1,4 +1,8 @@
 module SciMLBase
+if isdefined(Base, :Experimental) &&
+        isdefined(Base.Experimental, Symbol("@max_methods"))
+    @eval Base.Experimental.@max_methods 1
+end
 using ConstructionBase: ConstructionBase, getproperties
 using RecipesBase: RecipesBase, @recipe, @series
 using RecursiveArrayTools: RecursiveArrayTools, AbstractDiffEqArray,
@@ -135,7 +139,7 @@ are:
   - `tspan`: the independent-variable interval for time-dependent problems.
   - `p`: parameters, defaulting to `NullParameters` when omitted.
   - `kwargs`: keyword arguments stored on the problem and forwarded to solves.
-  - construction-layout metadata available through [`problem_type`](@ref) when
+  - construction-layout metadata available through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) when
     several constructors share one concrete representation.
 
 Subtypes that expose state and parameters through symbolic indexing should
@@ -352,7 +356,7 @@ function mutation convention.
 ## Interface
 
 ODE problems should provide `f`, `u0`, `tspan`, `p`, and `kwargs`. A problem that
-preserves an alternate construction layout should extend [`problem_type`](@ref).
+preserves an alternate construction layout should extend [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/).
 The function should support either `f(u, p, t)` or
 `f(du, u, p, t)` according to [`isinplace`](@ref). Stored keyword arguments such
 as callbacks or tolerances are forwarded to solvers.
@@ -464,7 +468,7 @@ $(TYPEDEF)
 
 Base interface for second-order ODE problems. These problems are represented in
 the ODE hierarchy for solver interoperability, but their constructors preserve
-second-order structure through concrete fields or [`problem_type`](@ref) metadata.
+second-order structure through concrete fields or [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) metadata.
 """
 abstract type AbstractSecondOrderODEProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -2012,6 +2016,8 @@ function unwrap_fw end
 
 export ReturnCode
 
+# Exports
+export AllObserved
 
 export isinplace
 

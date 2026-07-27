@@ -513,7 +513,14 @@ function solve_batch(
 end
 
 function responsible_map(f, II...)
-    batch_data = Vector{Any}(undef, length(II[1]))
+    batch_data = Vector{
+        Core.Compiler.return_type(
+            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
+        ),
+    }(
+        undef,
+        length(II[1])
+    )
     for i in 1:length(II[1])
         batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
     end
@@ -570,7 +577,12 @@ function solve_batch(
 end
 
 function tmap(f, args...)
-    batch_data = Vector{Any}(undef, length(args[1]))
+    batch_data = Vector{
+        Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...}),
+    }(
+        undef,
+        length(args[1])
+    )
     Threads.@threads for i in 1:length(args[1])
         batch_data[i] = f(getindex.(args, i)...)
     end
