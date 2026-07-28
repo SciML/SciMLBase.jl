@@ -173,15 +173,15 @@ function build_solution(
 end
 
 function save_discretes!(sol::AbstractRODESolution, t, vals, timeseries_idx)
-    RecursiveArrayTools.has_discretes(sol) || return
-    disc = RecursiveArrayTools.get_discretes(sol)
+    is_parameter_timeseries(sol) == Timeseries() || return
+    disc::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
     return _save_discretes_internal!(disc[timeseries_idx], t, vals)
 end
 
 function get_interpolated_discretes(sol::AbstractRODESolution, t, deriv, continuity)
     is_parameter_timeseries(sol) == Timeseries() || return nothing
 
-    discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+    discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
     interp_discs = map(discs) do partition
         hold_discrete(partition.u, partition.t, t)
     end

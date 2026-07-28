@@ -257,9 +257,12 @@ if isdefined(Base, :ispublic)
     @testset "Extension hooks public API" begin
         for name in (
                 :parameterless_type, :updated_u0_p, :isdenseplot, :plottable_indices,
-                :done, :postamble!,
+                :done, :postamble!, :enable_interpolation_sensitivitymode,
+                :get_root_indp, :has_initializeprob, :late_binding_update_u0_p,
+                :strip_interpolation, :unitfulvalue, :value, :last_step_failed,
             )
             @test Base.ispublic(SciMLBase, name)
+            @test Base.Docs.hasdoc(SciMLBase, name)
         end
     end
 
@@ -456,7 +459,6 @@ if isdefined(Base, :ispublic)
                 :AbstractDAEIntegrator,
                 :AbstractSDDEIntegrator,
                 :DECache,
-                :step!,
                 :addat!,
                 :get_tmp_cache,
                 :user_cache,

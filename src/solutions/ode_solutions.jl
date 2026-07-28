@@ -210,7 +210,7 @@ end
 function get_interpolated_discretes(sol::AbstractODESolution, t, deriv, continuity)
     is_parameter_timeseries(sol) == Timeseries() || return nothing
 
-    discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+    discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
     interp_discs = map(discs) do partition
         hold_discrete(partition.u, partition.t, t)
     end
@@ -310,7 +310,7 @@ function (sol::AbstractODESolution)(
         return getp(sol, idxs)(ps)
     end
     if is_parameter_timeseries(sol) == Timeseries() && is_discrete_expression(sol, idxs)
-        discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+        discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
@@ -336,7 +336,7 @@ function (sol::AbstractODESolution)(
     error_if_observed_derivative(sol, idxs, deriv)
     ps = parameter_values(sol)
     if is_parameter_timeseries(sol) == Timeseries() && is_discrete_expression(sol, idxs)
-        discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+        discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
@@ -500,8 +500,8 @@ save_discretes!(args...) = nothing
 
 # public API, used by MTK
 function save_discretes!(sol::AbstractODESolution, t, vals, timeseries_idx; skip_duplicates = false)
-    RecursiveArrayTools.has_discretes(sol) || return
-    disc = RecursiveArrayTools.get_discretes(sol)
+    is_parameter_timeseries(sol) == Timeseries() || return
+    disc::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
     return _save_discretes_internal!(disc[timeseries_idx], t, vals; skip_duplicates)
 end
 

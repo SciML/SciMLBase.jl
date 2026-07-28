@@ -422,9 +422,11 @@ macro def(name, definition)
     end
 end
 
-using Base: typename
-
-Base.@pure __parameterless_type(T) = typename(T).wrapper
+# `remaker_of` and the `remake` reconstruction paths dispatch on the result, so this
+# must resolve during inference rather than at runtime.
+@generated function __parameterless_type(::Type{T}) where {T}
+    return :($(Base.typename(T).wrapper))
+end
 
 """
     parameterless_type(x)

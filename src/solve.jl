@@ -38,7 +38,10 @@ promote_u0(::Nothing, p, t0) = nothing
 isdualtype(::Type{T}) where {T} = false
 
 has_kwargs(_prob::AbstractSciMLProblem) = has_kwargs(typeof(_prob))
-Base.@pure __has_kwargs(::Type{T}) where {T} = :kwargs ∈ fieldnames(T)
+# Branched on in `solve`/`init` argument handling, so it has to fold at compile time.
+@generated function __has_kwargs(::Type{T}) where {T}
+    return :($(:kwargs ∈ fieldnames(T)))
+end
 has_kwargs(::Type{T}) where {T} = __has_kwargs(T)
 
 @inline function extract_alg(solve_args, solve_kwargs, prob_kwargs)
@@ -270,7 +273,45 @@ anyeltypedual(x) = anyeltypedual(x, Val{0})
 anyeltypedual(x, counter) = Any
 anyeltypedual(x::FixedSizeDiffCache, counter = 0) = Any
 
+"""
+    value(x)
+
+Return the plain scalar or type representation underlying `x`.
+
+Numeric-wrapper integrations may specialize this hook to remove AD,
+uncertainty, or unit wrappers when a solver needs an ordinary numeric value for
+control flow or type selection. The default returns `x` unchanged.
+
+!!! warning "Developer API, not user API"
+    Solver and numeric-wrapper packages may extend this hook. Application code
+    should preserve its numeric wrappers instead of stripping them manually.
+
+# Example
+```julia
+SciMLBase.value(x::MyTrackedNumber) = x.primal
+```
+"""
 value(x) = x
+
+"""
+    unitfulvalue(x)
+
+Return the numeric value of `x` while retaining its physical units.
+
+Numeric-wrapper integrations may specialize this hook to remove AD or
+uncertainty wrappers without discarding a unit carried by the primal value. The
+default returns `x` unchanged. Use [`value`](@ref) when the solver instead needs
+a fully unwrapped scalar or type.
+
+!!! warning "Developer API, not user API"
+    Solver and numeric-wrapper packages may extend this hook. Application code
+    should use its quantity package's operations directly.
+
+# Example
+```julia
+SciMLBase.unitfulvalue(x::MyDualQuantity) = x.primal
+```
+"""
 unitfulvalue(x) = x
 isdistribution(u0) = false
 sse(x::Number) = abs2(x)

@@ -3,7 +3,7 @@ if isdefined(Base, :Experimental) &&
         isdefined(Base.Experimental, Symbol("@max_methods"))
     @eval Base.Experimental.@max_methods 1
 end
-using ConstructionBase: ConstructionBase, getproperties, setproperties
+using ConstructionBase: ConstructionBase, getproperties
 using RecipesBase: RecipesBase, @recipe, @series
 using RecursiveArrayTools: RecursiveArrayTools, AbstractDiffEqArray,
     AbstractVectorOfArray, ArrayPartition, DiffEqArray,
@@ -18,13 +18,14 @@ using SymbolicIndexingInterface: SymbolicIndexingInterface, ArraySymbolic,
     ScalarSymbolic, SymbolCache, Timeseries,
     all_variable_symbols, current_time,
     default_values, get_all_timeseries_indexes,
-    get_history_function, getname, getp, getsym,
+    get_history_function, get_parameter_timeseries_collection, getname, getp, getsym,
     getu, hasname, independent_variable_symbols,
     is_markovian, is_observed, is_parameter,
     is_parameter_timeseries, is_time_dependent,
     is_timeseries_parameter, is_variable,
     parameter_index, parameter_symbols,
     parameter_values, remake_buffer,
+    allvariables, solvedvariables,
     set_parameter!, set_state!, setsym,
     state_values, symbolic_container,
     symbolic_evaluate, symbolic_type,
@@ -43,30 +44,29 @@ using PreallocationTools: get_tmp, DiffCache, FixedSizeDiffCache
 using FindFirstFunctions: Guesser, GuesserHint, KIND_BRACKET_GALLOP, searchsorted_first
 
 import Logging, ArrayInterface, Random
+using LoggingExtras: ActiveFilteredLogger
 import IteratorInterfaceExtensions
-import CommonSolve: solve, init, step!, solve!
+import CommonSolve
+import CommonSolve: solve, init, step!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
 import ADTypes: ADTypes, AbstractADType
 import Accessors: @set, @reset, @delete, @insert
-import StaticArraysCore: StaticArraysCore, SArray
+import StaticArraysCore: StaticArraysCore, SArray, SVector
 import Adapt: adapt_structure, adapt
 
-using Reexport: Reexport, @reexport
 using SciMLOperators: SciMLOperators
 using SciMLOperators:
-    AbstractSciMLOperator,
-    IdentityOperator, NullOperator,
-    InvertibleOperator, AbstractSciMLScalarOperator
+    AbstractSciMLOperator, AbstractSciMLScalarOperator
 
 import SciMLOperators:
-    update_coefficients, update_coefficients!,
-    isconstant, iscached, islinear, issquare,
-    has_adjoint, has_expmv, has_expmv!, has_exp,
-    has_mul, has_mul!, has_ldiv, has_ldiv!
+    update_coefficients, update_coefficients!, islinear
 
-@reexport using SciMLOperators
+# Compatibility bindings for released solver packages. New code must access these
+# names through CommonSolve and SciMLOperators, which own their public contracts.
+const solve! = CommonSolve.solve!
+const isconstant = SciMLOperators.isconstant
 
 using SciMLPublic: @public
 
@@ -2016,13 +2016,12 @@ function unwrap_fw end
 
 export ReturnCode
 
-
 # Exports
 export AllObserved
 
 export isinplace
 
-export solve, solve!, init, discretize, symbolic_discretize
+export discretize, symbolic_discretize
 
 export LinearProblem, LinearSolution, IntervalNonlinearProblem,
     IntegralProblem, IntegralSolution, SampledIntegralProblem,
@@ -2073,7 +2072,7 @@ export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSeria
 export EnsembleAnalysis, EnsembleSummary
 
 
-export step!, deleteat!, addat!, get_tmp_cache,
+export addat!, get_tmp_cache,
     full_cache, user_cache, u_cache, du_cache,
     rand_cache, ratenoise_cache,
     resize_non_user_cache!, deleteat_non_user_cache!, addat_non_user_cache!,
@@ -2172,6 +2171,11 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Solution / integrator interface
 @public DEStats, check_error!, promote_tspan, set_ut!, get_sol, done, postamble!
+
+# Versioned solver-author extension API. These names are deliberately not exported:
+# application code should use the user-facing solve and solution interfaces instead.
+@public enable_interpolation_sensitivitymode, get_root_indp, has_initializeprob,
+    late_binding_update_u0_p, strip_interpolation, unitfulvalue, value, last_step_failed
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, NonlinearAliasSpecifier

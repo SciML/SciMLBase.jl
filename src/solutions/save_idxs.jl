@@ -60,6 +60,27 @@ function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
+"""
+    get_root_indp(x)
+
+Return the innermost symbolic index provider associated with `x`, or `nothing`
+when no provider is available.
+
+Solver and symbolic-problem wrappers use this query before dispatching symbolic
+`remake` and initialization behavior. A wrapper that introduces a symbolic
+container may specialize it to forward to the underlying problem or function.
+The fallback returns `x`, which lets an explicit index provider participate
+directly.
+
+!!! warning "Developer API, not user API"
+    This is a versioned hook for solver and symbolic-wrapper packages.
+
+# Example
+```julia
+SciMLBase.get_root_indp(wrapper::MyProblemWrapper) =
+    SciMLBase.get_root_indp(wrapper.prob)
+```
+"""
 function get_root_indp(prob::AbstractSciMLProblem)
     return get_root_indp(prob.f)
 end
