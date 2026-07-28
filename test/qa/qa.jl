@@ -43,10 +43,40 @@ end
     # Aqua.test_piracy(SciMLBase) # failing
 end
 
+# Qualified accesses to names their owner has not declared public. Each one buys
+# compile-time behavior or a diagnostic that has no public equivalent, so it is
+# allowed here rather than worked around in the source. Only checked on Julia 1.11+,
+# where `Base.ispublic` exists.
+const _ei_nonpublic_qualified_accesses = (
+    # Compile-time hints and inference entry points. Dropping these costs inference,
+    # not just style: `Vector{Any}` batches in the ensemble solvers, and a lost
+    # `@max_methods` bound.
+    Symbol("@max_methods"),                # Base.Experimental.@max_methods 1
+    :Experimental,                         # Base.Experimental
+    :Compiler, :return_type,               # Core.Compiler.return_type
+    # Type introspection with no public equivalent on any supported version.
+    :typename,                             # Base.typename(T).wrapper
+    :unwrap_unionall,                      # Base.unwrap_unionall
+    :promote_typejoin,                     # Base.promote_typejoin (keeps small Unions)
+    :SizeUnknown,                          # Base.IteratorSize(::Type{<:DEIntegrator})
+    # Error-hint registration and the wrapper-lookup error type it reports on.
+    :register_error_hint,                  # Base.Experimental.register_error_hint
+    :NoFunctionWrapperFoundError,          # FunctionWrappersWrappers
+    # Not declared public upstream; dropping it costs the allocation-free
+    # `totallength` path for static arrays.
+    :StaticArray,                          # StaticArraysCore
+)
+
 # `AllObserved` is the RecursiveArrayTools symbolic-indexing selector, reexported so
 # solution indexing code shares one selector rather than depending on its storage
 # location.
-run_qa(SciMLBase; reexports_allow = (:AllObserved,))
+run_qa(
+    SciMLBase;
+    reexports_allow = (:AllObserved,),
+    ei_kwargs = (;
+        all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
+    ),
+)
 
 include("alloccheck.jl")
 
