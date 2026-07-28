@@ -5591,6 +5591,17 @@ has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
 has_vjp_p(f::AbstractSciMLFunction) = __has_vjp_p(f) && f.vjp_p !== nothing
+"""
+    has_sys(f::AbstractSciMLFunction)
+
+Return whether `f` carries a non-`nothing` symbolic system.
+
+The system is the symbolic description the function was generated from, such as
+a ModelingToolkit system or a `SymbolicIndexingInterface.SymbolCache`. It backs
+symbolic indexing and the initialization pipeline, so code that must keep a
+problem's `u0`/`p` in a form those paths can read should query this trait rather
+than inspecting `f.sys`, which is absent on function types that carry no system.
+"""
 has_sys(f::AbstractSciMLFunction) = __has_sys(f) && f.sys !== nothing
 """
     has_initializeprob(f::AbstractSciMLFunction) -> Bool

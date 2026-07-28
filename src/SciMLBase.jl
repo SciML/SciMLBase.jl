@@ -2112,7 +2112,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # SciMLFunction derivative traits
 @public has_jac, has_jvp, has_vjp, has_tgrad, has_analytic, has_reinit,
-    has_initialization_data, has_stats
+    has_initialization_data, has_stats, has_sys
 
 # Function-argument validation errors
 @public FunctionArgumentsError, TooFewArgumentsError, TooManyArgumentsError
