@@ -66,6 +66,28 @@ handle_distribution_u0(_u0) = _u0
 eval_u0(u0::Function) = true
 eval_u0(u0) = false
 
+"""
+    get_concrete_p(prob, kwargs)
+
+Return the parameter value a solver should use for a single solve call.
+
+# Arguments
+
+- `prob`: A SciML problem with a `p` field.
+- `kwargs`: Keyword arguments from the solve call, represented by a `NamedTuple` or
+  another key-addressable keyword container.
+
+# Returns
+
+The `p` keyword override when present; otherwise `prob.p`.
+
+# Developer Interface
+
+Solver packages call this before constructing their cache or concretizing a problem so
+that `solve(prob; p = new_p)` and `solve(remake(prob; p = new_p))` use the same
+parameter value. Extensions should preserve that override rule and must not mutate
+`prob` or the supplied keyword container.
+"""
 function get_concrete_p(prob, kwargs)
     return if haskey(kwargs, :p)
         p = kwargs[:p]
@@ -74,6 +96,32 @@ function get_concrete_p(prob, kwargs)
     end
 end
 
+"""
+    get_concrete_u0(prob, isadapt, t0, kwargs)
+
+Return the initial state a solver should use for a single solve call.
+
+# Arguments
+
+- `prob`: A SciML problem with a `u0` field.
+- `isadapt`: Whether the solver will adapt its time step or mesh. Integer initial
+  states are converted to floating-point values when this is `true`.
+- `t0`: The initial independent-variable value.
+- `kwargs`: Keyword arguments from the solve call. A `u0` entry overrides `prob.u0`.
+
+# Returns
+
+The effective initial state after applying the `u0` override, evaluating supported
+problem-specific initial-state representations, and enforcing the common in-place and
+tuple-state constraints.
+
+# Developer Interface
+
+Solver packages use this hook while concretizing a problem. Extensions must honor the
+`u0` keyword override, return a state compatible with the problem's in-place trait,
+and throw the appropriate SciMLBase initial-condition error instead of silently
+changing an invalid state representation.
+"""
 function get_concrete_u0(prob::BVProblem, isadapt, t0, kwargs)
     if haskey(kwargs, :u0)
         u0 = kwargs[:u0]
@@ -156,6 +204,29 @@ function get_updated_symbolic_problem(indp, prob; kw...)
     return prob
 end
 
+"""
+    isconcreteu0(prob, t0, kwargs) -> Bool
+
+Return whether `prob.u0` is already a concrete initial state that can be reused without
+evaluation.
+
+# Arguments
+
+- `prob`: A SciML problem with a `u0` field.
+- `t0`: The initial independent-variable value for the proposed solve.
+- `kwargs`: Keyword arguments for the proposed solve.
+
+# Returns
+
+`true` when the problem's stored `u0` is neither deferred nor distribution-valued, and
+`false` otherwise.
+
+# Developer Interface
+
+`get_concrete_problem` implementations use this predicate to decide whether they may
+return the original problem object. Extensions must return `false` whenever evaluating
+or replacing `u0` is required, including for solve-call overrides.
+"""
 function isconcreteu0(prob, t0, kwargs)
     return !eval_u0(prob.u0) && prob.u0 !== nothing && !isdistribution(prob.u0)
 end
@@ -215,6 +286,29 @@ function get_concrete_du0(prob, isadapt, t0, kwargs)
     return _du0
 end
 
+"""
+    promote_u0(u0, p, t0)
+
+Promote an initial state to preserve automatic-differentiation element types carried by
+parameters or the initial independent variable.
+
+# Arguments
+
+- `u0`: Initial state to prepare for a solve.
+- `p`: Effective parameter value for the solve.
+- `t0`: Effective initial independent-variable value.
+
+# Returns
+
+`u0` unchanged when no dual element type is present; otherwise a state with the common
+dual-compatible element type.
+
+# Developer Interface
+
+Solver packages call this after `get_concrete_u0` and before constructing caches or
+testing whether a problem can be reused. Extensions must retain the value semantics of
+`u0` and only change its element type when promotion is required by `p` or `t0`.
+"""
 function promote_u0(u0, p, t0)
     if SciMLStructures.isscimlstructure(p)
         _p = SciMLStructures.canonicalize(SciMLStructures.Tunable(), p)[1]
@@ -315,6 +409,58 @@ SciMLBase.unitfulvalue(x::MyDualQuantity) = x.primal
 unitfulvalue(x) = x
 isdistribution(u0) = false
 sse(x::Number) = abs2(x)
+
+"""
+    get_concrete_problem(prob, isadapt; alg = nothing, kwargs...)
+
+Return the problem object a solver should use for a specific solve call.
+
+# Arguments
+
+- `prob`: The problem supplied to `solve` or `init`.
+- `isadapt`: Whether the selected algorithm adapts time steps or a mesh.
+- `alg`: Selected algorithm, when algorithm-dependent promotion or function
+  specialization is required.
+- `kwargs`: Solve-call keyword arguments, including possible `u0`, `p`, and time-span
+  overrides.
+
+# Returns
+
+Either `prob` when its stored data already matches the requested solve, or a replacement
+problem carrying the effective values for that solve.
+
+# Developer Interface
+
+Solver packages extend this hook for problem families that require solver-time
+concretization. Implementations should use `get_concrete_p`, `get_concrete_u0`,
+`promote_u0`, and `remake` as appropriate; they must not mutate `prob`, must preserve
+the problem family and user-visible metadata, and may return `prob` only when the
+effective values and their relevant types are unchanged.
+"""
+function get_concrete_problem end
+
+"""
+    check_prob_alg_pairing(prob, alg)
+
+Validate that `alg` is applicable to `prob` before a solver allocates its cache.
+
+# Arguments
+
+- `prob`: Problem selected for the solve.
+- `alg`: Algorithm selected for the solve.
+
+# Returns
+
+`nothing` when the pairing is supported.
+
+# Developer Interface
+
+Solver packages extend this hook for problem families with algorithm restrictions.
+Implementations should throw a descriptive SciMLBase error for unsupported pairings and
+must not mutate `prob` or `alg`. A no-op method is appropriate when every algorithm in
+the package's documented algorithm family supports the problem type.
+"""
+function check_prob_alg_pairing end
 
 struct DualEltypeChecker{T, T2}
     x::T

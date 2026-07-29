@@ -9,6 +9,20 @@ end
 SciMLBase.problem_type(::ProblemTypeTestProblem) = ProblemTypeTestMarker()
 SciMLBase.wrap_sol(::ProblemTypeTestSolution, ::ProblemTypeTestMarker) = :wrapped
 
+struct ConcretizationHookProblem{F, U, P} <: SciMLBase.AbstractSciMLProblem
+    f::F
+    u0::U
+    p::P
+end
+struct ConcretizationHookAlgorithm end
+
+SciMLBase.isinplace(::ConcretizationHookProblem) = false
+SciMLBase.get_concrete_problem(
+    prob::ConcretizationHookProblem, isadapt; alg = nothing, kwargs...
+) = (; prob, isadapt, alg, kwargs)
+SciMLBase.check_prob_alg_pairing(::ConcretizationHookProblem, ::ConcretizationHookAlgorithm) =
+    nothing
+
 @testset "Common keyword interface documentation" begin
     common_keywords = read(
         joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Common_Keywords.md"),
@@ -105,6 +119,31 @@ end
     @test occursin("SciMLBase.problem_type", problem_trait_docs)
     @test occursin("Delay, Boundary, and Noise Problem Types", problem_docs)
     @test occursin("Algebraic Problem Types", problem_docs)
+end
+
+@testset "Solver concretization developer interface" begin
+    prob = ConcretizationHookProblem(nothing, [1.0], :default_parameter)
+    alg = ConcretizationHookAlgorithm()
+
+    @test SciMLBase.get_concrete_p(prob, (;)) === :default_parameter
+    @test SciMLBase.get_concrete_p(prob, (; p = :override_parameter)) === :override_parameter
+    @test SciMLBase.get_concrete_u0(prob, false, 0.0, (;)) === prob.u0
+    @test SciMLBase.get_concrete_u0(prob, false, 0.0, (; u0 = [2.0])) == [2.0]
+    @test SciMLBase.isconcreteu0(prob, 0.0, (;))
+    @test SciMLBase.promote_u0([1.0], prob.p, 0.0) == [1.0]
+
+    concrete = SciMLBase.get_concrete_problem(prob, true; alg, p = :override_parameter)
+    @test concrete.prob === prob
+    @test concrete.isadapt
+    @test concrete.alg === alg
+    @test concrete.kwargs[:p] === :override_parameter
+    @test SciMLBase.check_prob_alg_pairing(prob, alg) === nothing
+
+    SciMLBase.@add_kwonly function concretization_kwonly(x; offset = 1)
+        return x + offset
+    end
+    @test concretization_kwonly(2) == 3
+    @test concretization_kwonly(; x = 2, offset = 4) == 6
 end
 
 @testset "Concrete interface reference documentation" begin
@@ -259,6 +298,9 @@ if isdefined(Base, :ispublic)
                 :done, :postamble!, :enable_interpolation_sensitivitymode,
                 :get_root_indp, :has_initializeprob, :late_binding_update_u0_p,
                 :strip_interpolation, :unitfulvalue, :value, :last_step_failed,
+                :get_concrete_p, :get_concrete_u0, :isconcreteu0, :promote_u0,
+                :get_concrete_problem, :check_prob_alg_pairing, :KeywordArgError,
+                :keyword_arg_silent, Symbol("@add_kwonly"),
             )
             @test Base.ispublic(SciMLBase, name)
             @test Base.Docs.hasdoc(SciMLBase, name)
