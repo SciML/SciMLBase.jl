@@ -67,12 +67,16 @@ const _ei_nonpublic_qualified_accesses = (
     :StaticArray,                          # StaticArraysCore
 )
 
-# `AllObserved` is the RecursiveArrayTools symbolic-indexing selector, reexported so
-# solution indexing code shares one selector rather than depending on its storage
-# location.
+# The CommonSolve verbs. SciMLBase does not own them, but they are the SciML solve
+# interface as users and solver packages write it, and they are documented here, so
+# they stay exported and are allow-listed rather than dropped. They are documented at
+# CommonSolve as well, so the rendered-docs check skips them.
+const _reexports_allow = (:init, :solve, :solve!, :step!)
+
 run_qa(
     SciMLBase;
-    reexports_allow = (:AllObserved,),
+    reexports_allow = _reexports_allow,
+    api_docs_kwargs = (; rendered_ignore = _reexports_allow),
     ei_kwargs = (;
         all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
     ),

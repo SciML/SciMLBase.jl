@@ -47,7 +47,7 @@ import Logging, ArrayInterface, Random
 using LoggingExtras: ActiveFilteredLogger
 import IteratorInterfaceExtensions
 import CommonSolve
-import CommonSolve: solve, init, step!
+import CommonSolve: solve, init, step!, solve!
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
@@ -63,9 +63,8 @@ using SciMLOperators:
 import SciMLOperators:
     update_coefficients, update_coefficients!, islinear
 
-# Compatibility bindings for released solver packages. New code must access these
-# names through CommonSolve and SciMLOperators, which own their public contracts.
-const solve! = CommonSolve.solve!
+# Compatibility binding for released solver packages. New code must access this
+# name through SciMLOperators, which owns its public contract.
 const isconstant = SciMLOperators.isconstant
 
 using SciMLPublic: @public
@@ -2016,12 +2015,9 @@ function unwrap_fw end
 
 export ReturnCode
 
-# Exports
-export AllObserved
-
 export isinplace
 
-export discretize, symbolic_discretize
+export solve, solve!, init, step!, discretize, symbolic_discretize
 
 export LinearProblem, LinearSolution, IntervalNonlinearProblem,
     IntegralProblem, IntegralSolution, SampledIntegralProblem,

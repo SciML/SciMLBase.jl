@@ -208,7 +208,6 @@ end
     end
 
     for binding in (
-            "SciMLBase.AllObserved",
             "SciMLBase.Clocks",
             "SciMLBase.EnsembleAnalysis",
             "SciMLBase.NullParameters",
