@@ -32,3 +32,21 @@ SciMLBase.unitfulvalue
 ```@docs
 SciMLBase.last_step_failed
 ```
+
+## Solver Preparation Hooks
+
+Solver packages use these hooks to derive the effective problem data for an individual
+solve call and to reject unsupported problem-algorithm pairings. They are not an
+application-facing replacement for `solve`, `init`, or `remake`.
+
+```@docs
+SciMLBase.get_concrete_p
+SciMLBase.get_concrete_u0
+SciMLBase.isconcreteu0
+SciMLBase.promote_u0
+SciMLBase.get_concrete_problem
+SciMLBase.check_prob_alg_pairing
+SciMLBase.KeywordArgError
+SciMLBase.keyword_arg_silent
+SciMLBase.@add_kwonly
+```

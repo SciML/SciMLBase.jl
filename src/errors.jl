@@ -102,7 +102,7 @@ $allowedkeywords
 See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more details.
 
 Set kwargshandle=KeywordArgError for an error message.
-Set kwargshandle=KeywordArgSilent to ignore this message.
+Set kwargshandle=keyword_arg_silent to ignore this message.
 """
 
 const KWARGERROR_MESSAGE = """
@@ -166,7 +166,36 @@ function Base.showerror(io::IO, e::CommonKwargError)
     return nothing
 end
 
+"""
+    KeywordArgError
+    KeywordArgWarn
+    KeywordArgSilent
+
+Controls how a solver handles keyword arguments outside its supported keyword set.
+
+## Values
+
+- `KeywordArgError`: throw `CommonKwargError` for unsupported keywords.
+- `KeywordArgWarn`: emit a warning and continue.
+- `KeywordArgSilent`: accept unsupported keywords without a warning.
+
+Solver packages can use these values as the `kwargshandle` passed to their keyword
+validation path. Application code should prefer solver-specific documented keywords
+instead of suppressing validation with `KeywordArgSilent`.
+"""
 @enum KeywordArgError KeywordArgWarn KeywordArgSilent
+
+"""
+    keyword_arg_silent
+
+The documented solver-author value for accepting unsupported keyword arguments without
+emitting a warning. Pass it as `kwargshandle` to a keyword-validation path when the
+caller has intentionally delegated keyword handling to another layer.
+
+Application code should not use this value to suppress unsupported solver keywords;
+use the solver's documented keyword interface instead.
+"""
+const keyword_arg_silent = KeywordArgSilent
 
 const INCOMPATIBLE_U0_MESSAGE = """
 Initial condition incompatible with functional form.

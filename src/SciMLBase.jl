@@ -2105,6 +2105,11 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Core functions
 @public build_solution, numargs
 
+# Solver problem-concretization extension API
+@public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,
+    get_concrete_problem, check_prob_alg_pairing, KeywordArgError, keyword_arg_silent,
+    @add_kwonly
+
 # SciMLFunction derivative traits
 @public has_jac, has_jvp, has_vjp, has_tgrad, has_analytic, has_reinit,
     has_initialization_data, has_stats
