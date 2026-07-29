@@ -43,6 +43,9 @@ run_tests(;
         @time @safetestset "Integrator interface" begin
             include("integrator_tests.jl")
         end
+        @time @safetestset "check_error diagnostics" begin
+            include("check_error_diagnostics.jl")
+        end
         @time @safetestset "Ensemble functionality" begin
             include("ensemble_tests.jl")
         end
