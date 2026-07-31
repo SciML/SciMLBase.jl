@@ -2100,7 +2100,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Solution / problem support types
 @public NLStats, NullParameters, AbstractSpecialization, AutoSpecialize,
-    AbstractOptimizationCache
+    AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats
 
 # Core functions
 @public build_solution, numargs
@@ -2179,7 +2179,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     late_binding_update_u0_p, strip_interpolation, unitfulvalue, value, last_step_failed
 
 # Problem types and alias specifiers
-@public ImmutableODEProblem, NonlinearAliasSpecifier
+@public ImmutableODEProblem, ImmutableNonlinearProblem, NonlinearAliasSpecifier
 @public AbstractAliasSpecifier, AnalyticalAliasSpecifier, SteadyStateAliasSpecifier,
     ImplicitDiscreteAliasSpecifier, DAEAliasSpecifier, DDEAliasSpecifier,
     SDDEAliasSpecifier, BVPAliasSpecifier, OptimizationAliasSpecifier,

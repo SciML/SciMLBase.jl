@@ -208,6 +208,7 @@ with their respective interfaces.
 ```@docs
 SciMLBase.DEStats
 SciMLBase.NLStats
+SciMLBase.OptimizationStats
 ```
 
 ### Solution Construction and Errors

@@ -665,6 +665,21 @@ struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
     end
 end
 
+"""
+$(TYPEDEF)
+
+An immutable counterpart to [`NonlinearProblem`](@ref SciMLBase.NonlinearProblem) that
+carries the same `f`, `u0`, `p`, `problem_type`, and `kwargs` data.
+
+Because the struct and its fields are immutable, an `ImmutableNonlinearProblem` built
+from `isbits` components is itself `isbits`. That makes it usable from contexts which
+cannot allocate or mutate — most importantly inside GPU kernels, where solver packages
+construct one per thread and hand it to a non-allocating nonlinear solver. Use
+`NonlinearProblem` for ordinary host-side solves; reach for this type when the problem
+must cross into a kernel or otherwise stay allocation-free.
+
+Constructors mirror `NonlinearProblem`, and `remake` is supported.
+"""
 struct ImmutableNonlinearProblem{uType, iip, P, F, K, PT} <:
     AbstractNonlinearProblem{uType, iip}
     f::F

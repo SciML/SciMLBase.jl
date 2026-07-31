@@ -212,6 +212,7 @@ SciMLBase.AbstractSteadyStateProblem
 
 ```@docs
 SciMLBase.AbstractOptimizationCache
+SciMLBase.DefaultOptimizationCache
 ```
 
 ## Concrete Problem Reference
