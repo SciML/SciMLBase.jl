@@ -70,3 +70,17 @@ end
     @test clocktype(PeriodicClock(1 // 2, 3.14)) === (1 // 2, 3.14)
     @test clocktype(pi) === "other" broken = true
 end
+
+@testset "SciMLBase precompiles without deprecation warnings" begin
+    # Moshi's bare singleton variant syntax (`ContinuousClock` rather than
+    # `ContinuousClock()`) only warns while the `@data` block is macroexpanded, so a
+    # forced recompile is the only way to observe it from a test.
+    script = """Base.compilecache(Base.identify_package("SciMLBase"))"""
+    cmd = `$(Base.julia_cmd()) --startup-file=no --project=$(Base.active_project()) -e $script`
+    buf = IOBuffer()
+    run(pipeline(ignorestatus(cmd), stdout = buf, stderr = buf))
+    output = String(take!(buf))
+    occursin("deprecated", output) &&
+        @info "SciMLBase precompilation output" output
+    @test !occursin("deprecated", output)
+end

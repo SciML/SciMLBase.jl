@@ -1,12 +1,12 @@
 abstract type AbstractClock end
 
 @data Clocks <: AbstractClock begin
-    ContinuousClock
+    ContinuousClock()
     struct PeriodicClock
         dt::Union{Nothing, Float64, Rational{Int}}
         phase::Float64 = 0.0
     end
-    SolverStepClock
+    SolverStepClock()
     struct EventClock
         id::Symbol
     end
