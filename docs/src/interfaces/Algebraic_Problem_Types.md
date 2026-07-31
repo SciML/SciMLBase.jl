@@ -23,6 +23,7 @@ SciMLBase.EigenvalueTarget.SmallestImaginaryPart
 
 ```@docs
 SciMLBase.NonlinearProblem
+SciMLBase.ImmutableNonlinearProblem
 SciMLBase.StandardNonlinearProblem
 SciMLBase.IntervalNonlinearProblem
 SciMLBase.NonlinearLeastSquaresProblem
