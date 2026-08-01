@@ -214,6 +214,10 @@ run_tests(;
         end,
     ),
     qa = function ()
+        # QA has its own environment (test/qa/Project.toml) so that the weakdeps whose
+        # extensions ExplicitImports must see can be loaded without dragging Enzyme,
+        # Makie, Mooncake, ... into the Core test environment.
+        activate_group_env(joinpath(@__DIR__, "qa"))
         return @time @safetestset "QA" begin
             include("qa/qa.jl")
         end

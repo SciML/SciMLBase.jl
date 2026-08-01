@@ -1,8 +1,12 @@
 module SciMLBaseMakieExt
 
-using SciMLBase
-using SymbolicIndexingInterface
-using Makie
+using SciMLBase: SciMLBase
+using SymbolicIndexingInterface: SymbolicIndexingInterface, ContinuousTimeseries, NotSymbolic,
+    current_time, get_all_timeseries_indexes, getname, getp, hasname,
+    independent_variable_symbols, symbolic_type, variable_symbols
+using RecursiveArrayTools: VectorOfArray, vecarr_to_vectors
+using GeometryBasics: Point2f, Point3f
+using Makie: Makie, Lines, Plot, PlotSpec
 
 import Makie.SpecApi as S
 
@@ -197,7 +201,7 @@ function Makie.convert_arguments(
         xvals = getindex.(tmpvals, 1)
         yvals = getindex.(tmpvals, 2)
 
-        label = string(SciMLBase.hasname(yvar) ? SciMLBase.getname(yvar) : yvar)
+        label = string(hasname(yvar) ? getname(yvar) : yvar)
 
         scatter_spec = Makie.SpecApi.Scatter(Point2f.(xvals, yvals); label)
 
@@ -299,7 +303,7 @@ function Makie.convert_arguments(
 
     labels = String[] # Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
     strs = String[]
-    varsyms = SciMLBase.variable_symbols(integrator)
+    varsyms = variable_symbols(integrator)
 
     for x in int_vars
         for j in 2:dims
@@ -321,9 +325,9 @@ function Makie.convert_arguments(
             end
 
             if !isempty(varsyms) && x[j] isa Integer
-                push!(strs, String(SciMLBase.getname(varsyms[x[j]])))
-            elseif SciMLBase.hasname(x[j])
-                push!(strs, String(SciMLBase.getname(x[j])))
+                push!(strs, String(getname(varsyms[x[j]])))
+            elseif hasname(x[j])
+                push!(strs, String(getname(x[j])))
             else
                 push!(strs, "u[$(x[j])]")
             end
@@ -482,12 +486,12 @@ function Makie.convert_arguments(
     )
     if ci_type == :SEM
         if sim.u.u[1] isa AbstractArray
-            u = SciMLBase.vecarr_to_vectors(sim.u)
+            u = vecarr_to_vectors(sim.u)
         else
             u = [sim.u.u]
         end
         if sim.u.u[1] isa AbstractArray
-            ci_low = SciMLBase.vecarr_to_vectors(
+            ci_low = vecarr_to_vectors(
                 VectorOfArray(
                     [
                         sqrt.(
@@ -511,13 +515,13 @@ function Makie.convert_arguments(
         end
     elseif ci_type == :quantile
         if sim.med.u[1] isa AbstractArray
-            u = SciMLBase.vecarr_to_vectors(sim.med)
+            u = vecarr_to_vectors(sim.med)
         else
             u = [sim.med.u]
         end
         if sim.u.u[1] isa AbstractArray
-            ci_low = u - SciMLBase.vecarr_to_vectors(sim.qlow)
-            ci_high = SciMLBase.vecarr_to_vectors(sim.qhigh) - u
+            ci_low = u - vecarr_to_vectors(sim.qlow)
+            ci_high = vecarr_to_vectors(sim.qhigh) - u
         else
             ci_low = [u[1] - sim.qlow.u]
             ci_high = [sim.qhigh.u - u[1]]

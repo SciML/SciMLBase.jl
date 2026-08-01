@@ -1,8 +1,8 @@
 module SciMLBaseMonteCarloMeasurementsExt
 
-using SciMLBase
-using SciMLBase: value
-using MonteCarloMeasurements
+using MonteCarloMeasurements: MonteCarloMeasurements
+using SciMLBase: SciMLBase
+using Statistics: mean
 
 function SciMLBase.promote_u0(
         u0::AbstractArray{

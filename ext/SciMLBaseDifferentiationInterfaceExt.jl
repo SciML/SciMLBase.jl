@@ -1,7 +1,7 @@
 module SciMLBaseDifferentiationInterfaceExt
 
-using SciMLBase, DifferentiationInterface
-
+using DifferentiationInterface: DifferentiationInterface
+using SciMLBase: SciMLBase
 import SciMLBase: anyeltypedual
 
 # Opt out since these are using for preallocation, not differentiation
