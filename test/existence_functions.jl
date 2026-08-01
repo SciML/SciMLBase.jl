@@ -2,8 +2,9 @@ using Test, SciMLBase
 using SciMLBase: __has_jac, __has_tgrad, __has_Wfact, __has_Wfact_t,
     __has_paramjac, __has_analytic, __has_colorvec, has_jac,
     has_tgrad,
-    has_Wfact, has_Wfact_t, has_paramjac, has_analytic, has_colorvec,
+    has_Wfact, has_Wfact_t, has_paramjac, has_analytic, has_colorvec, has_sys,
     AbstractDiffEqFunction
+using SymbolicIndexingInterface: SymbolCache
 
 struct Foo <: AbstractDiffEqFunction{false}
     jac::Any
@@ -57,3 +58,11 @@ f2 = Foo2(1, 1, nothing, nothing)
 @test !has_paramjac(f2)
 @test !has_analytic(f2)
 @test !has_colorvec(f2)
+
+@testset "has_sys" begin
+    fsys = NonlinearFunction((u, p) -> u; sys = SymbolCache([:x], [:a]))
+    @test has_sys(fsys)
+    @test !has_sys(NonlinearFunction((u, p) -> u))
+    # No `sys` field at all, so the field-existence branch has to short-circuit.
+    @test !has_sys(f)
+end

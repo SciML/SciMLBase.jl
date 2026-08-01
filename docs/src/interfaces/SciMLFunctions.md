@@ -133,6 +133,7 @@ SciMLBase.has_jvp
 SciMLBase.has_vjp
 SciMLBase.has_tgrad
 SciMLBase.has_initialization_data
+SciMLBase.has_sys
 ```
 
 ## AbstractSciMLFunction API
