@@ -1,14 +1,16 @@
 module SciMLBaseForwardDiffExt
 
-using SciMLBase, ForwardDiff
-using ArrayInterface
+using ForwardDiff: ForwardDiff
+using ArrayInterface: ArrayInterface
+using RecipesBase: RecipesBase
+using RecursiveArrayTools: RecursiveArrayTools
 
+using SciMLBase: SciMLBase
 import SciMLBase:
-    wrapfun_oop, wrapfun_iip, isdualtype, value, DualEltypeChecker,
+    isdualtype, value, DualEltypeChecker,
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
-    ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
-    RecursiveArrayTools, totallength, sse, anyeltypedual, reduce_tup,
-    unitfulvalue
+    ODEProblem, SDEProblem, RODEProblem, DDEProblem, OptimizationProblem,
+    sse, anyeltypedual, reduce_tup, unitfulvalue
 
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
@@ -240,7 +242,7 @@ function anyeltypedual(
 end
 
 function anyeltypedual(
-        x::SciMLBase.RecipesBase.AbstractPlot,
+        x::RecipesBase.AbstractPlot,
         ::Type{Val{counter}} = Val{0}
     ) where {counter}
     return Any

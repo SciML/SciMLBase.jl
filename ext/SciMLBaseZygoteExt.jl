@@ -1,16 +1,14 @@
 module SciMLBaseZygoteExt
 
-using Zygote
-using Zygote: @adjoint, pullback
-import Zygote: literal_getproperty
+using Zygote: Zygote, pullback
+using ZygoteRules: ZygoteRules, @adjoint, literal_getfield, literal_getproperty
 import ChainRulesCore
-using SciMLBase
-using SciMLBase: ODESolution, remake, ODEFunction,
-    getobserved, build_solution, EnsembleSolution,
-    NonlinearSolution, AbstractTimeseriesSolution
+using FillArrays: Fill
+using SciMLBase: SciMLBase, ODESolution, remake, ODEFunction,
+    build_solution, EnsembleSolution, NonlinearSolution, SDEProblem
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
     observed, parameter_values, state_values, current_time
-using RecursiveArrayTools
+using RecursiveArrayTools: RecursiveArrayTools, recursivecopy, recursivefill!
 import SciMLStructures
 
 # SciML problem types are mutable structs, so Zygote routes their field-access
@@ -29,7 +27,7 @@ import SciMLStructures
 # existing behavior — its nested-AD path already produces partial-`NamedTuple`
 # problem cotangents (the `getproperty` rrule in the ChainRulesCore ext), which
 # this full-`NamedTuple` pullback would collide with in `Zygote.accum`.
-@adjoint function Zygote.literal_getfield(
+@adjoint function literal_getfield(
         prob::SciMLBase.AbstractDEProblem, ::Val{f}
     ) where {f}
     val = getfield(prob, f)
@@ -69,7 +67,7 @@ end
                 copyto!(δu, Δ)
                 δu
             else
-                Zygote.FillArrays.Fill(zero(eltype(x)), size(x))
+                Fill(zero(eltype(x)), size(x))
             end
         end
         return (Δ′, nothing, nothing)
@@ -125,7 +123,7 @@ end
                 δu[front_inds...] = Δ
                 δu
             else
-                Zygote.FillArrays.Fill(zero(eltype(x)), size(x))
+                Fill(zero(eltype(x)), size(x))
             end
         end
         return (Δ′, nothing)
@@ -371,7 +369,7 @@ function unwrap_map_cotangent(Δ)
 end
 
 function ∇tmap(cx, f, args...)
-    ys_and_backs = SciMLBase.tmap((args...) -> Zygote._pullback(cx, f, args...), args...)
+    ys_and_backs = SciMLBase.tmap((args...) -> ZygoteRules._pullback(cx, f, args...), args...)
     return if isempty(ys_and_backs)
         ys_and_backs, _ -> (NoTangent(), NoTangent())
     else
@@ -389,7 +387,7 @@ end
 
 function ∇responsible_map(cx, f, args...)
     ys_and_backs = SciMLBase.responsible_map(
-        (args...) -> Zygote._pullback(cx, f, args...),
+        (args...) -> ZygoteRules._pullback(cx, f, args...),
         args...
     )
     return if isempty(ys_and_backs)

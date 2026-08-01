@@ -1,13 +1,13 @@
 module SciMLBaseMooncakeExt
 
-using SciMLBase, Mooncake
-using SciMLBase: ADOriginator, ChainRulesOriginator, MooncakeOriginator,
+using Mooncake: Mooncake
+using SciMLBase: SciMLBase,
     AbstractTimeseriesSolution, AbstractNonlinearSolution, getobserved
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index,
     parameter_values
 import SymbolicIndexingInterface as SII
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
-    @from_rrule, @zero_adjoint, @mooncake_overlay, MinimalCtx,
+    @zero_adjoint, @mooncake_overlay, MinimalCtx,
     NoPullback, NoFData, NoRData, NoTangent, fdata, zero_tangent,
     primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!,
     lazy_zero_rdata, instantiate

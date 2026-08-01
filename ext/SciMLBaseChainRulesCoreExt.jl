@@ -1,10 +1,11 @@
 module SciMLBaseChainRulesCoreExt
 
-using SciMLBase
-using SciMLBase: getobserved
+using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
+    SDEProblem, getobserved, remake
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
-using SymbolicIndexingInterface
+using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, parameter_values,
+    symbolic_type, variable_index
 using RecursiveArrayTools: AbstractVectorOfArray
 
 @non_differentiable SciMLBase.checkkwargs(kwargshandle)
