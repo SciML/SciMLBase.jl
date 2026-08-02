@@ -52,6 +52,9 @@ run_tests(;
         @time @safetestset "Solution interface" begin
             include("solution_interface.jl")
         end
+        @time @safetestset "Public solution builder interface" begin
+            include("solution_builder_interface.jl")
+        end
         @time @safetestset "Interpolation types" begin
             include("interpolation_tests.jl")
         end
