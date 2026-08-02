@@ -2164,7 +2164,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # SciMLFunction derivative traits
 @public has_jac, has_jvp, has_vjp, has_tgrad, has_analytic, has_reinit,
-    has_initialization_data, has_stats, has_sys
+    has_initialization_data, has_stats, has_sys, has_paramjac, has_vjp_p, has_observed
 
 # Function-argument validation errors
 @public FunctionArgumentsError, TooFewArgumentsError, TooManyArgumentsError
@@ -2314,7 +2314,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     generate_sim_seeds, default_rng_func, WeightedEnsembleSolution
 
 # AD / sensitivity function wrappers
-@public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper
+@public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper,
+    ParamJacobianWrapper, Void
 
 # Problem alias specifiers
 @public RODEAliasSpecifier, SDEAliasSpecifier

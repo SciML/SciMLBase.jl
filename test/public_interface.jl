@@ -355,6 +355,7 @@ if isdefined(Base, :ispublic)
                 :get_concrete_p, :get_concrete_u0, :isconcreteu0, :promote_u0,
                 :get_concrete_problem, :check_prob_alg_pairing, :KeywordArgError,
                 :keyword_arg_silent, Symbol("@add_kwonly"),
+                :has_paramjac, :has_vjp_p, :has_observed, :ParamJacobianWrapper, :Void,
                 :ADOriginator, :ChainRulesOriginator, :EnzymeOriginator,
                 :ReverseDiffOriginator, :TrackerOriginator, :MooncakeOriginator,
                 :_concrete_solve_adjoint, :_concrete_solve_forward,

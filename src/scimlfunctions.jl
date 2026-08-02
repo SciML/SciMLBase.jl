@@ -5589,7 +5589,27 @@ It is only meaningful for function types with an explicit independent variable.
 has_tgrad(f::AbstractSciMLFunction) = __has_tgrad(f) && f.tgrad !== nothing
 has_Wfact(f::AbstractSciMLFunction) = __has_Wfact(f) && f.Wfact !== nothing
 has_Wfact_t(f::AbstractSciMLFunction) = __has_Wfact_t(f) && f.Wfact_t !== nothing
+"""
+    has_paramjac(f::AbstractSciMLFunction) -> Bool
+
+Return whether `f` carries a non-`nothing` parameter-Jacobian callback.
+
+When this returns `true`, sensitivity or solver code may use `f.paramjac` to evaluate
+the derivative of the model function with respect to parameters without selecting an
+automatic-differentiation fallback. The callback must follow the in-place or
+out-of-place convention of `f`.
+"""
 has_paramjac(f::AbstractSciMLFunction) = __has_paramjac(f) && f.paramjac !== nothing
+
+"""
+    has_vjp_p(f::AbstractSciMLFunction) -> Bool
+
+Return whether `f` carries a non-`nothing` parameter vector-Jacobian-product callback.
+
+When this returns `true`, sensitivity or solver code may use `f.vjp_p` to apply the
+adjoint derivative with respect to parameters without materializing a parameter
+Jacobian. The callback must follow the in-place or out-of-place convention of `f`.
+"""
 has_vjp_p(f::AbstractSciMLFunction) = __has_vjp_p(f) && f.vjp_p !== nothing
 """
     has_sys(f::AbstractSciMLFunction)
@@ -5732,6 +5752,15 @@ function has_paramsyms(f::AbstractSciMLFunction)
         !isempty(parameter_symbols(f))
     end
 end
+"""
+    has_observed(f::AbstractSciMLFunction) -> Bool
+
+Return whether `f` carries a non-default observed-quantity callback.
+
+Observed callbacks define derived quantities evaluated from a problem state, parameters,
+and independent variable. A `true` result means downstream code may use the documented
+observed-function interface; a `false` result means it must not inspect `f.observed`.
+"""
 function has_observed(f::AbstractSciMLFunction)
     return __has_observed(f) && f.observed !== DEFAULT_OBSERVED && f.observed !== nothing
 end
