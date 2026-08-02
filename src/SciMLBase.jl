@@ -2219,7 +2219,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     requires_additive_noise
 
 # Initialization algorithms and interface
-@public NoInit, OverrideInit, get_initial_values
+@public NoInit, OverrideInit, get_initial_values, is_overdetermined_initialization
 @public OverrideInitData
 
 # Solution / integrator interface
@@ -2266,7 +2266,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     TrackerOriginator, MooncakeOriginator, _concrete_solve_adjoint, _concrete_solve_forward
 
 # Function-wrapper / solution interface helpers
-@public unwrapped_f, specialization, solution_new_retcode
+@public unwrapped_f, specialization, solution_new_retcode, sensitivity_solution
 @public parameterless_type, updated_u0_p, isdenseplot, plottable_indices
 @public isfunctionwrapper, wrapfun_oop, wrapfun_iip, unwrap_fw
 

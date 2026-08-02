@@ -217,6 +217,7 @@ SciMLBase.OptimizationStats
 SciMLBase.build_solution
 SciMLBase.calculate_solution_errors!
 SciMLBase.solution_new_retcode
+SciMLBase.sensitivity_solution
 ```
 
 ### Interpolation Types

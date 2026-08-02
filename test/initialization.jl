@@ -426,6 +426,7 @@ end
         fn = ODEFunction(rhs2; initialization_data)
         prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
         @test SciMLBase.initialization_status(prob) == SciMLBase.OVERDETERMINED
+        @test SciMLBase.is_overdetermined_initialization(prob)
     end
 
     @testset "Initialization status for underdetermined case" begin
@@ -439,7 +440,19 @@ end
         fn = ODEFunction(rhs2; initialization_data)
         prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
         @test SciMLBase.initialization_status(prob) == SciMLBase.UNDERDETERMINED
+        @test !SciMLBase.is_overdetermined_initialization(prob)
     end
+end
+
+@testset "Sensitivity solution developer interface" begin
+    prob = ODEProblem((u, p, t) -> u, [1.0], (0.0, 1.0))
+    sol = solve(prob, Tsit5(); saveat = [0.0, 1.0])
+    sensitivity_sol = SciMLBase.sensitivity_solution(sol, [[2.0], [3.0]], [0.0, 1.0])
+
+    @test sensitivity_sol.prob === sol.prob
+    @test sensitivity_sol.alg === sol.alg
+    @test sensitivity_sol.u == [[2.0], [3.0]]
+    @test sensitivity_sol.t == [0.0, 1.0]
 end
 
 @testset "NoInit" begin
