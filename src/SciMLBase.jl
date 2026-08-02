@@ -1595,9 +1595,26 @@ depend on a reaction-network package.
 abstract type AbstractReactionNetwork end
 
 """
-$(TYPEDEF)
+    ADOriginator
 
-Internal. Used for signifying which AD context a derivative calculation is in.
+Developer interface marker for the automatic-differentiation system that initiated a
+solve derivative.
+
+`ADOriginator` values are passed to [`_concrete_solve_adjoint`](@ref) and
+[`_concrete_solve_forward`](@ref) so a sensitivity implementation can choose a rule
+compatible with the outer AD system.
+
+# Extension Rules
+
+Packages that integrate a new AD system may define a zero-field subtype and pass an
+instance only from their own solve-derivative rule. They must also provide concrete-solve
+hook methods specialized on a problem, sensitivity algorithm, or originator type they
+own. Do not dispatch a broad fallback on `ADOriginator`, redefine another package's
+originator marker, or expose an originator value as an application-facing solver option.
+
+The built-in markers identify ChainRules, Enzyme, ReverseDiff, Tracker, and Mooncake
+contexts. They are developer API; application code should select a documented
+`sensealg` and let the loaded AD integration choose the originator.
 """
 abstract type ADOriginator end
 
@@ -1630,37 +1647,72 @@ when every stored field can share the same policy.
 abstract type AbstractAliasSpecifier end
 
 """
-$(TYPEDEF)
+    ChainRulesOriginator()
 
-Internal. Used for signifying the AD context comes from a ChainRules.jl definition.
+Zero-field [`ADOriginator`](@ref) marking a derivative initiated by a
+ChainRulesCore rule.
+
+# Developer Interface
+
+Pass this marker to a concrete-solve hook only from a ChainRules-backed solve rule.
+Sensitivity packages may specialize hook methods on it to return a ChainRules pullback.
+Application code must not construct this marker to select a sensitivity algorithm.
 """
 struct ChainRulesOriginator <: ADOriginator end
 
 """
-$(TYPEDEF)
+    EnzymeOriginator()
 
-Internal. Used for signifying the AD context comes from an Enzyme.jl definition.
+Zero-field [`ADOriginator`](@ref) marking a derivative initiated by Enzyme.
+
+# Developer Interface
+
+Pass this marker to a concrete-solve hook only from an Enzyme-backed solve rule.
+Sensitivity packages may specialize hook methods on it when the primal or derivative
+values require Enzyme-specific handling. Application code must not construct this
+marker to select a sensitivity algorithm.
 """
 struct EnzymeOriginator <: ADOriginator end
 
 """
-$(TYPEDEF)
+    ReverseDiffOriginator()
 
-Internal. Used for signifying the AD context comes from a ReverseDiff.jl context.
+Zero-field [`ADOriginator`](@ref) marking a derivative initiated by ReverseDiff.
+
+# Developer Interface
+
+Pass this marker to a concrete-solve hook only from a ReverseDiff-backed solve rule.
+Sensitivity packages may specialize hook methods on it to preserve ReverseDiff tape
+semantics. Application code must not construct this marker to select a sensitivity
+algorithm.
 """
 struct ReverseDiffOriginator <: ADOriginator end
 
 """
-$(TYPEDEF)
+    TrackerOriginator()
 
-Internal. Used for signifying the AD context comes from a Tracker.jl context.
+Zero-field [`ADOriginator`](@ref) marking a derivative initiated by Tracker.
+
+# Developer Interface
+
+Pass this marker to a concrete-solve hook only from a Tracker-backed solve rule.
+Sensitivity packages may specialize hook methods on it to preserve Tracker value and
+gradient handling. Application code must not construct this marker to select a
+sensitivity algorithm.
 """
 struct TrackerOriginator <: ADOriginator end
 
 """
-$(TYPEDEF)
+    MooncakeOriginator()
 
-Internal. Used for signifying the AD context comes from a Mooncake.jl context.
+Zero-field [`ADOriginator`](@ref) marking a derivative initiated by Mooncake.
+
+# Developer Interface
+
+Pass this marker to a concrete-solve hook only from a Mooncake-backed solve rule.
+Sensitivity packages may specialize hook methods on it to return Mooncake-compatible
+derivative data. Application code must not construct this marker to select a
+sensitivity algorithm.
 """
 struct MooncakeOriginator <: ADOriginator end
 
@@ -2207,6 +2259,11 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Automatic differentiation markers
 @public NoAD
+
+# Versioned automatic-differentiation concrete-solve extension API. These names are
+# deliberately not exported: application code selects a documented `sensealg` instead.
+@public ADOriginator, ChainRulesOriginator, EnzymeOriginator, ReverseDiffOriginator,
+    TrackerOriginator, MooncakeOriginator, _concrete_solve_adjoint, _concrete_solve_forward
 
 # Function-wrapper / solution interface helpers
 @public unwrapped_f, specialization, solution_new_retcode

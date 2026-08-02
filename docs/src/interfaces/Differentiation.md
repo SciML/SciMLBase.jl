@@ -98,6 +98,30 @@ SciMLBase.AbstractSecondOrderSensitivityAlgorithm
 SciMLBase.AbstractShadowingSensitivityAlgorithm
 ```
 
+## Concrete Solve Developer Interface
+
+The following developer API is for packages that implement an AD integration or a
+sensitivity algorithm. Application code must select a documented `sensealg` through
+`solve`; it must not call these hooks or construct originator markers directly.
+
+An integration creates or uses an [`SciMLBase.ADOriginator`](@ref) that identifies its outer AD
+system, then adds a narrowly dispatched concrete-solve method for types it owns. The
+method receives the effective `prob`, `alg`, `sensealg`, `u0`, and `p` values in that
+order and must return the ordinary primal result together with the corresponding
+pullback or pushforward. It must preserve the primal solve semantics and may not mutate
+the problem or differentiated inputs.
+
+```@docs
+SciMLBase.ADOriginator
+SciMLBase.ChainRulesOriginator
+SciMLBase.EnzymeOriginator
+SciMLBase.ReverseDiffOriginator
+SciMLBase.TrackerOriginator
+SciMLBase.MooncakeOriginator
+SciMLBase._concrete_solve_adjoint
+SciMLBase._concrete_solve_forward
+```
+
 ## SensitivityADPassThrough
 
 The special sensitivity algorithm `SensitivityADPassThrough` ignores the
