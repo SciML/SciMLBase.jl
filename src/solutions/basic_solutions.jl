@@ -30,6 +30,46 @@ struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}
     stats::S
 end
 
+"""
+    build_linear_solution(alg, u, resid, cache; retcode = ReturnCode.Default, iters = 0,
+        stats = nothing) -> LinearSolution
+
+Construct the `LinearSolution` returned by a solver for a linear system.
+
+!!! warning "Developer API, not user API"
+    Solver packages use this versioned construction hook after implementing a linear solve.
+    Application code should obtain solutions through `solve` or `solve!` rather than call it
+    directly.
+
+# Arguments
+
+- `alg`: The linear algorithm that produced the result.
+- `u`: The computed solution state. It is retained without copying.
+- `resid`: The residual reported by the algorithm, or `nothing` when it is unavailable.
+- `cache`: The cache associated with this solve, or `nothing` when no cache should be
+  exposed.
+
+# Keywords
+
+- `retcode::ReturnCode.T = ReturnCode.Default`: The completion status of the solve.
+- `iters::Integer = 0`: Number of iterations performed by an iterative method.
+- `stats = nothing`: Solver-specific statistics, or `nothing` when none are available.
+
+# Returns
+
+- `LinearSolution`: A no-time solution whose `u`, `resid`, `alg`, `retcode`, `iters`,
+  `cache`, and `stats` fields are the corresponding supplied values.
+
+# Example
+
+```julia
+julia> alg = :direct;
+
+julia> build_linear_solution(alg, [2.0], nothing, nothing;
+                              retcode = ReturnCode.Success)
+retcode: Success
+```
+"""
 function build_linear_solution(
         alg, u, resid, cache;
         retcode = ReturnCode.Default,
@@ -78,6 +118,44 @@ struct EigenvalueSolution{T, N, U, V, P, A, R, S} <: AbstractEigenvalueSolution{
     stats::S
 end
 
+"""
+    build_eigenvalue_solution(prob, alg, values, vectors; retcode = ReturnCode.Success,
+        resid = nothing, stats = nothing) -> EigenvalueSolution
+
+Construct the `EigenvalueSolution` returned by a solver for an eigenvalue problem.
+
+!!! warning "Developer API, not user API"
+    Solver packages use this versioned construction hook after computing eigenpairs.
+    Application code should obtain solutions through `solve` rather than call it directly.
+
+# Arguments
+
+- `prob`: The `EigenvalueProblem` that was solved.
+- `alg`: The eigenvalue algorithm that produced the result.
+- `values`: Computed eigenvalues. They are retained without copying as the solution's `u`
+  field.
+- `vectors`: Eigenvectors corresponding to `values`, conventionally stored column-wise.
+
+# Keywords
+
+- `retcode::ReturnCode.T = ReturnCode.Success`: The completion status of the solve.
+- `resid = nothing`: Residual information for the computed eigenpairs, when available.
+- `stats = nothing`: Solver-specific statistics, or `nothing` when none are available.
+
+# Returns
+
+- `EigenvalueSolution`: A no-time solution whose `u`, `vectors`, `prob`, `alg`, `retcode`,
+  `resid`, and `stats` fields are the corresponding supplied values.
+
+# Example
+
+```julia
+julia> prob = EigenvalueProblem([2.0 0.0; 0.0 3.0]);
+
+julia> build_eigenvalue_solution(prob, :dense, [2.0, 3.0], [1.0 0.0; 0.0 1.0]).retcode
+Success
+```
+"""
 function build_eigenvalue_solution(
         prob, alg, values, vectors;
         retcode = ReturnCode.Success, resid = nothing, stats = nothing

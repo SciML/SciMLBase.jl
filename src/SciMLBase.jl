@@ -2103,7 +2103,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats
 
 # Core functions
-@public build_solution, numargs
+@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs
 
 # Solver problem-concretization extension API
 @public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,
