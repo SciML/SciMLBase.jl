@@ -430,3 +430,28 @@ function initialization_status(prob::AbstractSciMLProblem)
         return FULLY_DETERMINED
     end
 end
+
+"""
+    is_overdetermined_initialization(prob) -> Bool
+
+Return whether `prob` carries an initialization problem with more residual equations
+than unknown initial values.
+
+# Arguments
+
+  - `prob`: A SciML problem whose function may carry initialization metadata.
+
+# Returns
+
+`true` when the initialization problem is overdetermined, and `false` when it is
+fully determined, underdetermined, or absent.
+
+# Developer Interface
+
+Solver and sensitivity packages use this predicate to select initialization behavior
+without depending on SciMLBase's internal status enum. Implementations must query the
+problem's initialization metadata rather than caching the result across `remake` or
+parameter updates.
+"""
+is_overdetermined_initialization(prob::AbstractSciMLProblem) =
+    initialization_status(prob) === OVERDETERMINED

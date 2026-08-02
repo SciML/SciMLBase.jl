@@ -155,6 +155,7 @@ SciMLBase.postamble!
 ```@docs
 SciMLBase.OverrideInitData
 SciMLBase.get_initial_values
+SciMLBase.is_overdetermined_initialization
 ```
 
 ## Argument Validation

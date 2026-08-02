@@ -301,6 +301,7 @@ if isdefined(Base, :ispublic)
                 :get_concrete_p, :get_concrete_u0, :isconcreteu0, :promote_u0,
                 :get_concrete_problem, :check_prob_alg_pairing, :KeywordArgError,
                 :keyword_arg_silent, Symbol("@add_kwonly"),
+                :is_overdetermined_initialization, :sensitivity_solution,
             )
             @test Base.ispublic(SciMLBase, name)
             @test Base.Docs.hasdoc(SciMLBase, name)
