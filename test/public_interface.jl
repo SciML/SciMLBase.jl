@@ -291,6 +291,20 @@ end
     @test occursin("SciMLBase.EnsembleAnalysis.EnsembleSummary", ensemble_docs)
 end
 
+@testset "Downstream-rendered integrator docstrings" begin
+    for doc in (
+            (@doc SciMLBase.last_step_failed),
+            (@doc SciMLBase.check_error),
+            (@doc SciMLBase.check_error!),
+        )
+        text = sprint(show, doc)
+        @test occursin(
+            "https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/", text
+        )
+        @test !occursin("](@ref)", text)
+    end
+end
+
 if isdefined(Base, :ispublic)
     @testset "Extension hooks public API" begin
         for name in (
