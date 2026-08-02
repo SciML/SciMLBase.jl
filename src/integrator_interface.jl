@@ -933,8 +933,9 @@ end
 Return whether the preceding attempted solver step failed to converge.
 
 Concrete differential-equation integrators may specialize this hook when their
-step controller tracks a recoverable failed attempt. [`check_error`](@ref) uses
-it to convert a non-adaptive repeated failure into
+step controller tracks a recoverable failed attempt.
+[`check_error`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error)
+uses it to convert a non-adaptive repeated failure into
 `ReturnCode.ConvergenceFailure`. The default is `false`.
 
 !!! warning "Developer API, not user API"
@@ -957,9 +958,10 @@ integration may continue.
 The common implementation preserves an existing terminal return code and checks
 for a NaN step size, iteration limits, a step size at or below `dtmin`, a
 user-supplied instability predicate, and failed nonlinear steps. It does not
-mutate `integrator.sol.retcode`; use [`check_error!`](@ref) when the solution
-must be updated. Concrete integrators may specialize the checks while preserving
-the return-code contract.
+mutate `integrator.sol.retcode`; use
+[`check_error!`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error!)
+when the solution must be updated. Concrete integrators may specialize the
+checks while preserving the return-code contract.
 """
 function check_error(integrator::DEIntegrator)
     if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
@@ -1057,8 +1059,9 @@ function postamble! end
 """
     check_error!(integrator)
 
-Run [`check_error`](@ref), store the resulting code in
-`integrator.sol.retcode`, and return that code.
+Run
+[`check_error`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error),
+store the resulting code in `integrator.sol.retcode`, and return that code.
 
 When the code is not `ReturnCode.Success`, the common implementation also calls
 the solver's `postamble!` hook so pending bookkeeping and finalization are

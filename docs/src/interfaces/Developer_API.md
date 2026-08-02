@@ -27,6 +27,17 @@ SciMLBase.value
 SciMLBase.unitfulvalue
 ```
 
+## Solution Construction Hooks
+
+Solver packages use these hooks after finishing a linear or eigenvalue solve. They preserve
+the common no-time-solution representation without making application code depend on a
+concrete solution constructor.
+
+```@docs
+SciMLBase.build_linear_solution
+SciMLBase.build_eigenvalue_solution
+```
+
 ## Integrator Hook
 
 ```@docs
