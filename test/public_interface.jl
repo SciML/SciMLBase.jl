@@ -23,6 +23,27 @@ SciMLBase.get_concrete_problem(
 SciMLBase.check_prob_alg_pairing(::ConcretizationHookProblem, ::ConcretizationHookAlgorithm) =
     nothing
 
+struct ConcreteSolveContractProblem end
+struct ConcreteSolveContractAlgorithm end
+struct ConcreteSolveContractSenseAlg end
+struct ConcreteSolveContractOriginator <: SciMLBase.ADOriginator end
+
+function SciMLBase._concrete_solve_adjoint(
+        ::ConcreteSolveContractProblem, ::ConcreteSolveContractAlgorithm,
+        ::ConcreteSolveContractSenseAlg, u0, p, ::ConcreteSolveContractOriginator,
+        args...; kwargs...
+    )
+    return (; u0, p, args, kwargs = (; kwargs...)), Δ -> (:adjoint, Δ)
+end
+
+function SciMLBase._concrete_solve_forward(
+        ::ConcreteSolveContractProblem, ::ConcreteSolveContractAlgorithm,
+        ::ConcreteSolveContractSenseAlg, u0, p, ::ConcreteSolveContractOriginator,
+        args...; kwargs...
+    )
+    return (; u0, p, args, kwargs = (; kwargs...)), Δ -> (:forward, Δ)
+end
+
 @testset "Common keyword interface documentation" begin
     common_keywords = read(
         joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Common_Keywords.md"),
@@ -144,6 +165,25 @@ end
     end
     @test concretization_kwonly(2) == 3
     @test concretization_kwonly(; x = 2, offset = 4) == 6
+end
+
+@testset "Concrete solve AD developer interface" begin
+    prob = ConcreteSolveContractProblem()
+    alg = ConcreteSolveContractAlgorithm()
+    sensealg = ConcreteSolveContractSenseAlg()
+    originator = ConcreteSolveContractOriginator()
+
+    primal, pullback = SciMLBase._concrete_solve_adjoint(
+        prob, alg, sensealg, :u0, :p, originator, :extra; saveat = :saved
+    )
+    @test primal == (; u0 = :u0, p = :p, args = (:extra,), kwargs = (; saveat = :saved))
+    @test pullback(:cotangent) == (:adjoint, :cotangent)
+
+    primal, pushforward = SciMLBase._concrete_solve_forward(
+        prob, alg, sensealg, :u0, :p, originator, :extra; saveat = :saved
+    )
+    @test primal == (; u0 = :u0, p = :p, args = (:extra,), kwargs = (; saveat = :saved))
+    @test pushforward(:tangent) == (:forward, :tangent)
 end
 
 @testset "Concrete interface reference documentation" begin
@@ -315,6 +355,9 @@ if isdefined(Base, :ispublic)
                 :get_concrete_p, :get_concrete_u0, :isconcreteu0, :promote_u0,
                 :get_concrete_problem, :check_prob_alg_pairing, :KeywordArgError,
                 :keyword_arg_silent, Symbol("@add_kwonly"),
+                :ADOriginator, :ChainRulesOriginator, :EnzymeOriginator,
+                :ReverseDiffOriginator, :TrackerOriginator, :MooncakeOriginator,
+                :_concrete_solve_adjoint, :_concrete_solve_forward,
             )
             @test Base.ispublic(SciMLBase, name)
             @test Base.Docs.hasdoc(SciMLBase, name)

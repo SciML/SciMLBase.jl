@@ -106,7 +106,7 @@ end
 # None of these cross a package boundary, and an extension is exactly where a package
 # is expected to wire its internals to an optional dependency.
 const _ei_own_internals = (
-    :ADOriginator, :MooncakeOriginator, :set_mooncakeoriginator_if_mooncake,
+    :set_mooncakeoriginator_if_mooncake,
     :DualEltypeChecker, :ODENLStepData,
     :_reshape, :add_labels!, :anyeltypedual, :build_linear_solution, :checkkwargs,
     :diffeq_to_arrays, :getobserved, :handle_distribution_u0, :interpret_vars,

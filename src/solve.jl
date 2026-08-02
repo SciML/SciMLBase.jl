@@ -527,6 +527,43 @@ function Base.showerror(io::IO, e::AdjointNotFoundError)
     return print(io, ADJOINT_NOT_FOUND_MESSAGE)
 end
 
+"""
+    _concrete_solve_adjoint(prob, alg, sensealg, u0, p, originator, args...; kwargs...)
+
+Construct the reverse-mode derivative result for a solver call.
+
+# Arguments
+
+  - `prob`: The problem being solved.
+  - `alg`: The selected solver algorithm, which may be `nothing` when the caller uses
+    a problem-stored default.
+  - `sensealg`: The selected sensitivity algorithm or `nothing` for a package-defined
+    default.
+  - `u0`: The effective initial state passed to the primal solve.
+  - `p`: The effective parameter value passed to the primal solve.
+  - `originator`: An [`ADOriginator`](@ref) identifying the outer AD system.
+  - `args...`: Remaining positional solve arguments.
+
+# Keyword Arguments
+
+`kwargs...` are the solve keywords forwarded by the caller. Implementations must honor
+the applicable common solve keywords and preserve any values that affect the primal
+solution or derivative result.
+
+# Returns
+
+A pair `(primal, pullback)`. `primal` is the ordinary solve result and `pullback` is a
+callable compatible with the AD system identified by `originator`.
+
+# Developer Interface
+
+Sensitivity packages extend this hook to implement reverse-mode solve derivatives.
+Methods must specialize on at least one problem type, solver/sensitivity algorithm, or
+originator type that the extending package owns. They must not mutate `prob`, `u0`, or
+`p`, must compute the same primal result as the corresponding `solve` call, and must
+return cotangents in the positional order expected by the originating AD rule. The
+fallback throws an informative error until a compatible sensitivity package has loaded.
+"""
 function _concrete_solve_adjoint(args...; kwargs...)
     throw(AdjointNotFoundError())
 end
@@ -543,6 +580,43 @@ function Base.showerror(io::IO, e::ForwardSensitivityNotFoundError)
     return print(io, FORWARD_SENSITIVITY_NOT_FOUND_MESSAGE)
 end
 
+"""
+    _concrete_solve_forward(prob, alg, sensealg, u0, p, originator, args...; kwargs...)
+
+Construct the forward-mode derivative result for a solver call.
+
+# Arguments
+
+  - `prob`: The problem being solved.
+  - `alg`: The selected solver algorithm, which may be `nothing` when the caller uses
+    a problem-stored default.
+  - `sensealg`: The selected sensitivity algorithm or `nothing` for a package-defined
+    default.
+  - `u0`: The effective initial state passed to the primal solve.
+  - `p`: The effective parameter value passed to the primal solve.
+  - `originator`: An [`ADOriginator`](@ref) identifying the outer AD system.
+  - `args...`: Remaining positional solve arguments.
+
+# Keyword Arguments
+
+`kwargs...` are the solve keywords forwarded by the caller. Implementations must honor
+the applicable common solve keywords and preserve any values that affect the primal
+solution or tangent result.
+
+# Returns
+
+A pair `(primal, pushforward)`. `primal` is the ordinary solve result and `pushforward`
+is a callable compatible with the AD system identified by `originator`.
+
+# Developer Interface
+
+Sensitivity packages extend this hook to implement forward-mode solve derivatives.
+Methods must specialize on at least one problem type, solver/sensitivity algorithm, or
+originator type that the extending package owns. They must not mutate `prob`, `u0`, or
+`p`, must compute the same primal result as the corresponding `solve` call, and must
+accept tangents in the positional order expected by the originating AD rule. The
+fallback throws an informative error until a compatible sensitivity package has loaded.
+"""
 function _concrete_solve_forward(args...; kwargs...)
     throw(ForwardSensitivityNotFoundError())
 end
