@@ -2,7 +2,8 @@ using Test, SciMLBase
 using SciMLBase: __has_jac, __has_tgrad, __has_Wfact, __has_Wfact_t,
     __has_paramjac, __has_analytic, __has_colorvec, has_jac,
     has_tgrad,
-    has_Wfact, has_Wfact_t, has_paramjac, has_analytic, has_colorvec, has_sys,
+    has_Wfact, has_Wfact_t, has_paramjac, has_vjp_p, has_observed, has_analytic,
+    has_colorvec, has_sys,
     AbstractDiffEqFunction
 using SymbolicIndexingInterface: SymbolCache
 
@@ -14,6 +15,37 @@ struct Foo <: AbstractDiffEqFunction{false}
     paramjac::Any
     analytic::Any
     colorvec::Any
+end
+
+struct SensitivityTraitFunction <: AbstractDiffEqFunction{false}
+    paramjac::Any
+    vjp_p::Any
+    observed::Any
+end
+
+@testset "Sensitivity function trait interface" begin
+    f = SensitivityTraitFunction(:paramjac, :vjp_p, :observed)
+    @test has_paramjac(f)
+    @test has_vjp_p(f)
+    @test has_observed(f)
+
+    missing = SensitivityTraitFunction(nothing, nothing, nothing)
+    @test !has_paramjac(missing)
+    @test !has_vjp_p(missing)
+    @test !has_observed(missing)
+end
+
+@testset "Sensitivity function wrapper interface" begin
+    pf = SciMLBase.ParamJacobianWrapper((u, p, t) -> p .* u, 0.0, [2.0])
+    @test pf([3.0]) == [6.0]
+    out = zeros(1)
+    @test pf(out, [4.0]) === out
+    @test out == [8.0]
+
+    values = Int[]
+    wrapped = SciMLBase.Void(x -> push!(values, x))
+    @test wrapped(1) === nothing
+    @test values == [1]
 end
 
 f = Foo(1, 1, 1, 1, 1, 1, 1)

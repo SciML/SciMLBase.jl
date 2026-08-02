@@ -132,6 +132,9 @@ SciMLBase.has_jac
 SciMLBase.has_jvp
 SciMLBase.has_vjp
 SciMLBase.has_tgrad
+SciMLBase.has_paramjac
+SciMLBase.has_vjp_p
+SciMLBase.has_observed
 SciMLBase.has_initialization_data
 SciMLBase.has_sys
 ```
@@ -182,4 +185,6 @@ SciMLBase.TimeDerivativeWrapper
 SciMLBase.TimeGradientWrapper
 SciMLBase.UDerivativeWrapper
 SciMLBase.UJacobianWrapper
+SciMLBase.ParamJacobianWrapper
+SciMLBase.Void
 ```

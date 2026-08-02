@@ -594,6 +594,36 @@ end
 # Overloaded in other repositories
 function unwrap_cache end
 
+"""
+    Void(f)
+
+Wrap `f` so every call returns `nothing` after evaluating `f`.
+
+# Arguments
+
+  - `f`: A callable whose side effects should be preserved while its return value is
+    discarded.
+
+# Returns
+
+A callable wrapper with the same positional arguments as `f` that always returns
+`nothing`.
+
+# Usage
+
+```julia
+values = Int[]
+push_nothing = Void(x -> push!(values, x))
+push_nothing(1) # nothing
+```
+
+# Developer Interface
+
+Use this wrapper when an in-place SciML callback must have `nothing` return semantics,
+including AD integration code that distinguishes mutation from an out-of-place return.
+`f` is still evaluated exactly once. Do not use `Void` to hide exceptions or to change
+the calling convention of `f`.
+"""
 struct Void{F}
     f::F
 end

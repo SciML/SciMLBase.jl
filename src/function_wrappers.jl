@@ -150,24 +150,45 @@ UDerivativeWrapper(f::F, t, p) where {F} = UDerivativeWrapper{isinplace(f, 4)}(f
 (ff::UDerivativeWrapper{true})(u) = (du1 = similar(u); ff.f(du1, u, ff.p, ff.t); du1)
 
 """
-    ParamJacobianWrapper{iip, fType, tType, uType} <: AbstractWrappedFunction{iip}
+    ParamJacobianWrapper(f, t, u)
+    ParamJacobianWrapper{iip}(f, t, u)
 
-Wraps functions to compute Jacobians with respect to parameters `p`. This wrapper is essential for 
-parameter estimation, inverse problems, and sensitivity analysis with respect to model parameters.
+Wrap an ODE-style function as a function of parameters alone.
+
+# Arguments
+
+  - `f`: An in-place `f(du, u, p, t)` or out-of-place `f(u, p, t)` model function.
+  - `t`: The fixed independent-variable value.
+  - `u`: The fixed state value.
+  - `iip`: Whether `f` follows the in-place convention. The unparameterized constructor
+    infers it from `f`.
 
 # Fields
-- `f`: The function to wrap
-- `t`: Time value
-- `u`: State variables
+
+  - `f`: The wrapped model function.
+  - `t`: The fixed independent-variable value.
+  - `u`: The fixed state value.
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `tType`: Type of the time variable
-- `uType`: Type of the state variables
 
-This wrapper enables efficient computation of `∂f/∂p` for parameter sensitivity analysis and
-optimization algorithms.
+  - `iip`: Whether the wrapped function is in-place.
+  - `fType`: Type of the wrapped function.
+  - `tType`: Type of the fixed independent-variable value.
+  - `uType`: Type of the fixed state value.
+
+# Usage
+
+```julia
+pf = ParamJacobianWrapper((u, p, t) -> p .* u, 0.0, [2.0])
+pf([3.0]) # [6.0]
+```
+
+# Developer Interface
+
+Sensitivity and solver packages use this wrapper when differentiating a model with
+respect to `p`. Call `pf(p)` to allocate an output or `pf(out, p)` to fill a provided
+output buffer. The fixed `u` and `t` values must be valid inputs for `f`; downstream
+code must use the callable interface rather than depending on the mutable field layout.
 """
 mutable struct ParamJacobianWrapper{iip, fType, tType, uType} <: AbstractWrappedFunction{iip}
     f::fType
