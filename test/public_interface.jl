@@ -359,6 +359,7 @@ if isdefined(Base, :ispublic)
                 :has_paramjac, :has_vjp_p, :has_observed, :ParamJacobianWrapper, :Void,
                 :ADOriginator, :ChainRulesOriginator, :EnzymeOriginator,
                 :ReverseDiffOriginator, :TrackerOriginator, :MooncakeOriginator,
+                :set_mooncakeoriginator_if_mooncake,
                 :_concrete_solve_adjoint, :_concrete_solve_forward,
             )
             @test Base.ispublic(SciMLBase, name)
@@ -611,6 +612,7 @@ if isdefined(Base, :ispublic)
                 :VectorContinuousCallback,
                 :DiscreteCallback,
                 :CallbackSet,
+                :RootfindOpt,
                 :NoRootFind,
                 :LeftRootFind,
                 :RightRootFind,

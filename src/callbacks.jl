@@ -3,6 +3,27 @@
 INITIALIZE_DEFAULT(cb, u, t, integrator) = derivative_discontinuity!(integrator, false)
 FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
 
+"""
+    RootfindOpt
+
+Select how a continuous callback localizes a detected zero crossing.
+
+# Values
+
+- `NoRootFind`: apply the callback at the detected step endpoint without root localization.
+- `LeftRootFind`: localize the event and use the solution's left-limit value.
+- `RightRootFind`: localize the event and use the solution's right-limit value.
+
+# Usage
+
+```julia
+callback = ContinuousCallback(condition, affect!; rootfind = LeftRootFind)
+```
+
+The `rootfind` keyword of `ContinuousCallback` and `VectorContinuousCallback`
+accepts one of these values. `Bool` values remain accepted for compatibility and
+convert to `LeftRootFind` or `NoRootFind`.
+"""
 @enum RootfindOpt::Int8 begin
     NoRootFind = 0
     LeftRootFind = 1

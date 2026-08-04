@@ -37,6 +37,7 @@ which is documented with the [symbolic save-index interface](@ref symbolic_save_
 SciMLBase.DECallback
 SciMLBase.AbstractContinuousCallback
 SciMLBase.AbstractDiscreteCallback
+SciMLBase.RootfindOpt
 SciMLBase.NoRootFind
 SciMLBase.LeftRootFind
 SciMLBase.RightRootFind

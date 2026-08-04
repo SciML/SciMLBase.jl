@@ -481,6 +481,19 @@ _reshape(v, siz) = reshape(v, siz)
 _reshape(v::Number, siz) = v
 _reshape(v::AbstractSciMLScalarOperator, siz) = v
 
+"""
+    set_mooncakeoriginator_if_mooncake(originator::ADOriginator)
+
+Return the automatic-differentiation originator for a solver call, preserving
+`originator` in ordinary execution and switching to `MooncakeOriginator()` when
+Mooncake's overlay evaluates the call.
+
+# Developer API
+
+Solver and sensitivity packages pass a concrete `ADOriginator` through their
+low-level solve path so AD rules can dispatch on its origin. End-user code
+should not call this function or dispatch on its result.
+"""
 set_mooncakeoriginator_if_mooncake(x::SciMLBase.ADOriginator) = x
 
 # Copied from Static.jl https://github.com/SciML/Static.jl/blob/b50279cc9b33741fd60f382c789fbaef8622d964/src/Static.jl#L743
