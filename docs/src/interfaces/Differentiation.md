@@ -111,6 +111,10 @@ order and must return the ordinary primal result together with the corresponding
 pullback or pushforward. It must preserve the primal solve semantics and may not mutate
 the problem or differentiated inputs.
 
+`set_mooncakeoriginator_if_mooncake` is the Mooncake overlay boundary for this
+protocol. Solver packages call it only while constructing their low-level
+originator keyword; application code must not call it.
+
 ```@docs
 SciMLBase.ADOriginator
 SciMLBase.ChainRulesOriginator
@@ -118,6 +122,7 @@ SciMLBase.EnzymeOriginator
 SciMLBase.ReverseDiffOriginator
 SciMLBase.TrackerOriginator
 SciMLBase.MooncakeOriginator
+SciMLBase.set_mooncakeoriginator_if_mooncake
 SciMLBase._concrete_solve_adjoint
 SciMLBase._concrete_solve_forward
 ```

@@ -2263,7 +2263,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Versioned automatic-differentiation concrete-solve extension API. These names are
 # deliberately not exported: application code selects a documented `sensealg` instead.
 @public ADOriginator, ChainRulesOriginator, EnzymeOriginator, ReverseDiffOriginator,
-    TrackerOriginator, MooncakeOriginator, _concrete_solve_adjoint, _concrete_solve_forward
+    TrackerOriginator, MooncakeOriginator, set_mooncakeoriginator_if_mooncake,
+    _concrete_solve_adjoint, _concrete_solve_forward
 
 # Function-wrapper / solution interface helpers
 @public unwrapped_f, specialization, solution_new_retcode, sensitivity_solution
@@ -2305,7 +2306,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Callback interface
 @public DECallback, AbstractContinuousCallback, AbstractDiscreteCallback,
-    NoRootFind, LeftRootFind, RightRootFind,
+    RootfindOpt, NoRootFind, LeftRootFind, RightRootFind,
     split_callbacks, save_final_discretes!, save_discretes_if_enabled!
 
 # Ensemble interface
