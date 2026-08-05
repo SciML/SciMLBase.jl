@@ -413,6 +413,46 @@ get_colorizers(io::IO) = get(io, :color, false) ? (TYPE_COLOR, NO_COLOR) : ("", 
 
 """
     @def name definition
+
+Define a zero-argument macro named `@name` whose expansion is `definition`.
+SciML solver packages use this helper for repeated interpolation and stage
+preambles that must be expanded in the caller's local scope.
+
+# Arguments
+
+  - `name`: name of the macro to define, without the leading `@`.
+  - `definition`: expression returned when the generated macro is expanded.
+
+# Returns
+
+An expression that defines `@name` in the module where `@def` is invoked.
+
+# Developer contract
+
+Invoke `@def` at module scope and invoke the generated macro without arguments.
+The generated macro escapes `definition`, so names in the definition resolve in
+the invocation scope. Package code must therefore ensure that every referenced
+local is available at each invocation. Do not use `@def` to introduce exported
+application API; it is a solver-author code-generation utility.
+
+# Examples
+
+```julia
+module ExampleSolver
+using SciMLBase: @def
+
+@def affine_preamble begin
+    shifted = x + offset
+end
+
+function evaluate(x, offset)
+    @affine_preamble
+    return shifted
+end
+end
+
+ExampleSolver.evaluate(2, 3) == 5
+```
 """
 macro def(name, definition)
     return quote
@@ -649,6 +689,38 @@ function mergedefaults(defaults, varmap, vars)
     end
 end
 
+"""
+    _unwrap_val(::Val{B}) where {B}
+    _unwrap_val(x)
+
+Return the value encoded by `Val{B}`, or return a non-`Val` input unchanged.
+Solver constructors use this developer utility for options that accept either a
+compile-time `Val` marker or an ordinary runtime value.
+
+# Arguments
+
+  - `x`: a `Val` instance or a value that should pass through unchanged.
+
+# Returns
+
+The type parameter `B` for `Val{B}()`; otherwise `x` itself, preserving its type
+and identity.
+
+# Developer contract
+
+Call this function only when both `Val` and runtime-value forms are part of the
+documented option contract. Downstream packages should not add methods: accepting
+another wrapper type is a change to the owner API and must be implemented here.
+
+# Examples
+
+```julia
+using SciMLBase: _unwrap_val
+
+_unwrap_val(Val(true)) === true
+_unwrap_val(:runtime) === :runtime
+```
+"""
 _unwrap_val(::Val{B}) where {B} = B
 _unwrap_val(B) = B
 

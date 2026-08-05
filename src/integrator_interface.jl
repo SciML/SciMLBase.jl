@@ -894,8 +894,78 @@ documented `reinit!` method. Supported optional keywords can still vary by
 problem family. The default is `false`.
 """ has_reinit
 
+"""
+    log_numerical_instability(integrator; jacobian_logging = true) -> AbstractString
+
+Return numerical diagnostics to append when an integrator reports instability.
+
+# Arguments
+
+- `integrator`: A solver integrator whose state can be inspected for numerical issues.
+
+# Keywords
+
+- `jacobian_logging::Bool = true`: Whether diagnostics may include Jacobian information.
+
+# Returns
+
+- `AbstractString`: A diagnostic suffix. The default is the empty string.
+
+# Rules
+
+- Solver packages may specialize this hook for their concrete integrator type.
+- Return text suitable for direct concatenation onto a solver error message.
+
+!!! warning "Developer API, not user API"
+    Application code should inspect a failed solution's return code and message,
+    not call this hook directly.
+
+# Example
+```julia
+struct MyIntegrator end
+
+SciMLBase.log_numerical_instability(::MyIntegrator; jacobian_logging = true) =
+    " State magnitude exceeded the configured bound."
+
+SciMLBase.log_numerical_instability(MyIntegrator())
+```
+"""
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
+"""
+    has_mtk_sys(integrator) -> Bool
+
+Return whether `integrator` provides a non-`nothing` ModelingToolkit system for
+symbolic instability diagnostics.
+
+# Arguments
+
+- `integrator`: A solver integrator.
+
+# Returns
+
+- `Bool`: `true` when the integrator supports symbolic diagnostic queries. The
+  default is `false`.
+
+# Rules
+
+- Solver packages may specialize this trait for their concrete integrator type.
+- A `true` result promises that the integrator exposes the system expected by
+  `diagnose_symbolic_instability`.
+
+!!! warning "Developer API, not user API"
+    Application code should use ModelingToolkit's problem interfaces directly;
+    this trait is only for solver diagnostic implementations.
+
+# Example
+```julia
+struct MyIntegrator end
+
+SciMLBase.has_mtk_sys(::MyIntegrator) = true
+
+SciMLBase.has_mtk_sys(MyIntegrator())
+```
+"""
 has_mtk_sys(integrator) = false
 
 diagnose_symbolic_instability(sys, u, uprev) = ""

@@ -27,6 +27,18 @@ SciMLBase.value
 SciMLBase.unitfulvalue
 ```
 
+## Solver Code-Generation Utilities
+
+These utilities support solver implementation code. Generated preambles must be
+defined at module scope, and their referenced names are resolved in the expansion
+site. `_unwrap_val` accepts only the owner-defined `Val` and pass-through forms;
+downstream packages should not extend it.
+
+```@docs
+SciMLBase.@def
+SciMLBase._unwrap_val
+```
+
 ## Solution Construction Hooks
 
 Solver packages use these hooks after finishing a linear or eigenvalue solve. They preserve
@@ -42,6 +54,13 @@ SciMLBase.build_eigenvalue_solution
 
 ```@docs
 SciMLBase.last_step_failed
+```
+
+## Instability Diagnostic Hooks
+
+```@docs
+SciMLBase.has_mtk_sys
+SciMLBase.log_numerical_instability
 ```
 
 ## Solver Preparation Hooks
