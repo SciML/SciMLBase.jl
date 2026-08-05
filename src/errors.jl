@@ -82,6 +82,12 @@ const allowedkeywords = (
     :store_trace,
     # Termination condition for solvers
     :termination_condition,
+    # Nonlinear preconditioning: a left preconditioner `G(fu, u, p)` on the residual and
+    # an iterate corrector `H(u_proposed, u_prev, p[, cache])` applied to accepted
+    # iterates. Solver-side options rather than properties of the function, so that they
+    # can be supplied late (at `solve`/`init`) or carried on the problem's `kwargs`.
+    :precondition,
+    :postcondition,
     # For AbstractAliasSpecifier
     :alias,
     # Parameter estimation with BVP
