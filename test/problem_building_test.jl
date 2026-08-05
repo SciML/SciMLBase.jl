@@ -309,3 +309,22 @@ end
     uf = SciMLBase.unwrapped_f(prob.f)
     @test SciMLBase.specialization(uf) === SciMLBase.AutoDePSpecialize
 end
+
+@testset "Nonlinear preconditioning keywords are accepted solver options" begin
+    for kw in (:precondition, :postcondition)
+        @test kw in SciMLBase.allowedkeywords
+    end
+    # They are ordinary solve keywords, so they ride along on the problem's `kwargs`
+    # and are merged into the solve call like any other option.
+    G = (fu, u, p) -> asinh.(fu)
+    H = (up, uprev, p) -> up
+    prob = NonlinearProblem(
+        (u, p) -> u .^ 2 .- p, [1.0], 2.0; precondition = G, postcondition = H
+    )
+    @test prob.kwargs[:precondition] === G
+    @test prob.kwargs[:postcondition] === H
+    @test SciMLBase.checkkwargs(SciMLBase.KeywordArgError; prob.kwargs...) === nothing
+    prob2 = remake(prob; p = 3.0)
+    @test prob2.kwargs[:precondition] === G
+    @test prob2.kwargs[:postcondition] === H
+end
