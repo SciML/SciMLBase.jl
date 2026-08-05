@@ -2229,7 +2229,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # application code should use the user-facing solve and solution interfaces instead.
 @public enable_interpolation_sensitivitymode, get_root_indp, has_initializeprob,
     late_binding_update_u0_p, strip_interpolation, unitfulvalue, value, last_step_failed,
-    has_mtk_sys, log_numerical_instability
+    has_mtk_sys, log_numerical_instability, @def, _unwrap_val
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, ImmutableNonlinearProblem, NonlinearAliasSpecifier
