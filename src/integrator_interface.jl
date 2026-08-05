@@ -922,8 +922,12 @@ Return numerical diagnostics to append when an integrator reports instability.
 
 # Example
 ```julia
+struct MyIntegrator end
+
 SciMLBase.log_numerical_instability(::MyIntegrator; jacobian_logging = true) =
     " State magnitude exceeded the configured bound."
+
+SciMLBase.log_numerical_instability(MyIntegrator())
 ```
 """
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
@@ -955,7 +959,11 @@ symbolic instability diagnostics.
 
 # Example
 ```julia
+struct MyIntegrator end
+
 SciMLBase.has_mtk_sys(::MyIntegrator) = true
+
+SciMLBase.has_mtk_sys(MyIntegrator())
 ```
 """
 has_mtk_sys(integrator) = false

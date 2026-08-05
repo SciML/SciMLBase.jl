@@ -186,10 +186,25 @@ end
     @test pushforward(:tangent) == (:forward, :tangent)
 end
 
+struct TestDiagnosticIntegrator end
+
+SciMLBase.has_mtk_sys(::TestDiagnosticIntegrator) = true
+function SciMLBase.log_numerical_instability(
+        ::TestDiagnosticIntegrator; jacobian_logging = true
+    )
+    return jacobian_logging ? " Jacobian diagnostic." : " State diagnostic."
+end
+
 @testset "Instability diagnostic developer interface" begin
     @test !SciMLBase.has_mtk_sys(nothing)
     @test SciMLBase.log_numerical_instability(nothing) == ""
     @test SciMLBase.log_numerical_instability(nothing; jacobian_logging = false) == ""
+
+    integrator = TestDiagnosticIntegrator()
+    @test SciMLBase.has_mtk_sys(integrator)
+    @test SciMLBase.log_numerical_instability(integrator) == " Jacobian diagnostic."
+    @test SciMLBase.log_numerical_instability(integrator; jacobian_logging = false) ==
+        " State diagnostic."
 end
 
 @testset "Concrete interface reference documentation" begin
