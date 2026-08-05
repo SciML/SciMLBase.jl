@@ -185,20 +185,47 @@ function checkkwargs(kwargshandle, allowed; kwargs...)
     end
 end
 """
-    $(TYPEDSIGNATURES)
+    get_updated_symbolic_problem(indp, prob; kwargs...) -> updated_prob
 
-Given the index provider `indp` used to construct the problem `prob` being solved, return
-an updated `prob` to be used for solving. All implementations should accept arbitrary
-keyword arguments.
+Return the problem that a solver should use after applying symbolic solve-time updates.
 
-Should be called before the problem is solved, after performing type-promotion on the
-problem. If the returned problem is not `===` the provided `prob`, it is assumed to
-contain the `u0` and `p` passed as keyword arguments.
+# Arguments
 
-# Keyword Arguments
+- `indp`: The root index provider returned by [`get_root_indp`](@ref); this is the
+  primary extension dispatch argument.
+- `prob`: The type-promoted SciML problem about to be solved.
 
-- `u0`, `p`: Override values for `state_values(prob)` and `parameter_values(prob)` which
-  should be used instead of the ones in `prob`.
+# Keywords
+
+- `u0`: A solve-time state override, defaulting to the problem's state values.
+- `p`: A solve-time parameter override, defaulting to the problem's parameter values.
+- `kwargs...`: Additional solve keywords. Implementations must accept arbitrary keywords.
+
+# Returns
+
+- `updated_prob`: `prob` or a replacement problem ready for `init`/`solve`. When the
+  result is not `=== prob`, it must already contain the effective `u0` and `p` values.
+
+# Extension Rules
+
+Symbolic-system packages may specialize on `indp` and problem types they own. This hook is
+called after type promotion and before solver initialization. Implementations must preserve
+the problem family and all solve-relevant fields not explicitly replaced.
+
+# Example
+
+```julia
+struct MySolveSystem end
+struct MySymbolicProblem
+    u0
+    p
+end
+
+function SciMLBase.get_updated_symbolic_problem(
+        ::MySolveSystem, prob::MySymbolicProblem; u0 = prob.u0, p = prob.p, kwargs...)
+    return MySymbolicProblem(u0, p)
+end
+```
 """
 function get_updated_symbolic_problem(indp, prob; kw...)
     return prob

@@ -1,5 +1,5 @@
 """
-    $(TYPEDEF)
+    ODENLStepData(nlprob, u0perm, set_gamma_c, set_outer_tmp, set_inner_tmp, nlprobmap)
 
 A collection of hooks for custom nonlinear stage solves in implicit ODE
 algorithms.
@@ -21,6 +21,14 @@ is the stage evaluation time, and `gamma1`, `gamma2`, `outer_tmp`, and
 # Fields
 
 $(TYPEDFIELDS)
+
+# Extension Rules
+
+Symbolic-system packages construct this value and store it as an `ODEFunction`'s
+nonlinear-stage metadata. Solver packages may consume the six fields through their
+callable contracts, but must not assume concrete callable types or mutate the container.
+Each setter must update the object it closes over consistently with `nlprob`, and
+`nlprobmap` must map a completed nonlinear solution back to the ODE stage representation.
 """
 struct ODENLStepData{NLProb, SetU0, SetGammaC, SetOuterTmp, SetInnerTmp, NLProbMap}
     """

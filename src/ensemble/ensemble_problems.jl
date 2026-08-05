@@ -164,18 +164,47 @@ Ensembles Simulations Interface page for more details",
 end
 
 """
-$(TYPEDEF)
+    WeightedEnsembleProblem(ensembleprob, weights)
+    WeightedEnsembleProblem(args...; weights, kwargs...)
 
-Weighted ensemble problem wrapper.
+Associate an [`EnsembleProblem`](@ref) with one weight per trajectory.
 
-`WeightedEnsembleProblem` associates an [`EnsembleProblem`](@ref) with a vector
-of trajectory weights. The weights are used by weighted ensemble analysis
-utilities and must match the number of underlying trajectories.
+The direct constructor wraps an existing ensemble problem. The keyword constructor
+forwards `args` and `kwargs` to `EnsembleProblem`, verifies that `weights` sum to one,
+and verifies that their length matches the generated problem collection.
 
-## Fields
+# Arguments
 
-  - `ensembleprob`: The wrapped ensemble problem.
-  - `weights`: A vector of trajectory weights.
+- `ensembleprob`: The ensemble problem whose trajectories are weighted.
+- `weights`: An `AbstractVector` containing one weight per trajectory.
+
+# Keywords
+
+- `weights`: Required by the forwarding constructor.
+- `kwargs...`: Forwarded to [`EnsembleProblem`](@ref).
+
+# Fields
+
+- `ensembleprob`: The wrapped ensemble problem.
+- `weights`: The trajectory weights.
+
+# Returns
+
+- `WeightedEnsembleProblem`: A wrapper that delegates ordinary ensemble-problem
+  properties and exposes `weights`.
+
+# Throws
+
+- `AssertionError`: The forwarding constructor throws when the weights do not sum to
+  one or their length does not match the generated problem collection.
+
+# Example
+
+```julia
+ensembleprob = EnsembleProblem([:first, :second])
+weighted = WeightedEnsembleProblem(ensembleprob, [0.25, 0.75])
+weighted.weights
+```
 """
 struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVector} <:
     AbstractEnsembleProblem
@@ -184,15 +213,36 @@ struct WeightedEnsembleProblem{T1 <: AbstractEnsembleProblem, T2 <: AbstractVect
 end
 
 """
-Return the properties of the wrapped ensemble problem plus `:weights`.
+    Base.propertynames(prob::WeightedEnsembleProblem) -> Tuple
+
+Return the delegated property names of `prob.ensembleprob`, followed by `:weights`.
+
+This method defines the properties advertised to reflection and tab completion. The
+returned tuple may include `:ensembleprob` when the wrapped problem advertises it.
 """
 function Base.propertynames(e::WeightedEnsembleProblem)
     return (Base.propertynames(getfield(e, :ensembleprob))..., :weights)
 end
 
 """
-Access `:weights`, `:ensembleprob`, or a delegated property of the wrapped
-ensemble problem.
+    Base.getproperty(prob::WeightedEnsembleProblem, name::Symbol)
+
+Return `prob.weights`, the wrapped `prob.ensembleprob`, or a property delegated to the
+wrapped ensemble problem.
+
+# Arguments
+
+- `prob`: The weighted ensemble wrapper.
+- `name`: `:weights`, `:ensembleprob`, or a property supported by the wrapped problem.
+
+# Returns
+
+- The stored weights, wrapped problem, or delegated property value.
+
+# Throws
+
+Errors from `getproperty(prob.ensembleprob, name)` propagate for unsupported delegated
+properties.
 """
 function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
     f === :weights && return getfield(e, :weights)
@@ -200,12 +250,6 @@ function Base.getproperty(e::WeightedEnsembleProblem, f::Symbol)
     return getproperty(getfield(e, :ensembleprob), f)
 end
 
-"""
-$(SIGNATURES)
-
-Construct a [`WeightedEnsembleProblem`](@ref), asserting that the supplied
-`weights` sum to one and match the number of generated problems.
-"""
 function WeightedEnsembleProblem(args...; weights, kwargs...)
     # TODO: allow skipping checks?
     @assert sum(weights) ≈ 1

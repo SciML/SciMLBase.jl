@@ -10,7 +10,6 @@ makedocs(
     authors = "Chris Rackauckas",
     modules = [SciMLBase],
     clean = true, doctest = true, linkcheck = true,
-    warnonly = [:docs_block, :missing_docs],
     format = Documenter.HTML(
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/SciMLBase/stable"

@@ -118,7 +118,7 @@ function remake(
 end
 
 """
-    $(TYPEDSIGNATURES)
+    _has_type_erased_params(::Type{T}) -> Bool where {T <: AbstractSciMLFunction}
 
 Check if the type `T` of an `AbstractSciMLFunction` has any type-erased (abstract) type
 parameters beyond `iip` and `specialize`. Returns `true` if any field type parameter (index
@@ -137,7 +137,10 @@ erasure was applied (e.g. by `promote_f` for AutoSpecialize compilation caching)
 end
 
 """
-    $(TYPEDSIGNATURES)
+    _reconstruct_as_type(::Type{TargetType}, source::SourceType) -> TargetType
+
+where `TargetType <: AbstractSciMLFunction` and
+`SourceType <: AbstractSciMLFunction`.
 
 Reconstruct `source` preserving the non-concrete (erased) type parameters from
 `TargetType` while using `source`'s actual concrete types for all other parameters.
@@ -172,7 +175,7 @@ OverrideInitData}` for initialization_data) while allowing concrete field types
 end
 
 """
-    $(TYPEDSIGNATURES)
+    widen_bounded_type_params(f::AbstractSciMLFunction) -> AbstractSciMLFunction
 
 Widen all bounded type parameters of an `AbstractSciMLFunction` to their upper bounds.
 
@@ -184,6 +187,30 @@ respectively, while leaving all unbounded (`<: Any`) type parameters concrete.
 This ensures that all AutoSpecialize instances of a function type share the same type
 regardless of model-specific details (e.g. initialization functions), preventing
 recompilation of `promote_f` and solver code for each model.
+
+# Arguments
+
+- `f`: A concrete SciML function wrapper.
+
+# Returns
+
+- A reconstruction of `f` with the same field values and with bounded type parameters
+  replaced by their declared upper bounds. Unbounded parameters remain concrete.
+
+# Developer Interface
+
+Symbolic-system packages may call this after attaching model-specific initialization or
+nonlinear-stage metadata to a function that uses `AutoSpecialize`. Callers must treat the
+returned wrapper as immutable metadata reconstruction and must not depend on its exact
+concrete type parameters.
+
+# Example
+
+```julia
+f = ODEFunction{false, AutoSpecialize}((u, p, t) -> u)
+widened = SciMLBase.widen_bounded_type_params(f)
+SciMLBase.isinplace(widened)
+```
 """
 @generated function widen_bounded_type_params(f::F) where {F <: AbstractSciMLFunction}
     # Walk the UnionAll chain to collect TypeVars and their upper bounds
@@ -444,22 +471,56 @@ function SciMLBase.remake(
 end
 
 """
-    $TYPEDEF
+    RemakeInitializationDataContext()
 
-Additional information passed to `remake_initialization_data` which influences behavior of
-implementors. Currently does not contain any fields.
+Context passed to [`remake_initialization_data`](@ref).
+
+The context currently has no fields. It reserves a positional extension point so future
+context can be added without changing the symbolic-remake dispatch shape. Extensions must
+accept the context argument and must not dispatch on undocumented implementation details.
 """
 struct RemakeInitializationDataContext end
 
 """
-    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext)
+    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp,
+        ctx = RemakeInitializationDataContext())
+        -> initialization_data
 
-Re-create the initialization data present in the function `scimlfn`, using the
-associated system `sys`, the user provided new values of `u0`, initial time `t0`,
-user-provided `p`, new u0 vector `newu0` and new parameter object `newp`. By default,
-returns `nothing` if `scimlfn` does not have initialization data. 
+Recreate a SciML function's initialization data after symbolic `remake` changes state or
+parameters.
 
-Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
+# Arguments
+
+- `sys`: The symbolic system associated with `scimlfn`; this is the primary extension
+  dispatch argument.
+- `scimlfn`: The SciML function whose initialization data is being reconstructed.
+- `u0`, `p`: Values supplied to `remake`; either may be `missing` when not overridden.
+- `t0`: The new initial independent-variable value.
+- `newu0`, `newp`: Concrete state and parameter values already resolved by `remake`.
+- `ctx`: A [`RemakeInitializationDataContext`](@ref).
+
+# Returns
+
+- Reconstructed initialization data, or `nothing` when `scimlfn` has none. The generic
+  method preserves the existing initialization callbacks and maps.
+
+# Extension Rules
+
+Symbolic-system packages may specialize on `sys` and function types they own. A method
+must accept the context argument, must handle `missing` user overrides, and must return
+data accepted by the target SciML function constructor. It must not mutate `u0`, `p`,
+`newu0`, or `newp` unless those objects' public contracts explicitly permit mutation.
+
+# Example
+
+```julia
+struct MyInitializationSystem end
+
+function SciMLBase.remake_initialization_data(
+        ::MyInitializationSystem, scimlfn, u0, t0, p, newu0, newp, ctx)
+    return (; previous = scimlfn.initialization_data, newu0, newp)
+end
+```
 """
 function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext = RemakeInitializationDataContext())
     if !has_initialization_data(scimlfn)
@@ -1226,17 +1287,46 @@ function _get_new_A_b(f::SymbolicLinearInterface, p, A, b; kw...)
     return get_new_A_b(f.sys, f, p, A, b; kw...)
 end
 
-# public API
 """
-    $(TYPEDSIGNATURES)
+    get_new_A_b(root_indp, f, p, A, b; kwargs...) -> (new_A, new_b)
 
-A function to return the updated `A` and `b` matrices for a `LinearProblem` after `remake`.
-`root_indp` is the innermost index provider found by recursively, calling
-`SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns the new `A`
-`b` matrices. Mutation of `A` and `b` is permitted.
+Return the matrix and right-hand side for a symbolic `LinearProblem` after `remake`.
 
-All implementations must accept arbitrary keyword arguments in case they are added in the
-future.
+# Arguments
+
+- `root_indp`: The innermost index provider obtained by recursively following
+  `SymbolicIndexingInterface.symbolic_container`; this is the primary extension dispatch
+  argument.
+- `f`: The problem's [`SymbolicLinearInterface`](@ref).
+- `p`: The remade parameter object.
+- `A`, `b`: Copies of the previous matrix and right-hand side.
+
+# Keywords
+
+Implementations must accept and forward arbitrary keyword arguments for compatibility
+with future symbolic remake options.
+
+# Returns
+
+- `(new_A, new_b)`: Updated linear-system data. Implementations may mutate and return
+  `A` and `b`, or return replacement objects.
+
+# Extension Rules
+
+Symbolic-system packages may specialize on `root_indp` and interface types they own. The
+returned objects must define the same linear problem represented by `f` and `p`, and must
+remain valid inputs to the original `LinearProblem` constructor.
+
+# Example
+
+```julia
+struct MyLinearSystem end
+
+function SciMLBase.get_new_A_b(::MyLinearSystem, f, p, A, b; kwargs...)
+    f.update_Ab(A, b, p)
+    return A, b
+end
+```
 """
 get_new_A_b(root_indp, f, p, A, b; kw...) = A, b
 
@@ -1258,10 +1348,34 @@ function varmap_get(varmap, var, default = nothing)
 end
 
 """
-    $(TYPEDSIGNATURES)
+    detect_cycles(indp, varmap, syms) -> Bool
 
-Check if `varmap::Dict{Any, Any}` contains cyclic values for any symbolic variables in
-`syms`. Falls back on the basis of `symbolic_container(indp)`. Returns `false` by default.
+Return whether symbolic substitutions in `varmap` contain a cycle involving `syms`.
+
+# Arguments
+
+- `indp`: An index provider used for extension dispatch.
+- `varmap`: A symbolic assignment map.
+- `syms`: Symbols whose dependencies should be checked.
+
+# Returns
+
+- `Bool`: The result from the innermost symbolic container. The generic fallback returns
+  `false` when no more specific container method exists.
+
+# Extension Rules
+
+Symbolic-system packages may specialize this function for index-provider types they own.
+A method must return `true` only for a dependency cycle that prevents deterministic
+symbolic replacement; it must not mutate `varmap` or `syms`.
+
+# Example
+
+```julia
+struct MyCycleCheckedSystem end
+SciMLBase.detect_cycles(::MyCycleCheckedSystem, varmap, syms) =
+    any(sym -> get(varmap, sym, nothing) === sym, syms)
+```
 """
 function detect_cycles(indp, varmap, syms)
     if hasmethod(symbolic_container, Tuple{typeof(indp)}) &&
@@ -1545,10 +1659,13 @@ function updated_u0_p(
 end
 
 """
-    $TYPEDEF
+    LateBindingUpdateU0PContext()
 
-Additional information passed to `late_binding_update_u0_p` which influences behavior of
-implementors. Currently does not contain any fields.
+Context passed to [`late_binding_update_u0_p`](@ref).
+
+The context currently has no fields. It reserves a positional extension point for
+symbolic-system packages. Extensions must accept it and must not assume that it remains
+fieldless in later minor releases.
 """
 struct LateBindingUpdateU0PContext end
 

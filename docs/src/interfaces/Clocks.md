@@ -22,5 +22,6 @@ SciMLBase.iseventclock
 SciMLBase.is_discrete_time_domain
 SciMLBase.first_clock_tick_time
 SciMLBase.IndexedClock
+Base.getindex(::SciMLBase.AbstractClock, ::Any)
 SciMLBase.canonicalize_indexed_clock
 ```

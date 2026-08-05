@@ -107,10 +107,10 @@ end
 # is expected to wire its internals to an optional dependency.
 const _ei_own_internals = (
     :set_mooncakeoriginator_if_mooncake,
-    :DualEltypeChecker, :ODENLStepData,
+    :DualEltypeChecker,
     :_reshape, :add_labels!, :anyeltypedual, :build_linear_solution, :checkkwargs,
     :diffeq_to_arrays, :getobserved, :handle_distribution_u0, :interpret_vars,
-    :isdistribution, :isdualtype, :prepare_function, :prepare_initial_state,
+    :isdistribution, :isdualtype,
     :reduce_tup, :responsible_map, :sse, :tmap, :totallength,
 )
 
@@ -182,15 +182,13 @@ const _ei_nonpublic_qualified_accesses = (
 )
 
 # The CommonSolve verbs. SciMLBase does not own them, but they are the SciML solve
-# interface as users and solver packages write it, and they are documented here, so
-# they stay exported and are allow-listed rather than dropped. They are documented at
-# CommonSolve as well, so the rendered-docs check skips them.
+# interface as users and solver packages write it, so they stay exported and are
+# allow-listed rather than dropped.
 const _reexports_allow = (:init, :solve, :solve!, :step!)
 
 run_qa(
     SciMLBase;
     reexports_allow = _reexports_allow,
-    api_docs_kwargs = (; rendered_ignore = _reexports_allow),
     ei_kwargs = (;
         all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
         all_explicit_imports_are_public = (; ignore = _ei_nonpublic_explicit_imports),

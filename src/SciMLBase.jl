@@ -1038,12 +1038,28 @@ abstract type AbstractDiffEqInterpolation end
 """
 $(TYPEDEF)
 
-Reserved supertype for differential-equation solver option containers.
+Developer interface for differential-equation solver option containers.
 
 SciMLBase currently stores most common solve options as keyword arguments rather
 than through concrete `AbstractDEOptions` subtypes. The abstract type remains as
 a compatibility hook for solver packages that need to share option-container
 types without introducing a dependency cycle.
+
+# Extension Rules
+
+Solver packages may subtype `AbstractDEOptions` for a concrete options container.
+The subtype owns its fields and constructors; SciMLBase does not require a field
+layout. User-facing options must still be accepted through the documented `solve`
+and `init` keywords, and a solver must not require applications to inspect the
+container directly.
+
+# Example
+
+```julia
+struct MySolverOptions{T} <: SciMLBase.AbstractDEOptions
+    abstol::T
+end
+```
 """
 abstract type AbstractDEOptions end
 
@@ -2152,7 +2168,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Solution / problem support types
 @public NLStats, NullParameters, AbstractSpecialization, AutoSpecialize,
-    AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats
+    AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats,
+    AbstractDEOptions, ODENLStepData
 
 # Core functions
 @public build_solution, build_linear_solution, build_eigenvalue_solution, numargs
@@ -2229,6 +2246,12 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # application code should use the user-facing solve and solution interfaces instead.
 @public enable_interpolation_sensitivitymode, get_root_indp, has_initializeprob,
     late_binding_update_u0_p, strip_interpolation, unitfulvalue, value, last_step_failed
+
+# Versioned symbolic-system and input-preparation extension API
+@public RemakeInitializationDataContext, remake_initialization_data,
+    LateBindingUpdateU0PContext, detect_cycles, get_updated_symbolic_problem,
+    SymbolicLinearInterface, get_new_A_b, widen_bounded_type_params,
+    prepare_initial_state, prepare_function
 
 # Problem types and alias specifiers
 @public ImmutableODEProblem, ImmutableNonlinearProblem, NonlinearAliasSpecifier
@@ -2316,7 +2339,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # AD / sensitivity function wrappers
 @public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper,
-    ParamJacobianWrapper, Void
+    ParamJacobianWrapper, JacobianWrapper, Void
 
 # Problem alias specifiers
 @public RODEAliasSpecifier, SDEAliasSpecifier

@@ -44,6 +44,48 @@ function SciMLBase._concrete_solve_forward(
     return (; u0, p, args, kwargs = (; kwargs...)), Δ -> (:forward, Δ)
 end
 
+struct SymbolicRemakeContractRoot end
+struct SymbolicRemakeContractProblem
+    u0
+    p
+end
+struct PreparedStateContract{T}
+    value::T
+end
+struct PreparedFunctionContract{F}
+    f::F
+end
+struct SolverOptionsContract <: SciMLBase.AbstractDEOptions end
+
+function SciMLBase.remake_initialization_data(
+        ::SymbolicRemakeContractRoot, scimlfn, u0, t0, p, newu0, newp,
+        ::SciMLBase.RemakeInitializationDataContext
+    )
+    return (; scimlfn, u0, t0, p, newu0, newp)
+end
+
+function SciMLBase.get_new_A_b(
+        ::SymbolicRemakeContractRoot, f, p, A, b; scale = one(p), kwargs...
+    )
+    return scale .* A, scale .* b
+end
+
+function SciMLBase.detect_cycles(
+        ::SymbolicRemakeContractRoot, varmap, syms
+    )
+    return any(sym -> get(varmap, sym, nothing) === sym, syms)
+end
+
+function SciMLBase.get_updated_symbolic_problem(
+        ::SymbolicRemakeContractRoot, prob::SymbolicRemakeContractProblem;
+        u0 = prob.u0, p = prob.p, kwargs...
+    )
+    return SymbolicRemakeContractProblem(u0, p)
+end
+
+SciMLBase.prepare_initial_state(state::PreparedStateContract) = state.value
+SciMLBase.prepare_function(f::PreparedFunctionContract) = f.f
+
 @testset "Common keyword interface documentation" begin
     common_keywords = read(
         joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Common_Keywords.md"),
@@ -184,6 +226,78 @@ end
     )
     @test primal == (; u0 = :u0, p = :p, args = (:extra,), kwargs = (; saveat = :saved))
     @test pushforward(:tangent) == (:forward, :tangent)
+end
+
+@testset "Symbolic-system developer interface" begin
+    root = SymbolicRemakeContractRoot()
+    prob = SymbolicRemakeContractProblem([1.0], [2.0])
+
+    @test SciMLBase.RemakeInitializationDataContext() isa
+        SciMLBase.RemakeInitializationDataContext
+    @test SciMLBase.LateBindingUpdateU0PContext() isa
+        SciMLBase.LateBindingUpdateU0PContext
+
+    initdata = SciMLBase.remake_initialization_data(
+        root, :function, :old_u0, 0.0, :old_p, :new_u0, :new_p
+    )
+    @test initdata == (;
+        scimlfn = :function, u0 = :old_u0, t0 = 0.0, p = :old_p,
+        newu0 = :new_u0, newp = :new_p,
+    )
+
+    @test SciMLBase.get_new_A_b(nothing, nothing, 2.0, [1.0], [3.0]) ==
+        ([1.0], [3.0])
+    @test SciMLBase.get_new_A_b(root, nothing, 2.0, [1.0], [3.0]; scale = 2.0) ==
+        ([2.0], [6.0])
+
+    @test !SciMLBase.detect_cycles(nothing, Dict(:x => :x), [:x])
+    @test SciMLBase.detect_cycles(root, Dict(:x => :x), [:x])
+    @test !SciMLBase.detect_cycles(root, Dict(:x => 1), [:x])
+
+    @test SciMLBase.get_updated_symbolic_problem(nothing, prob) === prob
+    updated = SciMLBase.get_updated_symbolic_problem(root, prob; u0 = [3.0], p = [4.0])
+    @test updated.u0 == [3.0]
+    @test updated.p == [4.0]
+
+    update_Ab = (A, b, p) -> (A .= p[1]; b .= p[2]; (A, b))
+    symbolic_linear = SciMLBase.SymbolicLinearInterface(
+        ; update_Ab, sys = root, observed = nothing, metadata = :metadata
+    )
+    A, b = symbolic_linear.update_Ab(zeros(1, 1), zeros(1), (2.0, 3.0))
+    @test A == fill(2.0, 1, 1)
+    @test b == [3.0]
+    @test symbolic_linear.sys === root
+    @test symbolic_linear.metadata === :metadata
+end
+
+@testset "Input-preparation developer interface" begin
+    state = PreparedStateContract([1.0, 2.0])
+    callable = PreparedFunctionContract(x -> x + 1)
+
+    @test SciMLBase.prepare_initial_state(:unchanged) === :unchanged
+    @test SciMLBase.prepare_initial_state(state) === state.value
+    @test SciMLBase.prepare_function(identity) === identity
+    @test SciMLBase.prepare_function(callable)(2) == 3
+end
+
+@testset "Solver support developer types" begin
+    @test SolverOptionsContract() isa SciMLBase.AbstractDEOptions
+
+    nlstep = SciMLBase.ODENLStepData(
+        :nlprob, :u0perm, :set_gamma_c, :set_outer_tmp, :set_inner_tmp, :nlprobmap
+    )
+    @test nlstep.nlprob === :nlprob
+    @test nlstep.u0perm === :u0perm
+    @test nlstep.set_γ_c === :set_gamma_c
+    @test nlstep.set_outer_tmp === :set_outer_tmp
+    @test nlstep.set_inner_tmp === :set_inner_tmp
+    @test nlstep.nlprobmap === :nlprobmap
+
+    wrapper = SciMLBase.JacobianWrapper((u, p) -> u .- p, [1.0, 2.0])
+    @test wrapper([3.0, 5.0]) == [2.0, 3.0]
+    residual = zeros(2)
+    @test wrapper(residual, [4.0, 7.0]) === residual
+    @test residual == [3.0, 5.0]
 end
 
 @testset "Concrete interface reference documentation" begin
@@ -361,6 +475,11 @@ if isdefined(Base, :ispublic)
                 :ReverseDiffOriginator, :TrackerOriginator, :MooncakeOriginator,
                 :set_mooncakeoriginator_if_mooncake,
                 :_concrete_solve_adjoint, :_concrete_solve_forward,
+                :RemakeInitializationDataContext, :remake_initialization_data,
+                :LateBindingUpdateU0PContext, :detect_cycles,
+                :get_updated_symbolic_problem, :SymbolicLinearInterface, :get_new_A_b,
+                :widen_bounded_type_params, :prepare_initial_state, :prepare_function,
+                :AbstractDEOptions, :ODENLStepData, :JacobianWrapper,
             )
             @test Base.ispublic(SciMLBase, name)
             @test Base.Docs.hasdoc(SciMLBase, name)
