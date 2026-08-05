@@ -181,9 +181,8 @@ function Makie.convert_arguments(
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
         if tspan !== nothing
-            tstart = searchsortedfirst(ts, tspan[1])
-            tend = searchsortedlast(ts, tspan[2])
-            if tstart == lastindex(ts) + 1 || tend == firstindex(ts) - 1
+            tstart, tend = SciMLBase.tspan_indices(ts, tspan)
+            if tstart > tend
                 continue
             end
         else

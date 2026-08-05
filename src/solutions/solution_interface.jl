@@ -411,9 +411,8 @@ plottable_indices(x::Number) = 1
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
         if tspan !== nothing
-            tstart = searchsortedfirst(ts, tspan[1])
-            tend = searchsortedlast(ts, tspan[2])
-            if tstart == lastindex(ts) + 1 || tend == firstindex(ts) - 1
+            tstart, tend = tspan_indices(ts, tspan)
+            if tstart > tend
                 continue
             end
         else
@@ -447,20 +446,33 @@ plottable_indices(x::Number) = 1
     end
 end
 
+"""
+    $(TYPEDSIGNATURES)
+
+Return the first and last index of the sorted time vector `t` whose times lie within
+`tspan`. `tspan` and `t` may run in either time direction. The returned range is empty
+if no time point lies within `tspan`.
+"""
+function tspan_indices(t, tspan)
+    lo, hi = minmax(tspan[1], tspan[end])
+    if length(t) > 1 && t[end] < t[1]
+        return searchsortedfirst(t, hi; rev = true), searchsortedlast(t, lo; rev = true)
+    else
+        return searchsortedfirst(t, lo), searchsortedlast(t, hi)
+    end
+end
+
 function diffeq_to_arrays(
         sol, plot_analytic, denseplot, plotdensity, tspan,
         vars, tscale, plotat
     )
+    last_idx = sol.tslocation == 0 ? lastindex(sol.t) : sol.tslocation
     if tspan === nothing
-        if sol.tslocation == 0
-            end_idx = length(sol.t)
-        else
-            end_idx = sol.tslocation
-        end
-        start_idx = 1
+        start_idx = firstindex(sol.t)
+        end_idx = last_idx
     else
-        start_idx = searchsortedfirst(sol.t, tspan[1])
-        end_idx = searchsortedlast(sol.t, tspan[end])
+        start_idx, end_idx = tspan_indices(sol.t, tspan)
+        end_idx = min(end_idx, last_idx)
     end
 
     # determine type of spacing for plot
@@ -502,26 +514,18 @@ function diffeq_to_arrays(
         end
     else
         # Plot for sparse output: use the timeseries itself
-        if sol.tslocation == 0
-            plott = sol.t
-            plot_timeseries = DiffEqArray(sol.u, sol.t)
-            if plot_analytic
-                plot_analytic_timeseries = sol.u_analytic
-            else
-                plot_analytic_timeseries = nothing
-            end
+        plott = sol.t[start_idx:end_idx]
+        if isempty(plott)
+            throw(
+                ArgumentError(
+                    "The solution has no saved time points within `tspan = $(tspan)`. Use `denseplot = true` or `plotat` to plot the interpolation over this interval instead."
+                )
+            )
+        end
+        if plot_analytic
+            plot_analytic_timeseries = sol.u_analytic[start_idx:end_idx]
         else
-            if tspan === nothing
-                plott = sol.t[start_idx:end_idx]
-            else
-                plott = collect(densetspacer(tspan[1], tspan[2], plotdensity))
-            end
-
-            if plot_analytic
-                plot_analytic_timeseries = sol.u_analytic[start_idx:end_idx]
-            else
-                plot_analytic_timeseries = nothing
-            end
+            plot_analytic_timeseries = nothing
         end
     end
 
