@@ -5671,62 +5671,6 @@ functions. Solvers should query this trait before using those hooks.
 function has_initialization_data(f)
     return __has_initialization_data(f) && f.initialization_data !== nothing
 end
-@doc """
-    has_analytic(f::AbstractSciMLFunction)
-
-Return whether `f` carries a non-`nothing` analytic solution callback.
-
-Analytic callbacks are optional and are mainly used by solvers and tests to
-compare numerical and exact solutions. The expected callback signature depends
-on the concrete function type, matching the independent variables described by
-that type's docstring.
-""" has_analytic
-@doc """
-    has_jac(f::AbstractSciMLFunction)
-
-Return whether `f` carries a non-`nothing` Jacobian callback.
-
-For differential equation functions this is usually the Jacobian with respect to
-the state variable. For implicit functions such as DAEs, the concrete function
-docstring defines the Jacobian convention. Solver code should query this trait
-before accessing `f.jac`.
-""" has_jac
-@doc """
-    has_jvp(f::AbstractSciMLFunction)
-
-Return whether `f` carries a non-`nothing` Jacobian-vector product callback.
-
-When true, solvers may use `f.jvp` to apply the Jacobian to a direction without
-materializing the full Jacobian. The callback must follow the in-place or
-out-of-place convention of the concrete function wrapper.
-""" has_jvp
-@doc """
-    has_vjp(f::AbstractSciMLFunction)
-
-Return whether `f` carries a non-`nothing` vector-Jacobian product callback.
-
-When true, solvers or sensitivity algorithms may use `f.vjp` to apply the
-adjoint Jacobian action without materializing the full Jacobian. The callback
-signature is defined by the concrete function type.
-""" has_vjp
-@doc """
-    has_tgrad(f::AbstractSciMLFunction)
-
-Return whether `f` carries a non-`nothing` time-gradient callback.
-
-The time-gradient callback represents the derivative of the model function with
-respect to the independent variable while holding the state and parameters fixed.
-It is only meaningful for function types with an explicit independent variable.
-""" has_tgrad
-@doc """
-    has_initialization_data(f)
-
-Return whether `f` carries non-`nothing` initialization metadata.
-
-Initialization data stores problem-level initialization hooks such as an
-initialization problem, an updater for that problem, and parameter/state mapping
-functions. Solvers should query this trait before using those hooks.
-""" has_initialization_data
 has_polynomialize(f) = __has_polynomialize(f) && f.polynomialize !== nothing
 has_unpolynomialize(f) = __has_unpolynomialize(f) && f.unpolynomialize !== nothing
 has_denominator(f) = __has_denominator(f) && f.denominator !== nothing

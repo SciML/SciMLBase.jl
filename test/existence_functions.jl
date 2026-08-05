@@ -35,6 +35,18 @@ end
     @test !has_observed(missing)
 end
 
+@testset "Documented function trait interface" begin
+    if isdefined(Base, :ispublic)
+        for name in (
+                :has_analytic, :has_jac, :has_jvp, :has_vjp, :has_tgrad,
+                :has_initialization_data,
+            )
+            @test Base.ispublic(SciMLBase, name)
+            @test Base.Docs.hasdoc(SciMLBase, name)
+        end
+    end
+end
+
 @testset "Sensitivity function wrapper interface" begin
     pf = SciMLBase.ParamJacobianWrapper((u, p, t) -> p .* u, 0.0, [2.0])
     @test pf([3.0]) == [6.0]
