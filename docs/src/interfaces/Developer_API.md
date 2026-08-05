@@ -44,6 +44,13 @@ SciMLBase.build_eigenvalue_solution
 SciMLBase.last_step_failed
 ```
 
+## Instability Diagnostic Hooks
+
+```@docs
+SciMLBase.has_mtk_sys
+SciMLBase.log_numerical_instability
+```
+
 ## Solver Preparation Hooks
 
 Solver packages use these hooks to derive the effective problem data for an individual

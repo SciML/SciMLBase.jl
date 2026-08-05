@@ -186,6 +186,12 @@ end
     @test pushforward(:tangent) == (:forward, :tangent)
 end
 
+@testset "Instability diagnostic developer interface" begin
+    @test !SciMLBase.has_mtk_sys(nothing)
+    @test SciMLBase.log_numerical_instability(nothing) == ""
+    @test SciMLBase.log_numerical_instability(nothing; jacobian_logging = false) == ""
+end
+
 @testset "Concrete interface reference documentation" begin
     interfaces_dir = joinpath(@__DIR__, "..", "docs", "src", "interfaces")
     bindings = String[]
