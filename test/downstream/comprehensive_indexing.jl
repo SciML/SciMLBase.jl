@@ -1035,6 +1035,16 @@ end
                 @test_nowarn plot(sol; idxs = idx)
             end
         end
+
+        @testset "`tspan` crops discrete timeseries" begin
+            for idx in (ud1, ud2)
+                x = plot(sol; idxs = idx, tspan = (0.4, 0.6)).series_list[1][:x]
+                @test !isempty(x)
+                @test all(t -> 0.4 <= t <= 0.6, x)
+            end
+            # No discrete save point in the window, so there is nothing to draw
+            @test isempty(plot(sol; idxs = ud1, tspan = (10.0, 20.0)).series_list)
+        end
     end
 
     @testset "`initialize_save_discretes`" begin

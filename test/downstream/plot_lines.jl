@@ -22,3 +22,32 @@ end
     converted = Makie.convert_arguments(Makie.Lines, sol)
     @test !isempty(converted)
 end
+
+@testset "tspan crops the plotted series" begin
+    using Plots: Plots, plot
+    sparse_sol = solve(prob, Tsit5(), dense = false)
+    window = (10.0, 20.0)
+
+    for (s, dense) in ((sol, true), (sol, false), (sparse_sol, false))
+        x = plot(s; idxs = 1, denseplot = dense, tspan = window).series_list[1][:x]
+        @test !isempty(x)
+        @test all(t -> window[1] <= t <= window[2], x)
+    end
+
+    # A sparse plot draws exactly the saved points inside the window
+    x = plot(sparse_sol; idxs = 1, tspan = window).series_list[1][:x]
+    @test x == filter(t -> window[1] <= t <= window[2], sparse_sol.t)
+
+    @test_throws ArgumentError plot(sparse_sol; idxs = 1, tspan = (200.0, 300.0))
+end
+
+@testset "tspan crops solutions integrated backwards in time" begin
+    using Plots: Plots, plot
+    decay_prob = ODEProblem((u, p, t) -> -0.01 * u, 1.0, (100.0, 0.0))
+    backwards_sol = solve(decay_prob, Tsit5(), dense = false, saveat = 1.0)
+
+    for window in ((80.0, 20.0), (20.0, 80.0))
+        x = plot(backwards_sol; tspan = window).series_list[1][:x]
+        @test extrema(x) == (20.0, 80.0)
+    end
+end
