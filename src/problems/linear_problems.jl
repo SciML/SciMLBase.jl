@@ -21,14 +21,46 @@ function (up::UpdateABWrapper)(p)
 end
 
 """
-    $(TYPEDEF)
+    SymbolicLinearInterface(; update_Ab, sys, observed, metadata)
+    SymbolicLinearInterface(update_A!, update_b!, sys, observed, metadata)
 
-A utility struct stored inside `LinearProblem` to enable a symbolic interface. Intended for
-use by ModelingToolkit.jl.
+Attach symbolic indexing and parameter-dependent matrix reconstruction to a
+[`LinearProblem`](@ref).
+
+# Arguments
+
+- `update_Ab`: A callable that updates mutable `A` and `b` as
+  `update_Ab(A, b, p)` or returns replacements as `update_Ab(p) -> (A, b)`.
+- `sys`: The symbolic container used by `SymbolicIndexingInterface` and by
+  [`get_new_A_b`](@ref) dispatch.
+- `observed`: A callable that builds observed-value functions, or `nothing` to delegate to
+  `sys`.
+- `metadata`: Symbolic-backend metadata not interpreted by SciMLBase.
+- `update_A!`, `update_b!`: Legacy separate matrix and right-hand-side update callables.
 
 # Fields
 
 $(TYPEDFIELDS)
+
+# Returns
+
+- `SymbolicLinearInterface`: Metadata stored in a linear problem's `f` field.
+
+# Extension Rules
+
+Symbolic-system packages construct this type and specialize [`get_new_A_b`](@ref) on the
+type of `sys`. Consumers must use the documented fields and
+`SymbolicIndexingInterface` operations; they must not depend on the concrete type
+parameters. New code should use the unified `update_Ab` keyword constructor.
+
+# Example
+
+```julia
+update_Ab = (A, b, p) -> (A .= p[1]; b .= p[2]; (A, b))
+interface = SciMLBase.SymbolicLinearInterface(
+    ; update_Ab, sys = :my_system, observed = nothing, metadata = nothing
+)
+```
 """
 @kwdef struct SymbolicLinearInterface{F, S, O, M}
     # the docstrings cannot start with a newline because otherwise the docs

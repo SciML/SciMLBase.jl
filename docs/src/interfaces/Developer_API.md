@@ -17,7 +17,27 @@ SciMLBase.strip_interpolation
 ```@docs
 SciMLBase.get_root_indp
 SciMLBase.has_initializeprob
+SciMLBase.RemakeInitializationDataContext
+SciMLBase.remake_initialization_data
+SciMLBase.LateBindingUpdateU0PContext
 SciMLBase.late_binding_update_u0_p
+SciMLBase.detect_cycles
+SciMLBase.get_updated_symbolic_problem
+```
+
+## Symbolic Linear Problem Hooks
+
+```@docs
+SciMLBase.SymbolicLinearInterface
+SciMLBase.get_new_A_b
+```
+
+## Function Preparation Hooks
+
+```@docs
+SciMLBase.prepare_initial_state
+SciMLBase.prepare_function
+SciMLBase.widen_bounded_type_params
 ```
 
 ## Numeric Wrapper Hooks
@@ -42,6 +62,9 @@ SciMLBase.build_eigenvalue_solution
 
 ```@docs
 SciMLBase.last_step_failed
+SciMLBase.AbstractDEOptions
+SciMLBase.ODENLStepData
+SciMLBase.JacobianWrapper
 ```
 
 ## Solver Preparation Hooks

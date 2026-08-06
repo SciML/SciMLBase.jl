@@ -235,12 +235,27 @@ struct IndexedClock{C <: AbstractClock, I}
     idx::I
 end
 
-# public
 """
-    $(TYPEDSIGNATURES)
+    Base.getindex(clock::AbstractClock, idx) -> IndexedClock
 
-Return a `SciMLBase.IndexedClock` representing the subset of the time points that the clock
-ticked indicated by `idx`.
+Select one or more tick indices from `clock` without resolving them to times.
+
+# Arguments
+
+- `clock`: A SciML clock whose ticks will be selected.
+- `idx`: An integer, integer collection, range, or `Colon()` selector.
+
+# Returns
+
+- [`IndexedClock`](@ref): A lazy clock/index pair. A solution resolves the pair to
+  concrete independent-variable values when it is interpolated.
+
+# Example
+
+```julia
+indexed_clock = Clock(0.1)[2:4]
+indexed_clock.idx
+```
 """
 Base.getindex(c::AbstractClock, idx) = IndexedClock(c, idx)
 

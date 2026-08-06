@@ -653,37 +653,72 @@ _unwrap_val(::Val{B}) where {B} = B
 _unwrap_val(B) = B
 
 """
-    prepare_initial_state(u0) = u0
+    prepare_initial_state(u0) -> prepared_u0
 
-Whenever an initial state is passed to the SciML ecosystem, is passed to
-`prepare_initial_state` and the result is used instead. If you define a
-type which cannot be used as a state but can be converted to something that
-can be, then you may define `prepare_initial_state(x::YourType) = ...`.
+Convert an object supplied as a SciML initial state into its solver-facing form.
 
-!!! warning
+# Arguments
 
-    This function is experimental and may be removed in the future.
+- `u0`: An initial-state value supplied to a problem or ensemble constructor.
 
-See also: `prepare_function`.
+# Returns
+
+- `prepared_u0`: The state stored by the constructor. The generic method returns `u0`
+  unchanged.
+
+# Extension Rules
+
+Wrapper and language-bridge packages may specialize this function for input types they
+own. A method must preserve the mathematical state values and shape expected by the model,
+must not evaluate the model, and must return an object accepted by SciML problem
+constructors. Do not specialize on broad types owned by another package.
+
+# Example
+
+```julia
+struct ExternalState{T}
+    values::T
+end
+
+SciMLBase.prepare_initial_state(state::ExternalState) = state.values
+```
+
+See also [`prepare_function`](@ref).
 """
 prepare_initial_state(u0) = u0
 
 """
-    prepare_function(f) = f
+    prepare_function(f) -> prepared_f
 
-Whenever a function is passed to the SciML ecosystem, is passed to
-`prepare_function` and the result is used instead. If you define a type which
-cannot be used as a function in the SciML ecosystem but can be converted to
-something that can be, then you may define `prepare_function(x::YourType) = ...`.
+Convert an object supplied as a SciML model or callback into a Julia-callable form.
 
-`prepare_function` may be called before or after
-the arity of a function is computed with `numargs`
+# Arguments
 
-!!! warning
+- `f`: A function or foreign-language callable supplied to a SciML constructor.
 
-    This function is experimental and may be removed in the future.
+# Returns
 
-See also: `prepare_initial_state`.
+- `prepared_f`: A callable implementing the same argument and mutation convention as
+  `f`. The generic method returns `f` unchanged.
+
+# Extension Rules
+
+Wrapper and language-bridge packages may specialize this function for callable types they
+own. `prepare_function` may run before or after [`numargs`](@ref), so both the original
+object and prepared callable must expose compatible arity. In-place callables must retain
+`nothing` return semantics, and implementations must not invoke `f` during preparation.
+
+# Example
+
+```julia
+struct ExternalCallable{F}
+    f::F
+end
+
+SciMLBase.prepare_function(f::ExternalCallable) = f.f
+```
+
+See also [`prepare_initial_state`](@ref).
 """
 prepare_function(f) = f
 

@@ -19,6 +19,14 @@ SciMLBase.DEFAULT_OUTPUT_FUNC
 SciMLBase.DEFAULT_REDUCTION
 ```
 
+`WeightedEnsembleProblem` delegates ordinary problem properties to its wrapped
+ensemble problem and adds the `weights` property:
+
+```@docs
+Base.propertynames(::SciMLBase.WeightedEnsembleProblem)
+Base.getproperty(::SciMLBase.WeightedEnsembleProblem, ::Symbol)
+```
+
 ### Solving the Problem
 
 ```@docs

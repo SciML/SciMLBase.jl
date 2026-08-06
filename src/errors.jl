@@ -125,7 +125,7 @@ See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more
 Step size controller keyword arguments that were moved onto the controller objects
 (`PIController`, `PIDController`, `IController`, `PredictiveController`). They are no
 longer accepted by `solve`/`init`; passing one produces a `CommonKwargError` carrying
-[`CONTROLLER_KWARG_MESSAGE`](@ref) rather than the generic unrecognized-keyword text.
+`CONTROLLER_KWARG_MESSAGE` rather than the generic unrecognized-keyword text.
 """
 const controller_kwargs = (
     :gamma,

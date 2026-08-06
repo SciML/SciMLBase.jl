@@ -213,22 +213,48 @@ function (ff::ParamJacobianWrapper{false})(du1, p)
 end
 
 """
-    JacobianWrapper{iip, fType, pType} <: AbstractWrappedFunction{iip}
+    JacobianWrapper(f, p)
+    JacobianWrapper{iip}(f, p)
 
-A general-purpose Jacobian wrapper that can be configured for different types of Jacobian computations. 
-This wrapper provides a unified interface for various Jacobian calculations across the SciML ecosystem.
+Fix the parameter argument of a residual function and expose the state as its free
+argument.
+
+# Arguments
+
+- `f`: An in-place `f(residual, u, p)` or out-of-place `f(u, p)` function.
+- `p`: The fixed parameter value.
+- `iip`: Whether `f` follows the in-place convention. The unparameterized constructor
+  infers this from `f`.
 
 # Fields
-- `f`: The function to wrap
-- `p`: Parameters
+
+- `f`: The wrapped residual function.
+- `p`: The fixed parameter value.
 
 # Type Parameters
-- `iip`: Boolean indicating if the function is in-place (`true`) or out-of-place (`false`)
-- `fType`: Type of the wrapped function
-- `pType`: Type of the parameters
 
-This wrapper provides a flexible interface for Jacobian computations that can adapt to different
-automatic differentiation backends and numerical methods.
+- `iip`: Whether the wrapped function is in-place.
+- `fType`: Type of the wrapped function.
+- `pType`: Type of the fixed parameter value.
+
+# Returns
+
+Calling an out-of-place wrapper as `wrapper(u)` returns `f(u, p)`. Calling either
+convention as `wrapper(residual, u)` fills `residual`; the in-place form returns the
+return value of `f`, while the out-of-place form returns the broadcast assignment.
+
+# Example
+
+```julia
+wrapper = JacobianWrapper((u, p) -> u .- p, [1.0, 2.0])
+wrapper([3.0, 5.0])
+```
+
+# Developer Interface
+
+Nonlinear solver and differentiation packages may construct this wrapper when they need
+a one-argument residual with fixed parameters. Use its callable interface rather than
+depending on the mutable field layout.
 """
 mutable struct JacobianWrapper{iip, fType, pType} <: AbstractWrappedFunction{iip}
     f::fType
