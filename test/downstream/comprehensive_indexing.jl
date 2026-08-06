@@ -4,6 +4,7 @@ using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimizatio
     DiffEqCallbacks, Test, Plots
 import Symbolics
 import SymbolicUtils as SU
+import Makie
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -1041,9 +1042,28 @@ end
                 x = plot(sol; idxs = idx, tspan = (0.4, 0.6)).series_list[1][:x]
                 @test !isempty(x)
                 @test all(t -> 0.4 <= t <= 0.6, x)
+
+                specs = Makie.convert_arguments(
+                    Makie.Lines, sol; idxs = idx, tspan = (0.4, 0.6)
+                )
+                @test !isempty(specs)
+                points = Iterators.flatten(only(spec.args) for spec in specs)
+                lo, hi = Float32.((0.4, 0.6))
+                @test all(point -> lo <= point[1] <= hi, points)
             end
             # No discrete save point in the window, so there is nothing to draw
             @test isempty(plot(sol; idxs = ud1, tspan = (10.0, 20.0)).series_list)
+            @test isempty(
+                Makie.convert_arguments(
+                    Makie.Lines, sol; idxs = ud1, tspan = (10.0, 20.0)
+                )
+            )
+
+            makie_ext = Base.get_extension(SciMLBase, :SciMLBaseMakieExt)
+            @test makie_ext._tspan_indices([0.2, 0.4, 0.6, 0.8], (0.65, 0.35)) ==
+                (2, 3)
+            @test makie_ext._tspan_indices([0.8, 0.6, 0.4, 0.2], (0.35, 0.65)) ==
+                (2, 3)
         end
     end
 
