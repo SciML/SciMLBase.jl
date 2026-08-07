@@ -903,9 +903,8 @@ diagnose_symbolic_instability(sys, u, uprev) = ""
 """
     report_integrator_failure(integrator, ::Val{reason})
 
-Report a failure mode detected by
-[`check_error`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error),
-called immediately before the corresponding return code is returned. `reason` is one
+Report a failure mode detected,called immediately 
+before the corresponding return code is returned. `reason` is one
 of `:dt_NaN`, `:max_iters`, `:dt_min_unstable`, `:dt_epsilon`, `:instability` or
 `:newton_convergence`.
 
@@ -917,18 +916,6 @@ implement it still gets correct return codes, just no diagnostics.
 Implementations must not affect control flow and their return value is ignored. A
 `reason` configured at `SciMLLogging.ErrorLevel` throws instead of returning, which is
 the intended behaviour of that level.
-
-!!! warning "Developer API, not user API"
-    This is a versioned integrator implementation hook. Application code should
-    inspect a solve result's return code instead.
-
-# Example
-```julia
-function SciMLBase.report_integrator_failure(integrator::MyIntegrator, ::Val{:dt_NaN})
-    @warn "NaN dt at t=\$(integrator.t)"
-    return nothing
-end
-```
 """
 @inline report_integrator_failure(integrator, ::Val) = nothing
 
