@@ -896,6 +896,17 @@ problem family. The default is `false`.
 
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
+# get_message_level is able to short-circuit in a type-stable way which helps trimming
+# avoid type instabilities in log_numerical_instability
+@inline function _instability_diagnostic(integrator, verbose, option)
+    get_message_level(verbose, option) === nothing && return ""
+    symbolic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ?
+        diagnose_symbolic_instability(integrator.f.sys, integrator.u, integrator.uprev) :
+        ""
+    numeric = log_numerical_instability(integrator; jacobian_logging = symbolic == "")
+    return numeric * symbolic
+end
+
 has_mtk_sys(integrator) = false
 
 diagnose_symbolic_instability(sys, u, uprev) = ""
@@ -1001,18 +1012,12 @@ function check_error(integrator::DEIntegrator)
                         true
                 )
             )
-            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-            numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
+            diagnostic = _instability_diagnostic(integrator, verbose, :dt_min_unstable)
             EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
             @SciMLMessage(lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic", verbose, :dt_min_unstable)
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
-            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-            numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
+            diagnostic = _instability_diagnostic(integrator, verbose, :dt_min_unstable)
             EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
             @SciMLMessage(lazy"At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or it cannot be represented in $(eltype(integrator.u)) precision).$diagnostic", verbose, :dt_epsilon)
             return ReturnCode.Unstable
@@ -1020,10 +1025,7 @@ function check_error(integrator::DEIntegrator)
     end
     if step_accepted &&
             opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-        symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-        numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-        diagnostic = verbosity_to_bool(verbose.instability) ? numeric_diagnostic * symbolic_diagnostic : ""
+        diagnostic = _instability_diagnostic(integrator, verbose, :instability)
         @SciMLMessage("Instability detected. Aborting.$diagnostic", verbose, :instability)
         return ReturnCode.Unstable
     end
