@@ -69,8 +69,6 @@ const isconstant = SciMLOperators.isconstant
 
 using SciMLPublic: @public
 
-using SciMLLogging: @SciMLMessage, verbosity_to_bool
-
 """
     __solve(prob, alg, args...; kwargs...)
 
@@ -2343,5 +2341,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Problem alias specifiers
 @public RODEAliasSpecifier, SDEAliasSpecifier
+
+# Integrator diagnostic hooks
+@public report_integrator_failure
 
 end

@@ -900,6 +900,38 @@ has_mtk_sys(integrator) = false
 
 diagnose_symbolic_instability(sys, u, uprev) = ""
 
+"""
+    report_integrator_failure(integrator, ::Val{reason})
+
+Report a failure mode detected by
+[`check_error`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error),
+called immediately before the corresponding return code is returned. `reason` is one
+of `:dt_NaN`, `:max_iters`, `:dt_min_unstable`, `:dt_epsilon`, `:instability` or
+`:newton_convergence`.
+
+`check_error` only detects failures; describing them belongs to the solver stack,
+which owns both the wording and the verbosity settings that gate it. DiffEqBase.jl
+implements this for `DEIntegrator`s. The default is a no-op, so a stack that does not
+implement it still gets correct return codes, just no diagnostics.
+
+Implementations must not affect control flow and their return value is ignored. A
+`reason` configured at `SciMLLogging.ErrorLevel` throws instead of returning, which is
+the intended behaviour of that level.
+
+!!! warning "Developer API, not user API"
+    This is a versioned integrator implementation hook. Application code should
+    inspect a solve result's return code instead.
+
+# Example
+```julia
+function SciMLBase.report_integrator_failure(integrator::MyIntegrator, ::Val{:dt_NaN})
+    @warn "NaN dt at t=\$(integrator.t)"
+    return nothing
+end
+```
+"""
+@inline report_integrator_failure(integrator, ::Val) = nothing
+
 ### Display
 
 function Base.summary(io::IO, I::DEIntegrator)
@@ -962,26 +994,25 @@ mutate `integrator.sol.retcode`; use
 [`check_error!`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error!)
 when the solution must be updated. Concrete integrators may specialize the
 checks while preserving the return-code contract.
+
+Diagnostics for detected failures are emitted through
+[`report_integrator_failure`](@ref), which the solver stack implements; this
+function only performs detection.
 """
 function check_error(integrator::DEIntegrator)
     if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
         return integrator.sol.retcode
     end
     opts = integrator.opts
-    verbose = opts.verbose
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
 
     if isnan(integrator.dt)
-        @SciMLMessage("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.", verbose, :dt_NaN)
+        report_integrator_failure(integrator, Val(:dt_NaN))
         return ReturnCode.DtNaN
     end
     if integrator.iter > opts.maxiters
-        @SciMLMessage(
-            "Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).",
-            verbose,
-            :max_iters
-        )
+        report_integrator_failure(integrator, Val(:max_iters))
         return ReturnCode.MaxIters
     end
 
@@ -1001,34 +1032,20 @@ function check_error(integrator::DEIntegrator)
                         true
                 )
             )
-            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-            numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
-            EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
-            @SciMLMessage(lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic", verbose, :dt_min_unstable)
+            report_integrator_failure(integrator, Val(:dt_min_unstable))
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
-            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-            numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
-            EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
-            @SciMLMessage(lazy"At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or it cannot be represented in $(eltype(integrator.u)) precision).$diagnostic", verbose, :dt_epsilon)
+            report_integrator_failure(integrator, Val(:dt_epsilon))
             return ReturnCode.Unstable
         end
     end
     if step_accepted &&
             opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-        symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-        numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-        diagnostic = verbosity_to_bool(verbose.instability) ? numeric_diagnostic * symbolic_diagnostic : ""
-        @SciMLMessage("Instability detected. Aborting.$diagnostic", verbose, :instability)
+        report_integrator_failure(integrator, Val(:instability))
         return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
-        @SciMLMessage("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.", verbose, :newton_convergence)
+        report_integrator_failure(integrator, Val(:newton_convergence))
         return ReturnCode.ConvergenceFailure
     end
     return ReturnCode.Success
