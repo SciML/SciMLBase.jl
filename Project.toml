@@ -1,6 +1,6 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "3.43.0"
+version = "3.44.0"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
 
 [deps]
@@ -28,7 +28,6 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 RuntimeGeneratedFunctions = "7e49a35a-f44a-4d26-94aa-eba1b4ca6b47"
-SciMLLogging = "a6db7da4-7206-11f0-1eab-35f2a5dbe1d1"
 SciMLOperators = "c0aeaf25-5076-4817-a8d5-81caf7dfa961"
 SciMLPublic = "431bcebd-1456-4ced-9d72-93c2757fff0b"
 SciMLStructures = "53ae85a6-f571-4167-b2af-e1d143709226"
@@ -127,7 +126,6 @@ RecursiveArrayTools = "4"
 ReverseDiff = "1"
 RuntimeGeneratedFunctions = "0.5.12"
 SafeTestsets = "0.1"
-SciMLLogging = "1.9, 2"
 SciMLOperators = "1.3"
 SciMLPublic = "1.0.0"
 SciMLStructures = "1.1"
