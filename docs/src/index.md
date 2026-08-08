@@ -206,6 +206,12 @@ that mixes inference, symbolics, and numerics.
 There are too many to name here. Check out the
 [SciML Organization Github Page](https://github.com/SciML) for details.
 
+## Module
+
+```@docs
+SciMLBase.SciMLBase
+```
+
 ## Contributing
 
   - Please refer to the

@@ -1,3 +1,34 @@
+"""
+    SciMLBase
+
+The core interface definition of the SciML ecosystem.
+
+SciMLBase.jl is a low-dependency library holding the vocabulary that the SciML solver
+packages share: the problem types (`AbstractSciMLProblem` and its subtypes such as
+`ODEProblem`, `NonlinearProblem`, `OptimizationProblem`), the function wrappers that
+carry a model and its derivatives (`AbstractSciMLFunction`, e.g. `ODEFunction`), the
+algorithm supertype (`AbstractSciMLAlgorithm`), and the solution types
+(`AbstractSciMLSolution`). It contains no numerical methods of its own — packages like
+OrdinaryDiffEq.jl, NonlinearSolve.jl and Optimization.jl implement these interfaces, which
+is what lets a problem built once be handed to any of them.
+
+Users normally reach this interface through a solver package that re-exports it rather
+than by depending on SciMLBase directly. The common entry point is to build a problem and
+call `solve`:
+
+```julia
+using OrdinaryDiffEq                       # re-exports the SciMLBase interface
+prob = ODEProblem((u, p, t) -> -u, 1.0, (0.0, 1.0))
+sol = solve(prob, Tsit5())
+successful_retcode(sol)                    # check `sol.retcode` the supported way
+```
+
+`init` and `step!` expose the same solve as a stepwise iterator, and `remake` rebuilds a
+problem with some fields changed.
+
+See the [SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/) for the full
+interface specification.
+"""
 module SciMLBase
 if isdefined(Base, :Experimental) &&
         isdefined(Base.Experimental, Symbol("@max_methods"))
