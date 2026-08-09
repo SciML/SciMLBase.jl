@@ -2245,7 +2245,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Versioned solver-author extension API. These names are deliberately not exported:
 # application code should use the user-facing solve and solution interfaces instead.
 @public enable_interpolation_sensitivitymode, get_root_indp, has_initializeprob,
-    late_binding_update_u0_p, strip_interpolation, unitfulvalue, value, last_step_failed
+    late_binding_update_u0_p, strip_interpolation, unitfulvalue, value, last_step_failed,
+    @def, _unwrap_val
 
 # Versioned symbolic-system and input-preparation extension API
 @public RemakeInitializationDataContext, remake_initialization_data,
