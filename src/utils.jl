@@ -413,6 +413,45 @@ get_colorizers(io::IO) = get(io, :color, false) ? (TYPE_COLOR, NO_COLOR) : ("", 
 
 """
     @def name definition
+
+Define a zero-argument macro named `@name` whose expansion is `definition`.
+
+Solver packages use `@def` to define repeated preambles that must expand in the
+generated macro's invocation scope.
+
+# Arguments
+
+- `name`: The name of the macro to define, without the leading `@`.
+- `definition`: The expression returned when the generated macro is expanded.
+
+# Returns
+
+An expression that defines `@name` in the module where `@def` is invoked.
+
+# Extension Rules
+
+Invoke `@def` at module scope and invoke the generated macro without arguments. Names in
+`definition` resolve in the generated macro's invocation scope, so each invocation must
+provide every referenced local. Do not extend `@def` or use it to define user-facing API.
+
+# Examples
+
+```julia
+module ExampleSolver
+using SciMLBase: @def
+
+@def affine_preamble begin
+    shifted = x + offset
+end
+
+function evaluate(x, offset)
+    @affine_preamble
+    return shifted
+end
+end
+
+ExampleSolver.evaluate(2, 3) # 5
+```
 """
 macro def(name, definition)
     return quote
@@ -649,6 +688,39 @@ function mergedefaults(defaults, varmap, vars)
     end
 end
 
+"""
+    _unwrap_val(::Val{B}) where {B}
+    _unwrap_val(x)
+
+Return the value encoded by a `Val`, or return any other input unchanged.
+
+Solver constructors use `_unwrap_val` for options that accept either a compile-time
+`Val` marker or an ordinary runtime value.
+
+# Arguments
+
+- `x`: A `Val` instance or a value that should pass through unchanged.
+
+# Returns
+
+The type parameter `B` for `Val{B}()`; otherwise `x` itself, preserving its type and
+identity.
+
+# Extension Rules
+
+Call `_unwrap_val` only when both `Val` and runtime-value forms are part of the option's
+documented contract. Downstream packages should not add methods; support for another
+wrapper type must be implemented in SciMLBase.
+
+# Examples
+
+```julia
+using SciMLBase: _unwrap_val
+
+_unwrap_val(Val(true)) # true
+_unwrap_val(:runtime) # :runtime
+```
+"""
 _unwrap_val(::Val{B}) where {B} = B
 _unwrap_val(B) = B
 

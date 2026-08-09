@@ -47,6 +47,15 @@ SciMLBase.value
 SciMLBase.unitfulvalue
 ```
 
+## Solver Code-Generation Utilities
+
+These utilities support solver implementation code and are not application-facing API.
+
+```@docs
+SciMLBase.@def
+SciMLBase._unwrap_val
+```
+
 ## Solution Construction Hooks
 
 Solver packages use these hooks after finishing a linear or eigenvalue solve. They preserve
