@@ -1586,7 +1586,8 @@ DAEFunction{iip,specialize}(f;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+                           sys = __has_sys(f) ? f.sys : nothing,
+                           nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1622,6 +1623,11 @@ the usage of `f`. These include:
   based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
+- `nlstep_data`: an [`ODENLStepData`](@ref SciMLBase.ODENLStepData) holding a structured
+  nonlinear problem for the implicit stage solve, or `nothing`. Implicit DAE integrators
+  which support it solve this problem in place of building a stage-equation closure. See the
+  `ODENLStepData` documentation for the stage equation the nonlinear problem must represent
+  in the fully implicit case.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -1685,7 +1691,7 @@ numerically-defined functions.
 struct DAEFunction{
         iip, specialize, F, Ta, Tt, TJ, TJU, TJD, JVP, VJP, JP, SP, TW, TWt, TPJ, O,
         TCV,
-        SYS, ID,
+        SYS, ID, NLP <: Union{Nothing, ODENLStepData},
     } <:
     AbstractDAEFunction{iip}
     f::F
@@ -1705,6 +1711,7 @@ struct DAEFunction{
     colorvec::TCV
     sys::SYS
     initialization_data::ID
+    nlstep_data::NLP
 end
 
 """
@@ -4143,7 +4150,8 @@ function DAEFunction{iip, specialize}(
         initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
         initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
-            nothing
+            nothing,
+        nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing
     ) where {
         iip,
         specialize,
@@ -4188,12 +4196,12 @@ function DAEFunction{iip, specialize}(
             iip, specialize, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any,
-            Any, typeof(_colorvec), Any, Any,
+            Any, typeof(_colorvec), Any, Any, Union{Nothing, ODENLStepData},
         }(
             _f, analytic, tgrad, jac, jac_u, jac_du, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
-            _colorvec, sys, initdata
+            _colorvec, sys, initdata, nlstep_data
         )
     else
         DAEFunction{
@@ -4203,12 +4211,12 @@ function DAEFunction{iip, specialize}(
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
             typeof(paramjac),
             typeof(observed), typeof(_colorvec),
-            typeof(sys), typeof(initdata),
+            typeof(sys), typeof(initdata), typeof(nlstep_data),
         }(
             _f, analytic, tgrad, jac, jac_u, jac_du, jvp, vjp,
             jac_prototype, sparsity, Wfact, Wfact_t,
             paramjac, observed,
-            _colorvec, sys, initdata
+            _colorvec, sys, initdata, nlstep_data
         )
     end
 end
