@@ -387,6 +387,60 @@ DAEFunction(dfiip, vjp = dvjp)
 DAEFunction(dfoop, vjp = dvjp)
 DAEFunction{true, SciMLBase.NoSpecialize}(dfiip, observed = 1)
 
+@testset "DAEFunction nlstep_data" begin
+    nlstep = SciMLBase.ODENLStepData(
+        NonlinearProblem((z, p) -> z, [1.0]), identity,
+        (gamma1, gamma2, c) -> nothing, identity, identity, identity
+    )
+
+    @testset "construction" begin
+        @test DAEFunction(dfiip).nlstep_data === nothing
+        @test typeof(DAEFunction(dfiip)).parameters[end] === Nothing
+        @test DAEFunction(dfiip; nlstep_data = nlstep).nlstep_data === nlstep
+        @test DAEFunction(dfoop; nlstep_data = nlstep).nlstep_data === nlstep
+        # a `DAEFunction` passed as the function carries its `nlstep_data` over
+        wrapped = DAEFunction{true, SciMLBase.FullSpecialize}(
+            DAEFunction(dfiip; nlstep_data = nlstep)
+        )
+        @test wrapped.nlstep_data === nlstep
+    end
+
+    @testset "specialization $spec" for spec in (
+            SciMLBase.FullSpecialize, SciMLBase.NoSpecialize, SciMLBase.AutoSpecialize,
+        )
+        f = DAEFunction{true, spec}(dfiip; nlstep_data = nlstep)
+        @test f.nlstep_data === nlstep
+
+        # `remake` reconstructs the struct through the keyword constructor, which builds
+        # it positionally with an explicit type-parameter list. `unwrapped_f` has no
+        # `DAEFunction` method and so is the identity here; assert it anyway so a future
+        # method has to keep the field.
+        @test SciMLBase.unwrapped_f(f).nlstep_data === nlstep
+        @test SciMLBase.remake(f).nlstep_data === nlstep
+        @test SciMLBase.remake(f; jac_prototype = zeros(1, 1)).nlstep_data === nlstep
+        # explicit overrides still win, matching `ODEFunction`
+        @test SciMLBase.remake(f; nlstep_data = nothing).nlstep_data === nothing
+
+        # AutoSpecialize erases the bounded parameters to keep the function type
+        # model-independent; `remake` must not narrow them back.
+        widened = SciMLBase.widen_bounded_type_params(f)
+        @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+        @test widened.nlstep_data === nlstep
+        rewidened = SciMLBase.remake(widened; jac_prototype = zeros(1, 1))
+        @test typeof(rewidened).parameters[end] ===
+            Union{Nothing, SciMLBase.ODENLStepData}
+        @test rewidened.nlstep_data === nlstep
+    end
+
+    @testset "problem construction" begin
+        prob = DAEProblem(
+            DAEFunction(dfiip; nlstep_data = nlstep), [0.0], [1.0], (0.0, 1.0)
+        )
+        @test prob.f.nlstep_data === nlstep
+        @test SciMLBase.remake(prob; u0 = [2.0]).f.nlstep_data === nlstep
+    end
+end
+
 # DDEFunction
 
 ddefoop(u, h, p, t) = u
