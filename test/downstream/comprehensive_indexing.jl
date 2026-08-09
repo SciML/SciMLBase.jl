@@ -974,9 +974,6 @@ end
     for (sym, val, check_inference) in [
             ([x, ud1], [_xval, _ud1val], false),
             ((x, ud1), (_xval, _ud1val), true),
-            (x + ud2, _xval + _ud2val, true),
-            ([2x, 3xd1], [2_xval, 3_xd1val], true),
-            ((2x, 3xd2), (2_xval, 3_xd2val), true),
         ]
         getter = getsym(sys, sym)
         @test_throws Exception getter(sol)
@@ -987,6 +984,35 @@ end
         if check_inference
             @inferred getter(integ)
         end
+        @test getter(integ) == val
+    end
+
+    function held_values(discrete, i, times)
+        return map(times) do time
+            discrete.u[searchsortedlast(discrete.t, time)][i]
+        end
+    end
+    ud2_at_t = held_values(sol.discretes.collection[2], 1, sol.t)
+    xd1_at_t = held_values(sol.discretes.collection[1], 2, sol.t)
+    xd2_at_t = held_values(sol.discretes.collection[2], 2, sol.t)
+    for (sym, val, tsval) in [
+            (x + ud2, _xval + _ud2val, xval .+ ud2_at_t),
+            ([2x, 3xd1], [2_xval, 3_xd1val], vcat.(2 .* xval, 3 .* xd1_at_t)),
+            ((2x, 3xd2), (2_xval, 3_xd2val), tuple.(2 .* xval, 3 .* xd2_at_t)),
+        ]
+        getter = getsym(sys, sym)
+        @inferred getter(sol)
+        @test getter(sol) == tsval
+        for subidx in [
+                1, CartesianIndex(2), :, rand(Bool, length(tsval)),
+                rand(eachindex(tsval), 3), 1:2,
+            ]
+            @inferred getter(sol, subidx)
+            target = subidx isa Colon ? tsval : tsval[subidx]
+            @test getter(sol, subidx) == target
+        end
+
+        @inferred getter(integ)
         @test getter(integ) == val
     end
 
