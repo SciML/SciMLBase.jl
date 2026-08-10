@@ -1782,6 +1782,7 @@ function specialization(
             RODEFunction{iip, specialize}, NonlinearFunction{iip, specialize},
             HomotopyNonlinearFunction{iip, specialize},
             IntervalNonlinearFunction{iip, specialize}, ODEInputFunction{iip, specialize},
+            OptimizationFunction{iip, specialize},
             BVPFunction{iip, specialize}, DynamicalBVPFunction{iip, specialize},
             IntegralFunction{iip, specialize}, BatchIntegralFunction{iip, specialize},
             IncrementingODEFunction{iip, specialize},
