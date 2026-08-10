@@ -55,6 +55,7 @@ Note that `iip` choice is required for specialization choices to be made.
 ```@docs
 SciMLBase.AbstractSpecialization
 SciMLBase.AutoSpecialize
+SciMLBase.AutoRespecialize
 SciMLBase.AutoDePSpecialize
 SciMLBase.NoSpecialize
 SciMLBase.FunctionWrapperSpecialize

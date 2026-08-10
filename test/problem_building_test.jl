@@ -279,18 +279,20 @@ end
     @test state_values(sccprob2) isa SVector{3, Float64}
 end
 
-@testset "AutoDePSpecialize specialization marker" begin
+@testset "AutoRespecialize specialization marker" begin
+    @test SciMLBase.AutoDePSpecialize === SciMLBase.AutoRespecialize
+
     struct DePParams
         k::Float64
     end
     f_dep!(du, u, p, t) = (du[1] = -p.k * u[1]; nothing)
 
-    prob = ODEProblem{true, SciMLBase.AutoDePSpecialize}(
+    prob = ODEProblem{true, SciMLBase.AutoRespecialize}(
         f_dep!, [1.0], (0.0, 1.0), DePParams(0.5)
     )
     @test prob isa ODEProblem
-    @test prob.f isa ODEFunction{true, SciMLBase.AutoDePSpecialize}
-    @test SciMLBase.specialization(prob.f) === SciMLBase.AutoDePSpecialize
+    @test prob.f isa ODEFunction{true, SciMLBase.AutoRespecialize}
+    @test SciMLBase.specialization(prob.f) === SciMLBase.AutoRespecialize
     # The marker alone performs no wrapping or packing in SciMLBase: fields stay
     # concretely typed like FullSpecialize/AutoSpecialize construction, and p is
     # the user's struct until a solver path installs an opaque-parameter wrapper.
@@ -302,12 +304,12 @@ end
 
     # Available for other function families, e.g. nonlinear problems.
     f_nl!(res, u, p) = (res[1] = u[1] - p.k; nothing)
-    nlfun = NonlinearFunction{true, SciMLBase.AutoDePSpecialize}(f_nl!)
-    @test SciMLBase.specialization(nlfun) === SciMLBase.AutoDePSpecialize
+    nlfun = NonlinearFunction{true, SciMLBase.AutoRespecialize}(f_nl!)
+    @test SciMLBase.specialization(nlfun) === SciMLBase.AutoRespecialize
 
     # unwrapped_f reconstruction keeps the marker
     uf = SciMLBase.unwrapped_f(prob.f)
-    @test SciMLBase.specialization(uf) === SciMLBase.AutoDePSpecialize
+    @test SciMLBase.specialization(uf) === SciMLBase.AutoRespecialize
 end
 
 @testset "Nonlinear preconditioning keywords are accepted solver options" begin

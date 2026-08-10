@@ -172,7 +172,7 @@ struct FullSpecialize <: AbstractSpecialization end
 """
 $(TYPEDEF)
 
-`AutoDePSpecialize` extends
+`AutoRespecialize` extends
 [`AutoSpecialize`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 by additionally
 *de-specializing the parameter object*. Solver paths with a supported
@@ -186,7 +186,7 @@ across all `isbits` parameter types. Inside the user's `f`, `p` is recovered
 at its original concrete type via a type-stable, allocation-free unpack, so
 the model function itself remains fully specialized.
 
-`AutoDePSpecialize` is the recommended choice for latency-sensitive workflows
+`AutoRespecialize` is the recommended choice for latency-sensitive workflows
 that construct many problems with differently-typed parameter structs
 (parameter studies over configuration structs, package test suites,
 teaching setups).
@@ -205,18 +205,26 @@ struct MyParams
     k::Float64
 end
 f(du, u, p, t) = (du .= p.k .* u)
-ODEProblem{true, SciMLBase.AutoDePSpecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
+ODEProblem{true, SciMLBase.AutoRespecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
 ```
 """
-struct AutoDePSpecialize <: AbstractSpecialization end
+struct AutoRespecialize <: AbstractSpecialization end
+
+"""
+    AutoDePSpecialize
+
+Deprecated name for [`AutoRespecialize`](@ref). New code should use
+`AutoRespecialize`.
+"""
+const AutoDePSpecialize = AutoRespecialize
 
 specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize")
 if specstring ∉
         (
         "NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize",
-        "AutoDePSpecialize",
+        "AutoRespecialize", "AutoDePSpecialize",
     )
-    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDePSpecialize).")
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoRespecialize, AutoDePSpecialize).")
 end
 
 const DEFAULT_SPECIALIZATION = getproperty(SciMLBase, Symbol(specstring))
