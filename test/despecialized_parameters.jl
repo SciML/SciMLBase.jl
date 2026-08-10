@@ -92,6 +92,9 @@ end
     foreach(call -> call(), calls)
     @test !isempty(seen)
     @test all(==(DespecializedCallParameters), seen)
+    @test SciMLBase.specialization(NonlinearFunction{false, SciMLBase.AutoSpecialize}) ===
+        SciMLBase.AutoSpecialize
+    @test SciMLBase.specialization(OptimizationFunction) === SciMLBase.FullSpecialize
 end
 
 @testset "stable container and forwarded interfaces" begin

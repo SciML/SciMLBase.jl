@@ -1758,6 +1758,7 @@ end
 
 """
     specialization(f::AbstractSciMLFunction) -> Type{<:AbstractSpecialization}
+    specialization(::Type{<:AbstractSciMLFunction}) -> Type{<:AbstractSpecialization}
 
 Return the specialization marker carried by a SciML function wrapper.
 
@@ -1772,34 +1773,39 @@ result is a marker type, not an instance, and can be compared with `===`.
 """
 function specialization(
         ::Union{
-            ODEFunction{iip, specialize},
-            SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-            SDDEFunction{iip, specialize},
-            DAEFunction{iip, specialize},
-            DynamicalODEFunction{iip, specialize},
-            SplitFunction{iip, specialize},
-            DynamicalSDEFunction{iip, specialize},
-            SplitSDEFunction{iip, specialize},
-            DynamicalDDEFunction{iip, specialize},
-            DiscreteFunction{iip, specialize},
-            ImplicitDiscreteFunction{iip, specialize},
-            RODEFunction{iip, specialize},
-            NonlinearFunction{iip, specialize},
-            OptimizationFunction{iip, specialize},
-            BVPFunction{iip, specialize},
-            DynamicalBVPFunction{iip, specialize},
-            IntegralFunction{iip, specialize},
-            BatchIntegralFunction{iip, specialize},
+            ODEFunction{iip, specialize}, SDEFunction{iip, specialize},
+            DDEFunction{iip, specialize}, SDDEFunction{iip, specialize},
+            DAEFunction{iip, specialize}, DynamicalODEFunction{iip, specialize},
+            SplitFunction{iip, specialize}, DynamicalSDEFunction{iip, specialize},
+            SplitSDEFunction{iip, specialize}, DynamicalDDEFunction{iip, specialize},
+            DiscreteFunction{iip, specialize}, ImplicitDiscreteFunction{iip, specialize},
+            RODEFunction{iip, specialize}, NonlinearFunction{iip, specialize},
+            HomotopyNonlinearFunction{iip, specialize},
+            IntervalNonlinearFunction{iip, specialize}, ODEInputFunction{iip, specialize},
+            BVPFunction{iip, specialize}, DynamicalBVPFunction{iip, specialize},
+            IntegralFunction{iip, specialize}, BatchIntegralFunction{iip, specialize},
             IncrementingODEFunction{iip, specialize},
         }
-    ) where {
-        iip,
-        specialize,
-    }
+    ) where {iip, specialize}
     return specialize
 end
 
 specialization(f::AbstractSciMLFunction) = FullSpecialize
+
+for FunctionType in (
+        ODEFunction, SDEFunction, DDEFunction, SDDEFunction, DAEFunction,
+        DynamicalODEFunction, SplitFunction, DynamicalSDEFunction, SplitSDEFunction,
+        DynamicalDDEFunction, DiscreteFunction, ImplicitDiscreteFunction, RODEFunction,
+        NonlinearFunction, HomotopyNonlinearFunction, IntervalNonlinearFunction,
+        ODEInputFunction, BVPFunction, DynamicalBVPFunction, IntegralFunction,
+        BatchIntegralFunction, IncrementingODEFunction,
+    )
+    @eval specialization(
+        ::Type{<:$FunctionType{iip, specialize}}
+    ) where {iip, specialize} = specialize
+end
+
+specialization(::Type{<:AbstractSciMLFunction}) = FullSpecialize
 
 """
 $(TYPEDEF)
