@@ -62,6 +62,14 @@ SciMLBase.FunctionWrapperSpecialize
 SciMLBase.FullSpecialize
 ```
 
+#### Parameter Despecialization
+
+```@docs
+SciMLBase.DespecializedParameters
+SciMLBase.unwrap_parameters
+SciMLBase.invoke_with_despecialized_parameters
+```
+
 #### Specialization Interface Hooks
 
 Solver and modeling packages should query the marker rather than inspect concrete

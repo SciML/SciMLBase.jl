@@ -2851,6 +2851,20 @@ end
 
 (f::ODEFunction)(args...) = f.f(args...)
 
+function (f::ODEFunction)(du, u, p::DespecializedParameters, t)
+    if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        return f.f(du, u, p, t)
+    end
+    return invoke_with_despecialized_parameters(f, (du, u, p, t), p, Val(3))
+end
+
+function (f::ODEFunction)(u, p::DespecializedParameters, t)
+    if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        return f.f(u, p, t)
+    end
+    return invoke_with_despecialized_parameters(f, (u, p, t), p, Val(2))
+end
+
 @static if isdefined(SciMLOperators, :isv1)
     function (f::ODEFunction)(du, u, p, t)
         if f.f isa AbstractSciMLOperator

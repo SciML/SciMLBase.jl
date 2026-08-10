@@ -1736,6 +1736,7 @@ include("initialization.jl")
 include("odenlstep.jl")
 include("utils.jl")
 include("function_wrappers.jl")
+include("despecialized_parameters.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
 include("debug.jl")
@@ -2167,12 +2168,13 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     AbstractBVPAlgorithm, AbstractSecondOrderODEAlgorithm, AbstractAliasSpecifier
 
 # Solution / problem support types
-@public NLStats, NullParameters, AbstractSpecialization, AutoSpecialize,
+@public NLStats, NullParameters, DespecializedParameters, AbstractSpecialization, AutoSpecialize,
     AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats,
     AbstractDEOptions, ODENLStepData
 
 # Core functions
-@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs
+@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs,
+    unwrap_parameters, invoke_with_despecialized_parameters
 
 # Solver problem-concretization extension API
 @public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,
