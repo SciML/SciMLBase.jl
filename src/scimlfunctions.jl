@@ -2849,7 +2849,7 @@ end
 
 ######### Backwards Compatibility Overloads
 
-(f::ODEFunction)(args...) = f.f(args...)
+(f::ODEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::ODEFunction)(du, u, p::DespecializedParameters, t)
     if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
@@ -2883,21 +2883,27 @@ end
     end
 end
 
-(f::NonlinearFunction)(args...) = f.f(args...)
-(f::HomotopyNonlinearFunction)(args...) = f.f(args...)
-(f::IntervalNonlinearFunction)(args...) = f.f(args...)
-(f::IntegralFunction)(args...) = f.f(args...)
-(f::BatchIntegralFunction)(args...) = f.f(args...)
+(f::NonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::HomotopyNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::IntervalNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::IntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::BatchIntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::DynamicalODEFunction)(u, p, t)
-    return ArrayPartition(f.f1(u.x[1], u.x[2], p, t), f.f2(u.x[1], u.x[2], p, t))
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], p, t))
+    return ArrayPartition(f1, f2)
 end
 function (f::DynamicalODEFunction)(du, u, p, t)
-    f.f1(du.x[1], u.x[1], u.x[2], p, t)
-    return f.f2(du.x[2], u.x[1], u.x[2], p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], p, t)
+    )
 end
 
-(f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
+(f::SplitFunction)(u, p, t) =
+    invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
+    invoke_with_despecialized_parameters(f.f2, (u, p, t))
 function (f::SplitFunction)(du, u, p, t)
     if f._func_cache === nothing
         throw(
@@ -2912,23 +2918,27 @@ function (f::SplitFunction)(du, u, p, t)
         )
     end
     tmp = get_tmp(f._func_cache, du)
-    f.f1(tmp, u, p, t)
-    f.f2(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
 
-(f::DiscreteFunction)(args...) = f.f(args...)
-(f::ImplicitDiscreteFunction)(args...) = f.f(args...)
-(f::DAEFunction)(args...) = f.f(args...)
-(f::DDEFunction)(args...) = f.f(args...)
-(f::ODEInputFunction)(args...) = f.f(args...)
+(f::DiscreteFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::ImplicitDiscreteFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DAEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::ODEInputFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::DynamicalDDEFunction)(u, h, p, t)
-    return ArrayPartition(f.f1(u.x[1], u.x[2], h, p, t), f.f2(u.x[1], u.x[2], h, p, t))
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], h, p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], h, p, t))
+    return ArrayPartition(f1, f2)
 end
 function (f::DynamicalDDEFunction)(du, u, h, p, t)
-    f.f1(du.x[1], u.x[1], u.x[2], h, p, t)
-    return f.f2(du.x[2], u.x[1], u.x[2], h, p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], h, p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], h, p, t)
+    )
 end
 function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
     if name === :f
@@ -2938,40 +2948,42 @@ function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
     return getfield(f, name)
 end
 
-(f::SDEFunction)(args...) = f.f(args...)
+(f::SDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 @static if isdefined(SciMLOperators, :isv1)
     function (f::SDEFunction)(du, u, p, t)
         if f.f isa AbstractSciMLOperator
-            f.f(du, u, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (du, u, u, p, t))
         else
-            f.f(du, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (du, u, p, t))
         end
     end
 
     function (f::SDEFunction)(u, p, t)
         if f.f isa AbstractSciMLOperator
-            f.f(u, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (u, u, p, t))
         else
-            f.f(u, p, t)
+            invoke_with_despecialized_parameters(f.f, (u, p, t))
         end
     end
 end
 
-(f::SDDEFunction)(args...) = f.f(args...)
-(f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
+(f::SDDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::SplitSDEFunction)(u, p, t) =
+    invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
+    invoke_with_despecialized_parameters(f.f2, (u, p, t))
 
 function (f::SplitSDEFunction)(du, u, p, t)
     tmp = get_tmp(f._func_cache, du)
-    f.f1(tmp, u, p, t)
-    f.f2(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
 
-(f::RODEFunction)(args...) = f.f(args...)
+(f::RODEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
-(f::BVPFunction)(args...) = f.f(args...)
-(f::DynamicalBVPFunction)(args...) = f.f(args...)
+(f::BVPFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DynamicalBVPFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 ######### Basic Constructor
 
@@ -4767,7 +4779,7 @@ chosen by the solver rather than generated via automatic differentiation.
 """
 struct NoAD <: AbstractADType end
 
-(f::OptimizationFunction)(args...) = f.f(args...)
+(f::OptimizationFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 function OptimizationFunction(f, args...; kwargs...)
     isinplace(f, 2, outofplace_param_number = 2)
     return OptimizationFunction{true}(f, args...; kwargs...)
@@ -4823,7 +4835,8 @@ function OptimizationFunction{iip}(
 end
 
 # Function call operator for MultiObjectiveOptimizationFunction
-(f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
+(f::MultiObjectiveOptimizationFunction)(args...) =
+    invoke_with_despecialized_parameters(f.f, args)
 
 # Convenience constructor
 function MultiObjectiveOptimizationFunction(f, args...; kwargs...)
@@ -5880,7 +5893,8 @@ function IncrementingODEFunction(f)
     return IncrementingODEFunction{isinplace(f, 7), DEFAULT_SPECIALIZATION}(f)
 end
 
-(f::IncrementingODEFunction)(args...; kwargs...) = f.f(args...; kwargs...)
+(f::IncrementingODEFunction)(args...; kwargs...) =
+    invoke_with_despecialized_parameters(f.f, args; kwargs...)
 
 for S in [
         :ODEFunction

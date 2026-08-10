@@ -392,6 +392,8 @@ end
 
 anyeltypedual(x) = anyeltypedual(x, Val{0})
 anyeltypedual(x, counter) = Any
+anyeltypedual(x::DespecializedParameters) = anyeltypedual(x.params)
+anyeltypedual(x::DespecializedParameters, counter) = anyeltypedual(x.params, counter)
 anyeltypedual(x::FixedSizeDiffCache, counter = 0) = Any
 
 """

@@ -1,5 +1,7 @@
 using Adapt
 using FunctionWrappersWrappers
+using ForwardDiff
+using RecursiveArrayTools: ArrayPartition
 using SciMLBase
 using SciMLStructures
 using SymbolicIndexingInterface
@@ -7,6 +9,89 @@ using Test
 
 struct DespecializedCallParameters
     rate::Float64
+end
+
+@testset "all callable SciMLFunction families" begin
+    params = SciMLBase.DespecializedParameters(DespecializedCallParameters(2.0))
+    seen = DataType[]
+    function record_parameter_type(p)
+        push!(seen, typeof(p))
+        return p.rate
+    end
+
+    u = [1.0]
+    dynamical_u = ArrayPartition([1.0], [2.0])
+    calls = (
+        () -> NonlinearFunction{false}((u, p) -> record_parameter_type(p))(u, params),
+        () -> IntervalNonlinearFunction{false}((u, p) -> record_parameter_type(p))(
+            1.0, params
+        ),
+        () -> IntegralFunction{false}((u, p) -> record_parameter_type(p), nothing)(
+            u, params
+        ),
+        () -> BatchIntegralFunction{false}(
+            (u, p) -> record_parameter_type(p), nothing
+        )(u, params),
+        () -> DiscreteFunction{false}((u, p, t) -> record_parameter_type(p))(
+            u, params, 0.0
+        ),
+        () -> ImplicitDiscreteFunction{false}(
+            (unext, u, p, t) -> record_parameter_type(p)
+        )(u, u, params, 0.0),
+        () -> DAEFunction{false}((du, u, p, t) -> record_parameter_type(p))(
+            u, u, params, 0.0
+        ),
+        () -> DDEFunction{false}((u, h, p, t) -> record_parameter_type(p))(
+            u, nothing, params, 0.0
+        ),
+        () -> SDEFunction{false}(
+            (u, p, t) -> record_parameter_type(p), (u, p, t) -> u
+        )(u, params, 0.0),
+        () -> SDDEFunction{false}(
+            (u, h, p, t) -> record_parameter_type(p), (u, h, p, t) -> u
+        )(u, nothing, params, 0.0),
+        () -> RODEFunction{false}((u, p, t, W) -> record_parameter_type(p))(
+            u, params, 0.0, nothing
+        ),
+        () -> ODEInputFunction{false}((x, u, p, t) -> record_parameter_type(p))(
+            u, u, params, 0.0
+        ),
+        () -> OptimizationFunction((u, p) -> record_parameter_type(p))(u, params),
+        () -> MultiObjectiveOptimizationFunction((u, p) -> record_parameter_type(p))(
+            u, params
+        ),
+        () -> HomotopyNonlinearFunction{false}((u, p) -> record_parameter_type(p))(
+            u, params
+        ),
+        () -> BVPFunction{false}(
+            (u, p, t) -> record_parameter_type(p), (u, p, t) -> nothing
+        )(u, params, 0.0),
+        () -> DynamicalBVPFunction{false}(
+            (du, u, p, t) -> record_parameter_type(p),
+            (du, u, p, t) -> nothing
+        )(u, u, params, 0.0),
+        () -> IncrementingODEFunction{false}(
+            (u, p, t, alpha, beta; scale = 1) ->
+            scale * record_parameter_type(p)
+        )(u, params, 0.0, 1.0, 2.0; scale = 2),
+        () -> SplitFunction{false}(
+            (u, p, t) -> record_parameter_type(p),
+            (u, p, t) -> record_parameter_type(p)
+        )(u, params, 0.0),
+        () -> DynamicalODEFunction{false}(
+            (x, v, p, t) -> [record_parameter_type(p)],
+            (x, v, p, t) -> [record_parameter_type(p)]
+        )(dynamical_u, params, 0.0),
+        () -> SplitSDEFunction{false}(
+            (u, p, t) -> record_parameter_type(p),
+            (u, p, t) -> record_parameter_type(p),
+            (u, p, t) -> u
+        )(u, params, 0.0),
+    )
+
+    foreach(call -> call(), calls)
+    @test !isempty(seen)
+    @test all(==(DespecializedCallParameters), seen)
 end
 
 @testset "stable container and forwarded interfaces" begin
@@ -82,6 +167,10 @@ end
     args = (zeros(1), [4.0], params, 0.0)
     SciMLBase.invoke_with_despecialized_parameters(rhs!, args, params, Val(3))
     @test args[1] == [-8.0]
+
+    dual = ForwardDiff.Dual{:despecialized_parameters}(2.0, 1.0)
+    @test SciMLBase.anyeltypedual(SciMLBase.DespecializedParameters([dual])) <:
+    ForwardDiff.Dual
 
     function wrapped_rhs!(du, u, p, t)
         return rhs!(du, u, SciMLBase.unwrap_parameters(p), t)

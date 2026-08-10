@@ -106,6 +106,13 @@ function SymbolicIndexingInterface.parameter_values(
     )
     return parameter_values(params.params, idx, args...)
 end
+function SymbolicIndexingInterface.parameter_values(
+        params::DespecializedParameters,
+        idx::SymbolicIndexingInterface.ParameterTimeseriesIndex,
+        subidx
+    )
+    return parameter_values(params.params, idx, subidx)
+end
 function SymbolicIndexingInterface.set_parameter!(
         params::DespecializedParameters, value, idx
     )
@@ -126,24 +133,51 @@ end
 adapt_structure(to, params::DespecializedParameters) =
     DespecializedParameters(adapt(to, params.params))
 
-Base.@noinline _invoke_with_despecialized_parameters(f, args...) = f(args...)
+Base.@noinline _invoke_with_despecialized_parameters(f, args...; kwargs...) =
+    f(args...; kwargs...)
 
 """
-    invoke_with_despecialized_parameters(f, args, params, ::Val{parameter_index})
+    invoke_with_despecialized_parameters(f, args; kwargs...)
+    invoke_with_despecialized_parameters(
+        f, args, params, ::Val{parameter_index}; kwargs...)
 
-Call `f(args...)` after replacing `args[parameter_index]` with the object wrapped by
-`params::DespecializedParameters`. The call crosses a non-inlined dynamic-dispatch
-barrier: code above the barrier sees the stable outer parameter type, while `f` compiles
-for the concrete wrapped parameter type.
+Call `f(args...; kwargs...)` after replacing a [`DespecializedParameters`](@ref) argument
+with its wrapped object. The two-argument form locates the wrapper in `args`; the explicit
+form accepts its statically known position. The call crosses a non-inlined dynamic-dispatch
+barrier: code above the barrier sees the stable outer parameter type, while `f` compiles for
+the concrete wrapped parameter type.
 
-This is a developer interface for SciML function wrappers whose parameter position is
-known statically. `args[parameter_index]` must be the same wrapper passed as `params`.
+This is a developer interface used by all built-in [`AbstractSciMLFunction`](@ref)
+containers. `args` may contain at most one despecialized parameter object. In the explicit
+form, `args[parameter_index]` must be the same wrapper passed as `params`.
 """
 Base.@inline @generated function invoke_with_despecialized_parameters(
         f, args::Tuple{Vararg{Any, N}}, params::DespecializedParameters,
-        ::Val{PIdx}
+        ::Val{PIdx}; kwargs...
     ) where {N, PIdx}
     1 <= PIdx <= N || error("parameter_index must be between 1 and $N, got $PIdx")
     call_args = [i == PIdx ? :(getfield(params, :params)) : :(args[$i]) for i in 1:N]
-    return :(_invoke_with_despecialized_parameters(f, $(call_args...)))
+    return :(_invoke_with_despecialized_parameters(f, $(call_args...); kwargs...))
+end
+
+Base.@inline @generated function invoke_with_despecialized_parameters(
+        f, args::Tuple{Vararg{Any, N}}; kwargs...
+    ) where {N}
+    parameter_indices = findall(T -> T <: DespecializedParameters, args.parameters)
+    length(parameter_indices) <= 1 ||
+        error("a SciML function call may contain at most one DespecializedParameters argument")
+    isempty(parameter_indices) && return :(f(args...; kwargs...))
+
+    parameter_index = only(parameter_indices)
+    return :(
+        invoke_with_despecialized_parameters(
+            f, args, args[$parameter_index], Val($parameter_index); kwargs...
+        )
+    )
+end
+
+function invoke_with_despecialized_parameters(
+        f::FunctionWrappersWrappers.FunctionWrappersWrapper, args::Tuple; kwargs...
+    )
+    return f(args...; kwargs...)
 end
