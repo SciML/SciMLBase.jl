@@ -82,6 +82,11 @@ end
             (x, v, p, t) -> [record_parameter_type(p)],
             (x, v, p, t) -> [record_parameter_type(p)]
         )(dynamical_u, params, 0.0),
+        () -> DynamicalSDEFunction{false}(
+            (x, v, p, t) -> [record_parameter_type(p)],
+            (x, v, p, t) -> [record_parameter_type(p)],
+            (u, p, t) -> u
+        )(dynamical_u, params, 0.0),
         () -> SplitSDEFunction{false}(
             (u, p, t) -> record_parameter_type(p),
             (u, p, t) -> record_parameter_type(p),

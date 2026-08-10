@@ -2901,6 +2901,18 @@ function (f::DynamicalODEFunction)(du, u, p, t)
     )
 end
 
+function (f::DynamicalSDEFunction)(u, p, t)
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], p, t))
+    return ArrayPartition(f1, f2)
+end
+function (f::DynamicalSDEFunction)(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], p, t)
+    )
+end
+
 (f::SplitFunction)(u, p, t) =
     invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
     invoke_with_despecialized_parameters(f.f2, (u, p, t))
