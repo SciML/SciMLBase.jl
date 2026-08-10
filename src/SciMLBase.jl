@@ -2318,7 +2318,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public DECache
 
 # Specialization markers
-@public FullSpecialize, NoSpecialize, FunctionWrapperSpecialize, AutoDePSpecialize
+@public FullSpecialize, NoSpecialize, FunctionWrapperSpecialize, AutoRespecialize,
+    AutoDePSpecialize
 
 # SDE interpretation trait
 @public AlgorithmInterpretation, alg_interpretation
