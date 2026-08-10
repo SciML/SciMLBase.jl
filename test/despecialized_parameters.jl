@@ -172,8 +172,9 @@ end
     @test args[1] == [-8.0]
 
     dual = ForwardDiff.Dual{:despecialized_parameters}(2.0, 1.0)
-    @test SciMLBase.anyeltypedual(SciMLBase.DespecializedParameters([dual])) <:
-    ForwardDiff.Dual
+    dual_params = SciMLBase.DespecializedParameters([dual])
+    @test SciMLBase.anyeltypedual(dual_params) <: ForwardDiff.Dual
+    @test SciMLBase.anyeltypedual(dual_params, Val{0}) <: ForwardDiff.Dual
 
     function wrapped_rhs!(du, u, p, t)
         return rhs!(du, u, SciMLBase.unwrap_parameters(p), t)
