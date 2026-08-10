@@ -1736,6 +1736,7 @@ include("initialization.jl")
 include("odenlstep.jl")
 include("utils.jl")
 include("function_wrappers.jl")
+include("despecialized_parameters.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
 include("debug.jl")
@@ -1757,6 +1758,7 @@ end
 
 """
     specialization(f::AbstractSciMLFunction) -> Type{<:AbstractSpecialization}
+    specialization(::Type{<:AbstractSciMLFunction}) -> Type{<:AbstractSpecialization}
 
 Return the specialization marker carried by a SciML function wrapper.
 
@@ -1771,34 +1773,40 @@ result is a marker type, not an instance, and can be compared with `===`.
 """
 function specialization(
         ::Union{
-            ODEFunction{iip, specialize},
-            SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-            SDDEFunction{iip, specialize},
-            DAEFunction{iip, specialize},
-            DynamicalODEFunction{iip, specialize},
-            SplitFunction{iip, specialize},
-            DynamicalSDEFunction{iip, specialize},
-            SplitSDEFunction{iip, specialize},
-            DynamicalDDEFunction{iip, specialize},
-            DiscreteFunction{iip, specialize},
-            ImplicitDiscreteFunction{iip, specialize},
-            RODEFunction{iip, specialize},
-            NonlinearFunction{iip, specialize},
+            ODEFunction{iip, specialize}, SDEFunction{iip, specialize},
+            DDEFunction{iip, specialize}, SDDEFunction{iip, specialize},
+            DAEFunction{iip, specialize}, DynamicalODEFunction{iip, specialize},
+            SplitFunction{iip, specialize}, DynamicalSDEFunction{iip, specialize},
+            SplitSDEFunction{iip, specialize}, DynamicalDDEFunction{iip, specialize},
+            DiscreteFunction{iip, specialize}, ImplicitDiscreteFunction{iip, specialize},
+            RODEFunction{iip, specialize}, NonlinearFunction{iip, specialize},
+            HomotopyNonlinearFunction{iip, specialize},
+            IntervalNonlinearFunction{iip, specialize}, ODEInputFunction{iip, specialize},
             OptimizationFunction{iip, specialize},
-            BVPFunction{iip, specialize},
-            DynamicalBVPFunction{iip, specialize},
-            IntegralFunction{iip, specialize},
-            BatchIntegralFunction{iip, specialize},
+            BVPFunction{iip, specialize}, DynamicalBVPFunction{iip, specialize},
+            IntegralFunction{iip, specialize}, BatchIntegralFunction{iip, specialize},
             IncrementingODEFunction{iip, specialize},
         }
-    ) where {
-        iip,
-        specialize,
-    }
+    ) where {iip, specialize}
     return specialize
 end
 
 specialization(f::AbstractSciMLFunction) = FullSpecialize
+
+for FunctionType in (
+        ODEFunction, SDEFunction, DDEFunction, SDDEFunction, DAEFunction,
+        DynamicalODEFunction, SplitFunction, DynamicalSDEFunction, SplitSDEFunction,
+        DynamicalDDEFunction, DiscreteFunction, ImplicitDiscreteFunction, RODEFunction,
+        NonlinearFunction, HomotopyNonlinearFunction, IntervalNonlinearFunction,
+        ODEInputFunction, BVPFunction, DynamicalBVPFunction, IntegralFunction,
+        BatchIntegralFunction, IncrementingODEFunction,
+    )
+    @eval specialization(
+        ::Type{<:$FunctionType{iip, specialize}}
+    ) where {iip, specialize} = specialize
+end
+
+specialization(::Type{<:AbstractSciMLFunction}) = FullSpecialize
 
 """
 $(TYPEDEF)
@@ -2167,12 +2175,13 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     AbstractBVPAlgorithm, AbstractSecondOrderODEAlgorithm, AbstractAliasSpecifier
 
 # Solution / problem support types
-@public NLStats, NullParameters, AbstractSpecialization, AutoSpecialize,
+@public NLStats, NullParameters, DespecializedParameters, AbstractSpecialization, AutoSpecialize,
     AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats,
     AbstractDEOptions, ODENLStepData
 
 # Core functions
-@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs
+@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs,
+    unwrap_parameters, invoke_with_despecialized_parameters
 
 # Solver problem-concretization extension API
 @public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,

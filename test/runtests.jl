@@ -67,6 +67,9 @@ run_tests(;
         @time @safetestset "Function wrappers" begin
             include("function_wrappers.jl")
         end
+        @time @safetestset "Despecialized parameters" begin
+            include("despecialized_parameters.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
