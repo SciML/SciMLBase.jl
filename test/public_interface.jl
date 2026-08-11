@@ -497,6 +497,7 @@ if isdefined(Base, :ispublic)
                 :done, :postamble!, :enable_interpolation_sensitivitymode,
                 :get_root_indp, :has_initializeprob, :late_binding_update_u0_p,
                 :strip_interpolation, :unitfulvalue, :value, :last_step_failed,
+                :log_numerical_instability, :has_mtk_sys, :diagnose_symbolic_instability,
                 Symbol("@def"), :_unwrap_val,
                 :get_concrete_p, :get_concrete_u0, :isconcreteu0, :promote_u0,
                 :get_concrete_problem, :check_prob_alg_pairing, :KeywordArgError,

@@ -69,8 +69,14 @@ SciMLBase.build_eigenvalue_solution
 
 ## Integrator Hook
 
+Solver and symbolic-system packages use these hooks to add diagnostics when an
+integration becomes unstable.
+
 ```@docs
 SciMLBase.last_step_failed
+SciMLBase.log_numerical_instability
+SciMLBase.has_mtk_sys
+SciMLBase.diagnose_symbolic_instability
 SciMLBase.AbstractDEOptions
 SciMLBase.ODENLStepData
 SciMLBase.JacobianWrapper

@@ -2251,6 +2251,9 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Solution / integrator interface
 @public DEStats, check_error!, promote_tspan, set_ut!, get_sol, done, postamble!
 
+# Instability diagnostic extension API
+@public log_numerical_instability, has_mtk_sys, diagnose_symbolic_instability
+
 # Versioned solver-author extension API. These names are deliberately not exported:
 # application code should use the user-facing solve and solution interfaces instead.
 @public enable_interpolation_sensitivitymode, get_root_indp, has_initializeprob,

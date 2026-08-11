@@ -894,10 +894,35 @@ documented `reinit!` method. Supported optional keywords can still vary by
 problem family. The default is `false`.
 """ has_reinit
 
+"""
+    log_numerical_instability(integrator; jacobian_logging = true)
+
+Return a numerical diagnostic for an unstable integration as a string.
+
+Solver packages can extend this hook for their integrator types. If `jacobian_logging`
+is `false`, the diagnostic should omit Jacobian analysis because a symbolic diagnostic
+has already identified the instability. The default is an empty string.
+"""
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
+"""
+    has_mtk_sys(integrator)
+
+Return whether `integrator.f.sys` supports [`diagnose_symbolic_instability`](@ref).
+
+Solver packages that expose a compatible symbolic system through `integrator.f.sys`
+should extend this trait for their integrator type. The default is `false`.
+"""
 has_mtk_sys(integrator) = false
 
+"""
+    diagnose_symbolic_instability(sys, u, uprev)
+
+Return a symbolic diagnostic for an unstable integration as a string.
+
+Symbolic-system packages can extend this hook to diagnose the change from `uprev` to
+`u`. The default is an empty string.
+"""
 diagnose_symbolic_instability(sys, u, uprev) = ""
 
 ### Display
