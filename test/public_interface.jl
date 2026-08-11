@@ -38,6 +38,8 @@ SciMLBase.get_concrete_problem(
 SciMLBase.check_prob_alg_pairing(::ConcretizationHookProblem, ::ConcretizationHookAlgorithm) =
     nothing
 
+struct GenericSciMLFunction{iip} <: SciMLBase.AbstractSciMLFunction{iip} end
+
 struct ConcreteSolveContractProblem end
 struct ConcreteSolveContractAlgorithm end
 struct ConcreteSolveContractSenseAlg end
@@ -177,6 +179,12 @@ end
     @test occursin("`update_coefficients` for the out-of-place form", function_docs)
     @test occursin("ODE and Discrete Function Types", function_docs)
     @test !occursin("SciMLBase.ODEFunction\n", function_docs)
+end
+
+@testset "AbstractSciMLFunction in-place trait contract" begin
+    @test SciMLBase.isinplace(GenericSciMLFunction{true}()) === true
+    @test SciMLBase.isinplace(GenericSciMLFunction{false}()) === false
+    @test Docs.doc(SciMLBase.isinplace) !== nothing
 end
 
 @testset "Problem layout marker interface" begin

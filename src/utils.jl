@@ -291,19 +291,48 @@ Check whether a user callback follows the in-place SciML convention.
 For an [`AbstractSciMLFunction`](@ref), `isinplace` returns the `iip` type
 parameter without inspecting methods. For an ordinary callable, it inspects the
 method table and compares available arities to the expected in-place and
-out-of-place signatures. `inplace_param_number` is the number of positional
-arguments for the in-place form, while `outofplace_param_number` defaults to one
-fewer argument. For example, an ODE right-hand side uses `4` for
-`f!(du, u, p, t)` and `3` for `f(u, p, t)`.
+out-of-place signatures.
+
+# Arguments
+
+- `f`: An [`AbstractSciMLFunction`](@ref) or callback whose calling convention is
+  being queried.
+- `inplace_param_number`: Number of positional arguments in the in-place callback
+  signature. For example, an ODE right-hand side uses `4` for `f!(du, u, p, t)`.
+- `fname`: Name used to identify `f` in an argument-convention error.
+- `iip_preferred`: Convention selected when `f` provides both accepted arities.
+
+# Keywords
+
+- `has_two_dispatches`: Whether the interface accepts both in-place and
+  out-of-place callback signatures. Set this to `false` for interfaces with only
+  one accepted arity, such as optimization objectives.
+- `isoptimization`: Whether errors should use optimization-specific wording.
+- `outofplace_param_number`: Number of positional arguments in the out-of-place
+  callback signature. It defaults to `inplace_param_number - 1`; the ODE
+  out-of-place form is therefore `f(u, p, t)`.
+
+# Returns
+
+Returns `true` for the in-place convention and `false` for the out-of-place
+convention. Concrete `AbstractSciMLFunction` subtypes must expose their
+convention through this trait; generic solver code must query `isinplace(f)` and
+must not inspect subtype fields or type parameters directly.
 
 If neither accepted arity is present, `isinplace` throws a function-argument
 error that uses `fname` to identify the offending callback. If both accepted
 arities are present, `iip_preferred = true` chooses the in-place interpretation
 and `iip_preferred = false` chooses the out-of-place interpretation.
 
-Set `has_two_dispatches = false` for interfaces that only accept one arity, such
-as optimization objective functions, so a shorter out-of-place form is not
-treated as valid.
+# Examples
+
+```julia
+f!(du, u, p, t) = (du .= u)
+f(u, p, t) = u
+
+isinplace(f!, 4) # true
+isinplace(f, 4)  # false
+```
 
 # See also
 
