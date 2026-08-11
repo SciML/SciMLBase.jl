@@ -900,25 +900,6 @@ has_mtk_sys(integrator) = false
 
 diagnose_symbolic_instability(sys, u, uprev) = ""
 
-"""
-    report_integrator_failure(integrator, ::Val{reason})
-
-Report a failure mode detected,called immediately 
-before the corresponding return code is returned. `reason` is one
-of `:dt_NaN`, `:max_iters`, `:dt_min_unstable`, `:dt_epsilon`, `:instability` or
-`:newton_convergence`.
-
-`check_error` only detects failures; describing them belongs to the solver stack,
-which owns both the wording and the verbosity settings that gate it. DiffEqBase.jl
-implements this for `DEIntegrator`s. The default is a no-op, so a stack that does not
-implement it still gets correct return codes, just no diagnostics.
-
-Implementations must not affect control flow and their return value is ignored. A
-`reason` configured at `SciMLLogging.ErrorLevel` throws instead of returning, which is
-the intended behaviour of that level.
-"""
-@inline report_integrator_failure(integrator, ::Val) = nothing
-
 ### Display
 
 function Base.summary(io::IO, I::DEIntegrator)
@@ -982,61 +963,12 @@ mutate `integrator.sol.retcode`; use
 when the solution must be updated. Concrete integrators may specialize the
 checks while preserving the return-code contract.
 
-Diagnostics for detected failures are emitted through
-[`report_integrator_failure`](@ref), which the solver stack implements; this
-function only performs detection.
+The `DEIntegrator` implementation lives in DiffEqBase.jl, alongside the
+differential-equation-specific diagnostics it reports. This package owns only the
+generic function, so that packages which depend on SciMLBase alone can still
+reference and extend `check_error`.
 """
-function check_error(integrator::DEIntegrator)
-    if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
-        return integrator.sol.retcode
-    end
-    opts = integrator.opts
-    # This implementation is intended to be used for ODEIntegrator and
-    # SDEIntegrator.
-
-    if isnan(integrator.dt)
-        report_integrator_failure(integrator, Val(:dt_NaN))
-        return ReturnCode.DtNaN
-    end
-    if integrator.iter > opts.maxiters
-        report_integrator_failure(integrator, Val(:max_iters))
-        return ReturnCode.MaxIters
-    end
-
-    # The last part:
-    # Bail out if we take a step with dt less than the minimum value (which may be time dependent)
-    # except if we are successfully taking such a small timestep is to hit a tstop exactly
-    # We also exit if the ODE is unstable according to a user chosen callback
-    # but only if we accepted the step to prevent from bailing out as unstable
-    # when we just took way too big a step)
-    step_accepted = !hasproperty(integrator, :accept_step) || integrator.accept_step
-    if !opts.force_dtmin && opts.adaptive
-        if abs(integrator.dt) <= abs(opts.dtmin) &&
-                (
-                !step_accepted || (
-                    hasproperty(opts, :tstops) ?
-                        integrator.t + integrator.dt < integrator.tdir * first(opts.tstops) :
-                        true
-                )
-            )
-            report_integrator_failure(integrator, Val(:dt_min_unstable))
-            return ReturnCode.DtLessThanMin
-        elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
-            report_integrator_failure(integrator, Val(:dt_epsilon))
-            return ReturnCode.Unstable
-        end
-    end
-    if step_accepted &&
-            opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        report_integrator_failure(integrator, Val(:instability))
-        return ReturnCode.Unstable
-    end
-    if last_step_failed(integrator)
-        report_integrator_failure(integrator, Val(:newton_convergence))
-        return ReturnCode.ConvergenceFailure
-    end
-    return ReturnCode.Success
-end
+function check_error end
 
 """
     postamble!(integrator)
@@ -1071,15 +1003,11 @@ When the code is not `ReturnCode.Success`, the common implementation also calls
 the solver's `postamble!` hook so pending bookkeeping and finalization are
 performed before the solve exits. A successful check updates the return code but
 does not finalize the integrator.
+
+As with [`check_error`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error),
+the `DEIntegrator` implementation lives in DiffEqBase.jl.
 """
-function check_error!(integrator::DEIntegrator)
-    code = check_error(integrator)
-    integrator.sol = solution_new_retcode(integrator.sol, code)
-    if code != ReturnCode.Success
-        postamble!(integrator)
-    end
-    return code
-end
+function check_error! end
 
 ### Default Iterator Interface
 """

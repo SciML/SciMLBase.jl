@@ -85,17 +85,13 @@ SciMLBase.set_ut!(integrator, [3.0], 2.0)
 @test integrator.u == [3.0]
 @test integrator.t == 2.0
 
+# `check_error` dispatches to the method DummyIntegrator defines above and must not
+# touch the solution's return code. `check_error!` and the `DEIntegrator` method of
+# `check_error` are implemented in DiffEqBase.jl and are covered by its tests.
 @test integrator.sol.retcode == ReturnCode.Default
 @test check_error(integrator) == ReturnCode.Success
 @test integrator.sol.retcode == ReturnCode.Default
-@test SciMLBase.check_error!(integrator) == ReturnCode.Success
-@test integrator.sol.retcode == ReturnCode.Success
 
 integrator.check_code = ReturnCode.ConvergenceFailure
-@test SciMLBase.check_error!(integrator) == ReturnCode.ConvergenceFailure
-@test integrator.postamble_calls == 1
-
-let
-    integrator = DummyIntegrator()
-    @test 0 == @allocated SciMLBase.check_error!(integrator)
-end
+@test check_error(integrator) == ReturnCode.ConvergenceFailure
+@test integrator.sol.retcode == ReturnCode.Default
