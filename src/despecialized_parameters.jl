@@ -11,7 +11,8 @@ SciMLStructures, SymbolicIndexingInterface, ArrayInterface, and Adapt interfaces
 wrapped value. The dynamic dispatch isolates inference loss at the function barrier, but
 adds runtime overhead. Use [`unwrap_parameters`](@ref) in transformations such as AD that
 need to reconstruct a problem with concrete parameters. Use [`FullSpecialize`](@ref) when
-runtime performance takes priority over compilation reuse.
+runtime performance takes priority over compilation reuse. Supported solvers select this
+container with [`AutoDespecialize`](@ref).
 
 `DespecializedParameters` is distinct from [`AutoRespecialize`](@ref): the latter lets a
 supporting solver recover a concrete parameter type without dynamic dispatch, but imposes

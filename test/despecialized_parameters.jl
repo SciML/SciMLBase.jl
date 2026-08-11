@@ -99,6 +99,10 @@ end
     @test all(==(DespecializedCallParameters), seen)
     @test SciMLBase.specialization(NonlinearFunction{false, SciMLBase.AutoSpecialize}) ===
         SciMLBase.AutoSpecialize
+    @test SciMLBase.specialization(
+        NonlinearFunction{false, SciMLBase.AutoDespecialize}
+    ) === SciMLBase.AutoDespecialize
+    @test SciMLBase.AutoDespecialize !== SciMLBase.AutoRespecialize
     @test SciMLBase.specialization(OptimizationFunction) === SciMLBase.FullSpecialize
 end
 
@@ -163,8 +167,8 @@ end
         return -p.rate .* u
     end
 
-    f_iip = ODEFunction{true, SciMLBase.AutoSpecialize}(rhs!)
-    f_oop = ODEFunction{false, SciMLBase.AutoSpecialize}(rhs)
+    f_iip = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    f_oop = ODEFunction{false, SciMLBase.AutoDespecialize}(rhs)
     du = zeros(1)
     f_iip(du, [3.0], params, 0.0)
     @test du == [-6.0]

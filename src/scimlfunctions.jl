@@ -19,12 +19,13 @@ with [`specialization`](@ref) instead of relying on a particular parameter
 position. Problem construction and `remake` should preserve an explicitly chosen
 marker unless the caller requests a different function representation.
 
-The built-in markers are [`AutoSpecialize`](@ref), [`NoSpecialize`](@ref),
-[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior
-is implemented jointly by SciMLBase constructors and downstream solver packages:
-a marker alone does not automatically erase types or install callable wrappers.
-New `AbstractSpecialization` subtypes therefore require explicit support in every
-function constructor and solver path that is expected to honor them.
+The built-in markers are [`AutoSpecialize`](@ref), [`AutoDespecialize`](@ref),
+[`AutoRespecialize`](@ref), [`NoSpecialize`](@ref),
+[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior is
+implemented jointly by SciMLBase constructors and downstream solver packages: a marker
+alone does not automatically erase types or install callable wrappers. New
+`AbstractSpecialization` subtypes therefore require explicit support in every function
+constructor and solver path that is expected to honor them.
 
 Solver and transformation code must not assume that a type-restricted wrapped
 callable accepts new state, time, parameter, or AD types. Use
@@ -87,6 +88,41 @@ ODEProblem{true, SciMLBase.AutoSpecialize}(f, [1.0], (0.0, 1.0))
 ```
 """
 struct AutoSpecialize <: AbstractSpecialization end
+
+"""
+$(TYPEDEF)
+
+`AutoDespecialize` asks supported solver paths to store `p` in a
+[`DespecializedParameters`](@ref) container. [`AutoSpecialize`](@ref) retains its existing
+function-specialization behavior and does not select this parameter container. The
+container has a stable outer type and stores the original parameter object in an `Any`
+field, so solver compilation can be reused across parameter-container types. Built-in
+SciML function containers cross a dynamic function barrier before calling model code,
+where the original concrete parameter object is recovered.
+
+This policy accepts arbitrary parameter objects and does not impose the opaque-container
+constraints of [`AutoRespecialize`](@ref). The tradeoff is dynamic dispatch at the model
+function barrier. Transformations such as parameter AD may call
+[`unwrap_parameters`](@ref) and reconstruct a concretely parameterized problem when
+needed. Symbolic and modeling packages must forward their parameter interfaces through
+`DespecializedParameters` for indexed access to remain available.
+
+Support is solver-specific. A solver without an `AutoDespecialize` path may fall back to
+ordinary specialization without wrapping `p`.
+
+## Example
+
+```julia
+struct MyParameters
+    rate::Float64
+end
+f(du, u, p, t) = (du .= -p.rate .* u)
+ODEProblem{true, SciMLBase.AutoDespecialize}(
+    f, [1.0], (0.0, 1.0), MyParameters(2.0)
+)
+```
+"""
+struct AutoDespecialize <: AbstractSpecialization end
 
 """
 $(TYPEDEF)
@@ -222,9 +258,9 @@ specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize
 if specstring ∉
         (
         "NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize",
-        "AutoRespecialize", "AutoDePSpecialize",
+        "AutoDespecialize", "AutoRespecialize", "AutoDePSpecialize",
     )
-    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoRespecialize, AutoDePSpecialize).")
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDespecialize, AutoRespecialize, AutoDePSpecialize).")
 end
 
 const DEFAULT_SPECIALIZATION = getproperty(SciMLBase, Symbol(specstring))
