@@ -50,6 +50,16 @@ change the first value). This is automatically determined using the methods tabl
 but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
+### In-place Trait Contract
+
+Every concrete `AbstractSciMLFunction{iip}` subtype must encode whether its
+primary callback mutates its first argument in the `iip` parameter. Generic
+solver and extension code must obtain this information through
+`isinplace(f)`, rather than inspecting fields or type parameters. The generic
+trait returns `true` for in-place and `false` for out-of-place function
+containers; callers can therefore support new concrete subtypes without adding
+type-specific dispatches.
+
 ### Specialization Choices
 
 Each `SciMLFunction` type allows for specialization choices
