@@ -118,6 +118,13 @@ for fn in [
     end
 end
 
+function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
+        sol::AbstractTimeseriesSolution, params::DespecializedParameters, args...
+    )
+    updated = with_updated_parameter_timeseries_values(sol, params.params, args...)
+    return DespecializedParameters(updated)
+end
+
 function SymbolicIndexingInterface.state_values(sol::AbstractTimeseriesSolution, i)
     ss = get_saved_subsystem(sol)
     ss === nothing && return sol.u[i]

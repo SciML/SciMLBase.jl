@@ -4,6 +4,7 @@ using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimizatio
     DiffEqCallbacks, Test, Plots
 import Symbolics
 import SymbolicUtils as SU
+import Makie
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -973,9 +974,6 @@ end
     for (sym, val, check_inference) in [
             ([x, ud1], [_xval, _ud1val], false),
             ((x, ud1), (_xval, _ud1val), true),
-            (x + ud2, _xval + _ud2val, true),
-            ([2x, 3xd1], [2_xval, 3_xd1val], true),
-            ((2x, 3xd2), (2_xval, 3_xd2val), true),
         ]
         getter = getsym(sys, sym)
         @test_throws Exception getter(sol)
@@ -986,6 +984,35 @@ end
         if check_inference
             @inferred getter(integ)
         end
+        @test getter(integ) == val
+    end
+
+    function held_values(discrete, i, times)
+        return map(times) do time
+            discrete.u[searchsortedlast(discrete.t, time)][i]
+        end
+    end
+    ud2_at_t = held_values(sol.discretes.collection[2], 1, sol.t)
+    xd1_at_t = held_values(sol.discretes.collection[1], 2, sol.t)
+    xd2_at_t = held_values(sol.discretes.collection[2], 2, sol.t)
+    for (sym, val, tsval) in [
+            (x + ud2, _xval + _ud2val, xval .+ ud2_at_t),
+            ([2x, 3xd1], [2_xval, 3_xd1val], vcat.(2 .* xval, 3 .* xd1_at_t)),
+            ((2x, 3xd2), (2_xval, 3_xd2val), tuple.(2 .* xval, 3 .* xd2_at_t)),
+        ]
+        getter = getsym(sys, sym)
+        @inferred getter(sol)
+        @test getter(sol) == tsval
+        for subidx in [
+                1, CartesianIndex(2), :, rand(Bool, length(tsval)),
+                rand(eachindex(tsval), 3), 1:2,
+            ]
+            @inferred getter(sol, subidx)
+            target = subidx isa Colon ? tsval : tsval[subidx]
+            @test getter(sol, subidx) == target
+        end
+
+        @inferred getter(integ)
         @test getter(integ) == val
     end
 
@@ -1041,9 +1068,28 @@ end
                 x = plot(sol; idxs = idx, tspan = (0.4, 0.6)).series_list[1][:x]
                 @test !isempty(x)
                 @test all(t -> 0.4 <= t <= 0.6, x)
+
+                specs = Makie.convert_arguments(
+                    Makie.Lines, sol; idxs = idx, tspan = (0.4, 0.6)
+                )
+                @test !isempty(specs)
+                points = Iterators.flatten(only(spec.args) for spec in specs)
+                lo, hi = Float32.((0.4, 0.6))
+                @test all(point -> lo <= point[1] <= hi, points)
             end
             # No discrete save point in the window, so there is nothing to draw
             @test isempty(plot(sol; idxs = ud1, tspan = (10.0, 20.0)).series_list)
+            @test isempty(
+                Makie.convert_arguments(
+                    Makie.Lines, sol; idxs = ud1, tspan = (10.0, 20.0)
+                )
+            )
+
+            makie_ext = Base.get_extension(SciMLBase, :SciMLBaseMakieExt)
+            @test makie_ext._tspan_indices([0.2, 0.4, 0.6, 0.8], (0.65, 0.35)) ==
+                (2, 3)
+            @test makie_ext._tspan_indices([0.8, 0.6, 0.4, 0.2], (0.35, 0.65)) ==
+                (2, 3)
         end
     end
 

@@ -55,10 +55,20 @@ Note that `iip` choice is required for specialization choices to be made.
 ```@docs
 SciMLBase.AbstractSpecialization
 SciMLBase.AutoSpecialize
+SciMLBase.AutoDespecialize
+SciMLBase.AutoRespecialize
 SciMLBase.AutoDePSpecialize
 SciMLBase.NoSpecialize
 SciMLBase.FunctionWrapperSpecialize
 SciMLBase.FullSpecialize
+```
+
+#### Parameter Despecialization
+
+```@docs
+SciMLBase.DespecializedParameters
+SciMLBase.unwrap_parameters
+SciMLBase.invoke_with_despecialized_parameters
 ```
 
 #### Specialization Interface Hooks

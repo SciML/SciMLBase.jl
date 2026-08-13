@@ -291,19 +291,48 @@ Check whether a user callback follows the in-place SciML convention.
 For an [`AbstractSciMLFunction`](@ref), `isinplace` returns the `iip` type
 parameter without inspecting methods. For an ordinary callable, it inspects the
 method table and compares available arities to the expected in-place and
-out-of-place signatures. `inplace_param_number` is the number of positional
-arguments for the in-place form, while `outofplace_param_number` defaults to one
-fewer argument. For example, an ODE right-hand side uses `4` for
-`f!(du, u, p, t)` and `3` for `f(u, p, t)`.
+out-of-place signatures.
+
+# Arguments
+
+- `f`: An [`AbstractSciMLFunction`](@ref) or callback whose calling convention is
+  being queried.
+- `inplace_param_number`: Number of positional arguments in the in-place callback
+  signature. For example, an ODE right-hand side uses `4` for `f!(du, u, p, t)`.
+- `fname`: Name used to identify `f` in an argument-convention error.
+- `iip_preferred`: Convention selected when `f` provides both accepted arities.
+
+# Keywords
+
+- `has_two_dispatches`: Whether the interface accepts both in-place and
+  out-of-place callback signatures. Set this to `false` for interfaces with only
+  one accepted arity, such as optimization objectives.
+- `isoptimization`: Whether errors should use optimization-specific wording.
+- `outofplace_param_number`: Number of positional arguments in the out-of-place
+  callback signature. It defaults to `inplace_param_number - 1`; the ODE
+  out-of-place form is therefore `f(u, p, t)`.
+
+# Returns
+
+Returns `true` for the in-place convention and `false` for the out-of-place
+convention. Concrete `AbstractSciMLFunction` subtypes must expose their
+convention through this trait; generic solver code must query `isinplace(f)` and
+must not inspect subtype fields or type parameters directly.
 
 If neither accepted arity is present, `isinplace` throws a function-argument
 error that uses `fname` to identify the offending callback. If both accepted
 arities are present, `iip_preferred = true` chooses the in-place interpretation
 and `iip_preferred = false` chooses the out-of-place interpretation.
 
-Set `has_two_dispatches = false` for interfaces that only accept one arity, such
-as optimization objective functions, so a shorter out-of-place form is not
-treated as valid.
+# Examples
+
+```julia
+f!(du, u, p, t) = (du .= u)
+f(u, p, t) = u
+
+isinplace(f!, 4) # true
+isinplace(f, 4)  # false
+```
 
 # See also
 
@@ -413,6 +442,45 @@ get_colorizers(io::IO) = get(io, :color, false) ? (TYPE_COLOR, NO_COLOR) : ("", 
 
 """
     @def name definition
+
+Define a zero-argument macro named `@name` whose expansion is `definition`.
+
+Solver packages use `@def` to define repeated preambles that must expand in the
+generated macro's invocation scope.
+
+# Arguments
+
+- `name`: The name of the macro to define, without the leading `@`.
+- `definition`: The expression returned when the generated macro is expanded.
+
+# Returns
+
+An expression that defines `@name` in the module where `@def` is invoked.
+
+# Extension Rules
+
+Invoke `@def` at module scope and invoke the generated macro without arguments. Names in
+`definition` resolve in the generated macro's invocation scope, so each invocation must
+provide every referenced local. Do not extend `@def` or use it to define user-facing API.
+
+# Examples
+
+```julia
+module ExampleSolver
+using SciMLBase: @def
+
+@def affine_preamble begin
+    shifted = x + offset
+end
+
+function evaluate(x, offset)
+    @affine_preamble
+    return shifted
+end
+end
+
+ExampleSolver.evaluate(2, 3) # 5
+```
 """
 macro def(name, definition)
     return quote
@@ -649,6 +717,39 @@ function mergedefaults(defaults, varmap, vars)
     end
 end
 
+"""
+    _unwrap_val(::Val{B}) where {B}
+    _unwrap_val(x)
+
+Return the value encoded by a `Val`, or return any other input unchanged.
+
+Solver constructors use `_unwrap_val` for options that accept either a compile-time
+`Val` marker or an ordinary runtime value.
+
+# Arguments
+
+- `x`: A `Val` instance or a value that should pass through unchanged.
+
+# Returns
+
+The type parameter `B` for `Val{B}()`; otherwise `x` itself, preserving its type and
+identity.
+
+# Extension Rules
+
+Call `_unwrap_val` only when both `Val` and runtime-value forms are part of the option's
+documented contract. Downstream packages should not add methods; support for another
+wrapper type must be implemented in SciMLBase.
+
+# Examples
+
+```julia
+using SciMLBase: _unwrap_val
+
+_unwrap_val(Val(true)) # true
+_unwrap_val(:runtime) # :runtime
+```
+"""
 _unwrap_val(::Val{B}) where {B} = B
 _unwrap_val(B) = B
 
