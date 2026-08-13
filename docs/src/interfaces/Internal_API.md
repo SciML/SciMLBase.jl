@@ -22,7 +22,6 @@ SciMLBase.AbstractReactionNetwork
 ## Construction And Remake
 
 ```@docs
-SciMLBase.@def
 SciMLBase.num_types_in_tuple
 SciMLBase._get_new_A_b
 SciMLBase.UpdateABWrapper

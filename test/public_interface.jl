@@ -1,5 +1,20 @@
 using SciMLBase, Test
 
+module ExternalSolverUtilities
+    using SciMLBase: @def, _unwrap_val
+
+    @def affine_preamble begin
+        shifted = x + offset
+    end
+
+    function evaluate(x, offset)
+        @affine_preamble
+        return shifted
+    end
+
+    unwrap(x) = _unwrap_val(x)
+end
+
 struct ProblemTypeTestProblem <: SciMLBase.AbstractSciMLProblem end
 struct ProblemTypeTestMarker end
 struct ProblemTypeTestSolution
@@ -22,6 +37,8 @@ SciMLBase.get_concrete_problem(
 ) = (; prob, isadapt, alg, kwargs)
 SciMLBase.check_prob_alg_pairing(::ConcretizationHookProblem, ::ConcretizationHookAlgorithm) =
     nothing
+
+struct GenericSciMLFunction{iip} <: SciMLBase.AbstractSciMLFunction{iip} end
 
 struct ConcreteSolveContractProblem end
 struct ConcreteSolveContractAlgorithm end
@@ -162,6 +179,12 @@ end
     @test occursin("`update_coefficients` for the out-of-place form", function_docs)
     @test occursin("ODE and Discrete Function Types", function_docs)
     @test !occursin("SciMLBase.ODEFunction\n", function_docs)
+end
+
+@testset "AbstractSciMLFunction in-place trait contract" begin
+    @test SciMLBase.isinplace(GenericSciMLFunction{true}()) === true
+    @test SciMLBase.isinplace(GenericSciMLFunction{false}()) === false
+    @test Docs.doc(SciMLBase.isinplace) !== nothing
 end
 
 @testset "Problem layout marker interface" begin
@@ -459,6 +482,14 @@ end
     end
 end
 
+@testset "Solver code-generation developer API" begin
+    @test ExternalSolverUtilities.evaluate(2, 3) == 5
+    @test ExternalSolverUtilities.unwrap(Val(:compile_time)) === :compile_time
+
+    runtime_value = Ref(1)
+    @test ExternalSolverUtilities.unwrap(runtime_value) === runtime_value
+end
+
 if isdefined(Base, :ispublic)
     @testset "Extension hooks public API" begin
         for name in (
@@ -466,6 +497,7 @@ if isdefined(Base, :ispublic)
                 :done, :postamble!, :enable_interpolation_sensitivitymode,
                 :get_root_indp, :has_initializeprob, :late_binding_update_u0_p,
                 :strip_interpolation, :unitfulvalue, :value, :last_step_failed,
+                Symbol("@def"), :_unwrap_val,
                 :get_concrete_p, :get_concrete_u0, :isconcreteu0, :promote_u0,
                 :get_concrete_problem, :check_prob_alg_pairing, :KeywordArgError,
                 :keyword_arg_silent, Symbol("@add_kwonly"),

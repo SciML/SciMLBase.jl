@@ -10,6 +10,15 @@ using Makie: Makie, Lines, Plot, PlotSpec
 
 import Makie.SpecApi as S
 
+function _tspan_indices(t, tspan)
+    lo, hi = minmax(tspan[1], tspan[end])
+    if length(t) > 1 && t[end] < t[1]
+        return searchsortedfirst(t, hi; rev = true), searchsortedlast(t, lo; rev = true)
+    else
+        return searchsortedfirst(t, lo), searchsortedlast(t, hi)
+    end
+end
+
 function ensure_plottrait(PT::Type, arg, desired_plottrait_type::Type)
     return if !(Makie.conversion_trait(PT, arg) isa desired_plottrait_type)
         error(
@@ -181,7 +190,7 @@ function Makie.convert_arguments(
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
         if tspan !== nothing
-            tstart, tend = SciMLBase.tspan_indices(ts, tspan)
+            tstart, tend = _tspan_indices(ts, tspan)
             if tstart > tend
                 continue
             end

@@ -462,6 +462,14 @@ function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
     return ps
 end
 
+
+function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
+        sswf::SavedSubsystemWithFallback, params::DespecializedParameters, args...
+    )
+    updated = with_updated_parameter_timeseries_values(sswf, params.params, args...)
+    return DespecializedParameters(updated)
+end
+
 """
     $(TYPEDSIGNATURES)
 

@@ -19,12 +19,13 @@ with [`specialization`](@ref) instead of relying on a particular parameter
 position. Problem construction and `remake` should preserve an explicitly chosen
 marker unless the caller requests a different function representation.
 
-The built-in markers are [`AutoSpecialize`](@ref), [`NoSpecialize`](@ref),
-[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior
-is implemented jointly by SciMLBase constructors and downstream solver packages:
-a marker alone does not automatically erase types or install callable wrappers.
-New `AbstractSpecialization` subtypes therefore require explicit support in every
-function constructor and solver path that is expected to honor them.
+The built-in markers are [`AutoSpecialize`](@ref), [`AutoDespecialize`](@ref),
+[`AutoRespecialize`](@ref), [`NoSpecialize`](@ref),
+[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior is
+implemented jointly by SciMLBase constructors and downstream solver packages: a marker
+alone does not automatically erase types or install callable wrappers. New
+`AbstractSpecialization` subtypes therefore require explicit support in every function
+constructor and solver path that is expected to honor them.
 
 Solver and transformation code must not assume that a type-restricted wrapped
 callable accepts new state, time, parameter, or AD types. Use
@@ -87,6 +88,41 @@ ODEProblem{true, SciMLBase.AutoSpecialize}(f, [1.0], (0.0, 1.0))
 ```
 """
 struct AutoSpecialize <: AbstractSpecialization end
+
+"""
+$(TYPEDEF)
+
+`AutoDespecialize` asks supported solver paths to store `p` in a
+[`DespecializedParameters`](@ref) container. [`AutoSpecialize`](@ref) retains its existing
+function-specialization behavior and does not select this parameter container. The
+container has a stable outer type and stores the original parameter object in an `Any`
+field, so solver compilation can be reused across parameter-container types. Built-in
+SciML function containers cross a dynamic function barrier before calling model code,
+where the original concrete parameter object is recovered.
+
+This policy accepts arbitrary parameter objects and does not impose the opaque-container
+constraints of [`AutoRespecialize`](@ref). The tradeoff is dynamic dispatch at the model
+function barrier. Transformations such as parameter AD may call
+[`unwrap_parameters`](@ref) and reconstruct a concretely parameterized problem when
+needed. Symbolic and modeling packages must forward their parameter interfaces through
+`DespecializedParameters` for indexed access to remain available.
+
+Support is solver-specific. A solver without an `AutoDespecialize` path may fall back to
+ordinary specialization without wrapping `p`.
+
+## Example
+
+```julia
+struct MyParameters
+    rate::Float64
+end
+f(du, u, p, t) = (du .= -p.rate .* u)
+ODEProblem{true, SciMLBase.AutoDespecialize}(
+    f, [1.0], (0.0, 1.0), MyParameters(2.0)
+)
+```
+"""
+struct AutoDespecialize <: AbstractSpecialization end
 
 """
 $(TYPEDEF)
@@ -172,7 +208,7 @@ struct FullSpecialize <: AbstractSpecialization end
 """
 $(TYPEDEF)
 
-`AutoDePSpecialize` extends
+`AutoRespecialize` extends
 [`AutoSpecialize`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 by additionally
 *de-specializing the parameter object*. Solver paths with a supported
@@ -186,7 +222,7 @@ across all `isbits` parameter types. Inside the user's `f`, `p` is recovered
 at its original concrete type via a type-stable, allocation-free unpack, so
 the model function itself remains fully specialized.
 
-`AutoDePSpecialize` is the recommended choice for latency-sensitive workflows
+`AutoRespecialize` is the recommended choice for latency-sensitive workflows
 that construct many problems with differently-typed parameter structs
 (parameter studies over configuration structs, package test suites,
 teaching setups).
@@ -205,18 +241,26 @@ struct MyParams
     k::Float64
 end
 f(du, u, p, t) = (du .= p.k .* u)
-ODEProblem{true, SciMLBase.AutoDePSpecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
+ODEProblem{true, SciMLBase.AutoRespecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
 ```
 """
-struct AutoDePSpecialize <: AbstractSpecialization end
+struct AutoRespecialize <: AbstractSpecialization end
+
+"""
+    AutoDePSpecialize
+
+Deprecated name for [`AutoRespecialize`](@ref). New code should use
+`AutoRespecialize`.
+"""
+const AutoDePSpecialize = AutoRespecialize
 
 specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize")
 if specstring ∉
         (
         "NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize",
-        "AutoDePSpecialize",
+        "AutoDespecialize", "AutoRespecialize", "AutoDePSpecialize",
     )
-    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDePSpecialize).")
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDespecialize, AutoRespecialize, AutoDePSpecialize).")
 end
 
 const DEFAULT_SPECIALIZATION = getproperty(SciMLBase, Symbol(specstring))
@@ -1586,7 +1630,8 @@ DAEFunction{iip,specialize}(f;
                            jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
                            sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+                           sys = __has_sys(f) ? f.sys : nothing,
+                           nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1622,6 +1667,11 @@ the usage of `f`. These include:
   based on the sparsity pattern. Defaults to `nothing`, which means a color vector will be
   internally computed on demand when required. The cost of this operation is highly dependent
   on the sparsity pattern.
+- `nlstep_data`: an [`ODENLStepData`](@ref SciMLBase.ODENLStepData) holding a structured
+  nonlinear problem for the implicit stage solve, or `nothing`. Implicit DAE integrators
+  which support it solve this problem in place of building a stage-equation closure. See the
+  `ODENLStepData` documentation for the stage equation the nonlinear problem must represent
+  in the fully implicit case.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -1685,7 +1735,7 @@ numerically-defined functions.
 struct DAEFunction{
         iip, specialize, F, Ta, Tt, TJ, TJU, TJD, JVP, VJP, JP, SP, TW, TWt, TPJ, O,
         TCV,
-        SYS, ID,
+        SYS, ID, NLP <: Union{Nothing, ODENLStepData},
     } <:
     AbstractDAEFunction{iip}
     f::F
@@ -1705,6 +1755,7 @@ struct DAEFunction{
     colorvec::TCV
     sys::SYS
     initialization_data::ID
+    nlstep_data::NLP
 end
 
 """
@@ -2834,7 +2885,21 @@ end
 
 ######### Backwards Compatibility Overloads
 
-(f::ODEFunction)(args...) = f.f(args...)
+(f::ODEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+
+function (f::ODEFunction)(du, u, p::DespecializedParameters, t)
+    if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        return f.f(du, u, p, t)
+    end
+    return invoke_with_despecialized_parameters(f, (du, u, p, t), p, Val(3))
+end
+
+function (f::ODEFunction)(u, p::DespecializedParameters, t)
+    if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        return f.f(u, p, t)
+    end
+    return invoke_with_despecialized_parameters(f, (u, p, t), p, Val(2))
+end
 
 @static if isdefined(SciMLOperators, :isv1)
     function (f::ODEFunction)(du, u, p, t)
@@ -2854,21 +2919,39 @@ end
     end
 end
 
-(f::NonlinearFunction)(args...) = f.f(args...)
-(f::HomotopyNonlinearFunction)(args...) = f.f(args...)
-(f::IntervalNonlinearFunction)(args...) = f.f(args...)
-(f::IntegralFunction)(args...) = f.f(args...)
-(f::BatchIntegralFunction)(args...) = f.f(args...)
+(f::NonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::HomotopyNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::IntervalNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::IntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::BatchIntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::DynamicalODEFunction)(u, p, t)
-    return ArrayPartition(f.f1(u.x[1], u.x[2], p, t), f.f2(u.x[1], u.x[2], p, t))
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], p, t))
+    return ArrayPartition(f1, f2)
 end
 function (f::DynamicalODEFunction)(du, u, p, t)
-    f.f1(du.x[1], u.x[1], u.x[2], p, t)
-    return f.f2(du.x[2], u.x[1], u.x[2], p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], p, t)
+    )
 end
 
-(f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
+function (f::DynamicalSDEFunction)(u, p, t)
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], p, t))
+    return ArrayPartition(f1, f2)
+end
+function (f::DynamicalSDEFunction)(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], p, t)
+    )
+end
+
+(f::SplitFunction)(u, p, t) =
+    invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
+    invoke_with_despecialized_parameters(f.f2, (u, p, t))
 function (f::SplitFunction)(du, u, p, t)
     if f._func_cache === nothing
         throw(
@@ -2883,23 +2966,27 @@ function (f::SplitFunction)(du, u, p, t)
         )
     end
     tmp = get_tmp(f._func_cache, du)
-    f.f1(tmp, u, p, t)
-    f.f2(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
 
-(f::DiscreteFunction)(args...) = f.f(args...)
-(f::ImplicitDiscreteFunction)(args...) = f.f(args...)
-(f::DAEFunction)(args...) = f.f(args...)
-(f::DDEFunction)(args...) = f.f(args...)
-(f::ODEInputFunction)(args...) = f.f(args...)
+(f::DiscreteFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::ImplicitDiscreteFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DAEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::ODEInputFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::DynamicalDDEFunction)(u, h, p, t)
-    return ArrayPartition(f.f1(u.x[1], u.x[2], h, p, t), f.f2(u.x[1], u.x[2], h, p, t))
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], h, p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], h, p, t))
+    return ArrayPartition(f1, f2)
 end
 function (f::DynamicalDDEFunction)(du, u, h, p, t)
-    f.f1(du.x[1], u.x[1], u.x[2], h, p, t)
-    return f.f2(du.x[2], u.x[1], u.x[2], h, p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], h, p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], h, p, t)
+    )
 end
 function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
     if name === :f
@@ -2909,40 +2996,42 @@ function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
     return getfield(f, name)
 end
 
-(f::SDEFunction)(args...) = f.f(args...)
+(f::SDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 @static if isdefined(SciMLOperators, :isv1)
     function (f::SDEFunction)(du, u, p, t)
         if f.f isa AbstractSciMLOperator
-            f.f(du, u, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (du, u, u, p, t))
         else
-            f.f(du, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (du, u, p, t))
         end
     end
 
     function (f::SDEFunction)(u, p, t)
         if f.f isa AbstractSciMLOperator
-            f.f(u, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (u, u, p, t))
         else
-            f.f(u, p, t)
+            invoke_with_despecialized_parameters(f.f, (u, p, t))
         end
     end
 end
 
-(f::SDDEFunction)(args...) = f.f(args...)
-(f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
+(f::SDDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::SplitSDEFunction)(u, p, t) =
+    invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
+    invoke_with_despecialized_parameters(f.f2, (u, p, t))
 
 function (f::SplitSDEFunction)(du, u, p, t)
     tmp = get_tmp(f._func_cache, du)
-    f.f1(tmp, u, p, t)
-    f.f2(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
 
-(f::RODEFunction)(args...) = f.f(args...)
+(f::RODEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
-(f::BVPFunction)(args...) = f.f(args...)
-(f::DynamicalBVPFunction)(args...) = f.f(args...)
+(f::BVPFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DynamicalBVPFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 ######### Basic Constructor
 
@@ -4143,7 +4232,8 @@ function DAEFunction{iip, specialize}(
         initializeprobmap = __has_initializeprobmap(f) ? f.initializeprobmap : nothing,
         initializeprobpmap = __has_initializeprobpmap(f) ? f.initializeprobpmap : nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
-            nothing
+            nothing,
+        nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing
     ) where {
         iip,
         specialize,
@@ -4188,12 +4278,12 @@ function DAEFunction{iip, specialize}(
             iip, specialize, Any, Any, Any,
             Any, Any, Any, Any, Any, Any, Any,
             Any, Any, Any,
-            Any, typeof(_colorvec), Any, Any,
+            Any, typeof(_colorvec), Any, Any, Union{Nothing, ODENLStepData},
         }(
             _f, analytic, tgrad, jac, jac_u, jac_du, jvp,
             vjp, jac_prototype, sparsity,
             Wfact, Wfact_t, paramjac, observed,
-            _colorvec, sys, initdata
+            _colorvec, sys, initdata, nlstep_data
         )
     else
         DAEFunction{
@@ -4203,12 +4293,12 @@ function DAEFunction{iip, specialize}(
             typeof(sparsity), typeof(Wfact), typeof(Wfact_t),
             typeof(paramjac),
             typeof(observed), typeof(_colorvec),
-            typeof(sys), typeof(initdata),
+            typeof(sys), typeof(initdata), typeof(nlstep_data),
         }(
             _f, analytic, tgrad, jac, jac_u, jac_du, jvp, vjp,
             jac_prototype, sparsity, Wfact, Wfact_t,
             paramjac, observed,
-            _colorvec, sys, initdata
+            _colorvec, sys, initdata, nlstep_data
         )
     end
 end
@@ -4737,7 +4827,7 @@ chosen by the solver rather than generated via automatic differentiation.
 """
 struct NoAD <: AbstractADType end
 
-(f::OptimizationFunction)(args...) = f.f(args...)
+(f::OptimizationFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 function OptimizationFunction(f, args...; kwargs...)
     isinplace(f, 2, outofplace_param_number = 2)
     return OptimizationFunction{true}(f, args...; kwargs...)
@@ -4793,7 +4883,8 @@ function OptimizationFunction{iip}(
 end
 
 # Function call operator for MultiObjectiveOptimizationFunction
-(f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
+(f::MultiObjectiveOptimizationFunction)(args...) =
+    invoke_with_despecialized_parameters(f.f, args)
 
 # Convenience constructor
 function MultiObjectiveOptimizationFunction(f, args...; kwargs...)
@@ -5850,7 +5941,8 @@ function IncrementingODEFunction(f)
     return IncrementingODEFunction{isinplace(f, 7), DEFAULT_SPECIALIZATION}(f)
 end
 
-(f::IncrementingODEFunction)(args...; kwargs...) = f.f(args...; kwargs...)
+(f::IncrementingODEFunction)(args...; kwargs...) =
+    invoke_with_despecialized_parameters(f.f, args; kwargs...)
 
 for S in [
         :ODEFunction
