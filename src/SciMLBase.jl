@@ -115,6 +115,18 @@ See also [`__solve`](@ref), which implements the direct solve path.
 """
 function __init end
 
+"""
+    solution_new_retcode(sol, retcode)
+
+Return a copy of the solution `sol` with its return code replaced by `retcode`. The
+solution is otherwise left unchanged; this is used to update the `retcode` of an existing
+solution (e.g. when an integrator finishes and the final status becomes known).
+
+Solver packages extend this generic for the solution types they own. Methods should return
+the same solution type with its return code replaced and preserve its other data.
+"""
+function solution_new_retcode end
+
 # Local alias for the `Union{Function, Type}` callable bound (mirrors the
 # unexported `Base.Callable`), so problem constructors can dispatch on it
 # without a non-public qualified access to Base.
