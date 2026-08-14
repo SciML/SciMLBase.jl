@@ -30,6 +30,27 @@ end
     @test ReturnCode.Stalled in unsuccessful
 end
 
+struct DownstreamLikeSolution
+    retcode::SciMLBase.ReturnCode.T
+    payload::Symbol
+end
+
+SciMLBase.solution_new_retcode(sol::DownstreamLikeSolution, retcode) =
+    DownstreamLikeSolution(retcode, sol.payload)
+
+@testset "solution_new_retcode extension contract" begin
+    binding = Base.Docs.Binding(SciMLBase, :solution_new_retcode)
+    @test Base.Docs.meta(SciMLBase)[binding].order == [Union{}]
+
+    doc = (@doc SciMLBase.solution_new_retcode)
+    @test occursin("Solver packages extend this generic", sprint(show, doc))
+
+    sol = DownstreamLikeSolution(ReturnCode.Default, :payload)
+    updated = SciMLBase.solution_new_retcode(sol, ReturnCode.Success)
+    @test updated.retcode === ReturnCode.Success
+    @test updated.payload === sol.payload
+end
+
 struct MockParameterTimeseriesSolution <:
     SciMLBase.AbstractODESolution{Float64, 2, Vector{Vector{Float64}}}
     discretes::ParameterTimeseriesCollection
