@@ -2919,7 +2919,23 @@ end
     end
 end
 
-(f::NonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::NonlinearFunction)(args...) = f.f(args...)
+
+Base.@inline function _invoke_nonlinear_function(f, args)
+    return invoke_with_despecialized_parameters(f.f, args)
+end
+
+(f::NonlinearFunction{false})(u, p::DespecializedParameters) =
+    _invoke_nonlinear_function(f, (u, p))
+
+(f::NonlinearFunction{true})(du, u, p::DespecializedParameters) =
+    _invoke_nonlinear_function(f, (du, u, p))
+
+(f::NonlinearFunction{false})(u, p::DespecializedParameters, λ) =
+    _invoke_nonlinear_function(f, (u, p, λ))
+
+(f::NonlinearFunction{true})(du, u, p::DespecializedParameters, λ) =
+    _invoke_nonlinear_function(f, (du, u, p, λ))
 (f::HomotopyNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 (f::IntervalNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 (f::IntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
