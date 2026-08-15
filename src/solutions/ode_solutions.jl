@@ -111,10 +111,14 @@ page of the DifferentialEquations.jl documentation.
     successfully, whether it terminated early due to a user-defined callback, or whether it
     exited due to an error. For more details, see
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `global_error`: an estimate of the global (accumulated) error of the solution, or
+    `nothing` when the algorithm does not compute one (see [`has_global_error`](@ref)).
+    When present it is an array matching `u`, with `global_error[i]` the estimated global
+    error of `u[i]` at `t[i]`.
 """
 struct ODESolution{
         T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
-        AC <: Union{Nothing, Vector{Int}}, R, O, V,
+        AC <: Union{Nothing, Vector{Int}}, R, O, V, GE,
     } <:
     AbstractODESolution{T, N, uType}
     u::uType
@@ -134,6 +138,10 @@ struct ODESolution{
     resid::R
     original::O
     saved_subsystem::V
+    # Estimate of the global (accumulated) error, populated by solvers/wrappers
+    # for which `has_global_error(alg)` is `true`; `nothing` otherwise. When
+    # present it matches `u`: a vector of per-time-point error estimates.
+    global_error::GE
 end
 
 function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution{T, N}}
@@ -153,7 +161,8 @@ function ConstructionBase.setproperties(
     return ODESolution{new_T, new_N}(
         patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
         patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
-        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem
+        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem,
+        patch.global_error
     )
 end
 
@@ -161,16 +170,17 @@ end
 function ODESolution{T, N}(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode, resid,
-        original, saved_subsystem
+        original, saved_subsystem, global_error = nothing
     ) where {T, N}
     return ODESolution{
         T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
-        typeof(saved_subsystem),
+        typeof(saved_subsystem), typeof(global_error),
     }(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp,
-        dense, tslocation, stats, alg_choice, retcode, resid, original, saved_subsystem
+        dense, tslocation, stats, alg_choice, retcode, resid, original,
+        saved_subsystem, global_error
     )
 end
 
@@ -540,6 +550,7 @@ function build_solution(
         retcode = ReturnCode.Default, stats = nothing,
         resid = nothing, original = nothing,
         saved_subsystem = nothing,
+        global_error = nothing,
         kwargs...
     )
     T = eltype(eltype(u))
@@ -590,7 +601,8 @@ function build_solution(
             retcode,
             resid,
             original,
-            saved_subsystem
+            saved_subsystem,
+            global_error
         )
         if calculate_error
             calculate_solution_errors!(
@@ -616,7 +628,8 @@ function build_solution(
             retcode,
             resid,
             original,
-            saved_subsystem
+            saved_subsystem,
+            global_error
         )
     end
 end
@@ -736,13 +749,14 @@ function solution_new_original_retcode(
         sol.u, sol.u_analytic, sol.errors, sol.t, sol.k,
         sol.discretes, sol.prob, sol.alg, sol.interp, sol.dense,
         sol.tslocation, sol.stats, sol.alg_choice, retcode,
-        resid, original, sol.saved_subsystem,
+        resid, original, sol.saved_subsystem, sol.global_error,
     )
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     @reset sol.u = sol.u[I]
     @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
+    @reset sol.global_error = sol.global_error === nothing ? nothing : sol.global_error[I]
     @reset sol.t = sol.t[I]
     @reset sol.k = sol.dense ? sol.k[I] : sol.k
     return @set sol.dense = false

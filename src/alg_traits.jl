@@ -124,6 +124,23 @@ The default is `false`.
 isdiscrete(alg::AbstractDEAlgorithm) = false
 
 """
+    has_global_error(alg::AbstractDEAlgorithm)
+
+Trait declaring whether an algorithm computes an estimate of the global
+(accumulated) error of the solution.
+
+Return `true` when the solver or solver wrapper populates the `global_error`
+field of the solution with a per-time-point estimate of the global error (the
+difference between the numerical and true solutions), rather than only
+controlling the local error of each step. When `true`, the solution's
+`global_error` is an array matching `u`; when `false` (the default) it is
+`nothing`.
+
+The default is `false`.
+"""
+has_global_error(alg::AbstractSciMLAlgorithm) = false
+
+"""
     has_lazy_interpolation(alg::AbstractDEAlgorithm)
 
 Trait declaring whether an algorithm constructs solution interpolation lazily.
