@@ -76,6 +76,17 @@ SciMLBase.ODENLStepData
 SciMLBase.JacobianWrapper
 ```
 
+## Numerical Instability Diagnostic Hooks
+
+Solver packages use these hooks to provide additional symbolic and numerical
+diagnostics when an integration becomes unstable. They are not application-facing
+replacements for a solver's documented instability reporting.
+
+```@docs
+SciMLBase.has_mtk_sys(integrator)
+SciMLBase.log_numerical_instability(integrator; jacobian_logging = true)
+```
+
 ## Solver Preparation Hooks
 
 Solver packages use these hooks to derive the effective problem data for an individual

@@ -894,8 +894,85 @@ documented `reinit!` method. Supported optional keywords can still vary by
 problem family. The default is `false`.
 """ has_reinit
 
+"""
+    log_numerical_instability(integrator; jacobian_logging::Bool = true) -> AbstractString
+
+Return additional text describing a numerical instability detected by a solver
+integrator. The generic method returns an empty string.
+
+# Arguments
+
+- `integrator`: The solver integrator for which a numerical instability was detected.
+
+# Keyword Arguments
+
+- `jacobian_logging`: Whether the diagnostic should include Jacobian information.
+  SciMLBase passes `false` when a symbolic diagnostic has already been produced.
+
+# Returns
+
+- An `AbstractString` containing diagnostic text to append to the solver's instability
+  message. Return an empty string when no additional diagnostic is available.
+
+# Extension Rules
+
+Solver packages may specialize this hook for integrators that can report additional
+numerical diagnostics. A method must accept the `jacobian_logging` keyword and return an
+`AbstractString`; the returned text should be ready to concatenate with the caller's
+message, including any desired leading whitespace.
+
+# Example
+
+```julia
+struct MyIntegrator end
+
+SciMLBase.log_numerical_instability(::MyIntegrator; jacobian_logging = true) =
+    jacobian_logging ? " Jacobian diagnostic." : " State diagnostic."
+
+SciMLBase.log_numerical_instability(MyIntegrator())
+```
+
+!!! warning "Developer API, not user API"
+    This hook is for solver implementations. Application code should use the solver's
+    documented instability reporting instead of calling or extending it directly.
+"""
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
+"""
+    has_mtk_sys(integrator) -> Bool
+
+Return whether a solver integrator provides a ModelingToolkit system for symbolic
+instability diagnostics. The generic method returns `false`.
+
+# Arguments
+
+- `integrator`: The solver integrator whose symbolic diagnostic support is queried.
+
+# Returns
+
+- `true` when `integrator` provides the symbolic system expected by the solver's
+  instability diagnostic path, and `false` otherwise.
+
+# Extension Rules
+
+Solver packages may specialize this trait for integrators that carry a ModelingToolkit
+system and support the corresponding symbolic instability diagnostic. A method must
+return a `Bool` and must return `false` when that diagnostic data is unavailable.
+
+# Example
+
+```julia
+struct MyIntegrator end
+
+SciMLBase.has_mtk_sys(::MyIntegrator) = true
+
+SciMLBase.has_mtk_sys(MyIntegrator())
+```
+
+!!! warning "Developer API, not user API"
+    This trait is for solver diagnostic implementations. Application code should use
+    ModelingToolkit's documented problem interfaces instead of calling or extending it.
+"""
 has_mtk_sys(integrator) = false
 
 diagnose_symbolic_instability(sys, u, uprev) = ""
