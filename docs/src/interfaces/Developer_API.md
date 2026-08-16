@@ -83,8 +83,8 @@ diagnostics when an integration becomes unstable. They are not application-facin
 replacements for a solver's documented instability reporting.
 
 ```@docs
-SciMLBase.has_mtk_sys(integrator)
-SciMLBase.log_numerical_instability(integrator; jacobian_logging = true)
+SciMLBase.has_mtk_sys
+SciMLBase.log_numerical_instability
 ```
 
 ## Solver Preparation Hooks
