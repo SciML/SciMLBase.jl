@@ -45,6 +45,29 @@ struct GenericGlobalErrorReportingAlgorithm <: SciMLBase.AbstractDEAlgorithm end
 
 SciMLBase.has_global_error(::GenericGlobalErrorReportingAlgorithm) = true
 
+struct GenericProblem <: SciMLBase.AbstractNonlinearProblem{Vector{Float64}, false}
+    u0::Vector{Float64}
+    p::NamedTuple
+end
+
+struct GenericFunction <: SciMLBase.AbstractSciMLFunction{false}
+    f::Function
+end
+
+(f::GenericFunction)(u, p, t) = f.f(u, p, t)
+
+struct GenericAlgorithm <: SciMLBase.AbstractODEAlgorithm end
+
+SciMLBase.isadaptive(::GenericAlgorithm) = false
+SciMLBase.isdiscrete(::GenericAlgorithm) = false
+SciMLBase.allowscomplex(::GenericAlgorithm) = true
+SciMLBase.alg_order(::GenericAlgorithm) = 2
+
+struct GenericSolution <: SciMLBase.AbstractNonlinearSolution{Float64, 1}
+    u::Vector{Float64}
+    retcode::SciMLBase.ReturnCode.T
+end
+
 struct ConcreteSolveContractProblem end
 struct ConcreteSolveContractAlgorithm end
 struct ConcreteSolveContractSenseAlg end
@@ -196,6 +219,35 @@ end
     @test !SciMLBase.has_global_error(GenericGlobalErrorAlgorithm())
     @test SciMLBase.has_global_error(GenericGlobalErrorReportingAlgorithm())
     @test Docs.doc(SciMLBase.has_global_error) !== nothing
+end
+
+@testset "Generic abstract interface contracts" begin
+    problem = GenericProblem([1.0], (; rate = 2.0))
+    @test SciMLBase.isinplace(problem) === false
+    @test SciMLBase.problem_type(problem) === nothing
+    @test SciMLBase.is_diagonal_noise(problem) === false
+
+    f = GenericFunction((u, p, t) -> p.rate .* u .+ t)
+    @test SciMLBase.isinplace(f) === false
+    @test f([1.0], (; rate = 2.0), 0.5) == [2.5]
+    @test !SciMLBase.has_analytic(f)
+    @test !SciMLBase.has_jac(f)
+    @test !SciMLBase.has_jvp(f)
+    @test !SciMLBase.has_vjp(f)
+    @test !SciMLBase.has_paramjac(f)
+    @test !SciMLBase.has_observed(f)
+
+    alg = GenericAlgorithm()
+    @test !SciMLBase.isadaptive(alg)
+    @test !SciMLBase.isdiscrete(alg)
+    @test SciMLBase.allowscomplex(alg)
+    @test SciMLBase.alg_order(alg) == 2
+
+    sol = GenericSolution([1.0, 2.0], SciMLBase.ReturnCode.Success)
+    @test size(sol) == (2,)
+    @test sol[2] == 2.0
+    @test SciMLBase.successful_retcode(sol)
+    @test SciMLBase.plottable_indices(sol.u) == 1:2
 end
 
 @testset "Problem layout marker interface" begin
@@ -463,6 +515,31 @@ end
     @test occursin("sol.tslocation != 0", solution_docs)
     @test occursin("1000 * sol.tslocation", solution_docs)
     @test occursin("`SensitivityInterpolation`", solution_docs)
+end
+
+@testset "Generic abstract interface documentation" begin
+    problem_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Problems.md"), String
+    )
+    function_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "SciMLFunctions.md"),
+        String,
+    )
+    algorithm_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Algorithms.md"), String
+    )
+    solution_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Solutions.md"), String
+    )
+
+    @test occursin("### Generic Usage Rules", problem_docs)
+    @test occursin("problem_type(prob)", problem_docs)
+    @test occursin("### Generic Usage Rules", function_docs)
+    @test occursin("has_paramjac", function_docs)
+    @test occursin("### Generic Usage Rules", algorithm_docs)
+    @test occursin("capability traits", algorithm_docs)
+    @test occursin("### Generic Usage Rules", solution_docs)
+    @test occursin("successful_retcode(sol)", solution_docs)
 end
 
 @testset "Ensemble interface documentation" begin
