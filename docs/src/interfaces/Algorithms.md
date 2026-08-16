@@ -8,6 +8,35 @@
 CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm; kwargs...)
 ```
 
+### Generic Usage Rules
+
+Generic solver and extension code should dispatch on both the problem and
+algorithm interfaces and use capability traits for behavior that varies by
+algorithm. It must not inspect algorithm fields or assume that every algorithm
+supports every common keyword. In particular:
+
+  - algorithm-specific choices belong in the algorithm constructor and its
+    documented fields;
+  - common solve controls belong in `solve` or `init` keyword arguments;
+  - `isadaptive`, `isdiscrete`, `allowscomplex`,
+    `allows_arbitrary_number_types`, and `alg_order` describe execution
+    behavior and should be queried before selecting a generic path;
+  - capability traits such as `allowsbounds`, `requiresgradient`, and
+    `allowscallback` must be treated as contracts, not hints;
+  - `remake(alg; kwargs...)` is for preserving a concrete algorithm while
+    replacing supported configuration fields, and callers must not assume that
+    arbitrary fields are replaceable.
+
+An algorithm author should test the trait values and the generic solve
+dispatch with a representative algorithm value. A downstream consumer should
+be able to make compatibility decisions without naming the concrete solver:
+
+```julia
+function supports_complex_adaptive(alg::SciMLBase.AbstractSciMLAlgorithm)
+    return SciMLBase.allowscomplex(alg) && SciMLBase.isadaptive(alg)
+end
+```
+
 ### Algorithm-Specific Arguments
 
 Note that because the keyword arguments of `solve` are designed to be common across the whole
