@@ -367,6 +367,7 @@ end
         "SciMLBase.SplitSDEProblem",
         "SciMLBase.DynamicalSDEProblem",
         "SciMLBase.DAEProblem",
+        "SciMLBase.StandardDAEProblem",
         "SciMLBase.DDEProblem",
         "SciMLBase.StandardDDEProblem",
         "SciMLBase.AbstractDynamicalDDEProblem",

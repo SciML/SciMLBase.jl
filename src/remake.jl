@@ -903,9 +903,9 @@ function remake(
 
     prob = if kwargs === missing
         # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
-        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
+        DAEProblem{iip}(f, du0, newu0, tspan, newp, prob.problem_type; differential_vars, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
-        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, kwargs...)
+        DAEProblem{iip}(f, du0, newu0, tspan, newp, prob.problem_type; differential_vars, kwargs...)
     end
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
