@@ -38,4 +38,5 @@ SciMLBase.DynamicalSDEProblem
 
 ```@docs
 SciMLBase.DAEProblem
+SciMLBase.StandardDAEProblem
 ```

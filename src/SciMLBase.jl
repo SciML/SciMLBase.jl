@@ -2284,8 +2284,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Steady-state / problem support types
 @public AbstractSteadyStateProblem, StandardODEProblem, StandardDDEProblem,
-    StandardNonlinearProblem, StandardBVProblem, StandardSecondOrderBVProblem,
-    AbstractSplitODEProblem, AbstractDynamicalDDEProblem
+    StandardDAEProblem, StandardNonlinearProblem, StandardBVProblem,
+    StandardSecondOrderBVProblem, AbstractSplitODEProblem, AbstractDynamicalDDEProblem
 
 # Abstract solution / discretization types
 @public AbstractTimeseriesSolution, AbstractDiscretization, AbstractDiscretizationMetadata
