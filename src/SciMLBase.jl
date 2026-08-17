@@ -69,7 +69,7 @@ const isconstant = SciMLOperators.isconstant
 
 using SciMLPublic: @public
 
-using SciMLLogging: @SciMLMessage, verbosity_to_bool
+using SciMLLogging: @SciMLMessage, verbosity_to_bool, get_message_level
 
 """
     __solve(prob, alg, args...; kwargs...)
