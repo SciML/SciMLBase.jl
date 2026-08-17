@@ -501,18 +501,36 @@ SciMLBase.log_numerical_instability(
 @testset "Instability diagnostic developer interface" begin
     integrator = InstabilityDiagnosticTestIntegrator()
 
-    @test !SciMLBase.has_mtk_sys(nothing)
-    @test SciMLBase.has_mtk_sys(integrator)
-    @test SciMLBase.log_numerical_instability(nothing) == ""
-    @test SciMLBase.log_numerical_instability(nothing; jacobian_logging = false) == ""
-    @test SciMLBase.log_numerical_instability(integrator) == " Jacobian diagnostic."
-    @test SciMLBase.log_numerical_instability(integrator; jacobian_logging = false) ==
-        " State diagnostic."
-    @test haskey(Base.Docs.meta(SciMLBase), Base.Docs.Binding(SciMLBase, :has_mtk_sys))
-    @test haskey(
-        Base.Docs.meta(SciMLBase),
-        Base.Docs.Binding(SciMLBase, :log_numerical_instability),
-    )
+    function instability_diagnostics(integrator)
+        return (
+            has_mtk_sys = SciMLBase.has_mtk_sys(integrator),
+            with_jacobian = SciMLBase.log_numerical_instability(integrator),
+            without_jacobian = SciMLBase.log_numerical_instability(
+                integrator; jacobian_logging = false
+            ),
+        )
+    end
+
+    default_diagnostics = instability_diagnostics(nothing)
+    @test default_diagnostics.has_mtk_sys === false
+    @test default_diagnostics.has_mtk_sys isa Bool
+    @test default_diagnostics.with_jacobian == ""
+    @test default_diagnostics.without_jacobian == ""
+    @test default_diagnostics.with_jacobian isa AbstractString
+
+    extended_diagnostics = instability_diagnostics(integrator)
+    @test extended_diagnostics.has_mtk_sys === true
+    @test extended_diagnostics.with_jacobian == " Jacobian diagnostic."
+    @test extended_diagnostics.without_jacobian == " State diagnostic."
+    @test extended_diagnostics.with_jacobian isa AbstractString
+
+    for name in (:has_mtk_sys, :log_numerical_instability)
+        binding = Base.Docs.Binding(SciMLBase, name)
+        @test haskey(Base.Docs.meta(SciMLBase), binding)
+        doc = sprint(show, Base.Docs.meta(SciMLBase)[binding])
+        @test occursin("Extension Rules", doc)
+        @test occursin("Example", doc)
+    end
 end
 
 @testset "Solution interface documentation" begin
@@ -544,6 +562,9 @@ end
     solution_docs = read(
         joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Solutions.md"), String
     )
+    developer_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Developer_API.md"), String
+    )
 
     @test occursin("### Generic Usage Rules", problem_docs)
     @test occursin("problem_type(prob)", problem_docs)
@@ -553,6 +574,8 @@ end
     @test occursin("capability traits", algorithm_docs)
     @test occursin("### Generic Usage Rules", solution_docs)
     @test occursin("successful_retcode(sol)", solution_docs)
+    @test occursin("SciMLBase.has_mtk_sys", developer_docs)
+    @test occursin("SciMLBase.log_numerical_instability", developer_docs)
 end
 
 @testset "Ensemble interface documentation" begin
