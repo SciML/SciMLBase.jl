@@ -40,6 +40,11 @@ SciMLBase.check_prob_alg_pairing(::ConcretizationHookProblem, ::ConcretizationHo
 
 struct GenericSciMLFunction{iip} <: SciMLBase.AbstractSciMLFunction{iip} end
 
+struct GenericGlobalErrorAlgorithm <: SciMLBase.AbstractDEAlgorithm end
+struct GenericGlobalErrorReportingAlgorithm <: SciMLBase.AbstractDEAlgorithm end
+
+SciMLBase.has_global_error(::GenericGlobalErrorReportingAlgorithm) = true
+
 struct ConcreteSolveContractProblem end
 struct ConcreteSolveContractAlgorithm end
 struct ConcreteSolveContractSenseAlg end
@@ -185,6 +190,12 @@ end
     @test SciMLBase.isinplace(GenericSciMLFunction{true}()) === true
     @test SciMLBase.isinplace(GenericSciMLFunction{false}()) === false
     @test Docs.doc(SciMLBase.isinplace) !== nothing
+end
+
+@testset "AbstractSciMLAlgorithm global-error trait contract" begin
+    @test !SciMLBase.has_global_error(GenericGlobalErrorAlgorithm())
+    @test SciMLBase.has_global_error(GenericGlobalErrorReportingAlgorithm())
+    @test Docs.doc(SciMLBase.has_global_error) !== nothing
 end
 
 @testset "Problem layout marker interface" begin
@@ -639,6 +650,7 @@ if isdefined(Base, :ispublic)
                 :forwarddiffs_model_time,
                 :forwarddiff_chunksize,
                 :has_lazy_interpolation,
+                :has_global_error,
                 :allows_late_binding_tstops,
                 :supports_opt_cache_interface,
                 :has_init,
