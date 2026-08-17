@@ -1,3 +1,18 @@
+"""
+$(TYPEDEF)
+
+Marker for the standard fully implicit DAE problem representation.
+
+`StandardDAEProblem()` is the default `problem_type` metadata stored by
+`DAEProblem` when a problem is represented directly as `0 = f(du, u, p, t)`.
+
+Users normally do not need to construct this marker directly. Solver
+implementations may test `problem_type(prob) isa StandardDAEProblem` when they
+need behavior specific to the standard DAE layout; generic DAE code should
+prefer the [`AbstractDAEProblem`](@ref) interface and problem traits.
+"""
+struct StandardDAEProblem end
+
 @doc doc"""
 
 Defines an implicit ordinary differential equation (ODE) or
@@ -67,7 +82,7 @@ prob = DAEProblemLibrary.prob_dae_resrob
 sol = solve(prob,IDA())
 ```
 """
-struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
+struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D, PT} <:
     AbstractDAEProblem{uType, duType, tType, isinplace}
     f::F
     du0::duType
@@ -76,9 +91,12 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     p::P
     kwargs::K
     differential_vars::D
+    """An internal argument for storing traits about the solving process."""
+    problem_type::PT
     @add_kwonly function DAEProblem{iip}(
             f::AbstractDAEFunction{iip},
-            du0, u0, tspan, p = NullParameters();
+            du0, u0, tspan, p = NullParameters(),
+            problem_type = StandardDAEProblem();
             differential_vars = nothing,
             kwargs...
         ) where {iip}
@@ -99,41 +117,52 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
             typeof(_u0), typeof(_du0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(f), typeof(kwargs),
-            typeof(differential_vars),
+            typeof(differential_vars), typeof(problem_type),
         }(
             f, _du0, _u0, _tspan, p,
-            kwargs, differential_vars
+            kwargs, differential_vars, problem_type
         )
     end
 
-    function DAEProblem{iip}(f, du0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+    function DAEProblem{iip}(
+            f, du0, u0, tspan, p = NullParameters(),
+            problem_type = StandardDAEProblem(); kwargs...
+        ) where {iip}
         return DAEProblem(
-            DAEFunction{iip, DEFAULT_SPECIALIZATION}(f), du0, u0, tspan, p; kwargs...
+            DAEFunction{iip, DEFAULT_SPECIALIZATION}(f), du0, u0, tspan, p,
+            problem_type; kwargs...
         )
     end
 
     @add_kwonly function DAEProblem{iip, specialize}(
-            f, du0, u0, tspan, p = NullParameters();
+            f, du0, u0, tspan, p = NullParameters(),
+            problem_type = StandardDAEProblem();
             kwargs...
         ) where {iip, specialize}
         return DAEProblem{iip}(
-            DAEFunction{iip, specialize}(f), du0, u0, tspan, p; kwargs...
+            DAEFunction{iip, specialize}(f), du0, u0, tspan, p, problem_type; kwargs...
         )
     end
 end
 
-function DAEProblem(f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return DAEProblem{isinplace(f)}(f, du0, u0, tspan, p; kwargs...)
+function DAEProblem(
+        f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(),
+        problem_type = StandardDAEProblem(); kwargs...
+    )
+    return DAEProblem{isinplace(f)}(f, du0, u0, tspan, p, problem_type; kwargs...)
 end
 
-function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
+function DAEProblem(
+        f, du0, u0, tspan, p = NullParameters(),
+        problem_type = StandardDAEProblem(); kwargs...
+    )
+    return DAEProblem(DAEFunction(f), du0, u0, tspan, p, problem_type; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}
-    return function ctor(f, du0, u0, tspan, p, kw, dv)
+    return function ctor(f, du0, u0, tspan, p, kw, dv, pt)
         iip = isinplace(f)
-        return DAEProblem{iip}(f, du0, u0, tspan, p; differential_vars = dv, kw...)
+        return DAEProblem{iip}(f, du0, u0, tspan, p, pt; differential_vars = dv, kw...)
     end
 end
 

@@ -58,6 +58,7 @@ SciMLBase.forwarddiffs_model
 SciMLBase.forwarddiffs_model_time
 SciMLBase.forwarddiff_chunksize
 SciMLBase.has_lazy_interpolation
+SciMLBase.has_global_error
 SciMLBase.allows_late_binding_tstops
 SciMLBase.supports_opt_cache_interface
 SciMLBase.has_init

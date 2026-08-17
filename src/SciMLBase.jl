@@ -113,6 +113,18 @@ See also [`__solve`](@ref), which implements the direct solve path.
 """
 function __init end
 
+"""
+    solution_new_retcode(sol, retcode)
+
+Return a copy of the solution `sol` with its return code replaced by `retcode`. The
+solution is otherwise left unchanged; this is used to update the `retcode` of an existing
+solution (e.g. when an integrator finishes and the final status becomes known).
+
+Solver packages extend this generic for the solution types they own. Methods should return
+the same solution type with its return code replaced and preserve its other data.
+"""
+function solution_new_retcode end
+
 # Local alias for the `Union{Function, Type}` callable bound (mirrors the
 # unexported `Base.Callable`), so problem constructors can dispatch on it
 # without a non-public qualified access to Base.
@@ -2235,7 +2247,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Algorithm / problem traits
 @public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,
     problem_type, is_diagonal_noise, forwarddiffs_model, forwarddiffs_model_time,
-    forwarddiff_chunksize, has_lazy_interpolation, allows_late_binding_tstops,
+    forwarddiff_chunksize, has_lazy_interpolation, has_global_error, allows_late_binding_tstops,
     supports_opt_cache_interface, alg_order, allowsbounds, requiresbounds,
     allowsconstraints, requiresconstraints, requiresgradient, allowsfg,
     requireshessian, allowsfgh, requiresconsjac, allowsconsjvp, allowsconsvjp,
@@ -2270,8 +2282,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Steady-state / problem support types
 @public AbstractSteadyStateProblem, StandardODEProblem, StandardDDEProblem,
-    StandardNonlinearProblem, StandardBVProblem, StandardSecondOrderBVProblem,
-    AbstractSplitODEProblem, AbstractDynamicalDDEProblem
+    StandardDAEProblem, StandardNonlinearProblem, StandardBVProblem,
+    StandardSecondOrderBVProblem, AbstractSplitODEProblem, AbstractDynamicalDDEProblem
 
 # Abstract solution / discretization types
 @public AbstractTimeseriesSolution, AbstractDiscretization, AbstractDiscretizationMetadata

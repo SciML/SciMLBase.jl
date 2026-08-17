@@ -21,9 +21,15 @@ jobs:
           - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/DiffEqBase, group: Downstream2}
           - {user: SciML, repo: DiffEqFlux.jl, group: All}
           - {user: SciML, repo: JumpProcesses.jl, group: All}
-          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Interface}
-          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Integrators}
-          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Regression}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: InterfaceI}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: InterfaceII}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: InterfaceIII}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: InterfaceIV}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: InterfaceV}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Integrators_I}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Integrators_II}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Regression_I}
+          - {user: SciML, repo: OrdinaryDiffEq.jl, group: Regression_II}
           - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: Interface1}
           - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: Interface2}
           - {user: SciML, repo: OrdinaryDiffEq.jl, subdir: lib/StochasticDiffEq, group: Interface3}
@@ -59,7 +65,7 @@ jobs:
       repo: "${{ matrix.package.repo }}"
       subdir: "${{ matrix.package.subdir }}"
       group: "${{ matrix.package.group }}"
-      julia-version: "1.10"
+      julia-version: "1"
       julia-arch: "x64"
       julia-runtest-depwarn: "yes"
     secrets: "inherit"
