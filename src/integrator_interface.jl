@@ -983,8 +983,8 @@ when the solution must be updated. Concrete integrators may specialize the
 checks while preserving the return-code contract.
 
 Diagnostics for detected failures are emitted through
-[`report_integrator_failure`](@ref), which the solver stack implements; this
-function only performs detection.
+[`report_integrator_failure`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.report_integrator_failure),
+which the solver stack implements; this function only performs detection.
 """
 function check_error(integrator::DEIntegrator)
     if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
