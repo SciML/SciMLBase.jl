@@ -72,6 +72,7 @@ function Base.summary(io::IO, prob::AbstractLinearProblem)
         no_color
     )
 end
+Base.show(io::IO, A::AbstractSciMLProblem) = show(io, MIME"text/plain", A)
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractLinearProblem)
     summary(io, A)
     println(io)
