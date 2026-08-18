@@ -131,6 +131,7 @@ SciMLBase.set_ut!
 SciMLBase.get_sol
 SciMLBase.check_error
 SciMLBase.check_error!
+SciMLBase.report_integrator_failure
 SciMLBase.initialize_dae!
 SciMLBase.has_reinit
 SciMLBase.has_rng

@@ -27,6 +27,7 @@ const allowedkeywords = (
     :maxtime,
     :callback,
     :isoutofdomain,
+    :domain_checks,
     :unstable_check,
     :verbose,
     :merge_callbacks,

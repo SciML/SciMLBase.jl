@@ -184,7 +184,7 @@ end
 @testset "AbstractSciMLFunction in-place trait contract" begin
     @test SciMLBase.isinplace(GenericSciMLFunction{true}()) === true
     @test SciMLBase.isinplace(GenericSciMLFunction{false}()) === false
-    @test Docs.doc(SciMLBase.isinplace) !== nothing
+    @test !occursin("No documentation found", sprint(show, @doc SciMLBase.isinplace))
 end
 
 @testset "Problem layout marker interface" begin
