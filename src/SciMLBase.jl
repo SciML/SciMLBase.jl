@@ -2365,7 +2365,5 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Problem alias specifiers
 @public RODEAliasSpecifier, SDEAliasSpecifier
 
-# Integrator diagnostic hooks
-@public report_integrator_failure
 
 end
