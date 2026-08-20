@@ -333,10 +333,11 @@ function DynamicalODEProblem(
         f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters();
         kwargs...
     )
-    return ODEProblem(f, ArrayPartition(v0, u0), tspan, p; kwargs...)
+    return ODEProblem(f, ArrayPartition(v0, u0), tspan, p, DynamicalODEProblem{iip}(); kwargs...)
 end
 function DynamicalODEProblem(f1, f2, v0, u0, tspan, p = NullParameters(); kwargs...)
-    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(v0, u0), tspan, p; kwargs...)
+    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(v0, u0), tspan, p,
+    DynamicalODEProblem{iip}(); kwargs...)
 end
 
 function DynamicalODEProblem{iip}(

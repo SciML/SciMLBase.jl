@@ -435,6 +435,112 @@ function remake(
     return prob
 end
 
+"""
+    remake(prob::DynamicalODEProblem; f = missing, v0 = missing, u0 = missing,
+           tspan = missing, p = missing, kwargs = missing, _kwargs...)
+
+Remake the given `DynamicalODEProblem`.
+If `v0`, `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
+"""
+function remake(
+        prob::ODEProblem{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:DynamicalODEProblem};
+        f = missing,
+        v0 = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        build_initializeprob = Val{true},
+        use_defaults = false,
+        lazy_initialization = nothing,
+        _kwargs...
+    )
+    if v0 === missing && u0 === missing
+        return remake(
+            prob; f,
+            u0 = missing,
+            tspan,
+            p,
+            kwargs,
+            interpret_symbolicmap,
+            build_initializeprob,
+            use_defaults,
+            lazy_initialization,
+            _kwargs...
+        )
+    else
+        return remake(
+            prob; f,
+            u0 = ArrayPartition(
+                v0 === missing ? state_values(prob).x[1] : v0,
+                u0 === missing ? state_values(prob).x[2] : u0
+            ),
+            tspan,
+            p,
+            kwargs,
+            interpret_symbolicmap,
+            build_initializeprob,
+            use_defaults,
+            lazy_initialization,
+            _kwargs...
+        )
+    end
+end
+
+"""
+    remake(prob::SecondOrderODEProblem; f = missing, du0 = missing, u0 = missing,
+          tspan = missing, p = missing, kwargs = missing, _kwargs...)
+
+Remake the given `SecondOrderODEProblem`.
+If `du0`, `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
+"""
+function remake(
+        prob::ODEProblem{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:SecondOrderODEProblem};
+        f = missing,
+        du0 = missing,
+        u0 = missing,
+        tspan = missing,
+        p = missing,
+        kwargs = missing,
+        interpret_symbolicmap = true,
+        build_initializeprob = Val{true},
+        use_defaults = false,
+        lazy_initialization = nothing,
+        _kwargs...
+    )
+    if du0 === missing && u0 === missing
+        return remake(
+            prob; f,
+            u0 = missing,
+            tspan,
+            p,
+            kwargs,
+            interpret_symbolicmap,
+            build_initializeprob,
+            use_defaults,
+            lazy_initialization,
+            _kwargs...
+        )
+    else
+        return remake(
+            prob; f,
+            u0 = ArrayPartition(
+                du0 === missing ? state_values(prob).x[1] : du0,
+                u0 === missing ? state_values(prob).x[2] : u0
+            ),
+            tspan,
+            p,
+            kwargs,
+            interpret_symbolicmap,
+            build_initializeprob,
+            use_defaults,
+            lazy_initialization,
+            _kwargs...
+        )
+    end
+end
+
 function SciMLBase.remake(
         prob::AbstractDynamicOptProblem; f = missing,
         u0 = missing,
