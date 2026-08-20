@@ -330,21 +330,21 @@ struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
 Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
 """
 function DynamicalODEProblem(
-        f::DynamicalODEFunction, du0, u0, tspan, p = NullParameters();
+        f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters();
         kwargs...
     )
-    return ODEProblem(f, ArrayPartition(du0, u0), tspan, p; kwargs...)
+    return ODEProblem(f, ArrayPartition(v0, u0), tspan, p; kwargs...)
 end
-function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(du0, u0), tspan, p; kwargs...)
+function DynamicalODEProblem(f1, f2, v0, u0, tspan, p = NullParameters(); kwargs...)
+    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(v0, u0), tspan, p; kwargs...)
 end
 
 function DynamicalODEProblem{iip}(
-        f1, f2, du0, u0, tspan, p = NullParameters();
+        f1, f2, v0, u0, tspan, p = NullParameters();
         kwargs...
     ) where {iip}
     return ODEProblem(
-        DynamicalODEFunction{iip}(f1, f2), ArrayPartition(du0, u0), tspan, p,
+        DynamicalODEFunction{iip}(f1, f2), ArrayPartition(v0, u0), tspan, p,
         DynamicalODEProblem{iip}(); kwargs...
     )
 end
