@@ -461,8 +461,9 @@ Multiple callbacks can be chained together to form a `CallbackSet`. A
     CallbackSet(cb1,cb2,cb3)
 
 You can pass as many callbacks as needed. Nested callback sets are flattened into
-two ordered tuples, `continuous_callbacks` and `discrete_callbacks`. Solvers
-should use these tuples instead of re-splitting callbacks themselves.
+two ordered collections, `continuous_callbacks` and `discrete_callbacks`. Public
+constructors use tuples; solver paths may use vectors when callback types must be
+erased to reuse compilation.
 
 When a solver encounters multiple callbacks, the following rules apply:
 
@@ -476,7 +477,10 @@ When a solver encounters multiple callbacks, the following rules apply:
     that the next callback no longer evaluates condition to `true`, its `affect`
     will not be applied.
 """
-struct CallbackSet{T1 <: Tuple, T2 <: Tuple} <: DECallback
+struct CallbackSet{
+        T1 <: Union{Tuple, AbstractVector},
+        T2 <: Union{Tuple, AbstractVector},
+    } <: DECallback
     continuous_callbacks::T1
     discrete_callbacks::T2
 end
@@ -567,6 +571,18 @@ function save_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
     return _save_all_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
 end
 
+function save_discretes!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_discretes!(integrator, callback; skip_duplicates = true)
+        end
+    end
+    return
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -592,6 +608,18 @@ _save_all_final_discretes!(::DEIntegrator) = nothing
 
 function save_final_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
     return _save_all_final_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
+end
+
+function save_final_discretes!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_final_discretes!(integrator, callback)
+        end
+    end
+    return
 end
 
 """
@@ -623,4 +651,16 @@ _save_discretes_if_enabled!(::DEIntegrator; kw...) = nothing
 
 function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; kw...)
     return _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
+end
+
+function save_discretes_if_enabled!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_discretes_if_enabled!(integrator, callback; kw...)
+        end
+    end
+    return
 end
