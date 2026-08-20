@@ -48,8 +48,8 @@ function ChainRulesCore.rrule(
             dprob = remake(VA.prob, p = dp)
             du, dprob
         end
-        T = eltype(eltype(du))
-        N = ndims(eltype(du)) + 1
+        T = eltype(first(du))
+        N = ndims(first(du)) + 1
         Δ′ = ODESolution{T, N}(
             du, nothing, nothing, VA.t, VA.k, nothing, dprob,
             VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode,
