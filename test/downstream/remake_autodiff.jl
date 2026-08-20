@@ -151,6 +151,7 @@ if VERSION < v"1.12"
             make_symbolic_indexing_observed_p(prob, u0), backend, p
         )
         @test dp1 !== nothing
+        @test all(isfinite, dp1)
         cur_ders["symbolic_indexing_observed_p"] = dp1
     end
 
