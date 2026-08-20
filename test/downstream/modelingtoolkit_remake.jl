@@ -1,4 +1,5 @@
 using ModelingToolkit, SymbolicIndexingInterface
+import SciMLBase
 using JumpProcesses
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using OrdinaryDiffEq
@@ -78,7 +79,7 @@ push!(probs, OptimizationProblem(optsys, [u0; p]))
     [0 ~ x^3 * β + y^3 * ρ - σ, 0 ~ x^2 + 2x * y + y^2, 0 ~ z^2 - 4z + 4],
     [x, y, z], [σ, β, ρ]
 )
-sccprob = SCCNonlinearProblem(sys, [u0; p])
+sccprob = SciMLBase.SCCNonlinearProblem(sys, [u0; p])
 @test_nowarn SciMLBase.initialization_status(sccprob)
 push!(syss, sys)
 push!(probs, sccprob)
@@ -427,7 +428,7 @@ end
         β => 8 / 3,
     ]
 
-    sccprob = SCCNonlinearProblem(fullsys, [u0; p])
+    sccprob = SciMLBase.SCCNonlinearProblem(fullsys, [u0; p])
 
     sccprob2 = remake(sccprob; u0 = 2ones(3))
     @test state_values(sccprob2) ≈ 2ones(3)
@@ -481,10 +482,10 @@ end
     @testset "$Problem" for (rhss, Problem, Func) in [
             (0.0, ODEProblem, ODEFunction),
             (a, SDEProblem, SDEFunction),
-            (_x(t - 0.1), DDEProblem, DDEFunction),
-            (_x(t - 0.1) + a, SDDEProblem, SDDEFunction),
+            (_x(t - 0.1), SciMLBase.DDEProblem, SciMLBase.DDEFunction),
+            (_x(t - 0.1) + a, SciMLBase.SDDEProblem, SciMLBase.SDDEFunction),
             (y + 2, NonlinearProblem, NonlinearFunction),
-            (y + 2, NonlinearLeastSquaresProblem, NonlinearFunction),
+            (y + 2, SciMLBase.NonlinearLeastSquaresProblem, NonlinearFunction),
         ]
         is_nlsolve = Func == NonlinearFunction
         D = is_nlsolve ? (v) -> v^3 : Differential(t)
