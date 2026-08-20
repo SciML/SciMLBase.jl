@@ -11,6 +11,19 @@ struct DespecializedCallParameters
     rate::Float64
 end
 
+struct WrappedDespecializedCallable end
+
+function (::WrappedDespecializedCallable)(du, u, p::SciMLBase.DespecializedParameters)
+    du[1] = u[1] * p.rate
+    return nothing
+end
+
+function SciMLBase.invoke_with_despecialized_parameters(
+        f::WrappedDespecializedCallable, args::Tuple; kwargs...
+    )
+    return f(args...; kwargs...)
+end
+
 @testset "all callable SciMLFunction families" begin
     params = SciMLBase.DespecializedParameters(DespecializedCallParameters(2.0))
     seen = DataType[]
@@ -23,6 +36,15 @@ end
     dynamical_u = ArrayPartition([1.0], [2.0])
     calls = (
         () -> NonlinearFunction{false}((u, p) -> record_parameter_type(p))(u, params),
+        () -> NonlinearFunction{true}((du, u, p) -> record_parameter_type(p))(
+            u, u, params
+        ),
+        () -> NonlinearFunction{false}(
+            (u, p, λ) -> record_parameter_type(p); lambda_extended = true
+        )(u, params, 0.0),
+        () -> NonlinearFunction{true}(
+            (du, u, p, λ) -> record_parameter_type(p); lambda_extended = true
+        )(u, u, params, 0.0),
         () -> IntervalNonlinearFunction{false}((u, p) -> record_parameter_type(p))(
             1.0, params
         ),
@@ -104,6 +126,14 @@ end
     ) === SciMLBase.AutoDespecialize
     @test SciMLBase.AutoDespecialize !== SciMLBase.AutoRespecialize
     @test SciMLBase.specialization(OptimizationFunction) === SciMLBase.FullSpecialize
+end
+
+@testset "wrapped callable despecialization hook" begin
+    params = SciMLBase.DespecializedParameters((rate = 2.0,))
+    f = NonlinearFunction{true}(WrappedDespecializedCallable())
+    du = zeros(1)
+    f(du, [3.0], params)
+    @test du == [6.0]
 end
 
 @testset "stable container and forwarded interfaces" begin
