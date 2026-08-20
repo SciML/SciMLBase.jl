@@ -494,6 +494,21 @@ end
     end
 end
 
+@testset "Downstream-rendered problem trait docstrings" begin
+    for doc in (
+            (@doc SciMLBase.AbstractSciMLProblem),
+            (@doc SciMLBase.StandardBVProblem),
+            (@doc SciMLBase.AbstractDynamicalODEProblem),
+            (@doc SciMLBase.StandardNonlinearProblem),
+        )
+        text = sprint(show, doc)
+        @test occursin(
+            "https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#problem_type",
+            text,
+        )
+    end
+end
+
 @testset "Solver code-generation developer API" begin
     @test ExternalSolverUtilities.evaluate(2, 3) == 5
     @test ExternalSolverUtilities.unwrap(Val(:compile_time)) === :compile_time

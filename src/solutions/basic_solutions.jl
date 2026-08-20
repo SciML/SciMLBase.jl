@@ -260,7 +260,7 @@ Return `sol` or wrap it in a higher-level SciML solution container.
 
 Solvers call `wrap_sol(sol)` after constructing a low-level solution. When
 `sol.prob` is an [`AbstractSciMLProblem`](@ref), the default implementation
-queries [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) and dispatches to
+queries [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#problem_type) and dispatches to
 `wrap_sol(sol, problem_type_or_metadata)` when the result is not `nothing`.
 Problem-family packages extend the two-argument form when a generated solver
 solution should be returned as a more specific public solution type.
