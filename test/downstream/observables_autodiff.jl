@@ -136,7 +136,9 @@ end
             end
             @test count(!iszero, gp_ref) == 1
             @test only(filter(!iszero, gp_ref)) == 1.0
-            @test _unwrap_grad(gs).prob.fields.p.fields.tunable ≈ gp_ref
+            gp = _unwrap_grad(gs).prob.fields.p
+            gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
+            @test gp.fields.tunable ≈ gp_ref
         end
     end
 end
