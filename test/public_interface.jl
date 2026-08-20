@@ -842,4 +842,27 @@ if isdefined(Base, :ispublic)
             @test Base.ispublic(SciMLBase, name)
         end
     end
+
+    @testset "Public abstract interface documentation" begin
+        interface_docs = join(
+            read(joinpath(root, file), String)
+                for (root, _, files) in walkdir(joinpath(@__DIR__, "..", "docs", "src", "interfaces"))
+                for file in files if endswith(file, ".md")
+        )
+        interface_doc_lines = strip.(split(interface_docs, '\n'))
+        abstract_public_names = filter(
+            names(SciMLBase, all = true, imported = false)
+        ) do name
+            Base.ispublic(SciMLBase, name) &&
+                isdefined(SciMLBase, name) &&
+                let value = getfield(SciMLBase, name)
+                value isa DataType && isabstracttype(value)
+            end
+        end
+
+        for name in abstract_public_names
+            @test Base.Docs.hasdoc(SciMLBase, name)
+            @test "SciMLBase.$name" in interface_doc_lines
+        end
+    end
 end
