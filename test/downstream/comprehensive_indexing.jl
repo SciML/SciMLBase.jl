@@ -74,10 +74,10 @@ begin
     p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
 
     # Creates problems.
-    oprob = ODEProblem(osys, [u0_vals; p_vals], tspan)
-    sprob = SDEProblem(ssys, [u0_vals; p_vals], tspan)
+    oprob = ODEProblem{true, SciMLBase.FullSpecialize}(osys, [u0_vals; p_vals], tspan)
+    sprob = SDEProblem{true, SciMLBase.FullSpecialize}(ssys, [u0_vals; p_vals], tspan)
     jprob = JumpProblem(jsys, [u0_vals; p_vals], tspan; aggregator = Direct(), rng)
-    nprob = NonlinearProblem(nsys, [u0_vals; p_vals])
+    nprob = NonlinearProblem{true, SciMLBase.FullSpecialize}(nsys, [u0_vals; p_vals])
     hcprob = NonlinearProblem(HomotopyNonlinearFunction(nprob.f), nprob.u0, nprob.p)
     ssprob = SteadyStateProblem(osys, [u0_vals; p_vals])
     optprob = OptimizationProblem(optsys, [u0_vals; p_vals], grad = true, hess = true)
@@ -422,7 +422,7 @@ end
     ]
     @named sys = System(eqs, t, [sts...;], ps)
     sys = complete(sys)
-    prob = ODEProblem(sys, [], (0, 1.0))
+    prob = ODEProblem{true, SciMLBase.FullSpecialize}(sys, [], (0, 1.0))
     sol = solve(prob, Tsit5())
     # interpolation of array variables
     @test sol(1.0, idxs = x) == [sol(1.0, idxs = x[i]) for i in 1:3]
