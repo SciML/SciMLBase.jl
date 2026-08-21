@@ -569,7 +569,7 @@ function _append_state_indices!(translated, indp, sym)
 end
 
 """
-    _invalid_save_idxs_symbol_error(indp, var; allow_timeseries_params=true)
+    _invalid_save_idxs_symbol_error(indp, var; allow_timeseries_params = true)
 
 Build the `ArgumentError` for a symbolic entry that cannot be used in
 `save_idxs`. Observed quantities get a dedicated message (DifferentialEquations.jl#1036);

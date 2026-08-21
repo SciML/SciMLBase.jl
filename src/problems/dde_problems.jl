@@ -326,7 +326,7 @@ struct DynamicalDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 # u' = f1(v,h)
 # v' = f2(t,u,h)
 """
-    DynamicalDDEProblem(f::DynamicalDDEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    DynamicalDDEProblem(f::DynamicalDDEFunction, v0, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a dynamical DDE problem from a [`DynamicalDDEFunction`](@ref).
 """
@@ -355,7 +355,7 @@ function DynamicalDDEProblem(f1, f2, args...; kwargs...)
 end
 
 """
-    DynamicalDDEProblem{isinplace}(f1,f2,v0,u0,h,tspan,p=NullParameters(),callback=CallbackSet())
+    DynamicalDDEProblem{isinplace}(f1, f2, v0, u0, h, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a dynamical DDE problem from the two functions `f1` and `f2`.
 
@@ -393,7 +393,7 @@ function SecondOrderDDEProblem(f, args...; kwargs...)
 end
 
 """
-    SecondOrderDDEProblem{isinplace}(f,du0,u0,h,tspan,p=NullParameters(),callback=CallbackSet())
+    SecondOrderDDEProblem{isinplace}(f, du0, u0, h, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a second order DDE problem with the specified function.
 

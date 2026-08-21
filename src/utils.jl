@@ -467,16 +467,16 @@ provide every referenced local. Do not extend `@def` or use it to define user-fa
 
 ```julia
 module ExampleSolver
-using SciMLBase: @def
+    using SciMLBase: @def
 
-@def affine_preamble begin
-    shifted = x + offset
-end
+    @def affine_preamble begin
+        shifted = x + offset
+    end
 
-function evaluate(x, offset)
-    @affine_preamble
-    return shifted
-end
+    function evaluate(x, offset)
+        @affine_preamble
+        return shifted
+    end
 end
 
 ExampleSolver.evaluate(2, 3) # 5

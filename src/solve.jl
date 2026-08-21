@@ -222,7 +222,8 @@ struct MySymbolicProblem
 end
 
 function SciMLBase.get_updated_symbolic_problem(
-        ::MySolveSystem, prob::MySymbolicProblem; u0 = prob.u0, p = prob.p, kwargs...)
+        ::MySolveSystem, prob::MySymbolicProblem; u0 = prob.u0, p = prob.p, kwargs...
+    )
     return MySymbolicProblem(u0, p)
 end
 ```

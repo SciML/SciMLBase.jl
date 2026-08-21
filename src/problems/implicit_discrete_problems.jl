@@ -113,7 +113,7 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
 end
 
 """
-    ImplicitDiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
+    ImplicitDiscreteProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = nothing)
 
 Defines a discrete problem with the specified functions.
 """
