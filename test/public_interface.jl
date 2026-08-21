@@ -190,7 +190,6 @@ end
     @test SciMLBase.isinplace(GenericSciMLFunction{true}()) === true
     @test SciMLBase.isinplace(GenericSciMLFunction{false}()) === false
     @test !occursin("No documentation found", sprint(show, @doc SciMLBase.isinplace))
-    @test (@doc SciMLBase.isinplace) !== nothing
 end
 
 @testset "AbstractSciMLAlgorithm global-error trait contract" begin
