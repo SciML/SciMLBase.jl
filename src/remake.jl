@@ -72,8 +72,10 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
 end
 
 """
-    remake(prob::AbstractSciMLProblem; u0 = missing, p = missing,
-        interpret_symbolicmap = true, use_defaults = false, kwargs...)
+    remake(
+        prob::AbstractSciMLProblem; u0 = missing, p = missing,
+        interpret_symbolicmap = true, use_defaults = false, kwargs...
+    )
 
 Construct a problem of the same family as `prob`, replacing the supplied fields and
 preserving all other problem data. Extra keyword arguments are forwarded to the
@@ -357,8 +359,10 @@ function remake(
 end
 
 """
-    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
-           p = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
+        p = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `ODEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -517,7 +521,8 @@ data accepted by the target SciML function constructor. It must not mutate `u0`,
 struct MyInitializationSystem end
 
 function SciMLBase.remake_initialization_data(
-        ::MyInitializationSystem, scimlfn, u0, t0, p, newu0, newp, ctx)
+        ::MyInitializationSystem, scimlfn, u0, t0, p, newu0, newp, ctx
+    )
     return (; previous = scimlfn.initialization_data, newu0, newp)
 end
 ```
@@ -534,8 +539,10 @@ function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::R
 end
 
 """
-    remake(prob::BVProblem; f = missing, u0 = missing, tspan = missing,
-           p = missing, kwargs = missing, problem_type = missing, _kwargs...)
+    remake(
+        prob::BVProblem; f = missing, u0 = missing, tspan = missing,
+        p = missing, kwargs = missing, problem_type = missing, _kwargs...
+    )
 
 Remake the given `BVProblem`.
 """
@@ -603,9 +610,11 @@ function remake(
 end
 
 """
-    remake(prob::SDEProblem; f = missing, g = missing, u0 = missing, tspan = missing,
-           p = missing, noise = missing, noise_rate_prototype = missing,
-           seed = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::SDEProblem; f = missing, g = missing, u0 = missing, tspan = missing,
+        p = missing, noise = missing, noise_rate_prototype = missing,
+        seed = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `SDEProblem`.
 """
@@ -853,8 +862,10 @@ function remake(
 end
 
 """
-    remake(prob::DAEProblem; f = missing, du0 = missing, u0 = missing, tspan = missing,
-           p = missing, differential_vars = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::DAEProblem; f = missing, du0 = missing, u0 = missing, tspan = missing,
+        p = missing, differential_vars = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `DAEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -916,9 +927,11 @@ function remake(
 end
 
 """
-    remake(prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
+    remake(
+        prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
-        sense = missing, kwargs = missing, _kwargs...)
+        sense = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `OptimizationProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -981,8 +994,10 @@ function remake(
 end
 
 """
-    remake(prob::NonlinearProblem; f = missing, u0 = missing, p = missing,
-        problem_type = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::NonlinearProblem; f = missing, u0 = missing, p = missing,
+        problem_type = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `NonlinearProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -1102,8 +1117,10 @@ function remake(
 end
 
 """
-    remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
-        kwargs = missing, _kwargs...)
+    remake(
+        prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
+        kwargs = missing, _kwargs...
+    )
 
 Remake the given `NonlinearLeastSquaresProblem`.
 """
@@ -1210,8 +1227,10 @@ function scc_update_subproblems(probs::Tuple, newu0, newp, ::Val{P}) where {P}
 end
 
 """
-    remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
-        parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing)
+    remake(
+        prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing
+    )
 
 Remake the given `SCCNonlinearProblem`. `u0` is the state vector for the entire problem,
 which will be chunked appropriately and used to `remake` the individual subproblems. `p`
@@ -1613,8 +1632,10 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
 end
 
 """
-    updated_u0_p(prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
-        use_defaults = false)
+    updated_u0_p(
+        prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
+        use_defaults = false
+    )
 
 Resolve replacement initial conditions and parameters for a SciML problem.
 
@@ -1688,7 +1709,8 @@ unchanged. `root_indp` is supplied for dispatch and is obtained by
 # Example
 ```julia
 function SciMLBase.late_binding_update_u0_p(
-        prob::MyProblem, root::MySystem, u0, p, t0, newu0, newp, ctx)
+        prob::MyProblem, root::MySystem, u0, p, t0, newu0, newp, ctx
+    )
     return fill_missing_defaults(root, newu0, newp)
 end
 ```

@@ -40,7 +40,8 @@ end
 
 """
 ```julia
-ContinuousCallback(condition, affect!, affect_neg!;
+ContinuousCallback(
+    condition, affect!, affect_neg!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -48,11 +49,13 @@ ContinuousCallback(condition, affect!, affect_neg!;
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 ```julia
-ContinuousCallback(condition, affect!;
+ContinuousCallback(
+    condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -61,7 +64,8 @@ ContinuousCallback(condition, affect!;
     affect_neg! = affect!,
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 Contains a single callback whose `condition` is a continuous function. The callback is triggered when this function evaluates to 0.
@@ -243,7 +247,8 @@ end
 
 """
 ```julia
-VectorContinuousCallback(condition, affect!, len;
+VectorContinuousCallback(
+    condition, affect!, len;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -251,7 +256,8 @@ VectorContinuousCallback(condition, affect!, len;
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not feasible when you have many callbacks,
@@ -354,11 +360,13 @@ end
 
 """
 ```julia
-DiscreteCallback(condition, affect!;
+DiscreteCallback(
+    condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     save_positions = (true, true),
-    initializealg = nothing)
+    initializealg = nothing
+)
 ```
 
 # Arguments

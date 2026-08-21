@@ -182,7 +182,8 @@ shows how to set the specialization default to `FullSpecialize`:
 ```julia
 using Preferences, UUIDs
 set_preferences!(
-    UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize")
+    UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize"
+)
 ```
 
 The default is `AutoSpecialize`.

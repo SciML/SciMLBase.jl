@@ -2043,8 +2043,8 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
 
     ```julia
     function polynomialize(u, p)
-      x, y = u
-      return [sin(x^2), log(x + y)]
+        x, y = u
+        return [sin(x^2), log(x + y)]
     end
     ```
 
@@ -2066,11 +2066,11 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
 
     ```julia
     function unpolynomialize(u, p)
-      a, b = u
-      return [
-        [sqrt(asin(a)), exp(b) - sqrt(asin(a))],
-        [-sqrt(asin(a)), exp(b) + sqrt(asin(a))],
-      ]
+        a, b = u
+        return [
+            [sqrt(asin(a)), exp(b) - sqrt(asin(a))],
+            [-sqrt(asin(a)), exp(b) + sqrt(asin(a))],
+        ]
     end
     ```
 

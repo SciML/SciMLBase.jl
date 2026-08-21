@@ -148,7 +148,7 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 
     """
-        ODEProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=CallbackSet())
+        ODEProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
     Define an ODE problem with the specified function.
     `isinplace` optionally sets whether the function is inplace or not.
@@ -223,7 +223,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: ODEProblem}
 end
 
 """
-    ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    ODEProblem(f::ODEFunction, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define an ODE problem from an [`ODEFunction`](@ref).
 """
@@ -325,7 +325,7 @@ every solve call.
 struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
 
 """
-    DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    DynamicalODEProblem(f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
 """
@@ -715,7 +715,7 @@ struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 
     """
-        ImmutableODEProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=CallbackSet())
+        ImmutableODEProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
     Define an ODE problem with the specified function.
     `isinplace` optionally sets whether the function is inplace or not.
@@ -744,7 +744,7 @@ struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
 end
 
 """
-    ImmutableODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    ImmutableODEProblem(f::ODEFunction, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define an ODE problem from an [`ODEFunction`](@ref).
 """

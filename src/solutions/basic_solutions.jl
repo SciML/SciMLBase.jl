@@ -31,8 +31,10 @@ struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}
 end
 
 """
-    build_linear_solution(alg, u, resid, cache; retcode = ReturnCode.Default, iters = 0,
-        stats = nothing) -> LinearSolution
+    build_linear_solution(
+            alg, u, resid, cache; retcode = ReturnCode.Default, iters = 0,
+            stats = nothing
+        ) -> LinearSolution
 
 Construct the `LinearSolution` returned by a solver for a linear system.
 
@@ -62,11 +64,13 @@ Construct the `LinearSolution` returned by a solver for a linear system.
 
 # Example
 
-```julia
+```julia-repl
 julia> alg = :direct;
 
-julia> build_linear_solution(alg, [2.0], nothing, nothing;
-                              retcode = ReturnCode.Success)
+julia> build_linear_solution(
+           alg, [2.0], nothing, nothing;
+           retcode = ReturnCode.Success
+       )
 retcode: Success
 ```
 """
@@ -119,8 +123,10 @@ struct EigenvalueSolution{T, N, U, V, P, A, R, S} <: AbstractEigenvalueSolution{
 end
 
 """
-    build_eigenvalue_solution(prob, alg, values, vectors; retcode = ReturnCode.Success,
-        resid = nothing, stats = nothing) -> EigenvalueSolution
+    build_eigenvalue_solution(
+            prob, alg, values, vectors; retcode = ReturnCode.Success,
+            resid = nothing, stats = nothing
+        ) -> EigenvalueSolution
 
 Construct the `EigenvalueSolution` returned by a solver for an eigenvalue problem.
 
@@ -149,7 +155,7 @@ Construct the `EigenvalueSolution` returned by a solver for an eigenvalue proble
 
 # Example
 
-```julia
+```julia-repl
 julia> prob = EigenvalueProblem([2.0 0.0; 0.0 3.0]);
 
 julia> build_eigenvalue_solution(prob, :dense, [2.0, 3.0], [1.0 0.0; 0.0 1.0]).retcode
