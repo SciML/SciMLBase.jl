@@ -518,3 +518,56 @@ end
         @test prob4.ub === nothing
     end
 end
+
+@testset "`remake` `DynamicalODEProblem` with the additional argument" begin
+    f1! = function (dv,v,u,p,t)
+        dv[1] = -p[1] * u[1]
+    end
+    f2! = function (du,v,u,p,t)
+        du[1] = p[2] * v[1]
+    end
+    prob = DynamicalODEProblem(f1!, f2!, [1.0], [2.0], 3.0, [4.0, 5.0])
+    @test prob.u0 == ArrayPartition([1.0], [2.0])
+
+    # `remake` with no initial values override
+    prob2 = remake(prob; p = [6.0, 7.0])
+    @test prob2.u0 == ArrayPartition([1.0], [2.0])
+    @test prob2.p == [6.0, 7.0]
+
+    # `remake` v0 override
+    prob3 = remake(prob; v0 = [6.0])
+    @test prob3.u0 == ArrayPartition([6.0], [2.0])
+
+    # `remake` u0 override
+    prob4 = remake(prob; u0 = [6.0])
+    @test prob4.u0 == ArrayPartition([1.0], [6.0])
+
+    # `remake` v0 and u0 override
+    prob5 = remake(prob; v0 = [6.0], u0 = [7.0])
+    @test prob5.u0 == ArrayPartition([6.0], [7.0])
+end
+
+@testset "`remake` `SecondOrderODEProblem` with the additional argument" begin
+    f! = function (ddu,du,u,p,t)
+        ddu[1] = -p[1] * sin(u[1])
+    end
+    prob = SecondOrderODEProblem(f!, [1.0], [2.0], 3.0, [4.0])
+    @test prob.u0 == ArrayPartition([1.0], [2.0])
+
+    # `remake` with no initial values override
+    prob2 = remake(prob; p = [5.0])
+    @test prob2.u0 == ArrayPartition([1.0], [2.0])
+    @test prob2.p == [5.0]
+
+    # `remake` du0 override
+    prob3 = remake(prob; du0 = [5.0])
+    @test prob3.u0 == ArrayPartition([5.0], [2.0])
+
+    # `remake` u0 override
+    prob4 = remake(prob; u0 = [5.0])
+    @test prob4.u0 == ArrayPartition([1.0], [5.0])
+
+    # `remake` du0 and u0 override
+    prob5 = remake(prob; du0 = [5.0], u0 = [6.0])
+    @test prob5.u0 == ArrayPartition([5.0], [6.0])
+end
