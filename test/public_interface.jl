@@ -849,7 +849,18 @@ if isdefined(Base, :ispublic)
                 for (root, _, files) in walkdir(joinpath(@__DIR__, "..", "docs", "src", "interfaces"))
                 for file in files if endswith(file, ".md")
         )
-        interface_doc_lines = strip.(split(interface_docs, '\n'))
+        interface_api_bindings = String[]
+        in_docs_block = false
+        for line in strip.(split(interface_docs, '\n'))
+            if line == "```@docs"
+                in_docs_block = true
+            elseif in_docs_block && startswith(line, "```")
+                in_docs_block = false
+            elseif in_docs_block && !isempty(line)
+                push!(interface_api_bindings, line)
+            end
+        end
+        @test !in_docs_block
         abstract_public_names = filter(
             names(SciMLBase, all = true, imported = false)
         ) do name
@@ -862,7 +873,7 @@ if isdefined(Base, :ispublic)
 
         for name in abstract_public_names
             @test Base.Docs.hasdoc(SciMLBase, name)
-            @test "SciMLBase.$name" in interface_doc_lines
+            @test "SciMLBase.$name" in interface_api_bindings
         end
     end
 end
