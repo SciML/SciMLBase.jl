@@ -15,6 +15,40 @@ types have a method for constructing the associated problem and function types.
 The following standard principles should be adhered to across all
 `AbstractSciMLProblem` instantiations.
 
+### Generic Usage Rules
+
+Code that accepts an abstract problem must dispatch on the problem type itself
+and use the generic traits rather than inspecting a concrete problem's fields.
+The minimum generic contract is:
+
+  - `isinplace(prob)` reports the callback mutation convention encoded by the
+    problem type.
+  - `problem_type(prob)` reports construction-layout metadata, or `nothing`
+    when no separate layout marker applies.
+  - `is_diagonal_noise(prob)` reports the noise-storage convention for
+    stochastic problem families.
+  - `remake(prob; kwargs...)` creates a compatible problem with requested
+    replacements while preserving the problem's layout marker and callback
+    convention.
+
+Solver and extension code must not assume that every problem has the same
+fields, that a problem can be mutated in place, or that a convenience
+constructor's concrete representation identifies its mathematical layout.
+Custom problem types should implement the generic traits they support and test
+them with a representative problem value, without dispatching on a concrete
+problem type in downstream code.
+
+For example, a generic consumer can make a dispatch decision without knowing
+which problem family supplied the value:
+
+```julia
+function setup_problem(prob::SciMLBase.AbstractSciMLProblem)
+    iip = SciMLBase.isinplace(prob)
+    layout = SciMLBase.problem_type(prob)
+    return (; iip, layout)
+end
+```
+
 ### In-place Specification
 
 Each `AbstractSciMLProblem` type can be called with an "is inplace" (iip) choice. For example:

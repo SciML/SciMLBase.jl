@@ -11,6 +11,36 @@ of pre-computed functions to speed up the calculations. This is offered via the
 The following standard principles should be adhered to across all
 `AbstractSciMLFunction` instantiations.
 
+### Generic Usage Rules
+
+Generic solver code must treat an `AbstractSciMLFunction` as a callable
+container and query its capability traits before using optional callbacks. The
+portable contract is:
+
+  - call the function using the signature documented by its function family;
+    do not infer the signature from the concrete wrapper's fields;
+  - use `isinplace(f)` to select the mutating or returning call convention;
+  - use `has_jac`, `has_jvp`, `has_vjp`, `has_paramjac`, `has_observed`, and
+    the related `has_*` traits before reading an optional callback;
+  - use `unwrapped_f(f)` only when an operation explicitly needs the underlying
+    callable, and preserve the wrapper's in-place convention after wrapping;
+  - treat optional callbacks as absent when the corresponding trait is false,
+    rather than assuming a field exists on every concrete subtype.
+
+An implementation of a new function container should be testable through these
+generic operations alone. A downstream package should therefore be able to
+write code such as:
+
+```julia
+function evaluate_model(f::SciMLBase.AbstractSciMLFunction, u, p, t)
+    return (; value = f(u, p, t), has_jac = SciMLBase.has_jac(f))
+end
+```
+
+The concrete function type remains responsible for documenting callback
+arguments, return values, and field layout. Generic code must not reach into
+those fields to discover capabilities.
+
 ### Common Function Choice Definitions
 
 The full interface available to the solvers is as follows:
