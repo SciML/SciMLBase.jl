@@ -218,7 +218,7 @@ end
 @testset "AbstractSciMLAlgorithm global-error trait contract" begin
     @test !SciMLBase.has_global_error(GenericGlobalErrorAlgorithm())
     @test SciMLBase.has_global_error(GenericGlobalErrorReportingAlgorithm())
-    @test Docs.doc(SciMLBase.has_global_error) !== nothing
+    @test (@doc SciMLBase.has_global_error) !== nothing
 end
 
 @testset "Generic abstract interface contracts" begin
