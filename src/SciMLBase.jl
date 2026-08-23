@@ -63,9 +63,17 @@ using SciMLOperators:
 import SciMLOperators:
     update_coefficients, update_coefficients!, islinear
 
-# Compatibility binding for released solver packages. New code must access this
-# name through SciMLOperators, which owns its public contract.
-const isconstant = SciMLOperators.isconstant
+# The SciMLOperators operator interface that SciMLBase reexports (see the matching
+# `export` block further down), so that `using SciMLBase` on its own is enough to build
+# the operator a `jac_prototype`, a `SplitFunction` or an `IncrementingODEFunction`
+# takes, and to update and query it. Everything stays owned and documented upstream in
+# SciMLOperators.
+using SciMLOperators: AddVector, AffineOperator, BlockDiagonalOperator,
+    DiagonalOperator, FunctionOperator, IdentityOperator, InvertibleOperator,
+    MatrixOperator, NullOperator, ScalarOperator, TensorProductOperator,
+    TensorSumOperator, cache_operator, concretize, has_adjoint, has_concretization,
+    has_exp, has_expmv, has_expmv!, has_ldiv, has_ldiv!, has_mul, has_mul!, isconstant,
+    isconvertible, iscached, issquare, kronsum
 
 using SciMLPublic: @public
 
@@ -2172,6 +2180,21 @@ export ContinuousCallback, DiscreteCallback, CallbackSet, VectorContinuousCallba
 export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, iscontinuous
 
 export ODEAliasSpecifier, LinearAliasSpecifier
+
+# Reexported SciMLOperators operator interface; approved via `reexports_allow` in
+# test/qa/qa.jl. `jac_prototype`, `SplitFunction`/`SplitODEProblem` and
+# `IncrementingODEProblem` are all documented in terms of these operators, so
+# `using SciMLBase` has to supply them for that documented use to work. The names are
+# owned and documented by SciMLOperators; the `SciMLOperators` binding is reexported
+# too, which is how the non-exported abstract types (`SciMLOperators.AbstractSciMLOperator`
+# and friends) stay reachable.
+export SciMLOperators
+export AddVector, AffineOperator, BlockDiagonalOperator, DiagonalOperator,
+    FunctionOperator, IdentityOperator, InvertibleOperator, MatrixOperator,
+    NullOperator, ScalarOperator, TensorProductOperator, TensorSumOperator
+export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has_expmv,
+    has_expmv!, has_ldiv, has_ldiv!, has_mul, has_mul!, isconstant, isconvertible,
+    iscached, islinear, issquare, kronsum, update_coefficients, update_coefficients!
 
 # Public traits
 

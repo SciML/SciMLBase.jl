@@ -184,7 +184,42 @@ const _ei_nonpublic_qualified_accesses = (
 # The CommonSolve verbs. SciMLBase does not own them, but they are the SciML solve
 # interface as users and solver packages write it, so they stay exported and are
 # allow-listed rather than dropped.
-const _reexports_allow = (:init, :solve, :solve!, :step!)
+const _commonsolve_reexports = (:init, :solve, :solve!, :step!)
+
+# The SciMLOperators operator interface. SciMLBase's own `jac_prototype`,
+# `SplitFunction`/`SplitODEProblem` and `IncrementingODEProblem` documentation is
+# written in terms of these, so `using SciMLBase` has to supply them. Owned and
+# documented by SciMLOperators; kept in sync with the reexport `export` block in
+# src/SciMLBase.jl.
+const _scimloperators_reexports = (
+    :SciMLOperators,
+    :AddVector, :AffineOperator, :BlockDiagonalOperator, :DiagonalOperator,
+    :FunctionOperator, :IdentityOperator, :InvertibleOperator, :MatrixOperator,
+    :NullOperator, :ScalarOperator, :TensorProductOperator, :TensorSumOperator,
+    :cache_operator, :concretize, :has_adjoint, :has_concretization, :has_exp,
+    :has_expmv, :has_expmv!, :has_ldiv, :has_ldiv!, :has_mul, :has_mul!, :isconstant,
+    :isconvertible, :iscached, :islinear, :issquare, :kronsum, :update_coefficients,
+    :update_coefficients!,
+)
+
+const _reexports_allow = (_commonsolve_reexports..., _scimloperators_reexports...)
+
+# A scope whose only `using` is SciMLBase, so `isdefined` below measures exactly the
+# property under test: what `using SciMLBase` on its own brings into scope. Testing it
+# in this file's own scope would be confounded by the extension trigger packages loaded
+# above.
+module ReexportScope
+    using SciMLBase
+end
+
+@testset "Reexport surface" begin
+    # Every approved reexport must actually be reachable from `using SciMLBase`, so the
+    # allow-list cannot drift into approving names the package no longer provides.
+    @testset "$name" for name in _reexports_allow
+        @test name in names(SciMLBase)
+        @test isdefined(ReexportScope, name)
+    end
+end
 
 run_qa(
     SciMLBase;
