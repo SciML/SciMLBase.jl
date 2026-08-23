@@ -14,7 +14,7 @@ function step!(d::DEIntegrator)
 end
 
 """
-    resize!(integrator::DEIntegrator,k::Int)
+    resize!(integrator::DEIntegrator, k::Int)
 
 Resize the state dimension of an integrator to length `k`.
 
@@ -28,7 +28,7 @@ function Base.resize!(i::DEIntegrator, ii::Int)
 end
 
 """
-    deleteat!(integrator::DEIntegrator,idxs)
+    deleteat!(integrator::DEIntegrator, idxs)
 
 Delete state components from a dynamic-size integrator.
 
@@ -42,7 +42,7 @@ function Base.deleteat!(i::DEIntegrator, ii)
 end
 
 """
-    addat!(integrator::DEIntegrator,idxs,val)
+    addat!(integrator::DEIntegrator, idxs, val)
 
 Insert state components into a dynamic-size integrator.
 
@@ -149,7 +149,7 @@ function full_cache(i::DEIntegrator)
 end
 
 """
-    resize_non_user_cache!(integrator::DEIntegrator,k::Int)
+    resize_non_user_cache!(integrator::DEIntegrator, k::Int)
 
 Resizes the non-user facing caches to be compatible with a DE of size `k`. This includes resizing Jacobian caches.
 
@@ -164,7 +164,7 @@ function resize_non_user_cache!(i::DEIntegrator, ii::Int)
 end
 
 """
-    deleteat_non_user_cache!(integrator::DEIntegrator,idxs)
+    deleteat_non_user_cache!(integrator::DEIntegrator, idxs)
 
 [`deleteat!`](@ref)s the non-user facing caches at indices `idxs`. This includes resizing Jacobian caches.
 
@@ -179,7 +179,7 @@ function deleteat_non_user_cache!(i::DEIntegrator, idxs)
 end
 
 """
-    addat_non_user_cache!(i::DEIntegrator,idxs)
+    addat_non_user_cache!(i::DEIntegrator, idxs)
 
 [`addat!`](@ref)s the non-user facing caches at indices `idxs`. This includes resizing Jacobian caches.
 
@@ -290,8 +290,10 @@ function set_proposed_dt!(i::DEIntegrator, dt)
 end
 
 """
-    savevalues!(integrator::DEIntegrator,
-      force_save=false) -> Tuple{Bool, Bool}
+    savevalues!(
+            integrator::DEIntegrator,
+            force_save = false
+        ) -> Tuple{Bool, Bool}
 
 Try to save the state and time variables at the current time point, or the
 `saveat` point by using interpolation when appropriate. It returns a tuple that
@@ -303,9 +305,9 @@ The saving priority/order is as follows:
 
   - `save_on`
 
-      + `saveat`
-      + `force_save`
-      + `save_everystep`
+    + `saveat`
+    + `force_save`
+    + `save_everystep`
 """
 function savevalues!(i::DEIntegrator)
     error("savevalues!: method has not been implemented for the integrator")
@@ -509,7 +511,7 @@ function set_rng!(integrator::DEIntegrator, rng)
 end
 
 """
-    reinit!(integrator::DEIntegrator,args...; kwargs...)
+    reinit!(integrator::DEIntegrator, args...; kwargs...)
 
 The reinit function lets you restart the integration at a new value.
 
@@ -536,7 +538,7 @@ function reinit!(integrator::DEIntegrator, args...; kwargs...)
 end
 
 """
-    initialize_dae!(integrator::DEIntegrator,initializealg = integrator.initializealg)
+    initialize_dae!(integrator::DEIntegrator, initializealg = integrator.initializealg)
 
 Runs the DAE initialization to find a consistent state vector. The optional
 argument `initializealg` can be used to specify a different initialization
@@ -568,7 +570,10 @@ function auto_dt_reset!(integrator::DEIntegrator)
 end
 
 """
-    change_t_via_interpolation!(integrator::DEIntegrator,t,modify_save_endpoint=Val{false},reinitialize_alg=nothing)
+    change_t_via_interpolation!(
+        integrator::DEIntegrator, t,
+        modify_save_endpoint = Val{false}, reinitialize_alg = nothing
+    )
 
 Move the integrator to time `t` using the method's local interpolation.
 
@@ -597,8 +602,10 @@ for cache construction and are not a portable user interface.
 addsteps!(i::DEIntegrator, args...) = nothing
 
 """
-    reeval_internals_due_to_modification!(integrator::DEIntegrator, continuous_modification::Bool=true;
-                                          callback_initializealg = nothing)
+    reeval_internals_due_to_modification!(
+        integrator::DEIntegrator, continuous_modification::Bool = true;
+        callback_initializealg = nothing
+    )
 
 Update an integrator after callback-driven mutation.
 

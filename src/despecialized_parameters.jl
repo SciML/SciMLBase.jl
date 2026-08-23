@@ -140,7 +140,8 @@ Base.@noinline _invoke_with_despecialized_parameters(f, args...; kwargs...) =
 """
     invoke_with_despecialized_parameters(f, args; kwargs...)
     invoke_with_despecialized_parameters(
-        f, args, params, ::Val{parameter_index}; kwargs...)
+        f, args, params, ::Val{parameter_index}; kwargs...
+    )
 
 Call `f(args...; kwargs...)` after replacing a [`DespecializedParameters`](@ref) argument
 with its wrapped object. The two-argument form locates the wrapper in `args`; the explicit

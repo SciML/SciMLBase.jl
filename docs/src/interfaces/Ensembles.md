@@ -266,7 +266,7 @@ using OrdinaryDiffEq
 using SciMLBase
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 function prob_func(prob, ctx)
-    remake(prob, u0 = rand(ctx.rng) * prob.u0)
+    return remake(prob, u0 = rand(ctx.rng) * prob.u0)
 end
 ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10)
@@ -291,7 +291,7 @@ we can index an evenly spaced `range`:
 ```@example ensemble1_3
 initial_conditions = range(0, stop = 1, length = 100)
 function prob_func(prob, ctx)
-    remake(prob, u0 = initial_conditions[ctx.sim_id])
+    return remake(prob, u0 = initial_conditions[ctx.sim_id])
 end
 ```
 
@@ -307,6 +307,7 @@ drift component:
 function f(du, u, p, t)
     du[1] = p[1] * u[1] - p[2] * u[1] * u[2]
     du[2] = -3 * u[2] + u[1] * u[2]
+    return
 end
 ```
 
@@ -316,6 +317,7 @@ For our noise function, we will use multiplicative noise:
 function g(du, u, p, t)
     du[1] = p[3] * u[1]
     du[2] = p[4] * u[2]
+    return
 end
 ```
 
@@ -378,7 +380,7 @@ to discard the rest of the data.
 
 ```@example ensemble3
 function output_func(sol, ctx)
-    last(sol), false
+    return last(sol), false
 end
 ```
 
@@ -391,7 +393,7 @@ using SciMLBase
 prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 
 function prob_func(prob, ctx)
-    remake(prob, u0 = rand(ctx.rng) * prob.u0)
+    return remake(prob, u0 = rand(ctx.rng) * prob.u0)
 end
 ```
 
@@ -405,15 +407,16 @@ function reduction(u, batch, I)
     u = append!(u, batch)
     relative_standard_error = sqrt(var(u) / last(I)) / abs(mean(u))
     finished = relative_standard_error < 0.5
-    u, finished
+    return u, finished
 end
 ```
 
 Then we can define and solve the problem:
 
 ```@example ensemble3
-prob2 = EnsembleProblem(prob, prob_func = prob_func, output_func = output_func,
-    reduction = reduction, u_init = Vector{Float64}())
+prob2 = EnsembleProblem(
+    prob; prob_func, output_func, reduction, u_init = Vector{Float64}()
+)
 sim = solve(prob2, Tsit5(), trajectories = 10000, batch_size = 20)
 ```
 
@@ -430,10 +433,9 @@ save the running summation of the endpoints:
 
 ```@example ensemble3
 function reduction(u, batch, I)
-    u + sum(batch), false
+    return u + sum(batch), false
 end
-prob2 = EnsembleProblem(prob, prob_func = prob_func, output_func = output_func,
-    reduction = reduction, u_init = 0.0)
+prob2 = EnsembleProblem(prob; prob_func, output_func, reduction, u_init = 0.0)
 sim2 = solve(prob2, Tsit5(), trajectories = 100, batch_size = 20)
 ```
 
@@ -452,11 +454,13 @@ function f(du, u, p, t)
     for i in 1:length(u)
         du[i] = 1.01 * u[i]
     end
+    return
 end
 function σ(du, u, p, t)
     for i in 1:length(u)
         du[i] = 0.87 * u[i]
     end
+    return
 end
 using StochasticDiffEq
 prob = SDEProblem(f, σ, ones(4, 2) / 2, (0.0, 1.0)) #prob_sde_2Dlinear
@@ -506,7 +510,7 @@ compute covariance matrices similarly:
 
 ```@example ensemble4
 timeseries_steps_meancov(sim) # Use the time steps, assume fixed dt
-timeseries_point_meancov(sim, 0:(1 // 2 ^ (3)):1, 0:(1 // 2 ^ (3)):1) # Use time points, interpolate
+timeseries_point_meancov(sim, 0:(1 // 2^3):1, 0:(1 // 2^3):1) # Use time points, interpolate
 ```
 
 For general analysis, we can build an `EnsembleSummary`.

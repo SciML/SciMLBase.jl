@@ -146,7 +146,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DiscreteProblem}
 end
 
 """
-    DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
+    DiscreteProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = nothing)
 
 Defines a discrete problem with the specified functions.
 """
