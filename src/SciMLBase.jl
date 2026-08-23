@@ -68,6 +68,11 @@ import SciMLOperators:
 # the operator a `jac_prototype`, a `SplitFunction` or an `IncrementingODEFunction`
 # takes, and to update and query it. Everything stays owned and documented upstream in
 # SciMLOperators.
+#
+# This block is what sets the SciMLOperators compat floor: 1.19.0 is the first
+# registered version that exports every name below (`BlockDiagonalOperator`,
+# `TensorSumOperator` and `kronsum` arrived in 1.19.0, `has_concretization` in 1.13.0).
+# Lowering the floor breaks precompilation, not just behavior.
 using SciMLOperators: AddVector, AffineOperator, BlockDiagonalOperator,
     DiagonalOperator, FunctionOperator, IdentityOperator, InvertibleOperator,
     MatrixOperator, NullOperator, ScalarOperator, TensorProductOperator,
