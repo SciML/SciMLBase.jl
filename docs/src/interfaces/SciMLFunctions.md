@@ -129,7 +129,10 @@ When `jac_prototype` is an `AbstractSciMLOperator` and `jac` is omitted, the con
 creates a Jacobian update using `update_coefficients!` for the in-place form and
 `update_coefficients` for the out-of-place form.
 Refer to the [SciMLOperators](https://docs.sciml.ai/SciMLOperators/stable/premade_operators/) section for more information
-on setting up time/parameter dependent operators.
+on setting up time/parameter dependent operators. The operator types and traits named
+here are re-exported by SciMLBase, so `using SciMLBase` is enough to build them; see
+[Reexported API](@ref) for the exact list and for what has to be imported from
+SciMLOperators directly.
 
 ### Sparsity Handling
 

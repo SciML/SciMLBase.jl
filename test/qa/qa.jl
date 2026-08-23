@@ -190,7 +190,7 @@ const _commonsolve_reexports = (:init, :solve, :solve!, :step!)
 # `SplitFunction`/`SplitODEProblem` and `IncrementingODEProblem` documentation is
 # written in terms of these, so `using SciMLBase` has to supply them. Owned and
 # documented by SciMLOperators; kept in sync with the reexport `export` block in
-# src/SciMLBase.jl.
+# src/SciMLBase.jl and the list rendered in docs/src/interfaces/Reexported_API.md.
 const _scimloperators_reexports = (
     :SciMLOperators,
     :AddVector, :AffineOperator, :BlockDiagonalOperator, :DiagonalOperator,

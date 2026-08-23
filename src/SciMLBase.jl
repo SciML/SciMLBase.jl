@@ -2181,13 +2181,16 @@ export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, 
 
 export ODEAliasSpecifier, LinearAliasSpecifier
 
-# Reexported SciMLOperators operator interface; approved via `reexports_allow` in
-# test/qa/qa.jl. `jac_prototype`, `SplitFunction`/`SplitODEProblem` and
-# `IncrementingODEProblem` are all documented in terms of these operators, so
-# `using SciMLBase` has to supply them for that documented use to work. The names are
-# owned and documented by SciMLOperators; the `SciMLOperators` binding is reexported
-# too, which is how the non-exported abstract types (`SciMLOperators.AbstractSciMLOperator`
-# and friends) stay reachable.
+# Reexported SciMLOperators operator interface. `jac_prototype`,
+# `SplitFunction`/`SplitODEProblem` and `IncrementingODEProblem` are all documented in
+# terms of these operators, so `using SciMLBase` has to supply them for that documented
+# use to work. The names are owned and documented by SciMLOperators; the `SciMLOperators`
+# binding is reexported too, which is how the non-exported abstract types
+# (`SciMLOperators.AbstractSciMLOperator` and friends) stay reachable.
+#
+# The same list lives in two other places and must be kept in sync with both: the
+# rendered docs page docs/src/interfaces/Reexported_API.md, and `reexports_allow` in
+# test/qa/qa.jl, which asserts the two agree.
 export SciMLOperators
 export AddVector, AffineOperator, BlockDiagonalOperator, DiagonalOperator,
     FunctionOperator, IdentityOperator, InvertibleOperator, MatrixOperator,
