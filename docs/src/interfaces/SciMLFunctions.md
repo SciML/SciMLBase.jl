@@ -102,6 +102,16 @@ which designates how the compiler should specialize on the model function `f`. F
 more details on specialization choices, see the [SciMLProblems](@ref scimlproblems)
 page.
 
+Use `SciMLBase.respecialize(f, specialization)` to rebuild an `ODEFunction` or
+`ODEInputFunction` at an automatic specialization level while retaining its field values.
+For `AutoSpecialize`, `AutoDespecialize`, and `AutoRespecialize`, this also widens
+initialization metadata so model-specific initialization types do not defeat compilation
+reuse.
+
+```@docs
+SciMLBase.respecialize
+```
+
 ### Specifying Jacobian Types
 
 The `jac` field of an inplace style `SciMLFunction` has the signature `jac(J,u,p,t)`,

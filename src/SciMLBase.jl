@@ -2191,7 +2191,7 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Core functions
 @public build_solution, build_linear_solution, build_eigenvalue_solution, numargs,
-    unwrap_parameters, invoke_with_despecialized_parameters
+    unwrap_parameters, invoke_with_despecialized_parameters, respecialize
 
 # Solver problem-concretization extension API
 @public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,

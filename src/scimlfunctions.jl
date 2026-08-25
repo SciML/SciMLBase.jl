@@ -3213,22 +3213,6 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             f.Wfact_t, f.W_prototype, f.paramjac, f.vjp_p,
             f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
         )
-    elseif specialization(f) === AutoSpecialize
-        ODEFunction{
-            isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
-            typeof(f.analytic), typeof(f.tgrad),
-            typeof(f.jac), typeof(f.jvp), typeof(f.vjp), typeof(f.jac_prototype),
-            typeof(f.sparsity), typeof(f.Wfact), typeof(f.Wfact_t), typeof(f.W_prototype),
-            typeof(f.paramjac),
-            typeof(f.vjp_p),
-            typeof(f.observed), typeof(f.colorvec),
-            typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
-        }(
-            newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
-            f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,
-            f.Wfact_t, f.W_prototype, f.paramjac, f.vjp_p,
-            f.observed, f.colorvec, f.sys, f.initialization_data, f.nlstep_data
-        )
     else
         ODEFunction{
             isinplace(f), specialization(f), typeof(newf), typeof(f.mass_matrix),
@@ -3238,7 +3222,8 @@ function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
             typeof(f.paramjac),
             typeof(f.vjp_p),
             typeof(f.observed), typeof(f.colorvec),
-            typeof(f.sys), typeof(f.initialization_data), typeof(f.nlstep_data),
+            typeof(f.sys), fieldtype(typeof(f), :initialization_data),
+            fieldtype(typeof(f), :nlstep_data),
         }(
             newf, f.mass_matrix, f.analytic, f.tgrad, f.jac,
             f.jvp, f.vjp, f.jac_prototype, f.sparsity, f.Wfact,

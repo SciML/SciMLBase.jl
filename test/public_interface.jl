@@ -600,6 +600,7 @@ if isdefined(Base, :ispublic)
                 :LateBindingUpdateU0PContext, :detect_cycles,
                 :get_updated_symbolic_problem, :SymbolicLinearInterface, :get_new_A_b,
                 :widen_bounded_type_params, :prepare_initial_state, :prepare_function,
+                :respecialize,
                 :AbstractDEOptions, :ODENLStepData, :JacobianWrapper,
             )
             @test Base.ispublic(SciMLBase, name)

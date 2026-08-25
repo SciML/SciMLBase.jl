@@ -24,6 +24,13 @@ f = Foo{1}()
 (this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
+struct RespecializePreparedRHS
+    stage::Int
+end
+(f::RespecializePreparedRHS)(u, p, t) = u
+SciMLBase.prepare_function(f::RespecializePreparedRHS) =
+    RespecializePreparedRHS(f.stage + 1)
+
 @testset "isinplace for FunctionWrappersWrapper" begin
     using FunctionWrappersWrappers
 
@@ -74,6 +81,98 @@ end
     for fname in fieldnames(typeof(f))
         @test getfield(f, fname) === getfield(widened, fname)
     end
+end
+
+@testset "respecialize metadata layout" begin
+    ode_rhs = (u, p, t) -> u
+    input_rhs = (x, input, p, t) -> x
+    initprob = NonlinearProblem((u, p) -> u, [0.0])
+    initdata = SciMLBase.OverrideInitData(initprob, nothing, identity, nothing)
+    nlstep_data = SciMLBase.ODENLStepData(
+        NonlinearProblem((z, p) -> z, [1.0]), identity,
+        (gamma1, gamma2, c) -> nothing, identity, identity, identity
+    )
+    initdata_type = Union{Nothing, SciMLBase.OverrideInitData}
+    nlstep_data_type = Union{Nothing, SciMLBase.ODENLStepData}
+
+    plain = ODEFunction{false, SciMLBase.FullSpecialize}(ode_rhs)
+    with_metadata = ODEFunction{false, SciMLBase.FullSpecialize}(
+        ode_rhs; initialization_data = initdata, nlstep_data
+    )
+    plain_input = ODEInputFunction{false, SciMLBase.FullSpecialize}(input_rhs)
+    input_with_metadata = ODEInputFunction{false, SciMLBase.FullSpecialize}(
+        input_rhs; initialization_data = initdata
+    )
+
+    for specialize in (
+            SciMLBase.AutoSpecialize,
+            SciMLBase.AutoDespecialize,
+            SciMLBase.AutoRespecialize,
+        )
+        respecialized = SciMLBase.respecialize(with_metadata, specialize)
+        plain_respecialized = SciMLBase.respecialize(plain, specialize)
+
+        @test SciMLBase.specialization(respecialized) === specialize
+        @test fieldtype(typeof(respecialized), :initialization_data) === initdata_type
+        @test fieldtype(typeof(respecialized), :nlstep_data) === nlstep_data_type
+        @test typeof(respecialized) === typeof(plain_respecialized)
+        @test respecialized.initialization_data === initdata
+        @test respecialized.nlstep_data === nlstep_data
+        for field in fieldnames(typeof(with_metadata))
+            @test getfield(respecialized, field) === getfield(with_metadata, field)
+        end
+
+        unwrapped = SciMLBase.unwrapped_f(respecialized)
+        @test fieldtype(typeof(unwrapped), :initialization_data) === initdata_type
+        @test fieldtype(typeof(unwrapped), :nlstep_data) === nlstep_data_type
+        @test typeof(unwrapped) === typeof(respecialized)
+
+        remade = SciMLBase.remake(respecialized)
+        @test fieldtype(typeof(remade), :initialization_data) === initdata_type
+        @test fieldtype(typeof(remade), :nlstep_data) === nlstep_data_type
+        @test typeof(remade) === typeof(respecialized)
+
+        respecialized_input = SciMLBase.respecialize(input_with_metadata, specialize)
+        plain_respecialized_input = SciMLBase.respecialize(plain_input, specialize)
+        @test SciMLBase.specialization(respecialized_input) === specialize
+        @test fieldtype(typeof(respecialized_input), :initialization_data) === initdata_type
+        @test typeof(respecialized_input) === typeof(plain_respecialized_input)
+        @test respecialized_input.initialization_data === initdata
+        for field in fieldnames(typeof(input_with_metadata))
+            @test getfield(respecialized_input, field) === getfield(input_with_metadata, field)
+        end
+    end
+
+    auto = @inferred SciMLBase.respecialize(
+        ODEFunction{false, SciMLBase.FullSpecialize}(
+            ode_rhs; initialization_data = initdata, nlstep_data
+        ), SciMLBase.AutoSpecialize
+    )
+    @test fieldtype(typeof(auto), :initialization_data) === initdata_type
+    @test fieldtype(typeof(auto), :nlstep_data) === nlstep_data_type
+    @test @inferred(SciMLBase.unwrapped_f(auto)) isa typeof(auto)
+
+    direct_auto = ODEFunction{false, SciMLBase.AutoSpecialize}(
+        ode_rhs; initialization_data = initdata, nlstep_data
+    )
+    @test fieldtype(typeof(direct_auto), :initialization_data) === typeof(initdata)
+    @test fieldtype(typeof(direct_auto), :nlstep_data) === typeof(nlstep_data)
+    @test typeof(SciMLBase.unwrapped_f(direct_auto)) === typeof(direct_auto)
+
+    prepared = ODEFunction{false, SciMLBase.FullSpecialize}(
+        RespecializePreparedRHS(0)
+    )
+    @test prepared.f.stage == 1
+    prepared_auto = SciMLBase.respecialize(prepared, SciMLBase.AutoSpecialize)
+    @test prepared_auto.f === prepared.f
+    @test prepared_auto.f.stage == 1
+
+    custom_input = ODEInputFunction{false, SciMLBase.FullSpecialize}(
+        input_rhs; initialization_data = :custom
+    )
+    custom_auto = SciMLBase.respecialize(custom_input, SciMLBase.AutoSpecialize)
+    @test fieldtype(typeof(custom_auto), :initialization_data) === Any
+    @test custom_auto.initialization_data === :custom
 end
 
 @testset "isinplace accepts an out-of-place version with different numbers of parameters " begin

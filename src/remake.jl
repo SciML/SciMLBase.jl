@@ -241,6 +241,66 @@ SciMLBase.isinplace(widened)
 end
 
 """
+    respecialize(f, specialize)
+
+Reconstruct an [`ODEFunction`](@ref) or [`ODEInputFunction`](@ref) at the requested
+automatic specialization level while preserving its field values and in-place convention.
+
+`AutoSpecialize`, `AutoDespecialize`, and `AutoRespecialize` widen the initialization
+metadata type (and, for `ODEFunction`, the nonlinear-step metadata type). This matches
+the symbolic-system layout for the first two policies and prevents model-specific
+metadata from defeating the compilation reuse promised by `AutoRespecialize`.
+The direct function constructors retain concrete metadata types because widening can
+reduce inference through code that reads or remakes those fields; `respecialize` makes
+that tradeoff explicit.
+
+For an `ODEInputFunction`, a custom initialization payload that is not
+`OverrideInitData` is widened to `Any`, since the payload type is otherwise unbounded.
+
+# Example
+
+```julia
+f = ODEFunction{false, SciMLBase.FullSpecialize}((u, p, t) -> u)
+f_auto = SciMLBase.respecialize(f, SciMLBase.AutoSpecialize)
+SciMLBase.specialization(f_auto) === SciMLBase.AutoSpecialize
+```
+"""
+@generated function respecialize(
+        f::F, ::Type{S}
+    ) where {
+        F <: Union{ODEFunction, ODEInputFunction},
+        S <: Union{AutoSpecialize, AutoDespecialize, AutoRespecialize},
+    }
+    wrapper = F.name.wrapper
+    field_names = fieldnames(F)
+    length(F.parameters) == length(field_names) + 2 ||
+        error("SciMLFunction type parameters do not match its fields")
+
+    parameter_expressions = Any[F.parameters[1], S]
+    field_expressions = Any[]
+    for (i, field_name) in enumerate(field_names)
+        field_expression = :(getfield(f, $i))
+        push!(field_expressions, field_expression)
+        if field_name === :initialization_data
+            metadata_type = if F <: ODEFunction ||
+                    fieldtype(F, i) <: Union{Nothing, OverrideInitData}
+                Union{Nothing, OverrideInitData}
+            else
+                Any
+            end
+            push!(parameter_expressions, metadata_type)
+        elseif field_name === :nlstep_data
+            push!(parameter_expressions, Union{Nothing, ODENLStepData})
+        else
+            push!(parameter_expressions, Expr(:call, :typeof, field_expression))
+        end
+    end
+
+    new_type = Expr(:curly, wrapper, parameter_expressions...)
+    return Expr(:call, new_type, field_expressions...)
+end
+
+"""
     $(TYPEDSIGNATURES)
 
 A utility function which merges two `NamedTuple`s `a` and `b`, assuming that the
