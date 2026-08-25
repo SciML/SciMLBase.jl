@@ -334,8 +334,15 @@ function DynamicalODEProblem(
         kwargs...
     )
     iip = isinplace(f)
+    _u0 = ArrayPartition(v0, u0)
+    _tspan = tspan
+    if specialization(f) === FunctionWrapperSpecialize
+        _u0 = prepare_initial_state(_u0)
+        _tspan = promote_tspan(tspan)
+        f = _functionwrapper_specialize_dynamical(f, _u0, p, _tspan[1])
+    end
     return ODEProblem(
-        f, ArrayPartition(v0, u0), tspan, p, DynamicalODEProblem{iip}(); kwargs...
+        f, _u0, _tspan, p, DynamicalODEProblem{iip}(); kwargs...
     )
 end
 function DynamicalODEProblem(f1, f2, v0, u0, tspan, p = NullParameters(); kwargs...)
@@ -433,8 +440,7 @@ function SecondOrderODEProblem(
     )
     iip = isinplace(f)
     _u0 = ArrayPartition((du0, u0))
-    f2 = f.f2 isa ODEFunction ? unwrapped_f(f.f2.f) : unwrapped_f(f.f2)
-    if f2 === nothing
+    if _is_absent_dynamical_component(f.f2)
         if iip
             f2 = function (du, v, u, p, t)
                 return du .= v
@@ -444,12 +450,22 @@ function SecondOrderODEProblem(
                 return v
             end
         end
-        f = remake(f; f2)
-    else
+        f = if specialization(f) === FunctionWrapperSpecialize
+            _rebuild_dynamical_function(f, f.f1, f2, FunctionWrapperSpecialize)
+        else
+            remake(f; f2)
+        end
+    elseif specialization(f) !== FunctionWrapperSpecialize
         f = remake(f)
     end
+    _tspan = tspan
+    if specialization(f) === FunctionWrapperSpecialize
+        _u0 = prepare_initial_state(_u0)
+        _tspan = promote_tspan(tspan)
+        f = _functionwrapper_specialize_dynamical(f, _u0, p, _tspan[1])
+    end
     return ODEProblem(
-        f, _u0, tspan, p, SecondOrderODEProblem{iip}(); kwargs...
+        f, _u0, _tspan, p, SecondOrderODEProblem{iip}(); kwargs...
     )
 end
 

@@ -704,13 +704,21 @@ end
         @test SciMLBase.problem_type(remade) === SciMLBase.problem_type(prob)
     end
 
-    unsupported_func = DynamicalODEFunction{
+    wrapped_func = DynamicalODEFunction{
         false, SciMLBase.FunctionWrapperSpecialize,
     }(f1, f2)
-    unsupported_prob = DynamicalODEProblem(
-        unsupported_func, [1.0], [2.0], (0.0, 1.0), [3.0, 4.0]
+    wrapped_prob = DynamicalODEProblem(
+        wrapped_func, [1.0], [2.0], (0.0, 1.0), [3.0, 4.0]
     )
-    @test_throws ArgumentError remake(unsupported_prob)
+    wrapped_remade = @inferred remake(wrapped_prob; v0 = [5.0])
+    @test SciMLBase.specialization(wrapped_remade.f) ===
+        SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.specialization(wrapped_remade.f.f1) ===
+        SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.specialization(wrapped_remade.f.f2) ===
+        SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.unwrapped_f(wrapped_remade.f.f1.f) === f1
+    @test SciMLBase.unwrapped_f(wrapped_remade.f.f2.f) === f2
 
     old_analytic(u0, p, t) = :old
     new_analytic(u0, p, t) = :new
@@ -746,6 +754,13 @@ end
     @test SciMLBase.specialization(fully_replaced.f.f2) === SciMLBase.FullSpecialize
     @test SciMLBase.problem_type(fully_replaced) === SciMLBase.problem_type(prob)
 
+    replacement_without_f2 = DynamicalODEFunction(newf1)
+    fallback_replaced = remake(prob; f = replacement_without_f2)
+    fallback_result = fallback_replaced.f(
+        fallback_replaced.u0, fallback_replaced.p, 0.0
+    )
+    @test fallback_result == ArrayPartition([11.0], [4.0])
+
     component_jac(u, p, t) = fill(-p[1], length(u))
     component_f1 = ODEFunction{false, SciMLBase.FullSpecialize}(
         f1; jac = component_jac
@@ -759,6 +774,15 @@ end
     metadata_remade = remake(metadata_prob)
     @test metadata_remade.f.f1.jac === component_jac
     @test SciMLBase.has_jac(metadata_remade.f)
+    metadata_raw_replaced = remake(metadata_prob; f = newf1)
+    @test metadata_raw_replaced.f.f1.jac === component_jac
+    @test SciMLBase.has_jac(metadata_raw_replaced.f)
+    metadata_wrapped_replaced = remake(
+        metadata_prob;
+        f = ODEFunction{false, SciMLBase.NoSpecialize}(newf1)
+    )
+    @test metadata_wrapped_replaced.f.f1.jac === component_jac
+    @test SciMLBase.has_jac(metadata_wrapped_replaced.f)
 
     widened_component_f1 = SciMLBase.widen_bounded_type_params(component_f1)
     widened_func = DynamicalODEFunction{false, SciMLBase.FullSpecialize}(
@@ -770,6 +794,10 @@ end
     widened_remade = remake(widened_prob)
     @test typeof(widened_remade.f.f1) === typeof(widened_component_f1)
     @test typeof(widened_remade.f.f1).parameters[end - 1] ===
+        Union{Nothing, SciMLBase.OverrideInitData}
+    widened_replaced = remake(widened_prob; f = newf1)
+    @test widened_replaced.f.f1.jac === component_jac
+    @test typeof(widened_replaced.f.f1).parameters[end - 1] ===
         Union{Nothing, SciMLBase.OverrideInitData}
 
     auto_func = DynamicalODEFunction{false, SciMLBase.AutoSpecialize}(f1, f2)
@@ -815,6 +843,95 @@ end
     second_result = second_remade.f(second_remade.u0, second_remade.p, 0.0)
     @test second_result.x[1] == [13.0]
     @test second_result.x[2] == [5.0]
+    second_full_replacement = remake(
+        second_order; f = DynamicalODEFunction(new_acceleration)
+    )
+    second_full_result = second_full_replacement.f(
+        second_full_replacement.u0, second_full_replacement.p, 0.0
+    )
+    @test second_full_result.x[1] == [13.0]
+    @test second_full_result.x[2] == [1.0]
+end
+
+@testset "structured `FunctionWrapperSpecialize` remake" begin
+    f1(v, u, p, t) = v .* p[1]
+    f2(v, u, p, t) = u .* p[2]
+    v0 = Float32[1]
+    u0 = Int[2]
+    p = (Float32(3), 2)
+    func = DynamicalODEFunction{false, SciMLBase.FunctionWrapperSpecialize}(f1, f2)
+    prob = @inferred DynamicalODEProblem(func, v0, u0, (0.0, 1.0), p)
+
+    @test SciMLBase.specialization(prob.f) === SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.specialization(prob.f.f1) === SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.specialization(prob.f.f2) === SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.unwrapped_f(prob.f.f1.f) === f1
+    @test SciMLBase.unwrapped_f(prob.f.f2.f) === f2
+    result = @inferred prob.f(prob.u0, prob.p, 0.0)
+    @test result == ArrayPartition(Float32[3], Int[4])
+    @test result.x[1] isa Vector{Float32}
+    @test result.x[2] isa Vector{Int}
+
+    derivative = ForwardDiff.derivative(1.0) do x
+        value = prob.f(ArrayPartition([x], prob.u0.x[2]), prob.p, 0.0)
+        return only(value.x[1])
+    end
+    @test derivative == 3.0
+
+    newf1(v, u, p, t) = v .+ p[1]
+    newf2(v, u, p, t) = u .+ p[2]
+    replacement = DynamicalODEFunction{
+        false, SciMLBase.FunctionWrapperSpecialize,
+    }(newf1, newf2)
+    remade = @inferred remake(prob; f = replacement, v0 = Float32[5])
+    @test typeof(remade.f.f1.f) === typeof(prob.f.f1.f)
+    @test typeof(remade.f.f2.f) === typeof(prob.f.f2.f)
+    @test SciMLBase.unwrapped_f(remade.f.f1.f) === newf1
+    @test SciMLBase.unwrapped_f(remade.f.f2.f) === newf2
+    @test remade.f(remade.u0, remade.p, 0.0) ==
+        ArrayPartition(Float32[8], Int[4])
+
+    raw_remade = @inferred remake(prob; f = newf1, v0 = Float32[6])
+    @test SciMLBase.unwrapped_f(raw_remade.f.f1.f) === newf1
+    @test SciMLBase.unwrapped_f(raw_remade.f.f2.f) === f2
+    @test raw_remade.f(raw_remade.u0, raw_remade.p, 0.0) ==
+        ArrayPartition(Float32[9], Int[4])
+
+    component_jac(u, p, t) = fill(p[1], length(u))
+    component = ODEFunction{false, SciMLBase.FullSpecialize}(f1; jac = component_jac)
+    metadata_func = DynamicalODEFunction{
+        false, SciMLBase.FunctionWrapperSpecialize,
+    }(component, f2)
+    metadata_prob = DynamicalODEProblem(metadata_func, v0, u0, (0.0, 1.0), p)
+    metadata_remade = remake(metadata_prob; f = newf1)
+    @test metadata_remade.f.f1.jac === component_jac
+    @test SciMLBase.has_jac(metadata_remade.f)
+
+    f1!(dv, v, u, p, t) = dv .= p[1] .* u
+    f2!(du, v, u, p, t) = du .= p[2] .* v
+    ifunc = DynamicalODEFunction{true, SciMLBase.FunctionWrapperSpecialize}(f1!, f2!)
+    iprob = @inferred DynamicalODEProblem(
+        ifunc, [1.0], [2.0], (0.0, 1.0), [3.0, 4.0]
+    )
+    iremade = @inferred remake(iprob; v0 = [5.0])
+    du = ArrayPartition(zeros(1), zeros(1))
+    @test iremade.f(du, iremade.u0, iremade.p, 0.0) === nothing
+    @test du == ArrayPartition([6.0], [20.0])
+
+    acceleration(du, u, p, t) = -p[1] .* u
+    second_func = DynamicalODEFunction{
+        false, SciMLBase.FunctionWrapperSpecialize,
+    }(acceleration, nothing)
+    second = @inferred SecondOrderODEProblem(
+        second_func, [1.0], [2.0], (0.0, 1.0), [3.0]
+    )
+    second_remade = @inferred remake(second; du0 = [4.0])
+    @test second_remade.f(second_remade.u0, second_remade.p, 0.0) ==
+        ArrayPartition([-6.0], [4.0])
+    @test SciMLBase.specialization(second_remade.f.f1) ===
+        SciMLBase.FunctionWrapperSpecialize
+    @test SciMLBase.specialization(second_remade.f.f2) ===
+        SciMLBase.FunctionWrapperSpecialize
 end
 
 struct StructuredRemakeInitSystem

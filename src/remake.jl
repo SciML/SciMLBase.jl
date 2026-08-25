@@ -296,10 +296,11 @@ function remake(
                         "convention as the original function"
                 )
             )
-            props = _similar_namedtuple_merge_ignore_nothing(props, getproperties(f))
-            if hasproperty(f, :f2)
-                f2 = coalesce(f2, f.f2)
+            replacement_props = getproperties(f)
+            if _is_absent_dynamical_component(f.f2)
+                replacement_props = merge(replacement_props, (; f2 = nothing))
             end
+            props = _similar_namedtuple_merge_ignore_nothing(props, replacement_props)
             f = f.f1
         end
     elseif f === missing || is_split_function(func)
@@ -327,7 +328,7 @@ function remake(
         # `f1` and `f2` are wrapped in another SciMLFunction, unless they're
         # already wrapped in the appropriate type or are an `AbstractSciMLOperator`
         if func isa DynamicalODEFunction
-            f = _remake_dynamical_component(f, typeof(func))
+            f = _remake_dynamical_component(func.f1, f, typeof(func))
         elseif !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
             f = split_function_f_wrapper(T){iip, spec}(f)
         end
@@ -339,7 +340,7 @@ function remake(
             # a SciMLFunction for `f` which contains `f2` we use that.
             f2 = coalesce(f2, get(props, :f2, missing), func.f2)
             if func isa DynamicalODEFunction
-                f2 = _remake_dynamical_component(f2, typeof(func))
+                f2 = _remake_dynamical_component(func.f2, f2, typeof(func))
             elseif !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
                 f2 = split_function_f_wrapper(T){iip, spec}(f2)
             end
@@ -385,30 +386,192 @@ function remake(
     return result
 end
 
-function _remake_dynamical_component(
-        f::ODEFunction{iip, spec},
-        ::Type{<:DynamicalODEFunction{iip, spec}}
-    ) where {iip, spec}
-    return f
+_dynamical_component_function(f::ODEFunction) = unwrapped_f(f.f)
+_dynamical_component_function(f) = unwrapped_f(f)
+_is_absent_dynamical_component(f) = _dynamical_component_function(f) === nothing
+
+function _dynamical_component_properties(original, replacement)
+    props = if original isa ODEFunction && replacement isa ODEFunction
+        _similar_namedtuple_merge_ignore_nothing(
+            getproperties(original), getproperties(replacement)
+        )
+    elseif replacement isa ODEFunction
+        getproperties(replacement)
+    elseif original isa ODEFunction
+        getproperties(original)
+    else
+        (; f = replacement)
+    end
+    return @delete props.f
+end
+
+function _dynamical_component_erasure_source(original, replacement)
+    if replacement isa ODEFunction && _has_type_erased_params(typeof(replacement))
+        return replacement
+    elseif original isa ODEFunction && _has_type_erased_params(typeof(original))
+        return original
+    end
+    return nothing
 end
 
 function _remake_dynamical_component(
-        f, ::Type{<:DynamicalODEFunction{iip, spec}}
+        original, replacement, ::Type{<:DynamicalODEFunction{iip, spec}}
     ) where {iip, spec}
-    if f isa AbstractSciMLOperator
-        return f
-    elseif f isa ODEFunction
-        isinplace(f) == iip || throw(
+    if replacement === original &&
+            replacement isa Union{AbstractSciMLOperator, ODEFunction{iip, spec}}
+        return replacement
+    elseif replacement isa AbstractSciMLOperator
+        return replacement
+    elseif replacement isa ODEFunction
+        isinplace(replacement) == iip || throw(
             ArgumentError(
                 "a replacement ODEFunction component must have the same in-place " *
                     "convention as its DynamicalODEFunction container"
             )
         )
-        props = getproperties(f)
-        props = @delete props.f
-        return ODEFunction{iip, spec}(unwrapped_f(f.f); props...)
     end
-    return ODEFunction{iip, spec}(unwrapped_f(f))
+
+    props = _dynamical_component_properties(original, replacement)
+    callable = if spec === FunctionWrapperSpecialize && replacement isa ODEFunction &&
+            replacement.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        replacement.f
+    else
+        _dynamical_component_function(replacement)
+    end
+    result = ODEFunction{iip, spec}(callable; props...)
+
+    erasure_source = _dynamical_component_erasure_source(original, replacement)
+    if erasure_source isa ODEFunction
+        return _reconstruct_as_type(typeof(erasure_source), result)
+    end
+    return result
+end
+
+function _rebuild_dynamical_function(
+        original::DynamicalODEFunction, f1, f2, ::Type{spec}
+    ) where {spec}
+    props = getproperties(original)
+    props = @delete props.f1
+    props = @delete props.f2
+    result = DynamicalODEFunction{isinplace(original), spec}(f1, f2; props...)
+    if _has_type_erased_params(typeof(original))
+        return _reconstruct_as_type(typeof(original), result)
+    end
+    return result
+end
+
+function _wrap_dynamical_oop(
+        @nospecialize(f), args::A, output::R
+    ) where {N, A <: NTuple{N, Any}, R}
+    FW = FunctionWrappersWrappers.FunctionWrappers.FunctionWrapper
+    exact = FW{R, A}(f)::FW{R, A}
+    fallback = FW{Any, NTuple{N, Any}}(f)::FW{Any, NTuple{N, Any}}
+    wrappers = (exact, fallback)
+    storage = FunctionWrappersWrappers.NoCacheStorage()
+    return FunctionWrappersWrappers.FunctionWrappersWrapper{
+        typeof(wrappers), FunctionWrappersWrappers.Strict, typeof(storage),
+    }(wrappers, storage)
+end
+
+function _wrap_dynamical_iip(
+        @nospecialize(f), args::A
+    ) where {N, A <: NTuple{N, Any}}
+    FW = FunctionWrappersWrappers.FunctionWrappers.FunctionWrapper
+    void_f = Void(f)
+    exact = FW{Nothing, A}(void_f)::FW{Nothing, A}
+    fallback = FW{Nothing, NTuple{N, Any}}(void_f)::FW{Nothing, NTuple{N, Any}}
+    wrappers = (exact, fallback)
+    storage = FunctionWrappersWrappers.NoCacheStorage()
+    return FunctionWrappersWrappers.FunctionWrappersWrapper{
+        typeof(wrappers), FunctionWrappersWrappers.Strict, typeof(storage),
+    }(wrappers, storage)
+end
+
+function _functionwrapper_specialize_dynamical_component(
+        original, replacement, args, output, ::Val{iip}
+    ) where {iip}
+    if replacement isa ODEFunction
+        isinplace(replacement) == iip || throw(
+            ArgumentError(
+                "a DynamicalODEFunction component must have the same in-place " *
+                    "convention as its container"
+            )
+        )
+    end
+
+    raw = _dynamical_component_function(replacement)
+    wrapped = if iip
+        _wrap_dynamical_iip(raw, args)
+    else
+        _wrap_dynamical_oop(raw, args, output)
+    end
+    props = _dynamical_component_properties(original, replacement)
+    result = ODEFunction{iip, FunctionWrapperSpecialize}(wrapped; props...)
+    erasure_source = _dynamical_component_erasure_source(original, replacement)
+    if erasure_source isa ODEFunction
+        return _reconstruct_as_type(typeof(erasure_source), result)
+    end
+    return result
+end
+
+function _functionwrapper_specialize_dynamical_replacement(
+        original::DynamicalODEFunction{iip}, replacement, u0, p, t
+    ) where {iip}
+    v, u = u0.x
+    if replacement isa DynamicalODEFunction
+        isinplace(replacement) == iip || throw(
+            ArgumentError(
+                "a replacement DynamicalODEFunction must have the same in-place " *
+                    "convention as the original function"
+            )
+        )
+        replacement_f1 = replacement.f1
+        replacement_f2 = if _is_absent_dynamical_component(replacement.f2)
+            original.f2
+        else
+            replacement.f2
+        end
+        metadata_source = replacement
+    else
+        replacement_f1 = replacement
+        replacement_f2 = original.f2
+        metadata_source = original
+    end
+
+    if iip
+        f1 = _functionwrapper_specialize_dynamical_component(
+            original.f1, replacement_f1, (v, v, u, p, t), v, Val(true)
+        )
+        f2 = _functionwrapper_specialize_dynamical_component(
+            original.f2, replacement_f2, (u, v, u, p, t), u, Val(true)
+        )
+    else
+        args = (v, u, p, t)
+        f1 = _functionwrapper_specialize_dynamical_component(
+            original.f1, replacement_f1, args, v, Val(false)
+        )
+        f2 = _functionwrapper_specialize_dynamical_component(
+            original.f2, replacement_f2, args, u, Val(false)
+        )
+    end
+    return _rebuild_dynamical_function(
+        metadata_source, f1, f2, FunctionWrapperSpecialize
+    )
+end
+
+function _functionwrapper_specialize_dynamical(
+        f::DynamicalODEFunction, u0, p, t
+    )
+    return _functionwrapper_specialize_dynamical_replacement(f, f, u0, p, t)
+end
+
+function _remake_functionwrapper_dynamical(
+        original::DynamicalODEFunction, replacement, initialization_data, u0, p, t
+    )
+    prepared = _functionwrapper_specialize_dynamical_replacement(
+        original, replacement, u0, p, t
+    )
+    return remake(original; f = prepared, initialization_data)
 end
 
 """
@@ -436,18 +599,6 @@ function _remake_odeproblem(
         lazy_initialization = nothing,
         _kwargs...
     )
-    if prob.f isa DynamicalODEFunction &&
-            specialization(prob.f) === FunctionWrapperSpecialize
-        throw(
-            ArgumentError(
-                "remake does not support DynamicalODEFunction with " *
-                    "FunctionWrapperSpecialize because the available wrapper hooks only " *
-                    "describe ordinary ODE call signatures; use AutoSpecialize, " *
-                    "AutoDespecialize, AutoRespecialize, FullSpecialize, or NoSpecialize"
-            )
-        )
-    end
-
     if tspan === missing
         tspan = prob.tspan
     end
@@ -487,9 +638,18 @@ function _remake_odeproblem(
     end
 
     f = coalesce(f, prob.f)
-    f = remake(prob.f; f, initialization_data)
+    f = if prob.f isa DynamicalODEFunction &&
+            specialization(prob.f) === FunctionWrapperSpecialize
+        ptspan = promote_tspan(tspan)
+        _remake_functionwrapper_dynamical(
+            prob.f, f, initialization_data, newu0, newp, ptspan[1]
+        )
+    else
+        remake(prob.f; f, initialization_data)
+    end
 
-    if specialization(f) === FunctionWrapperSpecialize
+    if specialization(f) === FunctionWrapperSpecialize &&
+            !(f isa DynamicalODEFunction)
         ptspan = promote_tspan(tspan)
         if iip
             f = remake(
@@ -516,6 +676,13 @@ function _remake_odeproblem(
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
     @reset prob.u0 = u0
     @reset prob.p = p
+    if prob.f isa DynamicalODEFunction &&
+            specialization(prob.f) === FunctionWrapperSpecialize
+        ptspan = promote_tspan(prob.tspan)
+        @reset prob.f = _functionwrapper_specialize_dynamical(
+            prob.f, prob.u0, prob.p, ptspan[1]
+        )
+    end
 
     return prob
 end
@@ -528,8 +695,6 @@ Remake the given `DynamicalODEProblem`.
 `u0 = ArrayPartition(v0, u0)` remains supported as a full-state replacement when `v0`
 is omitted. Pair-valued symbolic state maps are forwarded to the standard `ODEProblem`
 remake machinery; component overrides must otherwise be concrete values.
-`FunctionWrapperSpecialize` is not supported because the wrapper hooks currently only
-describe ordinary ODE call signatures, not the two component signatures used here.
 """
 function remake(
         prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:DynamicalODEProblem};
@@ -549,8 +714,6 @@ Remake the given `SecondOrderODEProblem`.
 `u0 = ArrayPartition(du0, u0)` remains supported as a full-state replacement when `du0`
 is omitted. Pair-valued symbolic state maps are forwarded to the standard `ODEProblem`
 remake machinery; component overrides must otherwise be concrete values.
-`FunctionWrapperSpecialize` is not supported because the wrapper hooks currently only
-describe ordinary ODE call signatures, not the two component signatures used here.
 """
 function remake(
         prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:SecondOrderODEProblem};
