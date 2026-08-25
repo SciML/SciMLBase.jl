@@ -390,6 +390,28 @@ _dynamical_component_function(f::ODEFunction) = unwrapped_f(f.f)
 _dynamical_component_function(f) = unwrapped_f(f)
 _is_absent_dynamical_component(f) = _dynamical_component_function(f) === nothing
 
+function _dynamical_oop_wrapper_template(
+        args::A, output::R
+    ) where {N, A <: NTuple{N, Any}, R}
+    # This callable is never invoked. Keeping it independent of `output` lets the
+    # compiler materialize the wrapper type after the actual callable was erased.
+    return FunctionWrappersWrappers.FunctionWrappersWrapper(
+        Returns(nothing), (A, NTuple{N, Any}), (R, Any);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+end
+
+function _dynamical_iip_wrapper_template(args::A) where {N, A <: NTuple{N, Any}}
+    return FunctionWrappersWrappers.FunctionWrappersWrapper(
+        Returns(nothing), (A, NTuple{N, Any}), (Nothing, Nothing);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+end
+
+_dynamical_wrapper_typeassert(actual, ::T) where {T} = actual::T
+
 function _dynamical_component_properties(original, replacement)
     props = if original isa ODEFunction && replacement isa ODEFunction
         _similar_namedtuple_merge_ignore_nothing(
@@ -463,28 +485,26 @@ end
 function _wrap_dynamical_oop(
         @nospecialize(f), args::A, output::R
     ) where {N, A <: NTuple{N, Any}, R}
-    FW = FunctionWrappersWrappers.FunctionWrappers.FunctionWrapper
-    exact = FW{R, A}(f)::FW{R, A}
-    fallback = FW{Any, NTuple{N, Any}}(f)::FW{Any, NTuple{N, Any}}
-    wrappers = (exact, fallback)
-    storage = FunctionWrappersWrappers.NoCacheStorage()
-    return FunctionWrappersWrappers.FunctionWrappersWrapper{
-        typeof(wrappers), FunctionWrappersWrappers.Strict, typeof(storage),
-    }(wrappers, storage)
+    template = _dynamical_oop_wrapper_template(args, output)
+    wrapped = FunctionWrappersWrappers.FunctionWrappersWrapper(
+        f, (A, NTuple{N, Any}), (R, Any);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+    return _dynamical_wrapper_typeassert(wrapped, template)
 end
 
 function _wrap_dynamical_iip(
         @nospecialize(f), args::A
     ) where {N, A <: NTuple{N, Any}}
-    FW = FunctionWrappersWrappers.FunctionWrappers.FunctionWrapper
     void_f = Void(f)
-    exact = FW{Nothing, A}(void_f)::FW{Nothing, A}
-    fallback = FW{Nothing, NTuple{N, Any}}(void_f)::FW{Nothing, NTuple{N, Any}}
-    wrappers = (exact, fallback)
-    storage = FunctionWrappersWrappers.NoCacheStorage()
-    return FunctionWrappersWrappers.FunctionWrappersWrapper{
-        typeof(wrappers), FunctionWrappersWrappers.Strict, typeof(storage),
-    }(wrappers, storage)
+    template = _dynamical_iip_wrapper_template(args)
+    wrapped = FunctionWrappersWrappers.FunctionWrappersWrapper(
+        void_f, (A, NTuple{N, Any}), (Nothing, Nothing);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+    return _dynamical_wrapper_typeassert(wrapped, template)
 end
 
 function _functionwrapper_specialize_dynamical_component(
