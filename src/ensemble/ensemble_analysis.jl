@@ -547,6 +547,30 @@ function timeseries_point_weighted_meancov(sim, W, ts1, ts2)
     return [timepoint_weighted_meancov(sim, W, t1, t2) for t1 in ts1, t2 in ts2]
 end
 
+"""
+$(SIGNATURES)
+
+Compute the arithmetic mean of a collection of scalar or array-valued observations
+componentwise.
+
+For array-valued observations, every observation must have compatible axes and the
+returned mean has the same shape as an observation. The collection must be nonempty.
+
+# Arguments
+
+- `A`: An iterable of scalar or array-valued observations to average.
+
+# Returns
+
+- `mean`: The arithmetic mean. This is a scalar for scalar observations and an
+  array with the observation shape for array-valued observations.
+
+# Examples
+
+```julia
+componentwise_mean([[1, 2], [3, 4]]) # [2.0, 3.0]
+```
+"""
 function componentwise_mean(A)
     x0 = first(A)
     n = 0
@@ -569,6 +593,42 @@ end
 
 # Welford algorithm
 # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+"""
+$(SIGNATURES)
+
+Compute the arithmetic mean and variance of a collection of scalar or array-valued
+observations componentwise using Welford's algorithm.
+
+For array-valued observations, every observation must have compatible axes and the
+returned mean and variance have the same shape as an observation. The collection
+must be nonempty. Fewer than two observations produce `NaN` instead of a
+`(mean, variance)` tuple.
+
+# Arguments
+
+- `A`: An iterable of scalar or array-valued observations from which to compute
+  the statistics.
+
+# Keywords
+
+- `bessel::Bool = true`: If `true`, use the sample-variance denominator `n - 1`.
+  If `false`, use the population-variance denominator `n`.
+
+# Returns
+
+- `(mean, variance)`: A tuple containing the componentwise arithmetic mean and
+  variance. Each entry is a scalar for scalar observations or an array with the
+  observation shape for array-valued observations.
+
+# Examples
+
+```julia
+observations = [[1, 2], [3, 4]]
+
+componentwise_meanvar(observations) # ([2.0, 3.0], [2.0, 2.0])
+componentwise_meanvar(observations; bessel = false) # ([2.0, 3.0], [1.0, 1.0])
+```
+"""
 function componentwise_meanvar(A; bessel = true)
     x0 = first(A)
     n = 0

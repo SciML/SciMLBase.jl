@@ -120,6 +120,13 @@ SciMLBase.EnsembleAnalysis.componentwise_vectors_timestep
 SciMLBase.EnsembleAnalysis.componentwise_vectors_timepoint
 ```
 
+### Componentwise Statistics
+
+```@docs
+SciMLBase.EnsembleAnalysis.componentwise_mean
+SciMLBase.EnsembleAnalysis.componentwise_meanvar
+```
+
 ### Summary Statistics Functions
 
 #### Single Time Statistics
