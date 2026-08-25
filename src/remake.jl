@@ -443,7 +443,7 @@ Remake the given `DynamicalODEProblem`.
 If `v0`, `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(
-        prob::ODEProblem{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:DynamicalODEProblem};
+        prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:DynamicalODEProblem};
         f = missing,
         v0 = missing,
         u0 = missing,
@@ -457,8 +457,8 @@ function remake(
         _kwargs...
     )
     if v0 === missing && u0 === missing
-        return remake(
-            prob; f,
+        return @invoke remake(
+            prob::ODEProblem; f,
             u0 = missing,
             tspan,
             p,
@@ -470,8 +470,8 @@ function remake(
             _kwargs...
         )
     else
-        return remake(
-            prob; f,
+        return @invoke remake(
+            prob::ODEProblem; f,
             u0 = ArrayPartition(
                 v0 === missing ? state_values(prob).x[1] : v0,
                 u0 === missing ? state_values(prob).x[2] : u0
@@ -496,7 +496,7 @@ Remake the given `SecondOrderODEProblem`.
 If `du0`, `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
 function remake(
-        prob::ODEProblem{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:SecondOrderODEProblem};
+        prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:SecondOrderODEProblem};
         f = missing,
         du0 = missing,
         u0 = missing,
@@ -510,8 +510,8 @@ function remake(
         _kwargs...
     )
     if du0 === missing && u0 === missing
-        return remake(
-            prob; f,
+        return @invoke remake(
+            prob::ODEProblem; f,
             u0 = missing,
             tspan,
             p,
@@ -523,8 +523,8 @@ function remake(
             _kwargs...
         )
     else
-        return remake(
-            prob; f,
+        return @invoke remake(
+            prob::ODEProblem; f,
             u0 = ArrayPartition(
                 du0 === missing ? state_values(prob).x[1] : du0,
                 u0 === missing ? state_values(prob).x[2] : u0
