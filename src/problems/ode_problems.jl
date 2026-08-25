@@ -333,11 +333,15 @@ function DynamicalODEProblem(
         f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters();
         kwargs...
     )
-    return ODEProblem(f, ArrayPartition(v0, u0), tspan, p, DynamicalODEProblem{iip}(); kwargs...)
+    iip = isinplace(f)
+    return ODEProblem(
+        f, ArrayPartition(v0, u0), tspan, p, DynamicalODEProblem{iip}(); kwargs...
+    )
 end
 function DynamicalODEProblem(f1, f2, v0, u0, tspan, p = NullParameters(); kwargs...)
-    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(v0, u0), tspan, p,
-    DynamicalODEProblem{iip}(); kwargs...)
+    return DynamicalODEProblem(
+        DynamicalODEFunction(f1, f2), v0, u0, tspan, p; kwargs...
+    )
 end
 
 function DynamicalODEProblem{iip}(
@@ -427,9 +431,10 @@ function SecondOrderODEProblem(
         f::DynamicalODEFunction, du0, u0, tspan,
         p = NullParameters(); kwargs...
     )
-    iip = isinplace(f.f1, 5)
+    iip = isinplace(f)
     _u0 = ArrayPartition((du0, u0))
-    if f.f2.f === nothing
+    f2 = f.f2 isa ODEFunction ? unwrapped_f(f.f2.f) : unwrapped_f(f.f2)
+    if f2 === nothing
         if iip
             f2 = function (du, v, u, p, t)
                 return du .= v
@@ -439,28 +444,13 @@ function SecondOrderODEProblem(
                 return v
             end
         end
-        return ODEProblem(
-            DynamicalODEFunction{iip}(
-                f.f1, f2; mass_matrix = f.mass_matrix,
-                analytic = f.analytic
-            ),
-            _u0,
-            tspan,
-            p,
-            SecondOrderODEProblem{iip}(); kwargs...
-        )
+        f = remake(f; f2)
     else
-        return ODEProblem(
-            DynamicalODEFunction{iip}(
-                f.f1, f.f2; mass_matrix = f.mass_matrix,
-                analytic = f.analytic
-            ),
-            _u0,
-            tspan,
-            p,
-            SecondOrderODEProblem{iip}(); kwargs...
-        )
+        f = remake(f)
     end
+    return ODEProblem(
+        f, _u0, tspan, p, SecondOrderODEProblem{iip}(); kwargs...
+    )
 end
 
 """

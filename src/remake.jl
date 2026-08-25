@@ -283,7 +283,26 @@ function remake(
     props = getproperties(func)
     forig = f
 
-    if f === missing || is_split_function(func)
+    if func isa DynamicalODEFunction
+        # Dynamical function containers retain their kind, iip, and specialization.
+        # An explicit `f` replaces the first function instead of the whole container.
+        T = parameterless_type(func)
+        if f === missing
+            f = func.f1
+        elseif f isa DynamicalODEFunction
+            isinplace(f) == iip || throw(
+                ArgumentError(
+                    "a replacement DynamicalODEFunction must have the same in-place " *
+                        "convention as the original function"
+                )
+            )
+            props = _similar_namedtuple_merge_ignore_nothing(props, getproperties(f))
+            if hasproperty(f, :f2)
+                f2 = coalesce(f2, f.f2)
+            end
+            f = f.f1
+        end
+    elseif f === missing || is_split_function(func)
         # if no `f` is provided, create the same type of SciMLFunction
         T = parameterless_type(func)
         f = isdefined(func, :f) ? func.f : func.f1
@@ -304,11 +323,12 @@ function remake(
     props = @delete props.f
     props = @delete props.f1
 
-    args = (f,)
     if is_split_function(T)
         # `f1` and `f2` are wrapped in another SciMLFunction, unless they're
         # already wrapped in the appropriate type or are an `AbstractSciMLOperator`
-        if !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+        if func isa DynamicalODEFunction
+            f = _remake_dynamical_component(f, typeof(func))
+        elseif !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
             f = split_function_f_wrapper(T){iip, spec}(f)
         end
         if hasproperty(func, :f2)
@@ -318,7 +338,9 @@ function remake(
             # f2 is a part of the function. Thus, if the user provides
             # a SciMLFunction for `f` which contains `f2` we use that.
             f2 = coalesce(f2, get(props, :f2, missing), func.f2)
-            if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+            if func isa DynamicalODEFunction
+                f2 = _remake_dynamical_component(f2, typeof(func))
+            elseif !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
                 f2 = split_function_f_wrapper(T){iip, spec}(f2)
             end
 
@@ -329,8 +351,12 @@ function remake(
                 props = @insert props._func_cache = forig._func_cache
             end
 
-            args = (args..., f2)
+            args = (f, f2)
+        else
+            args = (f,)
         end
+    else
+        args = (f,)
     end
     if isdefined(func, :g)
         # For SDEs/SDDEs where `g` is not a keyword
@@ -352,10 +378,37 @@ function remake(
     # params but the original `prob.f` does not — so we must check `forig` too.
     if _has_type_erased_params(typeof(func))
         return _reconstruct_as_type(typeof(func), result)
-    elseif forig isa AbstractSciMLFunction && _has_type_erased_params(typeof(forig))
+    elseif !(result isa DynamicalODEFunction) && forig isa AbstractSciMLFunction &&
+            _has_type_erased_params(typeof(forig))
         return _reconstruct_as_type(typeof(forig), result)
     end
     return result
+end
+
+function _remake_dynamical_component(
+        f::ODEFunction{iip, spec},
+        ::Type{<:DynamicalODEFunction{iip, spec}}
+    ) where {iip, spec}
+    return f
+end
+
+function _remake_dynamical_component(
+        f, ::Type{<:DynamicalODEFunction{iip, spec}}
+    ) where {iip, spec}
+    if f isa AbstractSciMLOperator
+        return f
+    elseif f isa ODEFunction
+        isinplace(f) == iip || throw(
+            ArgumentError(
+                "a replacement ODEFunction component must have the same in-place " *
+                    "convention as its DynamicalODEFunction container"
+            )
+        )
+        props = getproperties(f)
+        props = @delete props.f
+        return ODEFunction{iip, spec}(unwrapped_f(f.f); props...)
+    end
+    return ODEFunction{iip, spec}(unwrapped_f(f))
 end
 
 """
@@ -367,7 +420,11 @@ end
 Remake the given `ODEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
-function remake(
+function remake(prob::ODEProblem; kwargs...)
+    return _remake_odeproblem(prob; kwargs...)
+end
+
+function _remake_odeproblem(
         prob::ODEProblem; f = missing,
         u0 = missing,
         tspan = missing,
@@ -379,6 +436,18 @@ function remake(
         lazy_initialization = nothing,
         _kwargs...
     )
+    if prob.f isa DynamicalODEFunction &&
+            specialization(prob.f) === FunctionWrapperSpecialize
+        throw(
+            ArgumentError(
+                "remake does not support DynamicalODEFunction with " *
+                    "FunctionWrapperSpecialize because the available wrapper hooks only " *
+                    "describe ordinary ODE call signatures; use AutoSpecialize, " *
+                    "AutoDespecialize, AutoRespecialize, FullSpecialize, or NoSpecialize"
+            )
+        )
+    end
+
     if tspan === missing
         tspan = prob.tspan
     end
@@ -388,7 +457,23 @@ function remake(
     iip = isinplace(prob)
 
     if build_initializeprob == Val{true} || build_initializeprob == true
-        if f !== missing && has_initialization_data(f)
+        if prob.f isa DynamicalODEFunction
+            full_replacement = f isa DynamicalODEFunction
+            initialization_sys = if full_replacement && f.sys !== nothing
+                f.sys
+            else
+                prob.f.sys
+            end
+            initialization_source = if full_replacement && has_initialization_data(f)
+                f
+            else
+                prob.f
+            end
+            initialization_data = remake_initialization_data(
+                initialization_sys, initialization_source, u0, tspan[1], p, newu0,
+                newp
+            )
+        elseif f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp
             )
@@ -440,52 +525,20 @@ end
            tspan = missing, p = missing, kwargs = missing, _kwargs...)
 
 Remake the given `DynamicalODEProblem`.
-If `v0`, `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
+`u0 = ArrayPartition(v0, u0)` remains supported as a full-state replacement when `v0`
+is omitted. Pair-valued symbolic state maps are forwarded to the standard `ODEProblem`
+remake machinery; component overrides must otherwise be concrete values.
+`FunctionWrapperSpecialize` is not supported because the wrapper hooks currently only
+describe ordinary ODE call signatures, not the two component signatures used here.
 """
 function remake(
-        prob::ODEProblem{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:DynamicalODEProblem};
-        f = missing,
+        prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:DynamicalODEProblem};
         v0 = missing,
         u0 = missing,
-        tspan = missing,
-        p = missing,
-        kwargs = missing,
-        interpret_symbolicmap = true,
-        build_initializeprob = Val{true},
-        use_defaults = false,
-        lazy_initialization = nothing,
-        _kwargs...
+        kwargs...
     )
-    if v0 === missing && u0 === missing
-        return remake(
-            prob; f,
-            u0 = missing,
-            tspan,
-            p,
-            kwargs,
-            interpret_symbolicmap,
-            build_initializeprob,
-            use_defaults,
-            lazy_initialization,
-            _kwargs...
-        )
-    else
-        return remake(
-            prob; f,
-            u0 = ArrayPartition(
-                v0 === missing ? state_values(prob).x[1] : v0,
-                u0 === missing ? state_values(prob).x[2] : u0
-            ),
-            tspan,
-            p,
-            kwargs,
-            interpret_symbolicmap,
-            build_initializeprob,
-            use_defaults,
-            lazy_initialization,
-            _kwargs...
-        )
-    end
+    u0 = _partitioned_initial_values(prob, v0, u0)
+    return _remake_odeproblem(prob; u0, kwargs...)
 end
 
 """
@@ -493,52 +546,50 @@ end
           tspan = missing, p = missing, kwargs = missing, _kwargs...)
 
 Remake the given `SecondOrderODEProblem`.
-If `du0`, `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
+`u0 = ArrayPartition(du0, u0)` remains supported as a full-state replacement when `du0`
+is omitted. Pair-valued symbolic state maps are forwarded to the standard `ODEProblem`
+remake machinery; component overrides must otherwise be concrete values.
+`FunctionWrapperSpecialize` is not supported because the wrapper hooks currently only
+describe ordinary ODE call signatures, not the two component signatures used here.
 """
 function remake(
-        prob::ODEProblem{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:SecondOrderODEProblem};
-        f = missing,
+        prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:SecondOrderODEProblem};
         du0 = missing,
         u0 = missing,
-        tspan = missing,
-        p = missing,
-        kwargs = missing,
-        interpret_symbolicmap = true,
-        build_initializeprob = Val{true},
-        use_defaults = false,
-        lazy_initialization = nothing,
-        _kwargs...
+        kwargs...
     )
-    if du0 === missing && u0 === missing
-        return remake(
-            prob; f,
-            u0 = missing,
-            tspan,
-            p,
-            kwargs,
-            interpret_symbolicmap,
-            build_initializeprob,
-            use_defaults,
-            lazy_initialization,
-            _kwargs...
-        )
-    else
-        return remake(
-            prob; f,
-            u0 = ArrayPartition(
-                du0 === missing ? state_values(prob).x[1] : du0,
-                u0 === missing ? state_values(prob).x[2] : u0
-            ),
-            tspan,
-            p,
-            kwargs,
-            interpret_symbolicmap,
-            build_initializeprob,
-            use_defaults,
-            lazy_initialization,
-            _kwargs...
+    u0 = _partitioned_initial_values(prob, du0, u0)
+    return _remake_odeproblem(prob; u0, kwargs...)
+end
+
+_is_pair_map(::Missing) = false
+_is_pair_map(value) = eltype(value) !== Union{} && eltype(value) <: Pair
+
+function _partitioned_initial_values(prob, first, second)
+    if first === missing
+        if second === missing || second isa ArrayPartition || _is_pair_map(second)
+            return second
+        end
+        return ArrayPartition(state_values(prob).x[1], second)
+    end
+
+    first_is_map = _is_pair_map(first)
+    second_is_map = _is_pair_map(second)
+    if first_is_map || second_is_map
+        if first_is_map && second === missing
+            return first
+        elseif first_is_map && second_is_map
+            return [collect(first); collect(second)]
+        end
+        throw(
+            ArgumentError(
+                "symbolic state maps cannot be mixed with concrete component overrides"
+            )
         )
     end
+
+    second = second === missing ? state_values(prob).x[2] : second
+    return ArrayPartition(first, second)
 end
 
 function SciMLBase.remake(
