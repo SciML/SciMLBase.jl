@@ -5,7 +5,7 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 using OrdinaryDiffEq
 using DiffEqNoiseProcess
 using Optimization
-using OptimizationOptimJL
+using OptimizationOptimJL: Optim
 using ForwardDiff
 using SciMLStructures
 using Test
@@ -298,7 +298,7 @@ end
 
 f = OptimizationFunction(loss, Optimization.AutoForwardDiff())
 prob = OptimizationProblem(f, [0.5], [odeprob])
-sol = solve(prob, BFGS())
+sol = solve(prob, Optim.BFGS())
 @test sol.u[1] ≈ 2.5 rtol = 1.0e-4
 
 # Issue ModelingToolkit.jl#2637
