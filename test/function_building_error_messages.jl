@@ -24,6 +24,13 @@ f = Foo{1}()
 (this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
+struct PreparedODEConstructorRHS
+    stage::Int
+end
+(f::PreparedODEConstructorRHS)(u, p, t) = u
+SciMLBase.prepare_function(f::PreparedODEConstructorRHS) =
+    PreparedODEConstructorRHS(f.stage + 1)
+
 @testset "isinplace for FunctionWrappersWrapper" begin
     using FunctionWrappersWrappers
 
@@ -74,6 +81,59 @@ end
     for fname in fieldnames(typeof(f))
         @test getfield(f, fname) === getfield(widened, fname)
     end
+end
+
+@testset "ODEFunction specialization constructor" begin
+    rhs = (u, p, t) -> u
+    initdata = SciMLBase.OverrideInitData(
+        NonlinearProblem((u, p) -> u, [0.0]), nothing, identity, nothing
+    )
+    nlstep_data = SciMLBase.ODENLStepData(
+        NonlinearProblem((z, p) -> z, [1.0]), identity,
+        (gamma1, gamma2, c) -> nothing, identity, identity, identity
+    )
+    initdata_type = Union{Nothing, SciMLBase.OverrideInitData}
+    nlstep_data_type = Union{Nothing, SciMLBase.ODENLStepData}
+    original = ODEFunction{false, SciMLBase.FullSpecialize}(
+        rhs; initialization_data = initdata, nlstep_data
+    )
+
+    for specialize in (
+            SciMLBase.AutoSpecialize,
+            SciMLBase.AutoDespecialize,
+            SciMLBase.AutoRespecialize,
+        )
+        respecialized = ODEFunction{false, specialize}(original)
+        @test SciMLBase.specialization(respecialized) === specialize
+        @test respecialized.f === rhs
+        @test fieldtype(typeof(respecialized), :initialization_data) === initdata_type
+        @test fieldtype(typeof(respecialized), :nlstep_data) === nlstep_data_type
+        for field in fieldnames(typeof(original))
+            @test getfield(respecialized, field) === getfield(original, field)
+        end
+    end
+
+    auto = SciMLBase.widen_bounded_type_params(
+        ODEFunction{false, SciMLBase.AutoSpecialize}(
+            rhs; initialization_data = initdata, nlstep_data
+        )
+    )
+    rebuilt = ODEFunction{false, SciMLBase.AutoSpecialize}(auto; sys = :replacement)
+    @test rebuilt.f === rhs
+    @test rebuilt.sys === :replacement
+    @test fieldtype(typeof(rebuilt), :initialization_data) === initdata_type
+    @test fieldtype(typeof(rebuilt), :nlstep_data) === nlstep_data_type
+
+    full = ODEFunction{false, SciMLBase.FullSpecialize}(auto)
+    @test full.f === rhs
+    @test fieldtype(typeof(full), :initialization_data) === typeof(initdata)
+    @test fieldtype(typeof(full), :nlstep_data) === typeof(nlstep_data)
+
+    prepared = ODEFunction{false, SciMLBase.FullSpecialize}(PreparedODEConstructorRHS(0))
+    @test prepared.f.stage == 1
+    prepared_auto = @inferred ODEFunction{false, SciMLBase.AutoSpecialize}(prepared)
+    @test prepared_auto.f === prepared.f
+    @test prepared_auto.f.stage == 1
 end
 
 @testset "isinplace accepts an out-of-place version with different numbers of parameters " begin
