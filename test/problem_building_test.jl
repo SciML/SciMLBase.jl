@@ -79,8 +79,8 @@ end
     f2! = (du, u, p, t) -> (du .= u)
 
     for build in (
-            (u0,) -> SplitODEProblem(f1!, f2!, u0, (0.0, 1.0)),
-            (u0,) -> ODEProblem(SplitFunction(f1!, f2!), u0, (0.0, 1.0)),
+            (u0) -> SplitODEProblem(f1!, f2!, u0, (0.0, 1.0)),
+            (u0) -> ODEProblem(SplitFunction(f1!, f2!), u0, (0.0, 1.0)),
         )
         u0 = [1.0, 2.0]
         prob = build(u0)
