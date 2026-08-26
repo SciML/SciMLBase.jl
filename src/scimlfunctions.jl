@@ -377,11 +377,20 @@ ODEFunction{iip,specialize}(f;
                            vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
                            colorvec = __has_colorvec(f) ? f.colorvec : nothing,
                            sys = __has_sys(f) ? f.sys : nothing)
+
+ODEFunction{iip,specialize}(f::ODEFunction; kwargs...)
 ```
 
 Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
+
+The fully parameterized constructor can also change the specialization of an existing
+`ODEFunction`. It preserves the stored callable and fields, with keyword arguments taking
+priority. Converting to `AutoSpecialize`, `AutoDespecialize`, or `AutoRespecialize` widens
+the bounded initialization and nonlinear-step metadata types so model-specific metadata
+does not defeat compilation reuse. Construction from a raw callable retains concrete
+metadata types.
 
 All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
@@ -3086,12 +3095,14 @@ function ODEFunction{iip, specialize}(
         iip,
         specialize,
     }
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    callable = f isa ODEFunction ? f.f : f
+
+    if mass_matrix === I && callable isa Tuple
+        mass_matrix = ((I for i in 1:length(callable))...,)
     end
 
     if (specialize === FunctionWrapperSpecialize) &&
-            !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+            !(callable isa FunctionWrappersWrappers.FunctionWrappersWrapper)
         error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
 
@@ -3129,7 +3140,7 @@ function ODEFunction{iip, specialize}(
         throw(NonconformingFunctionsError(functions))
     end
 
-    _f = prepare_function(f)
+    _f = f isa ODEFunction ? callable : prepare_function(callable)
 
 
     initdata = reconstruct_initialization_data(
@@ -3172,6 +3183,13 @@ function ODEFunction{iip, specialize}(
             observed, _colorvec, sys, initdata, nlstep_data
         )
     else
+        widen_metadata = f isa ODEFunction &&
+            (
+            specialize === AutoSpecialize || specialize === AutoDespecialize ||
+                specialize === AutoRespecialize
+        )
+        initdata_type = widen_metadata ? Union{Nothing, OverrideInitData} : typeof(initdata)
+        nlstep_data_type = widen_metadata ? Union{Nothing, ODENLStepData} : typeof(nlstep_data)
         ODEFunction{
             iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -3181,7 +3199,7 @@ function ODEFunction{iip, specialize}(
             typeof(vjp_p),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initdata), typeof(nlstep_data),
+            typeof(sys), initdata_type, nlstep_data_type,
         }(
             _f, mass_matrix, analytic, tgrad,
             jac, jvp, vjp, jac_prototype, sparsity, Wfact,
