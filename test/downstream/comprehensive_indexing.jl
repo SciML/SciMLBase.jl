@@ -1,7 +1,8 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
-    OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
+    OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
     SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
     DiffEqCallbacks, Test, Plots
+using OptimizationOptimJL: Optim
 import Symbolics
 import SymbolicUtils as SU
 import Makie
@@ -109,7 +110,7 @@ begin
     jsol = solve(jprob, SSAStepper(); seed)
     nsol = solve(nprob, NewtonRaphson())
     sssol = solve(ssprob, DynamicSS(Tsit5()))
-    optsol = solve(optprob, GradientDescent())
+    optsol = solve(optprob, Optim.GradientDescent())
     sols = [osol, ssol, jsol, nsol, sssol, optsol]
 end
 
