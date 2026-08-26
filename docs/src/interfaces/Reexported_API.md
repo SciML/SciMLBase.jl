@@ -69,7 +69,7 @@ omissions:
 ## CommonSolve
 
 The solve verbs `solve`, `solve!`, `init` and `step!` are owned by
-[CommonSolve.jl](https://github.com/JuliaLang/CommonSolve.jl). SciMLBase defines the SciML
+[CommonSolve.jl](https://github.com/SciML/CommonSolve.jl). SciMLBase defines the SciML
 methods on them and re-exports them, since they are the SciML solve interface as users and
 solver packages write it. See [The SciML init and solve Functions](@ref) for the SciML contract on
 these functions.
