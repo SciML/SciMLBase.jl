@@ -234,10 +234,13 @@ end
 # In-place `SplitFunction` evaluation needs a temporary buffer (`_func_cache`).
 # `SplitODEProblem` always allocates it from `u0`; bare `ODEProblem(sf, u0, tspan)`
 # must do the same so `f(du,u,p,t)` does not call `get_tmp(nothing, du)`.
+# The buffer must be a copy: `DiffCache(u0)` keeps the passed array itself as the
+# primary buffer, so `f(du,u,p,t)` would evaluate `f1` into `u0`'s memory.
 function ODEProblem(f::SplitFunction, u0, tspan, args...; kwargs...)
     iip = isinplace(f)
     if iip && f._func_cache === nothing
-        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(u0) : u0
+        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(copy(u0)) :
+            copy(u0)
         f = remake(f; _func_cache)
     end
     return ODEProblem{iip}(f, u0, tspan, args...; kwargs...)
@@ -570,7 +573,10 @@ function SplitODEProblem{iip}(
         kwargs...
     ) where {iip}
     if f._func_cache === nothing && iip
-        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(u0) : u0
+        # A copy, not `u0` itself: `DiffCache(u0)` would keep `u0` as the primary
+        # buffer and a direct `f(du,u,p,t)` would evaluate `f1` into `u0`'s memory.
+        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(copy(u0)) :
+            copy(u0)
         f = remake(f; _func_cache)
     end
     return ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)

@@ -71,6 +71,34 @@ end
     @test prob_oop.f(1.0, nothing, 0.0) == 0.0
 end
 
+# `_func_cache` must not alias `u0`: `f1` is evaluated into the cache, so an
+# aliased buffer overwrites the initial condition on every combined `f` call
+# and returns a wrong sum when called at `u0` itself.
+@testset "SplitFunction _func_cache does not alias u0" begin
+    f1! = (du, u, p, t) -> (du .= 2 .* u)
+    f2! = (du, u, p, t) -> (du .= u)
+
+    for build in (
+            (u0,) -> SplitODEProblem(f1!, f2!, u0, (0.0, 1.0)),
+            (u0,) -> ODEProblem(SplitFunction(f1!, f2!), u0, (0.0, 1.0)),
+        )
+        u0 = [1.0, 2.0]
+        prob = build(u0)
+        @test SciMLBase.get_tmp(prob.f._func_cache, u0) !== u0
+
+        # evaluation at u0 itself: f1 + f2 = 3u
+        du = zeros(2)
+        prob.f(du, u0, nothing, 0.0)
+        @test du == [3.0, 6.0]
+        @test u0 == [1.0, 2.0]
+
+        # evaluation at another state must not touch u0 either
+        prob.f(du, [5.0, 7.0], nothing, 0.0)
+        @test du == [15.0, 21.0]
+        @test u0 == [1.0, 2.0]
+    end
+end
+
 @testset "`constructorof` tests" begin
     probs = []
 
