@@ -265,7 +265,7 @@ end
     resid = [0.0, 0.0]
     nlsol = SciMLBase.NonlinearSolution{
         Float64, 1, typeof(u), typeof(resid), Nothing, Nothing,
-        Any, Nothing, Nothing, Nothing,
+        Any, Nothing, Nothing, Nothing, SciMLBase.ReturnCode.T,
     }(
         u, resid, nothing, nothing, SciMLBase.ReturnCode.Success, [0.1, 0.2],
         nothing, nothing, nothing, nothing

@@ -491,3 +491,6 @@ function successful_retcode(retcode::ReturnCode.T)
         retcode == ReturnCode.StalledSuccess
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
+# Return codes carried by other scalar types (e.g. a Reactant `ConcreteRNumber`) are
+# converted first.
+successful_retcode(retcode) = successful_retcode(convert(ReturnCode.T, retcode))
