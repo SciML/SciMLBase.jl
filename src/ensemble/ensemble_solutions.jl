@@ -219,12 +219,12 @@ function calculate_ensemble_errors(
         densetimes = collect(range(u[1].t[1], stop = u[1].t[end], length = 100))
         u_analytic = [
             [
-                    sol.prob.f.analytic(
-                        sol.prob.u0, sol.prob.p, densetimes[i],
-                        sol.W(densetimes[i])[1]
-                    )
+                sol.prob.f.analytic(
+                    sol.prob.u0, sol.prob.p, densetimes[i],
+                    sol.W(densetimes[i])[1]
+                )
                     for i in eachindex(densetimes)
-                ] for sol in u
+            ] for sol in u
         ]
 
         udense = [u[j](densetimes) for j in 1:length(u)]

@@ -80,9 +80,9 @@ end
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
         arrarr = [
             [
-                    p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
+                p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
                     for j in 1:size(p̄)[end - 1]
-                ] for i in 1:size(p̄)[end]
+            ] for i in 1:size(p̄)[end]
         ]
         (EnsembleSolution(arrarr, 0.0, true, stats), nothing, nothing, nothing)
     end
