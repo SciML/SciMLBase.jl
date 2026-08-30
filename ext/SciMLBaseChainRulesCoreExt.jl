@@ -37,6 +37,9 @@ function ChainRulesCore.rrule(
             if dp == NoTangent()
                 dp = zero_tangent(parameter_values(VA.prob))
             end
+            if dp isa ChainRulesCore.Tangent{<:SciMLBase.DespecializedParameters}
+                dp = dp.params
+            end
             dprob = remake(VA.prob, p = dp)
             du, dprob
         else
