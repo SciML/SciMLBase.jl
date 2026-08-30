@@ -8,6 +8,12 @@ using SymbolicIndexingInterface:
     ParameterTimeseriesCollection, SymbolCache, Timeseries, get_parameter_timeseries_collection,
     is_observed, is_parameter_timeseries, is_variable
 
+struct ConvertibleRetcode
+    value::ReturnCode.T
+end
+
+Base.convert(::Type{ReturnCode.T}, retcode::ConvertibleRetcode) = retcode.value
+
 @testset "getindex" begin
     u = rand(1)
     @test SciMLBase.build_linear_solution(nothing, u, zeros(1), nothing)[] == u[]
@@ -28,6 +34,8 @@ end
     @test all(!SciMLBase.successful_retcode(code) for code in unsuccessful)
     @test ReturnCode.Default in unsuccessful
     @test ReturnCode.Stalled in unsuccessful
+    @test SciMLBase.successful_retcode(ConvertibleRetcode(ReturnCode.Success))
+    @test !SciMLBase.successful_retcode(ConvertibleRetcode(ReturnCode.MaxIters))
 end
 
 struct DownstreamLikeSolution
@@ -91,6 +99,11 @@ end
         @test updated.u === null_sol.u
         @test updated.retcode == ReturnCode.Success
     end
+
+    wrapped_retcode = Ref(ReturnCode.MaxIters)
+    wrapped_sol = SciMLBase.solution_new_retcode(null_sol, wrapped_retcode)
+    @test wrapped_sol.retcode === wrapped_retcode
+    @test fieldtype(typeof(wrapped_sol), :retcode) === typeof(wrapped_retcode)
     @test typeof(setproperties(null_sol, (u = copy(null_sol.u),))) === typeof(null_sol)
     no_saved_states = setproperties(null_sol, (u = nothing,))
     @test no_saved_states isa ODESolution{Any, 2}
