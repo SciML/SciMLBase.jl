@@ -1166,10 +1166,10 @@ Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
         if plot_analytic
             plot_analytic_timeseries = [
                 integrator.sol.prob.f.analytic(
-                        integrator.sol.prob.u0,
-                        integrator.sol.prob.p,
-                        t
-                    ) for t in plott
+                    integrator.sol.prob.u0,
+                    integrator.sol.prob.p,
+                    t
+                ) for t in plott
             ]
         end
     else

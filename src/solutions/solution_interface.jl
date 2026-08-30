@@ -506,9 +506,9 @@ function diffeq_to_arrays(
             if sol.prob.f isa Tuple
                 plot_analytic_timeseries = [
                     sol.prob.f[1].analytic(
-                            sol.prob.u0, sol.prob.p,
-                            t
-                        ) for t in plott
+                        sol.prob.u0, sol.prob.p,
+                        t
+                    ) for t in plott
                 ]
             else
                 plot_analytic_timeseries = [
