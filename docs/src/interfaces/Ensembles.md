@@ -77,6 +77,7 @@ trajectory outputs.
 SciMLBase.EnsembleSolution
 SciMLBase.EnsembleTestSolution
 SciMLBase.WeightedEnsembleSolution
+SciMLBase.calculate_ensemble_errors
 ```
 
 ### Plot Recipe
