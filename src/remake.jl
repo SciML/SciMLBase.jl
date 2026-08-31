@@ -708,8 +708,10 @@ function _remake_odeproblem(
 end
 
 """
-    remake(prob::DynamicalODEProblem; f = missing, v0 = missing, u0 = missing,
-           tspan = missing, p = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::DynamicalODEProblem; f = missing, v0 = missing, u0 = missing,
+        tspan = missing, p = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `DynamicalODEProblem`.
 `u0 = ArrayPartition(v0, u0)` remains supported as a full-state replacement when `v0`
@@ -727,8 +729,10 @@ function remake(
 end
 
 """
-    remake(prob::SecondOrderODEProblem; f = missing, du0 = missing, u0 = missing,
-          tspan = missing, p = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::SecondOrderODEProblem; f = missing, du0 = missing, u0 = missing,
+        tspan = missing, p = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `SecondOrderODEProblem`.
 `u0 = ArrayPartition(du0, u0)` remains supported as a full-state replacement when `du0`
@@ -826,9 +830,10 @@ accept the context argument and must not dispatch on undocumented implementation
 struct RemakeInitializationDataContext end
 
 """
-    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp,
-        ctx = RemakeInitializationDataContext())
-        -> initialization_data
+    remake_initialization_data(
+            sys, scimlfn, u0, t0, p, newu0, newp,
+            ctx = RemakeInitializationDataContext()
+        ) -> initialization_data
 
 Recreate a SciML function's initialization data after symbolic `remake` changes state or
 parameters.

@@ -211,11 +211,11 @@ This is incompatible because Numbers cannot be mutated, i.e.
 `x = 2.0; y = 2.0; x .= y` will error.
 
 If using a immutable initial condition type, please use the out-of-place form.
-I.e. define the function `du=f(u,p,t)` instead of attempting to "mutate" the immutable `du`.
+I.e. define the function `du = f(u, p, t)` instead of attempting to "mutate" the immutable `du`.
 
 If your differential equation function was defined with multiple dispatches and one is
 in-place, then the automatic detection will choose in-place. In this case, override the
-choice in the problem constructor, i.e. `ODEProblem{false}(f,u0,tspan,p,kwargs...)`.
+choice in the problem constructor, i.e. `ODEProblem{false}(f, u0, tspan, p, kwargs...)`.
 
 For a longer discussion on mutability vs immutability and in-place vs out-of-place, see:
 <https://docs.sciml.ai/DiffEqDocs/stable/tutorials/faster_ode_example#Example-Accelerating-a-Non-Stiff-Equation:-The-Lorenz-Equation>
@@ -268,7 +268,7 @@ end
 
 const NON_SOLVER_MESSAGE = """
 The arguments to solve are incorrect.
-The second argument must be a solver choice, `solve(prob,alg)`
+The second argument must be a solver choice, `solve(prob, alg)`
 where `alg` is a `<: AbstractDEAlgorithm`, e.g. `Tsit5()`.
 
 Please double check the arguments being sent to the solver.
@@ -291,10 +291,10 @@ Noise sizes are incompatible. The expected number of noise terms in the defined
 
 Note: Noise process definitions require that users specify `u0`, and this value is
 directly used in the definition. For example, if `noise = WienerProcess(0.0,0.0)`,
-then the noise process is a scalar with `u0=0.0`. If `noise = WienerProcess(0.0,[0.0])`,
-then the noise process is a vector with `u0=0.0`. If `noise_rate_prototype = zeros(2,4)`,
+then the noise process is a scalar with `u0=0.0`. If `noise = WienerProcess(0.0, [0.0])`,
+then the noise process is a vector with `u0=0.0`. If `noise_rate_prototype = zeros(2, 4)`,
 then the noise process must be a 4-dimensional process, for example
-`noise = WienerProcess(0.0,zeros(4))`. This error is a sign that the user definition
+`noise = WienerProcess(0.0, zeros(4))`. This error is a sign that the user definition
 of `noise_rate_prototype` and `noise` are not aligned in this manner and the definitions should
 be double checked.
 """
@@ -390,8 +390,8 @@ from RecursiveArrayTools.jl. For example:
 
 ```julia
 using RecursiveArrayTools
-u0 = ArrayPartition([1.0,2.0],[3.0,4.0])
-u0 = VectorOfArray([1.0,2.0],[3.0,4.0])
+u0 = ArrayPartition([1.0, 2.0], [3.0, 4.0])
+u0 = VectorOfArray([1.0, 2.0], [3.0, 4.0])
 ```
 
 are both initial conditions which would be compatible with
@@ -501,24 +501,24 @@ Instead, change your equation from using tuple constructors `()`
 to static array constructors `SA[]`. For example, change:
 
 ```julia
-function ftup((a,b),p,t)
-  return b,-a
+function ftup((a, b), p, t)
+    return (b, -a)
 end
 u0 = (1.0,2.0)
 tspan = (0.0,1.0)
-ODEProblem(ftup,u0,tspan)
+ODEProblem(ftup, u0, tspan)
 ```
 
 to:
 
 ```julia
 using StaticArrays
-function fsa(u,p,t)
-    SA[u[2],u[1]]
+function fsa(u, p, t)
+    return SA[u[2], u[1]]
 end
-u0 = SA[1.0,2.0]
-tspan = (0.0,1.0)
-ODEProblem(ftup,u0,tspan)
+u0 = SA[1.0, 2.0]
+tspan = (0.0, 1.0)
+ODEProblem(ftup, u0, tspan)
 ```
 
 This will be safer and fast for small ODEs. For more information, see:

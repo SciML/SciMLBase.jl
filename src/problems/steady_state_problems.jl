@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines a steady state ODE problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/>
@@ -9,7 +9,7 @@ To define a Steady State Problem, you simply need to give the function ``f``
 which defines the ODE:
 
 ```math
-\frac{du}{dt} = f(u, p, t)
+\\frac{du}{dt} = f(u, p, t)
 ```
 
 and an initial guess ``u_0`` of where `f(u, p, t) = 0`. `f` should be specified as
@@ -34,7 +34,8 @@ SteadyStateProblem{isinplace, specialize}(f, u0, p = NullParameters(); kwargs...
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given, a `NullParameters()` singleton
@@ -139,8 +140,11 @@ end
 
 SymbolicIndexingInterface.is_time_dependent(::SteadyStateProblem) = true
 
-@doc doc"""
-    SteadyStateAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+"""
+    SteadyStateAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
 
 Control which `SteadyStateProblem` inputs and solver option arrays may be
 aliased.

@@ -364,19 +364,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-ODEFunction{iip,specialize}(f;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+ODEFunction{iip, specialize}(
+    f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 
 ODEFunction{iip,specialize}(f::ODEFunction; kwargs...)
 ```
@@ -468,10 +470,10 @@ The following example creates an inplace `ODEFunction` whose Jacobian is a `Diag
 
 ```julia
 using LinearAlgebra
-f = (du,u,p,t) -> du .= t .* u
-jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
+f = (du, u, p, t) -> du .= t .* u
+jac = (J, u, p, t) -> (J[1, 1] = t; J[2, 2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac, jac_prototype=jp)
+fun = ODEFunction(f; jac, jac_prototype = jp)
 ```
 
 The prototype declares Jacobian shape, element type, and structure. It must support
@@ -496,9 +498,10 @@ the function `f(du,u,p,t)` with an in-place updating function for the Jacobian:
 take the Lotka-Volterra model:
 
 ```julia
-function f(du,u,p,t)
-  du[1] = 2.0 * u[1] - 1.2 * u[1]*u[2]
-  du[2] = -3 * u[2] + u[1]*u[2]
+function f(du, u, p, t)
+    du[1] = 2.0 * u[1] - 1.2 * u[1] * u[2]
+    du[2] = -3 * u[2] + u[1] * u[2]
+    return
 end
 ```
 
@@ -506,24 +509,24 @@ To declare the Jacobian, we simply add the dispatch:
 
 ```julia
 function f_jac(J,u,p,t)
-  J[1,1] = 2.0 - 1.2 * u[2]
-  J[1,2] = -1.2 * u[1]
-  J[2,1] = 1 * u[2]
-  J[2,2] = -3 + u[1]
-  nothing
+    J[1,1] = 2.0 - 1.2 * u[2]
+    J[1,2] = -1.2 * u[1]
+    J[2,1] = 1 * u[2]
+    J[2,2] = -3 + u[1]
+    return
 end
 ```
 
 Then we can supply the Jacobian with our ODE as:
 
 ```julia
-ff = ODEFunction(f;jac=f_jac)
+ff = ODEFunction(f; jac = f_jac)
 ```
 
 and use this in an `ODEProblem`:
 
 ```julia
-prob = ODEProblem(ff,ones(2),(0.0,10.0))
+prob = ODEProblem(ff, ones(2), (0.0, 10.0))
 ```
 
 ## Symbolically Generating the Functions
@@ -583,19 +586,21 @@ and exponential integrators.
 ## Constructor
 
 ```julia
-SplitFunction{iip,specialize}(f1,f2;
-                             mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
-                             analytic = __has_analytic(f1) ? f1.analytic : nothing,
-                             tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
-                             jac = __has_jac(f1) ? f1.jac : nothing,
-                             jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                             vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                             jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
-                             W_prototype = __has_W_prototype(f1) ? f1.W_prototype : nothing,
-                             sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
-                             paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                             colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
-                             sys = __has_sys(f1) ? f1.sys : nothing)
+SplitFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
+    analytic = __has_analytic(f1) ? f1.analytic : nothing,
+    tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
+    jac = __has_jac(f1) ? f1.jac : nothing,
+    jvp = __has_jvp(f1) ? f1.jvp : nothing,
+    vjp = __has_vjp(f1) ? f1.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
+    W_prototype = __has_W_prototype(f1) ? f1.W_prototype : nothing,
+    sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
+    colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
+    sys = __has_sys(f1) ? f1.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -711,18 +716,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalODEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+DynamicalODEFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -825,18 +832,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DDEFunction{iip,specialize}(f;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                 tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                 jac = __has_jac(f) ? f.jac : nothing,
-                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                 sys = __has_sys(f) ? f.sys : nothing)
+DDEFunction{iip, specialize}(
+    f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -931,18 +940,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalDDEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+DynamicalDDEFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -1047,8 +1058,10 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing)
+DiscreteFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1102,9 +1115,11 @@ dt: the time step
 ## Constructor
 
 ```julia
-ImplicitDiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing)
+ImplicitDiscreteFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1170,19 +1185,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-SDEFunction{iip,specialize}(f,g;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           ggprime = nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+SDEFunction{iip, specialize}(
+    f, g;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    ggprime = nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that both the function `f` and `g` are required. This function should
@@ -1277,19 +1294,21 @@ and exponential integrators.
 ## Constructor
 
 ```julia
-SplitSDEFunction{iip,specialize}(f1,f2,g;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                 tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                 jac = __has_jac(f) ? f.jac : nothing,
-                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                 ggprime = nothing,
-                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                 sys = __has_sys(f) ? f.sys : nothing)
+SplitSDEFunction{iip, specialize}(
+    f1, f2, g;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    ggprime = nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. All of the remaining functions
@@ -1390,19 +1409,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalSDEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    ggprime=nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+DynamicalSDEFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    ggprime = nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -1509,19 +1530,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-RODEFunction{iip,specialize}(f;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing,
-                           analytic_full = __has_analytic_full(f) ? f.analytic_full : false)
+RODEFunction{iip, specialize}(
+    f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing,
+    analytic_full = __has_analytic_full(f) ? f.analytic_full : false
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1629,18 +1652,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DAEFunction{iip,specialize}(f;
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jac_u = __has_jac_u(f) ? f.jac_u : nothing,
-                           jac_du = __has_jac_du(f) ? f.jac_du : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing,
-                           nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing)
+DAEFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jac_u = __has_jac_u(f) ? f.jac_u : nothing,
+    jac_du = __has_jac_du(f) ? f.jac_du : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing,
+    nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1710,27 +1735,28 @@ The Jacobian should be given in the form `gamma*dG/d(du) + dG/du ` where `gamma`
 is given by the solver. This means that the signature is:
 
 ```julia
-f(J,du,u,p,gamma,t)
+f(J, du, u, p, gamma, t)
 ```
 
 For example, for the equation
 
 ```julia
-function testjac(res,du,u,p,t)
-  res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1]*u[2]
-  res[2] = du[2] -3 * u[2] - u[1]*u[2]
+function testjac(res, du, u, p, t)
+    res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1] * u[2]
+    res[2] = du[2] - 3 * u[2] - u[1] * u[2]
+    return
 end
 ```
 
 we would define the Jacobian as:
 
 ```julia
-function testjac(J,du,u,p,gamma,t)
-  J[1,1] = gamma - 2.0 + 1.2 * u[2]
-  J[1,2] = 1.2 * u[1]
-  J[2,1] = - 1 * u[2]
-  J[2,2] = gamma - 3 - u[1]
-  nothing
+function testjac(J, du, u, p, gamma, t)
+    J[1, 1] = gamma - 2.0 + 1.2 * u[2]
+    J[1, 2] = 1.2 * u[1]
+    J[2, 1] = - 1 * u[2]
+    J[2, 2] = gamma - 3 - u[1]
+    return
 end
 ```
 
@@ -1796,18 +1822,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-SDDEFunction{iip,specialize}(f,g;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                 tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                 jac = __has_jac(f) ? f.jac : nothing,
-                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 colorvec = __has_colorvec(f) ? f.colorvec : nothing
-                 sys = __has_sys(f) ? f.sys : nothing)
+SDDEFunction{iip, specialize}(
+    f, g;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1910,16 +1938,18 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-NonlinearFunction{iip, specialize}(f;
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+NonlinearFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -2124,9 +2154,11 @@ interval variable.
 ## Constructor
 
 ```julia
-IntervalNonlinearFunction{iip, specialize}(f;
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+IntervalNonlinearFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -2172,12 +2204,14 @@ A representation of an objective function `f`, defined by:
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
-and more. For all cases, `u` is the state which in this case are the optimization variables and `p` are the fixed parameters or data.
+and more. For all cases, `u` is the state which in this case are the
+optimization variables and `p` are the fixed parameters or data.
 
 ## Constructor
 
 ```julia
-OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
+OptimizationFunction{iip}(
+    f, adtype::AbstractADType = NoAD();
     grad = nothing, hess = nothing, hv = nothing,
     cons = nothing, cons_j = nothing, cons_jvp = nothing,
     cons_vjp = nothing, cons_h = nothing,
@@ -2190,14 +2224,18 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
     cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     lag_hess_colorvec = nothing,
-    sys = __has_sys(f) ? f.sys : nothing)
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 ## Positional Arguments
 
-  - `f(u,p)`: the function to optimize. `u` are the optimization variables and `p` are fixed parameters or data used in the objective,
-    even if no such parameters are used in the objective it should be an argument in the function. For minibatching `p` can be used to pass in
-    a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/) to see how to do it.
+  - `f(u,p)`: the function to optimize. `u` are the optimization variables and
+    `p` are fixed parameters or data used in the objective,
+    even if no such parameters are used in the objective it should be an
+    argument in the function. For minibatching `p` can be used to pass in
+    a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/)
+    to see how to do it.
     This should return a scalar, the loss value, as the return output.
   - `adtype`: see the Defining Optimization Functions via AD section below.
 
@@ -2243,7 +2281,8 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
   - `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for
     the sparsity pattern of the `cons_hess_prototype`.
 
-When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Optimization/stable/tutorials/symbolic/) interface is used the following arguments are also relevant:
+When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Optimization/stable/tutorials/symbolic/)
+interface is used the following arguments are also relevant:
 
   - `observed`: an algebraic combination of optimization variables that is of interest to the user
     which will be available in the solution. This can be single or multiple expressions.
@@ -2397,7 +2436,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-ODEInputFunction{iip, specialize}(f;
+ODEInputFunction{iip, specialize}(
+    f;
     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2410,7 +2450,8 @@ ODEInputFunction{iip, specialize}(f;
     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-    sys = __has_sys(f) ? f.sys : nothing)
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 `f` should be given as `f(x_out,x,u,p,t)` or `out = f(x,u,p,t)`.
@@ -2513,7 +2554,7 @@ If the size of `g(u, p, t)` is different from the size of `u`, then the constrai
 interpreted as a least squares problem, i.e. the objective function is:
 
 ```math
-\\min_u \\| g_i(u, p, t) \\|^2
+\\min_u ‖ g_i(u, p, t) ‖^2
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -2521,7 +2562,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-BVPFunction{iip, specialize}(f, bc;
+BVPFunction{iip, specialize}(
+    f, bc;
     cost = __has_cost(f) ? f.cost : nothing,
     equality = __has_equality(f) ? f.equality : nothing,
     inequality = __has_inequality(f) ? f.inequality : nothing,
@@ -2540,7 +2582,8 @@ BVPFunction{iip, specialize}(f, bc;
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing,
-    twopoint::Union{Val, Bool} = Val(false))
+    twopoint::Union{Val, Bool} = Val(false)
+)
 ```
 
 Note that both the function `f` and boundary condition `bc` are required. `f` should
@@ -2649,7 +2692,7 @@ $(TYPEDEF)
 A representation of a dynamical BVP function `f`, defined by:
 
 ```math
-M u'' = f(u',u,p,t)
+M u'' = f(u', u, p, t)
 ```
 
 along with its boundary condition:
@@ -2665,22 +2708,24 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalBVPFunction{iip,specialize}(f, bc;
-                                    cost = __has_cost(f) ? f.cost : nothing,
-                                    equality = __has_equality(f) ? f.equality : nothing,
-                                    inequality = __has_inequality(f) ? f.inequality : nothing,
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing
-                                    twopoint::Union{Val, Bool} = Val(false))
+DynamicalBVPFunction{iip, specialize}(
+    f, bc;
+    cost = __has_cost(f) ? f.cost : nothing,
+    equality = __has_equality(f) ? f.equality : nothing,
+    inequality = __has_inequality(f) ? f.inequality : nothing,
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+    twopoint::Union{Val, Bool} = Val(false)
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -2768,8 +2813,8 @@ struct DynamicalBVPFunction{
     initialization_data::ID
 end
 
-@doc doc"""
-    IntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+"""
+    IntegralFunction{iip, specialize, F, T} <: AbstractIntegralFunction{iip}
 
 A representation of an integrand `f` defined by:
 
@@ -2781,7 +2826,7 @@ For an in-place form of `f` see the `iip` section below for details on in-place 
 out-of-place handling.
 
 ```julia
-IntegralFunction{iip,specialize}(f, [integrand_prototype])
+IntegralFunction{iip, specialize}(f, [integrand_prototype])
 ```
 
 Note that only `f` is required, and in the case of inplace integrands a mutable array
@@ -2814,8 +2859,8 @@ struct IntegralFunction{iip, specialize, F, T} <:
     integrand_prototype::T
 end
 
-@doc doc"""
-    BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+"""
+    BatchIntegralFunction{iip, specialize, F, T} <: AbstractIntegralFunction{iip}
 
 A batched representation of an (non-batched) integrand `f(u, p)` that can be
 evaluated at multiple points simultaneously using threads, the gpu, or
@@ -2840,8 +2885,9 @@ For an in-place form of `bf` see the `iip` section below for details on in-place
 or out-of-place handling.
 
 ```julia
-BatchIntegralFunction{iip,specialize}(bf, [integrand_prototype];
-                                     max_batch=typemax(Int))
+BatchIntegralFunction{iip, specialize}(
+    bf, [integrand_prototype]; max_batch = typemax(Int)
+)
 ```
 Note that only `bf` is required, and in the case of inplace integrands a mutable
 array `integrand_prototype` to store a batch of integrand evaluations, with
