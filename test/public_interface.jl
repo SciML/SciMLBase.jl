@@ -886,6 +886,7 @@ if isdefined(Base, :ispublic)
                 :EnsembleSolution,
                 :EnsembleTestSolution,
                 :WeightedEnsembleSolution,
+                :calculate_ensemble_errors,
             )
             @test Base.ispublic(SciMLBase, name)
         end

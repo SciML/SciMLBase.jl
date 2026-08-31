@@ -2387,7 +2387,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
 # Ensemble interface
 @public AbstractEnsembleEstimator, WeightedEnsembleProblem,
     DEFAULT_PROB_FUNC, DEFAULT_OUTPUT_FUNC, DEFAULT_REDUCTION,
-    generate_sim_seeds, default_rng_func, WeightedEnsembleSolution
+    generate_sim_seeds, default_rng_func, WeightedEnsembleSolution,
+    calculate_ensemble_errors
 
 # AD / sensitivity function wrappers
 @public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper,

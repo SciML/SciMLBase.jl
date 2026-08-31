@@ -161,6 +161,22 @@ struct EnsembleSummary{T, N, Tt, S, S2, S3, S4, S5} <: AbstractEnsembleSolution{
     converged::Bool
 end
 
+"""
+    calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
+    calculate_ensemble_errors(trajectories; elapsedTime = 0.0, converged = false,
+        weak_timeseries_errors = false, weak_dense_errors = false)
+
+Collect the strong and weak errors from an ensemble whose trajectories include analytic
+reference solutions, returning an [`EnsembleTestSolution`](@ref).
+
+Strong errors are collected from each trajectory's `errors` field and summarized by their
+mean and median. The final-time weak error is always calculated. Set
+`weak_timeseries_errors = true` to calculate weak errors at the saved time steps, or
+`weak_dense_errors = true` to calculate them on a 100-point interpolation grid.
+
+When an `AbstractEnsembleSolution` is passed, its `elapsedTime` and `converged` fields are
+preserved. The trajectory-collection form accepts those values as keyword arguments.
+"""
 function calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
     calculate_ensemble_errors(
         sim.u; elapsedTime = sim.elapsedTime,
