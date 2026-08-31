@@ -821,6 +821,9 @@ function SymbolicIndexingInterface.set_state!(A::DEIntegrator, val, idx)
     A.u[idx] = val
     return derivative_discontinuity!(A, true)
 end
+function SymbolicIndexingInterface.finalize_parameters_hook!(A::DEIntegrator, _)
+    return derivative_discontinuity!(A, true)
+end
 
 SymbolicIndexingInterface.is_time_dependent(::DEIntegrator) = true
 
