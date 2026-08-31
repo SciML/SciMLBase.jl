@@ -1,5 +1,6 @@
 using CommonSolve: step!
 using Test, SciMLBase
+import SymbolicIndexingInterface
 
 struct DummySolution
     retcode::SciMLBase.ReturnCode.T
@@ -84,6 +85,10 @@ integrator = DummyIntegrator()
 SciMLBase.set_ut!(integrator, [3.0], 2.0)
 @test integrator.u == [3.0]
 @test integrator.t == 2.0
+
+integrator.discontinuity = false
+SymbolicIndexingInterface.finalize_parameters_hook!(integrator, :p)
+@test integrator.discontinuity
 
 @test integrator.sol.retcode == ReturnCode.Default
 @test check_error(integrator) == ReturnCode.Success
