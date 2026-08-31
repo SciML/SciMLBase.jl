@@ -648,9 +648,6 @@ Hermite Interpolation
     return out
 end
 
-"""
-Hermite Interpolation
-"""
 @inline function hermite_interpolant(
         Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{1}}
@@ -686,9 +683,6 @@ Hermite Interpolation
     return out
 end
 
-"""
-Hermite Interpolation
-"""
 @inline function hermite_interpolant(
         Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{2}}
@@ -720,9 +714,6 @@ Hermite Interpolation
     return out
 end
 
-"""
-Hermite Interpolation
-"""
 @inline function hermite_interpolant(
         Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{3}}
@@ -773,9 +764,6 @@ Hermite Interpolation
     end
 end
 
-"""
-Hermite Interpolation
-"""
 @inline function hermite_interpolant!(
         out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{1}}
@@ -806,9 +794,6 @@ Hermite Interpolation
     end
 end
 
-"""
-Hermite Interpolation
-"""
 @inline function hermite_interpolant!(
         out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{2}}
@@ -837,9 +822,6 @@ Hermite Interpolation
     end
 end
 
-"""
-Hermite Interpolation
-"""
 @inline function hermite_interpolant!(
         out, Θ, dt, y₀, y₁, dy₀, dy₁, idxs,
         T::Type{Val{3}}
@@ -916,10 +898,7 @@ end
 """
 Linear Interpolation
 """
-@inline function linear_interpolant!(
-        out, Θ, dt, y₀, y₁, idxs,
-        T::Type{Val{0}}
-    )
+@inline function linear_interpolant!(out, Θ, dt, y₀, y₁, idxs, T::Type{Val{0}})
     Θm1 = (1 - Θ)
     if out === nothing
         return Θm1 * y₀[idxs] + Θ * y₁[idxs]
@@ -930,13 +909,7 @@ Linear Interpolation
     end
 end
 
-"""
-Linear Interpolation
-"""
-@inline function linear_interpolant!(
-        out, Θ, dt, y₀, y₁, idxs,
-        T::Type{Val{1}}
-    )
+@inline function linear_interpolant!(out, Θ, dt, y₀, y₁, idxs, T::Type{Val{1}})
     if out === nothing
         return (y₁[idxs] - y₀[idxs]) / dt
     elseif idxs === nothing
@@ -1021,9 +994,6 @@ Constant Interpolation
     end
 end
 
-"""
-Constant Interpolation
-"""
 @inline function interpolant!(
         out, Θ, id::ConstantInterpolation, dt, y₀, y₁, idxs,
         T::Type{Val{1}}
