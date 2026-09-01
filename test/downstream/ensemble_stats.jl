@@ -8,6 +8,6 @@ prob = ODEProblem(f, u0, tspan)
 function prob_func(prob, ctx)
     return remake(prob, u0 = rand() * prob.u0)
 end
-ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
+ensemble_prob = EnsembleProblem(prob; prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10)
 @test sim.stats.nf == mapreduce(x -> x.stats.nf, +, sim.u)

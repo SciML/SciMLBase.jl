@@ -179,8 +179,8 @@ preserved. The trajectory-collection form accepts those values as keyword argume
 """
 function calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
     calculate_ensemble_errors(
-        sim.u; elapsedTime = sim.elapsedTime,
-        converged = sim.converged, kwargs...
+        sim.u; sim.elapsedTime,
+        sim.converged, kwargs...
     )
 end
 

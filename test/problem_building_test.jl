@@ -181,7 +181,7 @@ function alias_specifier_with_policy(T, alias)
     return if T === SciMLBase.IntegralAliasSpecifier
         T(nothing, nothing, alias)
     else
-        T(; alias = alias)
+        T(; alias)
     end
 end
 

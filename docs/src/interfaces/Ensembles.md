@@ -242,7 +242,7 @@ end
 Now we build and solve the `EnsembleProblem` with this base problem and `prob_func`:
 
 ```julia
-ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
+ensemble_prob = EnsembleProblem(prob; prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleDistributed(), trajectories = 10)
 ```
 
@@ -276,7 +276,7 @@ prob = ODEProblem((u, p, t) -> 1.01u, 0.5, (0.0, 1.0))
 function prob_func(prob, ctx)
     return remake(prob, u0 = rand(ctx.rng) * prob.u0)
 end
-ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
+ensemble_prob = EnsembleProblem(prob; prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10)
 using Plots;
 plot(sim);
@@ -359,7 +359,7 @@ end
 Now we solve the problem 10 times and plot all of the trajectories in phase space:
 
 ```@example ensemble2
-ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
+ensemble_prob = EnsembleProblem(prob; prob_func)
 sim = solve(ensemble_prob, SRIW1(), trajectories = 10)
 using Plots;
 plot(sim, linealpha = 0.6, color = :blue, idxs = (0, 1), title = "Phase Space Plot");

@@ -116,7 +116,7 @@ using LinearAlgebra
 f = (du, u, p, t) -> du .= t .* u
 jac = (J, u, p, t) -> (J[1, 1] = t; J[2, 2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac = jac, jac_prototype = jp)
+fun = ODEFunction(f; jac, jac_prototype = jp)
 ```
 
 The prototype declares Jacobian shape, element type, and structure. It must support
