@@ -30,6 +30,7 @@ end
 # property access. Normalize so both backends can be tested with the same
 # accessor.
 _unwrap_grad(gs) = hasproperty(gs, :fields) ? getfield(gs, :fields) : gs
+_unwrap_parameter_gradient(gp) = hasproperty(gp, :params) ? gp.params : gp
 
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
@@ -116,7 +117,7 @@ end
                 p -> f(SII.state_values(iprob), p), backend, SII.parameter_values(iprob)
             )
 
-            @test gs.prob.p == gp
+            @test _unwrap_parameter_gradient(gs.prob.p) == gp
         end
     end
     for backend in MOONCAKE_BACKENDS
@@ -225,7 +226,7 @@ sol_dae = solve(prob_dae, Rodas5())
                 gs = DifferentiationInterface.gradient(
                     isol -> isol[simple_dae.u_dae], backend, isol
                 )
-                gt = gs.prob.p.tunable
+                gt = _unwrap_parameter_gradient(gs.prob.p).tunable
                 @test length(findall(!iszero, gt)) == 1
             end
         end
