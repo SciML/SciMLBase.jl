@@ -26,7 +26,7 @@ function lotka_volterra(; name = name)
         D(y) ~ -p3 * y + p4 * x * y,
         o ~ x * y,
     ]
-    return System(eqs, t, unknowns, params; name = name)
+    return System(eqs, t, unknowns, params; name)
 end
 
 @named lotka_volterra_sys = lotka_volterra()
@@ -35,7 +35,7 @@ function make_sum_of_solution_u0(prob)
     return function (u0)
         # If `p` is passed to `remake`, MTK won't copy `u0` to initials
         # and it will be reset to the previous value
-        _prob = remake(prob, u0 = u0)
+        _prob = remake(prob; u0)
         return sum(
             solve(
                 _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
@@ -47,7 +47,7 @@ end
 
 function make_sum_of_solution_p(prob, u0_fixed)
     return function (p)
-        _prob = remake(prob, u0 = u0_fixed, p = p)
+        _prob = remake(prob; u0 = u0_fixed, p)
         return sum(
             solve(
                 _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
@@ -59,7 +59,7 @@ end
 
 function make_symbolic_indexing_u0(prob)
     return function (u0)
-        _prob = remake(prob, u0 = u0)
+        _prob = remake(prob; u0)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -70,7 +70,7 @@ end
 
 function make_symbolic_indexing_p(prob, u0_fixed)
     return function (p)
-        _prob = remake(prob, u0 = u0_fixed, p = p)
+        _prob = remake(prob; u0 = u0_fixed, p)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -81,7 +81,7 @@ end
 
 function make_symbolic_indexing_observed_u0(prob)
     return function (u0)
-        _prob = remake(prob, u0 = u0)
+        _prob = remake(prob; u0)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -92,7 +92,7 @@ end
 
 function make_symbolic_indexing_observed_p(prob, u0_fixed)
     return function (p)
-        _prob = remake(prob, u0 = u0_fixed, p = p)
+        _prob = remake(prob; u0 = u0_fixed, p)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())

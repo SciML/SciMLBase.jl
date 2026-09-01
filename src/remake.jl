@@ -1317,18 +1317,18 @@ function remake(
 
     return if kwargs === missing
         # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
-        OptimizationProblem{isinplace(prob)}(
-            f = f, u0 = u0, p = p, lb = lb,
-            ub = ub, int = int,
-            lcons = lcons, ucons = ucons,
-            sense = sense; (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
+        OptimizationProblem{isinplace(prob)}(;
+            f, u0, p, lb,
+            ub, int,
+            lcons, ucons,
+            sense, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        OptimizationProblem{isinplace(prob)}(
-            f = f, u0 = u0, p = p, lb = lb,
-            ub = ub, int = int,
-            lcons = lcons, ucons = ucons,
-            sense = sense; kwargs...
+        OptimizationProblem{isinplace(prob)}(;
+            f, u0, p, lb,
+            ub, int,
+            lcons, ucons,
+            sense; kwargs...
         )
     end
 end
@@ -1389,15 +1389,15 @@ function remake(
     prob = if kwargs === missing
         # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
         # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
-        NonlinearProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp,
-            problem_type = problem_type, lb = lb, ub = ub;
+        NonlinearProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp,
+            problem_type, lb, ub,
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        NonlinearProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp,
-            problem_type = problem_type, lb = lb, ub = ub; kwargs...
+        NonlinearProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp,
+            problem_type, lb, ub, kwargs...
         )
     end
 
@@ -1441,12 +1441,12 @@ function remake(
 
     prob = if kwargs === missing
         # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
-        SteadyStateProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp;
+        SteadyStateProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp;
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; kwargs...)
+        SteadyStateProblem{isinplace(prob)}(; f, u0 = newu0, p = newp; kwargs...)
     end
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
@@ -1500,12 +1500,12 @@ function remake(
         # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
         # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, lb = lb, ub = ub,
+            f, u0 = newu0, p = newp, lb, ub,
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, lb = lb, ub = ub, kwargs...
+            f, u0 = newu0, p = newp, lb, ub, kwargs...
         )
     end
 
@@ -1898,7 +1898,7 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
     # used, since any state symbols in the expression were substituted out earlier.
     temp_state = ProblemState(;
-        u = state_values(prob), p = p, t = t0,
+        u = state_values(prob), p, t = t0,
         h = is_markovian(prob) ? nothing : get_history_function(prob)
     )
     for (k, v) in u0
