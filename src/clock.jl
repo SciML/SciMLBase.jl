@@ -136,7 +136,7 @@ Construct the default [`PeriodicClock`](@ref).
 
 `Clock(dt; phase = 0.0)` converts numeric `dt` values to a periodic clock with
 that tick interval. Rational and `Float64` intervals are preserved, while other
-numeric intervals are converted to `Float64`. Calling `Clock(; phase = phase)`
+numeric intervals are converted to `Float64`. Calling `Clock(; phase)`
 leaves `dt` as `nothing`, allowing downstream tooling to infer the interval when
 possible.
 """

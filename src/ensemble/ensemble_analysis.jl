@@ -713,9 +713,9 @@ function componentwise_meancov(A, B; bessel = true)
 end
 
 function componentwise_meancor(A, B; bessel = true)
-    mx, my, cov = componentwise_meancov(A, B; bessel = bessel)
-    mx, vx = componentwise_meanvar(A; bessel = bessel)
-    my, vy = componentwise_meanvar(B; bessel = bessel)
+    mx, my, cov = componentwise_meancov(A, B; bessel)
+    mx, vx = componentwise_meanvar(A; bessel)
+    my, vy = componentwise_meanvar(B; bessel)
     if vx isa AbstractArray
         vx .= sqrt.(vx)
         vy .= sqrt.(vy)

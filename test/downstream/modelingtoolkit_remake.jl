@@ -496,7 +496,7 @@ end
         prob = Problem(sys, [x => 1.0, y => 1.0], prob_args...)
         func_args = isdefined(prob.f, :g) ? (prob.f.g,) : ()
         func = Func{true, SciMLBase.FullSpecialize}(
-            prob.f.f, func_args...; initialization_data = initdata, sys = prob.f.sys
+            prob.f.f, func_args...; initialization_data = initdata, prob.f.sys
         )
         prob2 = remake(prob; f = func)
         @test SciMLBase.is_trivial_initialization(prob2)
@@ -543,7 +543,7 @@ end
     buf, repack, _ = SciMLStructures.canonicalize(SciMLStructures.Tunable(), prob.p)
     newps = repack(ForwardDiff.Dual.(buf))
     prob2 = @test_nowarn remake(
-        prob; f = prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps
+        prob; prob.f, u0 = ForwardDiff.Dual.(prob.u0), p = newps
     )
     @test prob2.f.initialization_data !== nothing
     initprob = prob2.f.initialization_data.initializeprob

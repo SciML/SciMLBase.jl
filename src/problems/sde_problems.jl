@@ -211,8 +211,8 @@ function SplitSDEProblem{iip}(
     if f._func_cache === nothing && iip
         _func_cache = similar(u0)
         _f = SplitSDEFunction{iip}(
-            f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-            _func_cache = _func_cache, analytic = f.analytic
+            f.f1, f.f2, f.g; f.mass_matrix,
+            _func_cache, f.analytic
         )
     else
         _f = f
@@ -270,8 +270,8 @@ function DynamicalSDEProblem{iip}(
     if f._func_cache === nothing && iip
         _func_cache = similar(u0)
         _f = DynamicalSDEFunction{iip}(
-            f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-            _func_cache = _func_cache, analytic = f.analytic
+            f.f1, f.f2, f.g; f.mass_matrix,
+            _func_cache, f.analytic
         )
     else
         _f = f

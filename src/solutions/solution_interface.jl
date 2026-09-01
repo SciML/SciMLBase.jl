@@ -62,7 +62,7 @@ function augment(
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     return DiffEqArray(
         A.u, A.t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense
+        sol.interp, sol.dense
     )
 end
 
@@ -486,7 +486,7 @@ function diffeq_to_arrays(
     densetspacer = if tscale in [:ln, :log10, :log2]
         (start, stop, n) -> exp10.(range(log10(start), stop = log10(stop), length = n))
     else
-        (start, stop, n) -> range(start; stop = stop, length = n)
+        (start, stop, n) -> range(start; stop, length = n)
     end
 
     if plotat !== nothing

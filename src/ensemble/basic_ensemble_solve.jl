@@ -443,7 +443,7 @@ function batch_func(
         name = get(kwargs, :progress_name, "Ensemble")
         progress_name = "$name #$i"
         progress_id = Symbol("SciMLBase_$i")
-        kwargs = (kwargs..., progress_name = progress_name, progress_id = progress_id)
+        kwargs = (; kwargs..., progress_name, progress_id)
     end
 
     # Solve — dispatch on pre-computed _solve_rng_mode:

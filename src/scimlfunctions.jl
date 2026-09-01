@@ -471,7 +471,7 @@ using LinearAlgebra
 f = (du,u,p,t) -> du .= t .* u
 jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac=jac, jac_prototype=jp)
+fun = ODEFunction(f; jac, jac_prototype=jp)
 ```
 
 The prototype declares Jacobian shape, element type, and structure. It must support
@@ -3301,18 +3301,18 @@ function ODEFunction{iip}(f::NonlinearFunction) where {iip}
 
     return ODEFunction{iip, specialization(f)}(
         _f;
-        mass_matrix = f.mass_matrix,
+        f.mass_matrix,
         analytic = _analytic,
         jac = _jac,
         jvp = _jvp,
         vjp = _vjp,
-        jac_prototype = f.jac_prototype,
-        sparsity = f.sparsity,
-        paramjac = f.paramjac,
-        sys = f.sys,
-        observed = f.observed,
-        colorvec = f.colorvec,
-        initialization_data = f.initialization_data
+        f.jac_prototype,
+        f.sparsity,
+        f.paramjac,
+        f.sys,
+        f.observed,
+        f.colorvec,
+        f.initialization_data
     )
 end
 
@@ -3358,13 +3358,13 @@ function NonlinearFunction{iip}(f::ODEFunction) where {iip}
         jac = _jac,
         jvp = _jvp,
         vjp = _vjp,
-        jac_prototype = f.jac_prototype,
-        sparsity = f.sparsity,
-        paramjac = f.paramjac,
-        sys = f.sys,
-        observed = f.observed,
-        colorvec = f.colorvec,
-        initialization_data = f.initialization_data
+        f.jac_prototype,
+        f.sparsity,
+        f.paramjac,
+        f.sys,
+        f.observed,
+        f.colorvec,
+        f.initialization_data
     )
 end
 
@@ -4766,7 +4766,7 @@ NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where {iip} = f
 function NonlinearFunction(f; lambda_extended = false, kwargs...)
     iip = isinplace(f, lambda_extended ? 4 : 3)
     return NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(
-        f; lambda_extended = lambda_extended, kwargs...
+        f; lambda_extended, kwargs...
     )
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
