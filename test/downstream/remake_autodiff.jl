@@ -1,4 +1,5 @@
 using OrdinaryDiffEq, ModelingToolkit, SciMLSensitivity
+using ChainRulesCore
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using Test
@@ -117,6 +118,11 @@ if VERSION < v"1.12"
         sys = mtkcompile(lotka_volterra_sys; split)
         prob = ODEProblem(sys, [], (0.0, 10.0))
         sol = solve(prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6)
+        @testset "Despecialized parameter cotangent remake" begin
+            _, pullback = ChainRulesCore.rrule(getindex, sol, x, 1)
+            cotangent = pullback(one(sol[x, 1]))[2]
+            @test cotangent.prob.p isa SciMLBase.DespecializedParameters
+        end
         setter = setsym_oop(prob, [unknowns(sys); parameters(sys)])
         u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
 
