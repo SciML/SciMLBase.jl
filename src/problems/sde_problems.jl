@@ -129,6 +129,15 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     function SDEProblem{iip}(f, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
         return SDEProblem(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
     end
+
+    @add_kwonly function SDEProblem{iip, specialize}(
+            f, g, u0, tspan, p = NullParameters();
+            kwargs...
+        ) where {iip, specialize}
+        return SDEProblem{iip}(
+            SDEFunction{iip, specialize}(f, g), u0, tspan, p; kwargs...
+        )
+    end
 end
 
 function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)

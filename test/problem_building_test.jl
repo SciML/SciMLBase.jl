@@ -340,6 +340,29 @@ end
     @test SciMLBase.specialization(uf) === SciMLBase.AutoRespecialize
 end
 
+@testset "SDEProblem specialization" begin
+    f!(du, u, p, t) = (du .= p .* u; nothing)
+    g!(du, u, p, t) = (du .= p .* u; nothing)
+    f(u, p, t) = p .* u
+    g(u, p, t) = p .* u
+
+    for (iip, drift, diffusion) in ((true, f!, g!), (false, f, g))
+        for specialization in (
+                SciMLBase.FullSpecialize,
+                SciMLBase.NoSpecialize,
+                SciMLBase.AutoSpecialize,
+                SciMLBase.FunctionWrapperSpecialize,
+                SciMLBase.AutoDespecialize,
+                SciMLBase.AutoRespecialize,
+            )
+            prob = SDEProblem{iip, specialization}(
+                drift, diffusion, [1.0], (0.0, 1.0), [0.1]
+            )
+            @test SciMLBase.specialization(prob.f) === specialization
+        end
+    end
+end
+
 @testset "Nonlinear preconditioning keywords are accepted solver options" begin
     for kw in (:precondition, :postcondition)
         @test kw in SciMLBase.allowedkeywords
