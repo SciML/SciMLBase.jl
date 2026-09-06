@@ -1,6 +1,7 @@
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelayDiffEq = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
@@ -43,6 +44,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 [compat]
 ADTypes = "1"
 BoundaryValueDiffEq = "5"
+ChainRulesCore = "1.18"
 DataFrames = "1.6"
 DelayDiffEq = "6"
 DiffEqCallbacks = "4"
