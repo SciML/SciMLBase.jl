@@ -785,7 +785,7 @@ function getindepsym(integrator::DEIntegrator)
     if isempty(syms)
         return nothing
     end
-    return syms
+    return syms[1]
 end
 
 function getparamsyms(integrator::DEIntegrator)
@@ -1141,6 +1141,112 @@ Base.eltype(::Type{T}) where {T <: DEIntegrator} = T
 Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
 
 
+"""
+    $(TYPEDSIGNATURES)
+
+Return whether `idx` refers to the independent variable of `integrator` rather than to one
+of its states. Plot specifications use `0` for the independent variable, and symbolic
+systems additionally allow naming it.
+"""
+function is_independent_variable_index(integrator::DEIntegrator, idx)
+    return (idx isa Integer && idx == 0) || isequal(idx, getindepsym_defaultt(integrator))
+end
+
+"""
+    symbolic_interpolation(integrator::DEIntegrator, t, idxs, deriv = Val{0})
+
+Evaluate `idxs` on the interpolant of `integrator`'s current step at time(s) `t`.
+
+`idxs` is resolved through `SymbolicIndexingInterface`, so observed equations and other
+symbolic expressions give the same values here that they do when indexing a solution with
+`sol(t; idxs)`. `t` may be a number or a collection of numbers; a collection returns a
+`DiffEqArray` over those times.
+
+Solver packages should route `integrator(t; idxs)` here when `idxs` is symbolic. Raw
+dense-output interpolants only accept integer component indices, so they cannot resolve
+quantities that are not stored in the state vector.
+"""
+function symbolic_interpolation(
+        integrator::DEIntegrator, t::Number, idxs, ::Type{deriv} = Val{0}
+    ) where {deriv}
+    error_if_observed_derivative(integrator, idxs, deriv)
+    state = ProblemState(; u = integrator(t, deriv), p = parameter_values(integrator), t = t)
+    return getsym(integrator, idxs)(state)
+end
+
+function symbolic_interpolation(
+        integrator::DEIntegrator, t, idxs, ::Type{deriv} = Val{0}
+    ) where {deriv}
+    error_if_observed_derivative(integrator, idxs, deriv)
+    getter = getsym(integrator, idxs)
+    p = parameter_values(integrator)
+    us = integrator(t, deriv)
+    u = map(eachindex(t)) do i
+        getter(ProblemState(; u = us[i], p = p, t = t[i]))
+    end
+    return DiffEqArray(u, collect(t), p, integrator)
+end
+
+function integplot_vecs_and_labels(dims, vars, plott, integrator, denseplot)
+    varsyms = variable_symbols(integrator)
+
+    batch_symbolic_vars = []
+    for x in vars
+        for j in 2:length(x)
+            is_independent_variable_index(integrator, x[j]) && continue
+            push!(batch_symbolic_vars, x[j])
+        end
+    end
+    batch_symbolic_vars = identity.(batch_symbolic_vars)
+
+    if isempty(batch_symbolic_vars)
+        timevals = denseplot ? plott : [integrator.t]
+        indexed_values = [[] for _ in timevals]
+    elseif denseplot
+        timevals = plott
+        indexed_values = symbolic_interpolation(integrator, plott, batch_symbolic_vars).u
+    else
+        timevals = [integrator.t]
+        indexed_values = [getsym(integrator, batch_symbolic_vars)(integrator)]
+    end
+
+    plot_vecs = []
+    labels = String[]
+    idxx = 0
+    for x in vars
+        tmp = []
+        strs = String[]
+        for j in 2:length(x)
+            if is_independent_variable_index(integrator, x[j])
+                push!(tmp, timevals)
+                push!(strs, "t")
+            else
+                idxx += 1
+                push!(tmp, [vals[idxx] for vals in indexed_values])
+                if !isempty(varsyms) && x[j] isa Integer
+                    push!(strs, String(getname(varsyms[x[j]])))
+                elseif hasname(x[j])
+                    push!(strs, String(getname(x[j])))
+                else
+                    push!(strs, "u[$(x[j])]")
+                end
+            end
+        end
+
+        tmp = map(x[1], tmp...)
+        tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
+        for i in eachindex(tmp)
+            if length(plot_vecs) < i
+                push!(plot_vecs, [])
+            end
+            push!(plot_vecs[i], tmp[i])
+        end
+        add_labels!(labels, x, dims, integrator, strs)
+    end
+
+    return [hcat(x...) for x in plot_vecs], labels
+end
+
 @recipe function f(
         integrator::DEIntegrator;
         denseplot = (
@@ -1160,104 +1266,36 @@ Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
         idxs = vars
     end
-
-    int_vars = interpret_vars(idxs, integrator.sol)
-
-    if denseplot
-        # Generate the points from the plot from dense function
-        plott = collect(range(integrator.tprev, integrator.t; length = plotdensity))
-        if plot_analytic
-            plot_analytic_timeseries = [
-                integrator.sol.prob.f.analytic(
-                    integrator.sol.prob.u0,
-                    integrator.sol.prob.p,
-                    t
-                ) for t in plott
-            ]
-        end
-    else
-        plott = nothing
-    end
-
-    dims = length(int_vars[1])
-    for var in int_vars
-        @assert length(var) == dims
-    end
-    # Should check that all have the same dims!
-
-    plot_vecs = []
-    for i in 2:dims
-        push!(plot_vecs, [])
-    end
-
-    labels = String[] # Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
-    strs = String[]
-    varsyms = variable_symbols(integrator)
-    @show plott
-
-    for x in int_vars
-        for j in 2:dims
-            if denseplot
-                if (x[j] isa Integer && x[j] == 0) ||
-                        isequal(x[j], getindepsym_defaultt(integrator))
-                    push!(plot_vecs[j - 1], plott)
-                else
-                    push!(plot_vecs[j - 1], Vector(integrator(plott; idxs = x[j])))
-                end
-            else # just get values
-                if x[j] == 0
-                    push!(plot_vecs[j - 1], integrator.t)
-                elseif x[j] == 1 && !(integrator.u isa AbstractArray)
-                    push!(plot_vecs[j - 1], integrator.u)
-                else
-                    push!(plot_vecs[j - 1], integrator.u[x[j]])
-                end
-            end
-
-            if !isempty(varsyms) && x[j] isa Integer
-                push!(strs, String(getname(varsyms[x[j]])))
-            elseif hasname(x[j])
-                push!(strs, String(getname(x[j])))
-            else
-                push!(strs, "u[$(x[j])]")
-            end
-        end
-        add_labels!(labels, x, dims, integrator.sol, strs)
-    end
-
     if plot_analytic
-        for x in int_vars
-            for j in 1:dims
-                if denseplot
-                    push!(
-                        plot_vecs[j],
-                        u_n(plot_timeseries, x[j], sol, plott, plot_timeseries)
-                    )
-                else # Just get values
-                    if x[j] == 0
-                        push!(plot_vecs[j], integrator.t)
-                    elseif x[j] == 1 && !(integrator.u isa AbstractArray)
-                        push!(
-                            plot_vecs[j],
-                            integrator.sol.prob.f(
-                                Val{:analytic}, integrator.t,
-                                integrator.sol[1]
-                            )
-                        )
-                    else
-                        push!(
-                            plot_vecs[j],
-                            integrator.sol.prob.f(
-                                Val{:analytic}, integrator.t,
-                                integrator.sol[1]
-                            )[x[j]]
-                        )
-                    end
-                end
-            end
-            add_labels!(labels, x, dims, integrator.sol, strs)
-        end
+        throw(
+            ArgumentError(
+                "`plot_analytic` is not supported when plotting an integrator. Plot `integrator.sol` instead."
+            )
+        )
     end
+
+    idxs = idxs === nothing ? plottable_indices(integrator.u) : idxs
+    int_vars = if idxs isa Union{Tuple, AbstractArray}
+        interpret_vars(idxs, integrator.sol)
+    else
+        interpret_vars([idxs], integrator.sol)
+    end
+
+    plott = if denseplot
+        collect(range(integrator.tprev, integrator.t; length = plotdensity))
+    else
+        nothing
+    end
+
+    dims = length(int_vars[1]) - 1
+    for var in int_vars
+        @assert length(var) - 1 == dims
+    end
+
+    plot_vecs,
+        labels = integplot_vecs_and_labels(
+        dims, int_vars, plott, integrator, denseplot
+    )
 
     xflip --> integrator.tdir < 0
 
@@ -1268,23 +1306,18 @@ Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
     end
 
     # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if idxs isa Tuple && (typeof(idxs[1]) == Symbol && typeof(idxs[2]) == Symbol)
+    if idxs isa Tuple && idxs[1] isa Symbol && idxs[2] isa Symbol
         xlabel --> idxs[1]
         ylabel --> idxs[2]
         if length(idxs) > 2
             zlabel --> idxs[3]
         end
     end
-    if getindex.(int_vars, 1) == zeros(length(int_vars)) ||
-            getindex.(int_vars, 2) == zeros(length(int_vars))
-        xlabel --> "t"
+    if all(x -> is_independent_variable_index(integrator, x[2]), int_vars)
+        xlabel --> "$(getindepsym_defaultt(integrator))"
     end
 
     linewidth --> 3
-    #xtickfont --> font(11)
-    #ytickfont --> font(11)
-    #legendfont --> font(11)
-    #guidefont  --> font(11)
     label --> reshape(labels, 1, length(labels))
     (plot_vecs...,)
 end
