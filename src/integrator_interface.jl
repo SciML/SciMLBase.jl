@@ -1153,6 +1153,22 @@ function is_independent_variable_index(integrator::DEIntegrator, idx)
 end
 
 """
+    has_symbolic_idxs(idxs)
+
+Return whether `idxs` names quantities symbolically rather than by position in the state
+vector.
+
+Solver packages use this to decide whether `integrator(t; idxs)` has to go through
+[`symbolic_interpolation`](@ref). A raw dense-output interpolant only accepts integer
+component indices, so it cannot resolve a symbolic index, which may name an observed
+equation that is not stored in the state vector at all.
+"""
+has_symbolic_idxs(idxs) = symbolic_type(idxs) !== NotSymbolic()
+function has_symbolic_idxs(idxs::Union{AbstractArray, Tuple})
+    return symbolic_type(idxs) !== NotSymbolic() || any(has_symbolic_idxs, idxs)
+end
+
+"""
     symbolic_interpolation(integrator::DEIntegrator, t, idxs, deriv = Val{0})
 
 Evaluate `idxs` on the interpolant of `integrator`'s current step at time(s) `t`.

@@ -94,6 +94,7 @@ SciMLBase.AbstractSDDEIntegrator
 SciMLBase.DECache
 SciMLBase.step!
 SciMLBase.symbolic_interpolation
+SciMLBase.has_symbolic_idxs
 Base.resize!(::SciMLBase.DEIntegrator, ::Int)
 Base.deleteat!(::SciMLBase.DEIntegrator, ::Any)
 SciMLBase.addat!
