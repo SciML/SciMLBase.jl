@@ -2325,7 +2325,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
 
 # Interpolation / symbolic / solution interface
 @public interp_summary, getindepsym, getindepsym_defaultt,
-    calculate_solution_errors!, initialize_dae!, symbolic_interpolation
+    calculate_solution_errors!, initialize_dae!, symbolic_interpolation,
+    has_symbolic_idxs
 @public get_saved_subsystem, SavedSubsystem, get_saved_state_idxs,
     SavedSubsystemWithFallback, get_save_idxs_and_saved_subsystem,
     create_parameter_timeseries_collection, get_saveable_values, save_discretes!,
