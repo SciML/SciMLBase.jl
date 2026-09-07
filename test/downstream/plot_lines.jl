@@ -23,6 +23,48 @@ end
     @test !isempty(converted)
 end
 
+@testset "Makie scalar ODESolution plots time, not indices" begin
+    using Makie
+    scalar_sol = solve(ODEProblem((u, p, t) -> -u, 1.0, (0.0, 1.0)), Tsit5())
+    fig, ax, plt = Makie.plot(scalar_sol)
+    @test plt isa Makie.PlotList
+    if plt isa Makie.PlotList
+        xs = [Float64(p[1]) for p in plt.plots[1].converted[][1]]
+        @test first(xs) ≈ 0.0 atol = 1.0e-6
+        @test last(xs) ≈ 1.0 atol = 1.0e-6
+    end
+    @test Makie.plot(scalar_sol; idxs = 1).plot isa Makie.PlotList
+end
+
+@testset "Makie Observable of integrator.sol tracks steps" begin
+    using Makie
+    osc = ODEProblem((u, p, t) -> [-u[2], u[1]], [1.0, 0.0], (0.0, 10.0))
+    plotted_xend(plt) = Float64(plt.plots[1].converted[][1][end][1])
+
+    integ = init(osc, Tsit5())
+    osol = Observable(integ.sol)
+    fig, ax, plt = Makie.plot(osol)
+    @test plt isa Makie.PlotList
+    @test plotted_xend(plt) ≈ 0.0 atol = 1.0e-6
+
+    step!(integ, 1.0, true)
+    osol[] = integ.sol
+    @test plotted_xend(plt) ≈ integ.t atol = 1.0e-5
+
+    step!(integ, 1.0, true)
+    osol[] = integ.sol
+    @test plotted_xend(plt) ≈ integ.t atol = 1.0e-5
+
+    integ2 = init(osc, Tsit5())
+    step!(integ2, 1.0, true)
+    osol2 = Observable(integ2.sol)
+    fig2, ax2, plt2 = Makie.plot(osol2)
+    @test plotted_xend(plt2) ≈ 1.0 atol = 1.0e-5
+    step!(integ2, 1.0, true)
+    osol2[] = integ2.sol
+    @test plotted_xend(plt2) ≈ integ2.t atol = 1.0e-5
+end
+
 @testset "tspan crops the plotted series" begin
     using Plots: Plots, plot
     sparse_sol = solve(prob, Tsit5(), dense = false)
