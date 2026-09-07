@@ -10,6 +10,26 @@ using Makie: Makie, Lines, Plot, PlotSpec
 
 import Makie.SpecApi as S
 
+# Scalar ODESolution <: AbstractVector{<:Real}; skip PointBased index expansion.
+Makie.expand_dimensions(::Makie.PointBased, ::SciMLBase.AbstractTimeseriesSolution) = nothing
+Makie.expand_dimensions(::Makie.PointBased, ::SciMLBase.DEIntegrator) = nothing
+
+# `step!` replaces the solution wrapper with an isequal copy; still reconvert.
+if isdefined(Makie, :ComputePipeline)
+    function Makie.ComputePipeline.is_same(
+            ::SciMLBase.AbstractTimeseriesSolution,
+            ::SciMLBase.AbstractTimeseriesSolution
+        )
+        return false
+    end
+    function Makie.ComputePipeline.is_same(
+            ::SciMLBase.DEIntegrator,
+            ::SciMLBase.DEIntegrator
+        )
+        return false
+    end
+end
+
 function _tspan_indices(t, tspan)
     lo, hi = minmax(tspan[1], tspan[end])
     if length(t) > 1 && t[end] < t[1]
