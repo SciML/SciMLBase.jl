@@ -65,6 +65,31 @@ end
     @test plotted_xend(plt2) ≈ integ2.t atol = 1.0e-5
 end
 
+# Combines both #1588 fixes: scalar AbstractVector dispatch + isequal sol wrappers.
+@testset "Makie Observable of scalar integrator.sol tracks steps" begin
+    using Makie
+    decay = ODEProblem((u, p, t) -> -u, 1.0, (0.0, 10.0))
+    plotted_xend(plt) = Float64(plt.plots[1].converted[][1][end][1])
+    plotted_yend(plt) = Float64(plt.plots[1].converted[][1][end][2])
+
+    integ = init(decay, Tsit5())
+    osol = Observable(integ.sol)
+    fig, ax, plt = Makie.plot(osol)
+    @test plt isa Makie.PlotList
+    @test plotted_xend(plt) ≈ 0.0 atol = 1.0e-6
+    @test plotted_yend(plt) ≈ 1.0 atol = 1.0e-6
+
+    step!(integ, 1.0, true)
+    osol[] = integ.sol
+    @test plotted_xend(plt) ≈ integ.t atol = 1.0e-5
+    @test plotted_yend(plt) ≈ integ.u atol = 1.0e-5
+
+    step!(integ, 1.0, true)
+    osol[] = integ.sol
+    @test plotted_xend(plt) ≈ integ.t atol = 1.0e-5
+    @test plotted_yend(plt) ≈ integ.u atol = 1.0e-5
+end
+
 @testset "tspan crops the plotted series" begin
     using Plots: Plots, plot
     sparse_sol = solve(prob, Tsit5(), dense = false)
