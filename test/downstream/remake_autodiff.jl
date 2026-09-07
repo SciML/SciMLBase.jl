@@ -118,10 +118,19 @@ if VERSION < v"1.12"
         sys = mtkcompile(lotka_volterra_sys; split)
         prob = ODEProblem(sys, [], (0.0, 10.0))
         sol = solve(prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6)
-        @testset "Despecialized parameter cotangent remake" begin
-            _, pullback = ChainRulesCore.rrule(getindex, sol, x, 1)
-            cotangent = pullback(one(sol[x, 1]))[2]
-            @test cotangent.prob.p isa SciMLBase.DespecializedParameters
+        # A `RuleConfig` is required: without one the call falls through to the
+        # generic `ChainRules` `AbstractArray` `getindex` rule instead of the
+        # `ODESolution` rule under test.
+        @testset "Despecialized parameter cotangent remake ($sym)" for sym in (x, o)
+            @test sol.prob.p isa SciMLBase.DespecializedParameters
+            _, pullback = ChainRulesCore.rrule(
+                Zygote.ZygoteRuleConfig(), getindex, sol, sym, 1
+            )
+            cotangent = pullback(one(sol[sym, 1]))[2]
+            # `remake` cannot consume a `Tangent` over the despecialized container.
+            @test !(cotangent.prob.p isa ChainRulesCore.Tangent)
+            @test cotangent.prob.p isa
+                typeof(SciMLBase.unwrap_parameters(sol.prob.p))
         end
         setter = setsym_oop(prob, [unknowns(sys); parameters(sys)])
         u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])
