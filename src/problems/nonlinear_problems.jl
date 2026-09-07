@@ -558,7 +558,7 @@ mutable struct SCCNonlinearProblem{
             uType = Nothing
         else
             u0 = mapreduce(
-                state_values, vcat, probs; init = init
+                state_values, vcat, probs; init
             )
             uType = typeof(u0)
         end
@@ -842,6 +842,6 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: HomotopyProblem}
         else
             iip = isinplace(f, 4)
         end
-        return HomotopyProblem{iip}(f, u0, p; λspan = λspan, kw...)
+        return HomotopyProblem{iip}(f, u0, p; λspan, kw...)
     end
 end

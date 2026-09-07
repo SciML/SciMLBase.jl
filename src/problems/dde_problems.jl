@@ -440,8 +440,8 @@ function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
         return DynamicalDDEProblem(
             DynamicalDDEFunction{iip}(
                 f.f1, f2;
-                mass_matrix = f.mass_matrix,
-                analytic = f.analytic
+                f.mass_matrix,
+                f.analytic
             ),
             args...; problem_type = SecondOrderDDEProblem{iip}(),
             kwargs...
@@ -450,8 +450,8 @@ function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
         return DynamicalDDEProblem(
             DynamicalDDEFunction{iip}(
                 f.f1, f.f2;
-                mass_matrix = f.mass_matrix,
-                analytic = f.analytic
+                f.mass_matrix,
+                f.analytic
             ),
             args...; problem_type = SecondOrderDDEProblem{iip}(),
             kwargs...

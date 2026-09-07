@@ -974,7 +974,7 @@ end
 function OverrideInit(; abstol = nothing, reltol = nothing, nlsolve = nothing)
     return OverrideInit(abstol, reltol, nlsolve)
 end
-OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
+OverrideInit(abstol) = OverrideInit(; abstol, nlsolve = nothing)
 
 # PDE Discretizations
 
@@ -1286,7 +1286,7 @@ use `length(sol.t)` or `eachindex(sol.t)` when iterating over saved times.
 Time-series solutions should provide `prob`, `alg`, `interp`, `dense`,
 `retcode`, and `stats` fields when those concepts apply. Dense or piecewise
 interpolation is exposed through callable syntax such as `sol(t)` and
-`sol(t; idxs = idxs)` when the stored interpolation supports it. Symbolic state,
+`sol(t; idxs)` when the stored interpolation supports it. Symbolic state,
 observed-variable, and parameter access is delegated through the
 `SymbolicIndexingInterface` metadata on the solution's problem, with
 time-varying parameter support supplied through `sol.discretes` and

@@ -8,7 +8,7 @@ prob = ODEProblem((u, p, t) -> A * u, ones(2, 2), (0.0, 1.0))
 function prob_func(prob, ctx)
     return remake(prob, u0 = ctx.sim_id * prob.u0)
 end
-ensemble_prob = EnsembleProblem(prob, prob_func = prob_func)
+ensemble_prob = EnsembleProblem(prob; prob_func)
 sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10, saveat = 0.01)
 @test sim isa EnsembleSolution
 @test size(sim[1, :, :, :]) == (2, 101, 10)

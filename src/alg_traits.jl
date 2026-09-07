@@ -516,11 +516,10 @@ has_step(a) = false
     supports_solve_rng(prob, alg) -> Bool
 
 Return whether the selected problem/algorithm path accepts
-`solve(prob, alg; rng = rng)` and uses that RNG to initialize its stochastic
-state.
+`solve(prob, alg; rng)` and uses that RNG to initialize its stochastic state.
 
 Pass `alg = nothing` to query support for the default solver-selection path
-(i.e., `solve(prob; rng = rng)`). The trait is defined on the pair because RNG
+(i.e., `solve(prob; rng)`). The trait is defined on the pair because RNG
 support can depend on both the problem family and the concrete solver.
 
 Ensemble solvers use a `true` result to pass an independently seeded RNG to each
