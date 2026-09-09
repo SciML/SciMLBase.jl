@@ -6003,6 +6003,22 @@ for S in [
     end
 end
 
+# Default ConstructionBase.getproperties uses `getproperty.((obj,), names)`, which
+# compiles broadcast/`convert` MethodInstances on fully open types like
+# `ODEFunction` / `DynamicalODEFunction` (NTuple{19,Symbol} field-name tuples).
+# Those instances sit in SciMLBase's precompile cache, get invalidated when
+# Symbolics' BroadcastStyle methods are present (MTK load order), and then
+# `@recompile_invalidations` tries to rebuild them — hitting Julia's
+# "irinterp is unable to handle heavy recursion correctly" internal error
+# (https://discourse.julialang.org/t/139291). A generated getfield-only path
+# keeps remake / Accessors off that broadcast edge set.
+@generated function ConstructionBase.getproperties(func::T) where {T <:
+                                                                      AbstractSciMLFunction}
+    names = fieldnames(T)
+    vals = Expr(:tuple, (:(getfield(func, $(QuoteNode(n)))) for n in names)...)
+    return :(NamedTuple{$names}($vals))
+end
+
 const EMPTY_SYMBOLCACHE = SymbolCache()
 
 function SymbolicIndexingInterface.symbolic_container(fn::AbstractSciMLFunction)
