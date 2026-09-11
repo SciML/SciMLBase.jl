@@ -12,7 +12,7 @@ on `AbstractSDEProblem` and the problem's function type instead of depending on
 """
 struct StandardSDEProblem end
 
-@doc doc"""
+"""
 
 Defines an stochastic differential equation (SDE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/>
@@ -23,7 +23,7 @@ To define an SDE Problem, you simply need to give the forcing function `f`,
 the noise function `g`, and the initial condition `u₀` which define an SDE:
 
 ```math
-du = f(u,p,t) \, dt + ∑ᵢ gᵢ(u,p,t) \, dWⁱ
+du = f(u,p,t) \\, dt + ∑ᵢ gᵢ(u,p,t) \\, dWⁱ
 ```
 
 `f` and `g` should be specified as `f(u,p,t)` and  `g(u,p,t)` respectively, and `u₀`
@@ -37,7 +37,7 @@ of `g`s can also be defined to determine an SDE of higher Ito dimension.
 Wraps the data which defines an SDE problem
 
 ```math
-u = f(u,p,t) \, dt + ∑ᵢ gᵢ(u,p,t) \, dWⁱ
+u = f(u,p,t) \\, dt + ∑ᵢ gᵢ(u,p,t) \\, dWⁱ
 ```
 
 with initial condition `u0`.
@@ -49,7 +49,8 @@ with initial condition `u0`.
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
   determined automatically, but not inferred. `specialize` optionally controls
-  the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+  the specialization level. See
+  [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
   for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
@@ -288,8 +289,11 @@ function DynamicalSDEProblem{iip}(
     return SDEProblem(_f, ArrayPartition(v0, u0), tspan, p; kwargs...)
 end
 
-@doc doc"""
-    SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
+"""
+    SDEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+    )
 
 Control which `SDEProblem` inputs and solver option arrays may be aliased.
 

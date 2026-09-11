@@ -892,17 +892,6 @@ documented `reinit!` method. Supported optional keywords can still vary by
 problem family. The default is `false`.
 """
 has_reinit(i::DEIntegrator) = false
-@doc """
-    has_reinit(i::DEIntegrator)
-
-Return whether `i` supports reinitialization through [`reinit!`](@ref).
-
-Generic code should query this trait before attempting to reuse an initialized
-solver object. A `true` result guarantees support for restarting from a new
-initial state and integration interval through the concrete integrator's
-documented `reinit!` method. Supported optional keywords can still vary by
-problem family. The default is `false`.
-""" has_reinit
 
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
@@ -1363,18 +1352,6 @@ integrator fields. The default is `false`, which tells generic code not to assum
 that a `stats` field or stats update path exists.
 """
 has_stats(i::DEIntegrator) = false
-@doc """
-    has_stats(i::DEIntegrator)
-
-Return whether `i` exposes mutable solve statistics through its integrator
-interface.
-
-Solver integrators that maintain counters such as function evaluations, rejected
-steps, nonlinear iterations, or linear solves should overload this trait to
-return `true` and provide the corresponding statistics through their documented
-integrator fields. The default is `false`, which tells generic code not to assume
-that a `stats` field or stats update path exists.
-""" has_stats
 
 """
     isadaptive(i::DEIntegrator)

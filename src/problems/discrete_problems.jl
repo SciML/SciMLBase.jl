@@ -1,7 +1,7 @@
 const DISCRETE_INPLACE_DEFAULT = DiscreteFunction{true}((du, u, p, t) -> du .= u)
 const DISCRETE_OUTOFPLACE_DEFAULT = DiscreteFunction{false}((u, p, t) -> u)
 
-@doc doc"""
+"""
 
 Defines a discrete dynamical system problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/>
@@ -12,7 +12,7 @@ To define a Discrete Problem, you simply need to give the function ``f`` and the
 condition ``u_0`` which define a function map:
 
 ```math
-u_{n+1} = f(u_{n},p,t_{n+1})
+u_{n+1} = f(u_n, p, t_{n+1})
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and `u_0` should
@@ -27,7 +27,7 @@ Note that if the discrete solver is set to have `scale_by_time=true`, then the p
 is interpreted as the map:
 
 ```math
-u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
+u_{n+1} = u_n + dt \\, f(u_n, p, t_{n+1})
 ```
 
 ## Problem Type
@@ -183,8 +183,8 @@ function DiscreteProblem(
     return DiscreteProblem(f, u0, tspan, p; kwargs...)
 end
 
-@doc doc"""
-    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+"""
+    DiscreteAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
 
 Control which `DiscreteProblem` inputs a solver may alias.
 

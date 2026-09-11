@@ -13,7 +13,7 @@ prefer the [`AbstractDAEProblem`](@ref) interface and problem traits.
 """
 struct StandardDAEProblem end
 
-@doc doc"""
+"""
 
 Defines an implicit ordinary differential equation (ODE) or
 differential-algebraic equation (DAE) problem.
@@ -79,7 +79,7 @@ To use a sample problem, such as `prob_dae_resrob`, you can do something like:
 #] add DAEProblemLibrary
 using DAEProblemLibrary
 prob = DAEProblemLibrary.prob_dae_resrob
-sol = solve(prob,IDA())
+sol = solve(prob, IDA())
 ```
 """
 struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D, PT} <:
@@ -166,8 +166,11 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}
     end
 end
 
-@doc doc"""
-    DAEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+"""
+    DAEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
 
 Control which `DAEProblem` inputs and solver option arrays may be aliased.
 

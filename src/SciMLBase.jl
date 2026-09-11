@@ -359,9 +359,9 @@ const AbstractSteadyStateProblem{
 $(TYPEDEF)
 
 Base interface for problems that directly solve or sample an
-[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess). Concrete noise problems should provide a `noise`
-field, a `tspan`, and solver keyword arguments. Their in-place behavior delegates
-to the stored noise process through [`isinplace`](@ref).
+[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess).
+Concrete noise problems should provide a `noise` field, a `tspan`, and solver keyword arguments.
+Their in-place behavior delegates to the stored noise process through [`isinplace`](@ref).
 """
 abstract type AbstractNoiseProblem <: AbstractDEProblem end
 
@@ -575,8 +575,10 @@ problem family stay as `solve` or `init` keyword arguments. Solver packages
 normally implement dispatches such as:
 
 ```julia
-CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
-    kwargs...)
+CommonSolve.solve(
+    prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
+    kwargs...
+)
 ```
 
 Algorithms should implement the relevant trait methods in `alg_traits.jl` when

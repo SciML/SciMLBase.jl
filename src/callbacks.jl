@@ -466,7 +466,7 @@ Multiple callbacks can be chained together to form a `CallbackSet`. A
 `DiscreteCallback`, `VectorContinuousCallback`, `nothing`, or other
 `CallbackSet` instances:
 
-    CallbackSet(cb1,cb2,cb3)
+    CallbackSet(cb1, cb2, cb3)
 
 You can pass as many callbacks as needed. Nested callback sets are flattened into
 two ordered collections, `continuous_callbacks` and `discrete_callbacks`. Public
@@ -475,8 +475,8 @@ erased to reuse compilation.
 
 When a solver encounters multiple callbacks, the following rules apply:
 
-  - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s. (This is because
-    they often implement event-finding that will backtrack the timestep to smaller
+  - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s.
+    (This is because they often implement event-finding that will backtrack the timestep to smaller
     than `dt`).
   - For `ContinuousCallback`s and `VectorContinuousCallback`s, the event times are found by rootfinding and only
     the first `ContinuousCallback` or `VectorContinuousCallback` affect is applied.

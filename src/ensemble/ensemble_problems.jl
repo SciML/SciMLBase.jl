@@ -14,11 +14,13 @@ per-trajectory RNG state when `rng` or `seed` is supplied to `solve`.
 ## Constructor
 
 ```julia
-EnsembleProblem(prob::AbstractSciMLProblem;
+EnsembleProblem(
+    prob::AbstractSciMLProblem;
     output_func = (sol, ctx) -> (sol, false),
     prob_func = (prob, ctx) -> prob,
     reduction = (u, data, I) -> (append!(u, data), false),
-    u_init = [], safetycopy = prob_func !== DEFAULT_PROB_FUNC)
+    u_init = [], safetycopy = prob_func !== DEFAULT_PROB_FUNC
+)
 ```
 
 ## Positional Arguments
