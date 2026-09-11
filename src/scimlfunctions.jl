@@ -6012,8 +6012,10 @@ end
 # "irinterp is unable to handle heavy recursion correctly" internal error
 # (https://discourse.julialang.org/t/139291). A generated getfield-only path
 # keeps remake / Accessors off that broadcast edge set.
-@generated function ConstructionBase.getproperties(func::T) where {T <:
-                                                                      AbstractSciMLFunction}
+@generated function ConstructionBase.getproperties(func::T) where {
+        T <:
+        AbstractSciMLFunction,
+    }
     names = fieldnames(T)
     vals = Expr(:tuple, (:(getfield(func, $(QuoteNode(n)))) for n in names)...)
     return :(NamedTuple{$names}($vals))
