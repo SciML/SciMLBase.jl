@@ -1,4 +1,8 @@
 using Pkg
+
+if get(ENV, "GROUP", "All") == "Reactant"
+    Pkg.add(PackageSpec(name = "Reactant", version = "0.2"))
+end
 using SafeTestsets
 using Test
 using SciMLTesting
@@ -110,6 +114,11 @@ run_tests(;
         end
     end,
     groups = Dict(
+        "Reactant" => function ()
+            return @safetestset "Reactant specialization" begin
+                include("reactant_specialization.jl")
+            end
+        end,
         "Downstream" => function ()
             return if !is_APPVEYOR
                 activate_downstream_env()
