@@ -37,7 +37,7 @@ using DocStringExtensions: DocStringExtensions, FIELDS, SIGNATURES, TYPEDEF,
 using LinearAlgebra: LinearAlgebra, I, det, norm
 using Statistics: Statistics, mean, median
 using Distributed: Distributed, CachingPool, myid, nworkers, pmap, workers
-using Markdown: Markdown, @doc_str
+using Markdown: Markdown
 using Printf: Printf, @printf
 import Preferences
 using PreallocationTools: get_tmp, DiffCache, FixedSizeDiffCache
