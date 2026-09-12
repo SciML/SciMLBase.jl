@@ -1,6 +1,6 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "3.51.0"
+version = "3.53.3"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
 
 [deps]
@@ -36,6 +36,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 
 [weakdeps]
+ReactantCore = "a3311ec8-5e00-46d5-b541-4f83e724a433"
 ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
@@ -60,6 +61,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 
 [extensions]
+SciMLBaseReactantCoreExt = "ReactantCore"
 SciMLBaseChainRulesCoreExt = "ChainRulesCore"
 SciMLBaseDifferentiationInterfaceExt = "DifferentiationInterface"
 SciMLBaseDistributionsExt = "Distributions"
@@ -80,6 +82,8 @@ SciMLBaseTrackerExt = "Tracker"
 SciMLBaseZygoteExt = ["Zygote", "ChainRulesCore", "ZygoteRules", "FillArrays"]
 
 [compat]
+Reactant = "0.2"
+ReactantCore = "0.1.21"
 ADTypes = "1.9.0"
 Accessors = "0.1.39"
 AllocCheck = "0.2"
@@ -145,6 +149,7 @@ ZygoteRules = "0.2.7"
 julia = "1.10"
 
 [extras]
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 AllocCheck = "9b6a8646-10ed-4001-bbdc-1d2f46dfbb1a"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"

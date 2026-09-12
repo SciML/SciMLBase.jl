@@ -159,6 +159,26 @@ end
     end
 end
 
+@testset "getproperties avoids broadcast on SciML functions" begin
+    function lorenz!(du, u, p, t)
+        du[1] = p[1] * (u[2] - u[1])
+        du[2] = u[1] * (p[2] - u[3]) - u[2]
+        du[3] = u[1] * u[2] - p[3] * u[3]
+    end
+    f = ODEFunction(lorenz!)
+    props = SciMLBase.getproperties(f)
+    @test props isa NamedTuple
+    @test keys(props) == fieldnames(typeof(f))
+    @test props.f === f.f
+    @test remake(ODEProblem(f, [1.0, 0.0, 0.0], (0.0, 1.0)); u0 = [2.0, 0.0, 0.0]).u0 ==
+        [2.0, 0.0, 0.0]
+
+    df = DynamicalODEFunction(lorenz!, lorenz!)
+    dprops = SciMLBase.getproperties(df)
+    @test keys(dprops) == fieldnames(typeof(df))
+    @test dprops.f1 === df.f1
+end
+
 const ALIAS_SPECIFIER_TYPES = (
     SciMLBase.LinearAliasSpecifier,
     SciMLBase.NonlinearAliasSpecifier,
@@ -181,7 +201,7 @@ function alias_specifier_with_policy(T, alias)
     return if T === SciMLBase.IntegralAliasSpecifier
         T(nothing, nothing, alias)
     else
-        T(; alias = alias)
+        T(; alias)
     end
 end
 

@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines a random ordinary differential equation (RODE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/rode_types/>
@@ -9,7 +9,7 @@ To define a RODE Problem, you simply need to give the function ``f`` and the ini
 condition ``u_0`` which define an ODE:
 
 ```math
-\frac{du}{dt} = f(u,p,t,W(t))
+\\frac{du}{dt} = f(u,p,t,W(t))
 ```
 
 where `W(t)` is a random process. `f` should be specified as `f(u,p,t,W)`
@@ -20,8 +20,8 @@ to numbers or vectors for `u₀`; one is allowed to provide `u₀` as arbitrary 
 
 ### Constructors
 
-- `RODEProblem(f::RODEFunction,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing)`
-- `RODEProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();noise=WHITE_NOISE,rand_prototype=nothing,callback=nothing,mass_matrix=I)` :
+- `RODEProblem(f::RODEFunction, u0, tspan, p = NullParameters(); noise = WHITE_NOISE, rand_prototype = nothing, callback = nothing)`
+- `RODEProblem{isinplace, specialize}(f, u0, tspan, p = NullParameters(); noise = WHITE_NOISE, rand_prototype = nothing, callback = nothing, mass_matrix = I)` :
   Defines the RODE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
   determined automatically, but not inferred. `specialize` optionally controls
@@ -97,8 +97,12 @@ function RODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
     return RODEProblem(RODEFunction(f), u0, tspan, p; kwargs...)
 end
 
-@doc doc"""
-    RODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing, alias_jumps = nothing, alias = nothing)
+"""
+    RODEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias_noise = nothing,
+        alias_jumps = nothing, alias = nothing
+    )
 
 Control which `RODEProblem` inputs, noise data, and solver option arrays may be
 aliased.

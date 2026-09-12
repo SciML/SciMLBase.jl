@@ -29,7 +29,7 @@ function ChainRulesCore.rrule(
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         du,
-            dprob = if i === nothing
+            dp = if i === nothing
             getter = getobserved(VA)
             grz = rrule_via_ad(config, getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
             du = [k == j ? grz[3] : zero(VA.u[1]) for k in 1:length(VA.u)]
@@ -37,20 +37,20 @@ function ChainRulesCore.rrule(
             if dp == NoTangent()
                 dp = zero_tangent(parameter_values(VA.prob))
             end
-            if dp isa ChainRulesCore.Tangent{<:SciMLBase.DespecializedParameters}
-                dp = dp.params
-            end
-            dprob = remake(VA.prob, p = dp)
-            du, dprob
+            du, dp
         else
             du = [
                 m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
                     zero(VA.u[1]) for m in 1:length(VA.u)
             ]
-            dp = zero_tangent(VA.prob.p)
-            dprob = remake(VA.prob, p = dp)
-            du, dprob
+            du, zero_tangent(VA.prob.p)
         end
+        # `remake` cannot consume a `Tangent` over the despecialized container, so
+        # reduce the cotangent to the wrapped parameter object first.
+        if dp isa ChainRulesCore.Tangent{<:SciMLBase.DespecializedParameters}
+            dp = dp.params
+        end
+        dprob = remake(VA.prob, p = dp)
         T = eltype(first(du))
         N = ndims(first(du)) + 1
         Δ′ = ODESolution{T, N}(

@@ -27,7 +27,7 @@ function lotka_volterra(; name = name)
         D(y) ~ -p3 * y + p4 * x * y,
         o ~ x * y,
     ]
-    return System(eqs, t, unknowns, params; name = name)
+    return System(eqs, t, unknowns, params; name)
 end
 
 @named lotka_volterra_sys = lotka_volterra()
@@ -36,7 +36,7 @@ function make_sum_of_solution_u0(prob)
     return function (u0)
         # If `p` is passed to `remake`, MTK won't copy `u0` to initials
         # and it will be reset to the previous value
-        _prob = remake(prob, u0 = u0)
+        _prob = remake(prob; u0)
         return sum(
             solve(
                 _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
@@ -48,7 +48,7 @@ end
 
 function make_sum_of_solution_p(prob, u0_fixed)
     return function (p)
-        _prob = remake(prob, u0 = u0_fixed, p = p)
+        _prob = remake(prob; u0 = u0_fixed, p)
         return sum(
             solve(
                 _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
@@ -60,7 +60,7 @@ end
 
 function make_symbolic_indexing_u0(prob)
     return function (u0)
-        _prob = remake(prob, u0 = u0)
+        _prob = remake(prob; u0)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -71,7 +71,7 @@ end
 
 function make_symbolic_indexing_p(prob, u0_fixed)
     return function (p)
-        _prob = remake(prob, u0 = u0_fixed, p = p)
+        _prob = remake(prob; u0 = u0_fixed, p)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -82,7 +82,7 @@ end
 
 function make_symbolic_indexing_observed_u0(prob)
     return function (u0)
-        _prob = remake(prob, u0 = u0)
+        _prob = remake(prob; u0)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -93,7 +93,7 @@ end
 
 function make_symbolic_indexing_observed_p(prob, u0_fixed)
     return function (p)
-        _prob = remake(prob, u0 = u0_fixed, p = p)
+        _prob = remake(prob; u0 = u0_fixed, p)
         soln = solve(
             _prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6, saveat = 0.1,
             sensealg = BacksolveAdjoint(autojacvec = ZygoteVJP())
@@ -118,10 +118,19 @@ if VERSION < v"1.12"
         sys = mtkcompile(lotka_volterra_sys; split)
         prob = ODEProblem(sys, [], (0.0, 10.0))
         sol = solve(prob, Tsit5(), reltol = 1.0e-6, abstol = 1.0e-6)
-        @testset "Despecialized parameter cotangent remake" begin
-            _, pullback = ChainRulesCore.rrule(getindex, sol, x, 1)
-            cotangent = pullback(one(sol[x, 1]))[2]
-            @test cotangent.prob.p isa SciMLBase.DespecializedParameters
+        # A `RuleConfig` is required: without one the call falls through to the
+        # generic `ChainRules` `AbstractArray` `getindex` rule instead of the
+        # `ODESolution` rule under test.
+        @testset "Despecialized parameter cotangent remake ($sym)" for sym in (x, o)
+            @test sol.prob.p isa SciMLBase.DespecializedParameters
+            _, pullback = ChainRulesCore.rrule(
+                Zygote.ZygoteRuleConfig(), getindex, sol, sym, 1
+            )
+            cotangent = pullback(one(sol[sym, 1]))[2]
+            # `remake` cannot consume a `Tangent` over the despecialized container.
+            @test !(cotangent.prob.p isa ChainRulesCore.Tangent)
+            @test cotangent.prob.p isa
+                typeof(SciMLBase.unwrap_parameters(sol.prob.p))
         end
         setter = setsym_oop(prob, [unknowns(sys); parameters(sys)])
         u0, p = setter(prob, [1.0, 1.0, 1.5, 1.0, 1.0, 1.0])

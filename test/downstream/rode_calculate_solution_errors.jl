@@ -27,7 +27,7 @@ p = (0.1, 0.05)
 
     # The bug used to fire inside `solve!`'s `calculate_solution_errors!`
     # postamble when an analytic solution is present.
-    sol = solve(prob, SRA(), dt = dt, adaptive = false)
+    sol = solve(prob, SRA(); dt, adaptive = false)
     @test SciMLBase.successful_retcode(sol)
     @test haskey(sol.errors, :final)
     @test haskey(sol.errors, :l∞)

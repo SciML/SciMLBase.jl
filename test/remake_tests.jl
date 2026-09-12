@@ -465,7 +465,7 @@ end
     f = ODEFunction{false, SciMLBase.FullSpecialize}((u, p, t) -> u)
     prob = ODEProblem(f, nothing, nothing)
     @test SciMLBase.specialization(prob.f) == SciMLBase.FullSpecialize
-    prob2 = remake(ODEProblem((u, p, t) -> 2 .* u, nothing, nothing); f = f)
+    prob2 = remake(ODEProblem((u, p, t) -> 2 .* u, nothing, nothing); f)
     @test SciMLBase.specialization(prob2.f) == SciMLBase.FullSpecialize
 end
 

@@ -10,6 +10,24 @@ using Makie: Makie, Lines, Plot, PlotSpec
 
 import Makie.SpecApi as S
 
+# Scalar ODESolution <: AbstractVector{<:Real}; skip PointBased index expansion.
+# DEIntegrator is not an AbstractVector, so it does not need this hook.
+Makie.expand_dimensions(::Makie.PointBased, ::SciMLBase.AbstractTimeseriesSolution) = nothing
+
+# `step!` replaces the solution wrapper with an isequal copy; still reconvert.
+# Same-object DEIntegrator mutation already makes ComputePipeline's default
+# `is_same` return false, so only solutions need an override.
+# Axis autolimits still do not follow PlotList data growth; call
+# `autolimits!(ax)` / `reset_limits!(ax)` after expanding the time window.
+if isdefined(Makie, :ComputePipeline)
+    function Makie.ComputePipeline.is_same(
+            ::SciMLBase.AbstractTimeseriesSolution,
+            ::SciMLBase.AbstractTimeseriesSolution
+        )
+        return false
+    end
+end
+
 function _tspan_indices(t, tspan)
     lo, hi = minmax(tspan[1], tspan[end])
     if length(t) > 1 && t[end] < t[1]

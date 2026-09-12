@@ -1,6 +1,6 @@
 @enum ObjSense MinSense MaxSense
 
-@doc doc"""
+"""
 
 Defines an optimization problem.
 Documentation Page: <https://docs.sciml.ai/Optimization/stable/API/optimization_problem/>
@@ -11,7 +11,7 @@ To define an optimization problem, you need the objective function ``f``
 which is minimized over the domain of ``u``, the collection of optimization variables:
 
 ```math
-\min_u f(u,p)
+\\min_u f(u,p)
 ```
 
 ``u₀`` is an initial guess for the minimizer. `f` should be specified as `f(u,p)`
@@ -25,13 +25,15 @@ higher-dimension tensors as well.
 ### Constructors
 
 ```julia
-OptimizationProblem{isinplace}(f, u0, p = SciMLBase.NullParameters(),;
-                        lb = nothing,
-                        ub = nothing,
-                        lcons = nothing,
-                        ucons = nothing,
-                        sense = nothing,
-                        kwargs...)
+OptimizationProblem{isinplace}(
+    f, u0, p = SciMLBase.NullParameters();
+    lb = nothing,
+    ub = nothing,
+    lcons = nothing,
+    ucons = nothing,
+    sense = nothing,
+    kwargs...
+)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not.
@@ -52,7 +54,8 @@ optimization and if they are set to be equal then it represents an equality cons
 They should be an `AbstractArray`, where `(lcons[i],ucons[i])`
 are the lower and upper bounds for `cons[i]`.
 
-The `f` in the `OptimizationProblem` should typically be an instance of [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
+The `f` in the `OptimizationProblem` should typically be an instance of
+[`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
 to specify the objective function and its derivatives either by passing
 predefined functions for them or automatically generated using the [ADType](https://github.com/SciML/ADTypes.jl).
 
@@ -66,34 +69,55 @@ Any extra keyword arguments are captured to be sent to the optimizers.
 
 * `f`: the function in the problem.
 * `u0`: the initial guess for the optimization variables.
-* `p`: Either the constant parameters or fixed data (full batch) used in the objective or a [MLUtils](https://github.com/JuliaML/MLUtils.jl) [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader) for minibatching with stochastic optimization solvers. Defaults to `NullParameters`.
+* `p`: Either the constant parameters or fixed data (full batch) used in the
+  objective or a [MLUtils](https://github.com/JuliaML/MLUtils.jl)
+  [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader)
+  for minibatching with stochastic optimization solvers. Defaults to `NullParameters`.
 * `lb`: the lower bounds for the optimization variables `u`.
 * `ub`: the upper bounds for the optimization variables `u`.
 * `int`: integrality indicator for `u`. If `int[i] == true`, then `u[i]` is an integer variable.
     Defaults to `nothing`, implying no integrality constraints.
-* `lcons`: the vector of lower bounds for the constraints passed to [OptimizationFunction](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
+* `lcons`: the vector of lower bounds for the constraints passed to
+  [OptimizationFunction](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
     Defaults to `nothing`, implying no lower bounds for the constraints (i.e. the constraint bound is `-Inf`)
-* `ucons`: the vector of upper bounds for the constraints passed to [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
+* `ucons`: the vector of upper bounds for the constraints passed to
+  [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
     Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
 * `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
 * `kwargs`: the keyword arguments passed on to the solvers.
 
 ## Inequality and Equality Constraints
 
-Both inequality and equality constraints are defined by the `f.cons` function in the [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
+Both inequality and equality constraints are defined by the `f.cons` function in the
+[`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction)
 description of the problem structure. This `f.cons` is given as a function `f.cons(u,p)` which computes
 the value of the constraints at `u`. For example, take `f.cons(u,p) = u[1] - u[2]`.
 With these definitions, `lcons` and `ucons` define the bounds on the constraint that the solvers try to satisfy.
-If `lcons` and `ucons` are `nothing`, then there are no constraints bounds, meaning that the constraint is satisfied when `-Inf < f.cons < Inf` (which of course is always!). If `lcons[i] = ucons[i] = 0`, then the constraint is satisfied when `f.cons(u,p)[i] = 0`, and so this implies the equality constraint `u[1] = u[2]`. If `lcons[i] = ucons[i] = a`, then ``u[1] - u[2] = a`` is the equality constraint.
+If `lcons` and `ucons` are `nothing`, then there are no constraints bounds, meaning that the
+constraint is satisfied when `-Inf < f.cons < Inf` (which of course is always!). If
+`lcons[i] = ucons[i] = 0`, then the constraint is satisfied when `f.cons(u,p)[i] = 0`, and
+so this implies the equality constraint `u[1] = u[2]`. If `lcons[i] = ucons[i] = a`, then
+``u[1] - u[2] = a`` is the equality constraint.
 
-Inequality constraints are then given by making `lcons[i] != ucons[i]`. For example, `lcons[i] = -Inf` and `ucons[i] = 0` would imply the inequality constraint `u[1] <= u[2]` since any `f.cons[i] <= 0` satisfies the constraint. Similarly, `lcons[i] = -1` and `ucons[i] = 1` would imply that `-1 <= f.cons[i] <= 1` is required or `-1 <= u[1] - u[2] <= 1`.
+Inequality constraints are then given by making `lcons[i] != ucons[i]`. For example,
+`lcons[i] = -Inf` and `ucons[i] = 0` would imply the inequality constraint `u[1] <= u[2]`
+since any `f.cons[i] <= 0` satisfies the constraint. Similarly, `lcons[i] = -1` and
+`ucons[i] = 1` would imply that `-1 <= f.cons[i] <= 1` is required or `-1 <= u[1] - u[2] <=
+1`.
 
-Note that these vectors must be sized to match the number of constraints, with one set of conditions for each constraint.
+Note that these vectors must be sized to match the number of constraints,
+with one set of conditions for each constraint.
 
 ## Data handling
 
-As described above the second argument of the objective definition can take a full batch or a [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader) object for mini-batching which is useful for stochastic optimization solvers. Thus the data either as an Array or a `DataLoader` object should be passed as the third argument of the `OptimizationProblem` constructor.
-For an example of how to use this data handling, see the `Sophia` example in the [Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/sophia/) or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
+As described above the second argument of the objective definition can take a full batch or
+a [`DataLoader`](https://juliaml.github.io/MLUtils.jl/stable/api/#MLUtils.DataLoader) object
+for mini-batching which is useful for stochastic optimization solvers. Thus the data either
+as an Array or a `DataLoader` object should be passed as the third argument of the
+`OptimizationProblem` constructor.
+For an example of how to use this data handling, see the `Sophia` example in the
+[Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/sophia/)
+or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
 """
 struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     AbstractOptimizationProblem{iip}
@@ -162,10 +186,12 @@ end
 isinplace(f::OptimizationFunction{iip}) where {iip} = iip
 isinplace(f::OptimizationProblem{iip}) where {iip} = iip
 
-@doc doc"""
-    ConvexOptimizationProblem{iip}(f, u0, p = NullParameters();
+"""
+    ConvexOptimizationProblem{iip}(
+        f, u0, p = NullParameters();
         constraints = nothing, lb = nothing, ub = nothing, int = nothing,
-        sense = MinSense, kwargs...)
+        sense = MinSense, kwargs...
+    )
 
 **Experimental.** A disciplined-convex-programming problem: minimize (or
 maximize) a *convex* objective subject to *convex* cone constraints. Unlike a
@@ -239,8 +265,10 @@ end
 
 isinplace(f::ConvexOptimizationProblem{iip}) where {iip} = iip
 
-@doc doc"""
-    OptimizationAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+"""
+    OptimizationAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
+    )
 
 Control which `OptimizationProblem` inputs a solver may alias.
 

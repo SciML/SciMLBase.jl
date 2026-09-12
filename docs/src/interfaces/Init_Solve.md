@@ -77,7 +77,9 @@ reach into solver-specific internals.
   must update state, saved state, and non-user caches consistently.
 - Symbolic state access follows `SymbolicIndexingInterface`: `integrator[sym]`
   reads state variables, `set_u!(integrator, sym, val)` writes state variables,
-  and parameter access should go through `integrator.ps[sym]`.
+  and parameter access should go through `integrator.ps[sym]`. Assigning a parameter
+  through this interface marks the derivative as discontinuous so the solver refreshes
+  affected caches before the next step.
 
 ```@docs
 SciMLBase.DEIntegrator
@@ -91,6 +93,8 @@ SciMLBase.AbstractDAEIntegrator
 SciMLBase.AbstractSDDEIntegrator
 SciMLBase.DECache
 SciMLBase.step!
+SciMLBase.symbolic_interpolation
+SciMLBase.has_symbolic_idxs
 Base.resize!(::SciMLBase.DEIntegrator, ::Int)
 Base.deleteat!(::SciMLBase.DEIntegrator, ::Any)
 SciMLBase.addat!

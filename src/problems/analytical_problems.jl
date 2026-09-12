@@ -46,8 +46,11 @@ end
 
 export AnalyticalProblem, AbstractAnalyticalProblem
 
-@doc doc"""
-    AnalyticalAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+"""
+    AnalyticalAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing,
+        alias_tstops = nothing, alias = nothing
+    )
 
 Control which `AnalyticalProblem` inputs and solver option arrays may be
 aliased.

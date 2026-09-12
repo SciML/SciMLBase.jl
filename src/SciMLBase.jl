@@ -37,7 +37,7 @@ using DocStringExtensions: DocStringExtensions, FIELDS, SIGNATURES, TYPEDEF,
 using LinearAlgebra: LinearAlgebra, I, det, norm
 using Statistics: Statistics, mean, median
 using Distributed: Distributed, CachingPool, myid, nworkers, pmap, workers
-using Markdown: Markdown, @doc_str
+using Markdown: Markdown
 using Printf: Printf, @printf
 import Preferences
 using PreallocationTools: get_tmp, DiffCache, FixedSizeDiffCache
@@ -359,9 +359,9 @@ const AbstractSteadyStateProblem{
 $(TYPEDEF)
 
 Base interface for problems that directly solve or sample an
-[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess). Concrete noise problems should provide a `noise`
-field, a `tspan`, and solver keyword arguments. Their in-place behavior delegates
-to the stored noise process through [`isinplace`](@ref).
+[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess).
+Concrete noise problems should provide a `noise` field, a `tspan`, and solver keyword arguments.
+Their in-place behavior delegates to the stored noise process through [`isinplace`](@ref).
 """
 abstract type AbstractNoiseProblem <: AbstractDEProblem end
 
@@ -575,8 +575,10 @@ problem family stay as `solve` or `init` keyword arguments. Solver packages
 normally implement dispatches such as:
 
 ```julia
-CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
-    kwargs...)
+CommonSolve.solve(
+    prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
+    kwargs...
+)
 ```
 
 Algorithms should implement the relevant trait methods in `alg_traits.jl` when
@@ -974,7 +976,7 @@ end
 function OverrideInit(; abstol = nothing, reltol = nothing, nlsolve = nothing)
     return OverrideInit(abstol, reltol, nlsolve)
 end
-OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
+OverrideInit(abstol) = OverrideInit(; abstol, nlsolve = nothing)
 
 # PDE Discretizations
 
@@ -1286,7 +1288,7 @@ use `length(sol.t)` or `eachindex(sol.t)` when iterating over saved times.
 Time-series solutions should provide `prob`, `alg`, `interp`, `dense`,
 `retcode`, and `stats` fields when those concepts apply. Dense or piecewise
 interpolation is exposed through callable syntax such as `sol(t)` and
-`sol(t; idxs = idxs)` when the stored interpolation supports it. Symbolic state,
+`sol(t; idxs)` when the stored interpolation supports it. Symbolic state,
 observed-variable, and parameter access is delegated through the
 `SymbolicIndexingInterface` metadata on the solution's problem, with
 time-varying parameter support supplied through `sol.discretes` and
@@ -2325,7 +2327,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
 
 # Interpolation / symbolic / solution interface
 @public interp_summary, getindepsym, getindepsym_defaultt,
-    calculate_solution_errors!, initialize_dae!
+    calculate_solution_errors!, initialize_dae!, symbolic_interpolation,
+    has_symbolic_idxs
 @public get_saved_subsystem, SavedSubsystem, get_saved_state_idxs,
     SavedSubsystemWithFallback, get_save_idxs_and_saved_subsystem,
     create_parameter_timeseries_collection, get_saveable_values, save_discretes!,

@@ -64,6 +64,9 @@ but note that for full type-inferability of the `AbstractSciMLProblem` this iip-
 be specified.
 
 By default, problem functions use `AutoSpecialize` to balance latency and runtime.
+Inside Reactant compilation, `ODEFunction` with `AutoSpecialize` reports
+`FullSpecialize` so solvers retain the function types needed for tracing. Outside
+compilation, its specialization remains `AutoSpecialize`.
 Choose another specialization marker explicitly when a workflow needs a different
 trade-off.
 

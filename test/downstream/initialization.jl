@@ -371,7 +371,7 @@ end
     end
 
     @testset "Solves with non-integrator value provider" begin
-        _integ = ProblemState(; u = integ.u, p = parameter_values(integ), t = integ.t)
+        _integ = ProblemState(; integ.u, p = parameter_values(integ), integ.t)
         u0, p,
             success = SciMLBase.get_initial_values(
             prob, _integ, fn, SciMLBase.OverrideInit(),
