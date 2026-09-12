@@ -32,6 +32,7 @@ OptimizationProblem{isinplace}(
     lcons = nothing,
     ucons = nothing,
     sense = nothing,
+    problem_type = nothing,
     kwargs...
 )
 ```
@@ -84,6 +85,10 @@ Any extra keyword arguments are captured to be sent to the optimizers.
   [`OptimizationFunction`](https://docs.sciml.ai/Optimization/stable/API/optimization_function/#optfunction).
     Defaults to `nothing`, implying no upper bounds for the constraints (i.e. the constraint bound is `Inf`)
 * `sense`: the objective sense, can take `MaxSense` or `MinSense` from Optimization.jl.
+* `problem_type`: an optional tag describing the origin of the problem, returned by
+  [`problem_type`](@ref). PDE discretizations store their
+  [`AbstractDiscretizationMetadata`](@ref) here so that [`wrap_sol`](@ref) can wrap the
+  optimization solution into a [`PDENoTimeSolution`](@ref).
 * `kwargs`: the keyword arguments passed on to the solvers.
 
 ## Inequality and Equality Constraints
@@ -119,7 +124,7 @@ For an example of how to use this data handling, see the `Sophia` example in the
 [Optimization.jl documentation](https://docs.sciml.ai/Optimization/dev/optimization_packages/sophia/)
 or the [mini-batching tutorial](https://docs.sciml.ai/Optimization/dev/tutorials/minibatch/).
 """
-struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
+struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, PT, K} <:
     AbstractOptimizationProblem{iip}
     f::F
     u0::uType
@@ -130,6 +135,7 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
     lcons::LC
     ucons::UC
     sense::S
+    problem_type::PT
     kwargs::K
     @add_kwonly function OptimizationProblem{iip}(
             f::Union{OptimizationFunction{iip}, MultiObjectiveOptimizationFunction{iip}},
@@ -137,7 +143,7 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
             p = NullParameters();
             lb = nothing, ub = nothing, int = nothing,
             lcons = nothing, ucons = nothing,
-            sense = nothing, kwargs...
+            sense = nothing, problem_type = nothing, kwargs...
         ) where {iip}
         if xor(lb === nothing, ub === nothing)
             error("If any of `lb` or `ub` is provided, both must be provided.")
@@ -146,9 +152,9 @@ struct OptimizationProblem{iip, F, uType, P, LB, UB, I, LC, UC, S, K} <:
         new{
             iip, typeof(f), typeof(u0), typeof(p),
             typeof(lb), typeof(ub), typeof(int), typeof(lcons), typeof(ucons),
-            typeof(sense), typeof(kwargs),
+            typeof(sense), typeof(problem_type), typeof(kwargs),
         }(
-            f, u0, p, lb, ub, int, lcons, ucons, sense,
+            f, u0, p, lb, ub, int, lcons, ucons, sense, problem_type,
             kwargs
         )
     end

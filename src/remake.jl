@@ -1275,7 +1275,7 @@ end
     remake(
         prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
-        sense = missing, kwargs = missing, _kwargs...
+        sense = missing, problem_type = missing, kwargs = missing, _kwargs...
     )
 
 Remake the given `OptimizationProblem`.
@@ -1292,6 +1292,7 @@ function remake(
         lcons = missing,
         ucons = missing,
         sense = missing,
+        problem_type = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -1300,6 +1301,9 @@ function remake(
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
     if f === missing
         f = prob.f
+    end
+    if problem_type === missing
+        problem_type = prob.problem_type
     end
     if lb === missing
         lb = prob.lb
@@ -1326,13 +1330,14 @@ function remake(
             f, u0, p, lb,
             ub, int,
             lcons, ucons,
-            sense, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
+            sense, problem_type, (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         OptimizationProblem{isinplace(prob)}(;
             f, u0, p, lb,
             ub, int,
-            lcons, ucons,
+            lcons, ucons, problem_type,
             sense, kwargs...
         )
     end
