@@ -418,6 +418,58 @@ a = Remake_Test1(p = 1)
     @test get(newp, :b, 0) == 4.5
 end
 
+struct RemakeArraySymbol{N} <: AbstractArray{Symbol, N}
+    elements::Array{Symbol, N}
+end
+Base.size(sym::RemakeArraySymbol) = size(sym.elements)
+Base.getindex(sym::RemakeArraySymbol, inds...) = sym.elements[inds...]
+SymbolicIndexingInterface.symbolic_type(::Type{<:RemakeArraySymbol}) = ArraySymbolic()
+
+struct RemakeArraySystem{S, V, P}
+    cache::S
+    variables::V
+    parameters::P
+end
+SymbolicIndexingInterface.symbolic_container(sys::RemakeArraySystem) = sys.cache
+SymbolicIndexingInterface.variable_symbols(sys::RemakeArraySystem) = sys.variables
+SymbolicIndexingInterface.parameter_symbols(sys::RemakeArraySystem) = sys.parameters
+
+@testset "remake with unscalarized array symbols" begin
+    @testset "shape $shape" for shape in ((2,), (2, 2))
+        n = prod(shape)
+        x = RemakeArraySymbol(reshape([Symbol(:x, i) for i in 1:n], shape))
+        a = RemakeArraySymbol(reshape([Symbol(:a, i) for i in 1:n], shape))
+        indices = reshape(collect(1:n), shape)
+        vars = Dict{Any, Any}(x => indices, :x => indices, :y => n + 1)
+        params = Dict{Any, Any}(a => indices, :a => indices, :b => n + 1)
+        merge!(vars, Dict(zip(x, indices)))
+        merge!(params, Dict(zip(a, indices)))
+        defaults = Dict{Any, Any}(x => fill(10.0, shape), a => fill(20.0, shape))
+        sys = RemakeArraySystem(SymbolCache(vars, params, :t; defaults), [x, :y], [a, :b])
+        prob = ODEProblem(ODEFunction((u, p, t) -> -u; sys), collect(1.0:(n + 1)), (0.0, 1.0), collect(2.0:(n + 2)))
+        for (key, pkey) in ((x, a), (:x, :a))
+            changed = remake(prob; u0 = [key => fill(3.0, shape)], p = [pkey => fill(4.0, shape)])
+            @test changed.u0 == [fill(3.0, n); n + 1]
+            @test changed.p == [fill(4.0, n); n + 2]
+        end
+        changed = remake(prob; u0 = [x[1] => 7.0], p = [a[1] => 8.0])
+        @test changed.u0 == [7.0; prob.u0[2:end]]
+        @test changed.p == [8.0; prob.p[2:end]]
+        changed = remake(prob; u0 = [:y => 7.0], p = [:b => 8.0])
+        @test changed.u0 == [prob.u0[1:n]; 7.0]
+        @test changed.p == [prob.p[1:n]; 8.0]
+        changed = remake(prob; u0 = [x[1] => 7.0], p = [a[1] => 8.0], use_defaults = true)
+        @test changed.u0 == [7.0; fill(10.0, n - 1); n + 1]
+        @test changed.p == [8.0; fill(20.0, n - 1); n + 2]
+        @test defaults == Dict(x => fill(10.0, shape), a => fill(20.0, shape))
+        defaults[x[1]] = 30.0
+        defaults[a[1]] = 40.0
+        changed = remake(prob; u0 = [:y => 7.0], p = [:b => 8.0], use_defaults = true)
+        @test changed.u0 == [30.0; fill(10.0, n - 1); 7.0]
+        @test changed.p == [40.0; fill(20.0, n - 1); 8.0]
+    end
+end
+
 @testset "value of `nothing` is ignored" begin
     sys = SymbolCache(
         Dict(:x => 1, :y => 2), Dict(:a => 1, :b => 2),
