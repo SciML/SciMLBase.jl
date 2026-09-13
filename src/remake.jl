@@ -1827,6 +1827,22 @@ end
 function fill_vars(
         prob, varmap; defs = nothing, use_defaults = false, allsyms, index_function
     )
+    scalar_syms = Any[]
+    for sym in allsyms
+        if symbolic_type(sym) == ArraySymbolic() &&
+                index_function(prob, sym) isa AbstractArray
+            append!(scalar_syms, sym)
+            if defs !== nothing && (defval = varmap_get(defs, sym)) !== nothing
+                defs = Dict{Any, Any}(defs)
+                for (element, value) in zip(sym, defval)
+                    get!(defs, element, value)
+                end
+            end
+        else
+            push!(scalar_syms, sym)
+        end
+    end
+    allsyms = scalar_syms
     idx_to_vsym = anydict(index_function(prob, sym) => sym for sym in allsyms)
     sym_to_idx = anydict()
     idx_to_sym = anydict()
