@@ -1423,6 +1423,7 @@ function remake(
         f = missing,
         u0 = missing,
         p = missing,
+        lowered_problem = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -1449,14 +1450,20 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
+    if lowered_problem === missing
+        lowered_problem = prob.lowered_problem
+    end
+
     prob = if kwargs === missing
         # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         SteadyStateProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp,
+            f, u0 = newu0, p = newp, lowered_problem,
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        SteadyStateProblem{isinplace(prob)}(; f, u0 = newu0, p = newp, kwargs...)
+        SteadyStateProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, lowered_problem, kwargs...
+        )
     end
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
