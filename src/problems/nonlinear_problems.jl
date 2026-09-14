@@ -244,6 +244,21 @@ end
 """
 $(SIGNATURES)
 
+Define the non-transient problem that a `SteadyStateProblem` lowers to. When the
+problem carries a [`lowered_problem`](@ref SteadyStateProblem) (e.g. an
+`SCCNonlinearProblem` stored by a symbolic frontend) it is used — a stored
+problem verbatim, a stored callable evaluated on `prob` — otherwise the ODE
+residual `f` is wrapped directly.
+"""
+function NonlinearProblem(prob::SteadyStateProblem)
+    lp = prob.lowered_problem
+    lp === nothing && return NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+    return lp isa AbstractNonlinearProblem ? lp : lp(prob)
+end
+
+"""
+$(SIGNATURES)
+
 Define a nonlinear problem using an instance of
 [`AbstractODEFunction`](@ref AbstractODEFunction). Note that
 this is interpreted in the form of the steady state problem, i.e.

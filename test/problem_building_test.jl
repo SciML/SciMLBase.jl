@@ -327,6 +327,60 @@ end
     @test state_values(sccprob2) isa SVector{3, Float64}
 end
 
+@testset "SteadyStateProblem lowered_problem" begin
+    ode_f = ODEFunction((du, u, p, t) -> (du .= -u .+ p))
+    u0 = [1.0, 2.0]
+    p = [3.0, 4.0]
+
+    @testset "defaults to nothing and wraps f" begin
+        prob = SteadyStateProblem(ode_f, u0, p)
+        @test prob.lowered_problem === nothing
+        nlprob = @inferred NonlinearProblem(prob)
+        @test nlprob isa NonlinearProblem
+        @test nlprob.u0 == u0
+        @test nlprob.p == p
+    end
+
+    @testset "stored problem is used verbatim" begin
+        lowered = NonlinearProblem((du, u, p) -> (du .= u .- p), u0, p)
+        prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
+        @test prob.lowered_problem === lowered
+        @test NonlinearProblem(prob) === lowered
+    end
+
+    @testset "callable is materialized against the current problem" begin
+        lowered_calls = Ref(0)
+        lowered = prob -> begin
+            lowered_calls[] += 1
+            return NonlinearProblem((du, u, p) -> (du .= u .- p), prob.u0, prob.p)
+        end
+        prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
+        nlprob = NonlinearProblem(prob)
+        @test nlprob isa NonlinearProblem
+        @test nlprob.u0 == u0
+        @test nlprob.p == p
+        @test lowered_calls[] == 1
+
+        # `remake` carries the builder, so the materialization sees the new
+        # operating point rather than the construction-time one.
+        prob2 = remake(prob; u0 = [5.0, 6.0], p = [7.0, 8.0])
+        @test prob2.lowered_problem === lowered
+        nlprob2 = NonlinearProblem(prob2)
+        @test nlprob2.u0 == [5.0, 6.0]
+        @test nlprob2.p == [7.0, 8.0]
+    end
+
+    @testset "remake can replace or clear the lowering" begin
+        lowered = NonlinearProblem((du, u, p) -> (du .= u .- p), u0, p)
+        prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
+        @test remake(prob; lowered_problem = nothing).lowered_problem === nothing
+        other = NonlinearProblem((du, u, p) -> (du .= u), u0, p)
+        @test remake(prob; lowered_problem = other).lowered_problem === other
+        # a stored problem is carried verbatim
+        @test remake(prob; u0 = [9.0, 9.0]).lowered_problem === lowered
+    end
+end
+
 @testset "AutoRespecialize specialization marker" begin
     @test SciMLBase.AutoDePSpecialize === SciMLBase.AutoRespecialize
 
