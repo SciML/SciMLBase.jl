@@ -346,6 +346,12 @@ end
         prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
         @test prob.lowered_problem === lowered
         @test NonlinearProblem(prob) === lowered
+
+        # a `LinearProblem` lowering is not an `AbstractNonlinearProblem`, but
+        # is still returned verbatim
+        linlowered = LinearProblem([2.0 0.0; 0.0 4.0], [1.0, 1.0])
+        lprob = SteadyStateProblem(ode_f, u0, p; lowered_problem = linlowered)
+        @test NonlinearProblem(lprob) === linlowered
     end
 
     @testset "callable is materialized against the current problem" begin

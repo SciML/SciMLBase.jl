@@ -65,7 +65,7 @@ For specifying Jacobians and mass matrices, see the DiffEqFunctions page.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
 * `lowered_problem`: An optional non-transient problem that this steady-state
   problem lowers to, used by [`NonlinearProblem`](@ref) conversions in place of
-  wrapping `f` directly. May be an `AbstractNonlinearProblem` (used verbatim) or a
+  wrapping `f` directly. May be an `AbstractSciMLProblem` (used verbatim) or a
   callable `prob -> problem` evaluated on the current problem, so that symbolic
   frontends can defer the lowering until it is needed while still reflecting
   `remake`d `u0`/`p` values. Defaults to `nothing`.
