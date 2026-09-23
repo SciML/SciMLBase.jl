@@ -1,4 +1,4 @@
-using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays
+using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays, ConstructionBase
 
 function simplependulum!(du, u, p, t)
     θ = u[1]
@@ -156,6 +156,35 @@ end
     @testset "$(SciMLBase.parameterless_type(typeof(prob)))" for prob in probs
         newprob = @reset prob.u0 = u0 .+ 1
         @test typeof(newprob) == typeof(prob)
+    end
+
+    @testset "rebuilding a function keeps its specialization" begin
+        for specialize in (
+                SciMLBase.FullSpecialize, SciMLBase.NoSpecialize,
+                SciMLBase.AutoSpecialize,
+            )
+            fn = ODEFunction{true, specialize}(lorenz!; sys)
+            newfn = @set fn.initialization_data = nothing
+            @test SciMLBase.specialization(newfn) === specialize
+            prob = ODEProblem(fn, u0, tspan, p)
+            newprob = @set prob.f.initialization_data = nothing
+            @test SciMLBase.specialization(newprob.f) === specialize
+        end
+
+        # the field parameters are still narrowed to the new values' types, so a
+        # rebuild after `widen_bounded_type_params` gets the concrete type back
+        fn = ODEFunction{true, SciMLBase.FullSpecialize}(lorenz!; sys)
+        widened = SciMLBase.widen_bounded_type_params(fn)
+        @test typeof(widened) != typeof(fn)
+        @test typeof(@set widened.jac = fn.jac) == typeof(fn)
+
+        # a partially specified type fills in what it leaves unbound
+        args = map(name -> getfield(fn, name), fieldnames(typeof(fn)))
+        newfn = ConstructionBase.constructorof(ODEFunction{true})(args...)
+        @test SciMLBase.specialization(newfn) === SciMLBase.DEFAULT_SPECIALIZATION
+        @test isconcretetype(typeof(newfn))
+        newfn = ConstructionBase.constructorof(ODEFunction{true, SciMLBase.FullSpecialize})(args...)
+        @test typeof(newfn) == typeof(fn)
     end
 end
 

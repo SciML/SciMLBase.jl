@@ -677,7 +677,7 @@ function _remake_odeproblem(
             )
         else
             f = remake(
-                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1]))
+                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newp, ptspan[1]))
             )
         end
     end
