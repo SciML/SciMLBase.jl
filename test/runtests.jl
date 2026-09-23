@@ -161,6 +161,9 @@ run_tests(;
                 @time @safetestset "Table Traits" begin
                     include("downstream/traits.jl")
                 end
+                @time @safetestset "FunctionWrapperSpecialize remake" begin
+                    include("downstream/function_wrapper_remake.jl")
+                end
                 @time @safetestset "SplitODEProblem cache" begin
                     include("downstream/splitodeproblem_cache.jl")
                 end
