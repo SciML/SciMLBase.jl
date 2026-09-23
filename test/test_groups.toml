@@ -31,3 +31,7 @@ num_threads = 11
 [Python]
 versions = ["lts", "1", "pre"]
 num_threads = 11
+
+[Reactant]
+versions = ["1"]
+in_all = false
