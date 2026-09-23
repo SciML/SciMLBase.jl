@@ -1,4 +1,4 @@
-using SciMLBase, Test, Logging
+using SciMLBase, Test, Logging, LinearAlgebra
 using SciMLBase: checkkwargs, can_honor, keyword_class, keyword_status, KeywordVerbosity,
     KeywordArgError, KeywordArgWarn, KeywordArgSilent, CommonKwargError
 using SciMLLogging: None, ErrorLevel, WarnLevel, InfoLevel, Silent
@@ -43,6 +43,13 @@ const UNHONORED = r"cannot honor keyword\(s\) `maxtime`"
     for (prob, class) in cases
         @test keyword_class(prob) === class
     end
+    mmprob(M) = ODEProblem(
+        ODEFunction((du, u, p, t) -> nothing; mass_matrix = M), [1.0, 1.0], (0.0, 1.0)
+    )
+    @test keyword_class(mmprob(I)) === :ODE
+    @test keyword_class(mmprob(Diagonal([1.0, 1.0]))) === :ODE
+    @test keyword_class(mmprob(0 * I)) === :DAE
+    @test keyword_class(mmprob(Diagonal([1.0, 0.0]))) === :DAE
 end
 
 @testset "Three states" begin
@@ -59,7 +66,17 @@ end
     @test keyword_status(opt, :callback) === :defined
     @test keyword_status(opt, :saveat) === :undefined
     @test keyword_status(discprob, :abstol) === :undefined
-    @test keyword_status(EnsembleProblem(odeprob), :gtol) === :defined
+    @test keyword_status(discprob, :internalnorm) === :undefined
+    for kw in (:saveat, :dt, :tstops, :save_everystep, :callback)
+        @test keyword_status(discprob, kw) === :defined
+    end
+    @test keyword_status(IntervalNonlinearProblem((u, p) -> u, (0.0, 1.0)), :internalnorm) ===
+        :undefined
+    bvp = BVProblem((u, p, t) -> u, (u, p, t) -> u[1][1], [1.0], (0.0, 1.0))
+    @test keyword_status(bvp, :dtmin) === :defined
+    @test_logs checkkwargs(bvp, nothing; dtmin = 1.0e-8)
+    @test keyword_status(EnsembleProblem(odeprob), :gtol) === :unclassified
+    @test keyword_status(EnsembleProblem(odeprob), :not_a_keyword) === :unrecognized
 
     @test_logs checkkwargs(nlprob, HonorsAllAlg(); abstol = 1.0e-3, maxiters = 10)
     @test_logs (:warn, UNDEF) checkkwargs(nlprob, HonorsAllAlg(); saveat = 0.1)

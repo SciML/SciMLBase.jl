@@ -71,7 +71,9 @@ const KEYWORD_CLASSES = (
         undefined = (),
     ),
     BVP = (
-        defined = (:abstol, :reltol, :internalnorm, :constrtol, :maxiters, :maxtime),
+        defined = (
+            :abstol, :reltol, :internalnorm, :constrtol, :maxiters, :maxtime, :dtmin,
+        ),
         undefined = (),
     ),
     SteadyState = (
@@ -89,7 +91,7 @@ const KEYWORD_CLASSES = (
         undefined = _NONTIMESERIES_UNDEFINED,
     ),
     Interval = (
-        defined = (:abstol, :internalnorm, :maxiters, :maxtime),
+        defined = (:abstol, :maxiters, :maxtime),
         undefined = _NONTIMESERIES_UNDEFINED,
     ),
     Optimization = (
@@ -108,7 +110,7 @@ const KEYWORD_CLASSES = (
         undefined = _NONTIMESERIES_UNDEFINED,
     ),
     Discrete = (
-        defined = (:internalnorm, :maxiters, :maxtime),
+        defined = (:maxiters, :maxtime),
         undefined = (),
     ),
 )
@@ -126,23 +128,24 @@ The classes and the tolerance/budget keywords (`abstol`, `reltol`, `internalnorm
 | class           | problem types                                                         | defined                                                                                      |
 |:--------------- |:--------------------------------------------------------------------- |:-------------------------------------------------------------------------------------------- |
 | `:ODE`          | ODE, SDE, RODE, DDE, SDDE (identity mass matrix), `ImplicitDiscreteProblem` | `abstol, reltol, internalnorm, maxiters, maxtime, dtmin`                                     |
-| `:DAE`          | `AbstractDAEProblem`; the above with a non-`UniformScaling` mass matrix | `abstol, reltol, internalnorm, constrtol, maxiters, maxtime, dtmin`                        |
-| `:BVP`          | `AbstractBVProblem`                                                   | `abstol, reltol, internalnorm, constrtol, maxiters, maxtime`                                 |
+| `:DAE`          | `AbstractDAEProblem`; the above with a non-identity mass matrix       | `abstol, reltol, internalnorm, constrtol, maxiters, maxtime, dtmin`                          |
+| `:BVP`          | `AbstractBVProblem`                                                   | `abstol, reltol, internalnorm, constrtol, maxiters, maxtime, dtmin`                          |
 | `:SteadyState`  | `SteadyStateProblem`                                                  | `abstol, reltol, internalnorm, xtol, gtol, maxiters, maxtime, dtmin`                         |
 | `:Nonlinear`    | other `AbstractNonlinearProblem`s                                     | `abstol, reltol, internalnorm, xtol, gtol, maxiters, maxtime`                                |
 | `:NLLS`         | `NonlinearLeastSquaresProblem`                                        | `abstol, reltol, internalnorm, xtol, gtol, maxiters, maxtime`                                |
-| `:Interval`     | `AbstractIntervalNonlinearProblem`                                    | `abstol, internalnorm, maxiters, maxtime`                                                    |
+| `:Interval`     | `AbstractIntervalNonlinearProblem`                                    | `abstol, maxiters, maxtime`                                                                  |
 | `:Optimization` | `AbstractOptimizationProblem`                                         | `abstol, reltol, internalnorm, xtol, gtol, constrtol, compltol, maxiters, maxtime`           |
 | `:Linear`       | `AbstractLinearProblem`                                               | `abstol, reltol, internalnorm, maxiters, maxtime`                                            |
 | `:Integral`     | `AbstractIntegralProblem`                                             | `abstol, reltol, internalnorm, maxiters, maxtime`                                            |
-| `:Discrete`     | `DiscreteProblem`; `AbstractJumpProblem` wrapping one                 | `internalnorm, maxiters, maxtime`                                                            |
+| `:Discrete`     | `DiscreteProblem`; `AbstractJumpProblem` wrapping one                 | `maxiters, maxtime`                                                                          |
 
 A tolerance/budget keyword not listed for a class is undefined for it. In addition, the
 time-series keywords (`dt`, `dtmax`, `saveat`, `tstops`, `dense`, `callback`,
 `adaptive`, `controller`, and the other saving/stepping controls) are undefined for the
 `:Nonlinear`, `:NLLS`, `:Interval`, `:Linear` and `:Integral` classes, and all but
-`callback` are undefined for `:Optimization`. An `AbstractJumpProblem` takes the class
-of the problem it wraps.
+`callback` are undefined for `:Optimization`. The time-series keywords stay defined for `:Discrete` (a
+`FunctionMap` solve saves and steps like an ODE solve). An `AbstractJumpProblem` takes
+the class of the problem it wraps.
 
 Packages defining new problem types outside SciMLBase extend this function.
 See the RFC <https://github.com/SciML/SciMLBase.jl/issues/1562> for the meaning of
@@ -171,8 +174,13 @@ keyword_class(::AbstractIntegralProblem) = :Integral
 
 function _timeseries_class(f)
     hasproperty(f, :mass_matrix) || return :ODE
-    return f.mass_matrix isa UniformScaling ? :ODE : :DAE
+    return _is_identity_mass_matrix(f.mass_matrix) ? :ODE : :DAE
 end
+
+_is_identity_mass_matrix(m::Union{UniformScaling, AbstractMatrix}) = isone(m)
+_is_identity_mass_matrix(::IdentityOperator) = true
+# Classing an operator mass matrix as :DAE only makes `constrtol` defined.
+_is_identity_mass_matrix(m) = false
 
 function _is_undefined_for_class(class::Symbol, kw::Symbol)
     spec = KEYWORD_CLASSES[class]
@@ -184,13 +192,20 @@ _is_undefined_for_class(::Nothing, ::Symbol) = false
 """
     keyword_status(prob::AbstractSciMLProblem, kw::Symbol)::Symbol
 
-Return `:defined`, `:undefined` (a real keyword with no meaning for the class of
-`prob`, see [`keyword_class`](@ref)), or `:unrecognized` (not a common `solve`/`init`
-keyword at all).
+Return one of
+
+  - `:defined`: a keyword with a meaning for the class of `prob` (see
+    [`keyword_class`](@ref));
+  - `:undefined`: a real keyword with no meaning for that class;
+  - `:unclassified`: a common `solve`/`init` keyword, but `keyword_class(prob)` is
+    `nothing`, so no class decides whether it has a meaning;
+  - `:unrecognized`: not a common `solve`/`init` keyword at all.
 """
 function keyword_status(prob::AbstractSciMLProblem, kw::Symbol)
-    _is_undefined_for_class(keyword_class(prob), kw) && return :undefined
-    return kw in allowedkeywords || kw in TOLERANCE_KEYWORDS ? :defined : :unrecognized
+    kw in allowedkeywords || kw in TOLERANCE_KEYWORDS || return :unrecognized
+    class = keyword_class(prob)
+    class === nothing && return :unclassified
+    return _is_undefined_for_class(class, kw) ? :undefined : :defined
 end
 
 """
