@@ -6041,10 +6041,15 @@ for S in [
         :BatchIntegralFunction
     ]
     @eval begin
-        function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
-                iip,
-            }
-            return (args...) -> $S{iip, DEFAULT_SPECIALIZATION, map(typeof, args)...}(args...)
+        # Keep the specialization of the type being rebuilt: `@set f.x = ...` on a
+        # `FullSpecialize` function must not come back `AutoSpecialize`. The default
+        # applies only when the type leaves it unbound. The field parameters are always
+        # narrowed to the new values' types, which callers such as DiffEqBase rely on
+        # after `widen_bounded_type_params`.
+        function ConstructionBase.constructorof(::Type{T}) where {iip, T <: $S{iip}}
+            P = Base.unwrap_unionall(T).parameters[2]
+            specialize = P isa TypeVar ? DEFAULT_SPECIALIZATION : P
+            return (args...) -> $S{iip, specialize, map(typeof, args)...}(args...)
         end
     end
 end
