@@ -232,6 +232,10 @@ end
 _keyword_verbosity(kwargshandle, v::AbstractVerbosityPreset) =
     _keyword_verbosity(kwargshandle, KeywordVerbosity(v))
 
+function _drop_tolerance_keywords(nt::NamedTuple)
+    return NamedTuple{filter(k -> !(k in TOLERANCE_KEYWORDS), keys(nt))}(nt)
+end
+
 _join_keywords(kws) = join(("`$k`" for k in kws), ", ")
 
 """
@@ -286,7 +290,7 @@ function checkkwargs(
     )
     checkkwargs(
         kwargshandle === nothing ? KeywordArgError : kwargshandle;
-        Base.structdiff(values(kwargs), NamedTuple{TOLERANCE_KEYWORDS})...
+        _drop_tolerance_keywords(values(kwargs))...
     )
     verbosity = _keyword_verbosity(kwargshandle, kwargs_verbosity)
     verbosity isa KeywordVerbosity{false} && return nothing
