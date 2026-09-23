@@ -215,13 +215,7 @@ end
     @test all(size(v, 1) > 0 for v in plot_vecs)
 end
 
-# Regression for DifferentialEquations.jl#360 / SciMLBase plot recipe:
-# input-arity of idxs specs is not plot dimensionality. `3` normalizes to
-# `(DEFAULT_PLOT_FUNC, 0, 3)` (3-tuple) while `(f, 0, 3, 4)` is a 4-tuple, but
-# both are 2-D when `f(t,a,b) = (t, a+b)`. Mixing them must plot; mixing a
-# genuine 2-D series with a 3-D series must throw ArgumentError.
-# Labels for custom transforms must stay `f(...)` (not the bare last index),
-# and dims must come from evaluated output (no probe with integer 1s).
+# #360: check plot dims from transform output, not idxs input arity.
 @testset "plot idxs with mixed input arity but matching output dims (#360)" begin
     f = ODEFunction((du, u, p, t) -> (du .= -u))
     t = collect(0.0:0.25:1.0)

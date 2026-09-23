@@ -231,11 +231,6 @@ end
 DEFAULT_PLOT_FUNC(x, y) = (x, y)
 DEFAULT_PLOT_FUNC(x, y, z) = (x, y, z) # For v0.5.2 bug
 
-# Plot dimensionality is the number of coordinates returned by a series
-# transform `f`, not `length(var) - 1` (input arity). A bare index `3` and
-# `(f, 0, 3, 4)` with `f(t,a,b)=(t,a+b)` both produce 2-D series. Dims are
-# taken from evaluated series output in `solplot_vecs_and_labels` (no probe).
-
 """
     isdenseplot(sol)
 
