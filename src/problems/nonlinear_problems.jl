@@ -616,6 +616,14 @@ function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
     return getfield(prob, name)
 end
 
+# `SCCNonlinearProblem` has no `u0` field (its state is the concatenation of its
+# sub-problems' states), so the generic `AbstractNonlinearProblem` fallback above
+# does not apply to it. It is already a valid nonlinear problem, so normalizing it
+# is a no-op; this also makes it safe for a `SteadyStateProblem`'s stored
+# `lowered_problem` to be re-normalized by callers that don't know it is already an
+# `SCCNonlinearProblem`.
+NonlinearProblem(prob::SCCNonlinearProblem) = prob
+
 function SymbolicIndexingInterface.symbolic_container(prob::SCCNonlinearProblem)
     return prob.f
 end

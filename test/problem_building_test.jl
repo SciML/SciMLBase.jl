@@ -350,6 +350,11 @@ end
     @test state_values(sccprob) isa SVector{3, Float64}
     @test sccprob.p === prob1.p === prob2.p === prob3.p
 
+    # `SCCNonlinearProblem` has no `u0` field, so normalizing an already-SCC
+    # problem through `NonlinearProblem` must not fall through to the generic
+    # `AbstractNonlinearProblem` method (which assumes `.u0` exists).
+    @test NonlinearProblem(sccprob) === sccprob
+
     sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
