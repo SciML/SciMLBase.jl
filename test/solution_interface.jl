@@ -215,6 +215,52 @@ end
     @test all(size(v, 1) > 0 for v in plot_vecs)
 end
 
+# Regression for DifferentialEquations.jl#360 / SciMLBase plot recipe:
+# input-arity of idxs specs is not plot dimensionality. `3` normalizes to
+# `(DEFAULT_PLOT_FUNC, 0, 3)` (3-tuple) while `(f, 0, 3, 4)` is a 4-tuple, but
+# both are 2-D when `f(t,a,b) = (t, a+b)`. Mixing them must plot; mixing a
+# genuine 2-D series with a 3-D series must throw ArgumentError.
+@testset "plot idxs with mixed input arity but matching output dims (#360)" begin
+    f = ODEFunction((du, u, p, t) -> (du .= -u))
+    t = collect(0.0:0.25:1.0)
+    u = [[1.0, 2.0, 10.0 + tt, 20.0 + 2tt] for tt in t]
+    ode = ODEProblem(f, u[1], (t[1], t[end]))
+    sol = SciMLBase.build_solution(ode, :NoAlgorithm, t, u)
+
+    adder(tt, a, b) = (tt, a + b)
+    adder3(tt, a, b) = (tt, a, b)
+
+    function plot_sparse(idxs)
+        int_vars = SciMLBase.interpret_vars(idxs, sol)
+        return SciMLBase.diffeq_to_arrays(
+            sol, false, false, 100, nothing, int_vars, :identity, nothing
+        )
+    end
+
+    u3 = [uu[3] for uu in u]
+    u3pu4 = [uu[3] + uu[4] for uu in u]
+
+    for idxs in ([3, (adder, 0, 3, 4)], [(0, 3), (adder, 0, 3, 4)])
+        plot_vecs, labels = plot_sparse(idxs)
+        @test length(plot_vecs) == 2
+        @test size(plot_vecs[1], 2) == 2
+        @test plot_vecs[1][:, 1] ≈ t
+        @test plot_vecs[2][:, 1] ≈ u3
+        @test plot_vecs[1][:, 2] ≈ t
+        @test plot_vecs[2][:, 2] ≈ u3pu4
+        @test length(labels) == 2
+    end
+
+    err = try
+        plot_sparse([3, (adder3, 0, 3, 4)])
+        nothing
+    catch e
+        e
+    end
+    @test err isa ArgumentError
+    @test occursin("output dimension", sprint(showerror, err))
+end
+
 @testset "interpolate empty ODE solution" begin
     f = (u, p, t) -> -u
     ode = ODEProblem(f, 1.0, (0.0, 1.0))

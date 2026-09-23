@@ -1292,10 +1292,7 @@ end
         nothing
     end
 
-    dims = length(int_vars[1]) - 1
-    for var in int_vars
-        @assert length(var) - 1 == dims
-    end
+    dims = check_plot_series_output_dims(int_vars)
 
     plot_vecs,
         labels = integplot_vecs_and_labels(
