@@ -1,7 +1,7 @@
-@doc doc"""
+"""
 
 Defines a stochastic delay differential equation (SDDE) problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/>
 
 ## Mathematical Specification of a Stochastic Delay Differential Equation (SDDE) Problem
 
@@ -10,13 +10,11 @@ the diffusion function `g`, the initial condition ``u_0`` at time point ``t_0``,
 and the history function ``h`` which together define a SDDE:
 
 ```math
-du = f(u,h,p,t)dt + g(u,h,p,t)dW_t \qquad (t \geq t_0)
-```
-```math
-u(t_0) = u_0,
-```
-```math
-u(t) = h(t) \qquad (t < t_0).
+\\begin{align*}
+du(t)  &= f(u,h,p,t) \\, dt + g(u,h,p,t) \\, dW_t & (t ≥ t_0) \\\\
+u(t_0) &= u_0, \\\\
+u(t)   &= h(t) & (t < t_0).
+\\end{align*}
 ```
 
 ``f`` should be specified as `f(u, h, p, t)` (or in-place as `f(du, u, h, p, t)`)
@@ -62,15 +60,16 @@ Note that algebraic equations can be specified by using a singular mass matrix.
 
 ### Constructors
 
-```
+```julia
 SDDEProblem(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 ```
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
-for more details. The default is `AutoSpecialize.
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
 
@@ -81,13 +80,15 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref performance_overloads) page.
+For specifying Jacobians and mass matrices, see the
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/).
 
 ### Arguments
 
 * `f`: The drift function in the SDDE.
 * `g`: The diffusion function in the SDDE.
-* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the history function evaluated at the initial time point.
+* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the
+  history function evaluated at the initial time point.
 * `h`: The history function for the DDE before `t0`.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters with which function `f` is called. Defaults to `NullParameters`.
@@ -101,7 +102,7 @@ For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref perfo
 * `kwargs`: The keyword arguments passed onto the solves.
 """
 struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND} <:
-       AbstractSDDEProblem{uType, tType, lType, isinplace, ND}
+    AbstractSDDEProblem{uType, tType, lType, isinplace, ND}
     f::F
     g::G
     u0::uType
@@ -117,50 +118,62 @@ struct SDDEProblem{uType, tType, lType, lType2, isinplace, P, NP, F, G, H, K, ND
     neutral::Bool
     order_discontinuity_t0::Rational{Int}
 
-    @add_kwonly function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
+    @add_kwonly function SDDEProblem{iip}(
+            f::AbstractSDDEFunction{iip}, g, u0, h, tspan,
             p = NullParameters();
             noise_rate_prototype = nothing, noise = nothing,
             seed = UInt64(0),
             constant_lags = (), dependent_lags = (),
             neutral = f.mass_matrix !== I &&
-                      det(f.mass_matrix) != 1,
+                det(f.mass_matrix) != 1,
             order_discontinuity_t0 = 0 // 1,
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
+        new{
+            typeof(_u0), typeof(_tspan), typeof(constant_lags), typeof(dependent_lags),
             isinplace(f),
             typeof(p), typeof(noise), typeof(f), typeof(g), typeof(h), typeof(kwargs),
-            typeof(noise_rate_prototype)}(f, g, _u0, h, _tspan, p, noise, constant_lags,
+            typeof(noise_rate_prototype),
+        }(
+            f, g, _u0, h, _tspan, p, noise, constant_lags,
             dependent_lags, kwargs, noise_rate_prototype,
-            seed, neutral, order_discontinuity_t0)
+            seed, neutral, order_discontinuity_t0
+        )
     end
 
-    function SDDEProblem{iip}(f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
+    function SDDEProblem{iip}(
+            f::AbstractSDDEFunction{iip}, g, h, tspan::Tuple,
             p = NullParameters();
-            order_discontinuity_t0 = 1 // 1, kwargs...) where {iip}
-        SDDEProblem{iip}(f, g, h(p, first(tspan)), h, tspan, p;
+            order_discontinuity_t0 = 1 // 1, kwargs...
+        ) where {iip}
+        return SDDEProblem{iip}(
+            f, g, h(p, first(tspan)), h, tspan, p;
             order_discontinuity_t0 = max(1 // 1, order_discontinuity_t0),
-            kwargs...)
+            kwargs...
+        )
     end
 
     function SDDEProblem{iip}(f, g, args...; kwargs...) where {iip}
-        SDDEProblem{iip}(SDDEFunction{iip}(f, g), g, args...; kwargs...)
+        return SDDEProblem{iip}(SDDEFunction{iip}(f, g), g, args...; kwargs...)
     end
 end
 
 function SDDEProblem(f, g, args...; kwargs...)
-    SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
+    return SDDEProblem(SDDEFunction(f, g), g, args...; kwargs...)
 end
 
 function SDDEProblem(f::AbstractSDDEFunction, args...; kwargs...)
-    SDDEProblem{isinplace(f)}(f, args...; kwargs...)
+    return SDDEProblem{isinplace(f)}(f, args...; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
-    function ctor(f, g, u0, h, tspan, p, noise, constant_lags, dependent_lags, kw,
-            noise_rate_prototype, seed, neutral, order_discontinuity_t0)
+    return function ctor(
+            f, g, u0, h, tspan, p, noise, constant_lags, dependent_lags, kw,
+            noise_rate_prototype, seed, neutral, order_discontinuity_t0
+        )
         if f isa AbstractSDDEFunction
             iip = isinplace(f)
         else
@@ -168,39 +181,53 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: SDDEProblem}
         end
         return SDDEProblem{iip}(
             f, g, u0, h, tspan, p; kw..., noise, constant_lags, dependent_lags,
-            noise_rate_prototype, seed, neutral, order_discontinuity_t0)
+            noise_rate_prototype, seed, neutral, order_discontinuity_t0
+        )
     end
 end
 
 SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
 
-@doc doc"""
-
-Holds information on what variables to alias
-when solving an SDDEProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `SDDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)`
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SDDEAliasSpecifier` to `alias`
-
 """
-struct SDDEAliasSpecifier
+    SDDEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing,
+        alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+    )
+
+Control which `SDDEProblem` inputs and solver option arrays may be aliased.
+
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the SDDE function object, `alias_tstops` controls the
+`tstops` vector, and `alias_jumps` controls jump process data when the problem is
+wrapped in a jump problem. A value of `nothing` delegates to the solver default.
+Set `alias = true` or `alias = false` to apply the same policy to all stored
+fields.
+
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `SDDEAliasSpecifier` does not store a
+separate `du0` alias field.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the SDDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `SDDEAliasSpecifier`.
+"""
+struct SDDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
     alias_jumps::Union{Bool, Nothing}
 
-    function SDDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
-        if alias == true
+    function SDDEAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)

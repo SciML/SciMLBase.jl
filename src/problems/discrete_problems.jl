@@ -1,10 +1,10 @@
 const DISCRETE_INPLACE_DEFAULT = DiscreteFunction{true}((du, u, p, t) -> du .= u)
 const DISCRETE_OUTOFPLACE_DEFAULT = DiscreteFunction{false}((u, p, t) -> u)
 
-@doc doc"""
+"""
 
 Defines a discrete dynamical system problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/>
 
 ## Mathematical Specification of a Discrete Problem
 
@@ -12,7 +12,7 @@ To define a Discrete Problem, you simply need to give the function ``f`` and the
 condition ``u_0`` which define a function map:
 
 ```math
-u_{n+1} = f(u_{n},p,t_{n+1})
+u_{n+1} = f(u_n, p, t_{n+1})
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and `u_0` should
@@ -27,7 +27,7 @@ Note that if the discrete solver is set to have `scale_by_time=true`, then the p
 is interpreted as the map:
 
 ```math
-u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
+u_{n+1} = u_n + dt \\, f(u_n, p, t_{n+1})
 ```
 
 ## Problem Type
@@ -43,7 +43,7 @@ u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -56,7 +56,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/)
 page.
 
 ### Fields
@@ -76,7 +76,7 @@ revert to the standard behavior of fixed timestep methods, which is "step to eac
 tstop".
 """
 struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
-       AbstractDiscreteProblem{uType, tType, isinplace}
+    AbstractDiscreteProblem{uType, tType, isinplace}
     """The function in the map."""
     f::F
     """The initial condition."""
@@ -87,43 +87,55 @@ struct DiscreteProblem{uType, tType, isinplace, P, F, K} <:
     p::P
     """ A callback to be applied to every solver which uses the problem."""
     kwargs::K
-    @add_kwonly function DiscreteProblem{iip}(f::AbstractDiscreteFunction{iip},
+    @add_kwonly function DiscreteProblem{iip}(
+            f::AbstractDiscreteFunction{iip},
             u0, tspan, p = NullParameters();
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan), isinplace(f, 4),
+        new{
+            typeof(_u0), typeof(_tspan), isinplace(f, 4),
             typeof(p),
-            typeof(f), typeof(kwargs)}(f,
+            typeof(f), typeof(kwargs),
+        }(
+            f,
             _u0,
             _tspan,
             p,
-            kwargs)
+            kwargs
+        )
     end
 
-    function DiscreteProblem{iip}(u0::Nothing, tspan::Nothing, p = NullParameters();
-            callback = nothing) where {iip}
+    function DiscreteProblem{iip}(
+            u0::Nothing, tspan::Nothing, p = NullParameters();
+            callback = nothing
+        ) where {iip}
         if iip
             f = DISCRETE_INPLACE_DEFAULT
         else
             f = DISCRETE_OUTOFPLACE_DEFAULT
         end
-        new{Nothing, Nothing, iip, typeof(p),
-            typeof(f), typeof(callback)}(f,
+        return new{
+            Nothing, Nothing, iip, typeof(p),
+            typeof(f), typeof(callback),
+        }(
+            f,
             nothing,
             nothing,
             p,
-            callback)
+            callback
+        )
     end
 
     function DiscreteProblem{iip}(f, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+        return DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
     end
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DiscreteProblem}
-    function ctor(f, u0, tspan, p, kw)
+    return function ctor(f, u0, tspan, p, kw)
         if f isa AbstractDiscreteFunction
             iip = isinplace(f)
         else
@@ -134,19 +146,23 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DiscreteProblem}
 end
 
 """
-    DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
+    DiscreteProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = nothing)
 
 Defines a discrete problem with the specified functions.
 """
-function DiscreteProblem(f::AbstractDiscreteFunction, u0, tspan,
-        p = NullParameters(); kwargs...)
-    DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+function DiscreteProblem(
+        f::AbstractDiscreteFunction, u0, tspan,
+        p = NullParameters(); kwargs...
+    )
+    return DiscreteProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function DiscreteProblem(f::Base.Callable, u0, tspan, p = NullParameters();
-        kwargs...)
+function DiscreteProblem(
+        f::Callable, u0, tspan, p = NullParameters();
+        kwargs...
+    )
     iip = isinplace(f, 4)
-    DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    return DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
 end
 
 """
@@ -154,41 +170,50 @@ $(SIGNATURES)
 
 Define a discrete problem with the identity map.
 """
-function DiscreteProblem(u0::Union{AbstractArray, Number}, tspan,
-        p = NullParameters(); kwargs...)
+function DiscreteProblem(
+        u0::Union{AbstractArray, Number}, tspan,
+        p = NullParameters(); kwargs...
+    )
     iip = u0 isa AbstractArray
     if iip
         f = DISCRETE_INPLACE_DEFAULT
     else
         f = DISCRETE_OUTOFPLACE_DEFAULT
     end
-    DiscreteProblem(f, u0, tspan, p; kwargs...)
+    return DiscreteProblem(f, u0, tspan, p; kwargs...)
 end
 
-@doc doc"""
-
-Holds information on what variables to alias
-when solving a DiscreteProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)`
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DiscreteAliasSpecifier` to `alias`
-
 """
-struct DiscreteAliasSpecifier
+    DiscreteAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+
+Control which `DiscreteProblem` inputs a solver may alias.
+
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+and `alias_f` controls the recurrence function object. A value of `nothing`
+delegates to the solver default. Set `alias = true` or `alias = false` to apply
+the same policy to all stored fields.
+
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `DiscreteAliasSpecifier` does not
+store a separate `du0` alias field.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the discrete function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `DiscreteAliasSpecifier`.
+"""
+struct DiscreteAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}
 
     function DiscreteAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias = nothing)
-        if alias == true
+            alias_du0 = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true)
         elseif alias == false
             new(false, false, false)

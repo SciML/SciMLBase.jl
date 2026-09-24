@@ -17,6 +17,22 @@ the `SciMLProblem`'s `u0` as a reference, and updating the saved values in it.
 See the implementation for `ODESolution` as a reference.
 =#
 
+"""
+    get_saved_subsystem(sol) -> Union{SavedSubsystem, Nothing}
+
+Return the saved-subsystem metadata carried by a solution with symbolic or
+partial `save_idxs`.
+
+Concrete time-series solution types that store only a subset of symbolic states
+or time-series parameters should provide a `saved_subsystem` field or overload
+this function to return the corresponding [`SavedSubsystem`](@ref). Return
+`nothing` when the solution saved the full symbolic state, when the problem has
+no symbolic index provider, or when no symbolic subset metadata is required.
+
+Solution indexing code uses this hook to decide whether symbolic queries should
+be forwarded directly to `symbolic_container(sol)` or through
+[`SavedSubsystemWithFallback`](@ref).
+"""
 get_saved_subsystem(_) = nothing
 
 struct VectorTemplate
@@ -33,23 +49,62 @@ function TupleOfArraysWrapper(vt::Vector{VectorTemplate})
 end
 
 function Base.getindex(t::TupleOfArraysWrapper, i::Tuple{Int, Int})
-    t.x[i[1]][i[2]]
+    return t.x[i[1]][i[2]]
 end
 
 function Base.setindex!(t::TupleOfArraysWrapper, val, i::Tuple{Int, Int})
-    t.x[i[1]][i[2]] = val
+    return t.x[i[1]][i[2]] = val
 end
 
 function as_diffeq_array(vt::Vector{VectorTemplate}, t)
     return DiffEqArray(typeof(TupleOfArraysWrapper(vt))[], t, (1, 1))
 end
 
-function get_root_indp(indp)
-    if hasmethod(symbolic_container, Tuple{typeof(indp)}) &&
-       (sc = symbolic_container(indp)) !== indp
-        return get_root_indp(sc)
+"""
+    get_root_indp(x)
+
+Return the innermost symbolic index provider associated with `x`, or `nothing`
+when no provider is available.
+
+Solver and symbolic-problem wrappers use this query before dispatching symbolic
+`remake` and initialization behavior. A wrapper that introduces a symbolic
+container may specialize it to forward to the underlying problem or function.
+The fallback returns `x`, which lets an explicit index provider participate
+directly.
+
+!!! warning "Developer API, not user API"
+    This is a versioned hook for solver and symbolic-wrapper packages.
+
+# Example
+```julia
+SciMLBase.get_root_indp(wrapper::MyProblemWrapper) =
+    SciMLBase.get_root_indp(wrapper.prob)
+```
+"""
+function get_root_indp(prob::AbstractSciMLProblem)
+    return get_root_indp(prob.f)
+end
+
+function get_root_indp(f::T) where {T <: AbstractSciMLFunction}
+    if hasfield(T, :sys)
+        return f.sys
+    elseif hasfield(T, :f) && f.f isa AbstractSciMLFunction
+        return get_root_indp(f.f)
+    else
+        return nothing
     end
-    return indp
+end
+
+function get_root_indp(prob::LinearProblem)
+    return get_root_indp(prob.f)
+end
+
+get_root_indp(prob::AbstractJumpProblem) = get_root_indp(prob.prob)
+
+get_root_indp(x) = x
+
+function get_root_indp(f::SymbolicLinearInterface)
+    return get_root_indp(f.sys)
 end
 
 # Everything from this point on is public API
@@ -57,19 +112,36 @@ end
 """
     $(TYPEDSIGNATURES)
 
-A representation of the subsystem of a given system which is saved in a solution. Created
-by providing an index provider and the indexes of saved variables in the system. The indexes
-can also be symbolic variables. All indexes must refer to state variables, or timeseries
-parameters.
+A representation of the symbolic subsystem saved in a solution.
 
-The arguments to the constructor are an index provider, the parameter object and the indexes
-of variables to save.
+`SavedSubsystem(indp, pobj, saved_idxs)` records how the saved values relate to
+the original symbolic system described by the index provider `indp` and
+parameter object `pobj`. `saved_idxs` may contain integer state indexes,
+symbolic state variables, symbolic arrays of state variables, or symbolic
+time-series parameters. Every symbolic entry must resolve to either a state
+variable or a time-series parameter of `indp`; other symbolic entries are
+rejected. Observed variables (quantities computed from the full state via
+`observed`, not stored in `u`) are **not** supported in `save_idxs` yet and
+raise a dedicated `ArgumentError` pointing at workarounds and
+DifferentialEquations.jl#1036.
 
-This object is stored in the solution object and used for symbolic indexing of the subsetted
-solution.
+The object is stored on solution types when `save_idxs` omits part of the
+symbolic state or time-series parameter set. It lets `sol[x]`, `state_values`,
+and time-series parameter queries keep using the original symbols even though
+the solution arrays contain only the saved subset.
 
-In case the provided `saved_idxs` is `nothing` or `isempty`, or if the provided
-`saved_idxs` includes all of the variables and timeseries parameters, returns `nothing`.
+The constructor returns `nothing` when no metadata is needed, including
+`saved_idxs === nothing`, unavailable symbolic metadata, or requests that save
+all state variables and all time-series parameters.
+
+Solver-author contract:
+
+  - Pass the returned object to `build_solution(...; saved_subsystem = ss)` when
+    constructing a solution from symbolic `save_idxs`.
+  - Store the object on concrete time-series solution types as
+    `saved_subsystem`, or overload [`get_saved_subsystem`](@ref).
+  - Forward symbolic time-series parameter operations through
+    [`SavedSubsystemWithFallback`](@ref) when `saved_subsystem !== nothing`.
 """
 struct SavedSubsystem{V, T, M, I, P, Q, C}
     """
@@ -127,19 +199,24 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     if eltype(saved_idxs) == Int
         state_map = Dict{Int, Int}(v => k for (k, v) in enumerate(saved_idxs))
         return SavedSubsystem(
-            state_map, nothing, nothing, nothing, nothing, nothing, nothing)
+            state_map, nothing, nothing, nothing, nothing, nothing, nothing
+        )
     end
 
     # array state symbolics must be scalarized
-    saved_idxs = collect(Iterators.flatten(map(saved_idxs) do sym
-        if symbolic_type(sym) == NotSymbolic()
-            (sym,)
-        elseif sym isa AbstractArray && is_variable(indp, sym)
-            collect(sym)
-        else
-            (sym,)
-        end
-    end))
+    saved_idxs = collect(
+        Iterators.flatten(
+            map(saved_idxs) do sym
+                if symbolic_type(sym) == NotSymbolic()
+                    (sym,)
+                elseif sym isa AbstractArray && is_variable(indp, sym)
+                    collect(sym)
+                else
+                    (sym,)
+                end
+            end
+        )
+    )
 
     saved_state_idxs = Int[]
     ts_idx_to_type_to_param_idx = Dict()
@@ -171,7 +248,7 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
             cnt = get(ts_idx_to_count, idx.timeseries_idx, 0)
             ts_idx_to_count[idx.timeseries_idx] = cnt + 1
         else
-            throw(ArgumentError("Can only save variables and timeseries parameters. Got $var."))
+            throw(_invalid_save_idxs_symbol_error(indp, var))
         end
     end
 
@@ -212,7 +289,8 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
             identity_partitions = Set{Ttsidx}(keys(ts_idx_to_type_to_param_idx))
         end
         return SavedSubsystem(
-            state_map, nothing, nothing, identity_partitions, nothing, nothing, nothing)
+            state_map, nothing, nothing, identity_partitions, nothing, nothing, nothing
+        )
     end
 
     if num_ts_params == 0
@@ -249,14 +327,20 @@ function SavedSubsystem(indp, pobj, saved_idxs::Union{AbstractArray, Tuple})
     timeseries_idx_to_param_idx = Dict{TParammapKeys, TParamIdx}(timeseries_idx_to_param_idx)
     return SavedSubsystem(
         state_map, parammap, timeseries_idx_to_param_idx, identitypartitions,
-        timeseries_partition_templates, indexes_in_partition, ts_idx_to_count)
+        timeseries_partition_templates, indexes_in_partition, ts_idx_to_count
+    )
 end
 
 """
     $(TYPEDSIGNATURES)
 
-Given a `SavedSubsystem`, return the subset of state indexes of the original system that are
-saved, in the order they are saved.
+Return the original-system state indexes saved by a `SavedSubsystem`.
+
+The returned vector is ordered like the saved state portion of the solution. It
+does not include saved time-series parameters; when `save_idxs` selected only
+time-series parameters, this returns an empty vector. Solver setup uses this
+helper to translate symbolic `save_idxs` into the integer state indexes passed
+to low-level save machinery.
 """
 function get_saved_state_idxs(ss::SavedSubsystem)
     idxs = Vector{valtype(ss.state_map)}(undef, length(ss.state_map))
@@ -269,15 +353,27 @@ end
 """
     $(TYPEDEF)
 
-A combination of a `SavedSubsystem` and a fallback index provider. The provided fallback
-is used as the `symbolic_container` for the `SavedSubsystemWithFallback`. Manually
-implements `is_timeseries_parameter` and `timeseries_parameter_index` using the
-`SavedSubsystem` to return the appropriate indexes for the subset of saved variables,
-and `nothing`/`false` otherwise.
+A symbolic indexing adapter for subsetted solutions.
 
-Also implements `create_parameter_timeseries_collection`, `get_saveable_values` and
-`with_updated_parameter_timeseries_values` to appropriately handled subsetted timeseries
-parameters.
+`SavedSubsystemWithFallback(saved_subsystem, fallback)` combines the subset map
+with the original symbolic index provider. The `fallback` is returned from
+`symbolic_container`, while time-series parameter queries are filtered and
+renumbered through `saved_subsystem`.
+
+Use this wrapper whenever a solution saved only part of the symbolic state or
+time-series parameter set. It preserves the original symbolic names while
+ensuring:
+
+  - unsaved time-series parameters are reported as unavailable in the saved
+    solution,
+  - fully saved time-series partitions reuse the fallback representation, and
+  - partially saved partitions allocate compact saved buffers and map updates
+    back to the original parameter object.
+
+The wrapper implements the time-series parameter hooks used by the
+`SymbolicIndexingInterface`: `is_timeseries_parameter`,
+`timeseries_parameter_index`, `create_parameter_timeseries_collection`,
+`get_saveable_values`, and `with_updated_parameter_timeseries_values`.
 """
 struct SavedSubsystemWithFallback{S <: SavedSubsystem, T}
     saved_subsystem::S
@@ -285,16 +381,18 @@ struct SavedSubsystemWithFallback{S <: SavedSubsystem, T}
 end
 
 function SymbolicIndexingInterface.symbolic_container(sswf::SavedSubsystemWithFallback)
-    sswf.fallback
+    return sswf.fallback
 end
 
 function SymbolicIndexingInterface.is_timeseries_parameter(
-        sswf::SavedSubsystemWithFallback, sym)
-    timeseries_parameter_index(sswf, sym) !== nothing
+        sswf::SavedSubsystemWithFallback, sym
+    )
+    return timeseries_parameter_index(sswf, sym) !== nothing
 end
 
 function SymbolicIndexingInterface.timeseries_parameter_index(
-        sswf::SavedSubsystemWithFallback, sym)
+        sswf::SavedSubsystemWithFallback, sym
+    )
     ss = sswf.saved_subsystem
     ss.timeseries_params_map === nothing && return nothing
     if symbolic_type(sym) == NotSymbolic()
@@ -340,7 +438,8 @@ function get_saveable_values(sswf::SavedSubsystemWithFallback, ps, tsidx)
 end
 
 function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
-        sswf::SavedSubsystemWithFallback, ps, args...)
+        sswf::SavedSubsystemWithFallback, ps, args...
+    )
     ss = sswf.saved_subsystem
     for (tsidx, val) in args
         if tsidx in ss.identity_partitions
@@ -353,29 +452,47 @@ function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
 
         # now we know val isa TupleOfArraysWrapper
         for idx in ss.indexes_in_partition[tsidx]
-            set_parameter!(ps, val[ss.timeseries_params_map[idx].parameter_idx],
-                ss.timeseries_idx_to_param_idx[idx])
+            set_parameter!(
+                ps, val[ss.timeseries_params_map[idx].parameter_idx],
+                ss.timeseries_idx_to_param_idx[idx]
+            )
         end
     end
 
     return ps
 end
 
+
+function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
+        sswf::SavedSubsystemWithFallback, params::DespecializedParameters, args...
+    )
+    updated = with_updated_parameter_timeseries_values(sswf, params.params, args...)
+    return DespecializedParameters(updated)
+end
+
 """
     $(TYPEDSIGNATURES)
 
-Given a SciMLProblem `prob` and (possibly symbolic) `save_idxs`, return the `save_idxs`
-corresponding to the state variables and a `SavedSubsystem` to pass to `build_solution`.
+Translate user-facing `save_idxs` into solver state indexes and subsystem
+metadata.
 
-The second return value (corresponding to the `SavedSubsystem`) may be `nothing` in case
-one is not required. `save_idxs` may be a scalar or `nothing`.
+Given a SciML problem `prob` and a possibly symbolic `save_idxs`, return
+`(state_save_idxs, saved_subsystem)`. `state_save_idxs` is the integer-only
+state selection that should be passed to solver save machinery, while
+`saved_subsystem` is the [`SavedSubsystem`](@ref) to pass to `build_solution`.
+
+The helper preserves the scalar/vector shape of the user's request where it
+matters: scalar state selections remain scalar, vector state selections remain
+vectors, and selections containing only time-series parameters return
+`Int[]` for the state portion. Either return value may be `nothing` when no
+subset handling is needed.
 """
 get_save_idxs_and_saved_subsystem(prob, ::Nothing) = nothing, nothing
 function get_save_idxs_and_saved_subsystem(prob, save_idxs::Vector{Int})
-    save_idxs, SavedSubsystem(prob, parameter_values(prob), save_idxs)
+    return save_idxs, SavedSubsystem(prob, parameter_values(prob), save_idxs)
 end
 function get_save_idxs_and_saved_subsystem(prob, save_idx::Int)
-    save_idx, SavedSubsystem(prob, parameter_values(prob), save_idx)
+    return save_idx, SavedSubsystem(prob, parameter_values(prob), save_idx)
 end
 function get_save_idxs_and_saved_subsystem(prob, save_idxs)
     if !(save_idxs isa AbstractArray) || symbolic_type(save_idxs) != NotSymbolic()
@@ -390,14 +507,92 @@ function get_save_idxs_and_saved_subsystem(prob, save_idxs)
             # no states to save
             save_idxs = Int[]
         elseif !(save_idxs isa AbstractArray) ||
-               symbolic_type(save_idxs) != NotSymbolic()
+                symbolic_type(save_idxs) != NotSymbolic()
             # only a single state to save, and save it as a scalar timeseries instead of
             # single-element array
             save_idxs = only(_save_idxs)
         else
             save_idxs = _save_idxs
         end
+    else
+        # `SavedSubsystem` also returns `nothing` when the selection saves every
+        # state variable (and every time-series parameter), in which case
+        # symbolic `save_idxs` must still be translated to integer state indexes,
+        # preserving the requested order, so raw symbols never leak into integer
+        # indexing. Non-symbolic `save_idxs` (e.g. `Colon`) pass through untouched.
+        save_idxs = translate_symbolic_save_idxs(prob, save_idxs)
     end
 
     return save_idxs, saved_subsystem
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Translate symbolic `save_idxs` into integer state indexes, preserving the
+requested order and scalarizing symbolic arrays. Non-symbolic `save_idxs` (an
+integer, `Colon`, etc.) are returned unchanged. A single symbolic entry that
+resolves to one state is returned as a scalar so it is saved as a scalar
+timeseries rather than a single-element array.
+"""
+function translate_symbolic_save_idxs(indp, save_idxs)
+    if save_idxs isa AbstractArray && symbolic_type(save_idxs) == NotSymbolic()
+        translated = Int[]
+        for sym in save_idxs
+            _append_state_indices!(translated, indp, sym)
+        end
+        return translated
+    elseif symbolic_type(save_idxs) == NotSymbolic()
+        return save_idxs
+    else
+        translated = Int[]
+        _append_state_indices!(translated, indp, save_idxs)
+        return length(translated) == 1 ? only(translated) : translated
+    end
+end
+
+function _append_state_indices!(translated, indp, sym)
+    if symbolic_type(sym) == NotSymbolic()
+        push!(translated, sym)
+    elseif sym isa AbstractArray && is_variable(indp, sym)
+        for s in collect(sym)
+            push!(translated, variable_index(indp, s))
+        end
+    else
+        idx = variable_index(indp, sym)
+        if idx === nothing
+            throw(_invalid_save_idxs_symbol_error(indp, sym; allow_timeseries_params = false))
+        end
+        push!(translated, idx)
+    end
+    return translated
+end
+
+"""
+    _invalid_save_idxs_symbol_error(indp, var; allow_timeseries_params = true)
+
+Build the `ArgumentError` for a symbolic entry that cannot be used in
+`save_idxs`. Observed quantities get a dedicated message (DifferentialEquations.jl#1036);
+other non-state / non-timeseries-parameter symbols keep a generic rejection.
+"""
+function _invalid_save_idxs_symbol_error(indp, var; allow_timeseries_params::Bool = true)
+    if is_observed(indp, var)
+        return ArgumentError(
+            string(
+                "Saving observed variables via `save_idxs` is not yet supported (got $var). ",
+                "Observed quantities are computed from the full state and are not stored in `u`, ",
+                "so the solver cannot select them with integer state indices. ",
+                "Workarounds: (1) omit `save_idxs` and index the full solution with `sol[$var]`; ",
+                "(2) use `DiffEqCallbacks.SavingCallback` to record observed values at save times; ",
+                "(3) pass the state variables the observed quantity depends on in `save_idxs`. ",
+                "See SciML/DifferentialEquations.jl#1036."
+            )
+        )
+    elseif allow_timeseries_params
+        return ArgumentError(
+            "Can only save variables and timeseries parameters. Got $var."
+        )
+    else
+        return ArgumentError("Can only save variables. Got $var.")
+    end
 end

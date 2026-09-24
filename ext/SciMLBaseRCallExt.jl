@@ -5,7 +5,7 @@ using SciMLBase
 
 # Always assume a function from R is not in-place because copy-on-write disallows it!
 function SciMLBase.isinplace(f::RFunction, args...; kwargs...)
-    false
+    return false
 end
 
 end

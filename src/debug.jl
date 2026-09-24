@@ -20,7 +20,7 @@ one could perform a domain transformation on the variables so that such an issue
 definition of `f`.
 
 For more information, check out the following FAQ page:
-https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?"""
+<https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?>"""
 
 FUNCTIONWRAPPERSWRAPPERS_MSG = """
 No appropriate function wrapper found. This means that the auto-despecialization code used for the reduction
@@ -28,19 +28,19 @@ of compile times has failed. This is most likely due to an issue internal to the
 found upon evaluation of the model. To work around this issue, use `SciMLBase.FullSpecialize`, like:
 
 ```julia
-ODEProblem{iip,SciMLBase.FullSpecialize}(f,u0,tspan,p)
+ODEProblem{iip, SciMLBase.FullSpecialize}(f, u0, tspan, p)
 ```
 
 where `iip` is either true or false depending on the in-placeness of the definition of `f` (i.e. for ODEs
-if `f` has 3 arguments `(u,p,t)` then it's false, otherwise `f(du,u,p,t)` is true).
+if `f` has 3 arguments `(u, p, t)` then it's false, otherwise `f(du, u, p, t)` is true).
 
 For more information on the control of specialization options, please see the documentation at:
 
-https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choices
+<https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Choices>
 
 If one wants way more detail than necessary on why the function wrappers exist and what they are doing, see:
 
-https://sciml.ai/news/2022/09/21/compile_time/"""
+<https://sciml.ai/news/2022/09/21/compile_time>"""
 
 const NO_PARAMETERS_ARITHMETIC_ERROR_MESSAGE = """
 
@@ -48,17 +48,42 @@ An arithmetic operation was performed on a NullParameters object. This means no 
 into the AbstractSciMLProblem (e.x.: ODEProblem) but the parameters object `p` was used in an arithmetic
 expression. Two common reasons for this issue are:
 
-1. Forgetting to pass parameters into the problem constructor. For example, `ODEProblem(f,u0,tspan)` should
-   be `ODEProblem(f,u0,tspan,p)` in order to use parameters.
+1. Forgetting to pass parameters into the problem constructor. For example, `ODEProblem(f, u0, tspan)` should
+   be `ODEProblem(f, u0, tspan, p)` in order to use parameters.
 
 2. Using the wrong function signature. For example, with `ODEProblem`s the function signature is always
-   `f(du,u,p,t)` for the in-place form or `f(u,p,t)` for the out-of-place form. Note that the `p` argument
+   `f(du, u, p, t)` for the in-place form or `f(u, p, t)` for the out-of-place form. Note that the `p` argument
    will always be in the function signature regardless of if the problem is defined with parameters!
 """
 
+"""
+    _has_sciml_in_stacktrace()
+
+Check whether any frame in the current exception's stacktrace originates from SciMLBase
+(e.g. from `SciMLFunction` wrappers in `scimlfunctions.jl`). This is used to avoid showing
+SciML-specific error hints when the error occurs outside of a SciML solver context.
+"""
+function _has_sciml_in_stacktrace()
+    bt = catch_backtrace()
+    frames = stacktrace(bt)
+    scimlbase_src = let d = pkgdir(@__MODULE__)
+        d === nothing ? nothing : joinpath(d, "src")
+    end
+    scimlbase_src === nothing && return false
+    for frame in frames
+        fpath = string(frame.file)
+        if startswith(fpath, scimlbase_src)
+            return true
+        end
+    end
+    return false
+end
+
 function __init__()
     Base.Experimental.register_error_hint(DomainError) do io, e
-        if e isa DomainError && occursin("will only return a complex result if called with a complex argument. Try ", e.msg)
+        if e isa DomainError &&
+                occursin("will only return a complex result if called with a complex argument. Try ", e.msg) &&
+                _has_sciml_in_stacktrace()
             println(io, DOMAINERROR_COMPLEX_MSG)
         end
     end
@@ -69,8 +94,8 @@ function __init__()
         end
     end
 
-    Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
-    e
+    return Base.Experimental.register_error_hint(FunctionWrappersWrappers.NoFunctionWrapperFoundError) do io,
+            e
         println(io, FUNCTIONWRAPPERSWRAPPERS_MSG)
     end
 end

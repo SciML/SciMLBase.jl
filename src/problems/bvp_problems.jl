@@ -1,17 +1,30 @@
 """
 $(TYPEDEF)
+
+Marker for multi-point first-order BVP layouts.
+
+`StandardBVProblem()` identifies boundary value problems whose boundary
+condition is supplied as one residual function over the current solution values
+and mesh. It is returned by [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) for a `BVProblem` that does
+not use separate endpoint boundary-condition functions.
 """
 struct StandardBVProblem end
 
 """
 $(TYPEDEF)
+
+Marker for two-point first-order BVP layouts.
+
+`TwoPointBVProblem{iip}` identifies BVPs whose boundary condition is supplied as
+a pair of endpoint residual functions. The `iip` parameter records the in-place
+convention of the associated `BVPFunction` used for type-stable construction.
 """
 struct TwoPointBVProblem{iip} end # The iip is needed to make type stable construction easier
 
-@doc doc"""
+"""
 
 Defines an BVP problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/>
 
 ## Mathematical Specification of a BVP Problem
 
@@ -19,7 +32,7 @@ To define a BVP Problem, you simply need to give the function ``f`` and the init
 condition ``u_0`` which define an ODE:
 
 ```math
-\frac{du}{dt} = f(u,p,t)
+\\frac{du}{dt} = f(u,p,t)
 ```
 
 along with an implicit function `bc` which defines the residual equation, where
@@ -32,8 +45,10 @@ is the manifold on which the solution must live. A common form for this is the
 two-point `BVProblem` where the manifold defines the solution at two points:
 
 ```math
-u(t_0) = a
-u(t_f) = b
+\\begin{align*}
+u(t_0) &= a, \\\\
+u(t_f) &= b
+\\end{align*}
 ```
 
 ## Problem Type
@@ -41,16 +56,16 @@ u(t_f) = b
 ### Constructors
 
 ```julia
-TwoPointBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
-BVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
+TwoPointBVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
+BVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
 ```
 
 or if we have an initial guess function `initialGuess(p, t)` for the given BVP,
 we can pass the initial guess to the problem constructors:
 
 ```julia
-TwoPointBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
-BVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
+TwoPointBVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
+BVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
 ```
 
 For any BVP problem type, `bc` must be inplace if `f` is inplace. Otherwise it must be
@@ -72,17 +87,18 @@ Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
 
 If the bvp is a TwoPointBVProblem then `bc` must be a Tuple `(bca, bcb)` and each of them
-must define either of the following functions:
+must define either of the following sets of functions:
 
 ```julia
-begin
-    bca!(resid_a, u_a, p)
-    bcb!(resid_b, u_b, p)
-end
-begin
-    resid_a = bca(u_a, p)
-    resid_b = bcb(u_b, p)
-end
+bca!(resid_a, u_a, p)
+bcb!(resid_b, u_b, p)
+```
+
+or
+
+```julia
+resid_a = bca(u_a, p)
+resid_b = bcb(u_b, p)
 ```
 
 where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
@@ -102,7 +118,14 @@ every solve call.
   initial value problem, or a `Vector` of values for ``u(t_i)`` for collocation
   methods.
 * `tspan`: The timespan for the problem.
-* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `lb`: The lower bounds for the solution variables. Defaults to `nothing`.
+* `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
+* `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
+* `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
+* Construction layout: Query [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) to obtain either
+  `StandardBVProblem` or `TwoPointBVProblem`.
+* `singular_term`: The singular term of the problem. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ### Special Keyword Arguments
@@ -113,38 +136,47 @@ every solve call.
   doesn't store array size as part of type information. If we can't reliably infer this,
   we set it to `Nothing`. Downstreams solvers must be setup to deal with this case.
 """
-struct BVProblem{uType, tType, isinplace, nlls, P, F, LC, UC, PT, K} <:
-       AbstractBVProblem{uType, tType, isinplace, nlls}
+struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, S, K} <:
+    AbstractBVProblem{uType, tType, isinplace, nlls}
     f::F
     u0::uType
     tspan::tType
     p::P
+    lb::LB
+    ub::UB
     lcons::LC
     ucons::UC
     problem_type::PT
+    singular_term::S
     kwargs::K
 
-    @add_kwonly function BVProblem{iip}(f::AbstractBVPFunction{iip, TP}, u0, tspan,
-            p = NullParameters(); lcons = nothing, ucons = nothing, problem_type = nothing, nlls = nothing,
-            kwargs...) where {iip, TP}
+    @add_kwonly function BVProblem{iip}(
+            f::AbstractBVPFunction{iip, TP}, u0, tspan,
+            p = NullParameters(); lb = nothing, ub = nothing, lcons = nothing,
+            ucons = nothing, problem_type = nothing, singular_term = nothing, nlls = nothing,
+            kwargs...
+        ) where {iip, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         prob_type = TP ? TwoPointBVProblem{iip}() : StandardBVProblem()
+        @assert singular_term === nothing || isa(singular_term, AbstractMatrix) "Singular term must be a singular matrix or nothing."
 
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
             problem_type = prob_type
         else
-            @assert prob_type===problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
+            @assert prob_type === problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
 
         if nlls === nothing
             if !hasmethod(length, Tuple{typeof(_u0)})
                 # If _u0 is a function for initial guess we won't be able to infer
                 __u0 = _u0 isa Function ?
-                       (hasmethod(_u0, Tuple{typeof(p), typeof(first(_tspan))}) ?
-                        _u0(p, first(_tspan)) : _u0(first(_tspan))) : nothing
+                    (
+                        hasmethod(_u0, Tuple{typeof(p), typeof(first(_tspan))}) ?
+                        _u0(p, first(_tspan)) : _u0(first(_tspan))
+                    ) : nothing
             else
                 __u0 = _u0
             end
@@ -167,21 +199,26 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LC, UC, PT, K} <:
                 if f.bcresid_prototype !== nothing
                     _nlls = length(f.bcresid_prototype) != length(__u0)
                 else
-                    _nlls = Nothing # Cannot reliably infer
+                    # For StandardBVProblem without bcresid_prototype, the solver
+                    # creates a residual matching u0 size, so it is not NLLS.
+                    _nlls = false
                 end
             end
         else
             _nlls = _unwrap_val(nlls)
         end
 
-        return new{typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p),
-            typeof(f), typeof(lcons), typeof(ucons),
-            typeof(problem_type), typeof(kwargs)}(
-            f, _u0, _tspan, p, lcons, ucons, problem_type, kwargs)
+        return new{
+            typeof(_u0), typeof(_tspan), iip, _nlls, typeof(p),
+            typeof(f), typeof(lb), typeof(ub), typeof(lcons), typeof(ucons),
+            typeof(problem_type), typeof(singular_term), typeof(kwargs),
+        }(
+            f, _u0, _tspan, p, lb, ub, lcons, ucons, problem_type, singular_term, kwargs
+        )
     end
 
     function BVProblem{iip}(f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        BVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+        return BVProblem(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
 
@@ -196,6 +233,20 @@ end
 
 # This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+"""
+    TwoPointBVPFunction(f, bc; kwargs...)
+    TwoPointBVPFunction{iip}(f, bc; kwargs...)
+
+Construct a [`BVPFunction`](@ref) for boundary conditions evaluated separately
+at the two endpoints. `bc` must contain exactly two callbacks with the same
+in-place convention. Out-of-place callbacks have signatures `bca(ua, p)` and
+`bcb(ub, p)`; in-place callbacks have signatures `bca!(resa, ua, p)` and
+`bcb!(resb, ub, p)` and require `bcresid_prototype = (resa, resb)`.
+
+All other keywords follow [`BVPFunction`](@ref). The returned wrapper has its
+two-point layout encoded in the type so boundary-value solvers can dispatch on
+it without inspecting the callbacks.
+"""
 struct TwoPointBVPFunction{iip} end
 
 @inline function TwoPointBVPFunction(args...; kwargs...)
@@ -205,35 +256,51 @@ end
     return BVPFunction{iip}(args...; kwargs..., twopoint = Val(true))
 end
 
-function TwoPointBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
-        bcresid_prototype = nothing, kwargs...) where {iip}
-    return TwoPointBVProblem(TwoPointBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
-        p; kwargs...)
+function TwoPointBVProblem{iip}(
+        f, bc, u0, tspan, p = NullParameters();
+        bcresid_prototype = nothing, kwargs...
+    ) where {iip}
+    return TwoPointBVProblem(
+        TwoPointBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
+        p; kwargs...
+    )
 end
-function TwoPointBVProblem(f, bc, u0, tspan, p = NullParameters();
-        bcresid_prototype = nothing, kwargs...)
-    return TwoPointBVProblem(TwoPointBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
-        kwargs...)
+function TwoPointBVProblem(
+        f, bc, u0, tspan, p = NullParameters();
+        bcresid_prototype = nothing, kwargs...
+    )
+    return TwoPointBVProblem(
+        TwoPointBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
+        kwargs...
+    )
 end
-function TwoPointBVProblem{iip}(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
-        p = NullParameters(); kwargs...) where {iip, twopoint}
+function TwoPointBVProblem{iip}(
+        f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+        p = NullParameters(); kwargs...
+    ) where {iip, twopoint}
     @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `BVPFunction`."
     return BVProblem{iip}(f, u0, tspan, p; kwargs...)
 end
-function TwoPointBVProblem(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
-        p = NullParameters(); kwargs...) where {iip, twopoint}
+function TwoPointBVProblem(
+        f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+        p = NullParameters(); kwargs...
+    ) where {iip, twopoint}
     @assert twopoint "`TwoPointBVProblem` can only be used with a `TwoPointBVPFunction`. Instead of using `BVPFunction`, use `TwoPointBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `BVPFunction`."
     return BVProblem{iip}(f, u0, tspan, p; kwargs...)
 end
 
 # Allow previous timeseries solution
-function TwoPointBVProblem(f::AbstractODEFunction, bc, sol::T, tspan::Tuple,
-        p = NullParameters(); kwargs...) where {T <: AbstractTimeseriesSolution}
+function TwoPointBVProblem(
+        f::AbstractODEFunction, bc, sol::T, tspan::Tuple,
+        p = NullParameters(); kwargs...
+    ) where {T <: AbstractTimeseriesSolution}
     return TwoPointBVProblem(f, bc, sol.u, tspan, p; kwargs...)
 end
 # Allow initial guess function for the initial guess
-function TwoPointBVProblem(f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
-        p = NullParameters(); kwargs...)
+function TwoPointBVProblem(
+        f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
+        p = NullParameters(); kwargs...
+    )
     u0 = [initialGuess(i) for i in tspan]
     return TwoPointBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
@@ -242,18 +309,32 @@ end
 
 """
 $(TYPEDEF)
+
+Marker for multi-point second-order BVP layouts.
+
+`StandardSecondOrderBVProblem()` identifies second-order BVPs whose boundary
+condition is supplied as one residual function over derivative values, state
+values, parameters, and mesh points. It is returned by [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+for a `SecondOrderBVProblem` when endpoint residual functions are not used.
 """
 struct StandardSecondOrderBVProblem end
 
 """
 $(TYPEDEF)
+
+Marker for two-point second-order BVP layouts.
+
+`TwoPointSecondOrderBVProblem{iip}` identifies second-order BVPs whose boundary
+condition is supplied as a pair of endpoint residual functions. The `iip`
+parameter records the in-place convention of the associated `DynamicalBVPFunction`
+used for type-stable construction.
 """
 struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type stable construction easier
 
-@doc doc"""
+"""
 
 Defines a second order BVP problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/>
 
 ## Mathematical Specification of a second order BVP Problem
 
@@ -261,21 +342,23 @@ To define a second order BVP Problem, you simply need to give the function ``f``
 condition ``u_0`` which define an ODE:
 
 ```math
-\frac{ddu}{dt} = f(du,u,p,t)
+u'' = \\frac{d^2 u}{dt^2} = f(u', u, p, t)
 ```
 
 along with an implicit function `bc` which defines the residual equation, where
 
 ```math
-bc(du,u,p,t) = 0
+bc(u', u, p, t) = 0
 ```
 
 is the manifold on which the solution must live. A common form for this is the
 two-point `SecondOrderBVProblem` where the manifold defines the solution at two points:
 
 ```math
-g(u(t_0),u'(t_0)) = 0
-g(u(t_f),u'(t_f)) = 0
+\\begin{align*}
+g(u(t_0), u'(t_0)) &= 0 \\\\
+g(u(t_f), u'(t_f)) &= 0
+\\end{align*}
 ```
 
 ## Problem Type
@@ -283,16 +366,16 @@ g(u(t_f),u'(t_f)) = 0
 ### Constructors
 
 ```julia
-TwoPointSecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
-SecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
+TwoPointSecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
+SecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
 ```
 
 or if we have an initial guess function `initialGuess(p, t)` for the given BVP,
 we can pass the initial guess to the problem constructors:
 
 ```julia
-TwoPointSecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
-SecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
+TwoPointSecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
+SecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
 ```
 
 For any BVP problem type, `bc` must be inplace if `f` is inplace. Otherwise it must be
@@ -314,21 +397,23 @@ Note that all features of the `ODESolution` are present in this form.
 In both cases, the size of the residual matches the size of the initial condition.
 
 If the bvp is a `TwoPointSecondOrderBVProblem` then `bc` must be a Tuple `(bca, bcb)` and each of them
-must define either of the following functions:
+must define either of the following sets of functions:
 
 ```julia
-begin
-    bca!(resid_a, du_a, u_a, p)
-    bcb!(resid_b, du_b, u_b, p)
-end
-begin
-    resid_a = bca(du_a, u_a, p)
-    resid_b = bcb(du_b, u_b, p)
-end
+bca!(resid_a, du_a, u_a, p)
+bcb!(resid_b, du_b, u_b, p)
+```
+
+or
+
+```julia
+resid_a = bca(du_a, u_a, p)
+resid_b = bcb(du_b, u_b, p)
 ```
 
 where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
-the solution values at the two endpoints, `du_a` and `du_b` are the derivative of solution values at the two endpoints, and `p` are the parameters.
+the solution values at the two endpoints, `du_a` and `du_b` are the derivative
+of solution values at the two endpoints, and `p` are the parameters.
 
 
 Parameters are optional, and if not given, then a `NullParameters()` singleton
@@ -345,58 +430,92 @@ every solve call.
   initial value problem, or a `Vector` of values for ``u(t_i)`` for collocation
   methods.
 * `tspan`: The timespan for the problem.
-* `p`: The parameters for the problem. Defaults to `NullParameters`
+* `p`: The parameters for the problem. Defaults to `NullParameters`.
+* `lb`: The lower bounds for the solution variables. Defaults to `nothing`.
+* `ub`: The upper bounds for the solution variables. Defaults to `nothing`.
+* `lcons`: The lower bounds for the constraint residuals. Defaults to `nothing`.
+* `ucons`: The upper bounds for the constraint residuals. Defaults to `nothing`.
+* Construction layout: Query [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) to obtain either
+  `StandardSecondOrderBVProblem` or `TwoPointSecondOrderBVProblem`.
 * `kwargs`: The keyword arguments passed onto the solves.
 """
-struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, PT, K} <:
-       AbstractBVProblem{uType, tType, isinplace, nlls}
+struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, K} <:
+    AbstractBVProblem{uType, tType, isinplace, nlls}
     f::F
     u0::uType
     tspan::tType
     p::P
+    lb::LB
+    ub::UB
+    lcons::LC
+    ucons::UC
     problem_type::PT
     kwargs::K
 
     @add_kwonly function SecondOrderBVProblem{iip}(
             f::DynamicalBVPFunction{iip, specialize, TP}, u0, tspan,
-            p = NullParameters(); problem_type = nothing, nlls = nothing,
-            kwargs...) where {iip, specialize, TP}
+            p = NullParameters(); lb = nothing, ub = nothing, lcons = nothing,
+            ucons = nothing, problem_type = nothing, nlls = nothing,
+            kwargs...
+        ) where {iip, specialize, TP}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
         prob_type = TP ? TwoPointSecondOrderBVProblem{iip}() :
-                    StandardSecondOrderBVProblem()
+            StandardSecondOrderBVProblem()
 
         # Needed to ensure that `problem_type` doesn't get passed in kwargs
         if problem_type === nothing
             problem_type = prob_type
         else
-            @assert prob_type===problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
+            @assert prob_type === problem_type "This indicates incorrect problem type specification! Users should never pass in `problem_type` kwarg, this exists exclusively for internal use."
         end
 
-        return new{typeof(_u0), typeof(_tspan), iip, typeof(nlls), typeof(p), typeof(f),
-            typeof(problem_type), typeof(kwargs)}(f, _u0, _tspan, p, problem_type, kwargs)
+        return new{
+            typeof(_u0), typeof(_tspan), iip, typeof(nlls), typeof(p), typeof(f),
+            typeof(lb), typeof(ub), typeof(lcons), typeof(ucons),
+            typeof(problem_type), typeof(kwargs),
+        }(
+            f, _u0, _tspan, p, lb, ub, lcons, ucons, problem_type, kwargs
+        )
     end
 
     function SecondOrderBVProblem{iip}(
-            f, bc, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        SecondOrderBVProblem(DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+            f, bc, u0, tspan, p = NullParameters(); kwargs...
+        ) where {iip}
+        return SecondOrderBVProblem(DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
     end
 end
 
 function SecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 5)
     return SecondOrderBVProblem{iip}(
-        DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+        DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...
+    )
 end
 
 function SecondOrderBVProblem(
-        f::DynamicalBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
+        f::DynamicalBVPFunction, u0, tspan, p = NullParameters(); kwargs...
+    )
     return SecondOrderBVProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 # This is mostly a fake struct and isn't used anywhere
 # But we need it for function calls like TwoPointBVProblem{iip}(...) = ...
+"""
+    TwoPointDynamicalBVPFunction(f, bc; kwargs...)
+    TwoPointDynamicalBVPFunction{iip}(f, bc; kwargs...)
+
+Construct a [`DynamicalBVPFunction`](@ref) for second-order boundary conditions
+evaluated separately at the two endpoints. `bc` must contain exactly two
+callbacks with the same in-place convention. Out-of-place callbacks have
+signatures `bca(dua, ua, p)` and `bcb(dub, ub, p)`; in-place callbacks have
+signatures `bca!(resa, dua, ua, p)` and `bcb!(resb, dub, ub, p)` and require
+`bcresid_prototype = (resa, resb)`.
+
+All other keywords follow [`DynamicalBVPFunction`](@ref). The returned wrapper
+encodes the two-point layout in its type.
+"""
 struct TwoPointDynamicalBVPFunction{iip} end
 
 @inline function TwoPointDynamicalBVPFunction(args...; kwargs...)
@@ -406,59 +525,78 @@ end
     return DynamicalBVPFunction{iip}(args...; kwargs..., twopoint = Val(true))
 end
 
-function TwoPointSecondOrderBVProblem{iip}(f, bc, u0, tspan, p = NullParameters();
-        bcresid_prototype = nothing, kwargs...) where {iip}
+function TwoPointSecondOrderBVProblem{iip}(
+        f, bc, u0, tspan, p = NullParameters();
+        bcresid_prototype = nothing, kwargs...
+    ) where {iip}
     return TwoPointSecondOrderBVProblem(
         TwoPointDynamicalBVPFunction{iip}(f, bc; bcresid_prototype), u0, tspan,
-        p; kwargs...)
+        p; kwargs...
+    )
 end
-function TwoPointSecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters();
-        bcresid_prototype = nothing, kwargs...)
+function TwoPointSecondOrderBVProblem(
+        f, bc, u0, tspan, p = NullParameters();
+        bcresid_prototype = nothing, kwargs...
+    )
     return TwoPointSecondOrderBVProblem(
         TwoPointDynamicalBVPFunction(f, bc; bcresid_prototype), u0, tspan, p;
-        kwargs...)
+        kwargs...
+    )
 end
 function TwoPointSecondOrderBVProblem{iip}(
         f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
-        p = NullParameters(); kwargs...) where {iip, twopoint}
+        p = NullParameters(); kwargs...
+    ) where {iip, twopoint}
     @assert twopoint "`TwoPointSecondOrderBVProblem` can only be used with a `TwoPointDynamicalBVPFunction`. Instead of using `DynamicalBVPFunction`, use `TwoPointDynamicalBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `DynamicalBVPFunction`."
     return SecondOrderBVProblem{iip}(f, u0, tspan, p; kwargs...)
 end
-function TwoPointSecondOrderBVProblem(f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
-        p = NullParameters(); kwargs...) where {iip, twopoint}
+function TwoPointSecondOrderBVProblem(
+        f::AbstractBVPFunction{iip, twopoint}, u0, tspan,
+        p = NullParameters(); kwargs...
+    ) where {iip, twopoint}
     @assert twopoint "`TwoPointSecondOrderBVProblem` can only be used with a `TwoPointDynamicalBVPFunction`. Instead of using `DynamicalBVPFunction`, use `TwoPointDynamicalBVPFunction` or pass a kwarg `twopoint=Val(true)` during the construction of the `DynamicalBVPFunction`."
     return SecondOrderBVProblem{iip}(f, u0, tspan, p; kwargs...)
 end
 
 # Allow previous timeseries solution
-function TwoPointSecondOrderBVProblem(f::AbstractODEFunction, bc, sol::T, tspan::Tuple,
-        p = NullParameters(); kwargs...) where {T <: AbstractTimeseriesSolution}
+function TwoPointSecondOrderBVProblem(
+        f::AbstractODEFunction, bc, sol::T, tspan::Tuple,
+        p = NullParameters(); kwargs...
+    ) where {T <: AbstractTimeseriesSolution}
     return TwoPointSecondOrderBVProblem(f, bc, sol.u, tspan, p; kwargs...)
 end
 # Allow initial guess function for the initial guess
 function TwoPointSecondOrderBVProblem(
         f::AbstractODEFunction, bc, initialGuess, tspan::AbstractVector,
-        p = NullParameters(); kwargs...)
+        p = NullParameters(); kwargs...
+    )
     u0 = [initialGuess(i) for i in tspan]
     return TwoPointSecondOrderBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
 
-@doc doc"""
+"""
+    BVPAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
 
-Holds information on what variables to alias
-when solving an BVP. Conforms to the AbstractAliasSpecifier interface. 
-    `BVPAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)`
+Control which BVP problem inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial mesh/state guess, `alias_du0` controls an
+initial derivative guess when the problem representation has one, `alias_p`
+controls the parameter object, `alias_f` controls the BVP function object, and
+`alias_tstops` controls the `tstops` vector. A value of `nothing` delegates to
+the solver default. Set `alias = true` or `alias = false` to apply the same
+policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `BVPAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the BVP function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `BVPAliasSpecifier`.
 """
 struct BVPAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
@@ -467,9 +605,11 @@ struct BVPAliasSpecifier <: AbstractAliasSpecifier
     alias_du0::Union{Bool, Nothing}
     alias_tstops::Union{Bool, Nothing}
 
-    function BVPAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-        if alias == true
+    function BVPAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)

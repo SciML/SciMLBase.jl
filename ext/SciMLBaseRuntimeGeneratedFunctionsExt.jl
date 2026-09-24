@@ -1,20 +1,22 @@
 module SciMLBaseRuntimeGeneratedFunctionsExt
 
-using SciMLBase
-using RuntimeGeneratedFunctions
+using SciMLBase: SciMLBase
+using RuntimeGeneratedFunctions: RuntimeGeneratedFunctions
 
-function SciMLBase.numargs(f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
+function SciMLBase.numargs(
+        f::RuntimeGeneratedFunctions.RuntimeGeneratedFunction{
+            T,
+            V,
+            W,
+            I,
+        }
+    ) where {
         T,
         V,
         W,
-        I
-}) where {
-        T,
-        V,
-        W,
-        I
-}
-    (length(T),)
+        I,
+    }
+    return (length(T),)
 end
 
 end

@@ -1,40 +1,48 @@
 using Pkg
+
+if get(ENV, "GROUP", "All") == "Reactant"
+    Pkg.add(PackageSpec(name = "Reactant", version = "0.2"))
+end
 using SafeTestsets
 using Test
+using SciMLTesting
 
-const GROUP = get(ENV, "GROUP", "All")
 const is_APPVEYOR = (Sys.iswindows() && haskey(ENV, "APPVEYOR"))
 
 function activate_downstream_env()
     Pkg.activate("downstream")
     Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
-    Pkg.instantiate()
+    return Pkg.instantiate()
 end
 
 function activate_python_env()
     Pkg.activate("python")
     Pkg.develop(PackageSpec(path = dirname(@__DIR__)))
-    Pkg.instantiate()
+    return Pkg.instantiate()
 end
 
-@time begin
-    if GROUP == "QA" || GROUP == "All"
-        @time @safetestset "Aqua" begin
-            include("aqua.jl")
+run_tests(;
+    core = function ()
+        @time @safetestset "Adapt structure" begin
+            include("adapt.jl")
         end
-    end
-    if GROUP == "Core" || GROUP == "All"
         @time @safetestset "Display" begin
             include("display.jl")
+        end
+        @time @safetestset "FunctionProperties extension" begin
+            include("function_properties_ext.jl")
         end
         @time @safetestset "Existence functions" begin
             include("existence_functions.jl")
         end
+        @time @safetestset "Public interface declarations" begin
+            include("public_interface.jl")
+        end
+        @time @safetestset "Compile-time trait inference" begin
+            include("inference_tests.jl")
+        end
         @time @safetestset "Function Building Error Messages" begin
             include("function_building_error_messages.jl")
-        end
-        @time @safetestset "Solver Missing Error Messages" begin
-            include("solver_missing_error_messages.jl")
         end
         @time @safetestset "Integrator interface" begin
             include("integrator_tests.jl")
@@ -42,17 +50,47 @@ end
         @time @safetestset "Ensemble functionality" begin
             include("ensemble_tests.jl")
         end
+        @time @safetestset "Ensemble RNG unit tests" begin
+            include("ensemble_rng_unit.jl")
+        end
         @time @safetestset "Solution interface" begin
             include("solution_interface.jl")
+        end
+        @time @safetestset "Public solution builder interface" begin
+            include("solution_builder_interface.jl")
+        end
+        @time @safetestset "Interpolation types" begin
+            include("interpolation_tests.jl")
+        end
+        @time @safetestset "PDE solutions" begin
+            include("pde_solutions.jl")
         end
         @time @safetestset "DE function conversion" begin
             include("convert_tests.jl")
         end
+        @time @safetestset "Function wrappers" begin
+            include("function_wrappers.jl")
+        end
+        @time @safetestset "Despecialized parameters" begin
+            include("despecialized_parameters.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
+        @time @safetestset "Error hints" begin
+            include("error_hint_tests.jl")
+        end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
+        end
+        @time @safetestset "Eigenvalue problem tests" begin
+            include("eigenvalue_problem_tests.jl")
+        end
+        @time @safetestset "ConvexOptimization problem/solution tests" begin
+            include("convex_optimization_tests.jl")
+        end
+        @time @safetestset "HomotopyProblem tests" begin
+            include("homotopy_problem_tests.jl")
         end
         @time @safetestset "Serialization tests" begin
             include("serialization_tests.jl")
@@ -60,92 +98,150 @@ end
         @time @safetestset "Clocks" begin
             include("clock.jl")
         end
-    end
-
-    if !is_APPVEYOR &&
-       (GROUP == "Core" || GROUP == "All" || GROUP == "SymbolicIndexingInterface")
-        @time @safetestset "Remake" begin
-            include("remake_tests.jl")
+        @time @safetestset "Callback constructors" begin
+            include("callback_constructors.jl")
         end
-    end
-
-    if !is_APPVEYOR && GROUP == "Downstream"
-        activate_downstream_env()
-        @time @safetestset "Ensembles of Zero Length Solutions" begin
-            include("downstream/ensemble_zero_length.jl")
+        @time @safetestset "NonlinearProblem Zygote cotangents" begin
+            include("nonlinearproblem_zygote.jl")
         end
-        @time @safetestset "Timing first batch when solving Ensembles" begin
-            include("downstream/ensemble_first_batch.jl")
+        @time @safetestset "Enzyme inactive solver algorithms" begin
+            include("enzyme_inactive_algorithm.jl")
         end
-        @time @safetestset "solving Ensembles with multiple problems" begin
-            include("downstream/ensemble_multi_prob.jl")
+        return if !is_APPVEYOR
+            @time @safetestset "Remake" begin
+                include("remake_tests.jl")
+            end
         end
-        @time @safetestset "Ensemble solution statistics" begin
-            include("downstream/ensemble_stats.jl")
+    end,
+    groups = Dict(
+        "Reactant" => function ()
+            return @safetestset "Reactant specialization" begin
+                include("reactant_specialization.jl")
+            end
+        end,
+        "Downstream" => function ()
+            return if !is_APPVEYOR
+                activate_downstream_env()
+                @time @safetestset "Ensembles of Zero Length Solutions" begin
+                    include("downstream/ensemble_zero_length.jl")
+                end
+                @time @safetestset "Timing first batch when solving Ensembles" begin
+                    include("downstream/ensemble_first_batch.jl")
+                end
+                @time @safetestset "solving Ensembles with multiple problems" begin
+                    include("downstream/ensemble_multi_prob.jl")
+                end
+                @time @safetestset "Ensemble solution statistics" begin
+                    include("downstream/ensemble_stats.jl")
+                end
+                @time @safetestset "Ensemble Optimization and Nonlinear problems" begin
+                    include("downstream/ensemble_nondes.jl")
+                end
+                @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
+                    include("downstream/ensemble_diffeq.jl")
+                end
+                @time @safetestset "Ensemble RNG reproducibility" begin
+                    include("downstream/ensemble_rng.jl")
+                end
+                @time @safetestset "Solution Indexing" begin
+                    include("downstream/solution_interface.jl")
+                end
+                @time @safetestset "Plots / Makie plot recipes on multi-state ODE" begin
+                    include("downstream/plot_lines.jl")
+                end
+                @time @safetestset "Unitful interpolations" begin
+                    include("downstream/unitful_interpolations.jl")
+                end
+                @time @safetestset "Integer idxs" begin
+                    include("downstream/integer_idxs.jl")
+                end
+                @time @safetestset "Partial Functions" begin
+                    include("downstream/partial_functions.jl")
+                end
+                @time @safetestset "ODE Solution Stripping" begin
+                    include("downstream/ode_stripping.jl")
+                end
+                @time @safetestset "Tables interface with MTK" begin
+                    include("downstream/tables.jl")
+                end
+                @time @safetestset "Initialization" begin
+                    include("downstream/initialization.jl")
+                end
+                @time @safetestset "Table Traits" begin
+                    include("downstream/traits.jl")
+                end
+                @time @safetestset "FunctionWrapperSpecialize remake" begin
+                    include("downstream/function_wrapper_remake.jl")
+                end
+                @time @safetestset "SplitODEProblem cache" begin
+                    include("downstream/splitodeproblem_cache.jl")
+                end
+                @time @safetestset "Scalar RODESolution calculate_solution_errors!" begin
+                    include("downstream/rode_calculate_solution_errors.jl")
+                end
+            end
+        end,
+        "DownstreamAD" => function ()
+            return if !is_APPVEYOR
+                activate_downstream_env()
+                @time @safetestset "Autodiff Remake" begin
+                    include("downstream/remake_autodiff.jl")
+                end
+                @time @safetestset "Autodiff Observable Functions" begin
+                    include("downstream/observables_autodiff.jl")
+                end
+                @time @safetestset "Ensemble adjoint gradient correctness" begin
+                    include("downstream/ensemble_adjoints.jl")
+                end
+            end
+        end,
+        "SII_Remake" => function ()
+            return if !is_APPVEYOR
+                @time @safetestset "Remake" begin
+                    include("remake_tests.jl")
+                end
+            end
+        end,
+        "SII_Downstream" => function ()
+            return if !is_APPVEYOR
+                activate_downstream_env()
+                @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
+                    include("downstream/comprehensive_indexing.jl")
+                end
+                @time @safetestset "Symbol and integer based indexing of integrators" begin
+                    include("downstream/integrator_indexing.jl")
+                end
+                @time @safetestset "Problem Indexing" begin
+                    include("downstream/problem_interface.jl")
+                end
+                @time @safetestset "Adjoints" begin
+                    include("downstream/adjoints.jl")
+                end
+                @time @safetestset "ModelingToolkit Remake" begin
+                    include("downstream/modelingtoolkit_remake.jl")
+                end
+            end
+        end,
+        "Python" => function ()
+            return if !is_APPVEYOR
+                activate_python_env()
+                @time @safetestset "PythonCall" begin
+                    include("python/pythoncall.jl")
+                end
+            end
+        end,
+    ),
+    qa = function ()
+        # QA has its own environment (test/qa/Project.toml) so that the weakdeps whose
+        # extensions ExplicitImports must see can be loaded without dragging Enzyme,
+        # Makie, Mooncake, ... into the Core test environment.
+        activate_group_env(joinpath(@__DIR__, "qa"))
+        return @time @safetestset "QA" begin
+            include("qa/qa.jl")
         end
-        @time @safetestset "Ensemble Optimization and Nonlinear problems" begin
-            include("downstream/ensemble_nondes.jl")
-        end
-        @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
-            include("downstream/ensemble_diffeq.jl")
-        end
-        @time @safetestset "Solution Indexing" begin
-            include("downstream/solution_interface.jl")
-        end
-        @time @safetestset "Unitful interpolations" begin
-            include("downstream/unitful_interpolations.jl")
-        end
-        @time @safetestset "Integer idxs" begin
-            include("downstream/integer_idxs.jl")
-        end
-        @time @safetestset "Autodiff Remake" begin
-            include("downstream/remake_autodiff.jl")
-        end
-        @time @safetestset "Partial Functions" begin
-            include("downstream/partial_functions.jl")
-        end
-        @time @safetestset "Autodiff Observable Functions" begin
-            include("downstream/observables_autodiff.jl")
-        end
-        @time @safetestset "ODE Solution Stripping" begin
-            include("downstream/ode_stripping.jl")
-        end
-        @time @safetestset "Tables interface with MTK" begin
-            include("downstream/tables.jl")
-        end
-        @time @safetestset "Initialization" begin
-            include("downstream/initialization.jl")
-        end
-        @time @safetestset "Table Traits" begin
-            include("downstream/traits.jl")
-        end
-    end
-
-    if !is_APPVEYOR && GROUP == "SymbolicIndexingInterface"
-        if GROUP != "Downstream"
-            activate_downstream_env()
-        end
-        @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
-            include("downstream/comprehensive_indexing.jl")
-        end
-        @time @safetestset "Symbol and integer based indexing of integrators" begin
-            include("downstream/integrator_indexing.jl")
-        end
-        @time @safetestset "Problem Indexing" begin
-            include("downstream/problem_interface.jl")
-        end
-        @time @safetestset "Adjoints" begin
-            include("downstream/adjoints.jl")
-        end
-        @time @safetestset "ModelingToolkit Remake" begin
-            include("downstream/modelingtoolkit_remake.jl")
-        end
-    end
-
-    if !is_APPVEYOR && GROUP == "Python"
-        activate_python_env()
-        @time @safetestset "PythonCall" begin
-            include("python/pythoncall.jl")
-        end
-    end
-end
+    end,
+    all = ["Core"],
+    umbrellas = Dict(
+        "SymbolicIndexingInterface" => ["SII_Remake", "SII_Downstream"],
+    ),
+)

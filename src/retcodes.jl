@@ -1,26 +1,25 @@
 """
-    SciML.ReturnCode
+    SciMLBase.ReturnCode
 
-`SciML.ReturnCode` is the standard return code enum interface for the SciML interface.
+`SciMLBase.ReturnCode` is the standard return code enum interface for the SciML interface.
 Return codes are notes given by the solvers to indicate the state of the solution, for
 example whether it successfully solved the equations, whether it failed to solve the
 equations, and importantly, why it exited.
 
-## Using `SciML.ReturnCode`
+## Using `SciMLBase.ReturnCode`
 
-`SciML.ReturnCode` use the interface of [EnumX.jl](https://github.com/fredrikekre/EnumX.jl)
+`SciMLBase.ReturnCode` uses the interface of [EnumX.jl](https://github.com/fredrikekre/EnumX.jl)
 and thus inherits all of the behaviors of being an EnumX. This includes the Enum type itself
-being referred to as `SciML.ReturnCode.T`, and each of the constituent enum states being
-referred to via `getproperty`, i.e. `SciML.ReturnCode.Success`.
+being referred to as `SciMLBase.ReturnCode.T`, and each constituent enum state being
+accessed as a module property, for example `SciMLBase.ReturnCode.Success`.
 
 ## Note About Success Checking
 
-Previous iterations of the interface suggested using `sol.retcode == :Success`, however,
-that is now not advised instead should be replaced with ` SciMLBase.successful_retcode(sol)`. The reason is that there are many different
-codes that can be interpreted as successful, such as `ReturnCode.Terminated` which means
-successfully used `terminate!(integrator)` to end an integration at a user-specified
-condition. As such, `successful_retcode` is the most general way to query for if the solver
-did not error.
+Previous iterations of the interface suggested `sol.retcode == :Success`. Use
+`SciMLBase.successful_retcode(sol)` instead. Several informative codes represent
+successful outcomes, such as `ReturnCode.Terminated` after a requested callback
+termination. The predicate is the canonical way to distinguish successful and
+unsuccessful solver exits.
 
 ## Properties
 
@@ -437,100 +436,59 @@ EnumX.@enumx ReturnCode begin
       - `successful_retcode` = `false`
     """
     InternalLinearSolveFailed
-end
 
-Base.:(!=)(retcode::ReturnCode.T, s::Symbol) = Symbol(retcode) != s
+    """
+        ReturnCode.APosterioriSafetyFailure
 
-const symtrue = Symbol("true")
-const symfalse = Symbol("false")
+    A failure exit state of the solver. If this return code is given, then the solver
+    completed execution but an a posteriori error check detected that the computed
+    solution is likely inaccurate due to numerical issues. This is distinct from
+    `ReturnCode.Failure` which indicates the solver itself failed to complete.
 
-function Base.convert(::Type{ReturnCode.T}, retcode::Symbol)
-    @warn "Backwards compatibility support of the new return codes to Symbols will be deprecated with the Julia v1.9 release. Please see https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes for more information"
+    ## Common Reasons for Seeing this Return Code
 
-    if retcode == :Default || retcode == :DEFAULT
-        ReturnCode.Default
-    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
-           retcode == :LOCALLY_SOLVED
-        ReturnCode.Success
-    elseif retcode == :Terminated
-        ReturnCode.Terminated
-    elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
-        ReturnCode.MaxIters
-    elseif retcode == :MaxNumSub
-        ReturnCode.MaxNumSub
-    elseif retcode == :MaxTime || retcode == :TIME_LIMIT
-        ReturnCode.MaxTime
-    elseif retcode == :DtLessThanMin
-        ReturnCode.DtLessThanMin
-    elseif retcode == :Unstable
-        ReturnCode.Unstable
-    elseif retcode == :InitialFailure
-        ReturnCode.InitialFailure
-    elseif retcode == :ConvergenceFailure || retcode == :ITERATION_LIMIT
-        ReturnCode.ConvergenceFailure
-    elseif retcode == :Failure || retcode == symfalse
-        ReturnCode.Failure
-    elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
-           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
-           retcode == :INFEASIBLE_OR_UNBOUNDED
-        ReturnCode.Infeasible
-    else
-        ReturnCode.Failure
-    end
-end
+      - A linear solver (e.g. LU factorization) succeeded but a post-solve residual check
+        `‖A*x - b‖` found the residual to be unacceptably large, indicating numerical
+        instability from a near-singular or ill-conditioned matrix.
+      - This return code is used when `residualsafety = true` is set on an LU algorithm
+        and the residual exceeds the safety threshold.
 
-# Deprecate ASAP, only to make the deprecation easier
-symbol_to_ReturnCode(retcode::ReturnCode.T) = retcode
-function symbol_to_ReturnCode(retcode::Symbol)
-    if retcode == :Default || retcode == :DEFAULT
-        ReturnCode.Default
-    elseif retcode == :Success || retcode == :EXACT_SOLUTION_LEFT ||
-           retcode == :FLOATING_POINT_LIMIT || retcode == symtrue || retcode == :OPTIMAL ||
-           retcode == :LOCALLY_SOLVED
-        ReturnCode.Success
-    elseif retcode == :Terminated
-        ReturnCode.Terminated
-    elseif retcode == :MaxIters || retcode == :MAXITERS_EXCEED
-        ReturnCode.MaxIters
-    elseif retcode == :MaxTime || retcode == :TIME_LIMIT
-        ReturnCode.MaxTime
-    elseif retcode == :DtLessThanMin
-        ReturnCode.DtLessThanMin
-    elseif retcode == :Unstable
-        ReturnCode.Unstable
-    elseif retcode == :InitialFailure
-        ReturnCode.InitialFailure
-    elseif retcode == :ConvergenceFailure || retcode == :ITERATION_LIMIT
-        ReturnCode.ConvergenceFailure
-    elseif retcode == :Failure || retcode == symfalse
-        ReturnCode.Failure
-    elseif retcode == :Infeasible || retcode == :INFEASIBLE ||
-           retcode == :DUAL_INFEASIBLE || retcode == :LOCALLY_INFEASIBLE ||
-           retcode == :INFEASIBLE_OR_UNBOUNDED
-        ReturnCode.Infeasible
-    else
-        ReturnCode.Failure
-    end
+    ## Properties
+
+      - `successful_retcode` = `false`
+    """
+    APosterioriSafetyFailure
 end
 
 function Base.convert(::Type{ReturnCode.T}, bool::Bool)
-    bool ? ReturnCode.Success : ReturnCode.Failure
+    return bool ? ReturnCode.Success : ReturnCode.Failure
 end
 
 """
     successful_retcode(retcode::ReturnCode.T)::Bool
     successful_retcode(sol::AbstractSciMLSolution)::Bool
 
-Returns a boolean for whether a return code should be interpreted as a form of success.
+Return whether a return code represents a successful solver outcome.
+
+The solution form forwards to `successful_retcode(sol.retcode)`. Use this
+predicate instead of comparing only with `ReturnCode.Success`, because requested
+termination and other informative terminal states can also be successful.
+
+The successful codes are `ReturnCode.Success`, `ReturnCode.Terminated`,
+`ReturnCode.ExactSolutionLeft`, `ReturnCode.ExactSolutionRight`,
+`ReturnCode.FloatingPointLimit`, and `ReturnCode.StalledSuccess`.
+`ReturnCode.Default` is not successful because it means the solve is unfinished
+or its outcome is unknown. `ReturnCode.Stalled` and all failure codes are also
+unsuccessful.
 """
 function successful_retcode end
 
 function successful_retcode(retcode::ReturnCode.T)
-    retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
+    return retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
         retcode == ReturnCode.ExactSolutionLeft ||
         retcode == ReturnCode.ExactSolutionRight ||
         retcode == ReturnCode.FloatingPointLimit ||
         retcode == ReturnCode.StalledSuccess
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
+successful_retcode(retcode) = successful_retcode(convert(ReturnCode.T, retcode))

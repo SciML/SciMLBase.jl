@@ -7,7 +7,7 @@ using OrdinaryDiffEq, DataFrames, SymbolicIndexingInterface
 @test !Tables.isrowtable(DAESolution)
 @test !Tables.isrowtable(SciMLBase.NonlinearSolution)
 @test !Tables.isrowtable(SciMLBase.LinearSolution)
-@test !Tables.isrowtable(SciMLBase.QuadratureSolution)
+@test !Tables.isrowtable(SciMLBase.IntegralSolution)
 @test !Tables.isrowtable(SciMLBase.OptimizationSolution)
 
 function rhs(u, p, t)

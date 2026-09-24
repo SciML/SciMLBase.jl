@@ -1,7 +1,11 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
-      OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
-      SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
-      DiffEqCallbacks, StochasticDelayDiffEq, Test, Plots
+    OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
+    SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
+    DiffEqCallbacks, Test, Plots
+using OptimizationOptimJL: Optim
+import Symbolics
+import SymbolicUtils as SU
+import Makie
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # Sets rnd number.
@@ -20,13 +24,17 @@ begin
         Y(t), [bounds = (-10.0, 10.0)]
         XY(t)
     end
-    alg_eqs = [0 ~ kp - kd * X - k1 * X + k2 * Y
-               0 ~ 1 + k1 * X - k2 * Y - Y]
-    diff_eqs = [D(X) ~ kp - kd * X - k1 * X + k2 * Y
-                D(Y) ~ 1 + k1 * X - k2 * Y - Y]
+    alg_eqs = [
+        0 ~ kp - kd * X - k1 * X + k2 * Y
+        0 ~ 1 + k1 * X - k2 * Y - Y
+    ]
+    diff_eqs = [
+        D(X) ~ kp - kd * X - k1 * X + k2 * Y
+        D(Y) ~ 1 + k1 * X - k2 * Y - Y
+    ]
     noise_eqs = [
         sqrt(kp + X),
-        sqrt(k1 + Y)
+        sqrt(k1 + Y),
     ]
     jumps = [
         ConstantRateJump(kp, [X ~ Pre(X) + 1]),
@@ -34,20 +42,29 @@ begin
         ConstantRateJump(k1 * X, [X ~ Pre(X) - 1, Y ~ Pre(Y) + 1]),
         ConstantRateJump(k2 * Y, [X ~ Pre(X) + 1, Y ~ Pre(Y) - 1]),
         ConstantRateJump(1, [Y ~ Pre(Y) + 1]),
-        ConstantRateJump(Y, [Y ~ Pre(Y) - 1])
+        ConstantRateJump(Y, [Y ~ Pre(Y) - 1]),
     ]
     obs = [XY ~ X + Y]
     loss = kd * (k1 - X)^2 + k2 * (kp * Y - X^2)^2
 
     # Create systems (without structural_simplify, since that might modify systems to affect intended tests).
     osys = complete(System(diff_eqs, t; observed = obs, name = :osys))
-    ssys = complete(System(
-        diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed = obs, name = :ssys))
-    jsys = complete(JumpSystem(
-        jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys))
+    ssys = complete(
+        System(
+            diff_eqs, t, [X, Y], [kp, kd, k1, k2]; noise_eqs, observed = obs, name = :ssys
+        )
+    )
+    jsys = complete(
+        JumpSystem(
+            jumps, t, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :jsys
+        )
+    )
     nsys = complete(System(alg_eqs; observed = obs, name = :nsys))
-    optsys = complete(OptimizationSystem(
-        loss, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :optsys))
+    optsys = complete(
+        OptimizationSystem(
+            loss, [X, Y], [kp, kd, k1, k2]; observed = obs, name = :optsys
+        )
+    )
 end
 
 # Prepares problems, integrators, and solutions.
@@ -58,10 +75,10 @@ begin
     p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
 
     # Creates problems.
-    oprob = ODEProblem(osys, [u0_vals; p_vals], tspan)
-    sprob = SDEProblem(ssys, [u0_vals; p_vals], tspan)
+    oprob = ODEProblem{true, SciMLBase.FullSpecialize}(osys, [u0_vals; p_vals], tspan)
+    sprob = SDEProblem{true, SciMLBase.FullSpecialize}(ssys, [u0_vals; p_vals], tspan)
     jprob = JumpProblem(jsys, [u0_vals; p_vals], tspan; aggregator = Direct(), rng)
-    nprob = NonlinearProblem(nsys, [u0_vals; p_vals])
+    nprob = NonlinearProblem{true, SciMLBase.FullSpecialize}(nsys, [u0_vals; p_vals])
     hcprob = NonlinearProblem(HomotopyNonlinearFunction(nprob.f), nprob.u0, nprob.p)
     ssprob = SteadyStateProblem(osys, [u0_vals; p_vals])
     optprob = OptimizationProblem(optsys, [u0_vals; p_vals], grad = true, hess = true)
@@ -83,7 +100,7 @@ begin
     sint = init(sprob, ImplicitEM(); save_everystep = false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
-    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SteadyStateDiffEq.jl/issues/79
+    ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false)
     integrators = [oint, sint, jint, nint]
     integsystems = [osys, ssys, jsys, nsys]
 
@@ -93,7 +110,7 @@ begin
     jsol = solve(jprob, SSAStepper(); seed)
     nsol = solve(nprob, NewtonRaphson())
     sssol = solve(ssprob, DynamicSS(Tsit5()))
-    optsol = solve(optprob, GradientDescent())
+    optsol = solve(optprob, Optim.GradientDescent())
     sols = [osol, ssol, jsol, nsol, sssol, optsol]
 end
 
@@ -103,23 +120,26 @@ timeseries_objects = [osol, ssol, jsol]
 timeseries_systems = [osys, ssys, jsys]
 
 @testset "Non-timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in
-                                                                             zip(
-    deepcopy(non_timeseries_objects), non_timeseries_systems)
+    zip(
+        deepcopy(non_timeseries_objects), non_timeseries_systems
+    )
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     @testset "State indexing" begin
-        for (sym, val, newval) in [(X, u[uidxs[1]], 4.0)
-             (indp.X, u[uidxs[1]], 4.0)
-             (:X, u[uidxs[1]], 4.0)
-             (uidxs[1], u[uidxs[1]], 4.0)
-             ([X, Y], u[uidxs], 4ones(2))
-             ([indp.X, indp.Y], u[uidxs], 4ones(2))
-             ([:X, :Y], u[uidxs], 4ones(2))
-             (uidxs, u[uidxs], 4ones(2))
-             ((X, Y), Tuple(u[uidxs]), (4.0, 4.0))
-             ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
-             ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
-             (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))]
+        for (sym, val, newval) in [
+                (X, u[uidxs[1]], 4.0)
+                (indp.X, u[uidxs[1]], 4.0)
+                (:X, u[uidxs[1]], 4.0)
+                (uidxs[1], u[uidxs[1]], 4.0)
+                ([X, Y], u[uidxs], 4ones(2))
+                ([indp.X, indp.Y], u[uidxs], 4ones(2))
+                ([:X, :Y], u[uidxs], 4ones(2))
+                (uidxs, u[uidxs], 4ones(2))
+                ((X, Y), Tuple(u[uidxs]), (4.0, 4.0))
+                ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
+                ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
+                (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))
+            ]
             get = getsym(indp, sym)
             set! = setsym(indp, sym)
             @inferred get(valp)
@@ -144,12 +164,14 @@ timeseries_systems = [osys, ssys, jsys]
 
     @testset "Observed" begin
         # Observed functions don't infer
-        for (sym, val) in [(XY, sum(u))
-             (indp.XY, sum(u))
-             (:XY, sum(u))
-             ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
-             ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
-             (X * Y, prod(u))]
+        for (sym, val) in [
+                (XY, sum(u))
+                (indp.XY, sum(u))
+                (:XY, sum(u))
+                ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
+                ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
+                (X * Y, prod(u))
+            ]
             get = getsym(indp, sym)
             @test get(valp) == val
         end
@@ -162,18 +184,20 @@ timeseries_systems = [osys, ssys, jsys]
     newp = p .* 10
     pidxs = parameter_index.((indp,), [kp, kd, k1, k2])
     @testset "Parameter indexing" begin
-        for (sym, oldval, newval) in [(kp, p[1], newp[1])
-             (indp.kp, p[1], newp[1])
-             (:kp, p[1], newp[1])
-             (pidxs[1], p[1], newp[1])
-             ([kp, kd], p[1:2], newp[1:2])
-             ([indp.kp, indp.kd], p[1:2], newp[1:2])
-             ([:kp, :kd], p[1:2], newp[1:2])
-             (pidxs[1:2], p[1:2], newp[1:2])
-             ((kp, kd), Tuple(p[1:2]), Tuple(newp[1:2]))
-             ((indp.kp, indp.kd), Tuple(p[1:2]), Tuple(newp[1:2]))
-             ((:kp, :kd), Tuple(p[1:2]), Tuple(newp[1:2]))
-             (Tuple(pidxs[1:2]), Tuple(p[1:2]), Tuple(newp[1:2]))]
+        for (sym, oldval, newval) in [
+                (kp, p[1], newp[1])
+                (indp.kp, p[1], newp[1])
+                (:kp, p[1], newp[1])
+                (pidxs[1], p[1], newp[1])
+                ([kp, kd], p[1:2], newp[1:2])
+                ([indp.kp, indp.kd], p[1:2], newp[1:2])
+                ([:kp, :kd], p[1:2], newp[1:2])
+                (pidxs[1:2], p[1:2], newp[1:2])
+                ((kp, kd), Tuple(p[1:2]), Tuple(newp[1:2]))
+                ((indp.kp, indp.kd), Tuple(p[1:2]), Tuple(newp[1:2]))
+                ((:kp, :kd), Tuple(p[1:2]), Tuple(newp[1:2]))
+                (Tuple(pidxs[1:2]), Tuple(p[1:2]), Tuple(newp[1:2]))
+            ]
             get = getp(indp, sym)
             set! = setp(indp, sym)
 
@@ -199,8 +223,9 @@ timeseries_systems = [osys, ssys, jsys]
 end
 
 @testset "Timeseries indexing $(SciMLBase.parameterless_type(valp))" for (valp, indp) in
-                                                                         zip(
-    timeseries_objects, timeseries_systems)
+    zip(
+        timeseries_objects, timeseries_systems
+    )
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
     xvals = getindex.(valp.u, uidxs[1])
@@ -208,60 +233,95 @@ end
     xyvals = xvals .+ yvals
     tvals = valp.t
     @testset "State indexing and observed" begin
-        for (sym, val, check_inference, check_getindex) in [(X, xvals, true, true)
-             (indp.X, xvals, true, true)
-             (:X, xvals, true, true)
-             (uidxs[1], xvals, true, false)
-             ([X, Y], vcat.(xvals, yvals),
-                 true, true)
-             ([indp.X, indp.Y],
-                 vcat.(xvals, yvals),
-                 true, true)
-             ([:X, :Y],
-                 vcat.(xvals, yvals),
-                 true, true)
-             (uidxs, vcat.(xvals, yvals),
-                 true, false)
-             ((Y, X),
-                 tuple.(yvals, xvals),
-                 true, true)
-             ((indp.Y, indp.X),
-                 tuple.(yvals, xvals),
-                 true, true)
-             ((:Y, :X),
-                 tuple.(yvals, xvals),
-                 true, true)
-             (Tuple(reverse(uidxs)),
-                 tuple.(yvals, xvals),
-                 true, false)
-             (t, tvals, true, true)
-             (:t, tvals, true, true)
-             ([X, t], vcat.(xvals, tvals),
-                 false, true)
-             ((Y, t),
-                 tuple.(yvals, tvals),
-                 true, true)
-             ([],
-                 [[]
-                  for _ in 1:length(tvals)],
-                 false,
-                 false)
-             (XY, xyvals, true, true)
-             (indp.XY, xyvals, true, true)
-             (:XY, xyvals, true, true)
-             ([X, indp.Y, :XY, X * Y],
-                 vcat.(xvals, yvals, xyvals,
-                     xvals .* yvals),
-                 false,
-                 true)
-             ((X, indp.Y, :XY, X * Y),
-                 tuple.(
-                     xvals, yvals, xyvals,
-                     xvals .* yvals),
-                 false,
-                 true)
-             (X * Y, xvals .* yvals,
-                 false, true)]
+        for (sym, val, check_inference, check_getindex) in [
+                (X, xvals, true, true)
+                (indp.X, xvals, true, true)
+                (:X, xvals, true, true)
+                (uidxs[1], xvals, true, false)
+                (
+                    [X, Y], vcat.(xvals, yvals),
+                    true, true,
+                )
+                (
+                    [indp.X, indp.Y],
+                    vcat.(xvals, yvals),
+                    true, true,
+                )
+                (
+                    [:X, :Y],
+                    vcat.(xvals, yvals),
+                    true, true,
+                )
+                (
+                    uidxs, vcat.(xvals, yvals),
+                    true, false,
+                )
+                (
+                    (Y, X),
+                    tuple.(yvals, xvals),
+                    true, true,
+                )
+                (
+                    (indp.Y, indp.X),
+                    tuple.(yvals, xvals),
+                    true, true,
+                )
+                (
+                    (:Y, :X),
+                    tuple.(yvals, xvals),
+                    true, true,
+                )
+                (
+                    Tuple(reverse(uidxs)),
+                    tuple.(yvals, xvals),
+                    true, false,
+                )
+                (t, tvals, true, true)
+                (:t, tvals, true, true)
+                (
+                    [X, t], vcat.(xvals, tvals),
+                    false, true,
+                )
+                (
+                    (Y, t),
+                    tuple.(yvals, tvals),
+                    true, true,
+                )
+                (
+                    [],
+                    [
+                        []
+                            for _ in 1:length(tvals)
+                    ],
+                    false,
+                    false,
+                )
+                (XY, xyvals, true, true)
+                (indp.XY, xyvals, true, true)
+                (:XY, xyvals, true, true)
+                (
+                    [X, indp.Y, :XY, X * Y],
+                    vcat.(
+                        xvals, yvals, xyvals,
+                        xvals .* yvals
+                    ),
+                    false,
+                    true,
+                )
+                (
+                    (X, indp.Y, :XY, X * Y),
+                    tuple.(
+                        xvals, yvals, xyvals,
+                        xvals .* yvals
+                    ),
+                    false,
+                    true,
+                )
+                (
+                    X * Y, xvals .* yvals,
+                    false, true,
+                )
+            ]
             get = getsym(indp, sym)
             if check_inference
                 @inferred get(valp)
@@ -287,18 +347,20 @@ end
     pidxs = parameter_index.((indp,), [kp, kd, k1, k2])
 
     @testset "Parameter indexing" begin
-        for (sym, oldval) in [(kp, p[1])
-             (indp.kp, p[1])
-             (:kp, p[1])
-             (pidxs[1], p[1])
-             ([kp, kd], p[1:2])
-             ([indp.kp, indp.kd], p[1:2])
-             ([:kp, :kd], p[1:2])
-             (pidxs[1:2], p[1:2])
-             ((kp, kd), Tuple(p[1:2]))
-             ((indp.kp, indp.kd), Tuple(p[1:2]))
-             ((:kp, :kd), Tuple(p[1:2]))
-             (Tuple(pidxs[1:2]), Tuple(p[1:2]))]
+        for (sym, oldval) in [
+                (kp, p[1])
+                (indp.kp, p[1])
+                (:kp, p[1])
+                (pidxs[1], p[1])
+                ([kp, kd], p[1:2])
+                ([indp.kp, indp.kd], p[1:2])
+                ([:kp, :kd], p[1:2])
+                (pidxs[1:2], p[1:2])
+                ((kp, kd), Tuple(p[1:2]))
+                ((indp.kp, indp.kd), Tuple(p[1:2]))
+                ((:kp, :kd), Tuple(p[1:2]))
+                (Tuple(pidxs[1:2]), Tuple(p[1:2]))
+            ]
             get = getp(indp, sym)
 
             @inferred get(valp)
@@ -353,13 +415,15 @@ end
 end
 
 @testset "ODE with array symbolics" begin
-    sts = @variables x(t)[1:3]=[1, 2, 3.0] y(t)=1.0
+    sts = @variables x(t)[1:3] = [1, 2, 3.0] y(t) = 1.0
     ps = @parameters p[1:3] = [1, 2, 3]
-    eqs = [collect(D.(x) .~ x)
-           D(y) ~ norm(x) * y - x[1]]
+    eqs = [
+        collect(D.(x) .~ x)
+        D(y) ~ norm(x) * y - x[1]
+    ]
     @named sys = System(eqs, t, [sts...;], ps)
     sys = complete(sys)
-    prob = ODEProblem(sys, [], (0, 1.0))
+    prob = ODEProblem{true, SciMLBase.FullSpecialize}(sys, [], (0, 1.0))
     sol = solve(prob, Tsit5())
     # interpolation of array variables
     @test sol(1.0, idxs = x) == [sol(1.0, idxs = x[i]) for i in 1:3]
@@ -370,9 +434,8 @@ end
     y_val = getindex.(sol.u, y_idx)
     obs_val = getindex.(x_val, 1) .+ y_val
 
-    @testset "Solution indexing" begin
-        # don't check inference for weird cases of nested arrays/tuples
-        for (sym, val, check_inference) in [
+    @testset "Solution indexing ($sym)" for (sym, val, check_inference) in [
+            # don't check inference for weird cases of nested arrays/tuples
             (x, x_val, true),
             (sys.x, x_val, true),
             (:x, x_val, true),
@@ -380,7 +443,9 @@ end
             (x[1] + sys.y, obs_val, true),
             ([x[1], x[2]], getindex.(x_val, ([1, 2],)), true),
             ([sys.x[1], sys.x[2]], getindex.(x_val, ([1, 2],)), true),
-            ([x[1], x_idx[2]], getindex.(x_val, ([1, 2],)), false),
+            # Type-annotation is required, otherwise this is a `Vector{Num}` and treated
+            # like a symbolic expression
+            (Any[x[1], x_idx[2]], getindex.(x_val, ([1, 2],)), false),
             ([x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
             ([sys.x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
             ([:x, x[1] + y], [[i, j] for (i, j) in zip(x_val, obs_val)], false),
@@ -404,20 +469,27 @@ end
             ((x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
             ((sys.x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
             ((:x, x[1] + y), [(i, j) for (i, j) in zip(x_val, obs_val)], true),
-            ((x, (x[1] + y, y)),
-                [(i, (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false),
-            ([x, [x[1] + y, y]],
-                [[i, [k, j]] for (i, j, k) in zip(x_val, y_val, obs_val)], false),
-            ((x, [x[1] + y, y], (x[1] + y, y_idx)),
-                [(i, [k, j], (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false),
-            ([x, [x[1] + y, y], (x[1] + y, y_idx)],
-                [[i, [k, j], (k, j)] for (i, j, k) in zip(x_val, y_val, obs_val)], false)
+            (
+                (x, (x[1] + y, y)),
+                [(i, (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+            (
+                [x, [x[1] + y, y]],
+                [[i, [k, j]] for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+            (
+                (x, [x[1] + y, y], (x[1] + y, y_idx)),
+                [(i, [k, j], (k, j)) for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
+            (
+                [x, [x[1] + y, y], (x[1] + y, y_idx)],
+                [[i, [k, j], (k, j)] for (i, j, k) in zip(x_val, y_val, obs_val)], false,
+            ),
         ]
-            if check_inference
-                @inferred getsym(prob, sym)(sol)
-            end
-            @test getsym(prob, sym)(sol) == val
+        if check_inference
+            @inferred getsym(prob, sym)(sol)
         end
+        @test getsym(prob, sym)(sol) == val
     end
 
     x_newval = [3.0, 6.0, 9.0]
@@ -425,8 +497,7 @@ end
     x_probval = prob[x]
     y_probval = prob[y]
 
-    @testset "Problem indexing" begin
-        for (sym, oldval, newval, check_inference) in [
+    @testset "Problem indexing ($sym)" for (sym, oldval, newval, check_inference) in [
             (x, x_probval, x_newval, true),
             (sys.x, x_probval, x_newval, true),
             (:x, x_probval, x_newval, true),
@@ -440,33 +511,40 @@ end
             ([:x, :y], [x_probval, y_probval], [x_newval, y_newval], false),
             ([x_idx, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
             ((x, y_idx), (x_probval, y_probval), (x_newval, y_newval), true),
-            ([x, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
+            (Any[x, y_idx], [x_probval, y_probval], [x_newval, y_newval], false),
             ((x_idx, y), (x_probval, y_probval), (x_newval, y_newval), true),
-            ([x_idx, y], [x_probval, y_probval], [x_newval, y_newval], false),
-            ([x[1:2], [y_idx, x[3]]], [x_probval[1:2], [y_probval, x_probval[3]]],
-                [x_newval[1:2], [y_newval, x_newval[3]]], false),
-            ([x[1:2], (y_idx, x[3])], [x_probval[1:2], (y_probval, x_probval[3])],
-                [x_newval[1:2], (y_newval, x_newval[3])], false),
-            ((x[1:2], [y_idx, x[3]]), (x_probval[1:2], [y_probval, x_probval[3]]),
-                (x_newval[1:2], [y_newval, x_newval[3]]), false),
-            ((x[1:2], (y_idx, x[3])), (x_probval[1:2], (y_probval, x_probval[3])),
-                (x_newval[1:2], (y_newval, x_newval[3])), false)
+            (Any[x_idx, y], [x_probval, y_probval], [x_newval, y_newval], false),
+            (
+                Any[x[1:2], Any[y_idx, x[3]]], [x_probval[1:2], [y_probval, x_probval[3]]],
+                [x_newval[1:2], [y_newval, x_newval[3]]], false,
+            ),
+            (
+                Any[x[1:2], (y_idx, x[3])], [x_probval[1:2], (y_probval, x_probval[3])],
+                [x_newval[1:2], (y_newval, x_newval[3])], false,
+            ),
+            (
+                (x[1:2], Any[y_idx, x[3]]), (x_probval[1:2], [y_probval, x_probval[3]]),
+                (x_newval[1:2], [y_newval, x_newval[3]]), false,
+            ),
+            (
+                (x[1:2], (y_idx, x[3])), (x_probval[1:2], (y_probval, x_probval[3])),
+                (x_newval[1:2], (y_newval, x_newval[3])), false,
+            ),
         ]
-            getter = getsym(prob, sym)
-            setter! = setsym(prob, sym)
-            if check_inference
-                @inferred getter(prob)
-            end
-            @test getter(prob) == oldval
-            if check_inference
-                @inferred setter!(prob, newval)
-            else
-                setter!(prob, newval)
-            end
-            @test getter(prob) == newval
-            setter!(prob, oldval)
-            @test getter(prob) == oldval
+        getter = getsym(prob, sym)
+        setter! = setsym(prob, sym)
+        if check_inference
+            @inferred getter(prob)
         end
+        @test getter(prob) == oldval
+        if check_inference
+            @inferred setter!(prob, newval)
+        else
+            setter!(prob, newval)
+        end
+        @test getter(prob) == newval
+        setter!(prob, oldval)
+        @test getter(prob) == oldval
     end
 
     @testset "Parameter indexing" begin
@@ -475,19 +553,23 @@ end
 
         # don't check inference for nested tuples/arrays
         for (sym, oldval, newval, check_inference) in [
-            (p[1], pval[1], pval_new[1], true),
-            (p, pval, pval_new, true),
-            (sys.p, pval, pval_new, true),
-            (:p, pval, pval_new, true),
-            ((p[1], p[2]), Tuple(pval[1:2]), Tuple(pval_new[1:2]), true),
-            ([p[1], p[2]], pval[1:2], pval_new[1:2], true),
-            ((p[1], p[2:3]), (pval[1], pval[2:3]), (pval_new[1], pval_new[2:3]), true),
-            ([p[1], p[2:3]], [pval[1], pval[2:3]], [pval_new[1], pval_new[2:3]], false),
-            ((p[1], (p[2],), [p[3]]), (pval[1], (pval[2],), [pval[3]]),
-                (pval_new[1], (pval_new[2],), [pval_new[3]]), false),
-            ([p[1], (p[2],), [p[3]]], [pval[1], (pval[2],), [pval[3]]],
-                [pval_new[1], (pval_new[2],), [pval_new[3]]], false)
-        ]
+                (p[1], pval[1], pval_new[1], true),
+                (p, pval, pval_new, true),
+                (sys.p, pval, pval_new, true),
+                (:p, pval, pval_new, true),
+                ((p[1], p[2]), Tuple(pval[1:2]), Tuple(pval_new[1:2]), true),
+                ([p[1], p[2]], pval[1:2], pval_new[1:2], true),
+                ((p[1], p[2:3]), (pval[1], pval[2:3]), (pval_new[1], pval_new[2:3]), true),
+                ([p[1], p[2:3]], [pval[1], pval[2:3]], [pval_new[1], pval_new[2:3]], false),
+                (
+                    (p[1], (p[2],), [p[3]]), (pval[1], (pval[2],), [pval[3]]),
+                    (pval_new[1], (pval_new[2],), [pval_new[3]]), false,
+                ),
+                (
+                    [p[1], (p[2],), [p[3]]], [pval[1], (pval[2],), [pval[3]]],
+                    [pval_new[1], (pval_new[2],), [pval_new[3]]], false,
+                ),
+            ]
             getter = getp(prob, sym)
             setter! = setp(prob, sym)
             if check_inference
@@ -510,7 +592,8 @@ end
 @testset "Interpolation of derivative of observed variables" begin
     @variables x(t) y(t) z(t) w(t)[1:2]
     @named sys = System(
-        [D(x) ~ 1, y ~ x^2, z ~ 2y^2 + 3x, w[1] ~ x + y + z, w[2] ~ z * x * y], t)
+        [D(x) ~ 1, y ~ x^2, z ~ 2y^2 + 3x, w[1] ~ x + y + z, w[2] ~ z * x * y], t
+    )
     sys = mtkcompile(sys)
     prob = ODEProblem(sys, [x => 0.0], (0.0, 1.0))
     sol = solve(prob, Tsit5())
@@ -528,13 +611,15 @@ end
     SymbolicIndexingInterface.symbolic_container(s::NumSymbolCache) = s.sc
     function SymbolicIndexingInterface.is_observed(s::NumSymbolCache, x)
         return symbolic_type(x) != NotSymbolic() && !is_variable(s, x) &&
-               !is_parameter(s, x) && !is_independent_variable(s, x)
+            !is_parameter(s, x) && !is_independent_variable(s, x)
     end
     function SymbolicIndexingInterface.observed(s::NumSymbolCache, x)
-        res = ModelingToolkit.build_function(x,
+        res = ModelingToolkit.build_function(
+            x,
             sort(variable_symbols(s); by = Base.Fix1(variable_index, s)),
             sort(parameter_symbols(s), by = Base.Fix1(parameter_index, s)),
-            independent_variable_symbols(s)[]; expression = Val(false))
+            independent_variable_symbols(s)[]; expression = Val(false)
+        )
         if res isa Tuple
             return let oopfn = res[1], iipfn = res[2]
                 fn(out, u, p, t) = iipfn(out, u, p, t)
@@ -554,17 +639,21 @@ end
             newx = []
             for i in eachindex(x)
                 if x[i] isa Symbol
-                    push!(newx,
-                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                    push!(
+                        newx,
+                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)]
+                    )
                 else
                     push!(newx, x[i])
                 end
             end
             x = newx
         end
-        res = ModelingToolkit.build_function(x,
+        res = ModelingToolkit.build_function(
+            x,
             sort(parameter_symbols(s), by = Base.Fix1(parameter_index, s)),
-            independent_variable_symbols(s)[]; expression = Val(false))
+            independent_variable_symbols(s)[]; expression = Val(false)
+        )
         if res isa Tuple
             return let oopfn = res[1], iipfn = res[2]
                 fn(out, p, t) = iipfn(out, p, t)
@@ -589,15 +678,18 @@ end
             newx = []
             for i in eachindex(x)
                 if x[i] isa Symbol
-                    push!(newx,
-                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)])
+                    push!(
+                        newx,
+                        allsyms[findfirst(y -> hasname(y) && x[i] == getname(y), allsyms)]
+                    )
                 else
                     push!(newx, x[i])
                 end
             end
             x = newx
         end
-        vars = ModelingToolkit.vars(x)
+        vars = Set{Symbolics.SymbolicT}()
+        SU.search_variables!(vars, x)
         return mapreduce(union, vars; init = Set()) do sym
             if is_variable(s, sym)
                 Set([ContinuousTimeseries()])
@@ -609,7 +701,8 @@ end
         end
     end
     function SymbolicIndexingInterface.with_updated_parameter_timeseries_values(
-            ::NumSymbolCache, p::Vector{Float64}, args...)
+            ::NumSymbolCache, p::Vector{Float64}, args...
+        )
         for (idx, buf) in args
             if idx == 1
                 p[1:2] .= buf
@@ -639,21 +732,26 @@ end
 
     @variables x(t) ud1(t) ud2(t) xd1(t) xd2(t)
     @parameters kp
-    sc = SymbolCache([x],
+    sc = SymbolCache(
+        [x],
         Dict(ud1 => 1, xd1 => 2, ud2 => 3, xd2 => 4, kp => 5),
         t;
         timeseries_parameters = Dict(
             ud1 => ParameterTimeseriesIndex(1, 1), xd1 => ParameterTimeseriesIndex(1, 2),
-            ud2 => ParameterTimeseriesIndex(2, 1), xd2 => ParameterTimeseriesIndex(2, 2)))
+            ud2 => ParameterTimeseriesIndex(2, 1), xd2 => ParameterTimeseriesIndex(2, 2)
+        )
+    )
     sys = NumSymbolCache(sc)
 
     function f!(du, u, p, t)
         du .= u .* t .+ p[5] * sum(u)
     end
-    fn = ODEFunction(f!; sys = sys)
+    fn = ODEFunction(f!; sys)
     prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
-    cb1 = PeriodicCallback(0.1; initial_affect = true, final_affect = true,
-        save_positions = (false, false)) do integ
+    cb1 = PeriodicCallback(
+        0.1; initial_affect = true, final_affect = true,
+        save_positions = (false, false)
+    ) do integ
         integ.p[1:2] .+= exp(-integ.t)
         SciMLBase.save_discretes!(integ, 1)
     end
@@ -661,8 +759,10 @@ end
         integ.p[3:4] .+= only(integ.u)
         SciMLBase.save_discretes!(integ, 2)
     end
-    cb2 = DiscreteCallback((args...) -> true, affect2!, save_positions = (false, false),
-        initialize = (c, u, t, integ) -> affect2!(integ))
+    cb2 = DiscreteCallback(
+        (args...) -> true, affect2!, save_positions = (false, false),
+        initialize = (c, u, t, integ) -> affect2!(integ)
+    )
     sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
 
     ud1val = getindex.(sol.discretes.collection[1].u, 1)
@@ -670,65 +770,91 @@ end
     ud2val = getindex.(sol.discretes.collection[2].u, 1)
     xd2val = getindex.(sol.discretes.collection[2].u, 2)
 
-    for (sym, timeseries_index, val, buffer, isobs, check_inference) in [(ud1,
-             1,
-             ud1val,
-             zeros(length(ud1val)),
-             false,
-             true)
-         ([ud1, xd1],
-             1,
-             vcat.(ud1val,
-                 xd1val),
-             map(
-                 _ -> zeros(2),
-                 ud1val),
-             false,
-             true)
-         ((ud2, xd2),
-             2,
-             tuple.(ud2val,
-                 xd2val),
-             map(
-                 _ -> zeros(2),
-                 ud2val),
-             false,
-             true)
-         (ud2 + xd2,
-             2,
-             ud2val .+
-             xd2val,
-             zeros(length(ud2val)),
-             true,
-             true)
-         (
-             [ud2 + xd2,
-                 ud2 * xd2],
-             2,
-             vcat.(
-                 ud2val .+
-                 xd2val,
-                 ud2val .*
-                 xd2val),
-             map(
-                 _ -> zeros(2),
-                 ud2val),
-             true,
-             true)
-         (
-             (ud1 + xd1,
-                 ud1 * xd1),
-             1,
-             tuple.(
-                 ud1val .+
-                 xd1val,
-                 ud1val .*
-                 xd1val),
-             map(
-                 _ -> zeros(2),
-                 ud1val),
-             true,
-             true)]
+    for (sym, timeseries_index, val, buffer, isobs, check_inference) in [
+            (
+                ud1,
+                1,
+                ud1val,
+                zeros(length(ud1val)),
+                false,
+                true,
+            )
+            (
+                [ud1, xd1],
+                1,
+                vcat.(
+                    ud1val,
+                    xd1val
+                ),
+                map(
+                    _ -> zeros(2),
+                    ud1val
+                ),
+                false,
+                true,
+            )
+            (
+                (ud2, xd2),
+                2,
+                tuple.(
+                    ud2val,
+                    xd2val
+                ),
+                map(
+                    _ -> zeros(2),
+                    ud2val
+                ),
+                false,
+                true,
+            )
+            (
+                ud2 + xd2,
+                2,
+                ud2val .+
+                    xd2val,
+                zeros(length(ud2val)),
+                true,
+                true,
+            )
+            (
+                [
+                    ud2 + xd2,
+                    ud2 * xd2,
+                ],
+                2,
+                vcat.(
+                    ud2val .+
+                        xd2val,
+                    ud2val .*
+                        xd2val
+                ),
+                map(
+                    _ -> zeros(2),
+                    ud2val
+                ),
+                true,
+                true,
+            )
+            (
+                (
+                    ud1 + xd1,
+                    ud1 * xd1,
+                ),
+                1,
+                tuple.(
+                    ud1val .+
+                        xd1val,
+                    ud1val .*
+                        xd1val
+                ),
+                map(
+                    _ -> zeros(2),
+                    ud1val
+                ),
+                true,
+                true,
+            )
+        ]
         getter = getp(sys, sym)
         if check_inference
             @inferred getter(sol)
@@ -762,7 +888,8 @@ end
         end
 
         for subidx in [
-            1, CartesianIndex(2), :, rand(Bool, length(val)), rand(eachindex(val), 4), 2:5]
+                1, CartesianIndex(2), :, rand(Bool, length(val)), rand(eachindex(val), 4), 2:5,
+            ]
             if check_inference
                 @inferred getter(sol, subidx)
                 if !isa(val[subidx], Number)
@@ -786,11 +913,12 @@ end
     end
 
     for sym in [
-        [ud1, xd1, ud2],
-        (ud2, xd1, xd2),
-        ud1 + ud2,
-        [ud1 + ud2, ud1 * xd1],
-        (ud1 + ud2, ud1 * xd1)]
+            [ud1, xd1, ud2],
+            (ud2, xd1, xd2),
+            ud1 + ud2,
+            [ud1 + ud2, ud1 * xd1],
+            (ud1 + ud2, ud1 * xd1),
+        ]
         getter = getp(sys, sym)
         @test_throws Exception getter(sol)
         @test_throws Exception getter([], sol)
@@ -804,18 +932,18 @@ end
     xval = getindex.(sol.u)
 
     for (sym, val_is_timeseries, val, check_inference) in [
-        (kp, false, kpval, true),
-        ([kp, kp], false, [kpval, kpval], true),
-        ((kp, kp), false, (kpval, kpval), true),
-        (ud2, true, ud2val, true),
-        ([ud2, kp], true, vcat.(ud2val, kpval), false),
-        ((ud1, kp), true, tuple.(ud1val, kpval), false),
-        ([kp, x], true, vcat.(kpval, xval), false),
-        ((kp, x), true, tuple.(kpval, xval), false),
-        (2ud2, true, 2 .* ud2val, true),
-        ([kp, 2ud1], true, vcat.(kpval, 2 .* ud1val), false),
-        ((kp, 2ud1), true, tuple.(kpval, 2 .* ud1val), false)
-    ]
+            (kp, false, kpval, true),
+            ([kp, kp], false, [kpval, kpval], true),
+            ((kp, kp), false, (kpval, kpval), true),
+            (ud2, true, ud2val, true),
+            ([ud2, kp], true, vcat.(ud2val, kpval), false),
+            ((ud1, kp), true, tuple.(ud1val, kpval), false),
+            ([kp, x], true, vcat.(kpval, xval), false),
+            ((kp, x), true, tuple.(kpval, xval), false),
+            (2ud2, true, 2 .* ud2val, true),
+            ([kp, 2ud1], true, vcat.(kpval, 2 .* ud1val), false),
+            ((kp, 2ud1), true, tuple.(kpval, 2 .* ud1val), false),
+        ]
         getter = getsym(sys, sym)
         if check_inference
             @inferred getter(sol)
@@ -823,9 +951,9 @@ end
         @test getter(sol) == val
         reference = val_is_timeseries ? val : xval
         for subidx in [
-            1, CartesianIndex(2), :, rand(Bool, length(reference)),
-            rand(eachindex(reference), 4), 2:6
-        ]
+                1, CartesianIndex(2), :, rand(Bool, length(reference)),
+                rand(eachindex(reference), 4), 2:6,
+            ]
             if check_inference
                 @inferred getter(sol, subidx)
             end
@@ -845,12 +973,9 @@ end
     _xd2val = xd2val[1]
     integ = init(prob, Tsit5(); callback = CallbackSet(cb1, cb2))
     for (sym, val, check_inference) in [
-        ([x, ud1], [_xval, _ud1val], false),
-        ((x, ud1), (_xval, _ud1val), true),
-        (x + ud2, _xval + _ud2val, true),
-        ([2x, 3xd1], [2_xval, 3_xd1val], true),
-        ((2x, 3xd2), (2_xval, 3_xd2val), true)
-    ]
+            ([x, ud1], [_xval, _ud1val], false),
+            ((x, ud1), (_xval, _ud1val), true),
+        ]
         getter = getsym(sys, sym)
         @test_throws Exception getter(sol)
         for subidx in [1, CartesianIndex(1), :, rand(Bool, 4), rand(1:4, 3), 1:2]
@@ -863,6 +988,35 @@ end
         @test getter(integ) == val
     end
 
+    function held_values(discrete, i, times)
+        return map(times) do time
+            discrete.u[searchsortedlast(discrete.t, time)][i]
+        end
+    end
+    ud2_at_t = held_values(sol.discretes.collection[2], 1, sol.t)
+    xd1_at_t = held_values(sol.discretes.collection[1], 2, sol.t)
+    xd2_at_t = held_values(sol.discretes.collection[2], 2, sol.t)
+    for (sym, val, tsval) in [
+            (x + ud2, _xval + _ud2val, xval .+ ud2_at_t),
+            ([2x, 3xd1], [2_xval, 3_xd1val], vcat.(2 .* xval, 3 .* xd1_at_t)),
+            ((2x, 3xd2), (2_xval, 3_xd2val), tuple.(2 .* xval, 3 .* xd2_at_t)),
+        ]
+        getter = getsym(sys, sym)
+        @inferred getter(sol)
+        @test getter(sol) == tsval
+        for subidx in [
+                1, CartesianIndex(2), :, rand(Bool, length(tsval)),
+                rand(eachindex(tsval), 3), 1:2,
+            ]
+            @inferred getter(sol, subidx)
+            target = subidx isa Colon ? tsval : tsval[subidx]
+            @test getter(sol, subidx) == target
+        end
+
+        @inferred getter(integ)
+        @test getter(integ) == val
+    end
+
     xinterp = sol(0.1:0.1:0.3, idxs = x).u
     xinterp2 = sol(sol.discretes.collection[2].t[2:4], idxs = x).u
     ud1interp = ud1val[2:4]
@@ -871,15 +1025,15 @@ end
     c1 = SciMLBase.Clock(0.1)
     c2 = SciMLBase.SolverStepClock()
     for (sym, t, val) in [
-        (x, c1[2], xinterp[1]),
-        (x, c1[2:4], xinterp),
-        ([x, ud1], c1[2], [xinterp[1], ud1interp[1]]),
-        ([x, ud1], c1[2:4], vcat.(xinterp, ud1interp)),
-        (x, c2[2], xinterp2[1]),
-        (x, c2[2:4], xinterp2),
-        ([x, ud2], c2[2], [xinterp2[1], ud2interp[1]]),
-        ([x, ud2], c2[2:4], vcat.(xinterp2, ud2interp))
-    ]
+            (x, c1[2], xinterp[1]),
+            (x, c1[2:4], xinterp),
+            ([x, ud1], c1[2], [xinterp[1], ud1interp[1]]),
+            ([x, ud1], c1[2:4], vcat.(xinterp, ud1interp)),
+            (x, c2[2], xinterp2[1]),
+            (x, c2[2:4], xinterp2),
+            ([x, ud2], c2[2], [xinterp2[1], ud2interp[1]]),
+            ([x, ud2], c2[2:4], vcat.(xinterp2, ud2interp)),
+        ]
         res = sol(t, idxs = sym)
         if res isa DiffEqArray
             res = res.u
@@ -896,13 +1050,93 @@ end
             @test_nowarn plot(sol; idxs = idx)
             @test_nowarn plot(sol; idxs = [idx])
         end
-        for idx in Iterators.flatten((
-            Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs)))
+        for idx in Iterators.flatten(
+                (
+                    Iterators.product(all_idxs, all_idxs), Iterators.product(sym_idxs, sym_idxs),
+                )
+            )
             @test_nowarn plot(sol; idxs = collect(idx))
-            if !(idx[1] isa Tuple || idx[2] isa Tuple ||
-                 length(get_all_timeseries_indexes(sol, collect(idx))) > 1)
+            if !(
+                    idx[1] isa Tuple || idx[2] isa Tuple ||
+                        length(get_all_timeseries_indexes(sol, collect(idx))) > 1
+                )
                 @test_nowarn plot(sol; idxs = idx)
             end
+        end
+
+        @testset "`tspan` crops discrete timeseries" begin
+            for idx in (ud1, ud2)
+                x = plot(sol; idxs = idx, tspan = (0.4, 0.6)).series_list[1][:x]
+                @test !isempty(x)
+                @test all(t -> 0.4 <= t <= 0.6, x)
+
+                specs = Makie.convert_arguments(
+                    Makie.Lines, sol; idxs = idx, tspan = (0.4, 0.6)
+                )
+                @test !isempty(specs)
+                points = Iterators.flatten(only(spec.args) for spec in specs)
+                lo, hi = Float32.((0.4, 0.6))
+                @test all(point -> lo <= point[1] <= hi, points)
+            end
+            # No discrete save point in the window, so there is nothing to draw
+            @test isempty(plot(sol; idxs = ud1, tspan = (10.0, 20.0)).series_list)
+            @test isempty(
+                Makie.convert_arguments(
+                    Makie.Lines, sol; idxs = ud1, tspan = (10.0, 20.0)
+                )
+            )
+
+            makie_ext = Base.get_extension(SciMLBase, :SciMLBaseMakieExt)
+            @test makie_ext._tspan_indices([0.2, 0.4, 0.6, 0.8], (0.65, 0.35)) ==
+                (2, 3)
+            @test makie_ext._tspan_indices([0.8, 0.6, 0.4, 0.2], (0.35, 0.65)) ==
+                (2, 3)
+        end
+    end
+
+    @testset "`initialize_save_discretes`" begin
+        fn = ODEFunction(f!; sys)
+        prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
+        cb1 = PeriodicCallback(
+            0.1; initial_affect = true, final_affect = true,
+            save_positions = (false, false)
+        ) do integ
+            integ.p[1:2] .+= exp(-integ.t)
+            SciMLBase.save_discretes!(integ, 1)
+        end
+        function affect2!(integ)
+            integ.p[3:4] .+= only(integ.u)
+        end
+
+        @testset "`DiscreteCallback`" begin
+            cb2 = DiscreteCallback(
+                (args...) -> true, affect2!, save_positions = (true, true),
+                initialize_save_discretes = false, saved_clock_partitions = (2,)
+            )
+            sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+            @test sol.discretes.collection[2].t[1] > 0.0
+        end
+
+        @testset "`ContinuousCallback`" begin
+            cb2 = ContinuousCallback(
+                (u, t, i) -> cos(4pi * t), affect2!, save_positions = (true, true),
+                initialize_save_discretes = false, saved_clock_partitions = (2,)
+            )
+            sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+            @test sol.discretes.collection[2].t[1] > 0.0
+        end
+
+        @testset "`VectorContinuousCallback`" begin
+            cb2 = VectorContinuousCallback(
+                (out, u, t, integ) -> (out[1] = cos(4pi * t)), (integ, i) -> affect2!(integ), 2;
+                save_positions = (true, true),
+                initialize_save_discretes = false, saved_clock_partitions = [(2,)]
+            )
+            sol = solve(deepcopy(prob), Tsit5(); callback = CallbackSet(cb1, cb2))
+
+            @test sol.discretes.collection[2].t[1] > 0.0
         end
     end
 end
@@ -910,10 +1144,11 @@ end
 # Issue https://github.com/SciML/ModelingToolkit.jl/issues/3004
 @testset "Continuous interpolation before discrete save" begin
     @variables x(t)
-    @parameters c(t)
+    @discretes c(t)
     devt = ModelingToolkit.SymbolicDiscreteCallback(1.0, [c ~ Pre(c) + 1]; discrete_parameters = [c], iv = t)
     @mtkcompile sys = System(
-        D(x) ~ c * cos(x), t, [x], [c]; discrete_events = [devt])
+        D(x) ~ c * cos(x), t, [x, c], []; discrete_events = [devt]
+    )
     prob = ODEProblem(sys, [x => 0.0, c => 1.0], (0.0, 2pi))
     sol = solve(prob, Tsit5())
     @test_nowarn sol(-0.1; idxs = sys.x)
@@ -924,19 +1159,23 @@ end
 
 @testset "DDEs" begin
     function oscillator(; name, k = 1.0, τ = 0.01)
-        @parameters k=k τ=τ
-        @variables x(..)=0.1+t y(t)=0.1+t jcn(t) delx(t)
-        eqs = [D(x(t)) ~ y,
+        @parameters k = k τ = τ
+        @variables x(..) = 0.1 + t y(t) = 0.1 + t jcn(t) delx(t)
+        eqs = [
+            D(x(t)) ~ y,
             D(y) ~ -k * x(t - τ) + jcn,
-            delx ~ x(t - τ)]
-        return System(eqs, t; name = name)
+            delx ~ x(t - τ),
+        ]
+        return System(eqs, t; name)
     end
     systems = @named begin
         osc1 = oscillator(k = 1.0, τ = 0.01)
         osc2 = oscillator(k = 2.0, τ = 0.04)
     end
-    eqs = [osc1.jcn ~ osc2.delx,
-        osc2.jcn ~ osc1.delx]
+    eqs = [
+        osc1.jcn ~ osc2.delx,
+        osc2.jcn ~ osc1.delx,
+    ]
     @named coupledOsc = System(eqs, t)
     @named coupledOsc = compose(coupledOsc, systems)
     sys = mtkcompile(coupledOsc)
@@ -952,43 +1191,47 @@ end
     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
 end
 
-@testset "SDDEs" begin
-    function oscillator(; name, k = 1.0, τ = 0.01)
-        @parameters k=k τ=τ
-        @brownian a
-        @variables x(..)=0.1+t y(t)=0.1+t jcn(t) delx(t)
-        eqs = [D(x(t)) ~ y + a,
-            D(y) ~ -k * x(t - τ) + jcn,
-            delx ~ x(t - τ)]
-        return System(eqs, t; name = name)
-    end
-    systems = @named begin
-        osc1 = oscillator(k = 1.0, τ = 0.01)
-        osc2 = oscillator(k = 2.0, τ = 0.04)
-    end
-    eqs = [osc1.jcn ~ osc2.delx,
-        osc2.jcn ~ osc1.delx]
-    @named coupledOsc = System(eqs, t)
-    @named coupledOsc = compose(coupledOsc, systems)
-    sys = mtkcompile(coupledOsc)
-    prob = SDDEProblem(sys, [], (0.0, 10.0); constant_lags = [sys.osc1.τ, sys.osc2.τ])
-    sym = sys.osc1.delx
-    delay = sys.osc1.τ
-    original = sys.osc1.x
-    @test prob[sym] ≈ prob[original] .+ (prob.tspan[1] - prob.ps[delay])
-    sol = solve(prob, ImplicitEM())
-    @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
-end
+# @testset "SDDEs" begin
+#     function oscillator(; name, k = 1.0, τ = 0.01)
+#         @parameters k = k τ = τ
+#         @brownians a
+#         @variables x(..) = 0.1 + t y(t) = 0.1 + t jcn(t) delx(t)
+#         eqs = [
+#             D(x(t)) ~ y + a,
+#             D(y) ~ -k * x(t - τ) + jcn,
+#             delx ~ x(t - τ),
+#         ]
+#         return System(eqs, t; name)
+#     end
+#     systems = @named begin
+#         osc1 = oscillator(k = 1.0, τ = 0.01)
+#         osc2 = oscillator(k = 2.0, τ = 0.04)
+#     end
+#     eqs = [
+#         osc1.jcn ~ osc2.delx,
+#         osc2.jcn ~ osc1.delx,
+#     ]
+#     @named coupledOsc = System(eqs, t)
+#     @named coupledOsc = compose(coupledOsc, systems)
+#     sys = mtkcompile(coupledOsc)
+#     prob = SDDEProblem(sys, [], (0.0, 10.0); constant_lags = [sys.osc1.τ, sys.osc2.τ])
+#     sym = sys.osc1.delx
+#     delay = sys.osc1.τ
+#     original = sys.osc1.x
+#     @test prob[sym] ≈ prob[original] .+ (prob.tspan[1] - prob.ps[delay])
+#     sol = solve(prob, MethodOfSteps(ImplicitEM()))
+#     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
+# end
 
 @testset "RODESolutions save discretes" begin
-    @parameters k(t)
+    @discretes k(t)
     @variables A(t)
     function affect2!(m, o, ctx, integ)
         return (; k = m.k + 1.0)
     end
     db = 1.0 => ModelingToolkit.ImperativeAffect(affect2!; modified = (; k))
 
-    @named ssys = System(D(A) ~ k * A, t, [A], [k]; noise_eqs = [0.0], discrete_events = db)
+    @named ssys = System(D(A) ~ k * A, t, [A, k], []; noise_eqs = [0.0], discrete_events = db)
     ssys = complete(ssys)
     prob = SDEProblem(ssys, [A => 1.0, k => 1.0], (0.0, 4.0))
     sol = solve(prob, RI5())

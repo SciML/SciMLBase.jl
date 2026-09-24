@@ -1,13 +1,38 @@
-# Necessary to have initialize set u_modified to false if all don't do anything
+# Necessary to have initialize set derivative_discontinuity to false if all don't do anything
 # otherwise unnecessary save
-INITIALIZE_DEFAULT(cb, u, t, integrator) = u_modified!(integrator, false)
+INITIALIZE_DEFAULT(cb, u, t, integrator) = derivative_discontinuity!(integrator, false)
 FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
 
+"""
+    RootfindOpt
+
+Select how a continuous callback localizes a detected zero crossing.
+
+# Values
+
+- `NoRootFind`: apply the callback at the detected step endpoint without root localization.
+- `LeftRootFind`: localize the event and use the solution's left-limit value.
+- `RightRootFind`: localize the event and use the solution's right-limit value.
+
+# Usage
+
+```julia
+callback = ContinuousCallback(condition, affect!; rootfind = LeftRootFind)
+```
+
+The `rootfind` keyword of `ContinuousCallback` and `VectorContinuousCallback`
+accepts one of these values. `Bool` values remain accepted for compatibility and
+convert to `LeftRootFind` or `NoRootFind`.
+"""
 @enum RootfindOpt::Int8 begin
     NoRootFind = 0
     LeftRootFind = 1
     RightRootFind = 2
 end
+
+@doc "Disable root localization and apply a continuous callback at the detected step endpoint." NoRootFind
+@doc "Locate a continuous-callback root and use the solution's left-limit value at the event." LeftRootFind
+@doc "Locate a continuous-callback root and use the solution's right-limit value at the event." RightRootFind
 
 function Base.convert(::Type{RootfindOpt}, b::Bool)
     return b ? LeftRootFind : NoRootFind
@@ -15,7 +40,8 @@ end
 
 """
 ```julia
-ContinuousCallback(condition, affect!, affect_neg!;
+ContinuousCallback(
+    condition, affect!, affect_neg!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -23,11 +49,13 @@ ContinuousCallback(condition, affect!, affect_neg!;
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 ```julia
-ContinuousCallback(condition, affect!;
+ContinuousCallback(
+    condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -36,7 +64,8 @@ ContinuousCallback(condition, affect!;
     affect_neg! = affect!,
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 Contains a single callback whose `condition` is a continuous function. The callback is triggered when this function evaluates to 0.
@@ -45,7 +74,7 @@ Contains a single callback whose `condition` is a continuous function. The callb
 
   - `condition`: This is a function `condition(u,t,integrator)` for declaring when
     the callback should be used. A callback is initiated if the condition hits
-    `0` within the time interval. See the [Integrator Interface](@ref integrator) documentation for information about `integrator`.
+    `0` within the time interval. See the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) documentation for information about `integrator`.
   - `affect!`: This is the function `affect!(integrator)` where one is allowed to
     modify the current state of the integrator. If you do not pass an `affect_neg!`
     function, it is called when `condition` is found to be `0` (at a root) and
@@ -53,16 +82,16 @@ Contains a single callback whose `condition` is a continuous function. The callb
     (from positive to negative). You need to explicitly pass `nothing` as the
     `affect_neg!` argument if it should only be called at upcrossings, e.g.
     `ContinuousCallback(condition, affect!, nothing)`. For more information on what can
-    be done, see the [Integrator Interface](@ref integrator) manual page. Modifications to
+    be done, see the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) manual page. Modifications to
     `u` are safe in this function.
   - `affect_neg!=affect!`: This is the function `affect_neg!(integrator)` where one is allowed to
     modify the current state of the integrator. This is called when `condition` is
     found to be `0` (at a root) and the cross is a downcrossing (from positive to
     negative). For more information on what can
-    be done, see the [Integrator Interface](@ref integrator) manual page. Modifications to
+    be done, see the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) manual page. Modifications to
     `u` are safe in this function.
   - `rootfind=LeftRootFind`: This is a flag to specify the type of rootfinding to do for finding
-    event location. If this is set to `LeftRootfind`, the solution will be backtracked to the point where
+    event location. If this is set to `LeftRootFind`, the solution will be backtracked to the point where
     `condition==0` and if the solution isn't exact, the left limit of root is used. If set to
     `RightRootFind`, the solution would be set to the right limit of the root. Otherwise, the systems and
     the `affect!` will occur at `t+dt`. Note that these enums are not exported, and thus one needs to
@@ -87,17 +116,22 @@ Contains a single callback whose `condition` is a continuous function. The callb
     ignored.
   - `finalize`: This is a function `(c,u,t,integrator)` which can be used to finalize
     the state of the callback `c`. It can modify the argument `c` and the return is ignored.
-  - `abstol=1e-14` & `reltol=0`: These are used to specify a tolerance from zero for the rootfinder:
-    if the starting condition is less than the tolerance from zero, then no root will be detected.
-    This is to stop repeat events happening immediately after a rootfinding event.
+  - `abstol=10eps()`: Tolerance for repeated event prevention. If the callback was just triggered
+    and the new starting condition is less than the tolerance from its value at the root,
+    then the next testing point will be nudged to avoid repeats. If the callback does not
+    mutate the integrator in a way that affect the condition, this can be safely set to `0.0`.
+    `reltol` is deprecated.
   - `repeat_nudge = 1//100`: This is used to set the next testing point after a
-    previously found zero. Defaults to 1//100, which means after a callback, the next
-    sign check will take place at t + dt*1//100 instead of at t to avoid repeats.
+    previously found zero. Defaults to `1//100`, which means after a callback, the next
+    sign check will take place at `t + dt*1//100` instead of at `t` to avoid repeats.
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
+  - `maybe_discontinuity = true`: Declares whether the condition time could have a discontinuity
+    or the `affect!` could introduce a discontinuity. Defaults to `true`. This is only used if
+    discontinuity detection is enabled in the controller (i.e. `discontinuity_handling = true`).
 
-!!! warn
+!!! warning
 
     The effect of using a callback with a DAE needs to be done with care because the solution
     `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
@@ -110,9 +144,17 @@ Contains a single callback whose `condition` is a continuous function. The callb
     `affect!` satisfies the constraints (or else errors). It is not recommended that `NoInit()` is
     used as that will lead to an unstable step following initialization. This warning can be
     ignored for non-DAE ODEs.
+
+# Extended help
+
+- `saved_clock_partitions`: An iterable of clock partition indices to save after the callback triggers. MTK-only
+  API.
+- `initialize_save_discretes = true`: Whether callback initialization should save
+  the discrete parameter partitions listed in `saved_clock_partitions` when
+  `save_positions[2]` is true.
 """
-struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
-       AbstractContinuousCallback
+struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP} <:
+    AbstractContinuousCallback
     condition::F1
     affect!::F2
     affect_neg!::F3
@@ -127,24 +169,34 @@ struct ContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
     reltol::T2
     repeat_nudge::T3
     initializealg::T4
-    function ContinuousCallback(condition::F1, affect!::F2, affect_neg!::F3,
+    saved_clock_partitions::SCP
+    maybe_discontinuity::Bool
+    initialize_save_discretes::Bool
+    function ContinuousCallback(
+            condition::F1, affect!::F2, affect_neg!::F3,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R, abstol::T,
-            reltol::T2,
-            repeat_nudge::T3,
-            initializealg::T4 = nothing) where {F1, F2, F3, F4, F5, T, T2, T3, T4, I, R
-    }
+            reltol::T2, repeat_nudge::T3, initializealg::T4 = nothing,
+            saved_clock_partitions::SCP = (), maybe_discontinuity::Bool = true,
+            initialize_save_discretes::Bool = true
+        ) where {
+            F1, F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP,
+        }
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R}(_condition,
+        return new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R, SCP}(
+            _condition,
             affect!, affect_neg!,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
-            dtrelax, abstol, reltol, repeat_nudge, initializealg)
+            dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+            maybe_discontinuity, initialize_save_discretes
+        )
     end
 end
 
-function ContinuousCallback(condition, affect!, affect_neg!;
+function ContinuousCallback(
+        condition, affect!, affect_neg!;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -154,15 +206,23 @@ function ContinuousCallback(condition, affect!, affect_neg!;
         dtrelax = 1,
         abstol = 10eps(), reltol = 0,
         repeat_nudge = 1 // 100,
-        initializealg = nothing)
-    ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize,
+        initializealg = nothing,
+        saved_clock_partitions = (),
+        maybe_discontinuity = true,
+        initialize_save_discretes = true,
+    )
+    return ContinuousCallback(
+        condition, affect!, affect_neg!, initialize, finalize,
         idxs,
         rootfind, interp_points,
         save_positions,
-        dtrelax, abstol, reltol, repeat_nudge, initializealg)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        maybe_discontinuity, initialize_save_discretes
+    )
 end
 
-function ContinuousCallback(condition, affect!;
+function ContinuousCallback(
+        condition, affect!;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -172,16 +232,23 @@ function ContinuousCallback(condition, affect!;
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing)
-    ContinuousCallback(condition, affect!, affect_neg!, initialize, finalize, idxs,
+        initializealg = nothing, saved_clock_partitions = (),
+        maybe_discontinuity = true,
+        initialize_save_discretes = true,
+    )
+    return ContinuousCallback(
+        condition, affect!, affect_neg!, initialize, finalize, idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge, initializealg)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        maybe_discontinuity, initialize_save_discretes
+    )
 end
 
 """
 ```julia
-VectorContinuousCallback(condition, affect!, affect_neg!, len;
+VectorContinuousCallback(
+    condition, affect!, len;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -189,25 +256,17 @@ VectorContinuousCallback(condition, affect!, affect_neg!, len;
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing)
-```
-
-```julia
-VectorContinuousCallback(condition, affect!, len;
-    initialize = INITIALIZE_DEFAULT,
-    finalize = FINALIZE_DEFAULT,
-    idxs = nothing,
-    rootfind = LeftRootFind,
-    save_positions = (true, true),
-    affect_neg! = affect!,
-    interp_points = 10,
-    abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not feasible when you have many callbacks,
 as it doesn't scale well. For this reason, we have `VectorContinuousCallback` - it allows you to have a single callback for
 multiple events.
+
+`VectorContinuousCallback` intentionally does not have an `affect_neg!`
+callback. Its `affect!` receives the triggering event index and is responsible
+for applying the appropriate effect for that event.
 
 # Arguments
 
@@ -219,12 +278,19 @@ multiple events.
   - `len`: Number of callbacks chained. This is compulsory to be specified.
 
 Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
+
+# Extended help
+
+- `saved_clock_partitions`: An iterable of `len` elements, where the `i`th element is an iterable
+  of clock partition indices to save when the `i`th event triggers. MTK-only API.
+- `initialize_save_discretes = true`: Whether callback initialization should save
+  the discrete parameter partitions listed in `saved_clock_partitions` when
+  `save_positions[2]` is true.
 """
-struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
-       AbstractContinuousCallback
+struct VectorContinuousCallback{F1, F2, F4, F5, T, T2, T3, T4, I, R, SCP} <:
+    AbstractContinuousCallback
     condition::F1
     affect!::F2
-    affect_neg!::F3
     len::Int
     initialize::F4
     finalize::F5
@@ -237,25 +303,39 @@ struct VectorContinuousCallback{F1, F2, F3, F4, F5, T, T2, T3, T4, I, R} <:
     reltol::T2
     repeat_nudge::T3
     initializealg::T4
+    saved_clock_partitions::SCP
+    maybe_discontinuity::Bool
+    initialize_save_discretes::Bool
     function VectorContinuousCallback(
-            condition::F1, affect!::F2, affect_neg!::F3, len::Int,
+            condition::F1, affect!::F2, len::Int,
             initialize::F4, finalize::F5, idxs::I, rootfind,
             interp_points, save_positions, dtrelax::R,
-            abstol::T, reltol::T2,
-            repeat_nudge::T3,
-            initializealg::T4 = nothing) where {F1, F2, F3, F4, F5, T, T2,
-            T3, T4, I, R}
+            abstol::T, reltol::T2, repeat_nudge::T3,
+            initializealg::T4 = nothing,
+            saved_clock_partitions::SCP = (),
+            maybe_discontinuity::Bool = true,
+            initialize_save_discretes = true
+        ) where {
+            F1, F2, F4, F5, T, T2,
+            T3, T4, I, R, SCP,
+        }
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5, T, T2, T3, T4, I, R}(_condition,
-            affect!, affect_neg!, len,
+        return new{typeof(_condition), F2, F4, F5, T, T2, T3, T4, I, R, SCP}(
+            _condition,
+            affect!, len,
             initialize, finalize, idxs, rootfind,
             interp_points,
             BitArray(collect(save_positions)),
-            dtrelax, abstol, reltol, repeat_nudge, initializealg)
+            dtrelax, abstol, reltol, repeat_nudge, initializealg,
+            saved_clock_partitions,
+            maybe_discontinuity,
+            initialize_save_discretes
+        )
     end
 end
 
-function VectorContinuousCallback(condition, affect!, affect_neg!, len;
+function VectorContinuousCallback(
+        condition, affect!, len;
         initialize = INITIALIZE_DEFAULT,
         finalize = FINALIZE_DEFAULT,
         idxs = nothing,
@@ -264,52 +344,39 @@ function VectorContinuousCallback(condition, affect!, affect_neg!, len;
         interp_points = 10,
         dtrelax = 1,
         abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing)
-    VectorContinuousCallback(condition, affect!, affect_neg!, len,
-        initialize, finalize,
-        idxs,
-        rootfind, interp_points,
-        save_positions, dtrelax,
-        abstol, reltol, repeat_nudge, initializealg)
-end
-
-function VectorContinuousCallback(condition, affect!, len;
-        initialize = INITIALIZE_DEFAULT,
-        finalize = FINALIZE_DEFAULT,
-        idxs = nothing,
-        rootfind = LeftRootFind,
-        save_positions = (true, true),
-        affect_neg! = affect!,
-        interp_points = 10,
-        dtrelax = 1,
-        abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-        initializealg = nothing)
-    VectorContinuousCallback(condition, affect!, affect_neg!, len, initialize, finalize,
+        initializealg = nothing, saved_clock_partitions = (),
+        maybe_discontinuity = true,
+        initialize_save_discretes = true
+    )
+    return VectorContinuousCallback(
+        condition, affect!, len, initialize, finalize,
         idxs,
         rootfind, interp_points,
         collect(save_positions),
-        dtrelax, abstol, reltol, repeat_nudge, initializealg)
+        dtrelax, abstol, reltol, repeat_nudge, initializealg, saved_clock_partitions,
+        maybe_discontinuity, initialize_save_discretes
+    )
 end
 
 """
 ```julia
-DiscreteCallback(condition, affect!;
+DiscreteCallback(
+    condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     save_positions = (true, true),
-    initializealg = nothing)
+    initializealg = nothing
+)
 ```
 
 # Arguments
 
   - `condition`: This is a function `condition(u,t,integrator)` for declaring when
     the callback should be used. A callback is initiated if the condition evaluates
-    to `true`. See the [Integrator Interface](@ref integrator) documentation for information about `integrator`.
-
-      + `affect!`: This is the function `affect!(integrator)` where one is allowed to
-        modify the current state of the integrator. For more information on what can
-        be done, see the [Integrator Interface](@ref integrator) manual page.
-
+    to `true`. See the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) documentation for information about `integrator`.
+  - `affect!`: This is the function `affect!(integrator)` where one is allowed to
+    modify the current state of the integrator. For more information on what can
+    be done, see the [Integrator Interface](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/) manual page.
   - `save_positions`: Boolean tuple for whether to save before and after the `affect!`.
     This saving will occur just before and after the event, only at event times, and
     does not depend on options like `saveat`, `save_everystep`, etc. (i.e. if
@@ -320,13 +387,13 @@ DiscreteCallback(condition, affect!;
     the state of the callback `c`. It should modify the argument `c` and the return is
     ignored.
   - `finalize`: This is a function `(c,u,t,integrator)` which can be used to finalize
-    the state of the callback `c`. It should can the argument `c` and the return is
+    the state of the callback `c`. It can modify the argument `c` and the return is
     ignored.
   - `initializealg = nothing`: In the context of a DAE, this is the algorithm that is used
     to run initialization after the effect. The default of `nothing` defers to the initialization
     algorithm provided in the `solve`.
 
-!!! warn
+!!! warning
 
     The effect of using a callback with a DAE needs to be done with care because the solution
     `u` needs to satisfy the algebraic constraints before taking the next step. For this reason,
@@ -339,47 +406,77 @@ DiscreteCallback(condition, affect!;
     `affect!` satisfies the constraints (or else errors). It is not recommended that `NoInit()` is
     used as that will lead to an unstable step following initialization. This warning can be
     ignored for non-DAE ODEs.
+
+# Extended help
+
+- `saved_clock_partitions`: An iterable of clock partition indices to save after the callback
+  triggers. MTK-only API.
+- `initialize_save_discretes = true`: Whether callback initialization should save
+  the discrete parameter partitions listed in `saved_clock_partitions` when
+  `save_positions[2]` is true.
 """
-struct DiscreteCallback{F1, F2, F3, F4, F5} <: AbstractDiscreteCallback
+struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
     condition::F1
     affect!::F2
     initialize::F3
     finalize::F4
     save_positions::BitArray{1}
     initializealg::F5
-    function DiscreteCallback(condition::F1, affect!::F2,
+    saved_clock_partitions::SCP
+    initialize_save_discretes::Bool
+    function DiscreteCallback(
+            condition::F1, affect!::F2,
             initialize::F3, finalize::F4,
             save_positions,
-            initializealg::F5 = nothing) where {F1, F2, F3, F4, F5}
+            initializealg::F5 = nothing,
+            saved_clock_partitions::SCP = (),
+            initialize_save_discretes = true
+        ) where {F1, F2, F3, F4, F5, SCP}
         _condition = prepare_function(condition)
-        new{typeof(_condition), F2, F3, F4, F5}(_condition,
+        return new{typeof(_condition), F2, F3, F4, F5, SCP}(
+            _condition,
             affect!, initialize, finalize,
             BitArray(collect(save_positions)),
-            initializealg)
+            initializealg, saved_clock_partitions,
+            initialize_save_discretes
+        )
     end
 end
-function DiscreteCallback(condition, affect!;
+function DiscreteCallback(
+        condition, affect!;
         initialize = INITIALIZE_DEFAULT, finalize = FINALIZE_DEFAULT,
         save_positions = (true, true),
-        initializealg = nothing)
-    DiscreteCallback(
-        condition, affect!, initialize, finalize, save_positions, initializealg)
+        initializealg = nothing, saved_clock_partitions = (),
+        initialize_save_discretes = true
+    )
+    return DiscreteCallback(
+        condition, affect!, initialize, finalize, save_positions, initializealg,
+        saved_clock_partitions,
+        initialize_save_discretes,
+    )
 end
 
 """
 $(TYPEDEF)
 
-Multiple callbacks can be chained together to form a `CallbackSet`. A `CallbackSet`
-is constructed by passing the constructor `ContinuousCallback`, `DiscreteCallback`,
-`VectorContinuousCallback` or other `CallbackSet` instances:
+Container for the callbacks attached to a differential equation solve.
 
-    CallbackSet(cb1,cb2,cb3)
+Multiple callbacks can be chained together to form a `CallbackSet`. A
+`CallbackSet` is constructed by passing `ContinuousCallback`,
+`DiscreteCallback`, `VectorContinuousCallback`, `nothing`, or other
+`CallbackSet` instances:
 
-You can pass as many callbacks as you like. When the solvers encounter multiple
-callbacks, the following rules apply:
+    CallbackSet(cb1, cb2, cb3)
 
-  - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s. (This is because
-    they often implement event-finding that will backtrack the timestep to smaller
+You can pass as many callbacks as needed. Nested callback sets are flattened into
+two ordered collections, `continuous_callbacks` and `discrete_callbacks`. Public
+constructors use tuples; solver paths may use vectors when callback types must be
+erased to reuse compilation.
+
+When a solver encounters multiple callbacks, the following rules apply:
+
+  - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s.
+    (This is because they often implement event-finding that will backtrack the timestep to smaller
     than `dt`).
   - For `ContinuousCallback`s and `VectorContinuousCallback`s, the event times are found by rootfinding and only
     the first `ContinuousCallback` or `VectorContinuousCallback` affect is applied.
@@ -388,7 +485,10 @@ callbacks, the following rules apply:
     that the next callback no longer evaluates condition to `true`, its `affect`
     will not be applied.
 """
-struct CallbackSet{T1 <: Tuple, T2 <: Tuple} <: DECallback
+struct CallbackSet{
+        T1 <: Union{Tuple, AbstractVector},
+        T2 <: Union{Tuple, AbstractVector},
+    } <: DECallback
     continuous_callbacks::T1
     discrete_callbacks::T2
 end
@@ -400,23 +500,175 @@ CallbackSet(cb::Nothing) = CallbackSet()
 
 # For Varargs, use recursion to make it type-stable
 function CallbackSet(callbacks::Union{DECallback, Nothing}...)
-    CallbackSet(split_callbacks((), (), callbacks...)...)
+    return CallbackSet(split_callbacks((), (), callbacks...)...)
 end
 
 """
     split_callbacks(cs, ds, args...)
 
-Split comma separated callbacks into sets of continuous and discrete callbacks.
+Split callbacks into continuous and discrete callback tuples.
+
+`cs` and `ds` are the tuples accumulated so far. Additional arguments may be
+`AbstractContinuousCallback`, `AbstractDiscreteCallback`, `CallbackSet`, or
+`nothing`. Nested callback sets are flattened while preserving the order within
+each category. This is the helper used by the vararg `CallbackSet` constructor.
 """
 @inline split_callbacks(cs, ds) = cs, ds
 @inline split_callbacks(cs, ds, c::Nothing, args...) = split_callbacks(cs, ds, args...)
 @inline function split_callbacks(cs, ds, c::AbstractContinuousCallback, args...)
-    split_callbacks((cs..., c), ds, args...)
+    return split_callbacks((cs..., c), ds, args...)
 end
 @inline function split_callbacks(cs, ds, d::AbstractDiscreteCallback, args...)
-    split_callbacks(cs, (ds..., d), args...)
+    return split_callbacks(cs, (ds..., d), args...)
 end
 @inline function split_callbacks(cs, ds, d::CallbackSet, args...)
-    split_callbacks((cs..., d.continuous_callbacks...), (ds..., d.discrete_callbacks...),
-        args...)
+    return split_callbacks(
+        (cs..., d.continuous_callbacks...), (ds..., d.discrete_callbacks...),
+        args...
+    )
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Save the discrete parameter partitions associated with callback `cb`.
+
+Callbacks created by ModelingToolkit may carry `saved_clock_partitions`
+metadata. When a callback triggers, this helper appends the corresponding
+time-series parameter values from `integrator` to the solution's discrete
+storage. For `VectorContinuousCallback`, the three-argument method saves only
+the partitions associated with event index `i`; the two-argument method saves
+all configured vector-event partitions.
+
+# Keyword arguments
+
+- `skip_duplicates`: Skip saving variables that have already been saved at the current time.
+"""
+function save_discretes!(integrator::DEIntegrator, cb::Union{ContinuousCallback, DiscreteCallback}; skip_duplicates = false)
+    isempty(cb.saved_clock_partitions) && return
+    for idx in cb.saved_clock_partitions
+        save_discretes!(integrator, idx; skip_duplicates)
+    end
+    return
+end
+
+function save_discretes!(integrator::DEIntegrator, cb::VectorContinuousCallback; kw...)
+    isempty(cb.saved_clock_partitions) && return
+    for idx in eachindex(cb.saved_clock_partitions)
+        save_discretes!(integrator, cb, idx; skip_duplicates = true)
+    end
+    return
+end
+
+function save_discretes!(integrator::DEIntegrator, cb::VectorContinuousCallback, i; skip_duplicates = false)
+    isempty(cb.saved_clock_partitions) && return
+    for idx in cb.saved_clock_partitions[i]
+        save_discretes!(integrator, idx; skip_duplicates)
+    end
+    return
+end
+
+function _save_all_discretes!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...)
+    save_discretes!(integrator, cb; skip_duplicates = true)
+    return _save_all_discretes!(integrator, cbs...)
+end
+
+_save_all_discretes!(::DEIntegrator) = nothing
+
+function save_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
+    return _save_all_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
+end
+
+function save_discretes!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_discretes!(integrator, callback; skip_duplicates = true)
+        end
+    end
+    return
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Save callback-associated discrete parameter partitions after finalization.
+
+This helper is used at the final time of the simulation. It saves only when the
+callback has a non-default `finalize` hook and `save_positions[2]` is true, so
+finalizer-induced changes to time-series parameters are reflected in the
+solution's discrete storage.
+"""
+function save_final_discretes!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback})
+    cb.finalize === FINALIZE_DEFAULT && return
+    cb.save_positions[2] || return
+    return save_discretes!(integrator, cb; skip_duplicates = true)
+end
+
+function _save_all_final_discretes!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...)
+    save_final_discretes!(integrator, cb)
+    return _save_all_final_discretes!(integrator, cbs...)
+end
+
+_save_all_final_discretes!(::DEIntegrator) = nothing
+
+function save_final_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
+    return _save_all_final_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
+end
+
+function save_final_discretes!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_final_discretes!(integrator, callback)
+        end
+    end
+    return
+end
+
+"""
+    $(TYPEDSIGNATURES)
+
+Save callback-associated discrete parameter partitions during initialization
+when enabled.
+
+Initialization saves occur only when both `save_positions[2]` and
+`initialize_save_discretes` are true. This lets callbacks participate in
+symbolic discrete-parameter saving while allowing solver authors or generated
+callbacks to opt out of the initial discrete save.
+
+# Keyword arguments
+
+- `skip_duplicates`: Skip saving variables that have already been saved at the current time.
+"""
+function save_discretes_if_enabled!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback}; skip_duplicates = false)
+    cb.save_positions[2] && cb.initialize_save_discretes || return
+    return save_discretes!(integrator, cb; skip_duplicates)
+end
+
+function _save_discretes_if_enabled!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...; kw...)
+    save_discretes_if_enabled!(integrator, cb; kw...)
+    return _save_discretes_if_enabled!(integrator, cbs...; kw...)
+end
+
+_save_discretes_if_enabled!(::DEIntegrator; kw...) = nothing
+
+function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; kw...)
+    return _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
+end
+
+function save_discretes_if_enabled!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_discretes_if_enabled!(integrator, callback; kw...)
+        end
+    end
+    return
 end

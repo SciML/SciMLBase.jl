@@ -13,7 +13,7 @@ in the `stats` field of the `OptimizationResult`.
   - `hevals`: number of hessian evaluations
 
 Default values for all the field are set to 0 and hence even when
-you might expect non-zero values due to unavilability of the information
+you might expect non-zero values due to unavailability of the information
 from the solver it would be 0.
 """
 struct OptimizationStats
@@ -25,7 +25,7 @@ struct OptimizationStats
 end
 
 function OptimizationStats(; iterations = 0, time = 0.0, fevals = 0, gevals = 0, hevals = 0)
-    OptimizationStats(iterations, time, fevals, gevals, hevals)
+    return OptimizationStats(iterations, time, fevals, gevals, hevals)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", s::OptimizationStats)
@@ -34,13 +34,14 @@ function Base.show(io::IO, ::MIME"text/plain", s::OptimizationStats)
     @printf io "%-50s %-f\n" "Time in seconds:" s.time
     @printf io "%-50s %-d\n" "Number of function evaluations:" s.fevals
     @printf io "%-50s %-d\n" "Number of gradient evaluations:" s.gevals
-    @printf io "%-50s %-d" "Number of hessian evaluations:" s.hevals
+    return @printf io "%-50s %-d" "Number of hessian evaluations:" s.hevals
 end
 
 function Base.merge(s1::OptimizationStats, s2::OptimizationStats)
-    OptimizationStats(
+    return OptimizationStats(
         s1.iterations + s2.iterations, s1.time + s2.time, s1.fevals + s2.fevals,
-        s1.gevals + s2.gevals, s1.hevals + s2.hevals)
+        s1.gevals + s2.gevals, s1.hevals + s2.hevals
+    )
 end
 
 """
@@ -59,6 +60,12 @@ Representation of the solution to a non-linear optimization defined by an Optimi
   - `original`: if the solver is wrapped from a external solver, e.g.
     Optim.jl, then this is the original return from said solver library.
   - `stats`: statistics of the solver, such as the number of function evaluations required.
+  - `dual`: dual multipliers, one vector per constraint in constraint order, or
+    `nothing`. General `OptimizationProblem` solves leave this `nothing`; a
+    `ConvexOptimizationProblem` solved by a conic backend populates it as the
+    optimality certificate. Its type is fixed at solve time by the `calculate_dual`
+    keyword (`Val(true)`/`Val(false)`/`Val(nothing)`) so switching problem types
+    stays type-stable — see [`default_calculate_dual`](@ref).
 
 ## Internal Fields
 
@@ -70,8 +77,8 @@ Representation of the solution to a non-linear optimization defined by an Optimi
 solution interfaces, check out the
 [SciML Solution Interface documentation page](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/)
 """
-struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST} <:
-       AbstractOptimizationSolution{T, N}
+struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, O, ST, DType} <:
+    AbstractOptimizationSolution{T, N}
     u::uType # minimizer
     cache::C # optimization cache
     alg::A # algorithm
@@ -79,23 +86,80 @@ struct OptimizationSolution{T, N, uType, C <: AbstractOptimizationCache, A, OV, 
     retcode::ReturnCode.T
     original::O # original output of the optimizer
     stats::ST
+    dual::DType # dual multipliers (one vector per constraint), or nothing
 end
 
-function build_solution(cache::AbstractOptimizationCache,
+# `calculate_dual` (a `Val`) fixes the *type* of the `dual` field at compile time
+# instead of letting it be inferred from the runtime dual value — this is what
+# keeps `solve` type-stable while still allowing duals to be present or absent:
+#   Val(true)    -> Vector{Vector{T}}                 (duals present; precise type)
+#   Val(false)   -> Nothing                           (duals suppressed; precise type)
+#   Val(nothing) -> Union{Nothing, Vector{Vector{T}}} (auto: the type-stable Union a
+#                                                       DCP router uses when it cannot
+#                                                       know statically whether a routed
+#                                                       problem yields duals)
+_dual_type(::Val{true}, ::Type{T}) where {T} = Vector{Vector{T}}
+_dual_type(::Val{false}, ::Type{T}) where {T} = Nothing
+_dual_type(::Val{nothing}, ::Type{T}) where {T} = Union{Nothing, Vector{Vector{T}}}
+
+_coerce_dual(::Val{false}, dual, ::Type{T}) where {T} = nothing
+_coerce_dual(::Val{true}, dual, ::Type{T}) where {T} = convert(Vector{Vector{T}}, dual)
+function _coerce_dual(::Val{nothing}, dual, ::Type{T}) where {T}
+    return dual === nothing ? nothing : convert(Vector{Vector{T}}, dual)
+end
+
+"""
+    default_calculate_dual(prob)
+
+Whether `solve` computes dual multipliers by default for problem `prob`, returned
+as a `Val`: `Val(false)` for a general [`OptimizationProblem`](@ref) (a local NLP
+solve has no duals to report), and `Val(true)` for a
+[`ConvexOptimizationProblem`](@ref) (convex duals are a first-class optimality
+certificate, so they are on by default). A DCP router that decides convex-vs-NLP at
+runtime should pass `Val(nothing)` to get the type-stable `Union` dual field.
+"""
+default_calculate_dual(::AbstractOptimizationProblem) = Val(false)
+default_calculate_dual(::ConvexOptimizationProblem) = Val(true)
+
+function build_solution(
+        cache::AbstractOptimizationCache,
         alg, u, objective;
         retcode = ReturnCode.Default,
         original = nothing,
         stats = nothing,
-        kwargs...)
+        dual = nothing,
+        calculate_dual::Val = Val(false),
+        kwargs...
+    )
     T = eltype(eltype(u))
     N = ndims(u)
+    DType = _dual_type(calculate_dual, T)
+    dualval = _coerce_dual(calculate_dual, dual, T)
 
-    #Backwords compatibility, remove ASAP
-    retcode = symbol_to_ReturnCode(retcode)
+    return OptimizationSolution{
+        T, N, typeof(u), typeof(cache), typeof(alg),
+        typeof(objective), typeof(original), typeof(stats), DType,
+    }(
+        u, cache, alg, objective, retcode, original, stats, dualval
+    )
+end
 
-    OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original), typeof(stats)}(u, cache,
-        alg, objective, retcode, original, stats)
+# Thin convenience for conic backends: builds the one `OptimizationSolution` with
+# duals on (`Val(true)`). `dual` is one vector per constraint, in constraint order.
+function build_convex_solution(
+        cache::AbstractOptimizationCache,
+        alg, u, objective;
+        dual = nothing,
+        calculate_dual::Val = Val(true),
+        retcode = ReturnCode.Default,
+        original = nothing,
+        stats = nothing,
+        kwargs...
+    )
+    return build_solution(
+        cache, alg, u, objective;
+        retcode, original, stats, dual, calculate_dual
+    )
 end
 
 """
@@ -104,35 +168,11 @@ $(TYPEDEF)
 Representation the default cache for an optimization problem defined by an `OptimizationProblem`.
 """
 mutable struct DefaultOptimizationCache{F <: OptimizationFunction, P} <:
-               AbstractOptimizationCache
+    AbstractOptimizationCache
     f::F
     p::P
 end
 
-# for compatibility
-function build_solution(prob::AbstractOptimizationProblem,
-        alg, u, objective;
-        retcode = ReturnCode.Default,
-        original = nothing,
-        kwargs...)
-    T = eltype(eltype(u))
-    N = ndims(u)
-
-    Base.depwarn(
-        "`build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)` is deprecated." *
-        " Consider implementing an `AbstractOptimizationCache` instead.",
-        "build_solution(prob::AbstractOptimizationProblem, args...; kwargs...)")
-
-    cache = DefaultOptimizationCache(prob.f, prob.p)
-
-    #Backwords compatibility, remove ASAP
-    retcode = symbol_to_ReturnCode(retcode)
-
-    OptimizationSolution{T, N, typeof(u), typeof(cache), typeof(alg),
-        typeof(objective), typeof(original)}(u, cache, alg, objective,
-        retcode,
-        original)
-end
 
 function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
     if x in (:u0, :p) && has_reinit(cache)
@@ -142,10 +182,12 @@ function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
 end
 
 function has_reinit(cache::SciMLBase.AbstractOptimizationCache)
-    hasfield(typeof(cache), :reinit_cache)
+    return hasfield(typeof(cache), :reinit_cache)
 end
-function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
-        u0 = missing, interpret_symbolicmap = true)
+function reinit!(
+        cache::SciMLBase.AbstractOptimizationCache; p = missing,
+        u0 = missing, interpret_symbolicmap = true
+    )
     if p === missing && u0 === missing
         p, u0 = cache.p, cache.u0
     else # at least one of them has a value
@@ -158,16 +200,24 @@ function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
         isu0symbolic = eltype(u0) <: Pair && !isempty(u0)
         ispsymbolic = eltype(p) <: Pair && !isempty(p) && interpret_symbolicmap
         if isu0symbolic && !has_sys(cache.f)
-            throw(ArgumentError("This cache does not support symbolic maps with" *
-                                " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
-                                "with the `u0` keyword argument as a vector of values, paying attention to" *
-                                "parameter order."))
+            throw(
+                ArgumentError(
+                    "This cache does not support symbolic maps with" *
+                        " remake, i.e. it does not have a symbolic origin. Please use `remke`" *
+                        "with the `u0` keyword argument as a vector of values, paying attention to" *
+                        "parameter order."
+                )
+            )
         end
         if ispsymbolic && !has_sys(cache.f)
-            throw(ArgumentError("This cache does not support symbolic maps with " *
-                                "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
-                                "with the `p` keyword argument as a vector of values (paying attention to" *
-                                "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"))
+            throw(
+                ArgumentError(
+                    "This cache does not support symbolic maps with " *
+                        "`remake`, i.e. it does not have a symbolic origin. Please use `remake`" *
+                        "with the `p` keyword argument as a vector of values (paying attention to" *
+                        "parameter order) or pass `interpret_symbolicmap = false` as a keyword argument"
+                )
+            )
         end
         if isu0symbolic && ispsymbolic
             p, u0 = process_p_u0_symbolic(cache, p, u0)
@@ -185,7 +235,7 @@ function reinit!(cache::SciMLBase.AbstractOptimizationCache; p = missing,
 end
 
 function SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationCache)
-    if has_reinit(x)
+    return if has_reinit(x)
         x.reinit_cache.p
     else
         x.p
@@ -211,28 +261,15 @@ function Base.show(io::IO, A::AbstractOptimizationSolution)
 end
 
 function SymbolicIndexingInterface.parameter_values(x::AbstractOptimizationSolution)
-    parameter_values(x.cache)
+    return parameter_values(x.cache)
 end
 SymbolicIndexingInterface.symbolic_container(x::AbstractOptimizationSolution) = x.cache
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractOptimizationSolution,
-        s::Symbol)
-    if s === :minimizer
-        Base.depwarn("`sol.minimizer` is deprecated. Use `sol.u` instead.",
-            "sol.minimizer")
-        return getfield(x, :u)
-    elseif s === :x
-        return getfield(x, :u)
-    elseif s === :minimum
-        Base.depwarn("`sol.minimum` is deprecated. Use `sol.objective` instead.",
-            "sol.minimum")
-        return getfield(x, :objective)
-    elseif s === :prob
-        Base.depwarn(
-            "`sol.prob` is deprecated. Use getters like `get_p` or `get_syms` on `sol` instead.",
-            "sol.prob")
-        return getfield(x, :cache)
-    elseif s === :ps
+Base.@propagate_inbounds function Base.getproperty(
+        x::AbstractOptimizationSolution,
+        s::Symbol
+    )
+    if s === :ps
         return ParameterIndexingProxy(x)
     end
     return getfield(x, s)
@@ -240,9 +277,11 @@ end
 
 function Base.summary(io::IO, A::AbstractOptimizationSolution)
     type_color, no_color = get_colorizers(io)
-    print(io,
+    return print(
+        io,
         type_color, nameof(typeof(A)),
         no_color, " with uType ",
         type_color, eltype(A.u),
-        no_color)
+        no_color
+    )
 end

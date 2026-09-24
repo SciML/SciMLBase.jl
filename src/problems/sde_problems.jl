@@ -1,12 +1,21 @@
 """
 $(TYPEDEF)
+
+Legacy marker for the standard SDE problem representation.
+
+The standard SDE layout is represented by `SDEProblem` itself: drift function,
+diffusion function, initial state, time span, parameters, noise metadata, and
+solver keywords. Current SDE constructors do not store a separate
+`problem_type` field for this marker, so solver implementations should dispatch
+on `AbstractSDEProblem` and the problem's function type instead of depending on
+`StandardSDEProblem`.
 """
 struct StandardSDEProblem end
 
-@doc doc"""
+"""
 
 Defines an stochastic differential equation (SDE) problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/sde_types/>
 
 ## Mathematical Specification of a SDE Problem
 
@@ -14,7 +23,7 @@ To define an SDE Problem, you simply need to give the forcing function `f`,
 the noise function `g`, and the initial condition `u₀` which define an SDE:
 
 ```math
-du = f(u,p,t)dt + Σgᵢ(u,p,t)dWⁱ
+du = f(u,p,t) \\, dt + ∑ᵢ gᵢ(u,p,t) \\, dWⁱ
 ```
 
 `f` and `g` should be specified as `f(u,p,t)` and  `g(u,p,t)` respectively, and `u₀`
@@ -28,7 +37,7 @@ of `g`s can also be defined to determine an SDE of higher Ito dimension.
 Wraps the data which defines an SDE problem
 
 ```math
-u = f(u,p,t)dt + Σgᵢ(u,p,t)dWⁱ
+u = f(u,p,t) \\, dt + ∑ᵢ gᵢ(u,p,t) \\, dWⁱ
 ```
 
 with initial condition `u0`.
@@ -40,8 +49,9 @@ with initial condition `u0`.
   Defines the SDE with the specified functions. The default noise is `WHITE_NOISE`.
   `isinplace` optionally sets whether the function is inplace or not. This is
   determined automatically, but not inferred. `specialize` optionally controls
-  the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
-  for more details. The default is `AutoSpecialize.
+  the specialization level. See
+  [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+  for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given then a `NullParameters()` singleton
 will be used which will throw nice errors if you try to index non-existent
@@ -50,7 +60,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/)
 page.
 
 ### Fields
@@ -62,7 +72,7 @@ page.
 * `p`: The optional parameters for the problem. Defaults to `NullParameters`.
 * `noise`: The noise process applied to the noise upon generation. Defaults to
   Gaussian white noise. For information on defining different noise processes,
-  see [the noise process documentation page](@ref noise_process).
+  see the [noise process documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/noise_process/).
 * `noise_rate_prototype`: A prototype type instance for the noise rates, that
   is the output `g`. It can be any type which overloads `A_mul_B!` with itself
   being the middle argument. Commonly, this is a matrix or sparse matrix. If
@@ -84,7 +94,7 @@ sol = solve(prob)
 ```
 """
 struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
-       AbstractSDEProblem{uType, tType, isinplace, ND}
+    AbstractSDEProblem{uType, tType, isinplace, ND}
     f::F
     g::G
     u0::uType
@@ -94,61 +104,93 @@ struct SDEProblem{uType, tType, isinplace, P, NP, F, G, K, ND} <:
     kwargs::K
     noise_rate_prototype::ND
     seed::UInt64
-    @add_kwonly function SDEProblem{iip}(f::AbstractSDEFunction{iip}, u0,
+    @add_kwonly function SDEProblem{iip}(
+            f::AbstractSDEFunction{iip}, u0,
             tspan, p = NullParameters();
             noise_rate_prototype = nothing,
             noise = nothing, seed = UInt64(0),
-            kwargs...) where {iip}
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
         warn_paramtype(p)
-        new{typeof(_u0), typeof(_tspan),
+        new{
+            typeof(_u0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(noise), typeof(f), typeof(f.g),
             typeof(kwargs),
-            typeof(noise_rate_prototype)}(f, f.g, _u0, _tspan, p,
+            typeof(noise_rate_prototype),
+        }(
+            f, f.g, _u0, _tspan, p,
             noise, kwargs,
-            noise_rate_prototype, seed)
+            noise_rate_prototype, seed
+        )
     end
 
     function SDEProblem{iip}(f, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        SDEProblem(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
+        return SDEProblem(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
+    end
+
+    @add_kwonly function SDEProblem{iip, specialize}(
+            f, g, u0, tspan, p = NullParameters();
+            kwargs...
+        ) where {iip, specialize}
+        return SDEProblem{iip}(
+            SDEFunction{iip, specialize}(f, g), u0, tspan, p; kwargs...
+        )
     end
 end
 
 function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
-    SDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+    return SDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
     iip = isinplace(f, 4)
-    SDEProblem{iip}(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
+    return SDEProblem{iip}(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SDEProblem}
-    function ctor(f, g, u0, tspan, p, noise, kw, noise_rate_prototype, seed)
+    return function ctor(f, g, u0, tspan, p, noise, kw, noise_rate_prototype, seed)
         if f isa AbstractSDEFunction
             iip = isinplace(f)
             if g !== f.g
                 f = remake(f; g)
             end
             return SDEProblem{iip}(
-                f, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
+                f, u0, tspan, p; kw..., noise, noise_rate_prototype, seed
+            )
         else
             iip = isinplace(f, 4)
             return SDEProblem{iip}(
-                f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed)
+                f, g, u0, tspan, p; kw..., noise, noise_rate_prototype, seed
+            )
         end
     end
 end
 
 """
 $(TYPEDEF)
+
+Marker supertype for split SDE constructor tags.
+
+Concrete subtypes represent SDEs whose drift is supplied in split form, for
+example a linear or stiff part plus a nonlinear part. Constructors use these
+tags to route through the standard `SDEProblem` storage with a
+`SplitSDEFunction`; solvers should generally inspect the function object rather
+than dispatching on this abstract marker.
 """
 abstract type AbstractSplitSDEProblem end
 
 """
 $(TYPEDEF)
+
+Constructor tag for split SDE problems.
+
+`SplitSDEProblem{iip}` records the in-place convention of the split SDE
+function while building an `SDEProblem` whose function is a `SplitSDEFunction`.
+The tag is a construction helper, not a separate stored problem object returned
+by `solve`.
 """
 struct SplitSDEProblem{iip} <: AbstractSplitSDEProblem end
 # u' = Au + f
@@ -158,86 +200,122 @@ function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
 end
 =#
 function SplitSDEProblem{iip}(
-        f1, f2, g, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-    SplitSDEProblem{iip}(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
+        f1, f2, g, u0, tspan, p = NullParameters(); kwargs...
+    ) where {iip}
+    return SplitSDEProblem{iip}(SplitSDEFunction(f1, f2, g), u0, tspan, p; kwargs...)
 end
 
 function SplitSDEProblem(f1, f2, g, u0, tspan, p = NullParameters(); kwargs...)
     ff = SplitSDEFunction(f1, f2, g)
-    SplitSDEProblem{isinplace(ff)}(ff, u0, tspan, p; kwargs...)
+    return SplitSDEProblem{isinplace(ff)}(ff, u0, tspan, p; kwargs...)
 end
 
 function SplitSDEProblem(f::SplitSDEFunction, u0, tspan, p = NullParameters(); kwargs...)
-    SplitSDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
+    return SplitSDEProblem{isinplace(f)}(f, u0, tspan, p; kwargs...)
 end
 
-function SplitSDEProblem{iip}(f::SplitSDEFunction, u0, tspan, p = NullParameters();
-        _func_cache = nothing, kwargs...) where {iip}
+function SplitSDEProblem{iip}(
+        f::SplitSDEFunction, u0, tspan, p = NullParameters();
+        _func_cache = nothing, kwargs...
+    ) where {iip}
     if f._func_cache === nothing && iip
         _func_cache = similar(u0)
-        _f = SplitSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-            _func_cache = _func_cache, analytic = f.analytic)
+        _f = SplitSDEFunction{iip}(
+            f.f1, f.f2, f.g; f.mass_matrix,
+            _func_cache, f.analytic
+        )
     else
         _f = f
     end
-    SDEProblem(_f, u0, tspan, p; kwargs...)
+    return SDEProblem(_f, u0, tspan, p; kwargs...)
 end
 
 """
 $(TYPEDEF)
+
+Marker supertype for dynamical SDE constructor tags.
+
+Dynamical SDE constructors preserve the partitioned `(v, u)` structure at
+construction time and then store the problem as an `SDEProblem` with an
+`ArrayPartition` state and `DynamicalSDEFunction`.
 """
 abstract type AbstractDynamicalSDEProblem end
 
 """
 $(TYPEDEF)
+
+Constructor tag for dynamical SDE problems.
+
+`DynamicalSDEProblem{iip}` records the in-place convention used when converting
+partitioned stochastic dynamics into the common `SDEProblem` representation.
+Solver code should normally work with the resulting `SDEProblem` and its
+`DynamicalSDEFunction`.
 """
 struct DynamicalSDEProblem{iip} <: AbstractDynamicalSDEProblem end
 
 function DynamicalSDEProblem(f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...)
     ff = DynamicalSDEFunction(f1, f2, g)
-    DynamicalSDEProblem{isinplace(ff)}(ff, v0, u0, tspan, p; kwargs...)
+    return DynamicalSDEProblem{isinplace(ff)}(ff, v0, u0, tspan, p; kwargs...)
 end
 
 function DynamicalSDEProblem{iip}(
-        f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
+        f1, f2, g, v0, u0, tspan, p = NullParameters(); kwargs...
+    ) where {iip}
     ff = DynamicalSDEFunction(f1, f2, g)
-    DynamicalSDEProblem{iip}(ff, v0, u0, tspan, p; kwargs...)
+    return DynamicalSDEProblem{iip}(ff, v0, u0, tspan, p; kwargs...)
 end
 
-function DynamicalSDEProblem(f::DynamicalSDEFunction, v0, u0, tspan,
-        p = NullParameters(); kwargs...)
-    DynamicalSDEProblem{isinplace(f)}(f, v0, u0, tspan, p; kwargs...)
+function DynamicalSDEProblem(
+        f::DynamicalSDEFunction, v0, u0, tspan,
+        p = NullParameters(); kwargs...
+    )
+    return DynamicalSDEProblem{isinplace(f)}(f, v0, u0, tspan, p; kwargs...)
 end
 
-function DynamicalSDEProblem{iip}(f::DynamicalSDEFunction, v0, u0, tspan,
+function DynamicalSDEProblem{iip}(
+        f::DynamicalSDEFunction, v0, u0, tspan,
         p = NullParameters();
-        _func_cache = nothing, kwargs...) where {iip}
+        _func_cache = nothing, kwargs...
+    ) where {iip}
     if f._func_cache === nothing && iip
         _func_cache = similar(u0)
-        _f = DynamicalSDEFunction{iip}(f.f1, f.f2, f.g; mass_matrix = f.mass_matrix,
-            _func_cache = _func_cache, analytic = f.analytic)
+        _f = DynamicalSDEFunction{iip}(
+            f.f1, f.f2, f.g; f.mass_matrix,
+            _func_cache, f.analytic
+        )
     else
         _f = f
     end
-    SDEProblem(_f, ArrayPartition(v0, u0), tspan, p; kwargs...)
+    return SDEProblem(_f, ArrayPartition(v0, u0), tspan, p; kwargs...)
 end
 
-@doc doc"""
+"""
+    SDEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+    )
 
-Holds information on what variables to alias
-when solving an SDEProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `SDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_tstops = nothing, alias = nothing)`
+Control which `SDEProblem` inputs and solver option arrays may be aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the SDE function object, `alias_tstops` controls the
+`tstops` vector, and `alias_jumps` controls jump process data when the problem is
+wrapped in a jump problem. A value of `nothing` delegates to the solver default.
+Set `alias = true` or `alias = false` to apply the same policy to all stored
+fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a JumpProcess
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SDEAliasSpecifier` to `alias`
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `SDEAliasSpecifier` does not store a
+separate `du0` alias field.
 
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the SDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `SDEAliasSpecifier`.
 """
 struct SDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
@@ -246,9 +324,11 @@ struct SDEAliasSpecifier <: AbstractAliasSpecifier
     alias_tstops::Union{Bool, Nothing}
     alias_jumps::Union{Bool, Nothing}
 
-    function SDEAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
-        if alias == true
+    function SDEAliasSpecifier(;
+            alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+            alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)

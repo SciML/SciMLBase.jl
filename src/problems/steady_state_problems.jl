@@ -1,7 +1,7 @@
-@doc doc"""
+"""
 
 Defines a steady state ODE problem.
-Documentation Page: [https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/](https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/)
+Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/steady_state_types/>
 
 ## Mathematical Specification of a Steady State Problem
 
@@ -9,7 +9,7 @@ To define a Steady State Problem, you simply need to give the function ``f``
 which defines the ODE:
 
 ```math
-\frac{du}{dt} = f(u, p, t)
+\\frac{du}{dt} = f(u, p, t)
 ```
 
 and an initial guess ``u_0`` of where `f(u, p, t) = 0`. `f` should be specified as
@@ -21,7 +21,7 @@ matrices / higher dimension tensors as well.
 Note that for the steady-state to be defined, we must have that `f` is autonomous,
 that is `f` is independent of `t`. But the form which matches the standard ODE
 solver should still be used. The steady state solvers interpret the `f` by
-fixing ``t = \infty``.
+fixing ``t = ∞``.
 
 ## Problem Type
 
@@ -34,7 +34,8 @@ SteadyStateProblem{isinplace, specialize}(f, u0, p = NullParameters(); kwargs...
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 Parameters are optional, and if not given, a `NullParameters()` singleton
@@ -62,6 +63,12 @@ For specifying Jacobians and mass matrices, see the DiffEqFunctions page.
 * `f`: The function in the ODE.
 * `u0`: The initial guess for the steady state.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
+* `lowered_problem`: An optional non-transient problem that this steady-state
+  problem lowers to, used by [`NonlinearProblem`](@ref) conversions in place of
+  wrapping `f` directly. May be an `AbstractSciMLProblem` (used verbatim) or a
+  callable `prob -> problem` evaluated on the current problem, so that symbolic
+  frontends can defer the lowering until it is needed while still reflecting
+  `remake`d `u0`/`p` values. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ## Special Solution Fields
@@ -69,22 +76,33 @@ For specifying Jacobians and mass matrices, see the DiffEqFunctions page.
 The `SteadyStateSolution` type is different from the other DiffEq solutions because
 it does not have temporal information.
 """
-struct SteadyStateProblem{uType, isinplace, P, F, K} <:
-       AbstractSteadyStateProblem{uType, isinplace}
+struct SteadyStateProblem{uType, isinplace, P, F, LP, K} <:
+    AbstractSteadyStateProblem{uType, isinplace}
     """f: The function in the ODE."""
     f::F
     """The initial guess for the steady state."""
     u0::uType
     """Parameter values for the ODE function."""
     p::P
+    """Optional non-transient problem that this problem lowers to; see the
+    `lowered_problem` field documentation above."""
+    lowered_problem::LP
     kwargs::K
-    @add_kwonly function SteadyStateProblem{iip}(f::AbstractODEFunction{iip},
+    @add_kwonly function SteadyStateProblem{iip}(
+            f::AbstractODEFunction{iip},
             u0, p = NullParameters();
-            kwargs...) where {iip}
+            lowered_problem = nothing,
+            kwargs...
+        ) where {iip}
         _u0 = prepare_initial_state(u0)
         warn_paramtype(p)
-        new{typeof(_u0), isinplace(f), typeof(p), typeof(f), typeof(kwargs)}(f, _u0, p,
-            kwargs)
+        new{
+            typeof(_u0), isinplace(f), typeof(p), typeof(f),
+            typeof(lowered_problem), typeof(kwargs),
+        }(
+            f, _u0, p, lowered_problem,
+            kwargs
+        )
     end
 
     """
@@ -95,7 +113,7 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     This is determined automatically, but not inferred.
     """
     function SteadyStateProblem{iip}(f, u0, p = NullParameters()) where {iip}
-        SteadyStateProblem(ODEFunction{iip}(f), u0, p)
+        return SteadyStateProblem(ODEFunction{iip}(f), u0, p)
     end
 end
 
@@ -106,21 +124,21 @@ Define a steady state problem using an instance of
 [`AbstractODEFunction`](@ref AbstractODEFunction).
 """
 function SteadyStateProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwargs...)
-    SteadyStateProblem{isinplace(f)}(f, u0, p; kwargs...)
+    return SteadyStateProblem{isinplace(f)}(f, u0, p; kwargs...)
 end
 
 function SteadyStateProblem(f, u0, p = NullParameters(); kwargs...)
-    SteadyStateProblem(ODEFunction(f), u0, p; kwargs...)
+    return SteadyStateProblem(ODEFunction(f), u0, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SteadyStateProblem}
-    function ctor(f, u0, p, kw)
+    return function ctor(f, u0, p, lowered_problem, kw)
         if f isa AbstractODEFunction
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)
         end
-        return SteadyStateProblem{iip}(f, u0, p; kw...)
+        return SteadyStateProblem{iip}(f, u0, p; lowered_problem, kw...)
     end
 end
 
@@ -130,27 +148,35 @@ $(SIGNATURES)
 Define a steady state problem from a standard ODE problem.
 """
 function SteadyStateProblem(prob::AbstractODEProblem)
-    SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
+    return SteadyStateProblem{isinplace(prob)}(prob.f, prob.u0, prob.p; prob.kwargs...)
 end
 
 SymbolicIndexingInterface.is_time_dependent(::SteadyStateProblem) = true
 
-@doc doc"""
+"""
+    SteadyStateAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
 
-Holds information on what variables to alias
-when solving a SteadyStateProblem. Conforms to the AbstractAliasSpecifier interface. 
-    `SteadyStateAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)`
+Control which `SteadyStateProblem` inputs and solver option arrays may be
+aliased.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls the initial state, `alias_du0` controls an initial
+derivative array when present, `alias_p` controls the parameter object,
+`alias_f` controls the steady-state function object, and `alias_tstops`
+controls the `tstops` vector used by ODE-derived steady-state workflows. A value
+of `nothing` delegates to the solver default. Set `alias = true` or
+`alias = false` to apply the same policy to all fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SteadStateAliasSpecifier` to `alias`
+### Keywords
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the steady-state function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array, when present.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `SteadyStateAliasSpecifier`.
 """
 struct SteadyStateAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
@@ -161,8 +187,9 @@ struct SteadyStateAliasSpecifier <: AbstractAliasSpecifier
 
     function SteadyStateAliasSpecifier(;
             alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
-            alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-        if alias == true
+            alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+        )
+        return if alias == true
             new(true, true, true, true, true)
         elseif alias == false
             new(false, false, false, false, false)

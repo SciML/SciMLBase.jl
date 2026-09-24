@@ -1,4 +1,6 @@
-using SciMLBase
+using CommonSolve: step!
+using Test, SciMLBase
+import SymbolicIndexingInterface
 
 struct DummySolution
     retcode::SciMLBase.ReturnCode.T
@@ -15,17 +17,22 @@ mutable struct DummyIntegrator{Alg, IIP, U, T} <: SciMLBase.DEIntegrator{Alg, II
     tdir::Any
     tstops::Any
     sol::DummySolution
+    discontinuity::Bool
+    check_code::SciMLBase.ReturnCode.T
+    postamble_calls::Int
 
     function DummyIntegrator()
-        new{Bool, Bool, Vector{Float64}, Float64}([0.0], 0, [0.0], 0, 1, 1, [],
-            DummySolution(ReturnCode.Default))
+        return new{Bool, Bool, Vector{Float64}, Float64}(
+            [0.0], 0, [0.0], 0, 1, 1, [],
+            DummySolution(ReturnCode.Default), false, ReturnCode.Success, 0
+        )
     end
 end
 
 function SciMLBase.add_tstop!(integrator::DummyIntegrator, t)
     integrator.tdir * (t - integrator.t) < 0 &&
         error("Tried to add a tstop that is behind the current time. This is strictly forbidden")
-    push!(integrator.tstops, t)
+    return push!(integrator.tstops, t)
 end
 
 function SciMLBase.step!(integrator::DummyIntegrator)
@@ -36,44 +43,62 @@ function SciMLBase.step!(integrator::DummyIntegrator)
     integrator.uprev .= integrator.u
     integrator.u[1] += 2 * (t_next - integrator.t)
     integrator.tprev = integrator.t
-    integrator.t = t_next
+    return integrator.t = t_next
 end
 
 function step_dt!(integrator, args...)
     t = integrator.t
     step!(integrator, args...)
-    integrator.t - t
+    return integrator.t - t
 end
 
 function SciMLBase.done(integrator::DummyIntegrator)
-    integrator.t > 10
+    return integrator.t > 10
 end
 
-SciMLBase.check_error(::DummyIntegrator) = ReturnCode.Success
-SciMLBase.postamble!(::DummyIntegrator) = nothing
+function SciMLBase.set_t!(integrator::DummyIntegrator, t)
+    integrator.t = t
+    return nothing
+end
+
+function SciMLBase.set_u!(integrator::DummyIntegrator, u)
+    integrator.u .= u
+    return nothing
+end
+
+function SciMLBase.derivative_discontinuity!(integrator::DummyIntegrator, discontinuity)
+    integrator.discontinuity = discontinuity
+    return nothing
+end
+
+SciMLBase.check_error(integrator::DummyIntegrator) = integrator.check_code
+function SciMLBase.postamble!(integrator::DummyIntegrator)
+    integrator.postamble_calls += 1
+    return nothing
+end
 
 integrator = DummyIntegrator()
 @test step_dt!(integrator, 1.5) == 2
 @test step_dt!(integrator, 1.5, true) == 1.5
 @test_throws ErrorException step!(integrator, -1)
 
-for (u, t) in tuples(DummyIntegrator())
-    @test u[1] == 2 * t
-end
-@test eltype(collect(tuples(DummyIntegrator()))) == Tuple{Vector{Float64}, Float64}
+SciMLBase.set_ut!(integrator, [3.0], 2.0)
+@test integrator.u == [3.0]
+@test integrator.t == 2.0
 
-for (uprev, tprev, u, t) in intervals(DummyIntegrator())
-    @test u[1] - uprev[1] == 2
-    @test t - tprev == 1
-end
-@test eltype(collect(intervals(DummyIntegrator()))) ==
-      Tuple{Vector{Float64}, Float64, Vector{Float64}, Float64}
+integrator.discontinuity = false
+SymbolicIndexingInterface.finalize_parameters_hook!(integrator, :p)
+@test integrator.discontinuity
 
 @test integrator.sol.retcode == ReturnCode.Default
 @test check_error(integrator) == ReturnCode.Success
 @test integrator.sol.retcode == ReturnCode.Default
 @test SciMLBase.check_error!(integrator) == ReturnCode.Success
 @test integrator.sol.retcode == ReturnCode.Success
+
+integrator.check_code = ReturnCode.ConvergenceFailure
+@test SciMLBase.check_error!(integrator) == ReturnCode.ConvergenceFailure
+@test integrator.postamble_calls == 1
 
 let
     integrator = DummyIntegrator()
