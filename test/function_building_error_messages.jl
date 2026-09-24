@@ -83,6 +83,36 @@ end
     end
 end
 
+@testset "concretized AutoDespecialize remake keeps narrowed metadata types" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    base = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    wrapped = FunctionWrappersWrapper(
+        rhs!,
+        (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},),
+        (Nothing,)
+    )
+    concrete = SciMLBase.unwrapped_f(base, wrapped)
+    @test SciMLBase.specialization(concrete) === SciMLBase.AutoDespecialize
+    @test typeof(concrete).parameters[end - 1] === Nothing
+    @test typeof(concrete).parameters[end] === Nothing
+
+    # A second concretization widens the bounded metadata, then remakes with that
+    # function. The remade function has to keep the narrowed type.
+    widened = SciMLBase.widen_bounded_type_params(concrete)
+    @test typeof(widened).parameters[end - 1] ===
+        Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+    @test typeof(remake(concrete; f = widened)) === typeof(concrete)
+
+    # The first concretization still adopts erasure from a not-yet-wrapped function.
+    plain = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    widened_plain = SciMLBase.widen_bounded_type_params(plain)
+    @test typeof(remake(plain; f = widened_plain)).parameters[end] ===
+        Union{Nothing, SciMLBase.ODENLStepData}
+end
+
 @testset "ODEFunction specialization constructor" begin
     rhs = (u, p, t) -> u
     initdata = SciMLBase.OverrideInitData(
