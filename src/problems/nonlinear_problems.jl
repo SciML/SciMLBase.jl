@@ -616,16 +616,8 @@ function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
     return getfield(prob, name)
 end
 
-# `SCCNonlinearProblem` has no `u0` field (its state is the concatenation of its
-# sub-problems' states), so the generic `AbstractNonlinearProblem` fallback above
-# does not apply to it: rebuilding via `prob.f`/`prob.u0`/`prob.p` throws an opaque
-# `FieldError`. Returning `prob` unchanged instead would be its own footgun — a
-# `NonlinearProblem` constructor returning something that is not a
-# `NonlinearProblem` breaks any caller that assumes `.u0`/`.lb`/`.ub`, and it is
-# exactly what let this conversion recurse forever in a caller that re-normalizes
-# its result (see SciML/NonlinearSolve.jl#1327). An `SCCNonlinearProblem` solves as
-# an ordered sequence of block solves, not a single residual, so there is no
-# faithful `NonlinearProblem` to construct; raise a clear error instead.
+# An `SCCNonlinearProblem` solves as an ordered sequence of block solves, not a
+# single residual, so it has no `u0` and no faithful `NonlinearProblem` conversion.
 function NonlinearProblem(prob::SCCNonlinearProblem)
     throw(
         ArgumentError(
