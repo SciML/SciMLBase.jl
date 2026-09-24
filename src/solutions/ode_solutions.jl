@@ -655,6 +655,7 @@ function _fill_uanalytic_ode!(sol, f)
             push!(sol.u_analytic, f.analytic(sol.prob.u0, sol.prob.p, sol.t[i]))
         end
     end
+    return
 end
 
 function _fill_uanalytic_dae!(sol, f)
@@ -662,11 +663,12 @@ function _fill_uanalytic_dae!(sol, f)
     for i in 1:size(sol.u, 1)
         push!(sol.u_analytic, f.analytic(prob.du0, prob.u0, prob.p, sol.t[i]))
     end
+    return
 end
 
 function _fill_uanalytic_rode!(sol, f)
     empty!(sol.u_analytic)
-    if f isa RODEFunction && f.analytic_full == true
+    return if f isa RODEFunction && f.analytic_full == true
         f.analytic(sol)
     elseif sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
         for i in eachindex(sol.t)
