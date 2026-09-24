@@ -1542,7 +1542,7 @@ end
 
 function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
     offset = Ref(0)
-    return map(probs) do subprob
+    out = map(probs) do subprob
         # N should be inferred if `prob` and `subprob.u0` are type-stable.
         N = length(state_values(subprob))
         _u0 = _scc_state_slice(newu0, offset[], Val(N))
@@ -1554,6 +1554,12 @@ function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
         offset[] += length(state_values(subprob))
         return subprob
     end
+    # Keep the caller's container eltype so homogeneous and heterogeneous
+    # block vectors remake to one `SCCNonlinearProblem` type.
+    if all(Base.Fix2(isa, eltype(probs)), out)
+        out = copyto!(similar(probs), out)
+    end
+    return out
 end
 
 @inline _scc_update_subproblems(newu0, newp, ::Val{P}, offset::Int) where {P} = ()
