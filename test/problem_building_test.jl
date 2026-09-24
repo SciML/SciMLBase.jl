@@ -366,8 +366,7 @@ end
     )
     @test sccprob.probs isa Vector{Any}
 
-    # `map` would narrow homogeneous blocks to `Vector{NonlinearProblem}`,
-    # giving the remade problem a different type than a heterogeneous one.
+    # `map` would narrow homogeneous blocks to `Vector{NonlinearProblem}`.
     sccprob2 = remake(sccprob; u0 = [1.5, 0.5])
     @test sccprob2.probs isa Vector{Any}
     @test state_values(sccprob2) == [1.5, 0.5]
@@ -378,6 +377,16 @@ end
     )
     sccprob4 = remake(sccprob3; u0 = [1.5, 0.5])
     @test state_values(sccprob4) == [1.5, 0.5]
+
+    # A narrow abstract container whose rebuilt blocks fit keeps its eltype.
+    probd = NonlinearProblem((u, p) -> [u[1]^2 - p[1]], [1.0], p)
+    U = Union{typeof(prob1), typeof(probd)}
+    sccprob5 = SCCNonlinearProblem(
+        U[prob1, probd], Any[Returns(nothing), Returns(nothing)], p, true
+    )
+    sccprob6 = remake(sccprob5; u0 = [1.5, 0.5])
+    @test sccprob6.probs isa Vector{U}
+    @test state_values(sccprob6) == [1.5, 0.5]
 end
 
 @testset "SteadyStateProblem lowered_problem" begin
