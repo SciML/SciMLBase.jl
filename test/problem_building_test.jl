@@ -352,8 +352,9 @@ end
 
     # `SCCNonlinearProblem` has no `u0` field, so normalizing an already-SCC
     # problem through `NonlinearProblem` must not fall through to the generic
-    # `AbstractNonlinearProblem` method (which assumes `.u0` exists).
-    @test NonlinearProblem(sccprob) === sccprob
+    # `AbstractNonlinearProblem` method (which assumes `.u0` exists and throws an
+    # opaque `FieldError`); it should raise a clear, dedicated error instead.
+    @test_throws ArgumentError NonlinearProblem(sccprob)
 
     sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)

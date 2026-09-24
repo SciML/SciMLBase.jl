@@ -618,11 +618,22 @@ end
 
 # `SCCNonlinearProblem` has no `u0` field (its state is the concatenation of its
 # sub-problems' states), so the generic `AbstractNonlinearProblem` fallback above
-# does not apply to it. It is already a valid nonlinear problem, so normalizing it
-# is a no-op; this also makes it safe for a `SteadyStateProblem`'s stored
-# `lowered_problem` to be re-normalized by callers that don't know it is already an
-# `SCCNonlinearProblem`.
-NonlinearProblem(prob::SCCNonlinearProblem) = prob
+# does not apply to it: rebuilding via `prob.f`/`prob.u0`/`prob.p` throws an opaque
+# `FieldError`. Returning `prob` unchanged instead would be its own footgun — a
+# `NonlinearProblem` constructor returning something that is not a
+# `NonlinearProblem` breaks any caller that assumes `.u0`/`.lb`/`.ub`, and it is
+# exactly what let this conversion recurse forever in a caller that re-normalizes
+# its result (see SciML/NonlinearSolve.jl#1327). An `SCCNonlinearProblem` solves as
+# an ordered sequence of block solves, not a single residual, so there is no
+# faithful `NonlinearProblem` to construct; raise a clear error instead.
+function NonlinearProblem(prob::SCCNonlinearProblem)
+    throw(
+        ArgumentError(
+            "an SCCNonlinearProblem cannot be converted to a NonlinearProblem; " *
+                "solve it directly or use its component problems."
+        )
+    )
+end
 
 function SymbolicIndexingInterface.symbolic_container(prob::SCCNonlinearProblem)
     return prob.f
