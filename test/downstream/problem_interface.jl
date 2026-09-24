@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, Test
+using SciMLBase
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using SymbolicIndexingInterface
 
@@ -285,7 +286,7 @@ eqs = [
     D(X) ~ p - d * X,
     X2 ~ 2 * X,
 ]
-@mtkbuild osys = System(eqs, t)
+@mtkcompile osys = System(eqs, t)
 
 u0 = [X => 0.1]
 ps = [p => 1.0, d => 0.2]

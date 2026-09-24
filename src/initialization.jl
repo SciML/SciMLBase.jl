@@ -1,44 +1,68 @@
 """
     $(TYPEDEF)
 
-A collection of all the data required for `OverrideInit`.
+Solver-author metadata for override-based initialization.
+
+`OverrideInitData` is stored on SciMLFunction wrappers in the
+`initialization_data` field. When `get_initial_values` is called with
+[`OverrideInit`](@ref), SciMLBase optionally updates `initializeprob` from the
+current value provider, solves that initialization problem, then maps the
+initialization solution back to the original problem's state and parameter
+objects.
+
+The initialization problem must be a nonlinear-style SciML problem accepted by
+the constructor below, such as `NonlinearProblem`,
+`NonlinearLeastSquaresProblem`, `SCCNonlinearProblem`, `ImmutableNonlinearProblem`,
+or `HomotopyProblem`. If the initialization problem is trivial, for example a
+nonlinear problem with no initial unknowns, no nonlinear solver algorithm or
+tolerances are required and the mapping hooks are applied directly.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct OverrideInitData{
         IProb, UIProb, IProbMap, IProbPmap, M, OOP <: Union{Val{true}, Val{false}},
     }
     """
-    The `AbstractNonlinearProblem` to solve for initialization.
+    Nonlinear-style SciML problem solved, or directly evaluated for trivial
+    initialization, to produce initialization values.
     """
     initializeprob::IProb
     """
-    A function which takes `(initializeprob, value_provider)` and updates
-    the parameters of the former with their values in the latter.
-    If absent (`nothing`) this will not be called, and the parameters
-    in `initializeprob` will be used without modification. `value_provider`
-    refers to a value provider as defined by SymbolicIndexingInterface.jl.
-    Usually this will refer to a problem or integrator.
+    Optional callable that synchronizes `initializeprob` with the current value
+    provider before solving. It is called as
+    `update_initializeprob!(initializeprob, value_provider)`.
+
+    If `is_update_oop === Val(false)`, the callable is expected to mutate
+    `initializeprob`. If `is_update_oop === Val(true)`, it must return the
+    updated initialization problem. If this field is `nothing`, the stored
+    `initializeprob` is used as-is.
     """
     update_initializeprob!::UIProb
     """
-    A function which takes the solution of `initializeprob` and returns
-    the state vector of the original problem. If absent, the existing state vector
-    will be used.
+    Optional callable that maps the solution of `initializeprob` to the state
+    object of the original problem. It is called as
+    `initializeprobmap(nlsol)`. If this field is `nothing`, the existing state
+    from the value provider is retained.
     """
     initializeprobmap::IProbMap
     """
-    A function which takes `value_provider` and the solution of `initializeprob` and returns
-    the parameter object of the original problem. If absent (`nothing`),
-    this will not be called and the parameters of the problem being
-    initialized will be returned as-is.
+    Optional callable that maps the solution of `initializeprob` to the
+    parameter object of the original problem. It is called as
+    `initializeprobpmap(value_provider, nlsol)`. If this field is `nothing`, the
+    existing parameter object from the value provider is retained.
     """
     initializeprobpmap::IProbPmap
     """
-    Additional metadata required by the creator of the initialization.
+    Additional metadata owned by the package that created the initialization
+    problem.
     """
     metadata::M
     """
-    If this flag is `Val{true}`, `update_initializeprob!` is treated as an out-of-place
-    function which returns the updated `initializeprob`.
+    Flag declaring whether `update_initializeprob!` mutates `initializeprob` or
+    returns an updated problem. Use `Val(false)` for in-place updates and
+    `Val(true)` for out-of-place updates.
     """
     is_update_oop::OOP
 
@@ -50,6 +74,7 @@ struct OverrideInitData{
             Union{
             SCCNonlinearProblem, ImmutableNonlinearProblem,
             NonlinearProblem, NonlinearLeastSquaresProblem,
+            HomotopyProblem,
         }
         return new{I, J, K, L, M, O}(
             initprob, update_initprob!, initprobmap, initprobpmap, metadata, is_update_oop
@@ -69,14 +94,23 @@ end
 """
     get_initial_values(prob, valp, f, alg, isinplace; kwargs...)
 
-Return the initial `u0` and `p` for the given SciMLProblem and initialization algorithm,
-and a boolean indicating whether the initialization process was successful. Keyword
-arguments to this function are dependent on the initialization algorithm. `prob` is only
-required for dispatching. `valp` refers the appropriate data structure from which the
-current state and parameter values should be obtained. `valp` is a non-timeseries value
-provider as defined by SymbolicIndexingInterface.jl. `f` is the SciMLFunction for the
-problem. `alg` is the initialization algorithm to use. `isinplace` is either `Val{true}`
-if `valp` and the SciMLFunction are inplace, and `Val{false}` otherwise.
+Return `(u0, p, success)` for the requested initialization algorithm.
+
+Solver packages call this hook when an initialized problem or integrator needs
+consistent initial state and parameter values before stepping or solving.
+`prob` is used for dispatch and problem-family-specific checks. `valp` is the
+current non-timeseries value provider, usually a problem or integrator, from
+which `state_values`, `parameter_values`, and `current_time` can be read. `f` is
+the SciMLFunction associated with `prob`, `alg` is the initialization algorithm,
+and `isinplace` is `Val(true)` when the value provider and SciMLFunction follow
+the in-place convention.
+
+Methods must return the initialized state object, the initialized parameter
+object, and a boolean indicating whether initialization succeeded. Keyword
+arguments are algorithm-specific: `CheckInit` requires an `abstol` for residual
+checks, while `OverrideInit` can require a NonlinearSolve algorithm and
+tolerances unless the stored [`OverrideInitData`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/) represents a trivial
+initialization problem.
 """
 function get_initial_values end
 
@@ -185,6 +219,20 @@ _vec(v::Number) = v
 _vec(v::SciMLOperators.AbstractSciMLScalarOperator) = v
 _vec(v::AbstractVector) = v
 
+# Check residual against abstol. Scalar abstol uses the usual scalar residual
+# norm; array abstol uses a weighted residual (componentwise / abstol) so vector
+# tolerances do not MethodError on `normresid > abstol` (OrdinaryDiffEq #1214).
+@inline function exceeds_checkinit_abstol(resid, abstol::Number, integrator, t)
+    normresid = isdefined(integrator.opts, :internalnorm) ?
+        integrator.opts.internalnorm(resid, t) : norm(resid)
+    return normresid > abstol
+end
+@inline function exceeds_checkinit_abstol(resid, abstol, integrator, t)
+    weighted = isdefined(integrator.opts, :internalnorm) ?
+        integrator.opts.internalnorm(resid ./ abstol, t) : norm(resid ./ abstol)
+    return weighted > 1
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -215,9 +263,9 @@ function get_initial_values(
     tmp = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
     tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
-    normresid = isdefined(integrator.opts, :internalnorm) ?
-        integrator.opts.internalnorm(tmp, t) : norm(tmp)
-    if normresid > abstol
+    if exceeds_checkinit_abstol(tmp, abstol, integrator, t)
+        normresid = isdefined(integrator.opts, :internalnorm) ?
+            integrator.opts.internalnorm(tmp, t) : norm(tmp)
         throw(CheckInitFailureError(normresid, abstol, true))
     end
     return u0, p, true
@@ -232,10 +280,10 @@ function get_initial_values(
     t = current_time(integrator)
 
     resid = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
-    normresid = isdefined(integrator.opts, :internalnorm) ?
-        integrator.opts.internalnorm(resid, t) : norm(resid)
 
-    if normresid > abstol
+    if exceeds_checkinit_abstol(resid, abstol, integrator, t)
+        normresid = isdefined(integrator.opts, :internalnorm) ?
+            integrator.opts.internalnorm(resid, t) : norm(resid)
         throw(CheckInitFailureError(normresid, abstol, false))
     end
     return u0, p, true
@@ -312,7 +360,7 @@ function get_initial_values(
             # A good local minima is not a success
             resid = nlsol.resid
             normresid = norm(resid)
-            SciMLBase.successful_retcode(nlsol) && normresid <= abstol
+            SciMLBase.successful_retcode(nlsol) && normresid <= _abstol
         else
             SciMLBase.successful_retcode(nlsol)
         end
@@ -382,3 +430,28 @@ function initialization_status(prob::AbstractSciMLProblem)
         return FULLY_DETERMINED
     end
 end
+
+"""
+    is_overdetermined_initialization(prob) -> Bool
+
+Return whether `prob` carries an initialization problem with more residual equations
+than unknown initial values.
+
+# Arguments
+
+  - `prob`: A SciML problem whose function may carry initialization metadata.
+
+# Returns
+
+`true` when the initialization problem is overdetermined, and `false` when it is
+fully determined, underdetermined, or absent.
+
+# Developer Interface
+
+Solver and sensitivity packages use this predicate to select initialization behavior
+without depending on SciMLBase's internal status enum. Implementations must query the
+problem's initialization metadata rather than caching the result across `remake` or
+parameter updates.
+"""
+is_overdetermined_initialization(prob::AbstractSciMLProblem) =
+    initialization_status(prob) === OVERDETERMINED

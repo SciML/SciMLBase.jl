@@ -20,14 +20,6 @@ const allowedkeywords = (
     :force_dtmin,
     :internalnorm,
     :controller,
-    :gamma,
-    :beta1,
-    :beta2,
-    :qmax,
-    :qmin,
-    :qsteady_min,
-    :qsteady_max,
-    :qoldinit,
     :failfactor,
     :calck,
     :alias_u0,
@@ -35,6 +27,7 @@ const allowedkeywords = (
     :maxtime,
     :callback,
     :isoutofdomain,
+    :domain_checks,
     :unstable_check,
     :verbose,
     :merge_callbacks,
@@ -82,16 +75,29 @@ const allowedkeywords = (
     :linsolve_kwargs,
     # Solvers internally using EnsembleProblem
     :ensemblealg,
+    # Per-trajectory RNG factory for ensemble solves
+    :rng_func,
     # Fine Grained Control of Tracing (Storing and Logging) during Solve
     :show_trace,
     :trace_level,
     :store_trace,
     # Termination condition for solvers
     :termination_condition,
+    # Nonlinear preconditioning: a left preconditioner `G(fu, u, p)` on the residual and
+    # an iterate corrector `H(u_proposed, u_prev, p[, cache])` applied to accepted
+    # iterates. Solver-side options rather than properties of the function, so that they
+    # can be supplied late (at `solve`/`init`) or carried on the problem's `kwargs`.
+    :precondition,
+    :postcondition,
     # For AbstractAliasSpecifier
     :alias,
     # Parameter estimation with BVP
     :tune_parameters,
+    # Optimizer kwargs passed via BVP solvers
+    :optimize_kwargs,
+    # Solve-level stage/step limiters (OrdinaryDiffEq solver kwargs)
+    :step_limiter,
+    :stage_limiter,
 )
 
 
@@ -103,7 +109,7 @@ $allowedkeywords
 See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more details.
 
 Set kwargshandle=KeywordArgError for an error message.
-Set kwargshandle=KeywordArgSilent to ignore this message.
+Set kwargshandle=keyword_arg_silent to ignore this message.
 """
 
 const KWARGERROR_MESSAGE = """
@@ -112,6 +118,41 @@ The only allowed keyword arguments to `solve` are:
 $allowedkeywords
 
 See <https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts> for more details.
+"""
+
+"""
+    controller_kwargs
+
+Step size controller keyword arguments that were moved onto the controller objects
+(`PIController`, `PIDController`, `IController`, `PredictiveController`). They are no
+longer accepted by `solve`/`init`; passing one produces a `CommonKwargError` carrying
+`CONTROLLER_KWARG_MESSAGE` rather than the generic unrecognized-keyword text.
+"""
+const controller_kwargs = (
+    :gamma,
+    :beta1,
+    :beta2,
+    :qmax,
+    :qmin,
+    :qsteady_min,
+    :qsteady_max,
+    :qoldinit,
+)
+
+const CONTROLLER_KWARG_MESSAGE = """
+
+These are step size controller options, which are no longer set as keyword arguments to
+`solve`. They are now fields of the controller object, passed via the `controller` keyword:
+
+    # old
+    solve(prob, alg; gamma = 0.9, beta1 = 0.7, beta2 = -0.4)
+
+    # new
+    using OrdinaryDiffEqCore: PIController
+    solve(prob, alg; controller = PIController(0.7, -0.4))
+
+`PIController`, `PIDController`, `IController`, and `PredictiveController` all live in
+OrdinaryDiffEqCore. Omit `controller` entirely to use the algorithm's default.
 """
 
 struct CommonKwargError <: Exception
@@ -123,10 +164,45 @@ function Base.showerror(io::IO, e::CommonKwargError)
     notin = collect(map(x -> x ∉ allowedkeywords, keys(e.kwargs)))
     unrecognized = collect(keys(e.kwargs))[notin]
     print(io, "Unrecognized keyword arguments: ")
-    return printstyled(io, unrecognized; bold = true, color = :red)
+    printstyled(io, unrecognized; bold = true, color = :red)
+    controller_passed = filter(in(controller_kwargs), unrecognized)
+    if !isempty(controller_passed)
+        print(io, "\n")
+        printstyled(io, CONTROLLER_KWARG_MESSAGE; color = :cyan)
+    end
+    return nothing
 end
 
+"""
+    KeywordArgError
+    KeywordArgWarn
+    KeywordArgSilent
+
+Controls how a solver handles keyword arguments outside its supported keyword set.
+
+## Values
+
+- `KeywordArgError`: throw `CommonKwargError` for unsupported keywords.
+- `KeywordArgWarn`: emit a warning and continue.
+- `KeywordArgSilent`: accept unsupported keywords without a warning.
+
+Solver packages can use these values as the `kwargshandle` passed to their keyword
+validation path. Application code should prefer solver-specific documented keywords
+instead of suppressing validation with `KeywordArgSilent`.
+"""
 @enum KeywordArgError KeywordArgWarn KeywordArgSilent
+
+"""
+    keyword_arg_silent
+
+The documented solver-author value for accepting unsupported keyword arguments without
+emitting a warning. Pass it as `kwargshandle` to a keyword-validation path when the
+caller has intentionally delegated keyword handling to another layer.
+
+Application code should not use this value to suppress unsupported solver keywords;
+use the solver's documented keyword interface instead.
+"""
+const keyword_arg_silent = KeywordArgSilent
 
 const INCOMPATIBLE_U0_MESSAGE = """
 Initial condition incompatible with functional form.
@@ -135,11 +211,11 @@ This is incompatible because Numbers cannot be mutated, i.e.
 `x = 2.0; y = 2.0; x .= y` will error.
 
 If using a immutable initial condition type, please use the out-of-place form.
-I.e. define the function `du=f(u,p,t)` instead of attempting to "mutate" the immutable `du`.
+I.e. define the function `du = f(u, p, t)` instead of attempting to "mutate" the immutable `du`.
 
 If your differential equation function was defined with multiple dispatches and one is
 in-place, then the automatic detection will choose in-place. In this case, override the
-choice in the problem constructor, i.e. `ODEProblem{false}(f,u0,tspan,p,kwargs...)`.
+choice in the problem constructor, i.e. `ODEProblem{false}(f, u0, tspan, p, kwargs...)`.
 
 For a longer discussion on mutability vs immutability and in-place vs out-of-place, see:
 <https://docs.sciml.ai/DiffEqDocs/stable/tutorials/faster_ode_example#Example-Accelerating-a-Non-Stiff-Equation:-The-Lorenz-Equation>
@@ -192,7 +268,7 @@ end
 
 const NON_SOLVER_MESSAGE = """
 The arguments to solve are incorrect.
-The second argument must be a solver choice, `solve(prob,alg)`
+The second argument must be a solver choice, `solve(prob, alg)`
 where `alg` is a `<: AbstractDEAlgorithm`, e.g. `Tsit5()`.
 
 Please double check the arguments being sent to the solver.
@@ -215,10 +291,10 @@ Noise sizes are incompatible. The expected number of noise terms in the defined
 
 Note: Noise process definitions require that users specify `u0`, and this value is
 directly used in the definition. For example, if `noise = WienerProcess(0.0,0.0)`,
-then the noise process is a scalar with `u0=0.0`. If `noise = WienerProcess(0.0,[0.0])`,
-then the noise process is a vector with `u0=0.0`. If `noise_rate_prototype = zeros(2,4)`,
+then the noise process is a scalar with `u0=0.0`. If `noise = WienerProcess(0.0, [0.0])`,
+then the noise process is a vector with `u0=0.0`. If `noise_rate_prototype = zeros(2, 4)`,
 then the noise process must be a 4-dimensional process, for example
-`noise = WienerProcess(0.0,zeros(4))`. This error is a sign that the user definition
+`noise = WienerProcess(0.0, zeros(4))`. This error is a sign that the user definition
 of `noise_rate_prototype` and `noise` are not aligned in this manner and the definitions should
 be double checked.
 """
@@ -261,7 +337,7 @@ function compatible_problem_types(prob, alg)
         ODEProblem
     elseif alg isa AbstractSDEAlgorithm
         (SDEProblem, SDDEProblem)
-    elseif alg isa AbstractDDEAlgorithm # StochasticDelayDiffEq.jl just uses the SDE alg
+    elseif alg isa AbstractDDEAlgorithm
         DDEProblem
     elseif alg isa AbstractDAEAlgorithm
         DAEProblem
@@ -314,8 +390,8 @@ from RecursiveArrayTools.jl. For example:
 
 ```julia
 using RecursiveArrayTools
-u0 = ArrayPartition([1.0,2.0],[3.0,4.0])
-u0 = VectorOfArray([1.0,2.0],[3.0,4.0])
+u0 = ArrayPartition([1.0, 2.0], [3.0, 4.0])
+u0 = VectorOfArray([1.0, 2.0], [3.0, 4.0])
 ```
 
 are both initial conditions which would be compatible with
@@ -391,6 +467,33 @@ function Base.showerror(io::IO, e::ComplexTspanError)
     return println(io, COMPLEX_TSPAN_ERROR_MESSAGE)
 end
 
+const COMPLEX_ENSEMBLE_SUMMARY_ERROR_MESSAGE = """
+Complex-valued ensemble trajectories detected when building an
+`EnsembleSummary`.
+
+`EnsembleSummary` computes componentwise medians and quantiles, which
+require a total order (`isless`). Complex numbers have no natural
+ordering, so quantiles (and medians) are undefined on ℂ.
+
+Supported options:
+  - Summarize real and imaginary parts separately (e.g. map each
+    trajectory to `real.(u)` / `imag.(u)` before summarizing).
+  - Summarize magnitudes with `abs.(u)` if a polar summary is enough.
+  - Use only mean/variance helpers such as `timeseries_point_meanvar`,
+    which do not require ordering.
+
+See https://github.com/SciML/DifferentialEquations.jl/issues/632.
+"""
+
+struct ComplexEnsembleSummaryError <: Exception
+    eltype::Any
+end
+
+function Base.showerror(io::IO, e::ComplexEnsembleSummaryError)
+    println(io, COMPLEX_ENSEMBLE_SUMMARY_ERROR_MESSAGE)
+    return println(io, "Detected element type: $(e.eltype)")
+end
+
 const TUPLE_STATE_ERROR_MESSAGE = """
 Tuple type used as a state. Since a tuple does not have vector
 properties, it will not work as a state type in equation solvers.
@@ -398,24 +501,24 @@ Instead, change your equation from using tuple constructors `()`
 to static array constructors `SA[]`. For example, change:
 
 ```julia
-function ftup((a,b),p,t)
-  return b,-a
+function ftup((a, b), p, t)
+    return (b, -a)
 end
 u0 = (1.0,2.0)
 tspan = (0.0,1.0)
-ODEProblem(ftup,u0,tspan)
+ODEProblem(ftup, u0, tspan)
 ```
 
 to:
 
 ```julia
 using StaticArrays
-function fsa(u,p,t)
-    SA[u[2],u[1]]
+function fsa(u, p, t)
+    return SA[u[2], u[1]]
 end
-u0 = SA[1.0,2.0]
-tspan = (0.0,1.0)
-ODEProblem(ftup,u0,tspan)
+u0 = SA[1.0, 2.0]
+tspan = (0.0, 1.0)
+ODEProblem(ftup, u0, tspan)
 ```
 
 This will be safer and fast for small ODEs. For more information, see:

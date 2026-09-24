@@ -1,7 +1,8 @@
 module SciMLBaseReverseDiffExt
 
-using SciMLBase
-using ReverseDiff
+using ForwardDiff: ForwardDiff
+using ReverseDiff: ReverseDiff
+using SciMLBase: SciMLBase
 
 function SciMLBase.anyeltypedual(
         ::Type{T},
@@ -67,7 +68,7 @@ end
 SciMLBase.promote_u0(u0, p::ReverseDiff.TrackedArray, t0) = ReverseDiff.track(u0)
 function SciMLBase.promote_u0(
         u0, p::ReverseDiff.TrackedArray{T}, t0
-    ) where {T <: ReverseDiff.ForwardDiff.Dual}
+    ) where {T <: ForwardDiff.Dual}
     return ReverseDiff.track(T.(u0))
 end
 SciMLBase.promote_u0(u0, p::AbstractArray{<:ReverseDiff.TrackedReal}, t0) = eltype(p).(u0)

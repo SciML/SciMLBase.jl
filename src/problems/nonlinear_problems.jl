@@ -1,9 +1,19 @@
 """
 $(TYPEDEF)
+
+Marker for standard nonlinear problem layouts.
+
+`StandardNonlinearProblem()` is the default `problem_type` metadata for
+nonlinear problems represented directly by a residual function and either an
+initial guess or an interval. Solver code may inspect this marker through
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+when it needs to distinguish the standard residual layout
+from specialized nonlinear problem encodings, while generic nonlinear code should rely on the
+`AbstractNonlinearProblem` fields and traits instead.
 """
 struct StandardNonlinearProblem end
 
-@doc doc"""
+"""
 
 Defines an interval nonlinear system problem.
 Documentation Page: <https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/>
@@ -17,7 +27,7 @@ which defines the nonlinear system:
 f(t,p) = u = 0
 ```
 
-along with an interval `tspan`, ``t \in [t_0,t_f]``, within which the root should be found.
+along with an interval `tspan`, ``t ∈ [t_0,t_f]``, within which the root should be found.
 `f` should be specified as `f(t,p)` (or in-place as `f(u,t,p)`), and `tspan` should be a
 `Tuple{T,T} where T <: Number`.
 
@@ -111,7 +121,7 @@ function IntervalNonlinearProblem(f, tspan, p = NullParameters(); kwargs...)
     return IntervalNonlinearProblem(IntervalNonlinearFunction(f), tspan, p; kwargs...)
 end
 
-@doc doc"""
+"""
 
 Defines a nonlinear system problem.
 Documentation Page: <https://docs.sciml.ai/NonlinearSolve/stable/basics/nonlinear_problem/>
@@ -150,7 +160,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
+nonlinear function types page of the SciMLBase interface documentation.
 
 ### Fields
 
@@ -234,10 +244,25 @@ end
 """
 $(SIGNATURES)
 
+Define the non-transient problem that a `SteadyStateProblem` lowers to. When the
+problem carries a [`lowered_problem`](@ref SteadyStateProblem) (e.g. an
+`SCCNonlinearProblem` stored by a symbolic frontend) it is used — a stored
+problem verbatim, a stored callable evaluated on `prob` — otherwise the ODE
+residual `f` is wrapped directly.
+"""
+function NonlinearProblem(prob::SteadyStateProblem)
+    lp = prob.lowered_problem
+    lp === nothing && return NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
+    return lp isa Base.Callable ? lp(prob) : lp
+end
+
+"""
+$(SIGNATURES)
+
 Define a nonlinear problem using an instance of
 [`AbstractODEFunction`](@ref AbstractODEFunction). Note that
 this is interpreted in the form of the steady state problem, i.e.
-find the ODE's solution at time ``t = \\infty``.
+find the ODE's solution at time ``t = ∞``.
 """
 function NonlinearProblem(f::AbstractODEFunction, u0, p = NullParameters(); kwargs...)
     return NonlinearProblem{isinplace(f)}(f, u0, p; kwargs...)
@@ -275,7 +300,7 @@ function Base.setproperty!(prob::NonlinearProblem, s::Symbol, v, order::Symbol)
     return Base.setfield!(prob, s, v, order)
 end
 
-@doc doc"""
+"""
 Defines a nonlinear least squares problem.
 
 ## Mathematical Specification of a Nonlinear Least Squares Problem
@@ -284,7 +309,7 @@ To define a Nonlinear Problem, you simply need to give the function ``f`` which 
 nonlinear system:
 
 ```math
-\min_x \| f(x, p) \|
+\\min_x ‖ f(x, p) ‖
 ```
 
 and an initial guess ``u_0`` for the minimization problem. ``f`` should be specified as
@@ -310,7 +335,7 @@ will be used, which will throw nice errors if you try to index non-existent
 parameters.
 
 For specifying Jacobians and mass matrices, see the
-[NonlinearFunctions](@ref nonlinearfunctions) page.
+nonlinear function types page of the SciMLBase interface documentation.
 
 ### Fields
 
@@ -379,7 +404,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: NonlinearLeastSqu
     end
 end
 
-@doc doc"""
+"""
     SCCNonlinearProblem(probs, explicitfuns!)
 
 Defines an SCC-split nonlinear system to be solved iteratively.
@@ -394,16 +419,16 @@ f(u,p) = 0
 
 with the special property that its Jacobian is in block-lower-triangular
 form. In this form, the nonlinear problem can be decomposed into a system
-of nonlinear systems. 
+of nonlinear systems.
 
 ```math
-\begin{align*}
-f_1(u_1,p) &= 0 \\
-f_2(u_2,u_1,p) &= 0 \\
-f_3(u_3,u_2,u_1,p) &= 0 \\
-& \vdots \\
-f_n(u_n,\ldots,u_3,u_2,u_1,p) &= 0
-\end{align*}
+\\begin{align*}
+f_1(u_1,p) &= 0 \\\\
+f_2(u_2,u_1,p) &= 0 \\\\
+f_3(u_3,u_2,u_1,p) &= 0 \\\\
+& ⋮ \\\\
+f_n(u_n,…,u_3,u_2,u_1,p) &= 0
+\\end{align*}
 ```
 
 Splitting the system in this form can have multiple advantages, including:
@@ -411,7 +436,7 @@ Splitting the system in this form can have multiple advantages, including:
 * Improved numerical stability and robustness of the solving process
 * Improved performance due to using smaller Jacobians
 
-The SCC-Split Nonlinear Problem is the ordered collection of nonlinear systems 
+The SCC-Split Nonlinear Problem is the ordered collection of nonlinear systems
 to solve in order solve the system in the optimized split form.
 
 ## Representation
@@ -421,13 +446,13 @@ of `NonlinearProblem`s, `probs`, with an attached explicit function for pre-proc
 a cache. This can be interpreted as follows:
 
 ```math
-\begin{align*}
-p_1 &= g_1(u,p) & f_1(u_1,p_1)         &= 0 \\
-p_2 &= g_2(u,p) & f_2(u_2,u_1,p_2)     &= 0 \\
-p_3 &= g_3(u,p) & f_3(u_3,u_2,u_1,p_3) &= 0 \\
-& \vdots \\
-p_n &= g_n(u,p) & f_n(u_n,\ldots,u_3,u_2,u_1,p_n) &= 0 \\
-\end{align*}
+\\begin{align*}
+p_1 &= g_1(u,p) & f_1(u_1,p_1)         &= 0 \\\\
+p_2 &= g_2(u,p) & f_2(u_2,u_1,p_2)     &= 0 \\\\
+p_3 &= g_3(u,p) & f_3(u_3,u_2,u_1,p_3) &= 0 \\\\
+& ⋮ \\\\
+p_n &= g_n(u,p) & f_n(u_n,…,u_3,u_2,u_1,p_n) &= 0 \\\\
+\\end{align*}
 ```
 
 where ``g_i`` is `explicitfuns![i]`. In a computational sense, `explictfuns!`
@@ -454,15 +479,16 @@ and below.
 For the following nonlinear problem:
 
 ```julia
-function f(du,u,p)
+function f(du, u, p)
     du[1] = cos(u[2]) - u[1]
     du[2] = sin(u[1] + u[2]) + u[2]
     du[3] = 2u[4] + u[3] + 1.0
     du[4] = u[5]^2 + u[4]
     du[5] = u[3]^2 + u[5]
-    du[6] = u[1] + u[2] + u[3] + u[4] + u[5]    + 2.0u[6] + 2.5u[7] + 1.5u[8]
+    du[6] = u[1] + u[2] + u[3] + u[4] + u[5] + 2.0u[6] + 2.5u[7] + 1.5u[8]
     du[7] = u[1] + u[2] + u[3] + 2.0u[4] + u[5] + 4.0u[6] - 1.5u[7] + 1.5u[8]
     du[8] = u[1] + 2.0u[2] + 3.0u[3] + 5.0u[4] + 6.0u[5] + u[6] - u[7] - u[8]
+    return
 end
 prob = NonlinearProblem(f, zeros(8))
 sol = solve(prob)
@@ -473,41 +499,46 @@ The split SCC form is:
 ```julia
 cache = zeros(3)
 
-function f1(du,u,cache)
+function f1(du, u, cache)
     du[1] = cos(u[2]) - u[1]
     du[2] = sin(u[1] + u[2]) + u[2]
+    return
 end
-explicitfun1(cache,sols) = nothing
+explicitfun1(cache, sols) = nothing
 prob1 = NonlinearProblem(NonlinearFunction{true, SciMLBase.NoSpecialize}(f1), zeros(2), cache)
 sol1 = solve(prob1, NewtonRaphson())
 
-function f2(du,u,cache)
+function f2(du, u, cache)
     du[1] = 2u[2] + u[1] + 1.0
     du[2] = u[3]^2 + u[2]
     du[3] = u[1]^2 + u[3]
+    return
 end
-explicitfun2(cache,sols) = nothing
+explicitfun2(cache, sols) = nothing
 prob2 = NonlinearProblem(NonlinearFunction{true, SciMLBase.NoSpecialize}(f2), zeros(3), cache)
 sol2 = solve(prob2, NewtonRaphson())
 
-function f3(du,u,cache)
+function f3(du, u, cache)
     du[1] = cache[1] + 2.0u[1] + 2.5u[2] + 1.5u[3]
     du[2] = cache[2] + 4.0u[1] - 1.5u[2] + 1.5u[3]
     du[3] = cache[3] + + u[1] - u[2] - u[3]
+    return
 end
 prob3 = NonlinearProblem(NonlinearFunction{true, SciMLBase.NoSpecialize}(f3), zeros(3), cache)
-function explicitfun3(cache,sols)
+function explicitfun3(cache, sols)
     cache[1] = sols[1][1] + sols[1][2] + sols[2][1] + sols[2][2] + sols[2][3]
     cache[2] = sols[1][1] + sols[1][2] + sols[2][1] + 2.0sols[2][2] + sols[2][3]
     cache[3] = sols[1][1] + 2.0sols[1][2] + 3.0sols[2][1] + 5.0sols[2][2] + 6.0sols[2][3]
+    return
 end
-explicitfun3(cache,[sol1,sol2])
+explicitfun3(cache, [sol1, sol2])
 sol3 = solve(prob3, NewtonRaphson())
 manualscc = [sol1; sol2; sol3]
 
 sccprob = SciMLBase.SCCNonlinearProblem(
-    [prob1,prob2,prob3],
-    SciMLBase.Void{Any}.([explicitfun1,explicitfun2,explicitfun3]))
+    [prob1, prob2, prob3],
+    SciMLBase.Void{Any}.([explicitfun1, explicitfun2, explicitfun3])
+)
 ```
 
 Note that this example aliases the parameters together for a memory-reduced representation.
@@ -544,22 +575,21 @@ mutable struct SCCNonlinearProblem{
             @assert first(probs) isa LinearProblem
             init = first(probs).A
         end
-        if ArrayInterface.ismutable(init)
-            init = similar(init, 0)
-        else
-            init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
-        end
+        init = _scc_empty_state(init)
         if has_no_u0
             uType = Nothing
         else
             u0 = mapreduce(
-                state_values, vcat, probs; init = init
+                state_values, vcat, probs; init
             )
             uType = typeof(u0)
         end
         return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
+
+_scc_empty_state(init) = similar(init, 0)
+_scc_empty_state(init::SVector) = SVector{0, eltype(init)}()
 
 function SCCNonlinearProblem(
         probs, explicitfuns!, parameter_object = nothing,
@@ -595,14 +625,10 @@ end
 function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{Nothing})
     return nothing
 end
-function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem)
+function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{T}) where {T}
     init = state_values(first(prob.probs))
-    if ArrayInterface.ismutable(init)
-        init = similar(init, 0)
-    else
-        init = StaticArraysCore.similar_type(init, StaticArraysCore.Size(0))()
-    end
-    return mapreduce(state_values, vcat, prob.probs; init)
+    init = _scc_empty_state(init)
+    return mapreduce(state_values, vcat, prob.probs; init)::T
 end
 
 function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, idx)
@@ -626,20 +652,24 @@ function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val
     return
 end
 
-@doc doc"""
-    NonlinearAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+"""
+    NonlinearAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
+    )
 
-Holds information on what variables to alias when solving a `NonlinearProblem`. 
-Conforms to the AbstractAliasSpecifier interface. 
+Control which `NonlinearProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_u0` controls whether the initial guess may be stored by reference,
+`alias_p` controls the parameter object, and `alias_f` controls the nonlinear
+function wrapper. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to all fields.
 
 ### Keywords
 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the nonlinear function object.
 * `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
-* `alias::Union{Bool, Nothing}`: sets all fields of the `NonlinearAliasSpecifier` to `alias`. 
+* `alias::Union{Bool, Nothing}`: set every field of the `NonlinearAliasSpecifier`.
 """
 struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
@@ -659,6 +689,21 @@ struct NonlinearAliasSpecifier <: AbstractAliasSpecifier
     end
 end
 
+"""
+$(TYPEDEF)
+
+An immutable counterpart to [`NonlinearProblem`](@ref SciMLBase.NonlinearProblem) that
+carries the same `f`, `u0`, `p`, `problem_type`, and `kwargs` data.
+
+Because the struct and its fields are immutable, an `ImmutableNonlinearProblem` built
+from `isbits` components is itself `isbits`. That makes it usable from contexts which
+cannot allocate or mutate — most importantly inside GPU kernels, where solver packages
+construct one per thread and hand it to a non-allocating nonlinear solver. Use
+`NonlinearProblem` for ordinary host-side solves; reach for this type when the problem
+must cross into a kernel or otherwise stay allocation-free.
+
+Constructors mirror `NonlinearProblem`, and `remake` is supported.
+"""
 struct ImmutableNonlinearProblem{uType, iip, P, F, K, PT} <:
     AbstractNonlinearProblem{uType, iip}
     f::F
@@ -721,4 +766,106 @@ function Base.convert(
     return ImmutableNonlinearProblem{SciMLBase.isinplace(prob)}(
         prob.f, prob.u0, prob.p, prob.problem_type; prob.kwargs...
     )
+end
+
+"""
+
+Defines a one-parameter homotopy nonlinear problem.
+This is the embedding / natural-parameter continuation problem type. It is unrelated to
+`HomotopyNonlinearFunction`, which supports polynomial homotopy continuation
+(e.g. via HomotopyContinuation.jl).
+
+## Mathematical Specification of a Homotopy Problem
+
+To define a Homotopy Problem, you give the residual function ``f``
+
+```math
+0 = f(u, p, λ)
+```
+
+where ``λ ∈ \\texttt{λspan}`` is the scalar continuation parameter, passed to
+`f` as a separate trailing argument after the parameters `p`. A continuation solver
+sweeps ``λ`` from `λspan[1]` to `λspan[2]`, warm-starting each step from the
+previous solution; the target system is the one at `λspan[2]`.
+
+## Problem Type
+
+### Constructors
+
+```julia
+HomotopyProblem(f::NonlinearFunction, u0, p = NullParameters(); λspan = (0.0, 1.0), kwargs...)
+HomotopyProblem{isinplace}(f, u0, p = NullParameters(); λspan = (0.0, 1.0), kwargs...)
+```
+
+`isinplace` optionally sets whether the function is in-place or not. This is
+determined automatically, but not inferred. The residual follows the time-dependent
+argument convention with ``λ`` in place of `t`:
+
+- out-of-place: `f(u, p, λ)`
+- in-place: `f(du, u, p, λ)`
+
+### Fields
+
+* `f`: The residual function, called as `f(u, p, λ)` (or `f(du, u, p, λ)` in-place).
+  Optional derivative fields of the wrapped `NonlinearFunction` (`jac`, `jac_prototype`,
+  `sparsity`, `colorvec`, ...), if provided, must follow the same λ-extended argument
+  convention, e.g. `jac(u, p, λ)` (or `jac(J, u, p, λ)` in-place); they are consumed by
+  NonlinearSolve.jl's continuation solvers. Pass `lambda_extended = true` to the
+  `NonlinearFunction` constructor so that `jac`, `jvp`, and `vjp` are validated against
+  the λ-extended arities instead of the standard nonlinear ones.
+* `u0`: The initial guess (a solution of the simplified system at `λspan[1]`).
+* `p`: The parameters, passed through to `f` unchanged; ``λ`` is not part of `p`.
+* `λspan`: the `(start, stop)` continuation interval; the target system is at `stop`.
+* `kwargs`: The keyword arguments passed on to the solvers.
+"""
+struct HomotopyProblem{uType, isinplace, P, F, K, S} <:
+    AbstractNonlinearProblem{uType, isinplace}
+    f::F
+    u0::uType
+    p::P
+    λspan::S
+    kwargs::K
+
+    @add_kwonly function HomotopyProblem{iip}(
+            f::AbstractNonlinearFunction{iip}, u0, p = NullParameters();
+            λspan = (0.0, 1.0), kwargs...
+        ) where {iip}
+        if haskey(kwargs, :p)
+            error(
+                "`p` specified as a keyword argument `p = $(kwargs[:p])` to " *
+                    "`HomotopyProblem`. This is not supported. Pass `p` as the third " *
+                    "positional argument instead."
+            )
+        end
+        warn_paramtype(p)
+        new{typeof(u0), iip, typeof(p), typeof(f), typeof(kwargs), typeof(λspan)}(
+            f, u0, p, λspan, kwargs
+        )
+    end
+
+    function HomotopyProblem{iip}(f, u0, p = NullParameters(); kwargs...) where {iip}
+        return HomotopyProblem{iip}(NonlinearFunction{iip}(f), u0, p; kwargs...)
+    end
+end
+
+function HomotopyProblem(f::AbstractNonlinearFunction, u0, p = NullParameters(); kwargs...)
+    return HomotopyProblem{isinplace(f)}(f, u0, p; kwargs...)
+end
+
+function HomotopyProblem(f, u0, p = NullParameters(); kwargs...)
+    # The residual takes λ as a trailing argument (like `t` for ODEs), so in-place
+    # detection follows the 4-argument convention: f(du, u, p, λ) is in-place.
+    iip = isinplace(f, 4)
+    return HomotopyProblem(NonlinearFunction{iip}(f), u0, p; kwargs...)
+end
+
+function ConstructionBase.constructorof(::Type{P}) where {P <: HomotopyProblem}
+    return function ctor(f, u0, p, λspan, kw)
+        if f isa AbstractNonlinearFunction
+            iip = isinplace(f)
+        else
+            iip = isinplace(f, 4)
+        end
+        return HomotopyProblem{iip}(f, u0, p; λspan, kw...)
+    end
 end

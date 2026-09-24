@@ -1,10 +1,41 @@
 module SciMLBaseMakieExt
 
-using SciMLBase
-using SymbolicIndexingInterface
-using Makie
+using SciMLBase: SciMLBase
+using SymbolicIndexingInterface: SymbolicIndexingInterface, ContinuousTimeseries, NotSymbolic,
+    current_time, get_all_timeseries_indexes, getname, getp, hasname,
+    independent_variable_symbols, symbolic_type, variable_symbols
+using RecursiveArrayTools: VectorOfArray, vecarr_to_vectors
+using GeometryBasics: Point2f, Point3f
+using Makie: Makie, Lines, Plot, PlotSpec
 
 import Makie.SpecApi as S
+
+# Scalar ODESolution <: AbstractVector{<:Real}; skip PointBased index expansion.
+# DEIntegrator is not an AbstractVector, so it does not need this hook.
+Makie.expand_dimensions(::Makie.PointBased, ::SciMLBase.AbstractTimeseriesSolution) = nothing
+
+# `step!` replaces the solution wrapper with an isequal copy; still reconvert.
+# Same-object DEIntegrator mutation already makes ComputePipeline's default
+# `is_same` return false, so only solutions need an override.
+# Axis autolimits still do not follow PlotList data growth; call
+# `autolimits!(ax)` / `reset_limits!(ax)` after expanding the time window.
+if isdefined(Makie, :ComputePipeline)
+    function Makie.ComputePipeline.is_same(
+            ::SciMLBase.AbstractTimeseriesSolution,
+            ::SciMLBase.AbstractTimeseriesSolution
+        )
+        return false
+    end
+end
+
+function _tspan_indices(t, tspan)
+    lo, hi = minmax(tspan[1], tspan[end])
+    if length(t) > 1 && t[end] < t[1]
+        return searchsortedfirst(t, hi; rev = true), searchsortedlast(t, lo; rev = true)
+    else
+        return searchsortedfirst(t, lo), searchsortedlast(t, hi)
+    end
+end
 
 function ensure_plottrait(PT::Type, arg, desired_plottrait_type::Type)
     return if !(Makie.conversion_trait(PT, arg) isa desired_plottrait_type)
@@ -108,7 +139,7 @@ function Makie.convert_arguments(
             sol.dense ||
                 typeof(sol.prob) <: SciMLBase.AbstractDiscreteProblem
         ) &&
-            !(typeof(sol) <: SciMLBase.AbstractRODESolution) &&
+            !(typeof(sol.prob) <: Union{SciMLBase.AbstractRODEProblem, SciMLBase.AbstractSDDEProblem}) &&
             !(
             hasfield(typeof(sol), :interp) &&
                 typeof(sol.interp) <: SciMLBase.SensitivityInterpolation
@@ -177,9 +208,8 @@ function Makie.convert_arguments(
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
         if tspan !== nothing
-            tstart = searchsortedfirst(ts, tspan[1])
-            tend = searchsortedlast(ts, tspan[2])
-            if tstart == lastindex(ts) + 1 || tend == firstindex(ts) - 1
+            tstart, tend = _tspan_indices(ts, tspan)
+            if tstart > tend
                 continue
             end
         else
@@ -197,7 +227,7 @@ function Makie.convert_arguments(
         xvals = getindex.(tmpvals, 1)
         yvals = getindex.(tmpvals, 2)
 
-        label = string(SciMLBase.hasname(yvar) ? SciMLBase.getname(yvar) : yvar)
+        label = string(hasname(yvar) ? getname(yvar) : yvar)
 
         scatter_spec = Makie.SpecApi.Scatter(Point2f.(xvals, yvals); label)
 
@@ -277,10 +307,10 @@ function Makie.convert_arguments(
         if plot_analytic
             plot_analytic_timeseries = [
                 integrator.sol.prob.f.analytic(
-                        integrator.sol.prob.u0,
-                        integrator.sol.prob.p,
-                        t
-                    ) for t in plott
+                    integrator.sol.prob.u0,
+                    integrator.sol.prob.p,
+                    t
+                ) for t in plott
             ]
         end
     else
@@ -299,7 +329,7 @@ function Makie.convert_arguments(
 
     labels = String[] # Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
     strs = String[]
-    varsyms = SciMLBase.variable_symbols(integrator)
+    varsyms = variable_symbols(integrator)
 
     for x in int_vars
         for j in 2:dims
@@ -321,9 +351,9 @@ function Makie.convert_arguments(
             end
 
             if !isempty(varsyms) && x[j] isa Integer
-                push!(strs, String(SciMLBase.getname(varsyms[x[j]])))
-            elseif SciMLBase.hasname(x[j])
-                push!(strs, String(SciMLBase.getname(x[j])))
+                push!(strs, String(getname(varsyms[x[j]])))
+            elseif hasname(x[j])
+                push!(strs, String(getname(x[j])))
             else
                 push!(strs, "u[$(x[j])]")
             end
@@ -372,11 +402,11 @@ function Makie.convert_arguments(
     return if denseplot
         [
             Makie.PlotSpec(
-                    plot_type_sym,
-                    Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]);
-                    label,
-                    color = Makie.Cycled(idx)
-                )
+                plot_type_sym,
+                Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]);
+                label,
+                color = Makie.Cycled(idx)
+            )
                 for (idx, label) in zip(1:length(plot_vecs[1]), labels)
         ]
     else
@@ -432,16 +462,16 @@ function Makie.convert_arguments(
 
     mp = [
         PlotSpec(
-                plot_type_sym,
-                sim.u[i];
-                plot_analytic,
-                denseplot,
-                plotdensity,
-                plotat,
-                tspan,
-                tscale,
-                idxs
-            ) for i in trajectories
+            plot_type_sym,
+            sim.u[i];
+            plot_analytic,
+            denseplot,
+            plotdensity,
+            plotat,
+            tspan,
+            tscale,
+            idxs
+        ) for i in trajectories
     ]
 
     # Main.Infiltrator.@infiltrate
@@ -482,18 +512,18 @@ function Makie.convert_arguments(
     )
     if ci_type == :SEM
         if sim.u.u[1] isa AbstractArray
-            u = SciMLBase.vecarr_to_vectors(sim.u)
+            u = vecarr_to_vectors(sim.u)
         else
             u = [sim.u.u]
         end
         if sim.u.u[1] isa AbstractArray
-            ci_low = SciMLBase.vecarr_to_vectors(
+            ci_low = vecarr_to_vectors(
                 VectorOfArray(
                     [
                         sqrt.(
-                                sim.v.u[i] /
+                            sim.v.u[i] /
                                 sim.num_monte
-                            ) .*
+                        ) .*
                             1.96
                             for i in 1:length(sim.v)
                     ]
@@ -511,13 +541,13 @@ function Makie.convert_arguments(
         end
     elseif ci_type == :quantile
         if sim.med.u[1] isa AbstractArray
-            u = SciMLBase.vecarr_to_vectors(sim.med)
+            u = vecarr_to_vectors(sim.med)
         else
             u = [sim.med.u]
         end
         if sim.u.u[1] isa AbstractArray
-            ci_low = u - SciMLBase.vecarr_to_vectors(sim.qlow)
-            ci_high = SciMLBase.vecarr_to_vectors(sim.qhigh) - u
+            ci_low = u - vecarr_to_vectors(sim.qlow)
+            ci_high = vecarr_to_vectors(sim.qhigh) - u
         else
             ci_low = [u[1] - sim.qlow.u]
             ci_high = [sim.qhigh.u - u[1]]

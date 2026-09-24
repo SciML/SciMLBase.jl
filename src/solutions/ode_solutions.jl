@@ -1,28 +1,35 @@
 """
 $(TYPEDEF)
 
-Statistics from the differential equation solver about the solution process.
+Counters collected by a differential equation solver while constructing a
+solution.
+
+`DEStats` is stored in the `stats` field of differential equation solutions when
+the solver reports work counters. The counters are intended for diagnostics and
+performance analysis; they are not part of the mathematical solution. Solvers
+that do not track a counter should leave it at the package's documented default,
+commonly `0` or the `DEStats()` sentinel value.
 
 ## Fields
 
-  - `nf`: Number of function evaluations. If the differential equation is a split function,
-    such as a `SplitFunction` for implicit-explicit (IMEX) integration, then `nf` is the
-    number of function evaluations for the first function (the implicit function)
-  - `nf2`: If the differential equation is a split function, such as a `SplitFunction`
-    for implicit-explicit (IMEX) integration, then `nf2` is the number of function
-    evaluations for the second function, i.e. the function treated explicitly. Otherwise
-    it is zero.
-  - `nw`: The number of `W=I-gamma*J` (or `W=I/gamma-J`) matrices constructed
+  - `nf`: Number of function evaluations. For split functions such as an
+    implicit-explicit `SplitFunction`, this counts evaluations of the first
+    function.
+  - `nf2`: Number of evaluations of the second function for split functions.
+    This is usually zero for non-split problems.
+  - `nw`: Number of `W = I - gamma*J` or `W = I/gamma - J` matrices constructed
     during the solving process.
-  - `nsolve`: The number of linear solves `W\\b` required for the integration.
-  - `njacs`: Number of Jacobians calculated during the integration.
-  - `nnonliniter`: Total number of iterations for the nonlinear solvers.
+  - `nsolve`: Number of linear solves required during the integration.
+  - `njacs`: Number of Jacobians constructed during the integration.
+  - `nnonliniter`: Total nonlinear solver iterations.
   - `nnonlinconvfail`: Number of nonlinear solver convergence failures.
-  - `ncondition`: Number of calls to the condition function for callbacks.
+  - `nfpiter`: Total fixed-point solver iterations.
+  - `nfpconvfail`: Number of fixed-point solver convergence failures.
+  - `ncondition`: Number of callback condition-function calls.
   - `naccept`: Number of accepted steps.
   - `nreject`: Number of rejected steps.
-  - `maxeig`: Maximum eigenvalue over the solution. This is only computed if the
-    method is an auto-switching algorithm.
+  - `maxeig`: Maximum eigenvalue estimate recorded by algorithms that compute
+    one, such as some auto-switching methods.
 """
 mutable struct DEStats
     nf::Int
@@ -53,7 +60,7 @@ function Base.show(io::IO, ::MIME"text/plain", s::DEStats)
     @printf io "%-50s %-d\n" "Number of nonlinear solver convergence failures:" s.nnonlinconvfail
     @printf io "%-50s %-d\n" "Number of fixed-point solver iterations:" s.nfpiter
     @printf io "%-50s %-d\n" "Number of fixed-point solver convergence failures:" s.nfpconvfail
-    @printf io "%-50s %-d\n" "Number of rootfind condition calls:" s.ncondition
+    @printf io "%-50s %-d\n" "Number of callback condition calls:" s.ncondition
     @printf io "%-50s %-d\n" "Number of accepted steps:" s.naccept
     @printf io "%-50s %-d" "Number of rejected steps:" s.nreject
     return iszero(s.maxeig) || @printf io "\n%-50s %-e" "Maximum eigenvalue recorded:" s.maxeig
@@ -104,10 +111,14 @@ page of the DifferentialEquations.jl documentation.
     successfully, whether it terminated early due to a user-defined callback, or whether it
     exited due to an error. For more details, see
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `global_error`: an estimate of the global (accumulated) error of the solution, or
+    `nothing` when the algorithm does not compute one (see [`has_global_error`](@ref)).
+    When present it is an array matching `u`, with `global_error[i]` the estimated global
+    error of `u[i]` at `t[i]`.
 """
 struct ODESolution{
         T, N, uType, duType, uType2, DType, tType, rateType, randType, discType, P, A,
-        IType, S, AC <: Union{Nothing, Vector{Int}}, R, O, V,
+        IType, S, AC <: Union{Nothing, Vector{Int}}, R, O, V, GE, RC,
     } <:
     AbstractODESolution{T, N, uType}
     u::uType
@@ -125,54 +136,55 @@ struct ODESolution{
     tslocation::Int
     stats::S
     alg_choice::AC
-    retcode::ReturnCode.T
+    retcode::RC
     resid::R
     original::O
     seed::UInt64
     saved_subsystem::V
+    # Estimate of the global (accumulated) error, populated by solvers/wrappers
+    # for which `has_global_error(alg)` is `true`; `nothing` otherwise. When
+    # present it matches `u`: a vector of per-time-point error estimates.
+    global_error::GE
 end
 
 function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution{T, N}}
     return ODESolution{T, N}
 end
 
-function ConstructionBase.setproperties(sol::ODESolution, patch::NamedTuple)
+function ConstructionBase.setproperties(
+        sol::ODESolution{T, N}, patch::NamedTuple
+    ) where {T, N}
     u = get(patch, :u, sol.u)
-    N = u === nothing ? 2 : ndims(eltype(u)) + 1
-    T = eltype(eltype(u))
+    new_T, new_N = if haskey(patch, :u)
+        eltype(eltype(u)), u === nothing || eltype(u) === Nothing ? 2 : ndims(eltype(u)) + 1
+    else
+        T, N
+    end
     patch = merge(getproperties(sol), patch)
-    return ODESolution{T, N}(
+    return ODESolution{new_T, new_N}(
         patch.u, patch.du, patch.u_analytic, patch.errors, patch.t, patch.k,
         patch.W, patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense,
         patch.tslocation, patch.stats, patch.alg_choice, patch.retcode, patch.resid,
-        patch.original, patch.seed, patch.saved_subsystem
+        patch.original, patch.seed, patch.saved_subsystem, patch.global_error
     )
 end
 
-Base.@propagate_inbounds function Base.getproperty(x::AbstractODESolution, s::Symbol)
-    if s === :destats
-        Base.depwarn("`sol.destats` is deprecated. Use `sol.stats` instead.", "sol.destats")
-        return getfield(x, :stats)
-    elseif s === :ps
-        return ParameterIndexingProxy(x)
-    end
-    return getfield(x, s)
-end
 
 function ODESolution{T, N}(
         u, du, u_analytic, errors, t, k, W, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode, resid = nothing,
-        original = nothing, seed::UInt64 = UInt64(0), saved_subsystem = nothing
+        original = nothing, seed::UInt64 = UInt64(0), saved_subsystem = nothing,
+        global_error = nothing
     ) where {T, N}
     return ODESolution{
         T, N, typeof(u), typeof(du), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(W), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
-        typeof(saved_subsystem),
+        typeof(saved_subsystem), typeof(global_error), typeof(retcode),
     }(
         u, du, u_analytic, errors, t, k, W, discretes, prob, alg, interp,
         dense, tslocation, stats, alg_choice, retcode, resid, original, seed,
-        saved_subsystem
+        saved_subsystem, global_error
     )
 end
 
@@ -217,7 +229,7 @@ end
 function get_interpolated_discretes(sol::AbstractODESolution, t, deriv, continuity)
     is_parameter_timeseries(sol) == Timeseries() || return nothing
 
-    discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+    discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
     interp_discs = map(discs) do partition
         hold_discrete(partition.u, partition.t, t)
     end
@@ -288,7 +300,7 @@ function (sol::AbstractODESolution)(
     ) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol)
+    return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 function (sol::AbstractODESolution)(
         t::AbstractVector{<:Number}, ::Type{deriv},
@@ -303,7 +315,7 @@ function (sol::AbstractODESolution)(
     end
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol)
+    return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 
 function (sol::AbstractODESolution)(
@@ -317,7 +329,7 @@ function (sol::AbstractODESolution)(
         return getp(sol, idxs)(ps)
     end
     if is_parameter_timeseries(sol) == Timeseries() && is_discrete_expression(sol, idxs)
-        discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+        discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
@@ -343,7 +355,7 @@ function (sol::AbstractODESolution)(
     error_if_observed_derivative(sol, idxs, deriv)
     ps = parameter_values(sol)
     if is_parameter_timeseries(sol) == Timeseries() && is_discrete_expression(sol, idxs)
-        discs::ParameterTimeseriesCollection = RecursiveArrayTools.get_discretes(sol)
+        discs::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
         ps = parameter_values(discs)
         for ts_idx in eachindex(discs)
             partition = discs[ts_idx]
@@ -365,7 +377,10 @@ function (sol::AbstractODESolution)(
     getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
-        return DiffEqArray(getter(interp_sol), t, p, sol)
+        return DiffEqArray(
+            getter(interp_sol), t, p, sol;
+            sol.interp, sol.dense
+        )
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
     interp_sol = sol.interp(t, nothing, deriv, p, continuity)
@@ -376,7 +391,10 @@ function (sol::AbstractODESolution)(
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
-    return DiffEqArray(u, t, p, sol; discretes)
+    return DiffEqArray(
+        u, t, p, sol; discretes,
+        sol.interp, sol.dense
+    )
 end
 
 function (sol::AbstractODESolution)(
@@ -391,7 +409,10 @@ function (sol::AbstractODESolution)(
     getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
-        return DiffEqArray(getter(interp_sol), t, p, sol)
+        return DiffEqArray(
+            getter(interp_sol), t, p, sol;
+            interp = sol.interp, dense = sol.dense
+        )
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
     interp_sol = sol.interp(t, nothing, deriv, p, continuity)
@@ -402,7 +423,10 @@ function (sol::AbstractODESolution)(
         end
         return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
     end
-    return DiffEqArray(u, t, p, sol; discretes)
+    return DiffEqArray(
+        u, t, p, sol; discretes,
+        sol.interp, sol.dense
+    )
 end
 
 struct DDESolutionHistoryWrapper{T}
@@ -432,9 +456,19 @@ end
 """
     create_parameter_timeseries_collection(sys, ps, tspan)
 
-Create a `SymbolicIndexingInterface.ParameterTimeseriesCollection` for the given system
-`sys` and parameter object `ps`. Return `nothing` if there are no timeseries parameters.
-Defaults to `nothing`. Falls back on the basis of `symbolic_container`.
+Create the discrete parameter time-series storage for a solution.
+
+`sys` is a symbolic index provider, `ps` is the parameter object used by the
+problem or integrator, and `tspan` is the solve time span. Return a
+`SymbolicIndexingInterface.ParameterTimeseriesCollection` when the system has
+time-series parameters that should be saved alongside the continuous state.
+Return `nothing` when there are no such parameters.
+
+Implementations should allocate one time-series buffer per discrete parameter
+partition and make `parameter_values(collection)` return the parameter object
+that should be updated during interpolation and symbolic indexing. The fallback
+delegates to `symbolic_container(sys)` when available and otherwise returns
+`nothing`.
 """
 function create_parameter_timeseries_collection(sys, ps, tspan)
     if hasmethod(symbolic_container, Tuple{typeof(sys)})
@@ -450,8 +484,13 @@ const PeriodicDiffEqArray = DiffEqArray{T, N, A, B} where {T, N, A, B <: Abstrac
 """
     get_saveable_values(sys, ps, timeseries_idx)
 
-Return the values to be saved in parameter object `ps` for timeseries index `timeseries_idx`. Called by
-`save_discretes!`. If this returns `nothing`, `save_discretes!` will not save anything.
+Return the values that should be appended to a discrete parameter time series.
+
+`timeseries_idx` selects the time-series partition to save from parameter object
+`ps`. The returned value must match the element type and shape of the buffer
+created by [`create_parameter_timeseries_collection`](@ref) for that partition.
+Return `nothing` when no value should be saved for `timeseries_idx`; in that
+case [`save_discretes!`](@ref) leaves the corresponding time series unchanged.
 """
 function get_saveable_values(sys, ps, timeseries_idx)
     return get_saveable_values(symbolic_container(sys), ps, timeseries_idx)
@@ -460,8 +499,14 @@ end
 """
     save_discretes!(integ::DEIntegrator, timeseries_idx)
 
-Save the parameter timeseries with index `timeseries_idx`. Calls `get_saveable_values` to
-get the values to save. If it returns `nothing`, then the save does not happen.
+Save one discrete parameter time-series partition at the integrator's current
+time.
+
+This obtains the current parameter object from `integ`, calls
+[`get_saveable_values`](@ref), and appends the returned values to the solution's
+discrete storage for `timeseries_idx`. If `get_saveable_values` returns
+`nothing`, no value is saved. When `skip_duplicates = true`, an implementation
+may avoid appending a second value at the same saved time.
 """
 function save_discretes!(integ::DEIntegrator, timeseries_idx; skip_duplicates = false)
     inner_sol = get_sol(integ)
@@ -474,8 +519,8 @@ save_discretes!(args...) = nothing
 
 # public API, used by MTK
 function save_discretes!(sol::AbstractODESolution, t, vals, timeseries_idx; skip_duplicates = false)
-    RecursiveArrayTools.has_discretes(sol) || return
-    disc = RecursiveArrayTools.get_discretes(sol)
+    is_parameter_timeseries(sol) == Timeseries() || return
+    disc::ParameterTimeseriesCollection = get_parameter_timeseries_collection(sol)
     return _save_discretes_internal!(disc[timeseries_idx], t, vals; skip_duplicates)
 end
 
@@ -506,9 +551,10 @@ function build_solution(
         k = nothing,
         alg_choice = nothing,
         interp = LinearInterpolation(t, u),
-        retcode = ReturnCode.Default, destats = missing, stats = nothing,
+        retcode = ReturnCode.Default, stats = nothing,
         resid = nothing, original = nothing,
         saved_subsystem = nothing,
+        global_error = nothing,
         kwargs...
     )
     T = eltype(eltype(u))
@@ -527,16 +573,6 @@ function build_solution(
         f = prob.f[1]
     else
         f = prob.f
-    end
-
-    if !ismissing(destats)
-        msg = "`destats` kwarg has been deprecated in favor of `stats`"
-        if stats !== nothing
-            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
-        else
-            stats = destats
-        end
-        Base.depwarn(msg, :build_solution)
     end
 
     ps = parameter_values(prob)
@@ -572,12 +608,13 @@ function build_solution(
             resid,
             original,
             UInt64(0),
-            saved_subsystem
+            saved_subsystem,
+            global_error
         )
         if calculate_error
             calculate_solution_errors!(
-                sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors
+                sol; timeseries_errors,
+                dense_errors
             )
         end
         return sol
@@ -601,7 +638,8 @@ function build_solution(
             resid,
             original,
             UInt64(0),
-            saved_subsystem
+            saved_subsystem,
+            global_error
         )
     end
 end
@@ -631,17 +669,17 @@ function _fill_uanalytic_rode!(sol, f)
     if f isa RODEFunction && f.analytic_full == true
         f.analytic(sol)
     elseif sol.W isa AbstractDiffEqArray{T, N, nothing} where {T, N}
-        for i in 1:length(sol)
+        for i in eachindex(sol.t)
             push!(
                 sol.u_analytic,
                 f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], first(sol.W(sol.t[i])))
             )
         end
     else
-        for i in 1:length(sol)
+        for i in eachindex(sol.t)
             push!(
                 sol.u_analytic,
-                f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W[:, i])
+                f.analytic(sol.prob.u0, sol.prob.p, sol.t[i], sol.W.u[i])
             )
         end
     end
@@ -664,6 +702,16 @@ function _dense_analytic_rode(sol, f, densetimes)
     return [f.analytic(sol.u[1], sol.prob.p, t, sol.W(t)[1]) for t in densetimes]
 end
 
+"""
+    calculate_solution_errors!(sol; fill_uanalytic = true, timeseries_errors = true, dense_errors = true)
+
+Compute the error estimates of a solution against the analytical solution of its problem
+(`sol.prob.f.analytic`) and store them in `sol.errors`. With `fill_uanalytic = true`, the
+analytical solution values are first filled into `sol.u_analytic`. `timeseries_errors`
+controls computation of errors at the saved time points and `dense_errors` controls
+computation of errors using the dense interpolation. Used by solutions that have a known
+analytic solution (e.g. for convergence testing).
+"""
 function calculate_solution_errors!(
         sol::AbstractODESolution; fill_uanalytic = true,
         timeseries_errors = true, dense_errors = true
@@ -759,15 +807,29 @@ end
 function solution_new_original_retcode(
         sol::ODESolution{T, N}, original, retcode, resid
     ) where {T, N}
-    @reset sol.original = original
-    @reset sol.retcode = retcode
-    return @set sol.resid = resid
+    # Reconstruct the ODESolution directly rather than going through the
+    # `@reset` / `ConstructionBase.setproperties` chain. The `@reset` form
+    # expands into three sequential `setproperties` calls, each of which
+    # threads through `merge(getproperties(sol), patch)` and back through
+    # `ODESolution{T, N}(...)`. That call graph exceeds Julia's inference
+    # limits for non-trivial callers (e.g. a `::NonlinearSolution` bare
+    # annotation on the caller), causing the rebuilt solution's type to
+    # widen all the way to `ODESolution` (bare UnionAll). A single direct
+    # inner-constructor call preserves the concrete type parameters that
+    # inference can derive from `sol` plus the new `original`/`resid`.
+    return ODESolution{T, N}(
+        sol.u, sol.du, sol.u_analytic, sol.errors, sol.t, sol.k, sol.W,
+        sol.discretes, sol.prob, sol.alg, sol.interp, sol.dense,
+        sol.tslocation, sol.stats, sol.alg_choice, retcode,
+        resid, original, sol.seed, sol.saved_subsystem, sol.global_error,
+    )
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     @reset sol.u = sol.u[I]
     @reset sol.du = sol.du === nothing ? nothing : sol.du[I]
     @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
+    @reset sol.global_error = sol.global_error === nothing ? nothing : sol.global_error[I]
     @reset sol.t = sol.t[I]
     @reset sol.k = sol.dense ? sol.k[I] : sol.k
     return @set sol.dense = false

@@ -1,4 +1,10 @@
 using DifferentialEquations, PythonCall, CondaPkg
+# DifferentialEquations.jl v8 no longer pulls in StochasticDiffEq, so the
+# default SDE algorithm needs to be loaded explicitly for `solve(prob)` to
+# dispatch on `SDEProblem`. OrdinaryDiffEqDefault is also loaded explicitly
+# to make the ODE default algorithm registration robust to future slimming
+# of the umbrella package.
+using OrdinaryDiffEqDefault, StochasticDiffEq
 
 CondaPkg.add_pip("diffeqpy")
 

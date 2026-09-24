@@ -1,10 +1,11 @@
 module SciMLBaseChainRulesCoreExt
 
-using SciMLBase
-using SciMLBase: getobserved
+using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution,
+    SDEProblem, getobserved, remake
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
-using SymbolicIndexingInterface
+using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, parameter_values,
+    symbolic_type, variable_index
 using RecursiveArrayTools: AbstractVectorOfArray
 
 @non_differentiable SciMLBase.checkkwargs(kwargshandle)
@@ -28,7 +29,7 @@ function ChainRulesCore.rrule(
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         du,
-            dprob = if i === nothing
+            dp = if i === nothing
             getter = getobserved(VA)
             grz = rrule_via_ad(config, getter, sym, VA.u[j], VA.prob.p, VA.t[j])[2](Δ)
             du = [k == j ? grz[3] : zero(VA.u[1]) for k in 1:length(VA.u)]
@@ -36,26 +37,57 @@ function ChainRulesCore.rrule(
             if dp == NoTangent()
                 dp = zero_tangent(parameter_values(VA.prob))
             end
-            dprob = remake(VA.prob, p = dp)
-            du, dprob
+            du, dp
         else
             du = [
                 m == j ? [i == k ? Δ : zero(VA.u[1][1]) for k in 1:length(VA.u[1])] :
                     zero(VA.u[1]) for m in 1:length(VA.u)
             ]
-            dp = zero_tangent(VA.prob.p)
-            dprob = remake(VA.prob, p = dp)
-            du, dprob
+            du, zero_tangent(VA.prob.p)
         end
-        T = eltype(eltype(du))
-        N = ndims(eltype(du)) + 1
+        # `remake` cannot consume a `Tangent` over the despecialized container, so
+        # reduce the cotangent to the wrapped parameter object first.
+        if dp isa ChainRulesCore.Tangent{<:SciMLBase.DespecializedParameters}
+            dp = dp.params
+        end
+        dprob = remake(VA.prob, p = dp)
+        T = eltype(first(du))
+        N = ndims(first(du)) + 1
         Δ′ = ODESolution{T, N}(
-            du, nothing, nothing, VA.t, VA.k, nothing, dprob,
+            du, nothing, nothing, nothing, VA.t, VA.k, nothing, nothing, dprob,
             VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode
         )
         return (NoTangent(), Δ′, NoTangent(), NoTangent())
     end
     return VA[sym, j], ODESolution_getindex_pullback
+end
+
+# `sol[i::Integer]`: under RecursiveArrayTools v4 `AbstractVectorOfArray`
+# subtypes `AbstractArray`, so linear integer indexing returns the i-th
+# scalar element in column-major order over the underlying state-by-time
+# layout, NOT the i-th timestep vector. A dedicated rrule is still
+# needed to keep dispatch from falling through to the broader
+# `getindex(VA::ODESolution, sym)` rule below (which would misinterpret
+# `i` as a state-variable index; #1325). The pullback scatters the
+# scalar cotangent into the matching slot of `VA.u`.
+function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
+    inds = Tuple(CartesianIndices(size(VA))[i])
+    front_inds = Base.front(inds)
+    step_idx = last(inds)
+    y = VA.u[step_idx][front_inds...]
+    function ODESolution_scalar_pullback(Δ)
+        Δ′ = map(enumerate(VA.u)) do (k, x)
+            if k == step_idx
+                δu = zero(x)
+                δu[front_inds...] = Δ
+                δu
+            else
+                zero(x)
+            end
+        end
+        return (NoTangent(), Δ′, NoTangent())
+    end
+    return y, ODESolution_scalar_pullback
 end
 
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
@@ -93,45 +125,25 @@ function ChainRulesCore.rrule(
         ::Type{
             <:ODESolution{
                 T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-                T11, T12, T13, T14, T15, T16,
+                T11, T12, T13, T14, T15, T16, T17, T18, T19, T20,
             },
         }, u,
         args...
     ) where {
         T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,
-        T12, T13, T14, T15, T16,
+        T12, T13, T14, T15, T16, T17, T18, T19, T20,
     }
     function ODESolutionAdjoint(ȳ)
         return (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    return ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16}(
+    return ODESolution{
+            T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16,
+            T17, T18, T19, T20,
+        }(
             u, args...
         ),
         ODESolutionAdjoint
-end
-
-function ChainRulesCore.rrule(
-        ::Type{
-            <:RODESolution{
-                T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-                T11, T12, T13, T14,
-            },
-        }, u,
-        args...
-    ) where {
-        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-        T11, T12, T13, T14,
-    }
-    function RODESolutionAdjoint(ȳ)
-        return (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
-    end
-
-    return RODESolution{
-            T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-            T11, T12, T13, T14,
-        }(u, args...),
-        RODESolutionAdjoint
 end
 
 # EnsembleSolution rrule with full support for various gradient types
@@ -143,9 +155,9 @@ function ChainRulesCore.rrule(
     function EnsembleSolution_adjoint(p̄::AbstractArray{T, N}) where {T, N}
         arrarr = [
             [
-                    p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
+                p̄[ntuple(x -> Colon(), Val(N - 2))..., j, i]
                     for j in 1:size(p̄)[end - 1]
-                ] for i in 1:size(p̄)[end]
+            ] for i in 1:size(p̄)[end]
         ]
         return (
             NoTangent(),
@@ -196,21 +208,24 @@ end
 # `back` explicitly while already in a reverse pass causing a nested gradient call. The mutable struct
 # causes accumulation anytime `getfield/property` is called, accumulating multiple times. This tries to treat
 # AbstractDEProblem as immutable for the purposes of reverse mode AD.
+#
+# The cotangent must be a `Tangent` (not a single-field `NamedTuple`): Zygote canonicalizes
+# `Tangent`s to full-width NamedTuples over all struct fields, whereas a partial NamedTuple
+# like `(p = dp,)` cannot be `Zygote.accum`ed with cotangents for the same problem coming
+# from other pullbacks (which are full-width), throwing
+# `ArgumentError: ... keys must be a subset of ... keys`.
 function ChainRulesCore.rrule(
         ::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
         ::typeof(Base.getproperty), x::NonlinearProblem, f::Symbol
     )
     val = getfield(x, f)
     function back(der)
-        dx = if der === nothing
-            ChainRulesCore.zero_tangent(x)
+        dx = if der === nothing || der isa ChainRulesCore.AbstractZero
+            ChainRulesCore.ZeroTangent()
         else
-            NamedTuple{(f,)}((der,))
+            ChainRulesCore.Tangent{typeof(x)}(; NamedTuple{(f,)}((der,))...)
         end
-        return (
-            ChainRulesCore.NoTangent(), ChainRulesCore.ProjectTo(x)(dx),
-            ChainRulesCore.NoTangent(),
-        )
+        return (ChainRulesCore.NoTangent(), dx, ChainRulesCore.NoTangent())
     end
     return val, back
 end

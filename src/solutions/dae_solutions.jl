@@ -14,7 +14,6 @@ function build_solution(
         interp = du === nothing ? LinearInterpolation(t, u) :
             HermiteInterpolation(t, u, du),
         retcode = ReturnCode.Default,
-        destats = missing,
         stats = nothing,
         saved_subsystem = nothing,
         kwargs...
@@ -25,16 +24,6 @@ function build_solution(
         N = 2
     else
         N = ndims(eltype(u)) + 1
-    end
-
-    if !ismissing(destats)
-        msg = "`destats` kwarg has been deprecated in favor of `stats`"
-        if stats !== nothing
-            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
-        else
-            stats = destats
-        end
-        Base.depwarn(msg, :build_solution)
     end
 
     ps = parameter_values(prob)
@@ -77,8 +66,8 @@ function build_solution(
 
         if calculate_error
             calculate_solution_errors!(
-                sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors
+                sol; timeseries_errors,
+                dense_errors
             )
         end
         sol

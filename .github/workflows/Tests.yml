@@ -16,31 +16,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch || github.ref != 'refs/tags/v*' }}
 
-env:
-  JULIA_NUM_THREADS: 11
-
 jobs:
   tests:
-    name: "Tests"
-    strategy:
-      fail-fast: false
-      matrix:
-        version:
-          - "1"
-          - "lts"
-          - "pre"
-        group:
-          - "Core"
-          - "Downstream"
-          - "SymbolicIndexingInterface"
-          - "QA"
-          - "Python"
-        exclude:
-          - version: "pre"
-            group: "QA"
-    uses: "SciML/.github/.github/workflows/tests.yml@v1"
-    with:
-      group: "${{ matrix.group }}"
-      julia-version: "${{ matrix.version }}"
-      julia-runtest-depwarn: "yes"
+    uses: "SciML/.github/.github/workflows/grouped-tests.yml@v1"
     secrets: "inherit"

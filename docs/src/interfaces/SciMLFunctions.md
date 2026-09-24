@@ -11,6 +11,36 @@ of pre-computed functions to speed up the calculations. This is offered via the
 The following standard principles should be adhered to across all
 `AbstractSciMLFunction` instantiations.
 
+### Generic Usage Rules
+
+Generic solver code must treat an `AbstractSciMLFunction` as a callable
+container and query its capability traits before using optional callbacks. The
+portable contract is:
+
+  - call the function using the signature documented by its function family;
+    do not infer the signature from the concrete wrapper's fields;
+  - use `isinplace(f)` to select the mutating or returning call convention;
+  - use `has_jac`, `has_jvp`, `has_vjp`, `has_paramjac`, `has_observed`, and
+    the related `has_*` traits before reading an optional callback;
+  - use `unwrapped_f(f)` only when an operation explicitly needs the underlying
+    callable, and preserve the wrapper's in-place convention after wrapping;
+  - treat optional callbacks as absent when the corresponding trait is false,
+    rather than assuming a field exists on every concrete subtype.
+
+An implementation of a new function container should be testable through these
+generic operations alone. A downstream package should therefore be able to
+write code such as:
+
+```julia
+function evaluate_model(f::SciMLBase.AbstractSciMLFunction, u, p, t)
+    return (; value = f(u, p, t), has_jac = SciMLBase.has_jac(f))
+end
+```
+
+The concrete function type remains responsible for documenting callback
+arguments, return values, and field layout. Generic code must not reach into
+those fields to discover capabilities.
+
 ### Common Function Choice Definitions
 
 The full interface available to the solvers is as follows:
@@ -50,6 +80,16 @@ change the first value). This is automatically determined using the methods tabl
 but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
+### In-place Trait Contract
+
+Every concrete `AbstractSciMLFunction{iip}` subtype must encode whether its
+primary callback mutates its first argument in the `iip` parameter. Generic
+solver and extension code must obtain this information through
+`isinplace(f)`, rather than inspecting fields or type parameters. The generic
+trait returns `true` for in-place and `false` for out-of-place function
+containers; callers can therefore support new concrete subtypes without adding
+type-specific dispatches.
+
 ### Specialization Choices
 
 Each `SciMLFunction` type allows for specialization choices
@@ -76,44 +116,70 @@ using LinearAlgebra
 f = (du, u, p, t) -> du .= t .* u
 jac = (J, u, p, t) -> (J[1, 1] = t; J[2, 2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac = jac, jac_prototype = jp)
+fun = ODEFunction(f; jac, jac_prototype = jp)
 ```
 
-Note that the integrators will always make a deep copy of `fun.jac_prototype`, so
-there's no worry of aliasing.
+The prototype declares Jacobian shape, element type, and structure. It must support
+the operations required by the selected differentiation and linear solver, including
+writes for an in-place `jac` and any multiplication, diagonal-shift, or factorization
+operations that solver performs. Solvers may copy, allocate with `similar`, or convert
+the prototype, so code must not rely on its object identity or aliasing behavior.
 
-In general the jacobian prototype can be anything that has `mul!` defined, in
-particular sparse matrices or custom lazy types that support `mul!`. A special case
-is when the `jac_prototype` is a `AbstractSciMLOperator`, in which case you
-do not need to supply `jac` as it is automatically set to `update_coefficients!`.
+When `jac_prototype` is an `AbstractSciMLOperator` and `jac` is omitted, the constructor
+creates a Jacobian update using `update_coefficients!` for the in-place form and
+`update_coefficients` for the out-of-place form.
 Refer to the [SciMLOperators](https://docs.sciml.ai/SciMLOperators/stable/premade_operators/) section for more information
-on setting up time/parameter dependent operators.
+on setting up time/parameter dependent operators. The operator types and traits named
+here are re-exported by SciMLBase, so `using SciMLBase` is enough to build them; see
+[Reexported API](@ref) for the exact list and for what has to be imported from
+SciMLOperators directly.
 
 ### Sparsity Handling
 
-The solver libraries internally use packages such as [FiniteDiff.jl](https://docs.sciml.ai/FiniteDiff/stable/)
-and [SparseDiffTools.jl](https://docs.sciml.ai/SparseDiffTools/stable/) for
-high performance calculation of sparse Jacobians and Hessians, along with matrix-free
-calculations of Jacobian-Vector products (`J*v`), vector-Jacobian products (`v'*J`),
-and Hessian-vector products (`H*v`). The SciML interface gives users the ability
-to control these connections in order to allow for top notch performance.
+Solver packages select differentiation backends through their algorithm and option
+interfaces. Depending on that choice, they may use finite differences, automatic
+differentiation, sparse coloring, explicit derivative functions, or matrix-free
+Jacobian-vector and vector-Jacobian products. The function wrapper provides structural
+information without requiring a particular backend package.
 
-The key arguments in the SciMLFunction is the `prototype`, which is an object
-that will be used as the underlying Jacobian/Hessian. Thus if one wants to use
-a sparse Jacobian, one should specify `jac_prototype` to be a sparse matrix.
-The sparsity pattern used in the differentiation scheme is defined by `sparsity`.
-By default, `sparsity=jac_prototype`, meaning that the sparse automatic differentiation
-scheme should specialize on the sparsity pattern given by the actual sparsity
-pattern. This can be overridden to say perform partial matrix coloring approximations.
-Additionally, the color vector for the sparse differentiation directions can
-be specified directly via `colorvec`. For more information on how these arguments
-control the differentiation process, see the aforementioned differentiation
-library documentations.
+Set `jac_prototype` to the concrete matrix or operator representation that should be
+used for the Jacobian. Set `sparsity` to the structural nonzero pattern used for sparse
+differentiation; it defaults to `jac_prototype` when omitted. Set `colorvec` to a
+column-color vector compatible with both that pattern and the selected backend, or
+leave it as `nothing` so coloring can be computed when needed. A prototype and color
+vector are performance and representation contracts, not substitutes for operations
+required by the selected linear solver.
+
+### Function Wrapper Rules
+
+SciMLBase provides small wrapper types that turn an ODE-style model function
+into a one-variable callable for derivative code. These wrappers close over the
+fixed arguments and expose only the argument being differentiated.
+
+- Time wrappers fix `u` and `p`, then expose `t`.
+- State wrappers fix `t` and `p`, then expose `u`.
+- `isinplace(wrapper)` preserves the in-place convention detected from the
+  wrapped function.
+- In-place wrappers support caller-provided output arrays. Their one-argument
+  convenience calls allocate an output with `similar` to match the exposed state.
+- Wrapper trait queries forward to the underlying function where applicable, so
+  derivative code should query traits instead of inspecting wrapper fields.
 
 ## Traits
 
 ```@docs
-SciMLBase.isinplace(f::SciMLBase.AbstractSciMLFunction)
+SciMLBase.isinplace
+SciMLBase.unwrapped_f
+SciMLBase.has_analytic
+SciMLBase.has_jac
+SciMLBase.has_jvp
+SciMLBase.has_vjp
+SciMLBase.has_tgrad
+SciMLBase.has_paramjac
+SciMLBase.has_vjp_p
+SciMLBase.has_observed
+SciMLBase.has_initialization_data
+SciMLBase.has_sys
 ```
 
 ## AbstractSciMLFunction API
@@ -121,6 +187,7 @@ SciMLBase.isinplace(f::SciMLBase.AbstractSciMLFunction)
 ### Abstract SciML Functions
 
 ```@docs
+SciMLBase.AbstractSciMLFunction
 SciMLBase.AbstractDiffEqFunction
 SciMLBase.AbstractODEFunction
 SciMLBase.AbstractSDEFunction
@@ -130,4 +197,37 @@ SciMLBase.AbstractRODEFunction
 SciMLBase.AbstractDiscreteFunction
 SciMLBase.AbstractSDDEFunction
 SciMLBase.AbstractNonlinearFunction
+SciMLBase.AbstractIntervalNonlinearFunction
+SciMLBase.AbstractIntegralFunction
+SciMLBase.AbstractOptimizationFunction
+SciMLBase.AbstractODEInputFunction
+SciMLBase.AbstractBVPFunction
+SciMLBase.AbstractParameterizedFunction
+SciMLBase.AbstractHistoryFunction
+```
+
+### Concrete SciML Function Reference
+
+Concrete function wrappers and their family-specific callback contracts are
+grouped in the following reference pages:
+
+  - [ODE and Discrete Function Types](@ref ode_discrete_function_types)
+  - [Stochastic, Delay, and DAE Function Types](@ref stochastic_delay_dae_function_types)
+  - [Nonlinear, Optimization, and Boundary Function Types](@ref nonlinear_optimization_boundary_function_types)
+
+### Automatic Differentiation Markers
+
+```@docs
+SciMLBase.NoAD
+```
+
+### Function Wrappers
+
+```@docs
+SciMLBase.TimeDerivativeWrapper
+SciMLBase.TimeGradientWrapper
+SciMLBase.UDerivativeWrapper
+SciMLBase.UJacobianWrapper
+SciMLBase.ParamJacobianWrapper
+SciMLBase.Void
 ```

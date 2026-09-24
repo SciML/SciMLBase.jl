@@ -1,11 +1,49 @@
-# SciMLSolutions
+# [SciMLSolutions](@id scimlsolutions)
 
 ## Definition of the AbstractSciMLSolution Interface
 
-All `AbstractSciMLSolution` types are a subset of some `AbstractArray`. Types with time series
-(like `ODESolution`) are subtypes of `RecursiveArrayTools.AbstractVectorOfArray` and
-`RecursiveArrayTools.AbstractDiffEqArray` where appropriate. Types without a time series
-(like `OptimizationSolution`) are directly subsets of `AbstractArray`.
+`AbstractSciMLSolution` is a union of four array-like solution families. Time-series
+solutions and noise processes use `RecursiveArrayTools.AbstractDiffEqArray`, ensemble
+solutions use `RecursiveArrayTools.AbstractVectorOfArray`, and solutions without an
+independent-variable series subtype `AbstractArray` directly.
+
+Concrete no-time solutions must expose their result as `u`. Concrete time-series
+solutions must expose saved states as `u` and matching independent-variable values as
+`t`; they provide `prob`, `alg`, `interp`, `dense`, `retcode`, and `stats` when those
+concepts apply. Ensemble and noise-process subtypes follow the contracts in their
+rendered abstract-type docstrings below.
+
+### Generic Usage Rules
+
+Consumers should dispatch on the narrowest abstract solution family they need
+and use the array and callable interfaces instead of inspecting a concrete
+solution type. The common contract is:
+
+  - no-time solutions expose `u` and forward `size`, `getindex`, and compatible
+    linear algebra operations to it;
+  - time-series solutions expose matching `u` and `t` indices, with state
+    components preceding the saved-time index;
+  - callers use `successful_retcode(sol)` rather than comparing only against
+    `ReturnCode.Success`;
+  - callers use `isdenseplot(sol)` and `plottable_indices(x)` when selecting
+    plotting behavior instead of assuming dense interpolation or that every
+    state component is plottable;
+  - optional fields such as `prob`, `alg`, `interp`, `stats`, and `resid` may
+    be absent for a solution family and must be accessed only when that family's
+    contract documents them.
+
+For example, a generic report can work for every no-time solution without
+knowing whether it came from a linear, nonlinear, integral, or optimization
+solver:
+
+```julia
+function solution_report(sol::SciMLBase.AbstractNoTimeSolution)
+    return (; size = size(sol), successful = SciMLBase.successful_retcode(sol))
+end
+```
+
+Concrete solution types must document their fields, indexing shape, callable
+interpolation behavior, and any additional mutation or cache guarantees.
 
 ### Array Interface
 
@@ -48,6 +86,9 @@ gives the timeseries for the `i`th component.
 
 ### Common Field Names
 
+Fields are required only when they apply to the solution family and solver. Concrete
+solution types must document which optional fields they provide.
+
   - `u`: the solution values
   - `t`: the independent variable values, matching the length of the solution, if applicable
   - `resid`: the residual of the solution, if applicable
@@ -71,6 +112,8 @@ SciMLBase.ReturnCode
 
 ```@docs
 SciMLBase.successful_retcode
+SciMLBase.isdenseplot
+SciMLBase.plottable_indices
 ```
 
 ### Specific Return Codes
@@ -100,7 +143,63 @@ SciMLBase.ReturnCode.Stalled
 SciMLBase.ReturnCode.StalledSuccess
 ```
 
+## Plotting
+
+Solution types include Plots.jl recipes. All the core plotting functionality
+(dense interpolation, `idxs` variable selection, `tspan`, `plotdensity`, etc.)
+is documented in the
+[RecursiveArrayTools.jl plotting docs](https://docs.sciml.ai/RecursiveArrayTools/stable/plotting/),
+since solutions are subtypes of `AbstractDiffEqArray`.
+
+Solution objects add the following on top of the base `AbstractDiffEqArray`
+recipe:
+
+| Keyword | Default | Description |
+|---------|---------|-------------|
+| `denseplot` | automatic | Enabled when `sol.dense` is true or the problem is discrete, except for `AbstractRODESolution` and `SensitivityInterpolation`. |
+| `plotdensity` | `min(100_000, max(1000, 10 * length(sol.t)))` | For a complete continuous solution. The multiplier is `100` for a discrete problem; when `sol.tslocation != 0`, the uncapped density is `1000 * sol.tslocation`. |
+| `plot_analytic` | `false` | Overlay the analytical solution (requires `prob.f.analytic`). |
+
+Additionally, solutions support:
+
+- **Discrete parameter variables**: Time-varying parameters from
+  `ParameterTimeseriesCollection` are plotted as step functions with dashed
+  lines and markers.
+- **Symbolic observed variables**: Derived quantities from ModelingToolkit
+  systems can be plotted directly via `idxs = :observed_var`.
+
+## Callable Interface (Interpolation)
+
+Solutions support callable syntax for interpolation:
+
+```julia
+sol(t)                       # all state variables at time t
+sol(t; idxs = 1)             # single component
+sol(t; idxs = [:x, :y])     # symbolic variables
+sol(t, Val{1})               # first derivative
+sol([0.1, 0.5, 0.9])        # returns a DiffEqArray
+```
+
+The returned `DiffEqArray` objects carry the interpolation, so they are
+themselves callable:
+
+```julia
+result = sol([0.0, 1.0])    # DiffEqArray with interp
+result(0.5)                  # interpolate the sub-result
+```
+
+## Symbolic `save_idxs`
+
+Symbolic problems may save a subset of state variables or time-series
+parameters while still preserving symbolic indexing on the returned solution.
+The solver-author contract is documented in
+[Symbolic `save_idxs` and Saved Subsystems](@ref symbolic_save_idxs).
+
 ## Solution Traits
+
+```@docs
+SciMLBase.has_stats
+```
 
 ## AbstractSciMLSolution API
 
@@ -113,12 +212,62 @@ SciMLBase.AbstractTimeseriesSolution
 SciMLBase.AbstractNoiseProcess
 SciMLBase.AbstractEnsembleSolution
 SciMLBase.AbstractLinearSolution
+SciMLBase.AbstractEigenvalueSolution
 SciMLBase.AbstractNonlinearSolution
 SciMLBase.AbstractIntegralSolution
+SciMLBase.AbstractOptimizationSolution
 SciMLBase.AbstractSteadyStateSolution
 SciMLBase.AbstractAnalyticalSolution
 SciMLBase.AbstractODESolution
 SciMLBase.AbstractDDESolution
 SciMLBase.AbstractRODESolution
 SciMLBase.AbstractDAESolution
+SciMLBase.AbstractPDETimeSeriesSolution
+SciMLBase.AbstractPDENoTimeSolution
+SciMLBase.AbstractPDESolution
+SciMLBase.AbstractSensitivitySolution
+```
+
+### Concrete Solution Reference
+
+See [Concrete Solution Types](@ref concrete_solution_types) for the concrete
+result containers returned by linear, nonlinear, integral, optimization, and
+differential-equation solvers. Ensemble and PDE solution types are documented
+with their respective interfaces.
+
+### Solution Statistics
+
+```@docs
+SciMLBase.DEStats
+SciMLBase.NLStats
+SciMLBase.OptimizationStats
+```
+
+### Solution Construction and Errors
+
+```@docs
+SciMLBase.build_solution
+SciMLBase.calculate_solution_errors!
+SciMLBase.solution_new_retcode
+SciMLBase.sensitivity_solution
+```
+
+### Interpolation Types
+
+```@docs
+SciMLBase.AbstractDiffEqInterpolation
+SciMLBase.ConstantInterpolation
+SciMLBase.LinearInterpolation
+SciMLBase.HermiteInterpolation
+SciMLBase.BasicInterpolation
+SciMLBase.SensitivityInterpolation
+SciMLBase.interp_summary
+SciMLBase.enable_interpolation_sensitivitymode
+```
+
+### Symbolic Utilities
+
+```@docs
+SciMLBase.getindepsym
+SciMLBase.getindepsym_defaultt
 ```

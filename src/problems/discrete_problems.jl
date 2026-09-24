@@ -1,7 +1,7 @@
 const DISCRETE_INPLACE_DEFAULT = DiscreteFunction{true}((du, u, p, t) -> du .= u)
 const DISCRETE_OUTOFPLACE_DEFAULT = DiscreteFunction{false}((u, p, t) -> u)
 
-@doc doc"""
+"""
 
 Defines a discrete dynamical system problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/>
@@ -12,7 +12,7 @@ To define a Discrete Problem, you simply need to give the function ``f`` and the
 condition ``u_0`` which define a function map:
 
 ```math
-u_{n+1} = f(u_{n},p,t_{n+1})
+u_{n+1} = f(u_n, p, t_{n+1})
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and `u_0` should
@@ -27,7 +27,7 @@ Note that if the discrete solver is set to have `scale_by_time=true`, then the p
 is interpreted as the map:
 
 ```math
-u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
+u_{n+1} = u_n + dt \\, f(u_n, p, t_{n+1})
 ```
 
 ## Problem Type
@@ -43,7 +43,7 @@ u_{n+1} = u_n + dt f(u_{n},p,t_{n+1})
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -56,7 +56,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/)
 page.
 
 ### Fields
@@ -146,7 +146,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: DiscreteProblem}
 end
 
 """
-    DiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
+    DiscreteProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = nothing)
 
 Defines a discrete problem with the specified functions.
 """
@@ -158,7 +158,7 @@ function DiscreteProblem(
 end
 
 function DiscreteProblem(
-        f::Base.Callable, u0, tspan, p = NullParameters();
+        f::Callable, u0, tspan, p = NullParameters();
         kwargs...
     )
     iip = isinplace(f, 4)
@@ -183,22 +183,28 @@ function DiscreteProblem(
     return DiscreteProblem(f, u0, tspan, p; kwargs...)
 end
 
-@doc doc"""
-    DiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
-
-Holds information on what variables to alias
-when solving a DiscreteProblem. Conforms to the AbstractAliasSpecifier interface. 
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DiscreteAliasSpecifier` to `alias`
-
 """
-struct DiscreteAliasSpecifier
+    DiscreteAliasSpecifier(; alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+
+Control which `DiscreteProblem` inputs a solver may alias.
+
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+and `alias_f` controls the recurrence function object. A value of `nothing`
+delegates to the solver default. Set `alias = true` or `alias = false` to apply
+the same policy to all stored fields.
+
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `DiscreteAliasSpecifier` does not
+store a separate `du0` alias field.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the discrete function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `DiscreteAliasSpecifier`.
+"""
+struct DiscreteAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

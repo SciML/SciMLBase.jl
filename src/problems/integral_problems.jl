@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines an integral problem.
 Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
@@ -8,7 +8,7 @@ Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
 Integral problems are multi-dimensional integrals defined as:
 
 ```math
-\int_{lb}^{ub} f(u,p) du
+∫_{lb}^{ub} f(u,p) du
 ```
 
 where `p` are parameters. `u` is a `Number` or `AbstractVector`
@@ -21,10 +21,10 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 ### Constructors
 
 ```julia
-IntegralProblem(f::AbstractIntegralFunction,domain,p=NullParameters(); kwargs...)
-IntegralProblem(f::AbstractIntegralFunction,lb,ub,p=NullParameters(); kwargs...)
-IntegralProblem(f,domain,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
-IntegralProblem(f,lb,ub,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
+IntegralProblem(f::AbstractIntegralFunction, domain, p = NullParameters(); kwargs...)
+IntegralProblem(f::AbstractIntegralFunction, lb, ub, p = NullParameters(); kwargs...)
+IntegralProblem(f, domain, p = NullParameters(); nout = nothing, batch = nothing, kwargs...)
+IntegralProblem(f, lb, ub, p = NullParameters(); nout = nothing, batch = nothing, kwargs...)
 ```
 
 - `f`: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
@@ -53,7 +53,7 @@ struct IntegralProblem{isinplace, P, F, T, K} <: AbstractIntegralProblem{isinpla
     kwargs::K
     @add_kwonly function IntegralProblem{iip}(
             f::AbstractIntegralFunction{iip}, domain,
-            p = NullParameters(); nout = nothing, batch = nothing,
+            p = NullParameters();
             kwargs...
         ) where {iip}
         warn_paramtype(p)
@@ -73,64 +73,22 @@ function IntegralProblem(
     return IntegralProblem{isinplace(f)}(f, domain, p; kwargs...)
 end
 
-@deprecate IntegralProblem{iip}(
-    f::AbstractIntegralFunction,
-    lb::Union{Number, AbstractVector{<:Number}},
-    ub::Union{Number, AbstractVector{<:Number}},
-    p = NullParameters(); kwargs...
-) where {iip} IntegralProblem{iip}(
-    f, (lb, ub), p; kwargs...
-)
-
 function IntegralProblem(f, args...; kwargs...)
     return IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
 end
 function IntegralProblem{iip}(
-        f, args...; nout = nothing, batch = nothing, kwargs...
+        f, args...; kwargs...
     ) where {iip}
-    if nout !== nothing || batch !== nothing
-        @warn "`nout` and `batch` keywords are deprecated in favor of inplace `IntegralFunction`s or `BatchIntegralFunction`s. Instead of using `nout` to define sizes, the new interface requires giving an `integrand_prototype` which is a vector of the form to write to. For example, define an `IntegralFunction` where `integrand_prototype = zero(nout)` (or appropriate vector type), or for batched `integrand_prototype = zero(nout, nbatch)`. See the updated Integrals.jl documentation for details."
-    end
-
     g = if iip
-        if batch === nothing
-            output_prototype = nout === nothing ? Array{Float64, 0}(undef) :
-                Vector{Float64}(undef, nout)
-            IntegralFunction(f, output_prototype)
-        else
-            output_prototype = nout === nothing ? Float64[] :
-                Matrix{Float64}(undef, nout, 0)
-            BatchIntegralFunction(f, output_prototype, max_batch = batch)
-        end
+        IntegralFunction(f, Array{Float64, 0}(undef))
     else
-        if batch === nothing
-            IntegralFunction(f)
-        else
-            BatchIntegralFunction(f, max_batch = batch)
-        end
+        IntegralFunction(f)
     end
     return IntegralProblem(g, args...; kwargs...)
 end
 
-function Base.getproperty(prob::IntegralProblem, name::Symbol)
-    if name === :lb
-        domain = getfield(prob, :domain)
-        lb, ub = domain
-        return lb
-    elseif name === :ub
-        domain = getfield(prob, :domain)
-        lb, ub = domain
-        return ub
-    elseif name === :ps
-        return ParameterIndexingProxy(prob)
-    end
-    return Base.getfield(prob, name)
-end
 
-struct QuadratureProblem end
-@deprecate QuadratureProblem(args...; kwargs...) IntegralProblem(args...; kwargs...)
-
-@doc doc"""
+"""
 
 Defines a integral problem over pre-sampled data.
 Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
@@ -140,7 +98,7 @@ Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
 Sampled integral problems are defined as:
 
 ```math
-\sum_i w_i y_i
+∑_i w_i y_i
 ```
 where `y_i` are sampled values of the integrand, and `w_i` are weights
 assigned by a quadrature rule, which depend on sampling points `x`.
@@ -150,7 +108,7 @@ assigned by a quadrature rule, which depend on sampling points `x`.
 ### Constructors
 
 ```julia
-SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs...)
+SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim = ndims(y), kwargs...)
 ```
 - `y`: The sampled integrand, must be a subtype of `AbstractArray`.
   It is assumed that the values of `y` along dimension `dim`
@@ -180,19 +138,21 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     end
 end
 
-@doc doc"""
-    IntegralAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+"""
+    IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving an IntegralProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `IntegralProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_p` controls the parameter object and `alias_f` controls the integrand
+function object. A value of `nothing` delegates to the solver default. Pass the
+third `alias` argument as `true` or `false` to apply the same policy to both
+fields.
 
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias::Union{Bool, Nothing}`: sets all fields of the `IntegralAliasSpecifier` to `alias`
+### Arguments
 
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the integrand function object.
+* `alias::Union{Bool, Nothing}`: set every field of the `IntegralAliasSpecifier`.
 """
 struct IntegralAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}

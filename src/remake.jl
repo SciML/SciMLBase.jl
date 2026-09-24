@@ -3,10 +3,16 @@
     return Expr(:tuple, A...)
 end
 
-Base.@pure function remaker_of(prob::T) where {T <: AbstractSciMLProblem}
-    parameterless_type(T){isinplace(prob)}
+@generated function _without_args(nt::NamedTuple{names}) where {names}
+    kept = Tuple(filter(!=(:args), names))
+    values = [:(nt.$name) for name in kept]
+    return :(NamedTuple{$kept}(($(values...),)))
 end
-Base.@pure remaker_of(alg::T) where {T} = parameterless_type(T)
+
+function remaker_of(prob::T) where {T <: AbstractSciMLProblem}
+    return parameterless_type(T){isinplace(prob)}
+end
+remaker_of(alg::T) where {T} = parameterless_type(T)
 
 # Define `remaker_of` for the types that does not (make sense to)
 # implement `isinplace` trait:
@@ -33,16 +39,16 @@ function _remake_internal(thing; kwargs...)
     named_thing = struct_as_namedtuple(thing)
     return if :kwargs ∈ fieldnames(typeof(thing))
         if :args ∈ fieldnames(typeof(thing))
-            named_thing = Base.structdiff(named_thing, (; args = ()))
+            named_thing = _without_args(named_thing)
             if :args ∉ keys(kwargs)
-                k = Base.structdiff(named_thing, (; args = ()))
+                k = _without_args(named_thing)
                 if :kwargs ∉ keys(kwargs)
                     T(; named_thing..., thing.kwargs..., kwargs...)
                 else
                     T(; named_thing..., kwargs[:kwargs]...)
                 end
             else
-                kwargs2 = Base.structdiff((; kwargs...), (; args = ()))
+                kwargs2 = _without_args((; kwargs...))
                 if :kwargs ∉ keys(kwargs)
                     T(kwargs[:args]...; named_thing..., thing.kwargs..., kwargs2...)
                 else
@@ -66,16 +72,25 @@ function isrecompile(prob::ODEProblem{iip}) where {iip}
 end
 
 """
-    remake(prob::AbstractSciMLProblem; u0 = missing, p = missing, interpret_symbolicmap = true, use_defaults = false)
+    remake(
+        prob::AbstractSciMLProblem; u0 = missing, p = missing,
+        interpret_symbolicmap = true, use_defaults = false, kwargs...
+    )
 
-Remake the given problem `prob`. If `u0` or `p` are given, they will be used instead
-of the unknowns/parameters of the problem. Either of them can be a symbolic map if
-the problem has an associated system. If `interpret_symbolicmap == false`, `p` will never
-be interpreted as a symbolic map and used as-is for parameters. `use_defaults` allows
-controlling whether the default values from the system will be used to calculate missing
-values in the symbolic map passed to `u0` or `p`. It is only valid when either `u0` or
-`p` have been explicitly provided as a symbolic map and the problem has an associated
-system.
+Construct a problem of the same family as `prob`, replacing the supplied fields and
+preserving all other problem data. Extra keyword arguments are forwarded to the
+problem-family-specific remake implementation.
+
+When `u0` or `p` is a symbolic map and `prob` has an associated symbolic system,
+explicit entries take precedence. Missing entries with symbolic-expression defaults
+use those expressions so dependent values remain consistent. Other missing entries
+retain their values from `prob` unless `use_defaults = true`, in which case available
+numeric system defaults are preferred. `use_defaults` is meaningful only when an
+explicit symbolic map is supplied for a problem with an associated system.
+
+Set `interpret_symbolicmap = false` to use a pair-valued `p` directly instead of
+interpreting it as a symbolic parameter map. Pair-valued `u0` is still interpreted as
+a symbolic state map. Non-symbolic `u0` and `p` values are used directly.
 """
 function remake(
         prob::AbstractSciMLProblem; u0 = missing,
@@ -105,7 +120,7 @@ function remake(
 end
 
 """
-    $(TYPEDSIGNATURES)
+    _has_type_erased_params(::Type{T}) -> Bool where {T <: AbstractSciMLFunction}
 
 Check if the type `T` of an `AbstractSciMLFunction` has any type-erased (abstract) type
 parameters beyond `iip` and `specialize`. Returns `true` if any field type parameter (index
@@ -124,7 +139,10 @@ erasure was applied (e.g. by `promote_f` for AutoSpecialize compilation caching)
 end
 
 """
-    $(TYPEDSIGNATURES)
+    _reconstruct_as_type(::Type{TargetType}, source::SourceType) -> TargetType
+
+where `TargetType <: AbstractSciMLFunction` and
+`SourceType <: AbstractSciMLFunction`.
 
 Reconstruct `source` preserving the non-concrete (erased) type parameters from
 `TargetType` while using `source`'s actual concrete types for all other parameters.
@@ -159,7 +177,7 @@ OverrideInitData}` for initialization_data) while allowing concrete field types
 end
 
 """
-    $(TYPEDSIGNATURES)
+    widen_bounded_type_params(f::AbstractSciMLFunction) -> AbstractSciMLFunction
 
 Widen all bounded type parameters of an `AbstractSciMLFunction` to their upper bounds.
 
@@ -171,6 +189,30 @@ respectively, while leaving all unbounded (`<: Any`) type parameters concrete.
 This ensures that all AutoSpecialize instances of a function type share the same type
 regardless of model-specific details (e.g. initialization functions), preventing
 recompilation of `promote_f` and solver code for each model.
+
+# Arguments
+
+- `f`: A concrete SciML function wrapper.
+
+# Returns
+
+- A reconstruction of `f` with the same field values and with bounded type parameters
+  replaced by their declared upper bounds. Unbounded parameters remain concrete.
+
+# Developer Interface
+
+Symbolic-system packages may call this after attaching model-specific initialization or
+nonlinear-stage metadata to a function that uses `AutoSpecialize`. Callers must treat the
+returned wrapper as immutable metadata reconstruction and must not depend on its exact
+concrete type parameters.
+
+# Example
+
+```julia
+f = ODEFunction{false, AutoSpecialize}((u, p, t) -> u)
+widened = SciMLBase.widen_bounded_type_params(f)
+SciMLBase.isinplace(widened)
+```
 """
 @generated function widen_bounded_type_params(f::F) where {F <: AbstractSciMLFunction}
     # Walk the UnionAll chain to collect TypeVars and their upper bounds
@@ -241,7 +283,27 @@ function remake(
     props = getproperties(func)
     forig = f
 
-    if f === missing || is_split_function(func)
+    if func isa DynamicalODEFunction
+        # Dynamical function containers retain their kind, iip, and specialization.
+        # An explicit `f` replaces the first function instead of the whole container.
+        T = parameterless_type(func)
+        if f === missing
+            f = func.f1
+        elseif f isa DynamicalODEFunction
+            isinplace(f) == iip || throw(
+                ArgumentError(
+                    "a replacement DynamicalODEFunction must have the same in-place " *
+                        "convention as the original function"
+                )
+            )
+            replacement_props = getproperties(f)
+            if _is_absent_dynamical_component(f.f2)
+                replacement_props = merge(replacement_props, (; f2 = nothing))
+            end
+            props = _similar_namedtuple_merge_ignore_nothing(props, replacement_props)
+            f = f.f1
+        end
+    elseif f === missing || is_split_function(func)
         # if no `f` is provided, create the same type of SciMLFunction
         T = parameterless_type(func)
         f = isdefined(func, :f) ? func.f : func.f1
@@ -259,21 +321,15 @@ function remake(
         T = parameterless_type(func)
     end
 
-    # minor hack to avoid breaking MTK, since prior to ~9.57 in `remake_initialization_data`
-    # it creates a `NonlinearFunction` inside a `NonlinearFunction`. Just recursively unwrap
-    # in this case and forget about properties.
-    while !is_split_function(T) && f isa AbstractSciMLFunction
-        f = isdefined(f, :f) ? f.f : f.f1
-    end
-
     props = @delete props.f
     props = @delete props.f1
 
-    args = (f,)
     if is_split_function(T)
         # `f1` and `f2` are wrapped in another SciMLFunction, unless they're
         # already wrapped in the appropriate type or are an `AbstractSciMLOperator`
-        if !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+        if func isa DynamicalODEFunction
+            f = _remake_dynamical_component(func.f1, f, typeof(func))
+        elseif !(f isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
             f = split_function_f_wrapper(T){iip, spec}(f)
         end
         if hasproperty(func, :f2)
@@ -283,7 +339,9 @@ function remake(
             # f2 is a part of the function. Thus, if the user provides
             # a SciMLFunction for `f` which contains `f2` we use that.
             f2 = coalesce(f2, get(props, :f2, missing), func.f2)
-            if !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
+            if func isa DynamicalODEFunction
+                f2 = _remake_dynamical_component(func.f2, f2, typeof(func))
+            elseif !(f2 isa Union{AbstractSciMLOperator, split_function_f_wrapper(T)})
                 f2 = split_function_f_wrapper(T){iip, spec}(f2)
             end
 
@@ -294,8 +352,12 @@ function remake(
                 props = @insert props._func_cache = forig._func_cache
             end
 
-            args = (args..., f2)
+            args = (f, f2)
+        else
+            args = (f,)
         end
+    else
+        args = (f,)
     end
     if isdefined(func, :g)
         # For SDEs/SDDEs where `g` is not a keyword
@@ -317,20 +379,235 @@ function remake(
     # params but the original `prob.f` does not — so we must check `forig` too.
     if _has_type_erased_params(typeof(func))
         return _reconstruct_as_type(typeof(func), result)
-    elseif forig isa AbstractSciMLFunction && _has_type_erased_params(typeof(forig))
+    elseif !(result isa DynamicalODEFunction) && forig isa AbstractSciMLFunction &&
+            _has_type_erased_params(typeof(forig))
         return _reconstruct_as_type(typeof(forig), result)
     end
     return result
 end
 
+_dynamical_component_function(f::ODEFunction) = unwrapped_f(f.f)
+_dynamical_component_function(f) = unwrapped_f(f)
+_is_absent_dynamical_component(f) = _dynamical_component_function(f) === nothing
+
+function _dynamical_oop_wrapper_template(
+        args::A, output::R
+    ) where {N, A <: NTuple{N, Any}, R}
+    # This callable is never invoked. Keeping it independent of `output` lets the
+    # compiler materialize the wrapper type after the actual callable was erased.
+    return FunctionWrappersWrappers.FunctionWrappersWrapper(
+        Returns(nothing), (A, NTuple{N, Any}), (R, Any);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+end
+
+function _dynamical_iip_wrapper_template(args::A) where {N, A <: NTuple{N, Any}}
+    return FunctionWrappersWrappers.FunctionWrappersWrapper(
+        Returns(nothing), (A, NTuple{N, Any}), (Nothing, Nothing);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+end
+
+_dynamical_wrapper_typeassert(actual, ::T) where {T} = actual::T
+
+function _dynamical_component_properties(original, replacement)
+    props = if original isa ODEFunction && replacement isa ODEFunction
+        _similar_namedtuple_merge_ignore_nothing(
+            getproperties(original), getproperties(replacement)
+        )
+    elseif replacement isa ODEFunction
+        getproperties(replacement)
+    elseif original isa ODEFunction
+        getproperties(original)
+    else
+        (; f = replacement)
+    end
+    return @delete props.f
+end
+
+function _dynamical_component_erasure_source(original, replacement)
+    if replacement isa ODEFunction && _has_type_erased_params(typeof(replacement))
+        return replacement
+    elseif original isa ODEFunction && _has_type_erased_params(typeof(original))
+        return original
+    end
+    return nothing
+end
+
+function _remake_dynamical_component(
+        original, replacement, ::Type{<:DynamicalODEFunction{iip, spec}}
+    ) where {iip, spec}
+    if replacement === original &&
+            replacement isa Union{AbstractSciMLOperator, ODEFunction{iip, spec}}
+        return replacement
+    elseif replacement isa AbstractSciMLOperator
+        return replacement
+    elseif replacement isa ODEFunction
+        isinplace(replacement) == iip || throw(
+            ArgumentError(
+                "a replacement ODEFunction component must have the same in-place " *
+                    "convention as its DynamicalODEFunction container"
+            )
+        )
+    end
+
+    props = _dynamical_component_properties(original, replacement)
+    callable = if spec === FunctionWrapperSpecialize && replacement isa ODEFunction &&
+            replacement.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        replacement.f
+    else
+        _dynamical_component_function(replacement)
+    end
+    result = ODEFunction{iip, spec}(callable; props...)
+
+    erasure_source = _dynamical_component_erasure_source(original, replacement)
+    if erasure_source isa ODEFunction
+        return _reconstruct_as_type(typeof(erasure_source), result)
+    end
+    return result
+end
+
+function _rebuild_dynamical_function(
+        original::DynamicalODEFunction, f1, f2, ::Type{spec}
+    ) where {spec}
+    props = getproperties(original)
+    props = @delete props.f1
+    props = @delete props.f2
+    result = DynamicalODEFunction{isinplace(original), spec}(f1, f2; props...)
+    if _has_type_erased_params(typeof(original))
+        return _reconstruct_as_type(typeof(original), result)
+    end
+    return result
+end
+
+function _wrap_dynamical_oop(
+        @nospecialize(f), args::A, output::R
+    ) where {N, A <: NTuple{N, Any}, R}
+    template = _dynamical_oop_wrapper_template(args, output)
+    wrapped = FunctionWrappersWrappers.FunctionWrappersWrapper(
+        f, (A, NTuple{N, Any}), (R, Any);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+    return _dynamical_wrapper_typeassert(wrapped, template)
+end
+
+function _wrap_dynamical_iip(
+        @nospecialize(f), args::A
+    ) where {N, A <: NTuple{N, Any}}
+    void_f = Void(f)
+    template = _dynamical_iip_wrapper_template(args)
+    wrapped = FunctionWrappersWrappers.FunctionWrappersWrapper(
+        void_f, (A, NTuple{N, Any}), (Nothing, Nothing);
+        cache = FunctionWrappersWrappers.NoCache(),
+        policy = FunctionWrappersWrappers.Strict()
+    )
+    return _dynamical_wrapper_typeassert(wrapped, template)
+end
+
+function _functionwrapper_specialize_dynamical_component(
+        original, replacement, args, output, ::Val{iip}
+    ) where {iip}
+    if replacement isa ODEFunction
+        isinplace(replacement) == iip || throw(
+            ArgumentError(
+                "a DynamicalODEFunction component must have the same in-place " *
+                    "convention as its container"
+            )
+        )
+    end
+
+    raw = _dynamical_component_function(replacement)
+    wrapped = if iip
+        _wrap_dynamical_iip(raw, args)
+    else
+        _wrap_dynamical_oop(raw, args, output)
+    end
+    props = _dynamical_component_properties(original, replacement)
+    result = ODEFunction{iip, FunctionWrapperSpecialize}(wrapped; props...)
+    erasure_source = _dynamical_component_erasure_source(original, replacement)
+    if erasure_source isa ODEFunction
+        return _reconstruct_as_type(typeof(erasure_source), result)
+    end
+    return result
+end
+
+function _functionwrapper_specialize_dynamical_replacement(
+        original::DynamicalODEFunction{iip}, replacement, u0, p, t
+    ) where {iip}
+    v, u = u0.x
+    if replacement isa DynamicalODEFunction
+        isinplace(replacement) == iip || throw(
+            ArgumentError(
+                "a replacement DynamicalODEFunction must have the same in-place " *
+                    "convention as the original function"
+            )
+        )
+        replacement_f1 = replacement.f1
+        replacement_f2 = if _is_absent_dynamical_component(replacement.f2)
+            original.f2
+        else
+            replacement.f2
+        end
+        metadata_source = replacement
+    else
+        replacement_f1 = replacement
+        replacement_f2 = original.f2
+        metadata_source = original
+    end
+
+    if iip
+        f1 = _functionwrapper_specialize_dynamical_component(
+            original.f1, replacement_f1, (v, v, u, p, t), v, Val(true)
+        )
+        f2 = _functionwrapper_specialize_dynamical_component(
+            original.f2, replacement_f2, (u, v, u, p, t), u, Val(true)
+        )
+    else
+        args = (v, u, p, t)
+        f1 = _functionwrapper_specialize_dynamical_component(
+            original.f1, replacement_f1, args, v, Val(false)
+        )
+        f2 = _functionwrapper_specialize_dynamical_component(
+            original.f2, replacement_f2, args, u, Val(false)
+        )
+    end
+    return _rebuild_dynamical_function(
+        metadata_source, f1, f2, FunctionWrapperSpecialize
+    )
+end
+
+function _functionwrapper_specialize_dynamical(
+        f::DynamicalODEFunction, u0, p, t
+    )
+    return _functionwrapper_specialize_dynamical_replacement(f, f, u0, p, t)
+end
+
+function _remake_functionwrapper_dynamical(
+        original::DynamicalODEFunction, replacement, initialization_data, u0, p, t
+    )
+    prepared = _functionwrapper_specialize_dynamical_replacement(
+        original, replacement, u0, p, t
+    )
+    return remake(original; f = prepared, initialization_data)
+end
+
 """
-    remake(prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
-           p = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::ODEProblem; f = missing, u0 = missing, tspan = missing,
+        p = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `ODEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
 """
-function remake(
+function remake(prob::ODEProblem; kwargs...)
+    return _remake_odeproblem(prob; kwargs...)
+end
+
+function _remake_odeproblem(
         prob::ODEProblem; f = missing,
         u0 = missing,
         tspan = missing,
@@ -351,7 +628,23 @@ function remake(
     iip = isinplace(prob)
 
     if build_initializeprob == Val{true} || build_initializeprob == true
-        if f !== missing && has_initialization_data(f)
+        if prob.f isa DynamicalODEFunction
+            full_replacement = f isa DynamicalODEFunction
+            initialization_sys = if full_replacement && f.sys !== nothing
+                f.sys
+            else
+                prob.f.sys
+            end
+            initialization_source = if full_replacement && has_initialization_data(f)
+                f
+            else
+                prob.f
+            end
+            initialization_data = remake_initialization_data(
+                initialization_sys, initialization_source, u0, tspan[1], p, newu0,
+                newp
+            )
+        elseif f !== missing && has_initialization_data(f)
             initialization_data = remake_initialization_data(
                 prob.f.sys, f, u0, tspan[1], p, newu0, newp
             )
@@ -365,9 +658,18 @@ function remake(
     end
 
     f = coalesce(f, prob.f)
-    f = remake(prob.f; f, initialization_data)
+    f = if prob.f isa DynamicalODEFunction &&
+            specialization(prob.f) === FunctionWrapperSpecialize
+        ptspan = promote_tspan(tspan)
+        _remake_functionwrapper_dynamical(
+            prob.f, f, initialization_data, newu0, newp, ptspan[1]
+        )
+    else
+        remake(prob.f; f, initialization_data)
+    end
 
-    if specialization(f) === FunctionWrapperSpecialize
+    if specialization(f) === FunctionWrapperSpecialize &&
+            !(f isa DynamicalODEFunction)
         ptspan = promote_tspan(tspan)
         if iip
             f = remake(
@@ -375,15 +677,17 @@ function remake(
             )
         else
             f = remake(
-                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1]))
+                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newp, ptspan[1]))
             )
         end
     end
 
     prob = if kwargs === missing
+        # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
+        # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         ODEProblem{iip}(
-            f, newu0, tspan, newp, prob.problem_type; prob.kwargs...,
-            _kwargs...
+            f, newu0, tspan, newp, prob.problem_type;
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         ODEProblem{iip}(f, newu0, tspan, newp, prob.problem_type; kwargs...)
@@ -392,8 +696,87 @@ function remake(
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
     @reset prob.u0 = u0
     @reset prob.p = p
+    if prob.f isa DynamicalODEFunction &&
+            specialization(prob.f) === FunctionWrapperSpecialize
+        ptspan = promote_tspan(prob.tspan)
+        @reset prob.f = _functionwrapper_specialize_dynamical(
+            prob.f, prob.u0, prob.p, ptspan[1]
+        )
+    end
 
     return prob
+end
+
+"""
+    remake(
+        prob::DynamicalODEProblem; f = missing, v0 = missing, u0 = missing,
+        tspan = missing, p = missing, kwargs = missing, _kwargs...
+    )
+
+Remake the given `DynamicalODEProblem`.
+`u0 = ArrayPartition(v0, u0)` remains supported as a full-state replacement when `v0`
+is omitted. Pair-valued symbolic state maps are forwarded to the standard `ODEProblem`
+remake machinery; component overrides must otherwise be concrete values.
+"""
+function remake(
+        prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:DynamicalODEProblem};
+        v0 = missing,
+        u0 = missing,
+        kwargs...
+    )
+    u0 = _partitioned_initial_values(prob, v0, u0)
+    return _remake_odeproblem(prob; u0, kwargs...)
+end
+
+"""
+    remake(
+        prob::SecondOrderODEProblem; f = missing, du0 = missing, u0 = missing,
+        tspan = missing, p = missing, kwargs = missing, _kwargs...
+    )
+
+Remake the given `SecondOrderODEProblem`.
+`u0 = ArrayPartition(du0, u0)` remains supported as a full-state replacement when `du0`
+is omitted. Pair-valued symbolic state maps are forwarded to the standard `ODEProblem`
+remake machinery; component overrides must otherwise be concrete values.
+"""
+function remake(
+        prob::ODEProblem{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, <:SecondOrderODEProblem};
+        du0 = missing,
+        u0 = missing,
+        kwargs...
+    )
+    u0 = _partitioned_initial_values(prob, du0, u0)
+    return _remake_odeproblem(prob; u0, kwargs...)
+end
+
+_is_pair_map(::Missing) = false
+_is_pair_map(value) = eltype(value) !== Union{} && eltype(value) <: Pair
+
+function _partitioned_initial_values(prob, first, second)
+    if first === missing
+        if second === missing || second isa ArrayPartition || _is_pair_map(second)
+            return second
+        end
+        return ArrayPartition(state_values(prob).x[1], second)
+    end
+
+    first_is_map = _is_pair_map(first)
+    second_is_map = _is_pair_map(second)
+    if first_is_map || second_is_map
+        if first_is_map && second === missing
+            return first
+        elseif first_is_map && second_is_map
+            return [collect(first); collect(second)]
+        end
+        throw(
+            ArgumentError(
+                "symbolic state maps cannot be mixed with concrete component overrides"
+            )
+        )
+    end
+
+    second = second === missing ? state_values(prob).x[2] : second
+    return ArrayPartition(first, second)
 end
 
 function SciMLBase.remake(
@@ -421,7 +804,8 @@ function SciMLBase.remake(
     T = parameterless_type(typeof(prob))
 
     prob = if kwargs === missing
-        T(f, newu0, tspan, newp, wrapped_model; prob.kwargs..., _kwargs...)
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        T(f, newu0, tspan, newp, wrapped_model; (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
         T(f, newu0, tspan, newp, wrapped_model; kwargs...)
     end
@@ -435,66 +819,75 @@ function SciMLBase.remake(
 end
 
 """
-    remake_initializeprob(sys, scimlfn, u0, t0, p)
+    RemakeInitializationDataContext()
 
-!!! warning
-    This method is deprecated. Please see `remake_initialization_data`
+Context passed to [`remake_initialization_data`](@ref).
 
-Re-create the initialization problem present in the function `scimlfn`, using the
-associated system `sys`, and the user-provided new values of `u0`, initial time `t0` and
-`p`. By default, returns `nothing, nothing, nothing, nothing` if `scimlfn` does not have an
-initialization problem, and
-`scimlfn.initializeprob, scimlfn.update_initializeprob!, scimlfn.initializeprobmap, scimlfn.initializeprobpmap`
-if it does.
-
-Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
+The context currently has no fields. It reserves a positional extension point so future
+context can be added without changing the symbolic-remake dispatch shape. Extensions must
+accept the context argument and must not dispatch on undocumented implementation details.
 """
-function remake_initializeprob(sys, scimlfn, u0, t0, p)
+struct RemakeInitializationDataContext end
+
+"""
+    remake_initialization_data(
+            sys, scimlfn, u0, t0, p, newu0, newp,
+            ctx = RemakeInitializationDataContext()
+        ) -> initialization_data
+
+Recreate a SciML function's initialization data after symbolic `remake` changes state or
+parameters.
+
+# Arguments
+
+- `sys`: The symbolic system associated with `scimlfn`; this is the primary extension
+  dispatch argument.
+- `scimlfn`: The SciML function whose initialization data is being reconstructed.
+- `u0`, `p`: Values supplied to `remake`; either may be `missing` when not overridden.
+- `t0`: The new initial independent-variable value.
+- `newu0`, `newp`: Concrete state and parameter values already resolved by `remake`.
+- `ctx`: A [`RemakeInitializationDataContext`](@ref).
+
+# Returns
+
+- Reconstructed initialization data, or `nothing` when `scimlfn` has none. The generic
+  method preserves the existing initialization callbacks and maps.
+
+# Extension Rules
+
+Symbolic-system packages may specialize on `sys` and function types they own. A method
+must accept the context argument, must handle `missing` user overrides, and must return
+data accepted by the target SciML function constructor. It must not mutate `u0`, `p`,
+`newu0`, or `newp` unless those objects' public contracts explicitly permit mutation.
+
+# Example
+
+```julia
+struct MyInitializationSystem end
+
+function SciMLBase.remake_initialization_data(
+        ::MyInitializationSystem, scimlfn, u0, t0, p, newu0, newp, ctx
+    )
+    return (; previous = scimlfn.initialization_data, newu0, newp)
+end
+```
+"""
+function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp, ctx::RemakeInitializationDataContext = RemakeInitializationDataContext())
     if !has_initialization_data(scimlfn)
-        return nothing, nothing, nothing, nothing
+        return nothing
     end
     initdata = scimlfn.initialization_data
-    return initdata.initializeprob, initdata.update_initializeprob!,
-        initdata.initializeprobmap, initdata.initializeprobpmap
-end
-
-"""
-    $(TYPEDSIGNATURES)
-
-Wrapper around `remake_initialization_data` for backward compatibility when `newu0` and
-`newp` were not arguments.
-"""
-function remake_initialization_data_compat_wrapper(sys, scimlfn, u0, t0, p, newu0, newp)
-    return if hasmethod(
-            remake_initialization_data,
-            Tuple{typeof(sys), typeof(scimlfn), typeof(u0), typeof(t0), typeof(p)}
-        )
-        remake_initialization_data(sys, scimlfn, u0, t0, p)
-    else
-        remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
-    end
-end
-
-"""
-    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
-
-Re-create the initialization data present in the function `scimlfn`, using the
-associated system `sys`, the user provided new values of `u0`, initial time `t0`,
-user-provided `p`, new u0 vector `newu0` and new parameter object `newp`. By default,
-this calls `remake_initializeprob` for backward compatibility and attempts to construct
-an `OverrideInitData` from the result.
-
-Note that `u0` or `p` may be `missing` if the user does not provide a value for them.
-"""
-function remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp)
     return reconstruct_initialization_data(
-        nothing, remake_initializeprob(sys, scimlfn, u0, t0, p)...
+        nothing, initdata.initializeprob, initdata.update_initializeprob!,
+        initdata.initializeprobmap, initdata.initializeprobpmap
     )
 end
 
 """
-    remake(prob::BVProblem; f = missing, u0 = missing, tspan = missing,
-           p = missing, kwargs = missing, problem_type = missing, _kwargs...)
+    remake(
+        prob::BVProblem; f = missing, u0 = missing, tspan = missing,
+        p = missing, kwargs = missing, problem_type = missing, _kwargs...
+    )
 
 Remake the given `BVProblem`.
 """
@@ -551,9 +944,10 @@ function remake(
     end
 
     return if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         BVProblem{iip}(
-            _f, bc, u0, tspan, p; problem_type, nlls = Val(nlls), prob.kwargs...,
-            _kwargs...
+            _f, bc, u0, tspan, p; problem_type, nlls = Val(nlls),
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         BVProblem{iip}(_f, bc, u0, tspan, p; problem_type, nlls = Val(nlls), kwargs...)
@@ -561,9 +955,11 @@ function remake(
 end
 
 """
-    remake(prob::SDEProblem; f = missing, g = missing, u0 = missing, tspan = missing,
-           p = missing, noise = missing, noise_rate_prototype = missing,
-           seed = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::SDEProblem; f = missing, g = missing, u0 = missing, tspan = missing,
+        p = missing, noise = missing, noise_rate_prototype = missing,
+        seed = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `SDEProblem`.
 """
@@ -621,6 +1017,7 @@ function remake(
     iip = isinplace(prob)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         SDEProblem{iip}(
             f,
             newu0,
@@ -629,8 +1026,8 @@ function remake(
             noise,
             noise_rate_prototype,
             seed,
-            prob.kwargs...,
-            _kwargs...
+            (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         SDEProblem{iip}(f, newu0, tspan, newp; noise, noise_rate_prototype, seed, kwargs...)
@@ -683,6 +1080,7 @@ function remake(
     iip = isinplace(prob)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         DDEProblem{iip}(
             f,
             newu0,
@@ -693,8 +1091,8 @@ function remake(
             dependent_lags,
             order_discontinuity_t0,
             neutral,
-            prob.kwargs...,
-            _kwargs...
+            (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         DDEProblem{iip}(
@@ -776,6 +1174,7 @@ function remake(
     neutral = coalesce(neutral, prob.neutral)
 
     prob = if kwargs === missing
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
         SDDEProblem{iip}(
             f,
             g,
@@ -790,8 +1189,8 @@ function remake(
             dependent_lags,
             order_discontinuity_t0,
             neutral,
-            prob.kwargs...,
-            _kwargs...
+            (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
         SDDEProblem{iip}(
@@ -808,8 +1207,10 @@ function remake(
 end
 
 """
-    remake(prob::DAEProblem; f = missing, du0 = missing, u0 = missing, tspan = missing,
-           p = missing, differential_vars = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::DAEProblem; f = missing, du0 = missing, u0 = missing, tspan = missing,
+        p = missing, differential_vars = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `DAEProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -857,9 +1258,10 @@ function remake(
     iip = isinplace(prob)
 
     prob = if kwargs === missing
-        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, prob.kwargs..., _kwargs...)
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        DAEProblem{iip}(f, du0, newu0, tspan, newp, prob.problem_type; differential_vars, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
-        DAEProblem{iip}(f, du0, newu0, tspan, newp; differential_vars, kwargs...)
+        DAEProblem{iip}(f, du0, newu0, tspan, newp, prob.problem_type; differential_vars, kwargs...)
     end
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
@@ -870,9 +1272,11 @@ function remake(
 end
 
 """
-    remake(prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
+    remake(
+        prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
-        sense = missing, kwargs = missing, _kwargs...)
+        sense = missing, problem_type = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `OptimizationProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -888,6 +1292,7 @@ function remake(
         lcons = missing,
         ucons = missing,
         sense = missing,
+        problem_type = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -896,6 +1301,9 @@ function remake(
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
     if f === missing
         f = prob.f
+    end
+    if problem_type === missing
+        problem_type = prob.problem_type
     end
     if lb === missing
         lb = prob.lb
@@ -917,25 +1325,29 @@ function remake(
     end
 
     return if kwargs === missing
-        OptimizationProblem{isinplace(prob)}(
-            f = f, u0 = u0, p = p, lb = lb,
-            ub = ub, int = int,
-            lcons = lcons, ucons = ucons,
-            sense = sense; prob.kwargs..., _kwargs...
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        OptimizationProblem{isinplace(prob)}(;
+            f, u0, p, lb,
+            ub, int,
+            lcons, ucons,
+            sense, problem_type, (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
-        OptimizationProblem{isinplace(prob)}(
-            f = f, u0 = u0, p = p, lb = lb,
-            ub = ub, int = int,
-            lcons = lcons, ucons = ucons,
-            sense = sense; kwargs...
+        OptimizationProblem{isinplace(prob)}(;
+            f, u0, p, lb,
+            ub, int,
+            lcons, ucons, problem_type,
+            sense, kwargs...
         )
     end
 end
 
 """
-    remake(prob::NonlinearProblem; f = missing, u0 = missing, p = missing,
-        problem_type = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::NonlinearProblem; f = missing, u0 = missing, p = missing,
+        problem_type = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `NonlinearProblem`.
 If `u0` or `p` are given as symbolic maps `ModelingToolkit.jl` has to be loaded.
@@ -946,6 +1358,8 @@ function remake(
         u0 = missing,
         p = missing,
         problem_type = missing,
+        lb = missing,
+        ub = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -975,17 +1389,25 @@ function remake(
     if problem_type === missing
         problem_type = prob.problem_type
     end
+    if lb === missing
+        lb = prob.lb
+    end
+    if ub === missing
+        ub = prob.ub
+    end
 
     prob = if kwargs === missing
-        NonlinearProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp,
-            problem_type = problem_type; prob.kwargs...,
-            _kwargs...
+        # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
+        # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
+        NonlinearProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp,
+            problem_type, lb, ub,
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        NonlinearProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp,
-            problem_type = problem_type; kwargs...
+        NonlinearProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp,
+            problem_type, lb, ub, kwargs...
         )
     end
 
@@ -1001,6 +1423,7 @@ function remake(
         f = missing,
         u0 = missing,
         p = missing,
+        lowered_problem = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -1027,13 +1450,20 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
+    if lowered_problem === missing
+        lowered_problem = prob.lowered_problem
+    end
+
     prob = if kwargs === missing
-        SteadyStateProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp; prob.kwargs...,
-            _kwargs...
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        SteadyStateProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, lowered_problem,
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; kwargs...)
+        SteadyStateProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, lowered_problem, kwargs...
+        )
     end
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
@@ -1044,13 +1474,16 @@ function remake(
 end
 
 """
-    remake(prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
-        kwargs = missing, _kwargs...)
+    remake(
+        prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
+        kwargs = missing, _kwargs...
+    )
 
 Remake the given `NonlinearLeastSquaresProblem`.
 """
 function remake(
         prob::NonlinearLeastSquaresProblem; f = missing, u0 = missing, p = missing,
+        lb = missing, ub = missing,
         interpret_symbolicmap = true, use_defaults = false, kwargs = missing,
         lazy_initialization = nothing, build_initializeprob = Val{true}, _kwargs...
     )
@@ -1073,14 +1506,23 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
+    if lb === missing
+        lb = prob.lb
+    end
+    if ub === missing
+        ub = prob.ub
+    end
+
     prob = if kwargs === missing
+        # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
+        # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, prob.kwargs...,
-            _kwargs...
+            f, u0 = newu0, p = newp, lb, ub,
+            (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, kwargs...
+            f, u0 = newu0, p = newp, lb, ub, kwargs...
         )
     end
 
@@ -1091,18 +1533,19 @@ function remake(
     return prob
 end
 
+_scc_state_slice(newu0, offset, ::Val{N}) where {N} = newu0[(offset + 1):(offset + N)]
+
+function _scc_state_slice(newu0::SVector, offset, ::Val{N}) where {N}
+    values = ntuple(i -> newu0[offset + i], Val(N))
+    return SVector{N, eltype(newu0)}(values)
+end
+
 function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
     offset = Ref(0)
-    return map(probs) do subprob
-        # N should be inferred if `prob` is type-stable and `subprob.u0 isa StaticArray`
+    out = map(probs) do subprob
+        # N should be inferred if `prob` and `subprob.u0` are type-stable.
         N = length(state_values(subprob))
-        if ArrayInterface.ismutable(newu0)
-            _u0 = newu0[(offset[] + 1):(offset[] + N)]
-        else
-            _u0 = StaticArraysCore.similar_type(
-                newu0, StaticArraysCore.Size(N)
-            )(newu0[(offset[] + 1):(offset[] + N)])
-        end
+        _u0 = _scc_state_slice(newu0, offset[], Val(N))
         subprob = if parameters_alias === Val(true)
             remake(subprob; u0 = _u0, p = newp)
         else
@@ -1111,6 +1554,12 @@ function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
         offset[] += length(state_values(subprob))
         return subprob
     end
+    # Keep the caller's container eltype so homogeneous and heterogeneous
+    # block vectors remake to one `SCCNonlinearProblem` type.
+    if all(Base.Fix2(isa, eltype(probs)), out)
+        out = copyto!(similar(probs), out)
+    end
+    return out
 end
 
 @inline _scc_update_subproblems(newu0, newp, ::Val{P}, offset::Int) where {P} = ()
@@ -1121,13 +1570,7 @@ end
     u0 = state_values(subprob)
     if u0 !== nothing
         N = length(state_values(subprob))
-        if ArrayInterface.ismutable(newu0)
-            _u0 = newu0[(offset + 1):(offset + N)]
-        else
-            _u0 = StaticArraysCore.similar_type(
-                newu0, StaticArraysCore.Size(N)
-            )(newu0[(offset + 1):(offset + N)])
-        end
+        _u0 = _scc_state_slice(newu0, offset, Val(N))
         if parameters_alias
             subprob = remake(subprob; u0 = _u0, p = newp)
         else
@@ -1147,8 +1590,10 @@ function scc_update_subproblems(probs::Tuple, newu0, newp, ::Val{P}) where {P}
 end
 
 """
-    remake(prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
-        parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing)
+    remake(
+        prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing
+    )
 
 Remake the given `SCCNonlinearProblem`. `u0` is the state vector for the entire problem,
 which will be chunked appropriately and used to `remake` the individual subproblems. `p`
@@ -1206,7 +1651,8 @@ function remake(
     A, b = _get_new_A_b(f, p, A, b)
 
     if kwargs === missing
-        return LinearProblem{isinplace(prob)}(A, b, p; u0, f, prob.kwargs..., _kwargs...)
+        # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
+        return LinearProblem{isinplace(prob)}(A, b, p; u0, f, (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...)
     else
         return LinearProblem{isinplace(prob)}(A, b, p; u0, f, kwargs...)
     end
@@ -1223,17 +1669,46 @@ function _get_new_A_b(f::SymbolicLinearInterface, p, A, b; kw...)
     return get_new_A_b(f.sys, f, p, A, b; kw...)
 end
 
-# public API
 """
-    $(TYPEDSIGNATURES)
+    get_new_A_b(root_indp, f, p, A, b; kwargs...) -> (new_A, new_b)
 
-A function to return the updated `A` and `b` matrices for a `LinearProblem` after `remake`.
-`root_indp` is the innermost index provider found by recursively, calling
-`SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns the new `A`
-`b` matrices. Mutation of `A` and `b` is permitted.
+Return the matrix and right-hand side for a symbolic `LinearProblem` after `remake`.
 
-All implementations must accept arbitrary keyword arguments in case they are added in the
-future.
+# Arguments
+
+- `root_indp`: The innermost index provider obtained by recursively following
+  `SymbolicIndexingInterface.symbolic_container`; this is the primary extension dispatch
+  argument.
+- `f`: The problem's [`SymbolicLinearInterface`](@ref).
+- `p`: The remade parameter object.
+- `A`, `b`: Copies of the previous matrix and right-hand side.
+
+# Keywords
+
+Implementations must accept and forward arbitrary keyword arguments for compatibility
+with future symbolic remake options.
+
+# Returns
+
+- `(new_A, new_b)`: Updated linear-system data. Implementations may mutate and return
+  `A` and `b`, or return replacement objects.
+
+# Extension Rules
+
+Symbolic-system packages may specialize on `root_indp` and interface types they own. The
+returned objects must define the same linear problem represented by `f` and `p`, and must
+remain valid inputs to the original `LinearProblem` constructor.
+
+# Example
+
+```julia
+struct MyLinearSystem end
+
+function SciMLBase.get_new_A_b(::MyLinearSystem, f, p, A, b; kwargs...)
+    f.update_Ab(A, b, p)
+    return A, b
+end
+```
 """
 get_new_A_b(root_indp, f, p, A, b; kw...) = A, b
 
@@ -1255,10 +1730,34 @@ function varmap_get(varmap, var, default = nothing)
 end
 
 """
-    $(TYPEDSIGNATURES)
+    detect_cycles(indp, varmap, syms) -> Bool
 
-Check if `varmap::Dict{Any, Any}` contains cyclic values for any symbolic variables in
-`syms`. Falls back on the basis of `symbolic_container(indp)`. Returns `false` by default.
+Return whether symbolic substitutions in `varmap` contain a cycle involving `syms`.
+
+# Arguments
+
+- `indp`: An index provider used for extension dispatch.
+- `varmap`: A symbolic assignment map.
+- `syms`: Symbols whose dependencies should be checked.
+
+# Returns
+
+- `Bool`: The result from the innermost symbolic container. The generic fallback returns
+  `false` when no more specific container method exists.
+
+# Extension Rules
+
+Symbolic-system packages may specialize this function for index-provider types they own.
+A method must return `true` only for a dependency cycle that prevents deterministic
+symbolic replacement; it must not mutate `varmap` or `syms`.
+
+# Example
+
+```julia
+struct MyCycleCheckedSystem end
+SciMLBase.detect_cycles(::MyCycleCheckedSystem, varmap, syms) =
+    any(sym -> get(varmap, sym, nothing) === sym, syms)
+```
 """
 function detect_cycles(indp, varmap, syms)
     if hasmethod(symbolic_container, Tuple{typeof(indp)}) &&
@@ -1422,7 +1921,7 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
     # used, since any state symbols in the expression were substituted out earlier.
     temp_state = ProblemState(;
-        u = state_values(prob), p = p, t = t0,
+        u = state_values(prob), p, t = t0,
         h = is_markovian(prob) ? nothing : get_history_function(prob)
     )
     for (k, v) in u0
@@ -1495,6 +1994,17 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{true}, t0)
         remake_buffer(prob, parameter_values(prob), keys(p), values(p))
 end
 
+"""
+    updated_u0_p(
+        prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
+        use_defaults = false
+    )
+
+Resolve replacement initial conditions and parameters for a SciML problem.
+
+Package authors implementing a `remake` method for a wrapper problem can use this to
+preserve the symbolic-map and default-value behavior of [`remake`](@ref).
+"""
 function updated_u0_p(
         prob, u0, p, t0 = nothing; interpret_symbolicmap = true,
         use_defaults = false
@@ -1533,26 +2043,55 @@ function updated_u0_p(
 end
 
 """
-    $(TYPEDSIGNATURES)
+    LateBindingUpdateU0PContext()
 
-A function to perform custom modifications to `newu0` and/or `newp` after they have been
-constructed in `remake`. `root_indp` is the innermost index provider found by recursively
-calling `SymbolicIndexingInterface.symbolic_container`, provided for dispatch. Returns
-the updated `newu0` and `newp`.
+Context passed to [`late_binding_update_u0_p`](@ref).
+
+The context currently has no fields. It reserves a positional extension point for
+symbolic-system packages. Extensions must accept it and must not assume that it remains
+fieldless in later minor releases.
 """
-function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
+struct LateBindingUpdateU0PContext end
+
+"""
+    late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx) -> (u0, p)
+
+Customize the state and parameter values produced by symbolic `remake`.
+
+Symbolic-system packages may specialize this hook for their problem and root
+index-provider types. `newu0` and `newp` have already been assembled from the
+requested symbolic map; return their replacement pair after applying any
+late-bound defaults or consistency rules. The generic method returns them
+unchanged. `root_indp` is supplied for dispatch and is obtained by
+[`get_root_indp`](@ref).
+
+!!! warning "Developer API, not user API"
+    This is a versioned symbolic-remake extension hook. Application code should
+    call [`remake`](@ref), not this function.
+
+# Example
+```julia
+function SciMLBase.late_binding_update_u0_p(
+        prob::MyProblem, root::MySystem, u0, p, t0, newu0, newp, ctx
+    )
+    return fill_missing_defaults(root, newu0, newp)
+end
+```
+"""
+function late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx::LateBindingUpdateU0PContext = LateBindingUpdateU0PContext())
     return newu0, newp
 end
 
 """
-    $(TYPEDSIGNATURES)
+    late_binding_update_u0_p(prob, u0, p, t0, newu0, newp, ctx) -> (u0, p)
 
-Calls `late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)` after finding
-`root_indp`.
+Call the symbolic-remake extension hook after deriving the root index provider
+with [`get_root_indp`](@ref). Solver code that does not already hold a root
+provider should use this form.
 """
-function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp)
+function late_binding_update_u0_p(prob, u0, p, t0, newu0, newp, ctx::LateBindingUpdateU0PContext = LateBindingUpdateU0PContext())
     root_indp = get_root_indp(prob)
-    return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp)
+    return late_binding_update_u0_p(prob, root_indp, u0, p, t0, newu0, newp, ctx)
 end
 
 # overloaded in MTK to intercept symbolic remake

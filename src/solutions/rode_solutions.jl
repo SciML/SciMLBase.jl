@@ -14,7 +14,7 @@ function build_solution(
         interp = LinearInterpolation(t, u),
         retcode = ReturnCode.Default,
         alg_choice = nothing,
-        seed = UInt64(0), destats = missing, stats = nothing,
+        seed = UInt64(0), stats = nothing,
         saved_subsystem = nothing, kwargs...
     )
     T = eltype(eltype(u))
@@ -28,16 +28,6 @@ function build_solution(
         f = prob.f[1]
     else
         f = prob.f
-    end
-
-    if !ismissing(destats)
-        msg = "`destats` kwarg has been deprecated in favor of `stats`"
-        if stats !== nothing
-            msg *= " `stats` kwarg is also provided, ignoring `destats` kwarg."
-        else
-            stats = destats
-        end
-        Base.depwarn(msg, :build_solution)
     end
 
     ps = parameter_values(prob)
@@ -78,8 +68,8 @@ function build_solution(
 
         if calculate_error
             calculate_solution_errors!(
-                sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors
+                sol; timeseries_errors,
+                dense_errors
             )
         end
 

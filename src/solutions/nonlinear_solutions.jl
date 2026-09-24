@@ -1,14 +1,21 @@
 """
 $(TYPEDEF)
-Statistics from the nonlinear equation solver about the solution process.
+
+Counters collected by a nonlinear equation solver while constructing a solution.
+
+`NLStats` is stored in the `stats` field of nonlinear and steady-state solutions
+when the solver reports work counters. The fields are intended for diagnostics,
+benchmarking, and convergence analysis. Solver packages should document whether a
+counter is exact, unavailable, or accumulated across nested solves.
 
 ## Fields
 
   - `nf`: Number of function evaluations.
   - `njacs`: Number of Jacobians created during the solve.
-  - `nfactors`: Number of factorzations of the jacobian required for the solve.
-  - `nsolve`: Number of linear solves `W\\b` required for the solve.
-  - `nsteps`: Total number of iterations for the nonlinear solver.
+  - `nfactors`: Number of factorizations of Jacobians or linear-system matrices.
+  - `nsolve`: Number of linear solves required by the nonlinear method.
+  - `nsteps`: Total number of nonlinear solver iterations or accepted nonlinear
+    steps, according to the solver's iteration model.
 """
 mutable struct NLStats
     nf::Int
@@ -82,6 +89,14 @@ function NonlinearSolution(u, resid, prob, alg, retcode, original, left, right, 
     )
 end
 
+"""
+    SteadyStateSolution
+
+Alias for [`NonlinearSolution`](@ref), the concrete solution type returned for
+[`SteadyStateProblem`](@ref) solves. It follows the nonlinear solution field and
+array interfaces; the stored `prob` identifies the result as a steady-state
+solve.
+"""
 const SteadyStateSolution = NonlinearSolution
 
 get_p(p::AbstractNonlinearSolution) = p.prob.p
@@ -110,6 +125,35 @@ function strip_solution(sol::NonlinearSolution)
     return sol
 end
 
+"""
+    sensitivity_solution(sol, u)
+    sensitivity_solution(sol, u, t)
+
+Return a solution with state values replaced by sensitivity-compatible values.
+
+# Arguments
+
+  - `sol`: A nonlinear, ODE, or RODE solution whose solver metadata should be
+    preserved.
+  - `u`: Replacement state values, ordered consistently with the returned solution's
+    saved values.
+  - `t`: Replacement saved times for time-dependent solutions. This argument is not
+    used by nonlinear solutions.
+
+# Returns
+
+A solution of the same family as `sol`, preserving problem, algorithm, return-code,
+and solver metadata while replacing its state values and, for time-dependent solutions,
+saved times. Time-dependent solutions enable interpolation sensitivity mode.
+
+# Developer Interface
+
+Sensitivity packages call this after differentiating a solve to construct a result that
+retains the original solution's SciML interface. Methods must preserve all metadata not
+explicitly replaced and must require `u` and `t` to have compatible saved-value layouts.
+Packages defining a new public solution family may add a narrowly dispatched method when
+that family has a distinct reconstruction invariant.
+"""
 function sensitivity_solution(sol::AbstractNonlinearSolution, u)
     # Some of the subtypes might not have a trace field
     trace = hasfield(typeof(sol), :trace) ? sol.trace : nothing

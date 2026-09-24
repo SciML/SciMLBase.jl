@@ -1,4 +1,5 @@
 using ModelingToolkit, OrdinaryDiffEq, SymbolicIndexingInterface, Test
+using OrdinaryDiffEqRosenbrock
 using ModelingToolkit: t_nounits as t, D_nounits as D
 
 # DifferentiationInterface with version-dependent backends
@@ -74,7 +75,7 @@ sol = solve(prob, Rodas4())
             true_grad_sym = zeros(length(ModelingToolkit.unknowns(sys)))
             true_grad_sym[idx_sym] = 1.0
 
-            @test all(map(x -> x == true_grad_sym, gs_sym))
+            @test all(map(x -> x == true_grad_sym, gs_sym.u))
         end
     end
     # Mooncake does not support SymbolicIndexingInterface AD yet

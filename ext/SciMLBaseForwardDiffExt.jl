@@ -1,14 +1,16 @@
 module SciMLBaseForwardDiffExt
 
-using SciMLBase, ForwardDiff
-using ArrayInterface
+using ForwardDiff: ForwardDiff
+using ArrayInterface: ArrayInterface
+using RecipesBase: RecipesBase
+using RecursiveArrayTools: RecursiveArrayTools
 
+using SciMLBase: SciMLBase
 import SciMLBase:
-    wrapfun_oop, wrapfun_iip, isdualtype, value, DualEltypeChecker,
+    isdualtype, value, DualEltypeChecker,
     AbstractTimeseriesSolution, NonlinearProblem, NonlinearLeastSquaresProblem,
-    ODEProblem, SDEProblem, RODEProblem, DDEProblem, PDEProblem, DAEProblem,
-    RecursiveArrayTools, totallength, sse, anyeltypedual, reduce_tup,
-    unitfulvalue
+    ODEProblem, SDEProblem, RODEProblem, DDEProblem, OptimizationProblem,
+    sse, anyeltypedual, reduce_tup, unitfulvalue
 
 eltypedual(x) = eltype(x) <: ForwardDiff.Dual
 isdualtype(::Type{<:ForwardDiff.Dual}) = true
@@ -55,7 +57,7 @@ function promote_dual(
 end
 
 """
-    promote_dual(::Type{T},::Type{T2})
+    promote_dual(::Type{T}, ::Type{T2})
 
 Is like the number promotion system, but always prefers a dual number type above
 anything else. For higher order differentiation, it returns the most dualiest of
@@ -115,7 +117,7 @@ themselves, for an example of how this can be confusing to a user see
 <https://discourse.julialang.org/t/typeerror-in-julia-turing-when-sampling-for-a-forced-differential-equation/82937>
 """
 @generated function anyeltypedual(x, ::Type{Val{counter}}) where {counter}
-    x = x.name === Core.Compiler.typename(Type) ? x.parameters[1] : x
+    x = Base.isType(x) ? x.parameters[1] : x
     return if isdualtype(x)
         :($x)
     elseif fieldnames(x) === ()
@@ -240,7 +242,7 @@ function anyeltypedual(
 end
 
 function anyeltypedual(
-        x::SciMLBase.RecipesBase.AbstractPlot,
+        x::RecipesBase.AbstractPlot,
         ::Type{Val{counter}} = Val{0}
     ) where {counter}
     return Any
@@ -297,6 +299,10 @@ end
 function anyeltypedual(sol::RecursiveArrayTools.AbstractDiffEqArray, counter = 0)
     return diffeqmapreduce(anyeltypedual, promote_dual, (sol.u, sol.t))
 end
+function anyeltypedual(sol::RecursiveArrayTools.AbstractDiffEqArray, ::Type{Val{counter}}) where {counter}
+    return diffeqmapreduce(anyeltypedual, promote_dual, (sol.u, sol.t))
+end
+
 
 function anyeltypedual(
         prob::Union{ODEProblem, SDEProblem, RODEProblem, DDEProblem},
