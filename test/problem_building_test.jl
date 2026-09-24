@@ -356,6 +356,30 @@ end
     @test state_values(sccprob2) isa SVector{3, Float64}
 end
 
+@testset "SCCNonlinearProblem remake preserves Vector container eltype" begin
+    f(u, p) = [u[1]^2 - p[1]]
+    p = [2.0]
+    prob1 = NonlinearProblem(f, [1.0], p)
+    prob2 = NonlinearProblem(f, [0.5], p)
+    sccprob = SCCNonlinearProblem(
+        Any[prob1, prob2], Any[Returns(nothing), Returns(nothing)], p, true
+    )
+    @test sccprob.probs isa Vector{Any}
+
+    # `map` would narrow homogeneous blocks to `Vector{NonlinearProblem}`,
+    # giving the remade problem a different type than a heterogeneous one.
+    sccprob2 = remake(sccprob; u0 = [1.5, 0.5])
+    @test sccprob2.probs isa Vector{Any}
+    @test state_values(sccprob2) == [1.5, 0.5]
+
+    # A concretely typed container keeps remaking correctly.
+    sccprob3 = SCCNonlinearProblem(
+        [prob1, prob2], [Returns(nothing), Returns(nothing)], p, true
+    )
+    sccprob4 = remake(sccprob3; u0 = [1.5, 0.5])
+    @test state_values(sccprob4) == [1.5, 0.5]
+end
+
 @testset "SteadyStateProblem lowered_problem" begin
     ode_f = ODEFunction((du, u, p, t) -> (du .= -u .+ p))
     u0 = [1.0, 2.0]

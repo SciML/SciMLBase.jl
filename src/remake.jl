@@ -1542,7 +1542,7 @@ end
 
 function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
     offset = Ref(0)
-    return map(probs) do subprob
+    function update_one(subprob)
         # N should be inferred if `prob` and `subprob.u0` are type-stable.
         N = length(state_values(subprob))
         _u0 = _scc_state_slice(newu0, offset[], Val(N))
@@ -1554,6 +1554,14 @@ function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
         offset[] += length(state_values(subprob))
         return subprob
     end
+    # Preserve a non-concrete container eltype (typically `Any`): `map`
+    # narrows the output to the common block type, so homogeneous vs
+    # heterogeneous blocks would remake to different problem types.
+    # Concretely typed inputs keep `map`.
+    if isconcretetype(eltype(probs))
+        return map(update_one, probs)
+    end
+    return map!(update_one, similar(probs), probs)
 end
 
 @inline _scc_update_subproblems(newu0, newp, ::Val{P}, offset::Int) where {P} = ()
