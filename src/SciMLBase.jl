@@ -6,8 +6,7 @@ end
 using ConstructionBase: ConstructionBase, getproperties
 using RecursiveArrayTools: RecursiveArrayTools, AbstractDiffEqArray,
     AbstractVectorOfArray, ArrayPartition, DiffEqArray,
-    VectorOfArray, recursive_mean, vecarr_to_vectors,
-    vecvecapply
+    VectorOfArray, recursive_mean, vecvecapply
 using SciMLStructures: SciMLStructures
 using SymbolicIndexingInterface: SymbolicIndexingInterface, ArraySymbolic,
     ContinuousTimeseries, NotSymbolic,
