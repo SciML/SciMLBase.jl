@@ -176,7 +176,10 @@ end
 
 function Base.getproperty(cache::SciMLBase.AbstractOptimizationCache, x::Symbol)
     if x in (:u0, :p) && has_reinit(cache)
-        return getfield(cache.reinit_cache, x)
+        # `getfield`, not `cache.reinit_cache`: going through `getproperty` again makes
+        # inference see a recursive call and widen every `cache.<field>` to the union
+        # of all field types, which solvers then pay for in every method using the cache
+        return getfield(getfield(cache, :reinit_cache), x)
     end
     return getfield(cache, x)
 end
