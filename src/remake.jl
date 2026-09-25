@@ -366,29 +366,35 @@ function remake(
         args = (args..., g)
     end
     result = T{iip, spec}(args...; props..., kwargs...)
-    # The keyword constructor narrows field types. Put back type erasure the original
-    # function already had, and erasure carried by the replacement. A concretized
-    # `AutoDespecialize` function is the exception: its replacement can arrive with
-    # the bounded metadata widened, and adopting that widening changes the remade type.
+    # Keyword construction narrows field types. Put erasure back from the original,
+    # or from the replacement: `get_concrete_problem` passes `f = promoted_f`, and
+    # that function can carry erasure the original does not. Skip that restore only
+    # when both are already-wrapped `AutoDespecialize` functions. That is a second
+    # concretization. The first DAE concretization is a wrapped replacement of a
+    # function that is not yet wrapped, and its widened bounds have to stay.
     # `_has_type_erased_params` is `@generated` and drops out for a fully concrete type.
     if _has_type_erased_params(typeof(func))
         return _reconstruct_as_type(typeof(func), result)
     elseif !(result isa DynamicalODEFunction) && forig isa AbstractSciMLFunction &&
             _has_type_erased_params(typeof(forig)) &&
-            _adopt_replacement_type_erasure(func)
+            _adopt_replacement_type_erasure(func, forig)
         return _reconstruct_as_type(typeof(forig), result)
     end
     return result
 end
 
-# Concretized `AutoDespecialize` functions already store narrowed field types. The
-# widened bounds on a replacement of that function are not a type to keep.
-function _adopt_replacement_type_erasure(func)
+# A re-concretized `AutoDespecialize` function is already wrapped, and so is the
+# widened function `promote_f` returns for it. Other replacements keep their erasure.
+function _adopt_replacement_type_erasure(func, replacement)
     return !(
-        specialization(func) === AutoDespecialize &&
-            hasfield(typeof(func), :f) &&
-            getfield(func, :f) isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        _wrapped_autodespecialize(func) && _wrapped_autodespecialize(replacement)
     )
+end
+
+function _wrapped_autodespecialize(f)
+    return specialization(f) === AutoDespecialize &&
+        hasfield(typeof(f), :f) &&
+        getfield(f, :f) isa FunctionWrappersWrappers.FunctionWrappersWrapper
 end
 
 _dynamical_component_function(f::ODEFunction) = unwrapped_f(f.f)
