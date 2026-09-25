@@ -139,7 +139,7 @@ function Makie.convert_arguments(
             sol.dense ||
                 typeof(sol.prob) <: SciMLBase.AbstractDiscreteProblem
         ) &&
-            !(typeof(sol) <: SciMLBase.AbstractRODESolution) &&
+            !(typeof(sol.prob) <: Union{SciMLBase.AbstractRODEProblem, SciMLBase.AbstractSDDEProblem}) &&
             !(
             hasfield(typeof(sol), :interp) &&
                 typeof(sol.interp) <: SciMLBase.SensitivityInterpolation

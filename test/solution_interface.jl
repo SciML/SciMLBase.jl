@@ -404,3 +404,50 @@ end
     @test ss isa SciMLBase.SavedSubsystem
     @test SciMLBase.get_saved_state_idxs(ss) == [1]
 end
+
+@testset "DAESolution and RODESolution are ODESolution aliases" begin
+    @test DAESolution === ODESolution
+    @test RODESolution === ODESolution
+    @test hasfield(ODESolution, :du)
+    @test hasfield(ODESolution, :W)
+    @test hasfield(ODESolution, :seed)
+    @test hasfield(ODESolution, :global_error)
+
+    # DAE build_solution creates an ODESolution with du populated.
+    daef = (out, du, u, p, t) -> (out .= u .- 1)
+    dae_prob = DAEProblem(daef, [0.0], [1.0], (0.0, 1.0))
+    dae_sol = SciMLBase.build_solution(
+        dae_prob, :NoAlgorithm, [0.0, 1.0], [[1.0], [1.0]], [[0.0], [0.0]];
+        interp = nothing, calculate_error = false
+    )
+    @test dae_sol isa ODESolution
+    @test dae_sol isa DAESolution
+    @test dae_sol.du == [[0.0], [0.0]]
+    @test dae_sol.W === nothing
+    @test dae_sol.seed == UInt64(0)
+    @test dae_sol.global_error === nothing
+
+    # RODE/SDE build_solution creates an ODESolution with W and seed populated.
+    rodef = (u, p, t, W) -> 1.01 * u .+ 0.87 * W
+    rode_prob = RODEProblem(rodef, [1.0], (0.0, 1.0))
+    seed = UInt64(0xdeadbeef)
+    rode_sol = SciMLBase.build_solution(
+        rode_prob, :NoAlgorithm, [0.0, 1.0], [[1.0], [2.0]];
+        W = :noise, seed, interp = nothing, calculate_error = false
+    )
+    @test rode_sol isa ODESolution
+    @test rode_sol isa RODESolution
+    @test rode_sol.W === :noise
+    @test rode_sol.seed === seed
+    @test rode_sol.du === nothing
+    @test rode_sol.global_error === nothing
+
+    # isdenseplot keys off problem type, not AbstractRODESolution.
+    dense_ode = SciMLBase.build_solution(
+        ODEProblem((u, p, t) -> u, [1.0], (0.0, 1.0)),
+        :NoAlgorithm, [0.0, 1.0], [[1.0], [2.0]];
+        dense = true, interp = nothing
+    )
+    @test SciMLBase.isdenseplot(dense_ode)
+    @test !SciMLBase.isdenseplot(rode_sol)
+end
