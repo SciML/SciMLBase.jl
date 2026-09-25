@@ -536,14 +536,9 @@ function diffeq_to_arrays(
         end
     end
 
-    dims = length(vars[1]) - 1
-    for var in vars
-        @assert length(var) - 1 == dims
-    end
-    # Should check that all have the same dims!
     return plot_vecs,
         labels = solplot_vecs_and_labels(
-        dims, vars, plott, sol,
+        vars, plott, sol,
         plot_analytic, plot_analytic_timeseries
     )
 end
@@ -617,7 +612,7 @@ end
 
 function add_labels!(labels, x, dims, sol, strs)
     if ((x[2] isa Integer && x[2] == 0) || isequal(x[2], getindepsym_defaultt(sol))) &&
-            dims == 2
+            dims == 2 && x[1] === DEFAULT_PLOT_FUNC
         push!(labels, strs[end])
     elseif x[1] !== DEFAULT_PLOT_FUNC
         push!(labels, "f($(join(strs, ',')))")
@@ -629,7 +624,7 @@ end
 
 function add_analytic_labels!(labels, x, dims, sol, strs)
     if ((x[2] isa Integer && x[2] == 0) || isequal(x[2], getindepsym_defaultt(sol))) &&
-            dims == 2
+            dims == 2 && x[1] === DEFAULT_PLOT_FUNC
         push!(labels, "True $(strs[end])")
     elseif x[1] !== DEFAULT_PLOT_FUNC
         push!(labels, "True f($(join(strs, ',')))")
@@ -640,11 +635,12 @@ function add_analytic_labels!(labels, x, dims, sol, strs)
 end
 
 function solplot_vecs_and_labels(
-        dims, vars, plott, sol, plot_analytic,
+        vars, plott, sol, plot_analytic,
         plot_analytic_timeseries
     )
     plot_vecs = []
     labels = String[]
+    dims = 0
     varsyms = variable_symbols(sol)
     batch_symbolic_vars = []
     for x in vars
@@ -681,6 +677,18 @@ function solplot_vecs_and_labels(
         f = x[1]
 
         tmp = map(f, tmp...)
+        series_dims = length(tmp[1])
+        if isempty(plot_vecs)
+            dims = series_dims
+        elseif series_dims != dims
+            throw(
+                ArgumentError(
+                    "Plot idxs series must all have the same output dimension, but got $dims and $series_dims. " *
+                        "Output dimension is the number of coordinates returned by each series transform " *
+                        "(e.g. `(t, u)` is 2-D), not the number of input indices in the idxs tuple."
+                )
+            )
+        end
 
         tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
         for i in eachindex(tmp)
