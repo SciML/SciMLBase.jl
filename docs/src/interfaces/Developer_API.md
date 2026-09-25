@@ -93,3 +93,18 @@ SciMLBase.KeywordArgError
 SciMLBase.keyword_arg_silent
 SciMLBase.@add_kwonly
 ```
+
+## Keyword Validation
+
+Solver packages opt into problem-class keyword validation by calling
+`checkkwargs(prob, alg; kwargs...)` at their user-facing `solve`/`init` entry point,
+and declare the keywords their algorithms ignore with `can_honor`. Internal `solve`
+calls that forward keywords pass `kwargs_verbosity = KeywordVerbosity(None())`.
+
+```@docs
+SciMLBase.checkkwargs
+SciMLBase.can_honor
+SciMLBase.KeywordVerbosity
+SciMLBase.keyword_class
+SciMLBase.keyword_status
+```
