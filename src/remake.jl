@@ -366,24 +366,35 @@ function remake(
         args = (args..., g)
     end
     result = T{iip, spec}(args...; props..., kwargs...)
-    # Preserve type erasure from AutoSpecialize's promote_f. The keyword constructor
-    # above uses typeof(field) for each type parameter, which restores concrete types
-    # and undoes the intentional type erasure. Re-apply the original abstract type
-    # parameters to maintain compilation caching benefits.
-    # The _has_type_erased_params check is @generated and resolves at compile time,
-    # so this branch is eliminated entirely for the common non-erased case.
-    #
-    # Check both `func` (the original function being remade) and `forig` (the incoming
-    # `f` keyword argument, if it was an AbstractSciMLFunction). When `get_concrete_problem`
-    # calls `remake(prob; f=promoted_f)`, the promoted_f from `unwrapped_f` has type-erased
-    # params but the original `prob.f` does not — so we must check `forig` too.
+    # Keyword construction narrows field types. Put erasure back from the original,
+    # or from the replacement: `get_concrete_problem` passes `f = promoted_f`, and
+    # that function can carry erasure the original does not. Skip that restore only
+    # when both are already-wrapped `AutoDespecialize` functions. That is a second
+    # concretization. The first DAE concretization is a wrapped replacement of a
+    # function that is not yet wrapped, and its widened bounds have to stay.
+    # `_has_type_erased_params` is `@generated` and drops out for a fully concrete type.
     if _has_type_erased_params(typeof(func))
         return _reconstruct_as_type(typeof(func), result)
     elseif !(result isa DynamicalODEFunction) && forig isa AbstractSciMLFunction &&
-            _has_type_erased_params(typeof(forig))
+            _has_type_erased_params(typeof(forig)) &&
+            _adopt_replacement_type_erasure(func, forig)
         return _reconstruct_as_type(typeof(forig), result)
     end
     return result
+end
+
+# A re-concretized `AutoDespecialize` function is already wrapped, and so is the
+# widened function `promote_f` returns for it. Other replacements keep their erasure.
+function _adopt_replacement_type_erasure(func, replacement)
+    return !(
+        _wrapped_autodespecialize(func) && _wrapped_autodespecialize(replacement)
+    )
+end
+
+function _wrapped_autodespecialize(f)
+    return specialization(f) === AutoDespecialize &&
+        hasfield(typeof(f), :f) &&
+        getfield(f, :f) isa FunctionWrappersWrappers.FunctionWrappersWrapper
 end
 
 _dynamical_component_function(f::ODEFunction) = unwrapped_f(f.f)
