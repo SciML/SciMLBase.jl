@@ -62,13 +62,13 @@ or the steady state solution to a differential equation defined by a SteadyState
   - `right`: if the solver is bracketing method, this is the final right bracket value.
   - `stats`: statistics of the solver, such as the number of function evaluations required.
 """
-struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr} <:
+struct NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr, RC} <:
     AbstractNonlinearSolution{T, N}
     u::uType
     resid::R
     prob::P
     alg::A
-    retcode::ReturnCode.T
+    retcode::RC
     original::O
     left::uType2
     right::uType2
@@ -82,11 +82,29 @@ function NonlinearSolution(u, resid, prob, alg, retcode, original, left, right, 
 
     return NonlinearSolution{
         T, N, typeof(u), typeof(resid), typeof(prob), typeof(alg),
-        typeof(original), typeof(left), typeof(stats), typeof(trace),
+        typeof(original), typeof(left), typeof(stats), typeof(trace), typeof(retcode),
     }(
         u, resid, prob, alg,
         retcode, original, left, right, stats, trace
     )
+end
+
+# Applying `NonlinearSolution` to the ten non-`RC` parameters resolves to a
+# UnionAll, which is not callable. This constructor accepts that spelling and
+# takes `RC` from `retcode`.
+function NonlinearSolution{T, N, uType, R, P, A, O, uType2, S, Tr}(
+        u, resid, prob, alg, retcode, original, left, right, stats, trace
+    ) where {T, N, uType, R, P, A, O, uType2, S, Tr}
+    return NonlinearSolution{
+        T, N, uType, R, P, A, O, uType2, S, Tr, typeof(retcode),
+    }(
+        u, resid, prob, alg,
+        retcode, original, left, right, stats, trace
+    )
+end
+
+function solution_new_retcode(sol::NonlinearSolution{T, N}, retcode) where {T, N}
+    return @set sol.retcode = retcode
 end
 
 """

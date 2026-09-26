@@ -59,6 +59,43 @@ SciMLBase.solution_new_retcode(sol::DownstreamLikeSolution, retcode) =
     @test updated.payload === sol.payload
 end
 
+@testset "NonlinearSolution retcode type parameter" begin
+    u = [1.0, 2.0]
+    resid = [0.0, 0.0]
+    nlsol = SciMLBase.NonlinearSolution(
+        u, resid, nothing, nothing, ReturnCode.Success,
+        nothing, nothing, nothing, nothing, nothing
+    )
+    @test fieldtype(typeof(nlsol), :retcode) === ReturnCode.T
+    @test SciMLBase.successful_retcode(nlsol)
+
+    wrapped_retcode = Ref(ReturnCode.MaxIters)
+    wrapped_sol = SciMLBase.solution_new_retcode(nlsol, wrapped_retcode)
+    @test wrapped_sol.retcode === wrapped_retcode
+    @test fieldtype(typeof(wrapped_sol), :retcode) === typeof(wrapped_retcode)
+
+    carried = SciMLBase.solution_new_retcode(nlsol, ConvertibleRetcode(ReturnCode.Success))
+    @test fieldtype(typeof(carried), :retcode) === ConvertibleRetcode
+    @test SciMLBase.successful_retcode(carried)
+
+    @test fieldtype(
+        typeof(SciMLBase.sensitivity_solution(wrapped_sol, u)), :retcode
+    ) === typeof(wrapped_retcode)
+
+    # `NonlinearSolution{...}` spelled with the ten non-`RC` parameters still
+    # constructs, inferring `RC` from `retcode` (NonlinearSolveBase's
+    # `build_solution_less_specialize` uses this spelling).
+    compat_sol = SciMLBase.NonlinearSolution{
+        Float64, 1, typeof(u), typeof(resid), Nothing, Nothing,
+        Any, Nothing, Nothing, Nothing,
+    }(
+        u, resid, nothing, nothing, ReturnCode.Success, [0.1, 0.2],
+        nothing, nothing, nothing, nothing
+    )
+    @test fieldtype(typeof(compat_sol), :retcode) === ReturnCode.T
+    @test compat_sol.original == [0.1, 0.2]
+end
+
 struct MockParameterTimeseriesSolution <:
     SciMLBase.AbstractODESolution{Float64, 2, Vector{Vector{Float64}}}
     discretes::ParameterTimeseriesCollection
