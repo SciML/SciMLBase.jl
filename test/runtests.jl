@@ -137,11 +137,17 @@ run_tests(;
                 @time @safetestset "Ensemble Optimization and Nonlinear problems" begin
                     include("downstream/ensemble_nondes.jl")
                 end
+                @time @safetestset "Nonlinear least squares to Optimization conversion (NLopt)" begin
+                    include("downstream/nllsopt.jl")
+                end
                 @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
                     include("downstream/ensemble_diffeq.jl")
                 end
                 @time @safetestset "Ensemble RNG reproducibility" begin
                     include("downstream/ensemble_rng.jl")
+                end
+                @time @safetestset "Ensembles of BVProblems" begin
+                    include("downstream/ensemble_bvp.jl")
                 end
                 @time @safetestset "Solution Indexing" begin
                     include("downstream/solution_interface.jl")
