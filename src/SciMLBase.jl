@@ -2284,8 +2284,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
     supports_opt_cache_interface, alg_order, allowsbounds, requiresbounds,
     allowsconstraints, requiresconstraints, requiresgradient, allowsfg,
     requireshessian, allowsfgh, requiresconsjac, allowsconsjvp, allowsconsvjp,
-    requiresconshess, requireslagh, allowscallback, allows_non_wiener_noise,
-    requires_additive_noise
+    requiresconsjvp, requiresconsvjp, requiresconshess, requireslagh, allowscallback,
+    allows_non_wiener_noise, requires_additive_noise
 
 # Initialization algorithms and interface
 @public NoInit, OverrideInit, get_initial_values, is_overdetermined_initialization
