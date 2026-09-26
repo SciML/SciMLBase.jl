@@ -1,6 +1,8 @@
 using NonlinearSolve, Optimization, OptimizationNLopt, ForwardDiff, Random, Test
 using SciMLBase
 
+Random.seed!(1234)
+
 true_function(x, θ) = @. θ[1] * exp(θ[2] * x) * cos(θ[3] * x + θ[4])
 
 θ_true = [1.0, 0.1, 2.0, 0.5]

@@ -1,5 +1,7 @@
 using BoundaryValueDiffEq, SciMLBase, Random, Test
 
+Random.seed!(1234)
+
 function ode!(du, u, p, t)
     du[1] = u[2]
     return du[2] = -p[1] * u[1]
