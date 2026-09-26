@@ -83,8 +83,7 @@ end
     ) === typeof(wrapped_retcode)
 
     # `NonlinearSolution{...}` spelled with the ten non-`RC` parameters still
-    # constructs, inferring `RC` from `retcode` (NonlinearSolveBase's
-    # `build_solution_less_specialize` uses this spelling).
+    # constructs, inferring `RC` from the `retcode` argument.
     compat_sol = SciMLBase.NonlinearSolution{
         Float64, 1, typeof(u), typeof(resid), Nothing, Nothing,
         Any, Nothing, Nothing, Nothing,
