@@ -104,7 +104,9 @@ SciMLBase.requireshessian
 SciMLBase.allowsfgh
 SciMLBase.requiresconsjac
 SciMLBase.allowsconsjvp
+SciMLBase.requiresconsjvp
 SciMLBase.allowsconsvjp
+SciMLBase.requiresconsvjp
 SciMLBase.requiresconshess
 SciMLBase.requireslagh
 SciMLBase.allowscallback
