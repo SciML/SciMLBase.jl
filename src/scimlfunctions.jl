@@ -2157,6 +2157,7 @@ interval variable.
 IntervalNonlinearFunction{iip, specialize}(
     f;
     analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
     sys = __has_sys(f) ? f.sys : nothing
 )
 ```
@@ -2170,6 +2171,8 @@ the usage of `f`. These include:
 
 - `analytic(p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
+- `jac(J,t,p)` or `J=jac(t,p)`: returns ``\\frac{df}{dt}``, for the solvers that use
+  the derivative of `f`.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -2184,11 +2187,12 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the IntervalNonlinearFunction type directly match the names of the inputs.
 """
 struct IntervalNonlinearFunction{
-        iip, specialize, F, Ta,
+        iip, specialize, F, Ta, TJ,
         O, SYS, ID,
     } <: AbstractIntervalNonlinearFunction{iip}
     f::F
     analytic::Ta
+    jac::TJ
     observed::O
     sys::SYS
     initialization_data::ID
@@ -4855,6 +4859,7 @@ function IntervalNonlinearFunction{iip, specialize}(
         analytic = __has_analytic(f) ?
             f.analytic :
             nothing,
+        jac = __has_jac(f) ? f.jac : nothing,
         observed = __has_observed(f) ?
             f.observed :
             DEFAULT_OBSERVED_NO_TIME,
@@ -4865,24 +4870,26 @@ function IntervalNonlinearFunction{iip, specialize}(
         iip,
         specialize,
     }
-    _f = prepare_function(f)
+    jaciip = jac !== nothing ? isinplace(jac, 3, "jac", iip) : iip
+    jaciip == iip || throw(NonconformingFunctionsError(["jac"]))
 
+    _f = prepare_function(f)
 
     return if specialize === NoSpecialize
         IntervalNonlinearFunction{
             iip, specialize,
-            Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any,
         }(
-            _f, analytic, observed, sys, initialization_data
+            _f, analytic, jac, observed, sys, initialization_data
         )
     else
         IntervalNonlinearFunction{
             iip, specialize,
-            typeof(_f), typeof(analytic),
+            typeof(_f), typeof(analytic), typeof(jac),
             typeof(observed),
             typeof(sys), typeof(initialization_data),
         }(
-            _f, analytic,
+            _f, analytic, jac,
             observed, sys, initialization_data
         )
     end
