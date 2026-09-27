@@ -722,6 +722,27 @@ nvjp(du, u, v, p) = [1.0]
 NonlinearFunction(nfiip, vjp = nvjp)
 NonlinearFunction(nfoop, vjp = nvjp)
 
+# IntervalNonlinearFunction
+
+infoop(t, p) = t - p
+infiip(u, t, p) = (u .= t .- p)
+
+injac(t) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infiip, jac = injac)
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infoop, jac = injac)
+injac(t, p) = 1.0
+@test_throws SciMLBase.NonconformingFunctionsError IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+injac(J, t, p) = (J .= 1.0)
+IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+
+@test !SciMLBase.has_jac(IntervalNonlinearFunction(infoop))
+intprob = IntervalNonlinearProblem(IntervalNonlinearFunction(infoop, jac = injac), (0.0, 2.0), 1.0)
+@test SciMLBase.has_jac(intprob.f)
+@test intprob.f.jac(0.5, 1.0) == 1.0
+@test remake(intprob; p = 1.5).f.jac === injac
+
 # Integrals
 intfew(u) = 1.0
 @test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intfew, (0.0, 1.0))
