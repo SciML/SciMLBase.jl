@@ -349,11 +349,16 @@ end
     @test sccprob isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob) isa SVector{3, Float64}
     @test sccprob.p === prob1.p === prob2.p === prob3.p
+    @test sccprob.u0 == state_values(sccprob)
+    @test sccprob.u0 isa SVector{3, Float64}
 
     sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}
+    @test sccprob2.u0 == state_values(sccprob2)
+
+    @test_throws ArgumentError NonlinearProblem(sccprob)
 end
 
 @testset "SCCNonlinearProblem remake preserves Vector container eltype" begin
