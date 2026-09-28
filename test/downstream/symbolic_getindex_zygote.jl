@@ -1,43 +1,9 @@
+using ModelingToolkit, OrdinaryDiffEq, SymbolicIndexingInterface, Test, ForwardDiff, SciMLBase
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using OrdinaryDiffEqBDF: DFBDF
 using SciMLSensitivity: InterpolatingAdjoint, ReverseDiffVJP
 using StochasticDiffEq: SOSRI
 using Zygote: Zygote
-
-# Manual cotangent for `loss(sol) = sol[idx]^2` under VectorOfArray layout:
-# scatter `2 * sol[idx]` into the matching state/time slot of `sol.u`.
-function integer_getindex_square_grad(sol, idx)
-    inds = idx isa CartesianIndex ? Tuple(idx) : Tuple(CartesianIndices(size(sol))[idx])
-    front_inds = Base.front(inds)
-    step_idx = last(inds)
-    val = sol[idx]
-    return map(enumerate(sol.u)) do (k, x)
-        if k == step_idx
-            δu = zero(x)
-            δu[front_inds...] = 2 * val
-            δu
-        else
-            zero(x)
-        end
-    end
-end
-
-# Normalize Zygote cotangents: AbstractArray layout is (state × time); the
-# SciML Integer adjoint returns a length-ntime vector of state vectors.
-function normalize_sol_grad(g, sol)
-    if g isa AbstractMatrix
-        return [g[:, j] for j in axes(g, 2)]
-    elseif hasproperty(g, :u)
-        return normalize_sol_grad(g.u, sol)
-    else
-        return g
-    end
-end
-
-function zygote_u_grad(loss, sol)
-    _, back = Zygote.pullback(loss, sol)
-    return normalize_sol_grad(back(1)[1], sol)
-end
 
 @testset "Symbolic solution indexing agrees with ForwardDiff (#1594)" begin
     @variables x(t)[1:2]
@@ -80,28 +46,40 @@ end
     end
 end
 
-@testset "DAE/RODE integer solution indexing under Zygote (#1594)" begin
-    # Non-symbolic indexing of DAESolution / RODESolution must not be captured by
-    # the symbolic AbstractODESolution getindex adjoint.
-    @variables x(t)[1:2]
-    @parameters p[1:2] = [1.0, 2.0]
-    @mtkcompile dsys = System(
-        [0 ~ -p[1] * x[1] - D(x[1]), 0 ~ -p[2] * x[2] - D(x[2])], t
+@testset "DAE/RODE non-symbolic indexing matches Array(sol) under Zygote (#1594)" begin
+    # Must use Zygote.gradient(loss, sol) (AbstractArray projection), not a
+    # hand-normalised pullback. Reference is the same loss on Array(sol).
+    f(u, p, t) = -p .* u
+    fd(du, u, p, t) = du .+ p .* u
+    dprob = DAEProblem(
+        fd, -[1.0, 4.0], [1.0, 2.0], (0.0, 1.0), [1.0, 2.0];
+        differential_vars = [true, true]
     )
-    dprob = DAEProblem(dsys, [x => [1.0, 1.0]], (0.0, 1.0))
-    dsol = solve(dprob, DFBDF(); saveat = 0.1, reltol = 1.0e-10, abstol = 1.0e-12)
+    dsol = solve(dprob, DFBDF(); saveat = 0.25)
+    g(u, p, t) = 0.0 .* u
+    sprob = SDEProblem(f, g, [1.0, 2.0], (0.0, 1.0), [1.0, 2.0])
+    ssol = solve(sprob, SOSRI(); saveat = 0.25, seed = 1)
 
-    f!(du, u, p, t) = (du[1] = -p[1] * u[1]; du[2] = -p[2] * u[2])
-    g!(du, u, p, t) = (du .= 0)
-    sprob = SDEProblem(f!, g!, [1.0, 1.0], (0.0, 1.0), [1.0, 2.0])
-    ssol = solve(sprob, SOSRI(); saveat = 0.1, seed = 1)
+    function index_loss(idx)
+        return s -> begin
+            y = s[idx...]
+            return y isa Number ? abs2(y) : sum(abs2, y)
+        end
+    end
 
     for sol in (dsol, ssol)
         @test sol isa SciMLBase.AbstractODESolution
         @test !(sol isa ODESolution)
-        for idx in (3, lastindex(sol), CartesianIndex(2, 3))
-            loss = s -> s[idx]^2
-            @test zygote_u_grad(loss, sol) ≈ integer_getindex_square_grad(sol, idx)
+        M = Array(sol)
+        for idx in (
+                (3,),
+                (lastindex(sol),),
+                (CartesianIndex(2, 3),),
+                (1:2,),
+                (:, 2),
+            )
+            loss = index_loss(idx)
+            @test Zygote.gradient(loss, sol)[1] ≈ Zygote.gradient(loss, M)[1]
         end
     end
 end
