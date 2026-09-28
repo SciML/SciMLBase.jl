@@ -69,10 +69,8 @@ end
 # layout, NOT the i-th timestep vector. A dedicated rrule is still
 # needed to keep dispatch from falling through to the broader symbolic
 # `getindex` rule below (which would misinterpret `i` as a state-variable
-# index; #1325). Typed on `AbstractODESolution` so DAE/RODE match here.
-function ChainRulesCore.rrule(
-        ::typeof(getindex), VA::AbstractODESolution, i::Integer
-    )
+# index; #1325). Kept on concrete `ODESolution`; DAE/RODE use the generic path.
+function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
     inds = Tuple(CartesianIndices(size(VA))[i])
     front_inds = Base.front(inds)
     step_idx = last(inds)
@@ -93,8 +91,9 @@ function ChainRulesCore.rrule(
 end
 
 function ChainRulesCore.rrule(::typeof(getindex), VA::AbstractODESolution, sym)
-    # Decline non-symbolic indices so Integer/Colon/ranges use other rrules
-    # or the generic AbstractArray path (ZygoteRules / ChainRules).
+    # ChainRules convention: `nothing` means no rule. Non-symbolic indices then
+    # use other rrules or the generic AbstractArray path. Under Zygote this
+    # method is shadowed by the `@adjoint` in SciMLBaseZygoteExt.
     symbolic_type(sym) === NotSymbolic() && return nothing
     function ODESolution_getindex_pullback(Δ)
         i = variable_index(VA, sym)

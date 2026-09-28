@@ -109,11 +109,10 @@ end
 # (e.g. from `eachindex(VA)`, which is `IndexCartesian`). A dedicated adjoint is
 # needed in both cases to keep dispatch from falling through to the broader
 # symbolic `getindex` rule below (which would misinterpret the index as a
-# state-variable symbol; #1325). Typed on `AbstractODESolution` so DAE/RODE
-# solutions get the same scatter (more specific than the symbolic rule).
-@adjoint function Base.getindex(
-        VA::AbstractODESolution, i::Union{Integer, CartesianIndex}
-    )
+# state-variable symbol; #1325). Kept on concrete `ODESolution` so DAE/RODE
+# integer indexing uses Zygote's generic AbstractArray path (compatible with
+# `Zygote.gradient(loss, sol)`).
+@adjoint function Base.getindex(VA::ODESolution, i::Union{Integer, CartesianIndex})
     inds = i isa CartesianIndex ? Tuple(i) : Tuple(CartesianIndices(size(VA))[i])
     front_inds = Base.front(inds)
     step_idx = last(inds)
@@ -133,21 +132,23 @@ end
     return y, ODESolution_scalar_pullback
 end
 
-# Symbolic-only: Integer/CartesianIndex/ranges must not hit this method (see
-# the more specific Integer rule above, and the ODESolution-only AbstractVector
-# rule below). Array symbols (`variable_index` → vector) expand to components.
+# Symbolic indexing on any timeseries solution. Non-symbolic indices
+# (`Integer`, `CartesianIndex`, ranges, `Colon`, …) must not stay here: they
+# fall through to Zygote's AbstractArray `getindex` by differentiating through
+# `Array(VA)`, which yields an AbstractArray-shaped cotangent accepted by
+# `Zygote.gradient(loss, sol)`.
 @adjoint function Base.getindex(VA::AbstractODESolution, sym)
+    if symbolic_type(sym) === NotSymbolic()
+        y, back = Zygote.pullback(Base.getindex, Array(VA), sym)
+        return y, Δ -> (back(Δ)[1], nothing)
+    end
     function ODESolution_getindex_pullback(Δ)
-        # Integer/CartesianIndex use the more specific rule above. Array symbols
-        # need `variable_index`; plain integer vectors keep their values as-is.
-        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
+        i = variable_index(VA, sym)
         if i isa AbstractVector
-            syms = if symbolic_type(sym) != NotSymbolic()
-                [sym[j] for j in eachindex(sym)]
-            else
-                collect(sym)
-            end
-            return (odesolution_getindex_cotangent(VA, syms, Δ), nothing)
+            return (
+                odesolution_getindex_cotangent(VA, [sym[j] for j in eachindex(sym)], Δ),
+                nothing,
+            )
         end
         if is_observed(VA, sym)
             f = observed(VA, sym)
@@ -241,9 +242,11 @@ function odesolution_getindex_cotangent(VA, sym, Δ)
     return Zygote.accum(gs_obs[1], (u = gs_not_obs,))
 end
 
-# Kept on concrete `ODESolution` so integer ranges / `AbstractVector{<:Integer}`
-# on DAE/RODE solutions keep Zygote's AbstractArray path. Array symbols on DAE
-# hit the scalar `AbstractODESolution` rule above (via `variable_index` → vector).
+# Multi-symbol selection on concrete `ODESolution` (tuples / vectors of
+# symbols or integer indices). Non-`ODESolution` timeseries (DAE/RODE) with
+# non-symbolic vector/range indices are declined by the AbstractODESolution
+# scalar rule above (`symbolic_type === NotSymbolic` → `Array(VA)` pullback).
+# Array symbols on DAE/RODE hit that scalar rule with `ArraySymbolic` instead.
 @adjoint function Base.getindex(
         VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}
     ) where {T}
