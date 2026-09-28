@@ -4,7 +4,7 @@ using Zygote: Zygote, pullback
 using ZygoteRules: ZygoteRules, @adjoint, literal_getfield, literal_getproperty
 import ChainRulesCore
 using FillArrays: Fill
-using SciMLBase: SciMLBase, ODESolution, remake, ODEFunction,
+using SciMLBase: SciMLBase, ODESolution, AbstractODESolution, remake, ODEFunction,
     build_solution, EnsembleSolution, NonlinearSolution, SDEProblem
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
     observed, parameter_values, state_values, current_time
@@ -131,9 +131,12 @@ end
     return y, ODESolution_scalar_pullback
 end
 
-@adjoint function Base.getindex(VA::ODESolution, sym)
+@adjoint function Base.getindex(VA::AbstractODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
+        if i isa AbstractVector
+            return (odesolution_getindex_cotangent(VA, [sym[j] for j in eachindex(sym)], Δ), nothing)
+        end
         if is_observed(VA, sym)
             f = observed(VA, sym)
             p = parameter_values(VA)
@@ -187,7 +190,7 @@ end
 _getindex_cotangent(Δ::AbstractMatrix, idx, t_idx) = Δ[idx, t_idx]
 _getindex_cotangent(Δ, idx, t_idx) = Δ[t_idx][idx]
 
-function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
+function not_obs_grads(VA::AbstractODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
     Δ′ = map(enumerate(VA.u)) do (t_idx, us)
         map(enumerate(us)) do (u_idx, u)
             if u_idx in i
@@ -208,7 +211,13 @@ end
 # vector-of-vectors (`sol[syms]`) or a `length(syms) × ntime` matrix
 # (`sol[syms, :]`); `not_obs_grads`/`_getindex_cotangent` handle both.
 function odesolution_getindex_cotangent(VA, sym, Δ)
-    sym = sym isa Tuple ? collect(sym) : sym
+    sym = if sym isa Tuple
+        collect(sym)
+    elseif symbolic_type(sym) != NotSymbolic() && variable_index(VA, sym) isa AbstractVector
+        [sym[j] for j in eachindex(sym)]
+    else
+        sym
+    end
     i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
 
     obs_idx = findall(s -> is_observed(VA, s), sym)
@@ -221,7 +230,7 @@ function odesolution_getindex_cotangent(VA, sym, Δ)
 end
 
 @adjoint function Base.getindex(
-        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}
+        VA::AbstractODESolution{T}, sym::Union{Tuple, AbstractVector}
     ) where {T}
     function ODESolution_getindex_pullback(Δ)
         (odesolution_getindex_cotangent(VA, sym, Δ), nothing)
@@ -239,7 +248,7 @@ end
 # `length(syms) × ntime` cotangent through `Zygote.pullback(getindex, VA, sym)`
 # would project it onto the (differently shaped) 2-arg primal and truncate it.
 @adjoint function Base.getindex(
-        VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}, ::Colon
+        VA::AbstractODESolution{T}, sym::Union{Tuple, AbstractVector}, ::Colon
     ) where {T}
     function ODESolution_getindex_colon_pullback(Δ)
         (odesolution_getindex_cotangent(VA, sym, Δ), nothing, nothing)
