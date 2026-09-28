@@ -67,11 +67,12 @@ end
 # subtypes `AbstractArray`, so linear integer indexing returns the i-th
 # scalar element in column-major order over the underlying state-by-time
 # layout, NOT the i-th timestep vector. A dedicated rrule is still
-# needed to keep dispatch from falling through to the broader
-# `getindex(VA::ODESolution, sym)` rule below (which would misinterpret
-# `i` as a state-variable index; #1325). The pullback scatters the
-# scalar cotangent into the matching slot of `VA.u`.
-function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
+# needed to keep dispatch from falling through to the broader symbolic
+# `getindex` rule below (which would misinterpret `i` as a state-variable
+# index; #1325). Typed on `AbstractODESolution` so DAE/RODE match here.
+function ChainRulesCore.rrule(
+        ::typeof(getindex), VA::AbstractODESolution, i::Integer
+    )
     inds = Tuple(CartesianIndices(size(VA))[i])
     front_inds = Base.front(inds)
     step_idx = last(inds)
@@ -92,13 +93,14 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
 end
 
 function ChainRulesCore.rrule(::typeof(getindex), VA::AbstractODESolution, sym)
+    # Decline non-symbolic indices so Integer/Colon/ranges use other rrules
+    # or the generic AbstractArray path (ZygoteRules / ChainRules).
+    symbolic_type(sym) === NotSymbolic() && return nothing
     function ODESolution_getindex_pullback(Δ)
-        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
+        i = variable_index(VA, sym)
         return if i === nothing
             throw(error("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
         elseif i isa AbstractVector
-            # Array symbols return a vector of state indices; scatter each
-            # component of the per-timestep cotangent into the matching slot.
             Δ′ = [
                 [
                     let idx = findfirst(isequal(k), i)
