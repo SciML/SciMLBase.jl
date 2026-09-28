@@ -608,7 +608,10 @@ function SCCNonlinearProblem(
 end
 
 function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
-    if name == :explictfuns!
+    if name === :u0
+        # SCCNonlinearProblem stores state only in its subproblems.
+        return state_values(prob)
+    elseif name == :explictfuns!
         return getfield(prob, :explicitfuns!)
     elseif name == :ps
         return ParameterIndexingProxy(prob)
@@ -650,6 +653,14 @@ function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val
         set_parameter!(scc, val, idx)
     end
     return
+end
+
+function NonlinearProblem(::SCCNonlinearProblem)
+    # SCCNonlinearProblem has no single residual to wrap as a NonlinearProblem.
+    throw(ArgumentError(
+        "an SCCNonlinearProblem cannot be converted to a NonlinearProblem; \
+solve it directly or use its component problems."
+    ))
 end
 
 """
