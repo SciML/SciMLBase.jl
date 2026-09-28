@@ -186,6 +186,30 @@ end
         newfn = ConstructionBase.constructorof(ODEFunction{true, SciMLBase.FullSpecialize})(args...)
         @test typeof(newfn) == typeof(fn)
     end
+
+    @testset "rebuilding a two-function type" begin
+        rest!(du, u, p, t) = (du .= 0.0; nothing)
+        dyn!(dv, v, u, p, t) = (dv .= -u; nothing)
+        dynrest!(du, v, u, p, t) = (du .= v; nothing)
+        ddedyn!(dv, v, u, h, p, t) = (dv .= -u; nothing)
+        dderest!(du, v, u, h, p, t) = (du .= v; nothing)
+        jp = zeros(3, 3)
+        fns = [
+            SplitFunction(lorenz!, rest!; jac_prototype = jp),
+            DynamicalODEFunction(dyn!, dynrest!; jac_prototype = jp),
+            DynamicalDDEFunction(ddedyn!, dderest!; jac_prototype = jp),
+            SplitSDEFunction(lorenz!, rest!, noise!; jac_prototype = jp),
+            DynamicalSDEFunction(dyn!, dynrest!, noise!; jac_prototype = jp),
+        ]
+        @testset "$(SciMLBase.parameterless_type(typeof(fn)))" for fn in fns
+            newfn = @set fn.jac_prototype = zeros(Float32, 3, 3)
+            @test SciMLBase.parameterless_type(typeof(newfn)) ==
+                SciMLBase.parameterless_type(typeof(fn))
+            @test SciMLBase.specialization(newfn) === SciMLBase.specialization(fn)
+            @test newfn.jac_prototype isa Matrix{Float32}
+            @test newfn.f1 === fn.f1 && newfn.f2 === fn.f2
+        end
+    end
 end
 
 @testset "getproperties avoids broadcast on SciML functions" begin

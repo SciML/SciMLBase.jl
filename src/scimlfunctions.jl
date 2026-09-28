@@ -6042,6 +6042,11 @@ for S in [
         :NonlinearFunction
         :IntervalNonlinearFunction
         :IncrementingODEFunction
+        :SplitFunction
+        :DynamicalODEFunction
+        :DynamicalDDEFunction
+        :SplitSDEFunction
+        :DynamicalSDEFunction
         :BVPFunction
         :DynamicalBVPFunction
         :IntegralFunction
