@@ -1,7 +1,7 @@
 module SciMLBaseChainRulesCoreExt
 
-using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
-    SDEProblem, getobserved, remake
+using SciMLBase: SciMLBase, AbstractODESolution, EnsembleSolution, NonlinearProblem,
+    ODESolution, RODESolution, SDEProblem, getobserved, remake
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
 using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, parameter_values,
@@ -91,11 +91,23 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
     return y, ODESolution_scalar_pullback
 end
 
-function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
+function ChainRulesCore.rrule(::typeof(getindex), VA::AbstractODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         return if i === nothing
             throw(error("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        elseif i isa AbstractVector
+            # Array symbols return a vector of state indices; scatter each
+            # component of the per-timestep cotangent into the matching slot.
+            Δ′ = [
+                [
+                    let idx = findfirst(isequal(k), i)
+                        idx === nothing ? zero(x[1]) : Δ[j][idx]
+                    end for k in 1:length(x)
+                ]
+                    for (x, j) in zip(VA.u, 1:length(VA))
+            ]
+            (NoTangent(), Δ′, NoTangent())
         else
             Δ′ = [
                 [i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
