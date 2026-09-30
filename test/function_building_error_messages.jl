@@ -83,6 +83,85 @@ end
     end
 end
 
+@testset "concretized AutoDespecialize remake keeps narrowed metadata types" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    base = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    wrapped = FunctionWrappersWrapper(
+        rhs!,
+        (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},),
+        (Nothing,)
+    )
+    concrete = SciMLBase.unwrapped_f(base, wrapped)
+    @test SciMLBase.specialization(concrete) === SciMLBase.AutoDespecialize
+    @test typeof(concrete).parameters[end - 1] === Nothing
+    @test typeof(concrete).parameters[end] === Nothing
+
+    # A second concretization widens the bounded metadata, then remakes with that
+    # function. The remade function has to keep the narrowed type.
+    widened = SciMLBase.widen_bounded_type_params(concrete)
+    @test typeof(widened).parameters[end - 1] ===
+        Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+    @test typeof(remake(concrete; f = widened)) === typeof(concrete)
+
+    # The first concretization still adopts erasure from a not-yet-wrapped function.
+    plain = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    widened_plain = SciMLBase.widen_bounded_type_params(plain)
+    @test typeof(remake(plain; f = widened_plain)).parameters[end] ===
+        Union{Nothing, SciMLBase.ODENLStepData}
+end
+
+@testset "only a wrapped AutoDespecialize replacement skips erasure" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    sig = (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},)
+    function concretized(spec)
+        base = ODEFunction{true, spec}(rhs!)
+        wrapped = FunctionWrappersWrapper(rhs!, sig, (Nothing,))
+        return SciMLBase.unwrapped_f(base, wrapped)
+    end
+    metadata(f) = (
+        SciMLBase.specialization(f),
+        fieldtype(typeof(f), :initialization_data),
+        fieldtype(typeof(f), :nlstep_data),
+    )
+    erased = (
+        Union{Nothing, SciMLBase.OverrideInitData},
+        Union{Nothing, SciMLBase.ODENLStepData},
+    )
+
+    concrete_ad = concretized(SciMLBase.AutoDespecialize)
+    concrete_as = concretized(SciMLBase.AutoSpecialize)
+    widened_as = SciMLBase.widen_bounded_type_params(concrete_as)
+    widened_plain = SciMLBase.widen_bounded_type_params(
+        ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    )
+
+    # Concretized AutoSpecialize still adopts erasure from its widened replacement.
+    @test metadata(remake(concrete_as; f = widened_as)) ===
+        (SciMLBase.AutoSpecialize, erased...)
+
+    # The original is concretized AutoDespecialize. These replacements are not a
+    # re-promoted copy of it, so their erasure stays.
+    remade_as = remake(concrete_ad; f = widened_as)
+    @test metadata(remade_as) === (SciMLBase.AutoSpecialize, erased...)
+    @test typeof(remade_as) === typeof(widened_as)
+
+    remade_plain = remake(concrete_ad; f = widened_plain)
+    @test metadata(remade_plain) === (SciMLBase.AutoDespecialize, erased...)
+    @test !(remade_plain.f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+
+    # A wrapped, widened replacement of a function that is not yet wrapped still
+    # contributes its bounds. That is the first DAE concretization.
+    widened_wrapped = SciMLBase.widen_bounded_type_params(concrete_ad)
+    plain_ad = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    @test metadata(remake(plain_ad; f = widened_wrapped)) ===
+        (SciMLBase.AutoDespecialize, erased...)
+end
+
 @testset "ODEFunction specialization constructor" begin
     rhs = (u, p, t) -> u
     initdata = SciMLBase.OverrideInitData(
@@ -170,80 +249,80 @@ ODEFunction(ofboth)
 @inferred ODEFunction{false}(ofboth)
 
 jac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, jac = jac)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, jac = jac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; jac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; jac)
 jac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, jac = jac)
-ODEFunction(foop, jac = jac)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; jac)
+ODEFunction(foop; jac)
 jac(du, u, p, t) = [1.0]
-ODEFunction(fiip, jac = jac)
-ODEFunction(foop, jac = jac)
+ODEFunction(fiip; jac)
+ODEFunction(foop; jac)
 
 Wfact(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact = Wfact)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact)
 Wfact(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact = Wfact)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact)
 Wfact(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, Wfact = Wfact)
-ODEFunction(foop, Wfact = Wfact)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; Wfact)
+ODEFunction(foop; Wfact)
 Wfact(du, u, p, gamma, t) = [1.0]
-ODEFunction(fiip, Wfact = Wfact)
-ODEFunction(foop, Wfact = Wfact)
+ODEFunction(fiip; Wfact)
+ODEFunction(foop; Wfact)
 
 Wfact_t(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact_t = Wfact_t)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact_t)
 Wfact_t(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact_t = Wfact_t)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact_t)
 Wfact_t(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, Wfact_t = Wfact_t)
-ODEFunction(foop, Wfact_t = Wfact_t)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; Wfact_t)
+ODEFunction(foop; Wfact_t)
 Wfact_t(du, u, p, gamma, t) = [1.0]
-ODEFunction(fiip, Wfact_t = Wfact_t)
-ODEFunction(foop, Wfact_t = Wfact_t)
+ODEFunction(fiip; Wfact_t)
+ODEFunction(foop; Wfact_t)
 
 tgrad(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, tgrad = tgrad)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, tgrad = tgrad)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; tgrad)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; tgrad)
 tgrad(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, tgrad = tgrad)
-ODEFunction(foop, tgrad = tgrad)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; tgrad)
+ODEFunction(foop; tgrad)
 tgrad(du, u, p, t) = [1.0]
-ODEFunction(fiip, tgrad = tgrad)
-ODEFunction(foop, tgrad = tgrad)
+ODEFunction(fiip; tgrad)
+ODEFunction(foop; tgrad)
 
 paramjac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, paramjac = paramjac)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, paramjac = paramjac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; paramjac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; paramjac)
 paramjac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, paramjac = paramjac)
-ODEFunction(foop, paramjac = paramjac)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; paramjac)
+ODEFunction(foop; paramjac)
 paramjac(du, u, p, t) = [1.0]
-ODEFunction(fiip, paramjac = paramjac)
-ODEFunction(foop, paramjac = paramjac)
+ODEFunction(fiip; paramjac)
+ODEFunction(foop; paramjac)
 
 jvp(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, jvp = jvp)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, jvp = jvp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; jvp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; jvp)
 jvp(u, v, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, jvp = jvp)
-ODEFunction(foop, jvp = jvp)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; jvp)
+ODEFunction(foop; jvp)
 jvp(du, u, v, p, t) = [1.0]
-ODEFunction(fiip, jvp = jvp)
-ODEFunction(foop, jvp = jvp)
+ODEFunction(fiip; jvp)
+ODEFunction(foop; jvp)
 
 vjp(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, vjp = vjp)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, vjp = vjp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; vjp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; vjp)
 vjp(u, v, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, vjp = vjp)
-ODEFunction(foop, vjp = vjp)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; vjp)
+ODEFunction(foop; vjp)
 vjp(du, u, v, p, t) = [1.0]
-ODEFunction(fiip, vjp = vjp)
-ODEFunction(foop, vjp = vjp)
+ODEFunction(fiip; vjp)
+ODEFunction(foop; vjp)
 
 # SDE
 
@@ -547,7 +626,7 @@ ddeWfact_t(u, h, p, gamma, t) = [1.0]
     ddefiip,
     Wfact_t = ddeWfact_t
 )
-DDEFunction(ddefoop, Wfact_t = Wfact_t)
+DDEFunction(ddefoop; Wfact_t)
 ddeWfact_t(du, u, h, p, gamma, t) = [1.0]
 DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
 DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
@@ -570,7 +649,7 @@ ddeparamjac(u, h, p, t) = [1.0]
     ddefiip,
     paramjac = ddeparamjac
 )
-DDEFunction(ddefoop, paramjac = paramjac)
+DDEFunction(ddefoop; paramjac)
 ddeparamjac(du, u, h, p, t) = [1.0]
 DDEFunction(ddefiip, paramjac = ddeparamjac)
 DDEFunction(ddefoop, paramjac = ddeparamjac)
@@ -643,6 +722,27 @@ nvjp(du, u, v, p) = [1.0]
 NonlinearFunction(nfiip, vjp = nvjp)
 NonlinearFunction(nfoop, vjp = nvjp)
 
+# IntervalNonlinearFunction
+
+infoop(t, p) = t - p
+infiip(u, t, p) = (u .= t .- p)
+
+injac(t) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infiip, jac = injac)
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infoop, jac = injac)
+injac(t, p) = 1.0
+@test_throws SciMLBase.NonconformingFunctionsError IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+injac(J, t, p) = (J .= 1.0)
+IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+
+@test !SciMLBase.has_jac(IntervalNonlinearFunction(infoop))
+intprob = IntervalNonlinearProblem(IntervalNonlinearFunction(infoop, jac = injac), (0.0, 2.0), 1.0)
+@test SciMLBase.has_jac(intprob.f)
+@test intprob.f.jac(0.5, 1.0) == 1.0
+@test remake(intprob; p = 1.5).f.jac === injac
+
 # Integrals
 intfew(u) = 1.0
 @test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intfew, (0.0, 1.0))
@@ -712,65 +812,65 @@ bjac(u, t) = [1.0]
 bcjac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfiip,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfoop,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfiip,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfoop,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 bjac(u, p, t) = [1.0]
 bcjac(u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfiip,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfiip,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfoop,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 BVPFunction(bfoop, bcoop, jac = bjac)
 bjac(du, u, p, t) = [1.0]
 bcjac(du, u, p, t) = [1.0]
-BVPFunction(bfiip, bciip, jac = bjac, bcjac = bcjac)
+BVPFunction(bfiip, bciip; jac = bjac, bcjac)
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfoop,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfiip,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
-BVPFunction(bfoop, bcoop, jac = bjac, bcjac = bcjac)
+BVPFunction(bfoop, bcoop; jac = bjac, bcjac)
 
 bWfact(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact = bWfact)
@@ -868,12 +968,12 @@ BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0)
 equality(u, p) = u
 inequality(u, p) = u
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
-    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality
+    bfiip, bciip; cost = (x, p) -> 0.0, equality, inequality
 )
 equality(res, u, p) = (res .= u)
 inequality(res, u, p) = (res .= u)
 BVPFunction(
-    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality
+    bfiip, bciip; cost = (x, p) -> 0.0, equality, inequality
 )
 
 # DynamicalBVPFunction

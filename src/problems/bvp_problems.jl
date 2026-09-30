@@ -21,7 +21,7 @@ convention of the associated `BVPFunction` used for type-stable construction.
 """
 struct TwoPointBVProblem{iip} end # The iip is needed to make type stable construction easier
 
-@doc doc"""
+"""
 
 Defines an BVP problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/>
@@ -32,7 +32,7 @@ To define a BVP Problem, you simply need to give the function ``f`` and the init
 condition ``u_0`` which define an ODE:
 
 ```math
-\frac{du}{dt} = f(u,p,t)
+\\frac{du}{dt} = f(u,p,t)
 ```
 
 along with an implicit function `bc` which defines the residual equation, where
@@ -45,10 +45,10 @@ is the manifold on which the solution must live. A common form for this is the
 two-point `BVProblem` where the manifold defines the solution at two points:
 
 ```math
-\begin{align*}
-u(t_0) &= a, \\
+\\begin{align*}
+u(t_0) &= a, \\\\
 u(t_f) &= b
-\end{align*}
+\\end{align*}
 ```
 
 ## Problem Type
@@ -56,16 +56,16 @@ u(t_f) &= b
 ### Constructors
 
 ```julia
-TwoPointBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
-BVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
+TwoPointBVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
+BVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
 ```
 
 or if we have an initial guess function `initialGuess(p, t)` for the given BVP,
 we can pass the initial guess to the problem constructors:
 
 ```julia
-TwoPointBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
-BVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
+TwoPointBVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
+BVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
 ```
 
 For any BVP problem type, `bc` must be inplace if `f` is inplace. Otherwise it must be
@@ -331,7 +331,7 @@ used for type-stable construction.
 """
 struct TwoPointSecondOrderBVProblem{iip} end # The iip is needed to make type stable construction easier
 
-@doc doc"""
+"""
 
 Defines a second order BVP problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/bvp_types/>
@@ -342,7 +342,7 @@ To define a second order BVP Problem, you simply need to give the function ``f``
 condition ``u_0`` which define an ODE:
 
 ```math
-u'' = \frac{d^2 u}{dt^2} = f(u', u, p, t)
+u'' = \\frac{d^2 u}{dt^2} = f(u', u, p, t)
 ```
 
 along with an implicit function `bc` which defines the residual equation, where
@@ -355,10 +355,10 @@ is the manifold on which the solution must live. A common form for this is the
 two-point `SecondOrderBVProblem` where the manifold defines the solution at two points:
 
 ```math
-\begin{align*}
-g(u(t_0), u'(t_0)) &= 0 \\
+\\begin{align*}
+g(u(t_0), u'(t_0)) &= 0 \\\\
 g(u(t_f), u'(t_f)) &= 0
-\end{align*}
+\\end{align*}
 ```
 
 ## Problem Type
@@ -366,16 +366,16 @@ g(u(t_f), u'(t_f)) &= 0
 ### Constructors
 
 ```julia
-TwoPointSecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
-SecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p=NullParameters(); kwargs...)
+TwoPointSecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
+SecondOrderBVProblem{isinplace}(f, bc, u0, tspan, p = NullParameters(); kwargs...)
 ```
 
 or if we have an initial guess function `initialGuess(p, t)` for the given BVP,
 we can pass the initial guess to the problem constructors:
 
 ```julia
-TwoPointSecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
-SecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p=NullParameters(); kwargs...)
+TwoPointSecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
+SecondOrderBVProblem{isinplace}(f, bc, initialGuess, tspan, p = NullParameters(); kwargs...)
 ```
 
 For any BVP problem type, `bc` must be inplace if `f` is inplace. Otherwise it must be
@@ -412,7 +412,8 @@ resid_b = bcb(du_b, u_b, p)
 ```
 
 where `resid_a` and `resid_b` are the residuals at the two endpoints, `u_a` and `u_b` are
-the solution values at the two endpoints, `du_a` and `du_b` are the derivative of solution values at the two endpoints, and `p` are the parameters.
+the solution values at the two endpoints, `du_a` and `du_b` are the derivative
+of solution values at the two endpoints, and `p` are the parameters.
 
 
 Parameters are optional, and if not given, then a `NullParameters()` singleton
@@ -573,8 +574,11 @@ function TwoPointSecondOrderBVProblem(
     return TwoPointSecondOrderBVProblem(f, bc, u0, (tspan[1], tspan[end]), p; kwargs...)
 end
 
-@doc doc"""
-    BVPAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+"""
+    BVPAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
 
 Control which BVP problem inputs and solver option arrays may be aliased.
 

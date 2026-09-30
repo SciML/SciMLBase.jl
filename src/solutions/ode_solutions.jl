@@ -118,7 +118,7 @@ page of the DifferentialEquations.jl documentation.
 """
 struct ODESolution{
         T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
-        AC <: Union{Nothing, Vector{Int}}, R, O, V, GE,
+        AC <: Union{Nothing, Vector{Int}}, R, O, V, GE, RC,
     } <:
     AbstractODESolution{T, N, uType}
     u::uType
@@ -134,7 +134,7 @@ struct ODESolution{
     tslocation::Int
     stats::S
     alg_choice::AC
-    retcode::ReturnCode.T
+    retcode::RC
     resid::R
     original::O
     saved_subsystem::V
@@ -176,7 +176,7 @@ function ODESolution{T, N}(
         T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
-        typeof(saved_subsystem), typeof(global_error),
+        typeof(saved_subsystem), typeof(global_error), typeof(retcode),
     }(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp,
         dense, tslocation, stats, alg_choice, retcode, resid, original,
@@ -296,7 +296,7 @@ function (sol::AbstractODESolution)(
     ) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol; interp = sol.interp, dense = sol.dense)
+    return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 function (sol::AbstractODESolution)(
         t::AbstractVector{<:Number}, ::Type{deriv},
@@ -311,7 +311,7 @@ function (sol::AbstractODESolution)(
     end
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol; interp = sol.interp, dense = sol.dense)
+    return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 
 function (sol::AbstractODESolution)(
@@ -375,7 +375,7 @@ function (sol::AbstractODESolution)(
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
         return DiffEqArray(
             getter(interp_sol), t, p, sol;
-            interp = sol.interp, dense = sol.dense
+            sol.interp, sol.dense
         )
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
@@ -389,7 +389,7 @@ function (sol::AbstractODESolution)(
     end
     return DiffEqArray(
         u, t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense
+        sol.interp, sol.dense
     )
 end
 
@@ -421,7 +421,7 @@ function (sol::AbstractODESolution)(
     end
     return DiffEqArray(
         u, t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense
+        sol.interp, sol.dense
     )
 end
 
@@ -606,8 +606,8 @@ function build_solution(
         )
         if calculate_error
             calculate_solution_errors!(
-                sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors
+                sol; timeseries_errors,
+                dense_errors
             )
         end
         return sol

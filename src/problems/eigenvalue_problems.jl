@@ -19,22 +19,22 @@ EnumX.@enumx EigenvalueTarget begin
     SmallestImaginaryPart
 end
 
-@doc doc"""
+"""
 
 Defines a standard or generalized eigenvalue problem.
 
 ## Mathematical Specification of an Eigenvalue Problem
 
-The standard problem finds pairs ``(\lambda, v)`` satisfying
+The standard problem finds pairs ``(λ, v)`` satisfying
 
 ```math
-A v = \lambda v
+A v = λ v
 ```
 
 If a second operator `B` is supplied, the generalized problem is solved instead:
 
 ```math
-A v = \lambda B v
+A v = λ B v
 ```
 
 ### Type Promotion Rules
@@ -52,9 +52,11 @@ A v = \lambda B v
 ### Constructors
 
 ```julia
-EigenvalueProblem(A, B = nothing, p = NullParameters();
+EigenvalueProblem(
+    A, B = nothing, p = NullParameters();
     num_eigenpairs = nothing, eigentarget = EigenvalueTarget.LargestMagnitude,
-    shift = nothing, u0 = nothing, kwargs...)
+    shift = nothing, u0 = nothing, kwargs...
+)
 ```
 
 ### Keyword Arguments

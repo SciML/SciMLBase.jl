@@ -41,3 +41,20 @@ end
     @test wrapped[1] === :time_series
     @test wrapped[3] === metadata
 end
+
+@testset "OptimizationProblem carries discretization metadata as its problem_type" begin
+    optf = OptimizationFunction((u, p) -> sum(abs2, u))
+    metadata = TestNoTimeMetadata()
+    prob = OptimizationProblem(optf, [1.0]; problem_type = metadata)
+
+    @test SciMLBase.problem_type(prob) === metadata
+    @test SciMLBase.problem_type(remake(prob; u0 = [2.0])) === metadata
+    @test SciMLBase.problem_type(remake(prob; problem_type = nothing)) === nothing
+    @test SciMLBase.problem_type(OptimizationProblem(optf, [1.0])) === nothing
+
+    sol = Any[:optimization_solution]
+    wrapped = SciMLBase.wrap_sol(sol, SciMLBase.problem_type(prob))
+    @test wrapped[1] === :no_time
+    @test wrapped[3] === metadata
+    @test SciMLBase.wrap_sol(sol, SciMLBase.problem_type(OptimizationProblem(optf, [1.0]))) === sol
+end

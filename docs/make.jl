@@ -10,7 +10,7 @@ cp("./docs/Project.toml", "./docs/src/assets/Project.toml", force = true)
 
 include("pages.jl")
 
-makedocs(
+makedocs(;
     sitename = "SciMLBase.jl",
     authors = "Chris Rackauckas",
     modules = [SciMLBase],
@@ -22,7 +22,7 @@ makedocs(
     linkcheck_ignore = [
         "https://www.sciencedirect.com/science/article/abs/pii/S0045782523007156",
     ],
-    pages = pages
+    pages
 )
 
 deploydocs(

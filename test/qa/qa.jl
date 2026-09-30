@@ -127,8 +127,11 @@ const _ei_nonpublic_third_party = (
     # Base reflection used by the `@generated` dual-eltype scan.
     Symbol("@pure"), :isType,
     # Makie's recipe/conversion plumbing; `Makie.SpecApi` is the documented spec API
-    # but is not marked public.
+    # but is not marked public. `expand_dimensions` opts a type out of PointBased
+    # index expansion. `ComputePipeline.is_same` is the Makie 0.24 hook that forces
+    # reconversion when an `Observable` is assigned an `isequal` solution wrapper.
     :Automatic, :SpecApi, :automatic, :conversion_trait, :plotsym, :plottype,
+    :expand_dimensions, :ComputePipeline, :is_same,
     # Mooncake's tangent-type interface.
     :FData, :RData, :Tangent, :MutableTangent, :NoTangent, :tangent_type,
     # Tracker / ReverseDiff tracked-value internals.
@@ -227,6 +230,8 @@ run_qa(
     ei_kwargs = (;
         all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
         all_explicit_imports_are_public = (; ignore = _ei_nonpublic_explicit_imports),
+        # Makie re-exports ComputePipeline; the owner is the ComputePipeline package.
+        all_qualified_accesses_via_owners = (; ignore = (:ComputePipeline,)),
     ),
 )
 

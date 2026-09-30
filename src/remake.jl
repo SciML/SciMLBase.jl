@@ -366,24 +366,35 @@ function remake(
         args = (args..., g)
     end
     result = T{iip, spec}(args...; props..., kwargs...)
-    # Preserve type erasure from AutoSpecialize's promote_f. The keyword constructor
-    # above uses typeof(field) for each type parameter, which restores concrete types
-    # and undoes the intentional type erasure. Re-apply the original abstract type
-    # parameters to maintain compilation caching benefits.
-    # The _has_type_erased_params check is @generated and resolves at compile time,
-    # so this branch is eliminated entirely for the common non-erased case.
-    #
-    # Check both `func` (the original function being remade) and `forig` (the incoming
-    # `f` keyword argument, if it was an AbstractSciMLFunction). When `get_concrete_problem`
-    # calls `remake(prob; f=promoted_f)`, the promoted_f from `unwrapped_f` has type-erased
-    # params but the original `prob.f` does not — so we must check `forig` too.
+    # Keyword construction narrows field types. Put erasure back from the original,
+    # or from the replacement: `get_concrete_problem` passes `f = promoted_f`, and
+    # that function can carry erasure the original does not. Skip that restore only
+    # when both are already-wrapped `AutoDespecialize` functions. That is a second
+    # concretization. The first DAE concretization is a wrapped replacement of a
+    # function that is not yet wrapped, and its widened bounds have to stay.
+    # `_has_type_erased_params` is `@generated` and drops out for a fully concrete type.
     if _has_type_erased_params(typeof(func))
         return _reconstruct_as_type(typeof(func), result)
     elseif !(result isa DynamicalODEFunction) && forig isa AbstractSciMLFunction &&
-            _has_type_erased_params(typeof(forig))
+            _has_type_erased_params(typeof(forig)) &&
+            _adopt_replacement_type_erasure(func, forig)
         return _reconstruct_as_type(typeof(forig), result)
     end
     return result
+end
+
+# A re-concretized `AutoDespecialize` function is already wrapped, and so is the
+# widened function `promote_f` returns for it. Other replacements keep their erasure.
+function _adopt_replacement_type_erasure(func, replacement)
+    return !(
+        _wrapped_autodespecialize(func) && _wrapped_autodespecialize(replacement)
+    )
+end
+
+function _wrapped_autodespecialize(f)
+    return specialization(f) === AutoDespecialize &&
+        hasfield(typeof(f), :f) &&
+        getfield(f, :f) isa FunctionWrappersWrappers.FunctionWrappersWrapper
 end
 
 _dynamical_component_function(f::ODEFunction) = unwrapped_f(f.f)
@@ -677,7 +688,7 @@ function _remake_odeproblem(
             )
         else
             f = remake(
-                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newu0, newp, ptspan[1]))
+                f; f = wrapfun_oop(unwrapped_f(f.f), (newu0, newp, ptspan[1]))
             )
         end
     end
@@ -708,8 +719,10 @@ function _remake_odeproblem(
 end
 
 """
-    remake(prob::DynamicalODEProblem; f = missing, v0 = missing, u0 = missing,
-           tspan = missing, p = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::DynamicalODEProblem; f = missing, v0 = missing, u0 = missing,
+        tspan = missing, p = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `DynamicalODEProblem`.
 `u0 = ArrayPartition(v0, u0)` remains supported as a full-state replacement when `v0`
@@ -727,8 +740,10 @@ function remake(
 end
 
 """
-    remake(prob::SecondOrderODEProblem; f = missing, du0 = missing, u0 = missing,
-          tspan = missing, p = missing, kwargs = missing, _kwargs...)
+    remake(
+        prob::SecondOrderODEProblem; f = missing, du0 = missing, u0 = missing,
+        tspan = missing, p = missing, kwargs = missing, _kwargs...
+    )
 
 Remake the given `SecondOrderODEProblem`.
 `u0 = ArrayPartition(du0, u0)` remains supported as a full-state replacement when `du0`
@@ -826,9 +841,10 @@ accept the context argument and must not dispatch on undocumented implementation
 struct RemakeInitializationDataContext end
 
 """
-    remake_initialization_data(sys, scimlfn, u0, t0, p, newu0, newp,
-        ctx = RemakeInitializationDataContext())
-        -> initialization_data
+    remake_initialization_data(
+            sys, scimlfn, u0, t0, p, newu0, newp,
+            ctx = RemakeInitializationDataContext()
+        ) -> initialization_data
 
 Recreate a SciML function's initialization data after symbolic `remake` changes state or
 parameters.
@@ -1270,7 +1286,7 @@ end
     remake(
         prob::OptimizationProblem; f = missing, u0 = missing, p = missing,
         lb = missing, ub = missing, int = missing, lcons = missing, ucons = missing,
-        sense = missing, kwargs = missing, _kwargs...
+        sense = missing, problem_type = missing, kwargs = missing, _kwargs...
     )
 
 Remake the given `OptimizationProblem`.
@@ -1287,6 +1303,7 @@ function remake(
         lcons = missing,
         ucons = missing,
         sense = missing,
+        problem_type = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -1295,6 +1312,9 @@ function remake(
     u0, p = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
     if f === missing
         f = prob.f
+    end
+    if problem_type === missing
+        problem_type = prob.problem_type
     end
     if lb === missing
         lb = prob.lb
@@ -1317,18 +1337,19 @@ function remake(
 
     return if kwargs === missing
         # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
-        OptimizationProblem{isinplace(prob)}(
-            f = f, u0 = u0, p = p, lb = lb,
-            ub = ub, int = int,
-            lcons = lcons, ucons = ucons,
-            sense = sense; (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
+        OptimizationProblem{isinplace(prob)}(;
+            f, u0, p, lb,
+            ub, int,
+            lcons, ucons,
+            sense, problem_type, (values(prob.kwargs)::NamedTuple)...,
+            (values(_kwargs)::NamedTuple)...
         )
     else
-        OptimizationProblem{isinplace(prob)}(
-            f = f, u0 = u0, p = p, lb = lb,
-            ub = ub, int = int,
-            lcons = lcons, ucons = ucons,
-            sense = sense; kwargs...
+        OptimizationProblem{isinplace(prob)}(;
+            f, u0, p, lb,
+            ub, int,
+            lcons, ucons, problem_type,
+            sense, kwargs...
         )
     end
 end
@@ -1389,15 +1410,15 @@ function remake(
     prob = if kwargs === missing
         # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
         # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
-        NonlinearProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp,
-            problem_type = problem_type, lb = lb, ub = ub;
+        NonlinearProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp,
+            problem_type, lb, ub,
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        NonlinearProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp,
-            problem_type = problem_type, lb = lb, ub = ub; kwargs...
+        NonlinearProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp,
+            problem_type, lb, ub, kwargs...
         )
     end
 
@@ -1413,6 +1434,7 @@ function remake(
         f = missing,
         u0 = missing,
         p = missing,
+        lowered_problem = missing,
         kwargs = missing,
         interpret_symbolicmap = true,
         use_defaults = false,
@@ -1439,14 +1461,20 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(prob.f; f, initialization_data)
 
+    if lowered_problem === missing
+        lowered_problem = prob.lowered_problem
+    end
+
     prob = if kwargs === missing
         # Splat as NamedTuples to stay off the `merge(::Any, ::Pairs)` invalidation path.
-        SteadyStateProblem{isinplace(prob)}(
-            f = f, u0 = newu0, p = newp;
+        SteadyStateProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, lowered_problem,
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
-        SteadyStateProblem{isinplace(prob)}(f = f, u0 = newu0, p = newp; kwargs...)
+        SteadyStateProblem{isinplace(prob)}(;
+            f, u0 = newu0, p = newp, lowered_problem, kwargs...
+        )
     end
 
     u0, p = maybe_eager_initialize_problem(prob, initialization_data, lazy_initialization)
@@ -1500,12 +1528,12 @@ function remake(
         # Splat as NamedTuples (not the `Pairs` directly) to keep the lowered
         # kwarg merges off the invalidation-prone `merge(::Any, ::Pairs)` path.
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, lb = lb, ub = ub,
+            f, u0 = newu0, p = newp, lb, ub,
             (values(prob.kwargs)::NamedTuple)..., (values(_kwargs)::NamedTuple)...
         )
     else
         prob = NonlinearLeastSquaresProblem{isinplace(prob)}(;
-            f, u0 = newu0, p = newp, lb = lb, ub = ub, kwargs...
+            f, u0 = newu0, p = newp, lb, ub, kwargs...
         )
     end
 
@@ -1525,7 +1553,7 @@ end
 
 function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
     offset = Ref(0)
-    return map(probs) do subprob
+    out = map(probs) do subprob
         # N should be inferred if `prob` and `subprob.u0` are type-stable.
         N = length(state_values(subprob))
         _u0 = _scc_state_slice(newu0, offset[], Val(N))
@@ -1537,6 +1565,12 @@ function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
         offset[] += length(state_values(subprob))
         return subprob
     end
+    # Keep the caller's container eltype so homogeneous and heterogeneous
+    # block vectors remake to one `SCCNonlinearProblem` type.
+    if all(Base.Fix2(isa, eltype(probs)), out)
+        out = copyto!(similar(probs), out)
+    end
+    return out
 end
 
 @inline _scc_update_subproblems(newu0, newp, ::Val{P}, offset::Int) where {P} = ()
@@ -1898,7 +1932,7 @@ function _updated_u0_p_symmap(prob, u0, ::Val{true}, p, ::Val{false}, t0)
     # This is sort of an implicit dependency on MTK. The values of `u` won't actually be
     # used, since any state symbols in the expression were substituted out earlier.
     temp_state = ProblemState(;
-        u = state_values(prob), p = p, t = t0,
+        u = state_values(prob), p, t = t0,
         h = is_markovian(prob) ? nothing : get_history_function(prob)
     )
     for (k, v) in u0

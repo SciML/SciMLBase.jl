@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines a stochastic delay differential equation (SDDE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/>
@@ -10,11 +10,11 @@ the diffusion function `g`, the initial condition ``u_0`` at time point ``t_0``,
 and the history function ``h`` which together define a SDDE:
 
 ```math
-\begin{align*}
-du(t)  &= f(u,h,p,t) \, dt + g(u,h,p,t) \, dW_t & (t \geq t_0) \\
-u(t_0) &= u_0, \\
+\\begin{align*}
+du(t)  &= f(u,h,p,t) \\, dt + g(u,h,p,t) \\, dW_t & (t ≥ t_0) \\\\
+u(t_0) &= u_0, \\\\
 u(t)   &= h(t) & (t < t_0).
-\end{align*}
+\\end{align*}
 ```
 
 ``f`` should be specified as `f(u, h, p, t)` (or in-place as `f(du, u, h, p, t)`)
@@ -67,7 +67,8 @@ SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
@@ -86,7 +87,8 @@ For specifying Jacobians and mass matrices, see the
 
 * `f`: The drift function in the SDDE.
 * `g`: The diffusion function in the SDDE.
-* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the history function evaluated at the initial time point.
+* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the
+  history function evaluated at the initial time point.
 * `h`: The history function for the DDE before `t0`.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters with which function `f` is called. Defaults to `NullParameters`.
@@ -186,8 +188,11 @@ end
 
 SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
 
-@doc doc"""
-    SDDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias_jumps = nothing, alias = nothing)
+"""
+    SDDEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing,
+        alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+    )
 
 Control which `SDDEProblem` inputs and solver option arrays may be aliased.
 

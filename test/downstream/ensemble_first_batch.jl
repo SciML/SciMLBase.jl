@@ -7,8 +7,8 @@ output_func(sol, ctx) = (last(sol), false)
 reduction(u, batch, I) = (append!(u, mean(batch)), false)
 # make sure first batch is timed (test using 1 batch but reduction)
 ensemble_prob = EnsembleProblem(
-    prob, prob_func = prob_func, output_func = output_func,
-    reduction = reduction
+    prob; prob_func, output_func,
+    reduction
 )
 sim = solve(
     ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 1000,

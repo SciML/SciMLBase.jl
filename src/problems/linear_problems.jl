@@ -57,8 +57,8 @@ parameters. New code should use the unified `update_Ab` keyword constructor.
 
 ```julia
 update_Ab = (A, b, p) -> (A .= p[1]; b .= p[2]; (A, b))
-interface = SciMLBase.SymbolicLinearInterface(
-    ; update_Ab, sys = :my_system, observed = nothing, metadata = nothing
+interface = SciMLBase.SymbolicLinearInterface(;
+    update_Ab, sys = :my_system, observed = nothing, metadata = nothing
 )
 ```
 """
@@ -111,7 +111,7 @@ function SymbolicIndexingInterface.observed(fn::SymbolicLinearInterface, sym)
     end
 end
 
-@doc doc"""
+"""
 
 Defines a linear system problem.
 Documentation Page: <https://docs.sciml.ai/LinearSolve/stable/basics/LinearProblem/>
@@ -135,7 +135,8 @@ are specified via the `AbstractSciMLOperator` interface. For more details, see
 the [SciMLBase Documentation](https://docs.sciml.ai/SciMLBase/stable/).
 
 Note that matrix-free versions of LinearProblem definitions are not compatible
-with all solvers. To check a solver for compatibility, use the function `needs_concrete_A(alg::AbstractLinearAlgorithm)`.
+with all solvers. To check a solver for compatibility, use the function
+`needs_concrete_A(alg::AbstractLinearAlgorithm)`.
 
 ## Problem Type
 
@@ -145,8 +146,8 @@ Optionally, an initial guess ``u₀`` can be supplied which is used for iterativ
 methods.
 
 ```julia
-LinearProblem{isinplace}(A,b,p=NullParameters();u0=nothing,kwargs...)
-LinearProblem(f::AbstractSciMLOperator,b,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem{isinplace}(A, b, p = NullParameters(); u0 = nothing, kwargs...)
+LinearProblem(f::AbstractSciMLOperator, b, p = NullParameters(); u0 = nothing, kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not, i.e. whether
@@ -218,7 +219,7 @@ function SymbolicIndexingInterface.set_parameter!(
     return nothing
 end
 
-@doc doc"""
+"""
     LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
 
 Control which `LinearProblem` inputs a solver may alias.

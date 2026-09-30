@@ -491,3 +491,4 @@ function successful_retcode(retcode::ReturnCode.T)
         retcode == ReturnCode.StalledSuccess
 end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
+successful_retcode(retcode) = successful_retcode(convert(ReturnCode.T, retcode))

@@ -152,8 +152,8 @@ function build_solution(
 
         if calculate_error
             calculate_solution_errors!(
-                sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors
+                sol; timeseries_errors,
+                dense_errors
             )
         end
 

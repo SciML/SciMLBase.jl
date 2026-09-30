@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines a discrete dynamical system problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/>
@@ -9,7 +9,7 @@ To define an ImplicitDiscrete Problem, you simply need to give the function ``f`
 condition ``u_0`` which define a function map:
 
 ```math
-f(u_{n+1}, u_n, p, t_{n+1}, \text{integ}) = 0
+f(u_{n+1}, u_n, p, t_{n+1}, \\text{integ}) = 0
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and
@@ -19,24 +19,23 @@ one is allowed to provide `u₀` as arbitrary matrices / higher dimension tensor
 as well. ``u_{n+1}`` only depends on the previous iteration ``u_{n}`` and
 ``t_{n+1}``. The default ``t_{n+1}`` is chosen adaptively, and when ``dt`` is
 specified, we have ``t_n = t_0 + n*dt``. `integ` contains the fields:
-```julia
-dt: the time step
-```
+- `dt`: the time step
 
 ## Problem Type
 
 ### Constructors
 
-- `ImplicitDiscreteProblem(f::ImplicitDiscreteFunction,u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan, p = NullParameters(); kwargs...)` :
   Defines the discrete problem with the specified functions.
-- `ImplicitDiscreteProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem{isinplace, specialize}(f, u0, tspan, p = NullParameters(); kwargs...)` :
   Defines the discrete problem with the specified functions.
-- `ImplicitDiscreteProblem{isinplace,specialize}(u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem{isinplace, specialize}(u0, tspan, p = NullParameters(); kwargs...)` :
   Defines the discrete problem with the identity map.
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See [Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -143,8 +142,10 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteP
     end
 end
 
-@doc doc"""
-    ImplicitDiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
+"""
+    ImplicitDiscreteAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
+    )
 
 Control which `ImplicitDiscreteProblem` inputs a solver may alias.
 

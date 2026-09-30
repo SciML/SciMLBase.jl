@@ -746,7 +746,7 @@ end
     function f!(du, u, p, t)
         du .= u .* t .+ p[5] * sum(u)
     end
-    fn = ODEFunction(f!; sys = sys)
+    fn = ODEFunction(f!; sys)
     prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
     cb1 = PeriodicCallback(
         0.1; initial_affect = true, final_affect = true,
@@ -1095,7 +1095,7 @@ end
     end
 
     @testset "`initialize_save_discretes`" begin
-        fn = ODEFunction(f!; sys = sys)
+        fn = ODEFunction(f!; sys)
         prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
         cb1 = PeriodicCallback(
             0.1; initial_affect = true, final_affect = true,
@@ -1166,7 +1166,7 @@ end
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ),
         ]
-        return System(eqs, t; name = name)
+        return System(eqs, t; name)
     end
     systems = @named begin
         osc1 = oscillator(k = 1.0, τ = 0.01)
@@ -1201,7 +1201,7 @@ end
 #             D(y) ~ -k * x(t - τ) + jcn,
 #             delx ~ x(t - τ),
 #         ]
-#         return System(eqs, t; name = name)
+#         return System(eqs, t; name)
 #     end
 #     systems = @named begin
 #         osc1 = oscillator(k = 1.0, τ = 0.01)
