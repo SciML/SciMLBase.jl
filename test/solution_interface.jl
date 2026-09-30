@@ -440,3 +440,10 @@ end
     @test ss isa SciMLBase.SavedSubsystem
     @test SciMLBase.get_saved_state_idxs(ss) == [1]
 end
+
+@testset "get_history_function DiffEqArray forwarding" begin
+    struct FakeHistorySource end
+    SymbolicIndexingInterface.get_history_function(::FakeHistorySource) = :forwarded
+    A = DiffEqArray([[1.0]], [0.0], nothing, FakeHistorySource())
+    @test SymbolicIndexingInterface.get_history_function(A) === :forwarded
+end

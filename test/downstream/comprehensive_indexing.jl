@@ -1189,6 +1189,9 @@ end
     @test integ[sym] ≈ SciMLBase.get_sol(integ)(integ.t - integ.ps[delay]; idxs = original)
     sol = solve(prob, MethodOfSteps(Tsit5()))
     @test sol[sym] ≈ sol(sol.t .- sol.ps[delay]; idxs = original)
+    @test sol(sol.t; idxs = sym).u ≈ sol[sym]
+    times = collect(range(prob.tspan...; length = 11))
+    @test sol(times; idxs = sym).u ≈ [sol(t; idxs = sym) for t in times]
 end
 
 # @testset "SDDEs" begin
