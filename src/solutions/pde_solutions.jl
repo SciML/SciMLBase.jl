@@ -171,7 +171,7 @@ function SciMLBase.wrap_sol(
 end
 
 """
-    pde_index_cotangent(config, sol::PDESolution, sym, Δ)
+    pde_index_cotangent(config, sol::AbstractPDESolution, sym, Δ)
 
 Reverse-mode hook behind `sol[sym]` and `sol[sym, inds...]` for a solution whose metadata
 subtypes [`AbstractDifferentiableDiscretizationMetadata`](@ref SciMLBase.AbstractDifferentiableDiscretizationMetadata):
@@ -187,7 +187,7 @@ that cannot provide a cotangent throws as well, so that a solution never returns
 gradient silently.
 """
 function pde_index_cotangent(
-        config, sol::PDESolution{T, N, S, D}, sym, Δ
+        config, sol::AbstractPDESolution{T, N, S, D}, sym, Δ
     ) where {T, N, S, D}
     throw(
         ArgumentError(
@@ -197,7 +197,7 @@ function pde_index_cotangent(
 end
 
 """
-    pde_call_cotangent(config, sol::PDESolution, args, dv, Δ)
+    pde_call_cotangent(config, sol::AbstractPDESolution, args, dv, Δ)
 
 Reverse-mode hook behind `sol(args...; dv)`: a tuple `(Δsol, Δargs)` of the cotangent of
 `sol.original_sol` and the cotangents of `args`, for a cotangent `Δ` of the evaluation at
@@ -210,7 +210,7 @@ index or a colon. See
 errors.
 """
 function pde_call_cotangent(
-        config, sol::PDESolution{T, N, S, D}, args, dv, Δ
+        config, sol::AbstractPDESolution{T, N, S, D}, args, dv, Δ
     ) where {T, N, S, D}
     throw(
         ArgumentError(

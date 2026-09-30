@@ -1,7 +1,7 @@
 module SciMLBaseChainRulesCoreExt
 
 using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
-    SDEProblem, getobserved, remake, PDESolution,
+    SDEProblem, getobserved, remake, AbstractPDESolution,
     AbstractDifferentiableDiscretizationMetadata, pde_index_cotangent, pde_call_cotangent
 import ChainRulesCore
 import ChainRulesCore: NoTangent, AbstractZero, @non_differentiable, zero_tangent, rrule_via_ad
@@ -292,7 +292,7 @@ end
 
 function ChainRulesCore.rrule(
         config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
-        ::typeof(getindex), A::PDESolution{T, N, S, D}, sym
+        ::typeof(getindex), A::AbstractPDESolution{T, N, S, D}, sym
     ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
     y = A[sym]
     function pde_getindex_pullback(Δ)
@@ -306,7 +306,7 @@ end
 
 function ChainRulesCore.rrule(
         config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
-        ::typeof(getindex), A::PDESolution{T, N, S, D}, sym, ind, inds...
+        ::typeof(getindex), A::AbstractPDESolution{T, N, S, D}, sym, ind, inds...
     ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
     y = A[sym, ind, inds...]
     Δinds = ntuple(_ -> NoTangent(), length(inds) + 1)
@@ -327,7 +327,7 @@ end
 # then.
 function ChainRulesCore.rrule(
         config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
-        A::PDESolution{T, N, S, D}, args::Vararg{Union{Number, AbstractArray, Colon}};
+        A::AbstractPDESolution{T, N, S, D}, args::Vararg{Union{Number, AbstractArray, Colon}};
         kwargs...
     ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
     issubset(keys(kwargs), (:dv,)) || throw(
