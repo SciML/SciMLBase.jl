@@ -170,6 +170,55 @@ function SciMLBase.wrap_sol(
     end
 end
 
+"""
+    pde_index_cotangent(config, sol::PDESolution, sym, Δ)
+
+Reverse-mode hook behind `sol[sym]` and `sol[sym, inds...]` for a solution whose metadata
+subtypes [`AbstractDifferentiableDiscretizationMetadata`](@ref SciMLBase.AbstractDifferentiableDiscretizationMetadata):
+the cotangent of `sol.original_sol` for a cotangent `Δ` of the array `sol[sym]`, as a
+`ChainRulesCore` tangent, or `NoTangent()` when `sym` does not depend on the solve (a
+grid, for instance). The rules in the ChainRulesCore extension route every cotangent of a
+wrapped solution back to `original_sol`, whose rules the solver packages provide; only the
+map from a field back to the solver's solution is the discretizer's, and this is where it
+implements it, for its metadata type `D`. `sym` is whatever the solution was indexed with,
+and the metadata is a constant of the solve, with no cotangent. `config` is the rule
+configuration, for `rrule_via_ad` on observed functions. The fallback errors, and a hook
+that cannot provide a cotangent throws as well, so that a solution never returns a wrong
+gradient silently.
+"""
+function pde_index_cotangent(
+        config, sol::PDESolution{T, N, S, D}, sym, Δ
+    ) where {T, N, S, D}
+    throw(
+        ArgumentError(
+            "Reverse-mode differentiation of `sol[sym]` is not implemented for solution metadata type $D, please post an issue on the relevant discretizer package's github page."
+        )
+    )
+end
+
+"""
+    pde_call_cotangent(config, sol::PDESolution, args, dv, Δ)
+
+Reverse-mode hook behind `sol(args...; dv)`: a tuple `(Δsol, Δargs)` of the cotangent of
+`sol.original_sol` and the cotangents of `args`, for a cotangent `Δ` of the evaluation at
+`args`. `dv` is the keyword as it was passed to the call, or `nothing` when it was not, and
+`Δ` then has the shape of what the call returns in that case (a collection over `sol.dvs`
+in the documented interface). `Δargs` has one entry per argument: the cotangent of a
+coordinate, or an error when the discretizer cannot provide it, and `NoTangent()` for an
+index or a colon. See
+[`pde_index_cotangent`](@ref SciMLBase.pde_index_cotangent) for the contract; the fallback
+errors.
+"""
+function pde_call_cotangent(
+        config, sol::PDESolution{T, N, S, D}, args, dv, Δ
+    ) where {T, N, S, D}
+    throw(
+        ArgumentError(
+            "Reverse-mode differentiation of `sol(args...)` is not implemented for solution metadata type $D, please post an issue on the relevant discretizer package's github page."
+        )
+    )
+end
+
 function Base.show(io::IO, m::MIME"text/plain", A::PDETimeSeriesSolution)
     println(io, string("retcode: ", A.retcode))
     println(io, string("Interpolation: "), typeof(A.interp))
