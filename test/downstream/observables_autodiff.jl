@@ -240,19 +240,18 @@ sol_dae = solve(prob_dae, Rodas5())
                 @test length(findall(!iszero, gt)) == 1
             end
         end
-        # Mooncake fails while copying the nonempty initialization-solution tangent.
         for backend in MOONCAKE_BACKENDS
-            @testset "$(backend_name(backend)) (broken)" begin
-                @test_broken begin
-                    iprob = prob_dae.f.initialization_data.initializeprob
-                    isol = solve(iprob)
-                    gs = DifferentiationInterface.gradient(
-                        isol -> isol[simple_dae.u_dae], backend, isol
-                    )
-                    gt = _unwrap_grad(gs).prob.fields.p.fields.tunable
-                    length(findall(!iszero, gt)) == 1 &&
-                        only(filter(!iszero, gt)) == 1.0
-                end
+            @testset "$(backend_name(backend))" begin
+                iprob = prob_dae.f.initialization_data.initializeprob
+                isol = solve(iprob)
+                gs = DifferentiationInterface.gradient(
+                    isol -> isol[simple_dae.u_dae], backend, isol
+                )
+                gp = _unwrap_grad(gs).prob.fields.p
+                gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
+                gt = gp.fields.tunable
+                @test length(findall(!iszero, gt)) == 1
+                @test only(filter(!iszero, gt)) == 1.0
             end
         end
     end
