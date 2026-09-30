@@ -448,6 +448,10 @@ function SymbolicIndexingInterface.get_history_function(sol::AbstractODESolution
     return DDESolutionHistoryWrapper(sol)
 end
 
+function SymbolicIndexingInterface.get_history_function(A::AbstractDiffEqArray)
+    return get_history_function(A.sys)
+end
+
 # public API, used by MTK
 """
     create_parameter_timeseries_collection(sys, ps, tspan)
