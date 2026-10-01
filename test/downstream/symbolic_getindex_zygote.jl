@@ -3,6 +3,7 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 using OrdinaryDiffEqBDF: DFBDF
 using SciMLSensitivity: InterpolatingAdjoint, ReverseDiffVJP
 using StochasticDiffEq: SOSRI
+using ChainRulesCore: ChainRulesCore
 using Zygote: Zygote
 
 @testset "Symbolic solution indexing agrees with ForwardDiff (#1594)" begin
@@ -39,6 +40,7 @@ using Zygote: Zygote
         ps -> ode_loss(x, ps),
         ps -> ode_loss(x[1], ps),
         ps -> dae_loss(sol -> sum(abs2, reduce(hcat, sol[x])), ps),
+        ps -> dae_loss(sol -> sum(abs2, sol[x[2]]), ps),
         ps -> dae_loss(sol -> sum(abs2, reduce(hcat, [sol[x[1]], sol[x[2]]])), ps),
     )
     for loss in losses
@@ -46,9 +48,9 @@ using Zygote: Zygote
     end
 end
 
-@testset "DAE/RODE non-symbolic indexing matches Array(sol) under Zygote (#1594)" begin
-    # Must use Zygote.gradient(loss, sol) (AbstractArray projection), not a
-    # hand-normalised pullback. Reference is the same loss on Array(sol).
+# Non-symbolic indices on DAE/RODE solutions must keep the generic `AbstractArray`
+# rules: a correct gradient, or an error, never a different answer.
+@testset "Non-symbolic indexing of DAE/RODE solutions under AD" begin
     f(u, p, t) = -p .* u
     fd(du, u, p, t) = du .+ p .* u
     dprob = DAEProblem(
@@ -56,30 +58,73 @@ end
         differential_vars = [true, true]
     )
     dsol = solve(dprob, DFBDF(); saveat = 0.25)
-    g(u, p, t) = 0.0 .* u
+    g(u, p, t) = 0.1 .* u
     sprob = SDEProblem(f, g, [1.0, 2.0], (0.0, 1.0), [1.0, 2.0])
     ssol = solve(sprob, SOSRI(); saveat = 0.25, seed = 1)
 
-    function index_loss(idx)
-        return s -> begin
-            y = s[idx...]
-            return y isa Number ? abs2(y) : sum(abs2, y)
+    idxs = (
+        (3,), (10,), (CartesianIndex(2, 3),), (1:2,), ([1, 3],), (2:2:4,),
+        (trues(10),), (:,), (:, 2), (1, 2), (1:2, 3), (1, :),
+    )
+    loss(idx) = s -> sum(abs2, Array(s[idx...]))
+    ones_like(y::Number) = 1.0
+    ones_like(y) = ones(size(y))
+    grad_matrix(sol, g::AbstractMatrix) = Array(g)
+    grad_matrix(sol, g::AbstractVector{<:AbstractVector}) = reduce(hcat, g)
+    grad_matrix(sol, g::NamedTuple) = grad_matrix(sol, g.u)
+    # Central differences of `loss` in each saved state value. The losses are
+    # quadratic in `sol.u`, so this is exact up to roundoff.
+    function fd_grad(loss, sol; h = 1.0e-4)
+        G = zeros(size(Array(sol)))
+        for j in eachindex(sol.u), k in eachindex(sol.u[j])
+            sp, sm = deepcopy(sol), deepcopy(sol)
+            sp.u[j][k] += h
+            sm.u[j][k] -= h
+            G[k, j] = (loss(sp) - loss(sm)) / 2h
+        end
+        return G
+    end
+    function outcome(thunk)
+        return try
+            thunk()
+        catch e
+            e
         end
     end
 
-    for sol in (dsol, ssol)
-        @test sol isa SciMLBase.AbstractODESolution
-        @test !(sol isa ODESolution)
-        M = Array(sol)
-        for idx in (
-                (3,),
-                (lastindex(sol),),
-                (CartesianIndex(2, 3),),
-                (1:2,),
-                (:, 2),
+    for sol in (dsol, ssol), idx in idxs
+        @test sol isa SciMLBase.AbstractODESolution && !(sol isa ODESolution)
+
+        # ChainRules: the rule applied is exactly the generic `AbstractArray` one.
+        generic = outcome(
+            () -> invoke(
+                ChainRulesCore.rrule,
+                Tuple{typeof(getindex), AbstractArray, map(typeof, idx)...},
+                getindex, sol, idx...
             )
-            loss = index_loss(idx)
-            @test Zygote.gradient(loss, sol)[1] ≈ Zygote.gradient(loss, M)[1]
+        )
+        rule = outcome(() -> ChainRulesCore.rrule(getindex, sol, idx...))
+        if generic isa Exception
+            @test typeof(rule) == typeof(generic)
+        else
+            @test rule[1] == generic[1]
+            dgeneric = outcome(() -> ChainRulesCore.unthunk.(generic[2](ones_like(generic[1]))))
+            drule = outcome(() -> ChainRulesCore.unthunk.(rule[2](ones_like(rule[1]))))
+            if dgeneric isa Exception
+                @test typeof(drule) == typeof(dgeneric)
+            else
+                @test drule == dgeneric
+            end
+        end
+
+        # Zygote: the gradient is the true derivative of the loss, or an error.
+        l = loss(idx)
+        primal = outcome(() -> l(sol))
+        zg = outcome(() -> Zygote.gradient(l, sol)[1])
+        if primal isa Exception
+            @test zg isa Exception
+        elseif !(zg isa Exception)
+            @test grad_matrix(sol, zg) ≈ fd_grad(l, sol) atol = 1.0e-6
         end
     end
 end
