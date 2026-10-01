@@ -4,10 +4,10 @@ using Zygote: Zygote, pullback
 using ZygoteRules: ZygoteRules, @adjoint, literal_getfield, literal_getproperty
 import ChainRulesCore
 using FillArrays: Fill
-using SciMLBase: SciMLBase, ODESolution, AbstractODESolution, remake, ODEFunction,
+using SciMLBase: SciMLBase, ODESolution, remake, ODEFunction,
     build_solution, EnsembleSolution, NonlinearSolution, SDEProblem
-using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
-    observed, parameter_values, state_values, current_time
+using SymbolicIndexingInterface: symbolic_type, NotSymbolic, ArraySymbolic, variable_index,
+    is_observed, observed, parameter_values, state_values, current_time
 using RecursiveArrayTools: RecursiveArrayTools, recursivecopy, recursivefill!
 import SciMLStructures
 
@@ -108,10 +108,9 @@ end
 # `CartesianIndices(size(VA))[i]`; a `CartesianIndex` already is that tuple
 # (e.g. from `eachindex(VA)`, which is `IndexCartesian`). A dedicated adjoint is
 # needed in both cases to keep dispatch from falling through to the broader
-# symbolic `getindex` rule below (which would misinterpret the index as a
-# state-variable symbol; #1325). Kept on concrete `ODESolution` so DAE/RODE
-# integer indexing uses Zygote's generic AbstractArray path (compatible with
-# `Zygote.gradient(loss, sol)`).
+# `Base.getindex(VA::ODESolution, sym)` rule below (which would misinterpret the
+# index as a state-variable symbol; #1325). The pullback scatters the scalar
+# cotangent into the matching slot of `VA.u`.
 @adjoint function Base.getindex(VA::ODESolution, i::Union{Integer, CartesianIndex})
     inds = i isa CartesianIndex ? Tuple(i) : Tuple(CartesianIndices(size(VA))[i])
     front_inds = Base.front(inds)
@@ -132,24 +131,9 @@ end
     return y, ODESolution_scalar_pullback
 end
 
-# Symbolic indexing on any timeseries solution. Non-symbolic indices
-# (`Integer`, `CartesianIndex`, ranges, `Colon`, …) must not stay here: they
-# fall through to Zygote's AbstractArray `getindex` by differentiating through
-# `Array(VA)`, which yields an AbstractArray-shaped cotangent accepted by
-# `Zygote.gradient(loss, sol)`.
-@adjoint function Base.getindex(VA::AbstractODESolution, sym)
-    if symbolic_type(sym) === NotSymbolic()
-        y, back = Zygote.pullback(Base.getindex, Array(VA), sym)
-        return y, Δ -> (back(Δ)[1], nothing)
-    end
+@adjoint function Base.getindex(VA::ODESolution, sym)
     function ODESolution_getindex_pullback(Δ)
-        i = variable_index(VA, sym)
-        if i isa AbstractVector
-            return (
-                odesolution_getindex_cotangent(VA, [sym[j] for j in eachindex(sym)], Δ),
-                nothing,
-            )
-        end
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         if is_observed(VA, sym)
             f = observed(VA, sym)
             p = parameter_values(VA)
@@ -203,7 +187,7 @@ end
 _getindex_cotangent(Δ::AbstractMatrix, idx, t_idx) = Δ[idx, t_idx]
 _getindex_cotangent(Δ, idx, t_idx) = Δ[t_idx][idx]
 
-function not_obs_grads(VA::AbstractODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
+function not_obs_grads(VA::ODESolution{T}, sym, not_obss_idx, i, Δ) where {T}
     Δ′ = map(enumerate(VA.u)) do (t_idx, us)
         map(enumerate(us)) do (u_idx, u)
             if u_idx in i
@@ -224,13 +208,9 @@ end
 # vector-of-vectors (`sol[syms]`) or a `length(syms) × ntime` matrix
 # (`sol[syms, :]`); `not_obs_grads`/`_getindex_cotangent` handle both.
 function odesolution_getindex_cotangent(VA, sym, Δ)
-    sym = if sym isa Tuple
-        collect(sym)
-    elseif symbolic_type(sym) != NotSymbolic() && variable_index(VA, sym) isa AbstractVector
-        [sym[j] for j in eachindex(sym)]
-    else
-        sym
-    end
+    # An array symbol (e.g. `x` for `@variables x(t)[1:2]`) is scattered as its
+    # scalar components.
+    sym = sym isa Tuple || symbolic_type(sym) === ArraySymbolic() ? vec(collect(sym)) : sym
     i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
 
     obs_idx = findall(s -> is_observed(VA, s), sym)
@@ -242,11 +222,6 @@ function odesolution_getindex_cotangent(VA, sym, Δ)
     return Zygote.accum(gs_obs[1], (u = gs_not_obs,))
 end
 
-# Multi-symbol selection on concrete `ODESolution` (tuples / vectors of
-# symbols or integer indices). Non-`ODESolution` timeseries (DAE/RODE) with
-# non-symbolic vector/range indices are declined by the AbstractODESolution
-# scalar rule above (`symbolic_type === NotSymbolic` → `Array(VA)` pullback).
-# Array symbols on DAE/RODE hit that scalar rule with `ArraySymbolic` instead.
 @adjoint function Base.getindex(
         VA::ODESolution{T}, sym::Union{Tuple, AbstractVector}
     ) where {T}

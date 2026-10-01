@@ -1,11 +1,12 @@
 module SciMLBaseChainRulesCoreExt
 
-using SciMLBase: SciMLBase, AbstractODESolution, EnsembleSolution, NonlinearProblem,
-    ODESolution, RODESolution, SDEProblem, getobserved, remake
+using SciMLBase: SciMLBase, AbstractODESolution, AbstractTimeseriesSolution,
+    EnsembleSolution, NonlinearProblem, ODESolution, RODESolution, SDEProblem, getobserved,
+    remake
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
-using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, parameter_values,
-    symbolic_type, variable_index
+using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, ArraySymbolic,
+    parameter_values, symbolic_type, variable_index
 using RecursiveArrayTools: AbstractVectorOfArray
 
 @non_differentiable SciMLBase.checkkwargs(kwargshandle)
@@ -67,9 +68,10 @@ end
 # subtypes `AbstractArray`, so linear integer indexing returns the i-th
 # scalar element in column-major order over the underlying state-by-time
 # layout, NOT the i-th timestep vector. A dedicated rrule is still
-# needed to keep dispatch from falling through to the broader symbolic
-# `getindex` rule below (which would misinterpret `i` as a state-variable
-# index; #1325). Kept on concrete `ODESolution`; DAE/RODE use the generic path.
+# needed to keep dispatch from falling through to the broader
+# `getindex(VA::ODESolution, sym)` rule below (which would misinterpret
+# `i` as a state-variable index; #1325). The pullback scatters the
+# scalar cotangent into the matching slot of `VA.u`.
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
     inds = Tuple(CartesianIndices(size(VA))[i])
     front_inds = Base.front(inds)
@@ -90,16 +92,32 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
     return y, ODESolution_scalar_pullback
 end
 
+function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
+    return VA[sym], solution_getindex_pullback(VA, sym)
+end
+
+# Other timeseries solutions (`DAESolution`, `RODESolution`, …) only get the
+# symbolic rule. Every non-symbolic index is handed to exactly the rule that
+# applies without this method, so its result or error is unchanged.
 function ChainRulesCore.rrule(::typeof(getindex), VA::AbstractODESolution, sym)
-    # ChainRules convention: `nothing` means no rule. Non-symbolic indices then
-    # use other rrules or the generic AbstractArray path. Under Zygote this
-    # method is shadowed by the `@adjoint` in SciMLBaseZygoteExt.
-    symbolic_type(sym) === NotSymbolic() && return nothing
+    if symbolic_type(sym) === NotSymbolic()
+        return invoke(
+            ChainRulesCore.rrule,
+            Tuple{typeof(getindex), AbstractTimeseriesSolution, typeof(sym)},
+            getindex, VA, sym
+        )
+    end
+    return VA[sym], solution_getindex_pullback(VA, sym)
+end
+
+function solution_getindex_pullback(VA, sym)
     function ODESolution_getindex_pullback(Δ)
-        i = variable_index(VA, sym)
+        i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         return if i === nothing
             throw(error("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
-        elseif i isa AbstractVector
+        elseif symbolic_type(sym) === ArraySymbolic()
+            # `sol[x]` for an array symbol returns one vector per timestep.
+            i = vec(i)
             Δ′ = [
                 [
                     let idx = findfirst(isequal(k), i)
@@ -117,7 +135,7 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::AbstractODESolution, sym)
             (NoTangent(), Δ′, NoTangent())
         end
     end
-    return VA[sym], ODESolution_getindex_pullback
+    return ODESolution_getindex_pullback
 end
 
 # NOTE: Constructor rrules for ODEProblem were removed. ODEProblem is a mutable struct,
