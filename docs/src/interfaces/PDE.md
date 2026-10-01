@@ -117,15 +117,17 @@ SciMLBase.wrap_sol
 
 A discretizer whose metadata subtypes
 [`AbstractDifferentiableDiscretizationMetadata`](@ref SciMLBase.AbstractDifferentiableDiscretizationMetadata)
-gets reverse-mode rules for `sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)` from
+gets reverse-mode rules for `sol[sym]`, `sol[sym, inds...]` (`sol[sym][inds...]` in the
+interface) and `sol(args...; dv)` from
 the ChainRulesCore extension: they route the cotangent back to `sol.original_sol`, whose
 rules the solver packages provide, and ask the discretizer for the map from a field or an
 evaluation back to the solver's solution through two hooks. The package that owns the
 metadata implements them; a subtype without them errors, so a solution never returns a
-wrong gradient silently. A cotangent that reaches the wrapper through one of its fields
-instead, `sol.u` for instance, is an error too, and the metadata is a constant of the
-solve. Metadata that subtypes `AbstractDiscretizationMetadata` directly gets no rules, and
-its solutions are traced like any other code.
+wrong gradient silently. A cotangent that reaches the wrapper through `sol.u`, `sol.interp`
+or `sol.prob` instead is an error too; the other fields, the saved times, the grids and the
+metadata, are constants of the wrapping. Metadata that subtypes
+`AbstractDiscretizationMetadata` directly gets no rules, and its solutions are traced like
+any other code.
 
 ```@docs
 SciMLBase.AbstractDifferentiableDiscretizationMetadata

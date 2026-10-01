@@ -173,7 +173,8 @@ end
 """
     pde_index_cotangent(config, sol::AbstractPDESolution, sym, Δ)
 
-Reverse-mode hook behind `sol[sym]` and `sol[sym, inds...]` for a solution whose metadata
+Reverse-mode hook behind `sol[sym]` and `sol[sym, inds...]` (`sol[sym][inds...]` in the
+interface) for a solution whose metadata
 subtypes [`AbstractDifferentiableDiscretizationMetadata`](@ref SciMLBase.AbstractDifferentiableDiscretizationMetadata):
 the cotangent of `sol.original_sol` for a cotangent `Δ` of the array `sol[sym]`, as a
 `ChainRulesCore` tangent, or `NoTangent()` when `sym` does not depend on the solve (a

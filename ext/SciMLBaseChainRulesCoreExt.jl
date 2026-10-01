@@ -267,7 +267,8 @@ end
 
 # The constructor `wrap_sol` calls. Only `original_sol` carries a gradient back; `u`, `interp`
 # and `prob` are reached through the rules below, so a cotangent on them means a path that
-# has no rule, and it is an error rather than a zero. Wrapping a wrapper is the identity.
+# has no rule, and it is an error rather than a zero. The other fields, the saved times, the
+# grids and the metadata, are constants of the wrapping. Wrapping a wrapper is the identity.
 for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
     @eval function ChainRulesCore.rrule(
             ::Type{SciMLBase.$W}, sol, metadata::AbstractDifferentiableDiscretizationMetadata
@@ -308,6 +309,8 @@ function ChainRulesCore.rrule(
         config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
         ::typeof(getindex), A::AbstractPDESolution{T, N, S, D}, sym, ind, inds...
     ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+    # `sol[sym, inds...]` is `sol[sym][inds...]` in the interface, so the cotangent of the slice
+    # is scattered into a cotangent of the field.
     y = A[sym, ind, inds...]
     Δinds = ntuple(_ -> NoTangent(), length(inds) + 1)
     function pde_getindex_pullback(Δ)
