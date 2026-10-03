@@ -3042,6 +3042,9 @@ function (f::SplitFunction)(du, u, p, t)
     end
     tmp = get_tmp(f._func_cache, du)
     invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    # `du` is the caller's buffer and is reused across calls, so components that `f2`
+    # leaves alone would otherwise accumulate their old values.
+    fill!(du, false)
     invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
@@ -3099,6 +3102,9 @@ end
 function (f::SplitSDEFunction)(du, u, p, t)
     tmp = get_tmp(f._func_cache, du)
     invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    # `du` is the caller's buffer and is reused across calls, so components that `f2`
+    # leaves alone would otherwise accumulate their old values.
+    fill!(du, false)
     invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
