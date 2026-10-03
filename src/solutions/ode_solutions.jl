@@ -314,6 +314,23 @@ function (sol::AbstractODESolution)(
     return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 
+function _observed_problem_state(sol, u, p, t)
+    return ProblemState(;
+        u, p, t,
+        h = is_markovian(sol) ? nothing : get_history_function(sol)
+    )
+end
+
+function _observed_at_times(sol, getter, interp_data, t, p)
+    if is_markovian(sol)
+        interp_sol = augment(interp_data, sol)
+        return getter(interp_sol)
+    end
+    return map(eachindex(t)) do ti
+        getter(_observed_problem_state(sol, interp_data.u[ti], p, t[ti]))
+    end
+end
+
 function (sol::AbstractODESolution)(
         t::Number, ::Type{deriv}, idxs,
         continuity
@@ -333,7 +350,9 @@ function (sol::AbstractODESolution)(
             ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
-    state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
+    state = _observed_problem_state(
+        sol, sol.interp(t, nothing, deriv, ps, continuity), ps, t
+    )
     return getsym(sol, idxs)(state)
 end
 
@@ -359,7 +378,9 @@ function (sol::AbstractODESolution)(
             ps = with_updated_parameter_timeseries_values(sol, ps, ts_idx => interp_val)
         end
     end
-    state = ProblemState(; u = sol.interp(t, nothing, deriv, ps, continuity), p = ps, t)
+    state = _observed_problem_state(
+        sol, sol.interp(t, nothing, deriv, ps, continuity), ps, t
+    )
     return getsym(sol, idxs)(state)
 end
 
@@ -372,9 +393,9 @@ function (sol::AbstractODESolution)(
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
-        interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
+        interp_data = sol.interp(t, nothing, deriv, p, continuity)
         return DiffEqArray(
-            getter(interp_sol), t, p, sol;
+            _observed_at_times(sol, getter, interp_data, t, p), t, p, sol;
             sol.interp, sol.dense
         )
     end
@@ -385,7 +406,7 @@ function (sol::AbstractODESolution)(
         for i in eachindex(discretes)
             ps = with_updated_parameter_timeseries_values(sol, ps, i => discretes[i, ti])
         end
-        return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
+        return getter(_observed_problem_state(sol, interp_sol.u[ti], ps, t[ti]))
     end
     return DiffEqArray(
         u, t, p, sol; discretes,
@@ -404,9 +425,9 @@ function (sol::AbstractODESolution)(
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
     getter = getsym(sol, idxs)
     if is_parameter_timeseries(sol) == NotTimeseries() || !is_discrete_expression(sol, idxs)
-        interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
+        interp_data = sol.interp(t, nothing, deriv, p, continuity)
         return DiffEqArray(
-            getter(interp_sol), t, p, sol;
+            _observed_at_times(sol, getter, interp_data, t, p), t, p, sol;
             interp = sol.interp, dense = sol.dense
         )
     end
@@ -417,7 +438,7 @@ function (sol::AbstractODESolution)(
         for i in eachindex(discretes)
             ps = with_updated_parameter_timeseries_values(sol, ps, i => discretes[i, ti])
         end
-        return getter(ProblemState(; u = interp_sol.u[ti], p = ps, t = t[ti]))
+        return getter(_observed_problem_state(sol, interp_sol.u[ti], ps, t[ti]))
     end
     return DiffEqArray(
         u, t, p, sol; discretes,
