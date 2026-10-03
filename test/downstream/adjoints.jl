@@ -194,6 +194,8 @@ end
     end
 end
 
+include("symbolic_getindex_zygote.jl")
+
 # BatchedInterface AD
 @variables x(t) = 1.0 y(t) = 1.0 z(t) = 1.0 w(t) = 1.0
 @named sys1 = System([D(x) ~ x + y, D(y) ~ y * z, D(z) ~ z * t * x], t)

@@ -6,8 +6,8 @@ import ChainRulesCore
 using FillArrays: Fill
 using SciMLBase: SciMLBase, ODESolution, remake, ODEFunction,
     build_solution, EnsembleSolution, NonlinearSolution, SDEProblem
-using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index, is_observed,
-    observed, parameter_values, state_values, current_time
+using SymbolicIndexingInterface: symbolic_type, NotSymbolic, ArraySymbolic, variable_index,
+    is_observed, observed, parameter_values, state_values, current_time
 using RecursiveArrayTools: RecursiveArrayTools, recursivecopy, recursivefill!
 import SciMLStructures
 
@@ -208,7 +208,9 @@ end
 # vector-of-vectors (`sol[syms]`) or a `length(syms) × ntime` matrix
 # (`sol[syms, :]`); `not_obs_grads`/`_getindex_cotangent` handle both.
 function odesolution_getindex_cotangent(VA, sym, Δ)
-    sym = sym isa Tuple ? collect(sym) : sym
+    # An array symbol (e.g. `x` for `@variables x(t)[1:2]`) is scattered as its
+    # scalar components.
+    sym = sym isa Tuple || symbolic_type(sym) === ArraySymbolic() ? vec(collect(sym)) : sym
     i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
 
     obs_idx = findall(s -> is_observed(VA, s), sym)
