@@ -261,7 +261,7 @@ function get_initial_values(
     (iszero(algebraic_vars) || iszero(algebraic_eqs)) && return u0, p, true
     update_coefficients!(M, u0, p, t)
     tmp = evaluate_f(integrator, prob, f, isinplace, u0, p, t)
-    tmp .= ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
+    tmp = ArrayInterface.restructure(tmp, algebraic_eqs .* _vec(tmp))
 
     if exceeds_checkinit_abstol(tmp, abstol, integrator, t)
         normresid = isdefined(integrator.opts, :internalnorm) ?
