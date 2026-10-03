@@ -1,6 +1,6 @@
 module SciMLBaseChainRulesCoreExt
 
-using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
+using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution,
     SDEProblem, getobserved, remake
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
@@ -54,9 +54,8 @@ function ChainRulesCore.rrule(
         T = eltype(first(du))
         N = ndims(first(du)) + 1
         Δ′ = ODESolution{T, N}(
-            du, nothing, nothing, VA.t, VA.k, nothing, dprob,
-            VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode,
-            nothing, nothing, nothing
+            du, nothing, nothing, nothing, VA.t, VA.k, nothing, nothing, dprob,
+            VA.alg, VA.interp, VA.dense, 0, VA.stats, VA.alg_choice, VA.retcode
         )
         return (NoTangent(), Δ′, NoTangent(), NoTangent())
     end
@@ -126,45 +125,25 @@ function ChainRulesCore.rrule(
         ::Type{
             <:ODESolution{
                 T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-                T11, T12, T13, T14, T15, T16,
+                T11, T12, T13, T14, T15, T16, T17, T18, T19, T20,
             },
         }, u,
         args...
     ) where {
         T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,
-        T12, T13, T14, T15, T16,
+        T12, T13, T14, T15, T16, T17, T18, T19, T20,
     }
     function ODESolutionAdjoint(ȳ)
         return (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
     end
 
-    return ODESolution{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16}(
+    return ODESolution{
+            T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16,
+            T17, T18, T19, T20,
+        }(
             u, args...
         ),
         ODESolutionAdjoint
-end
-
-function ChainRulesCore.rrule(
-        ::Type{
-            <:RODESolution{
-                T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-                T11, T12, T13, T14,
-            },
-        }, u,
-        args...
-    ) where {
-        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-        T11, T12, T13, T14,
-    }
-    function RODESolutionAdjoint(ȳ)
-        return (NoTangent(), ȳ, ntuple(_ -> NoTangent(), length(args))...)
-    end
-
-    return RODESolution{
-            T1, T2, T3, T4, T5, T6, T7, T8, T9, T10,
-            T11, T12, T13, T14,
-        }(u, args...),
-        RODESolutionAdjoint
 end
 
 # EnsembleSolution rrule with full support for various gradient types
