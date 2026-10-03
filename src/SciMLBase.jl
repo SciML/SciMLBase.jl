@@ -34,7 +34,7 @@ using SymbolicIndexingInterface: SymbolicIndexingInterface, ArraySymbolic,
     with_updated_parameter_timeseries_values
 using DocStringExtensions: DocStringExtensions, FIELDS, SIGNATURES, TYPEDEF,
     TYPEDFIELDS, TYPEDSIGNATURES
-using LinearAlgebra: LinearAlgebra, I, det, norm
+using LinearAlgebra: LinearAlgebra, I, UniformScaling, det, norm
 using Statistics: Statistics, mean, median
 using Distributed: Distributed, CachingPool, myid, nworkers, pmap, workers
 using Markdown: Markdown
@@ -81,6 +81,9 @@ using SciMLOperators: AddVector, AffineOperator, BlockDiagonalOperator,
     isconvertible, iscached, issquare, kronsum
 
 using SciMLPublic: @public
+using SciMLLogging: SciMLLogging, @SciMLMessage, @verbosity_specifier, AbstractVerbosityPreset,
+    AbstractVerbositySpecifier, MessageLevel, ErrorLevel, WarnLevel, Silent, None, Minimal,
+    Standard, Detailed, All
 
 """
     __solve(prob, alg, args...; kwargs...)
@@ -1887,6 +1890,7 @@ include("ensemble/basic_ensemble_solve.jl")
 include("ensemble/ensemble_analysis.jl")
 
 include("solve.jl")
+include("keyword_validation.jl")
 include("interpolation.jl")
 include("integrator_interface.jl")
 include("remake.jl")
@@ -2230,6 +2234,9 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
 @public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,
     get_concrete_problem, check_prob_alg_pairing, KeywordArgError, keyword_arg_silent,
     @add_kwonly
+
+# Problem-class keyword validation
+@public checkkwargs, can_honor, KeywordVerbosity, keyword_class, keyword_status
 
 # SciMLFunction derivative traits
 @public has_jac, has_jvp, has_vjp, has_tgrad, has_analytic, has_reinit,

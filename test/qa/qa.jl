@@ -232,6 +232,14 @@ run_qa(
         all_explicit_imports_are_public = (; ignore = _ei_nonpublic_explicit_imports),
         # Makie re-exports ComputePipeline; the owner is the ComputePipeline package.
         all_qualified_accesses_via_owners = (; ignore = (:ComputePipeline,)),
+        # Used only inside the `@verbosity_specifier KeywordVerbosity` expansion, which
+        # ExplicitImports does not see.
+        no_stale_explicit_imports = (;
+            ignore = (
+                :AbstractVerbositySpecifier, :MessageLevel, :None, :Minimal, :Standard,
+                :Detailed, :All,
+            ),
+        ),
     ),
 )
 
