@@ -199,6 +199,9 @@ run_tests(;
                 @time @safetestset "Ensemble adjoint gradient correctness" begin
                     include("downstream/ensemble_adjoints.jl")
                 end
+                @time @safetestset "PDE solution adjoints" begin
+                    include("downstream/pde_solution_adjoints.jl")
+                end
             end
         end,
         "SII_Remake" => function ()

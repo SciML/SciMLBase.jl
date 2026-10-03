@@ -1,9 +1,10 @@
 module SciMLBaseChainRulesCoreExt
 
 using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
-    SDEProblem, getobserved, remake
+    SDEProblem, getobserved, remake, AbstractPDESolution,
+    AbstractDifferentiableDiscretizationMetadata, pde_index_cotangent, pde_call_cotangent
 import ChainRulesCore
-import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
+import ChainRulesCore: NoTangent, AbstractZero, @non_differentiable, zero_tangent, rrule_via_ad
 using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, parameter_values,
     symbolic_type, variable_index
 using RecursiveArrayTools: AbstractVectorOfArray
@@ -249,6 +250,103 @@ function ChainRulesCore.rrule(
         return (ChainRulesCore.NoTangent(), dx, ChainRulesCore.NoTangent())
     end
     return val, back
+end
+
+# PDE solution wrappers. A discretizer builds the wrapper from the solver's solution inside
+# `solve`, and the wrapper is indexed and evaluated by symbols, through code that reverse
+# mode cannot trace in general. For metadata that subtypes
+# `AbstractDifferentiableDiscretizationMetadata` the rules below route every cotangent back
+# to `original_sol`, whose rules the solver packages provide; the map from a field or an
+# evaluation back to the solver's solution is the discretizer's, through
+# `pde_index_cotangent` and `pde_call_cotangent`. Other metadata gets no rule here.
+
+function _wrapper_cotangent(A, Δsol)
+    Δsol isa AbstractZero && return NoTangent()
+    return ChainRulesCore.Tangent{typeof(A)}(; original_sol = Δsol)
+end
+
+# The constructor `wrap_sol` calls. Only `original_sol` carries a gradient back; `u`, `interp`
+# and `prob` are reached through the rules below, so a cotangent on them means a path that
+# has no rule, and it is an error rather than a zero. The other fields, the saved times, the
+# grids and the metadata, are constants of the wrapping. Wrapping a wrapper is the identity.
+for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
+    @eval function ChainRulesCore.rrule(
+            ::Type{SciMLBase.$W}, sol, metadata::AbstractDifferentiableDiscretizationMetadata
+        )
+        A = SciMLBase.$W(sol, metadata)
+        function wrapper_pullback(ȳ)
+            ȳ = ChainRulesCore.unthunk(ȳ)
+            ȳ isa AbstractZero && return (NoTangent(), NoTangent(), NoTangent())
+            A === sol && return (NoTangent(), ȳ, NoTangent())
+            for field in (:u, :interp, :prob)
+                getproperty(ȳ, field) isa AbstractZero || throw(
+                    ArgumentError(
+                        "Reverse-mode differentiation reaches a PDE solution through `sol[sym]` and `sol(args...)`; the `$field` field of the solution has no rule."
+                    )
+                )
+            end
+            return (NoTangent(), ȳ.original_sol, NoTangent())
+        end
+        return A, wrapper_pullback
+    end
+end
+
+function ChainRulesCore.rrule(
+        config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
+        ::typeof(getindex), A::AbstractPDESolution{T, N, S, D}, sym
+    ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+    y = A[sym]
+    function pde_getindex_pullback(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
+        Δ isa AbstractZero && return (NoTangent(), NoTangent(), NoTangent())
+        Δsol = pde_index_cotangent(config, A, sym, Δ)
+        return (NoTangent(), _wrapper_cotangent(A, Δsol), NoTangent())
+    end
+    return y, pde_getindex_pullback
+end
+
+function ChainRulesCore.rrule(
+        config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
+        ::typeof(getindex), A::AbstractPDESolution{T, N, S, D}, sym, ind, inds...
+    ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+    # `sol[sym, inds...]` is `sol[sym][inds...]` in the interface, so the cotangent of the slice
+    # is scattered into a cotangent of the field.
+    y = A[sym, ind, inds...]
+    Δinds = ntuple(_ -> NoTangent(), length(inds) + 1)
+    function pde_getindex_pullback(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
+        Δ isa AbstractZero && return (NoTangent(), NoTangent(), NoTangent(), Δinds...)
+        Δfield = zero(A[sym])
+        view(Δfield, ind, inds...) .+= Δ  # accumulates over a repeated index
+        Δsol = pde_index_cotangent(config, A, sym, Δfield)
+        return (NoTangent(), _wrapper_cotangent(A, Δsol), NoTangent(), Δinds...)
+    end
+    return y, pde_getindex_pullback
+end
+
+# The evaluation `sol(args...; dv)` of the documented interface: numbers, arrays and colons,
+# with the dependent variable as the only keyword. The keywords go to the evaluation as
+# given, so that the discretizer's default for `dv` stays in force; the hook gets `nothing`
+# then.
+function ChainRulesCore.rrule(
+        config::ChainRulesCore.RuleConfig{>:ChainRulesCore.HasReverseMode},
+        A::AbstractPDESolution{T, N, S, D}, args::Vararg{Union{Number, AbstractArray, Colon}};
+        kwargs...
+    ) where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+    issubset(keys(kwargs), (:dv,)) || throw(
+        ArgumentError(
+            "Reverse-mode differentiation of `sol(args...; kwargs...)` covers the `dv` keyword only, got $(keys(kwargs))."
+        )
+    )
+    y = A(args...; kwargs...)
+    dv = get(kwargs, :dv, nothing)
+    function pde_call_pullback(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
+        Δ isa AbstractZero && return (NoTangent(), ntuple(_ -> NoTangent(), length(args))...)
+        Δsol, Δargs = pde_call_cotangent(config, A, args, dv, Δ)
+        return (_wrapper_cotangent(A, Δsol), Δargs...)
+    end
+    return y, pde_call_pullback
 end
 
 end

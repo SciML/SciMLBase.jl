@@ -918,6 +918,9 @@ if isdefined(Base, :ispublic)
                 :PDETimeSeriesSolution,
                 :PDENoTimeSolution,
                 :wrap_sol,
+                :AbstractDifferentiableDiscretizationMetadata,
+                :pde_index_cotangent,
+                :pde_call_cotangent,
             )
             @test Base.ispublic(SciMLBase, name)
         end
