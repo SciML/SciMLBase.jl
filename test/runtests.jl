@@ -199,6 +199,9 @@ run_tests(;
                 @time @safetestset "Ensemble adjoint gradient correctness" begin
                     include("downstream/ensemble_adjoints.jl")
                 end
+                @time @safetestset "Enzyme through ensembles of SDEs" begin
+                    include("downstream/ensemble_enzyme_sde.jl")
+                end
             end
         end,
         "SII_Remake" => function ()
