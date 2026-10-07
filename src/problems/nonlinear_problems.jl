@@ -460,6 +460,11 @@ is instead a mutating function `explictfuns![i](prob.probs[i],sols)` which
 updates the values of prob.probs[i] using the previous solutions `sols[i-1]`
 and below.
 
+The problem has no state of its own: `prob.u0` returns `state_values(prob)`, a new
+array concatenating the `u0` of each problem in `probs`, so mutating it does not
+modify the problem. Use `set_state!` or `remake` instead. There is no single
+residual function, so `NonlinearProblem(prob)` throws an `ArgumentError`.
+
 !!! warning
     For the purposes of differentiation, it's assumed that `explictfuns!` does
     not modify tunable parameters!
@@ -609,7 +614,6 @@ end
 
 function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
     if name === :u0
-        # SCCNonlinearProblem stores state only in its subproblems.
         return state_values(prob)
     elseif name == :explictfuns!
         return getfield(prob, :explicitfuns!)
@@ -656,11 +660,9 @@ function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val
 end
 
 function NonlinearProblem(::SCCNonlinearProblem)
-    # SCCNonlinearProblem has no single residual to wrap as a NonlinearProblem.
-    throw(ArgumentError(
-        "an SCCNonlinearProblem cannot be converted to a NonlinearProblem; \
-solve it directly or use its component problems."
-    ))
+    msg = "an SCCNonlinearProblem cannot be converted to a NonlinearProblem; " *
+        "solve it directly or use its component problems."
+    throw(ArgumentError(msg))
 end
 
 """
