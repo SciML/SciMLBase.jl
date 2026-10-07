@@ -461,9 +461,11 @@ updates the values of prob.probs[i] using the previous solutions `sols[i-1]`
 and below.
 
 The problem has no state of its own: `prob.u0` returns `state_values(prob)`, a new
-array concatenating the `u0` of each problem in `probs`, so mutating it does not
-modify the problem. Use `set_state!` or `remake` instead. There is no single
-residual function, so `NonlinearProblem(prob)` throws an `ArgumentError`.
+array concatenating the `u0` of each problem in `probs` (or `nothing` when no
+problem in `probs` has an initial guess), so mutating it does not modify the
+problem. Use `set_state!` or `remake` instead. There is no single residual
+function, so `NonlinearProblem(prob)` and `ImmutableNonlinearProblem(prob)` throw
+an `ArgumentError`; `remake(prob; ...)` returns an `SCCNonlinearProblem`.
 
 !!! warning
     For the purposes of differentiation, it's assumed that `explictfuns!` does
@@ -659,11 +661,19 @@ function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val
     return
 end
 
-function NonlinearProblem(::SCCNonlinearProblem)
-    msg = "an SCCNonlinearProblem cannot be converted to a NonlinearProblem; " *
+function Base.propertynames(prob::SCCNonlinearProblem, private::Bool = false)
+    return (fieldnames(typeof(prob))..., :u0)
+end
+
+# The SCC's `f` is a placeholder holding only the symbolic system, so generic
+# conversions that copy `prob.f`/`prob.u0` would build a problem with no equations.
+function _scc_flat_conversion_error(target)
+    msg = "an SCCNonlinearProblem cannot be converted to $target; " *
         "solve it directly or use its component problems."
     throw(ArgumentError(msg))
 end
+
+NonlinearProblem(::SCCNonlinearProblem) = _scc_flat_conversion_error("a NonlinearProblem")
 
 """
     NonlinearAliasSpecifier(;
@@ -771,6 +781,10 @@ Define a `ImmutableNonlinearProblem` problem from `SteadyStateProblem`.
 """
 function ImmutableNonlinearProblem(prob::AbstractNonlinearProblem)
     return ImmutableNonlinearProblem{SciMLBase.isinplace(prob)}(prob.f, prob.u0, prob.p)
+end
+
+function ImmutableNonlinearProblem(::SCCNonlinearProblem)
+    return _scc_flat_conversion_error("an ImmutableNonlinearProblem")
 end
 
 function Base.convert(
