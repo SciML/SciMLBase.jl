@@ -480,15 +480,17 @@ The successful codes are `ReturnCode.Success`, `ReturnCode.Terminated`,
 `ReturnCode.Default` is not successful because it means the solve is unfinished
 or its outcome is unknown. `ReturnCode.Stalled` and all failure codes are also
 unsuccessful.
+
+Inside a Reactant compilation a return code can be a traced `ReturnCode.T`; with
+Reactant loaded, `successful_retcode` then returns a traced `Bool`.
 """
 function successful_retcode end
 
-function successful_retcode(retcode::ReturnCode.T)
-    return retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
-        retcode == ReturnCode.ExactSolutionLeft ||
-        retcode == ReturnCode.ExactSolutionRight ||
-        retcode == ReturnCode.FloatingPointLimit ||
-        retcode == ReturnCode.StalledSuccess
-end
+const SUCCESSFUL_RETCODES = (
+    ReturnCode.Success, ReturnCode.Terminated, ReturnCode.ExactSolutionLeft,
+    ReturnCode.ExactSolutionRight, ReturnCode.FloatingPointLimit, ReturnCode.StalledSuccess,
+)
+
+successful_retcode(retcode::ReturnCode.T) = retcode in SUCCESSFUL_RETCODES
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
 successful_retcode(retcode) = successful_retcode(convert(ReturnCode.T, retcode))
