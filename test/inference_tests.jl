@@ -39,6 +39,33 @@ end
     @test iszero(@allocated totallength(SVector(1.0, 2.0, 3.0)))
 end
 
+@testset "convenience constructor iip static dispatch" begin
+    f!(du, u, p, t) = (du .= u)
+    f_oop(u, p, t) = u
+    nf(u, p) = u .- p
+    u0 = [1.0]
+    tspan = (0.0, 1.0)
+    p = 1.0
+
+    ODEFunction(f!)
+    ODEFunction(f_oop)
+    ODEProblem(f!, u0, tspan, p)
+    ODEProblem(f_oop, u0, tspan, p)
+    NonlinearProblem(nf, u0, p)
+
+    @test (@allocations ODEFunction(f!)) < 40
+    @test (@allocations ODEFunction(f_oop)) < 40
+    @test (@allocations ODEProblem(f!, u0, tspan, p)) < 40
+    @test (@allocations ODEProblem(f_oop, u0, tspan, p)) < 40
+    @test (@allocations NonlinearProblem(nf, u0, p)) < 40
+
+    @test ODEFunction(f!) isa ODEFunction{true}
+    @test ODEFunction(f_oop) isa ODEFunction{false}
+    @test ODEProblem(f!, u0, tspan, p).f isa ODEFunction{true}
+    @test ODEProblem(f_oop, u0, tspan, p).f isa ODEFunction{false}
+    @test NonlinearProblem(nf, u0, p).f isa NonlinearFunction{false}
+end
+
 @testset "integrator iteration size" begin
     @test Base.IteratorSize(SciMLBase.DEIntegrator) === Base.SizeUnknown()
 end
