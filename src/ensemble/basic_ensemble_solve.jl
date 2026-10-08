@@ -590,6 +590,14 @@ function tmap(f, args...)
     n = length(args[1])
     T = Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...})
     batch_data = Vector{T}(undef, n)
+    # When eltype inference proves every result fits in T, return the typed
+    # vector directly so callers (e.g. EnsembleThreads solve) stay concrete.
+    if Core.Compiler.return_type(f, Tuple{map(eltype, args)...}) <: T
+        Threads.@threads for i in 1:n
+            batch_data[i] = f(getindex.(args, i)...)
+        end
+        return batch_data
+    end
     # Misfits go here; widen once after the thread barrier (in-loop widen races).
     misfit = Vector{Any}(undef, n)
     Threads.@threads for i in 1:n

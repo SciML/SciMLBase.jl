@@ -58,6 +58,13 @@ end
     @test sols[2].prob.u0 isa Matrix{Float64}
 end
 
+@testset "tmap homogeneous return type is concrete" begin
+    # EnsembleThreads solve goes through tmap; a runtime misfit branch widens
+    # the inferred return to abstract Vector and makes solve infer as Any.
+    h(i) = Float64(i)
+    @test isconcretetype(only(Base.return_types(tmap, Tuple{typeof(h), UnitRange{Int}})))
+end
+
 @testset "static array totallength" begin
     @test totallength(SVector(1.0, 2.0, 3.0)) == 3
     @test totallength(SMatrix{2, 2}(1.0, 2.0, 3.0, 4.0)) == 4
