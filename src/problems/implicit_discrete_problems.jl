@@ -120,8 +120,7 @@ function ImplicitDiscreteProblem(
         f::ImplicitDiscreteFunction, u0, tspan::Tuple,
         p = NullParameters(); kwargs...
     )
-    return isinplace(f, 5) ? ImplicitDiscreteProblem{true}(f, u0, tspan, p; kwargs...) :
-        ImplicitDiscreteProblem{false}(f, u0, tspan, p; kwargs...)
+    return ImplicitDiscreteProblem{isinplace(f, 5)}(f, u0, tspan, p; kwargs...)
 end
 
 function ImplicitDiscreteProblem(
