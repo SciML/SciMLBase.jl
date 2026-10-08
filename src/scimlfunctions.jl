@@ -3263,9 +3263,10 @@ function ODEFunction{iip}(f; kwargs...) where {iip}
     return ODEFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = isinplace(f, 4) ?
-    ODEFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
-    ODEFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
+function ODEFunction(f; kwargs...)
+    return isinplace(f, 4) ? ODEFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        ODEFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
+end
 ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))

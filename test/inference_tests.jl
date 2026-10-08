@@ -79,17 +79,24 @@ end
     tspan = (0.0, 1.0)
     p = 1.0
 
-    ODEFunction(f!)
-    ODEFunction(f_oop)
-    ODEProblem(f!, u0, tspan, p)
-    ODEProblem(f_oop, u0, tspan, p)
-    NonlinearProblem(nf, u0, p)
+    # Julia 1.10's `@allocations` expands inline with `:force_compile`, so a bare
+    # constructor call does not warm the timed frame. Barrier helpers match 1.11+
+    # `Base.allocations(f, args...)` and drop the compiling first measurement.
+    odef_allocs(f) = @allocations ODEFunction(f)
+    odep_allocs(f, u0, tspan, p) = @allocations ODEProblem(f, u0, tspan, p)
+    nlp_allocs(f, u0, p) = @allocations NonlinearProblem(f, u0, p)
 
-    @test (@allocations ODEFunction(f!)) < 40
-    @test (@allocations ODEFunction(f_oop)) < 40
-    @test (@allocations ODEProblem(f!, u0, tspan, p)) < 40
-    @test (@allocations ODEProblem(f_oop, u0, tspan, p)) < 40
-    @test (@allocations NonlinearProblem(nf, u0, p)) < 40
+    odef_allocs(f!)
+    odef_allocs(f_oop)
+    odep_allocs(f!, u0, tspan, p)
+    odep_allocs(f_oop, u0, tspan, p)
+    nlp_allocs(nf, u0, p)
+
+    @test odef_allocs(f!) < 40
+    @test odef_allocs(f_oop) < 40
+    @test odep_allocs(f!, u0, tspan, p) < 40
+    @test odep_allocs(f_oop, u0, tspan, p) < 40
+    @test nlp_allocs(nf, u0, p) < 40
 
     @test ODEFunction(f!) isa ODEFunction{true}
     @test ODEFunction(f_oop) isa ODEFunction{false}
