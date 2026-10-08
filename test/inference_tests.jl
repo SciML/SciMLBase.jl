@@ -1,4 +1,4 @@
-using SciMLBase, StaticArrays, Test
+using SciMLBase, StaticArrays, Test, LinearAlgebra
 using SciMLBase: has_kwargs, parameterless_type, remaker_of, responsible_map, tmap,
     totallength
 
@@ -31,6 +31,26 @@ end
     @test responsible_map(x -> 2x, [1, 2, 3]) isa Vector{Int}
     @test responsible_map(+, [1, 2], [3, 4]) isa Vector{Int}
     @test tmap(x -> 2x, [1, 2, 3]) isa Vector{Int}
+end
+
+@testset "ensemble map widens when prob_func changes u0 type" begin
+    # Downstream `ensemble_zero_length` maps over mixed u0 shapes; with concrete
+    # ODEProblem inference the old narrowly typed Vector{T} threw on convert.
+    make_prob(u0) = ODEProblem((u, p, t) -> u, u0, (0.0, 1.0), nothing)
+    probs = responsible_map(make_prob, [0.5, diagm([1.0, 1.0])])
+    @test length(probs) == 2
+    @test probs[1].u0 isa Float64
+    @test probs[2].u0 isa Matrix{Float64}
+    sols = responsible_map(
+        u0 -> SciMLBase.build_solution(
+            make_prob(u0), :NoAlgorithm, [0.0, 1.0], [u0, u0];
+            retcode = ReturnCode.Success
+        ),
+        [0.5, diagm([1.0, 1.0])]
+    )
+    @test length(sols) == 2
+    @test sols[1].prob.u0 isa Float64
+    @test sols[2].prob.u0 isa Matrix{Float64}
 end
 
 @testset "static array totallength" begin

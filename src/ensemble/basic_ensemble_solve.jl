@@ -513,16 +513,26 @@ function solve_batch(
 end
 
 function responsible_map(f, II...)
-    batch_data = Vector{
-        Core.Compiler.return_type(
-            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
-        ),
-    }(
-        undef,
-        length(II[1])
+    n = length(II[1])
+    T = Core.Compiler.return_type(
+        f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
     )
-    for i in 1:length(II[1])
-        batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+    batch_data = Vector{T}(undef, n)
+    for i in 1:n
+        val = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+        # Widen when a later element does not fit (Base map/collect).
+        if val isa eltype(batch_data)
+            @inbounds batch_data[i] = val
+        else
+            new_data = Vector{
+                Base.promote_typejoin(eltype(batch_data), typeof(val)),
+            }(
+                undef, n
+            )
+            copyto!(new_data, 1, batch_data, 1, i - 1)
+            batch_data = new_data
+            @inbounds batch_data[i] = val
+        end
     end
     return batch_data
 end
@@ -577,16 +587,13 @@ function solve_batch(
 end
 
 function tmap(f, args...)
-    batch_data = Vector{
-        Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...}),
-    }(
-        undef,
-        length(args[1])
-    )
-    Threads.@threads for i in 1:length(args[1])
+    n = length(args[1])
+    # Threaded eltype widening is racy; collect into Any then tighten.
+    batch_data = Vector{Any}(undef, n)
+    Threads.@threads for i in 1:n
         batch_data[i] = f(getindex.(args, i)...)
     end
-    return batch_data
+    return tighten_container_eltype(batch_data)
 end
 
 function solve_batch(
