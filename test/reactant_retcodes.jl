@@ -14,3 +14,12 @@ end
     @test Bool(stalled_ok) == expected
     @test SciMLBase.successful_retcode(retcode) == expected
 end
+
+# `ifelse` on a traced condition turns the code into a `Reactant.TracedEnum`.
+traced_successful_code(flag, code) = SciMLBase.successful_retcode(ifelse(flag > 0, code, code))
+
+@testset "traced and host successful_retcode agree on $code" for code in
+    instances(ReturnCode.T)
+    traced = Reactant.@jit traced_successful_code(Reactant.ConcreteRNumber(1.0), code)
+    @test Bool(traced) == SciMLBase.successful_retcode(code)
+end

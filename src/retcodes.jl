@@ -486,11 +486,12 @@ Reactant loaded, `successful_retcode` then returns a traced `Bool`.
 """
 function successful_retcode end
 
-const SUCCESSFUL_RETCODES = (
-    ReturnCode.Success, ReturnCode.Terminated, ReturnCode.ExactSolutionLeft,
-    ReturnCode.ExactSolutionRight, ReturnCode.FloatingPointLimit, ReturnCode.StalledSuccess,
-)
-
-successful_retcode(retcode::ReturnCode.T) = retcode in SUCCESSFUL_RETCODES
+function successful_retcode(retcode::ReturnCode.T)
+    return retcode == ReturnCode.Success || retcode == ReturnCode.Terminated ||
+        retcode == ReturnCode.ExactSolutionLeft ||
+        retcode == ReturnCode.ExactSolutionRight ||
+        retcode == ReturnCode.FloatingPointLimit ||
+        retcode == ReturnCode.StalledSuccess
+end
 successful_retcode(sol::AbstractSciMLSolution) = successful_retcode(sol.retcode)
 successful_retcode(retcode) = successful_retcode(convert(ReturnCode.T, retcode))
