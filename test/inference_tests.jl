@@ -34,19 +34,24 @@ end
 end
 
 @testset "ensemble map widens when prob_func changes u0 type" begin
-    # Downstream `ensemble_zero_length` maps over mixed u0 shapes; with concrete
-    # ODEProblem inference the old narrowly typed Vector{T} threw on convert.
+    # Mixed u0 shapes must widen the container (responsible_map / EnsembleSerial
+    # and tmap / EnsembleThreads).
     make_prob(u0) = ODEProblem((u, p, t) -> u, u0, (0.0, 1.0), nothing)
-    probs = responsible_map(make_prob, [0.5, diagm([1.0, 1.0])])
+    u0s = [0.5, diagm([1.0, 1.0])]
+    probs = responsible_map(make_prob, u0s)
     @test length(probs) == 2
     @test probs[1].u0 isa Float64
     @test probs[2].u0 isa Matrix{Float64}
+    tprobs = tmap(make_prob, u0s)
+    @test length(tprobs) == 2
+    @test tprobs[1].u0 isa Float64
+    @test tprobs[2].u0 isa Matrix{Float64}
     sols = responsible_map(
         u0 -> SciMLBase.build_solution(
             make_prob(u0), :NoAlgorithm, [0.0, 1.0], [u0, u0];
             retcode = ReturnCode.Success
         ),
-        [0.5, diagm([1.0, 1.0])]
+        u0s
     )
     @test length(sols) == 2
     @test sols[1].prob.u0 isa Float64

@@ -588,12 +588,37 @@ end
 
 function tmap(f, args...)
     n = length(args[1])
-    # Threaded eltype widening is racy; collect into Any then tighten.
-    batch_data = Vector{Any}(undef, n)
+    T = Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...})
+    batch_data = Vector{T}(undef, n)
+    # Misfits go here; widen once after the thread barrier (in-loop widen races).
+    misfit = Vector{Any}(undef, n)
     Threads.@threads for i in 1:n
-        batch_data[i] = f(getindex.(args, i)...)
+        v = f(getindex.(args, i)...)
+        if v isa T
+            @inbounds batch_data[i] = v
+        else
+            @inbounds misfit[i] = v
+        end
     end
-    return tighten_container_eltype(batch_data)
+    any_misfit = false
+    for i in 1:n
+        if isassigned(misfit, i)
+            any_misfit = true
+            break
+        end
+    end
+    any_misfit || return batch_data
+    U = T
+    for i in 1:n
+        if isassigned(misfit, i)
+            U = Base.promote_typejoin(U, typeof(misfit[i]))
+        end
+    end
+    out = Vector{U}(undef, n)
+    for i in 1:n
+        @inbounds out[i] = isassigned(misfit, i) ? misfit[i] : batch_data[i]
+    end
+    return out
 end
 
 function solve_batch(
