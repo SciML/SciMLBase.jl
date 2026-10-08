@@ -3568,7 +3568,10 @@ function SplitFunction{iip, specialize}(
     end
 end
 
-SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
+function SplitFunction(f1, f2; kwargs...)
+    return isinplace(f2, 4) ? SplitFunction{true}(f1, f2; kwargs...) :
+        SplitFunction{false}(f1, f2; kwargs...)
+end
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
     return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
         ODEFunction(f1), ODEFunction{iip}(f2);
@@ -3671,7 +3674,8 @@ function DynamicalODEFunction{iip, specialize}(
 end
 
 function DynamicalODEFunction(f1, f2 = nothing; kwargs...)
-    return DynamicalODEFunction{isinplace(f1, 5)}(f1, f2; kwargs...)
+    return isinplace(f1, 5) ? DynamicalODEFunction{true}(f1, f2; kwargs...) :
+        DynamicalODEFunction{false}(f1, f2; kwargs...)
 end
 function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
     return DynamicalODEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -4076,7 +4080,8 @@ function SplitSDEFunction{iip, specialize}(
 end
 
 function SplitSDEFunction(f1, f2, g; kwargs...)
-    return SplitSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
+    return isinplace(f2, 4) ? SplitSDEFunction{true}(f1, f2, g; kwargs...) :
+        SplitSDEFunction{false}(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
     return SplitSDEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -4177,7 +4182,8 @@ function DynamicalSDEFunction{iip, specialize}(
 end
 
 function DynamicalSDEFunction(f1, f2, g; kwargs...)
-    return DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
+    return isinplace(f2, 5) ? DynamicalSDEFunction{true}(f1, f2, g; kwargs...) :
+        DynamicalSDEFunction{false}(f1, f2, g; kwargs...)
 end
 function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
     return DynamicalSDEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -4609,7 +4615,8 @@ function DynamicalDDEFunction{iip, specialize}(
 end
 
 function DynamicalDDEFunction(f1, f2 = nothing; kwargs...)
-    return DynamicalDDEFunction{isinplace(f1, 6)}(f1, f2; kwargs...)
+    return isinplace(f1, 6) ? DynamicalDDEFunction{true}(f1, f2; kwargs...) :
+        DynamicalDDEFunction{false}(f1, f2; kwargs...)
 end
 function DynamicalDDEFunction{iip}(f1, f2; kwargs...) where {iip}
     return DynamicalDDEFunction{iip, DEFAULT_SPECIALIZATION}(
