@@ -1,4 +1,4 @@
-using SciMLBase, StaticArrays, Test
+using SciMLBase, StaticArrays, Test, LinearAlgebra
 using SciMLBase: has_kwargs, parameterless_type, remaker_of, responsible_map, tmap,
     totallength
 
@@ -33,10 +33,76 @@ end
     @test tmap(x -> 2x, [1, 2, 3]) isa Vector{Int}
 end
 
+@testset "ensemble map widens when prob_func changes u0 type" begin
+    # Mixed u0 shapes must widen the container (responsible_map / EnsembleSerial
+    # and tmap / EnsembleThreads).
+    make_prob(u0) = ODEProblem((u, p, t) -> u, u0, (0.0, 1.0), nothing)
+    u0s = [0.5, diagm([1.0, 1.0])]
+    probs = responsible_map(make_prob, u0s)
+    @test length(probs) == 2
+    @test probs[1].u0 isa Float64
+    @test probs[2].u0 isa Matrix{Float64}
+    tprobs = tmap(make_prob, u0s)
+    @test length(tprobs) == 2
+    @test tprobs[1].u0 isa Float64
+    @test tprobs[2].u0 isa Matrix{Float64}
+    sols = responsible_map(
+        u0 -> SciMLBase.build_solution(
+            make_prob(u0), :NoAlgorithm, [0.0, 1.0], [u0, u0];
+            retcode = ReturnCode.Success
+        ),
+        u0s
+    )
+    @test length(sols) == 2
+    @test sols[1].prob.u0 isa Float64
+    @test sols[2].prob.u0 isa Matrix{Float64}
+end
+
+@testset "tmap homogeneous return type is concrete" begin
+    # EnsembleThreads solve goes through tmap; a runtime misfit branch widens
+    # the inferred return to abstract Vector and makes solve infer as Any.
+    h(i) = Float64(i)
+    @test isconcretetype(only(Base.return_types(tmap, Tuple{typeof(h), UnitRange{Int}})))
+end
+
 @testset "static array totallength" begin
     @test totallength(SVector(1.0, 2.0, 3.0)) == 3
     @test totallength(SMatrix{2, 2}(1.0, 2.0, 3.0, 4.0)) == 4
     @test iszero(@allocated totallength(SVector(1.0, 2.0, 3.0)))
+end
+
+@testset "convenience constructor iip static dispatch" begin
+    f!(du, u, p, t) = (du .= u)
+    f_oop(u, p, t) = u
+    nf(u, p) = u .- p
+    u0 = [1.0]
+    tspan = (0.0, 1.0)
+    p = 1.0
+
+    # Julia 1.10's `@allocations` expands inline with `:force_compile`, so a bare
+    # constructor call does not warm the timed frame. Barrier helpers match 1.11+
+    # `Base.allocations(f, args...)` and drop the compiling first measurement.
+    odef_allocs(f) = @allocations ODEFunction(f)
+    odep_allocs(f, u0, tspan, p) = @allocations ODEProblem(f, u0, tspan, p)
+    nlp_allocs(f, u0, p) = @allocations NonlinearProblem(f, u0, p)
+
+    odef_allocs(f!)
+    odef_allocs(f_oop)
+    odep_allocs(f!, u0, tspan, p)
+    odep_allocs(f_oop, u0, tspan, p)
+    nlp_allocs(nf, u0, p)
+
+    @test odef_allocs(f!) < 40
+    @test odef_allocs(f_oop) < 40
+    @test odep_allocs(f!, u0, tspan, p) < 40
+    @test odep_allocs(f_oop, u0, tspan, p) < 40
+    @test nlp_allocs(nf, u0, p) < 40
+
+    @test ODEFunction(f!) isa ODEFunction{true}
+    @test ODEFunction(f_oop) isa ODEFunction{false}
+    @test ODEProblem(f!, u0, tspan, p).f isa ODEFunction{true}
+    @test ODEProblem(f_oop, u0, tspan, p).f isa ODEFunction{false}
+    @test NonlinearProblem(nf, u0, p).f isa NonlinearFunction{false}
 end
 
 @testset "integrator iteration size" begin
