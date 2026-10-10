@@ -1,11 +1,12 @@
 module SciMLBaseChainRulesCoreExt
 
-using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
-    SDEProblem, getobserved, remake
+using SciMLBase: SciMLBase, AbstractODESolution, AbstractTimeseriesSolution,
+    EnsembleSolution, NonlinearProblem, ODESolution, RODESolution, SDEProblem, getobserved,
+    remake
 import ChainRulesCore
 import ChainRulesCore: NoTangent, @non_differentiable, zero_tangent, rrule_via_ad
-using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, parameter_values,
-    symbolic_type, variable_index
+using SymbolicIndexingInterface: SymbolicIndexingInterface, NotSymbolic, ArraySymbolic,
+    parameter_values, symbolic_type, variable_index
 using RecursiveArrayTools: AbstractVectorOfArray
 
 @non_differentiable SciMLBase.checkkwargs(kwargshandle)
@@ -92,10 +93,40 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, i::Integer)
 end
 
 function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
+    return VA[sym], solution_getindex_pullback(VA, sym)
+end
+
+# Other timeseries solutions (`DAESolution`, `RODESolution`, …) only get the
+# symbolic rule. Every non-symbolic index is handed to exactly the rule that
+# applies without this method, so its result or error is unchanged.
+function ChainRulesCore.rrule(::typeof(getindex), VA::AbstractODESolution, sym)
+    if symbolic_type(sym) === NotSymbolic()
+        return invoke(
+            ChainRulesCore.rrule,
+            Tuple{typeof(getindex), AbstractTimeseriesSolution, typeof(sym)},
+            getindex, VA, sym
+        )
+    end
+    return VA[sym], solution_getindex_pullback(VA, sym)
+end
+
+function solution_getindex_pullback(VA, sym)
     function ODESolution_getindex_pullback(Δ)
         i = symbolic_type(sym) != NotSymbolic() ? variable_index(VA, sym) : sym
         return if i === nothing
             throw(error("AD of purely-symbolic slicing for observed quantities is not yet supported. Work around this by using `A[sym,i]` to access each element sequentially in the function being differentiated."))
+        elseif symbolic_type(sym) === ArraySymbolic()
+            # `sol[x]` for an array symbol returns one vector per timestep.
+            i = vec(i)
+            Δ′ = [
+                [
+                    let idx = findfirst(isequal(k), i)
+                        idx === nothing ? zero(x[1]) : Δ[j][idx]
+                    end for k in 1:length(x)
+                ]
+                    for (x, j) in zip(VA.u, 1:length(VA))
+            ]
+            (NoTangent(), Δ′, NoTangent())
         else
             Δ′ = [
                 [i == k ? Δ[j] : zero(x[1]) for k in 1:length(x)]
@@ -104,7 +135,7 @@ function ChainRulesCore.rrule(::typeof(getindex), VA::ODESolution, sym)
             (NoTangent(), Δ′, NoTangent())
         end
     end
-    return VA[sym], ODESolution_getindex_pullback
+    return ODESolution_getindex_pullback
 end
 
 # NOTE: Constructor rrules for ODEProblem were removed. ODEProblem is a mutable struct,
