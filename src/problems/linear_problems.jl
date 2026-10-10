@@ -202,7 +202,8 @@ function LinearProblem(A, b, args...; kwargs...)
         # is the value the reflection already computes -- just statically.
         LinearProblem{true}(A, b, args...; kwargs...)
     else
-        LinearProblem{isinplace(A, 4)}(A, b, args...; kwargs...)
+        isinplace(A, 4) ? LinearProblem{true}(A, b, args...; kwargs...) :
+            LinearProblem{false}(A, b, args...; kwargs...)
     end
 end
 

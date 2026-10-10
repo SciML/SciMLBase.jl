@@ -513,16 +513,26 @@ function solve_batch(
 end
 
 function responsible_map(f, II...)
-    batch_data = Vector{
-        Core.Compiler.return_type(
-            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
-        ),
-    }(
-        undef,
-        length(II[1])
+    n = length(II[1])
+    T = Core.Compiler.return_type(
+        f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
     )
-    for i in 1:length(II[1])
-        batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+    batch_data = Vector{T}(undef, n)
+    for i in 1:n
+        val = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+        # Widen when a later element does not fit (Base map/collect).
+        if val isa eltype(batch_data)
+            @inbounds batch_data[i] = val
+        else
+            new_data = Vector{
+                Base.promote_typejoin(eltype(batch_data), typeof(val)),
+            }(
+                undef, n
+            )
+            copyto!(new_data, 1, batch_data, 1, i - 1)
+            batch_data = new_data
+            @inbounds batch_data[i] = val
+        end
     end
     return batch_data
 end
@@ -577,16 +587,46 @@ function solve_batch(
 end
 
 function tmap(f, args...)
-    batch_data = Vector{
-        Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...}),
-    }(
-        undef,
-        length(args[1])
-    )
-    Threads.@threads for i in 1:length(args[1])
-        batch_data[i] = f(getindex.(args, i)...)
+    n = length(args[1])
+    T = Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...})
+    batch_data = Vector{T}(undef, n)
+    # When eltype inference proves every result fits in T, return the typed
+    # vector directly so callers (e.g. EnsembleThreads solve) stay concrete.
+    if Core.Compiler.return_type(f, Tuple{map(eltype, args)...}) <: T
+        Threads.@threads for i in 1:n
+            batch_data[i] = f(getindex.(args, i)...)
+        end
+        return batch_data
     end
-    return batch_data
+    # Misfits go here; widen once after the thread barrier (in-loop widen races).
+    misfit = Vector{Any}(undef, n)
+    Threads.@threads for i in 1:n
+        v = f(getindex.(args, i)...)
+        if v isa T
+            @inbounds batch_data[i] = v
+        else
+            @inbounds misfit[i] = v
+        end
+    end
+    any_misfit = false
+    for i in 1:n
+        if isassigned(misfit, i)
+            any_misfit = true
+            break
+        end
+    end
+    any_misfit || return batch_data
+    U = T
+    for i in 1:n
+        if isassigned(misfit, i)
+            U = Base.promote_typejoin(U, typeof(misfit[i]))
+        end
+    end
+    out = Vector{U}(undef, n)
+    for i in 1:n
+        @inbounds out[i] = isassigned(misfit, i) ? misfit[i] : batch_data[i]
+    end
+    return out
 end
 
 function solve_batch(

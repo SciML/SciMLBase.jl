@@ -37,7 +37,8 @@ function TimeGradientWrapper{iip}(f::F, uprev, p) where {F, iip}
     return TimeGradientWrapper{iip, F, typeof(uprev), typeof(p)}(f, uprev, p)
 end
 function TimeGradientWrapper(f::F, uprev, p) where {F}
-    return TimeGradientWrapper{isinplace(f, 4)}(f, uprev, p)
+    return isinplace(f, 4) ? TimeGradientWrapper{true}(f, uprev, p) :
+        TimeGradientWrapper{false}(f, uprev, p)
 end
 
 function (ff::TimeGradientWrapper{true})(t)
@@ -73,7 +74,9 @@ end
 function UJacobianWrapper{iip}(f::F, t, p) where {F, iip}
     return UJacobianWrapper{iip, F, typeof(t), typeof(p)}(f, t, p)
 end
-UJacobianWrapper(f::F, t, p) where {F} = UJacobianWrapper{isinplace(f, 4)}(f, t, p)
+function UJacobianWrapper(f::F, t, p) where {F}
+    return isinplace(f, 4) ? UJacobianWrapper{true}(f, t, p) : UJacobianWrapper{false}(f, t, p)
+end
 
 (ff::UJacobianWrapper{true})(du1, uprev) = ff.f(du1, uprev, ff.p, ff.t)
 function (ff::UJacobianWrapper{true})(uprev)
@@ -112,7 +115,8 @@ function TimeDerivativeWrapper{iip}(f::F, u, p) where {F, iip}
     return TimeDerivativeWrapper{iip, F, typeof(u), typeof(p)}(f, u, p)
 end
 function TimeDerivativeWrapper(f::F, u, p) where {F}
-    return TimeDerivativeWrapper{isinplace(f, 4)}(f, u, p)
+    return isinplace(f, 4) ? TimeDerivativeWrapper{true}(f, u, p) :
+        TimeDerivativeWrapper{false}(f, u, p)
 end
 
 (ff::TimeDerivativeWrapper{false})(t) = ff.f(ff.u, ff.p, t)
@@ -143,7 +147,10 @@ end
 function UDerivativeWrapper{iip}(f::F, t, p) where {F, iip}
     return UDerivativeWrapper{iip, F, typeof(t), typeof(p)}(f, t, p)
 end
-UDerivativeWrapper(f::F, t, p) where {F} = UDerivativeWrapper{isinplace(f, 4)}(f, t, p)
+function UDerivativeWrapper(f::F, t, p) where {F}
+    return isinplace(f, 4) ? UDerivativeWrapper{true}(f, t, p) :
+        UDerivativeWrapper{false}(f, t, p)
+end
 
 (ff::UDerivativeWrapper{false})(u) = ff.f(u, ff.p, ff.t)
 (ff::UDerivativeWrapper{true})(du1, u) = ff.f(du1, u, ff.p, ff.t)
@@ -199,7 +206,10 @@ end
 function ParamJacobianWrapper{iip}(f::F, t, u) where {F, iip}
     return ParamJacobianWrapper{iip, F, typeof(t), typeof(u)}(f, t, u)
 end
-ParamJacobianWrapper(f::F, t, u) where {F} = ParamJacobianWrapper{isinplace(f, 4)}(f, t, u)
+function ParamJacobianWrapper(f::F, t, u) where {F}
+    return isinplace(f, 4) ? ParamJacobianWrapper{true}(f, t, u) :
+        ParamJacobianWrapper{false}(f, t, u)
+end
 
 (ff::ParamJacobianWrapper{true})(du1, p) = ff.f(du1, ff.u, p, ff.t)
 function (ff::ParamJacobianWrapper{true})(p)
@@ -262,7 +272,9 @@ mutable struct JacobianWrapper{iip, fType, pType} <: AbstractWrappedFunction{iip
 end
 
 JacobianWrapper{iip}(f::F, p) where {F, iip} = JacobianWrapper{iip, F, typeof(p)}(f, p)
-JacobianWrapper(f::F, p) where {F} = JacobianWrapper{isinplace(f, 3)}(f, p)
+function JacobianWrapper(f::F, p) where {F}
+    return isinplace(f, 3) ? JacobianWrapper{true}(f, p) : JacobianWrapper{false}(f, p)
+end
 
 (uf::JacobianWrapper{false})(u) = uf.f(u, uf.p)
 (uf::JacobianWrapper{false})(res, u) = (vec(res) .= vec(uf.f(u, uf.p)))
