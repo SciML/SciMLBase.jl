@@ -440,3 +440,19 @@ end
     @test ss isa SciMLBase.SavedSubsystem
     @test SciMLBase.get_saved_state_idxs(ss) == [1]
 end
+
+@testset "observed ProblemState carries delay history" begin
+    struct NonMarkovHistorySol <:
+        SciMLBase.AbstractODESolution{Float64, 1, Vector{Float64}} end
+    struct MarkovHistorySol <:
+        SciMLBase.AbstractODESolution{Float64, 1, Vector{Float64}} end
+    SymbolicIndexingInterface.is_markovian(::NonMarkovHistorySol) = false
+    SymbolicIndexingInterface.is_markovian(::MarkovHistorySol) = true
+    SymbolicIndexingInterface.get_history_function(::NonMarkovHistorySol) = :sol_history
+    nonmarkov = SciMLBase._observed_problem_state(
+        NonMarkovHistorySol(), [1.0], nothing, 0.0
+    )
+    @test nonmarkov.h === :sol_history
+    markov = SciMLBase._observed_problem_state(MarkovHistorySol(), [1.0], nothing, 0.0)
+    @test markov.h === nothing
+end
