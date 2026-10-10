@@ -115,8 +115,11 @@ run_tests(;
     end,
     groups = Dict(
         "Reactant" => function ()
-            return @safetestset "Reactant specialization" begin
+            @safetestset "Reactant specialization" begin
                 include("reactant_specialization.jl")
+            end
+            return @safetestset "Reactant return codes" begin
+                include("reactant_retcodes.jl")
             end
         end,
         "Downstream" => function ()
