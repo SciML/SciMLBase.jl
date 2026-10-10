@@ -12,3 +12,14 @@ sol = solve(remade, Tsit5())
 @test SciMLBase.successful_retcode(sol)
 fresh = ODEProblem{false, SciMLBase.FunctionWrapperSpecialize}(f, [1.0], (0.0, 1.0), [3.0])
 @test sol.u[end] ≈ solve(fresh, Tsit5()).u[end]
+
+g!(du, u, p, t) = (du .= -u; nothing)
+struct CustomSys end
+odef = ODEFunction{true}(g!; mass_matrix = fill(2.0, 1, 1), sys = CustomSys())
+prob = ODEProblem{true, SciMLBase.FunctionWrapperSpecialize}(odef, [1.0], (0.0, 1.0))
+@test prob.f.mass_matrix == fill(2.0, 1, 1)
+@test prob.f.sys === CustomSys()
+@test solve(prob, Rodas5P()).u[end][1] ≈ exp(-0.5) rtol = 1.0e-4
+
+rewrapped = ODEProblem{true, SciMLBase.FunctionWrapperSpecialize}(prob.f.f, [1.0], (0.0, 1.0))
+@test SciMLBase.specialization(rewrapped.f) === SciMLBase.FunctionWrapperSpecialize

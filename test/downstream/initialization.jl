@@ -135,6 +135,27 @@ end
             @test success
             @test u0 == prob.u0
         end
+
+        # Immutable out-of-place RHS residual must not setindex! into SVector.
+        @testset "SVector out-of-place mass matrix" begin
+            using OrdinaryDiffEqRosenbrock: Rodas5P
+            using StaticArrays
+            fsv(u, p, t) = SA[-u[1] + u[2], u[1] + u[2] - 1.0]
+            oopfn = ODEFunction{false}(fsv, mass_matrix = [1.0 0.0; 0.0 0.0])
+            prob = ODEProblem(oopfn, SA[1.0, 0.0], (0.0, 1.0))
+            integ = init(prob, Rodas5P(); initializealg = SciMLBase.NoInit())
+            u0, _,
+                success = SciMLBase.get_initial_values(
+                prob, integ, oopfn, SciMLBase.CheckInit(),
+                Val(false); abstol = 1.0e-10
+            )
+            @test success
+            @test u0 == prob.u0
+
+            sol = solve(prob, Rodas5P())
+            @test SciMLBase.successful_retcode(sol)
+            @test sol.u[end][1] + sol.u[end][2] ≈ 1
+        end
     end
 
     @testset "DAEProblem" begin
