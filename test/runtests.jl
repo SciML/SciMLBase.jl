@@ -80,6 +80,9 @@ run_tests(;
         @time @safetestset "Error hints" begin
             include("error_hint_tests.jl")
         end
+        @time @safetestset "Keyword validation" begin
+            include("keyword_validation.jl")
+        end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
