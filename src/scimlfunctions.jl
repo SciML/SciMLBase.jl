@@ -1969,6 +1969,9 @@ the usage of `f`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
+  It may also be an `AbstractSciMLOperator`, in which case `jac(u,p)` may return an operator that
+  NonlinearSolve.jl passes to the linear solver as is: `mul!` for Krylov methods, and
+  `convert(AbstractMatrix, op)` for factorizations (so it must be convertible for those).
 - `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
