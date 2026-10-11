@@ -240,7 +240,7 @@ Solution packages may extend this for a concrete solution type.
 """
 function isdenseplot(sol)
     return (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
-        !(sol isa AbstractRODESolution) &&
+        !(sol.prob isa Union{AbstractRODEProblem, AbstractSDDEProblem}) &&
         !(
         hasfield(typeof(sol), :interp) &&
             sol.interp isa SensitivityInterpolation
