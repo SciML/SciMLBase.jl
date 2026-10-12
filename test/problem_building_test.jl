@@ -207,8 +207,24 @@ end
                 SciMLBase.parameterless_type(typeof(fn))
             @test SciMLBase.specialization(newfn) === SciMLBase.specialization(fn)
             @test newfn.jac_prototype isa Matrix{Float32}
-            @test newfn.f1 === fn.f1 && newfn.f2 === fn.f2
+            @test all(
+                getfield(newfn, name) === getfield(fn, name)
+                    for name in fieldnames(typeof(fn)) if name !== :jac_prototype
+            )
         end
+    end
+
+    @testset "DynamicalDDEFunction keyword-only constructor" begin
+        f1(u, h, p, t) = u
+        f2(u, h, p, t) = -u
+        fn = DynamicalDDEFunction{false}(;
+            f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
+            jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
+            sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+            observed = nothing, colorvec = nothing, sys = nothing
+        )
+        @test fn isa DynamicalDDEFunction{false, SciMLBase.FullSpecialize}
+        @test fn.sparsity === nothing
     end
 end
 
