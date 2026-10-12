@@ -226,6 +226,19 @@ end
         @test fn isa DynamicalDDEFunction{false, SciMLBase.FullSpecialize}
         @test fn.sparsity === nothing
     end
+
+    @testset "DynamicalODEFunction keyword-only constructor" begin
+        f1 = ODEFunction{false}((v, u, p, t) -> -u)
+        f2 = ODEFunction{false}((v, u, p, t) -> v)
+        fn = DynamicalODEFunction{false}(;
+            f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
+            jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
+            sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+            observed = nothing, colorvec = nothing, sys = nothing
+        )
+        @test fn isa DynamicalODEFunction{false, SciMLBase.FullSpecialize}
+        @test fn.sparsity === nothing
+    end
 end
 
 @testset "getproperties avoids broadcast on SciML functions" begin
