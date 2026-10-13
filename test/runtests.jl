@@ -74,6 +74,9 @@ run_tests(;
         @time @safetestset "Despecialized parameters" begin
             include("despecialized_parameters.jl")
         end
+        @time @safetestset "OptimizationFunction specialization" begin
+            include("optimization_function_specialization.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
