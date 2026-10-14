@@ -1,5 +1,14 @@
 using SciMLBase, Test, SymbolicIndexingInterface
 
+struct SCCLinearTestSys
+    sc::SymbolCache
+end
+SymbolicIndexingInterface.symbolic_container(s::SCCLinearTestSys) = s.sc
+function SciMLBase.get_new_A_b(::SCCLinearTestSys, f, p, A, b; kwargs...)
+    A .= p[1]
+    return A, b
+end
+
 function scc_blocks(container)
     f1 = NonlinearFunction{false}(
         (u, p) -> [1 - u[1]];
@@ -138,6 +147,57 @@ end
         @test sol[:y] == 2.0
         @test sol[[:z, :x]] == [3.0, 1.0]
         @test sol[:(x + z)] == 4.0
+    end
+
+    @testset "remake parameters of guess-less linear blocks" begin
+        for T in (SCCSteadyStateProblem, SCCNonlinearProblem),
+                wrap in (x -> Tuple(x), identity)
+            p = [1.0]
+            lin = LinearProblem(
+                [1.0;;], [4.0], p;
+                f = SciMLBase.SymbolicLinearInterface(;
+                    update_Ab = nothing,
+                    sys = SCCLinearTestSys(SymbolCache([:x], [:k])),
+                    observed = nothing, metadata = nothing
+                )
+            )
+            prob = T(wrap([lin]), wrap([Returns(nothing)]), p, Val(true))
+
+            prob2 = remake(prob; p = [2.0])
+            @test prob2 isa T
+            @test parameter_values(prob2) == [2.0]
+            @test parameter_values(prob2.probs[1]) === parameter_values(prob2)
+            @test prob2.probs[1].A == [2.0;;]
+            @test prob2.probs[1].A \ prob2.probs[1].b ≈ [2.0]
+            @test state_values(prob2) === nothing
+            @test prob.probs[1].A == [1.0;;]
+
+            prob3 = remake(prob; u0 = [3.0])
+            @test state_values(prob3) == [3.0]
+            @test state_values(prob3.probs[1]) == [3.0]
+        end
+    end
+
+    @testset "mixed guess and guess-less blocks" begin
+        for T in (SCCSteadyStateProblem, SCCNonlinearProblem),
+                wrap in (x -> Tuple(x), identity)
+            lin = LinearProblem(Float64[1 0; 0 1], [1.0, 2.0])
+            nl = NonlinearProblem(
+                NonlinearFunction{false}((u, p) -> u .- 3), [3.0], nothing
+            )
+            funs = () -> wrap([Returns(nothing), Returns(nothing)])
+            @test_throws ArgumentError T(wrap([lin, nl]), funs())
+            @test_throws ArgumentError T(wrap([nl, lin]), funs())
+
+            linu = LinearProblem(Float64[1 0; 0 1], [1.0, 2.0]; u0 = [0.5, 0.25])
+            for (blocks, expected) in (
+                    ([linu, nl], [0.5, 0.25, 3.0]), ([nl, linu], [3.0, 0.5, 0.25]),
+                )
+                u = state_values(T(wrap(blocks), funs()))
+                @test u == expected
+                @test eltype(u) == Float64
+            end
+        end
     end
 
     @testset "all-LinearProblem blocks" begin

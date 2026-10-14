@@ -458,7 +458,10 @@ p_n &= g_n(u,p) & f_n(u_n,…,u_3,u_2,u_1,p_n) &= 0 \\\\
 where ``g_i`` is `explicitfuns![i]`. In a computational sense, `explictfuns!`
 is instead a mutating function `explictfuns![i](prob.probs[i],sols)` which
 updates the values of prob.probs[i] using the previous solutions `sols[i-1]`
-and below.
+and below. Either every block provides an initial state, in which case
+`state_values(prob)` is the concatenation of the block states, or every block is
+a `LinearProblem` without `u0`, in which case `state_values(prob) === nothing`;
+mixing the two throws an `ArgumentError`.
 
 !!! warning
     For the purposes of differentiation, it's assumed that `explictfuns!` does
@@ -568,28 +571,37 @@ mutable struct SCCNonlinearProblem{
             probs::P, funs::E, f::F, pobj::Par,
             alias::Palias
         ) where {P, E, F <: NonlinearFunction, Par, Palias}
-        init = state_values(first(probs))
-        has_no_u0 = init === nothing
-        if has_no_u0
-            # In this case, all of `probs` are `LinearProblem`
-            @assert first(probs) isa LinearProblem
-            init = first(probs).A
-        end
-        init = _scc_empty_state(init)
-        if has_no_u0
-            uType = Nothing
-        else
-            u0 = mapreduce(
-                state_values, vcat, probs; init
-            )
-            uType = typeof(u0)
-        end
+        uType = _scc_state_type(probs)
         return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
 
 _scc_empty_state(init) = similar(init, 0)
 _scc_empty_state(init::SVector) = SVector{0, eltype(init)}()
+
+function _scc_state_type(probs)
+    init = state_values(first(probs))
+    has_state = map(b -> state_values(b) !== nothing, probs)
+    if !any(has_state)
+        all(b -> b isa LinearProblem, probs) || throw(
+            ArgumentError(
+                "`probs` contains a block without an initial state that is not a " *
+                    "`LinearProblem`: either every block must provide an initial state " *
+                    "or every block must be a `LinearProblem` with `u0 = nothing`."
+            )
+        )
+        return Nothing
+    end
+    all(has_state) || throw(
+        ArgumentError(
+            "`probs` mixes blocks with and without an initial state: either every " *
+                "block must provide an initial state or every block must be a " *
+                "`LinearProblem` with `u0 = nothing`. Pass `u0` to each `LinearProblem` " *
+                "block."
+        )
+    )
+    return typeof(mapreduce(state_values, vcat, probs; init = _scc_empty_state(init)))
+end
 
 function SCCNonlinearProblem(
         probs, explicitfuns!, parameter_object = nothing,
@@ -634,7 +646,10 @@ collection `probs` of `NonlinearProblem`s (or `LinearProblem`s / `HomotopyProble
 one per diagonal block in SCC order, and `explicitfuns!` where
 `explicitfuns![i](parameter_values(probs[i]), sols)` updates block `i`'s caches from
 the already-solved blocks. See [`SCCNonlinearProblem`](@ref) for the full
-specification and an example.
+specification and an example. Either every block provides an initial state, in which
+case `state_values(prob)` is the concatenation of the block states, or every block is
+a `LinearProblem` without `u0`, in which case `state_values(prob) === nothing`;
+mixing the two throws an `ArgumentError`.
 
 ## Constructors
 
@@ -686,22 +701,7 @@ struct SCCSteadyStateProblem{
             probs::P, funs::E, f::F, pobj::Par,
             alias::Palias
         ) where {P, E, F <: NonlinearFunction, Par, Palias}
-        init = state_values(first(probs))
-        has_no_u0 = init === nothing
-        if has_no_u0
-            # In this case, all of `probs` are `LinearProblem`
-            @assert first(probs) isa LinearProblem
-            init = first(probs).A
-        end
-        init = _scc_empty_state(init)
-        if has_no_u0
-            uType = Nothing
-        else
-            u0 = mapreduce(
-                state_values, vcat, probs; init
-            )
-            uType = typeof(u0)
-        end
+        uType = _scc_state_type(probs)
         return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
