@@ -1602,11 +1602,13 @@ end
 
 """
     remake(
-        prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        prob::Union{SCCNonlinearProblem, SCCSteadyStateProblem};
+        u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing
     )
 
-Remake the given `SCCNonlinearProblem`. `u0` is the state vector for the entire problem,
+Remake the given `SCCNonlinearProblem` or `SCCSteadyStateProblem`, returning the same
+type it was given. `u0` is the state vector for the entire problem,
 which will be chunked appropriately and used to `remake` the individual subproblems. `p`
 is the parameter object for `prob`. If `parameters_alias`, the same parameter object will be
 used to `remake` the individual subproblems. Otherwise if `p !== missing`, this function will
@@ -1615,7 +1617,7 @@ error and require that `probs` be specified. `probs` is the collection of subpro
 override the values in `probs`. `sys` is the index provider for the full system.
 """
 function remake(
-        prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        prob::_SCCProblem; u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, f = missing, sys = missing,
         interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing
     )
@@ -1623,7 +1625,7 @@ function remake(
         parameters_alias = Val(parameters_alias)
     end
     if p !== missing && parameters_alias === Val(false) && probs === missing
-        throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
+        throw(ArgumentError("`parameters_alias` is `false` for the given `$(typeof(prob).name.name)`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
     end
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
     if probs === missing
@@ -1641,7 +1643,23 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(f; sys)
 
+    return _scc_construct(prob, probs, explicitfuns!, f, newp, parameters_alias)
+end
+
+function _scc_construct(
+        ::SCCNonlinearProblem, probs, explicitfuns!, f, newp, parameters_alias
+    )
     return SCCNonlinearProblem{
+        typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp),
+    }(
+        probs, explicitfuns!, f, newp, parameters_alias
+    )
+end
+
+function _scc_construct(
+        ::SCCSteadyStateProblem, probs, explicitfuns!, f, newp, parameters_alias
+    )
+    return SCCSteadyStateProblem{
         typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp),
     }(
         probs, explicitfuns!, f, newp, parameters_alias

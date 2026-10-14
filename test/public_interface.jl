@@ -414,6 +414,7 @@ end
         "SciMLBase.SampledIntegralProblem",
         "SciMLBase.OptimizationProblem",
         "SciMLBase.SteadyStateProblem",
+        "SciMLBase.SCCSteadyStateProblem",
         "SciMLBase.AnalyticalProblem",
         "SciMLBase.ODEProblem",
         "SciMLBase.ImmutableODEProblem",

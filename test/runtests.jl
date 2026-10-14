@@ -86,6 +86,9 @@ run_tests(;
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
         end
+        @time @safetestset "SCC steady state problem" begin
+            include("scc_steady_state_problem.jl")
+        end
         @time @safetestset "Eigenvalue problem tests" begin
             include("eigenvalue_problem_tests.jl")
         end

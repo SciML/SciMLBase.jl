@@ -2142,7 +2142,7 @@ export NonlinearProblem, NonlinearSolution,
     SCCNonlinearProblem, NonlinearLeastSquaresProblem, HomotopyProblem
 
 export DiscreteProblem, ImplicitDiscreteProblem
-export SteadyStateProblem, SteadyStateSolution
+export SteadyStateProblem, SteadyStateSolution, SCCSteadyStateProblem
 export NoiseProblem
 export ODEProblem, ODESolution
 export DynamicalODEFunction,
