@@ -1807,7 +1807,6 @@ function specialization(
             RODEFunction{iip, specialize}, NonlinearFunction{iip, specialize},
             HomotopyNonlinearFunction{iip, specialize},
             IntervalNonlinearFunction{iip, specialize}, ODEInputFunction{iip, specialize},
-            OptimizationFunction{iip, specialize},
             BVPFunction{iip, specialize}, DynamicalBVPFunction{iip, specialize},
             IntegralFunction{iip, specialize}, BatchIntegralFunction{iip, specialize},
             IncrementingODEFunction{iip, specialize},
@@ -1832,6 +1831,18 @@ for FunctionType in (
 end
 
 specialization(::Type{<:AbstractSciMLFunction}) = FullSpecialize
+
+# The second type parameter of `OptimizationFunction` is its AD type; the marker is last.
+specialization(f::OptimizationFunction) = specialization(typeof(f))
+const _OPTIMIZATION_FUNCTION_TYPE_PARAMS = (
+    :iip, :AD, :F, :G, :FG, :H, :FGH, :HV, :C, :CJ, :CJV, :CVJ, :CH, :HP, :CJP, :CHP, :O,
+    :EX, :CEX, :SYS, :LH, :LHP, :HCV, :CJCV, :CHCV, :LHCV, :ID,
+)
+@eval function specialization(
+        ::Type{<:OptimizationFunction{$(_OPTIMIZATION_FUNCTION_TYPE_PARAMS...), S}}
+    ) where {$(_OPTIMIZATION_FUNCTION_TYPE_PARAMS...), S <: AbstractSpecialization}
+    return S
+end
 
 """
 $(TYPEDEF)

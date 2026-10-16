@@ -480,6 +480,9 @@ The successful codes are `ReturnCode.Success`, `ReturnCode.Terminated`,
 `ReturnCode.Default` is not successful because it means the solve is unfinished
 or its outcome is unknown. `ReturnCode.Stalled` and all failure codes are also
 unsuccessful.
+
+Inside a Reactant compilation a return code can be a traced `ReturnCode.T`; with
+Reactant loaded, `successful_retcode` then returns a traced `Bool`.
 """
 function successful_retcode end
 
