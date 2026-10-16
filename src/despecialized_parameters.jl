@@ -31,6 +31,11 @@ end
 
 DespecializedParameters(params::DespecializedParameters) = params
 
+# Storage typed for despecialized parameters, like the `p` field of a solver cache that
+# `reinit!` replaces, accepts a new parameter object and wraps it.
+Base.convert(::Type{DespecializedParameters}, params) = DespecializedParameters(params)
+Base.convert(::Type{DespecializedParameters}, params::DespecializedParameters) = params
+
 """
     unwrap_parameters(params)
 

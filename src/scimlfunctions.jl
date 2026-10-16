@@ -1969,6 +1969,9 @@ the usage of `f`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
+  It may also be an `AbstractSciMLOperator`, in which case `jac(u,p)` may return an operator that
+  NonlinearSolve.jl passes to the linear solver as is: `mul!` for Krylov methods, and
+  `convert(AbstractMatrix, op)` for factorizations (so it must be convertible for those).
 - `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
@@ -2157,6 +2160,7 @@ interval variable.
 IntervalNonlinearFunction{iip, specialize}(
     f;
     analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
     sys = __has_sys(f) ? f.sys : nothing
 )
 ```
@@ -2170,6 +2174,8 @@ the usage of `f`. These include:
 
 - `analytic(p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
+- `jac(J,t,p)` or `J=jac(t,p)`: returns ``\\frac{df}{dt}``, for the solvers that use
+  the derivative of `f`.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -2184,11 +2190,12 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the IntervalNonlinearFunction type directly match the names of the inputs.
 """
 struct IntervalNonlinearFunction{
-        iip, specialize, F, Ta,
+        iip, specialize, F, Ta, TJ,
         O, SYS, ID,
     } <: AbstractIntervalNonlinearFunction{iip}
     f::F
     analytic::Ta
+    jac::TJ
     observed::O
     sys::SYS
     initialization_data::ID
@@ -2210,7 +2217,7 @@ optimization variables and `p` are the fixed parameters or data.
 ## Constructor
 
 ```julia
-OptimizationFunction{iip}(
+OptimizationFunction{iip, specialize}(
     f, adtype::AbstractADType = NoAD();
     grad = nothing, hess = nothing, hv = nothing,
     cons = nothing, cons_j = nothing, cons_jvp = nothing,
@@ -2313,7 +2320,19 @@ For more details on this argument, see the ODEFunction documentation.
 
 ## specialize: Controlling Compilation and Specialization
 
-For more details on this argument, see the ODEFunction documentation.
+```julia
+OptimizationFunction{iip, specialize}(f, adtype = NoAD(); kwargs...)
+```
+
+The default is [`FullSpecialize`](@ref): the solvers compile for the concrete types of
+the functions and of `p`. With [`AutoSpecialize`](@ref), supporting solver paths hide
+the types of the functions behind wrappers when the problem is solved, so the solver
+code compiles once for all objectives. [`AutoDespecialize`](@ref) additionally stores
+`p` in a [`DespecializedParameters`](@ref) container. The functions themselves stay
+fully specialized behind the wrappers; each call pays one dynamic dispatch. Support is
+solver-specific, and paths without it (for example out-of-place functions) fall back to
+`FullSpecialize`. [`specialization`](@ref) returns the marker; it is stored as the last
+type parameter, after the field types.
 
 ## Fields
 
@@ -2321,7 +2340,7 @@ The fields of the OptimizationFunction type directly match the names of the inpu
 """
 struct OptimizationFunction{
         iip, AD, F, G, FG, H, FGH, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
-        EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV, ID,
+        EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV, ID, S,
     } <:
     AbstractOptimizationFunction{iip}
     f::F
@@ -4855,6 +4874,7 @@ function IntervalNonlinearFunction{iip, specialize}(
         analytic = __has_analytic(f) ?
             f.analytic :
             nothing,
+        jac = __has_jac(f) ? f.jac : nothing,
         observed = __has_observed(f) ?
             f.observed :
             DEFAULT_OBSERVED_NO_TIME,
@@ -4865,24 +4885,26 @@ function IntervalNonlinearFunction{iip, specialize}(
         iip,
         specialize,
     }
-    _f = prepare_function(f)
+    jaciip = jac !== nothing ? isinplace(jac, 3, "jac", iip) : iip
+    jaciip == iip || throw(NonconformingFunctionsError(["jac"]))
 
+    _f = prepare_function(f)
 
     return if specialize === NoSpecialize
         IntervalNonlinearFunction{
             iip, specialize,
-            Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any,
         }(
-            _f, analytic, observed, sys, initialization_data
+            _f, analytic, jac, observed, sys, initialization_data
         )
     else
         IntervalNonlinearFunction{
             iip, specialize,
-            typeof(_f), typeof(analytic),
+            typeof(_f), typeof(analytic), typeof(jac),
             typeof(observed),
             typeof(sys), typeof(initialization_data),
         }(
-            _f, analytic,
+            _f, analytic, jac,
             observed, sys, initialization_data
         )
     end
@@ -4913,10 +4935,30 @@ function OptimizationFunction(f, args...; kwargs...)
     return OptimizationFunction{true}(f, args...; kwargs...)
 end
 
-OptimizationFunction{iip, spec}(f; adtype::spec, kws...) where {iip, spec} = OptimizationFunction(f, adtype; kws...)
-
 function OptimizationFunction{iip}(
-        f, adtype::AbstractADType = NoAD();
+        f, adtype::AbstractADType = NoAD(); kwargs...
+    ) where {iip}
+    return OptimizationFunction{iip, FullSpecialize}(f, adtype; kwargs...)
+end
+
+# `remake` and `ConstructionBase` rebuild through `T{iip, specialization(f)}(f; props...)`,
+# which passes `adtype` as a keyword.
+function OptimizationFunction{iip, specialize}(
+        f; adtype::AbstractADType = NoAD(), kwargs...
+    ) where {iip, specialize <: AbstractSpecialization}
+    return OptimizationFunction{iip, specialize}(f, adtype; kwargs...)
+end
+
+# Before the specialization marker existed, the second type parameter was the AD type
+# and this spelling rebuilt a function from its properties.
+function OptimizationFunction{iip, AD}(
+        f; adtype::AD, kwargs...
+    ) where {iip, AD <: AbstractADType}
+    return OptimizationFunction{iip}(f, adtype; kwargs...)
+end
+
+function OptimizationFunction{iip, specialize}(
+        f, adtype::AbstractADType;
         grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
         cons = nothing, cons_j = nothing, cons_jvp = nothing,
         cons_vjp = nothing, cons_h = nothing,
@@ -4937,7 +4979,7 @@ function OptimizationFunction{iip}(
         lag_hess_colorvec = nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
             nothing
-    ) where {iip}
+    ) where {iip, specialize <: AbstractSpecialization}
 
     return OptimizationFunction{
         iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
@@ -4950,7 +4992,7 @@ function OptimizationFunction{iip}(
         typeof(expr), typeof(cons_expr), typeof(sys), typeof(lag_h),
         typeof(lag_hess_prototype), typeof(hess_colorvec),
         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
-        typeof(lag_hess_colorvec), typeof(initialization_data),
+        typeof(lag_hess_colorvec), typeof(initialization_data), specialize,
     }(
         f, adtype, grad, fg, hess, fgh,
         hv, cons, cons_j, cons_jvp,
@@ -6041,11 +6083,28 @@ for S in [
         :BatchIntegralFunction
     ]
     @eval begin
-        function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
-                iip,
-            }
-            return (args...) -> $S{iip, DEFAULT_SPECIALIZATION, map(typeof, args)...}(args...)
+        # Keep the specialization of the type being rebuilt: `@set f.x = ...` on a
+        # `FullSpecialize` function must not come back `AutoSpecialize`. The default
+        # applies only when the type leaves it unbound. The field parameters are always
+        # narrowed to the new values' types, which callers such as DiffEqBase rely on
+        # after `widen_bounded_type_params`.
+        function ConstructionBase.constructorof(::Type{T}) where {iip, T <: $S{iip}}
+            P = Base.unwrap_unionall(T).parameters[2]
+            specialize = P isa TypeVar ? DEFAULT_SPECIALIZATION : P
+            return (args...) -> $S{iip, specialize, map(typeof, args)...}(args...)
         end
+    end
+end
+
+# As above, with the specialization stored after the field types. The type parameters
+# list the AD type before the objective, the fields store them the other way around.
+function ConstructionBase.constructorof(::Type{T}) where {iip, T <: OptimizationFunction{iip}}
+    P = last(Base.unwrap_unionall(T).parameters)
+    specialize = P isa TypeVar ? FullSpecialize : P
+    return function (f, adtype, args...)
+        return OptimizationFunction{
+            iip, typeof(adtype), typeof(f), map(typeof, args)..., specialize,
+        }(f, adtype, args...)
     end
 end
 

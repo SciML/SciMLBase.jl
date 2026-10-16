@@ -1,4 +1,4 @@
-using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays
+using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays, ConstructionBase
 
 function simplependulum!(du, u, p, t)
     θ = u[1]
@@ -156,6 +156,35 @@ end
     @testset "$(SciMLBase.parameterless_type(typeof(prob)))" for prob in probs
         newprob = @reset prob.u0 = u0 .+ 1
         @test typeof(newprob) == typeof(prob)
+    end
+
+    @testset "rebuilding a function keeps its specialization" begin
+        for specialize in (
+                SciMLBase.FullSpecialize, SciMLBase.NoSpecialize,
+                SciMLBase.AutoSpecialize,
+            )
+            fn = ODEFunction{true, specialize}(lorenz!; sys)
+            newfn = @set fn.initialization_data = nothing
+            @test SciMLBase.specialization(newfn) === specialize
+            prob = ODEProblem(fn, u0, tspan, p)
+            newprob = @set prob.f.initialization_data = nothing
+            @test SciMLBase.specialization(newprob.f) === specialize
+        end
+
+        # the field parameters are still narrowed to the new values' types, so a
+        # rebuild after `widen_bounded_type_params` gets the concrete type back
+        fn = ODEFunction{true, SciMLBase.FullSpecialize}(lorenz!; sys)
+        widened = SciMLBase.widen_bounded_type_params(fn)
+        @test typeof(widened) != typeof(fn)
+        @test typeof(@set widened.jac = fn.jac) == typeof(fn)
+
+        # a partially specified type fills in what it leaves unbound
+        args = map(name -> getfield(fn, name), fieldnames(typeof(fn)))
+        newfn = ConstructionBase.constructorof(ODEFunction{true})(args...)
+        @test SciMLBase.specialization(newfn) === SciMLBase.DEFAULT_SPECIALIZATION
+        @test isconcretetype(typeof(newfn))
+        newfn = ConstructionBase.constructorof(ODEFunction{true, SciMLBase.FullSpecialize})(args...)
+        @test typeof(newfn) == typeof(fn)
     end
 end
 
@@ -325,6 +354,39 @@ end
     @test !SciMLBase.isinplace(sccprob2)
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}
+end
+
+@testset "SCCNonlinearProblem remake preserves Vector container eltype" begin
+    f(u, p) = [u[1]^2 - p[1]]
+    p = [2.0]
+    prob1 = NonlinearProblem(f, [1.0], p)
+    prob2 = NonlinearProblem(f, [0.5], p)
+    sccprob = SCCNonlinearProblem(
+        Any[prob1, prob2], Any[Returns(nothing), Returns(nothing)], p, true
+    )
+    @test sccprob.probs isa Vector{Any}
+
+    # `map` would narrow homogeneous blocks to `Vector{NonlinearProblem}`.
+    sccprob2 = remake(sccprob; u0 = [1.5, 0.5])
+    @test sccprob2.probs isa Vector{Any}
+    @test state_values(sccprob2) == [1.5, 0.5]
+
+    # A concretely typed container keeps remaking correctly.
+    sccprob3 = SCCNonlinearProblem(
+        [prob1, prob2], [Returns(nothing), Returns(nothing)], p, true
+    )
+    sccprob4 = remake(sccprob3; u0 = [1.5, 0.5])
+    @test state_values(sccprob4) == [1.5, 0.5]
+
+    # A narrow abstract container whose rebuilt blocks fit keeps its eltype.
+    probd = NonlinearProblem((u, p) -> [u[1]^2 - p[1]], [1.0], p)
+    U = Union{typeof(prob1), typeof(probd)}
+    sccprob5 = SCCNonlinearProblem(
+        U[prob1, probd], Any[Returns(nothing), Returns(nothing)], p, true
+    )
+    sccprob6 = remake(sccprob5; u0 = [1.5, 0.5])
+    @test sccprob6.probs isa Vector{U}
+    @test state_values(sccprob6) == [1.5, 0.5]
 end
 
 @testset "SteadyStateProblem lowered_problem" begin
