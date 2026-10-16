@@ -118,7 +118,7 @@ page of the DifferentialEquations.jl documentation.
 """
 struct ODESolution{
         T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
-        AC <: Union{Nothing, Vector{Int}}, R, O, V, GE,
+        AC <: Union{Nothing, Vector{Int}}, R, O, V, GE, RC,
     } <:
     AbstractODESolution{T, N, uType}
     u::uType
@@ -134,7 +134,7 @@ struct ODESolution{
     tslocation::Int
     stats::S
     alg_choice::AC
-    retcode::ReturnCode.T
+    retcode::RC
     resid::R
     original::O
     saved_subsystem::V
@@ -176,7 +176,7 @@ function ODESolution{T, N}(
         T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
-        typeof(saved_subsystem), typeof(global_error),
+        typeof(saved_subsystem), typeof(global_error), typeof(retcode),
     }(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp,
         dense, tslocation, stats, alg_choice, retcode, resid, original,

@@ -176,28 +176,39 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
-        if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+        raw = f
+        props = (;)
+        if f isa ODEFunction
+            raw = unwrapped_f(f.f)
+            props = getproperties(f)
+            props = @delete props.f
+        end
+        if !(raw isa FunctionWrappersWrappers.FunctionWrappersWrapper)
             if iip
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_iip(
-                        f,
+                        raw,
                         (
                             _u0, _u0, p,
                             _tspan[1],
                         )
-                    )
+                    );
+                    props...
                 )
             else
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_oop(
-                        f,
+                        raw,
                         (
                             _u0, p,
                             _tspan[1],
                         )
-                    )
+                    );
+                    props...
                 )
             end
+        else
+            ff = ODEFunction{iip, FunctionWrapperSpecialize}(raw; props...)
         end
         return ODEProblem{iip}(ff, _u0, _tspan, p; kwargs...)
     end

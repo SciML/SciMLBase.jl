@@ -63,6 +63,12 @@ For specifying Jacobians and mass matrices, see the DiffEqFunctions page.
 * `f`: The function in the ODE.
 * `u0`: The initial guess for the steady state.
 * `p`: The parameters for the problem. Defaults to `NullParameters`
+* `lowered_problem`: An optional non-transient problem that this steady-state
+  problem lowers to, used by [`NonlinearProblem`](@ref) conversions in place of
+  wrapping `f` directly. May be an `AbstractSciMLProblem` (used verbatim) or a
+  callable `prob -> problem` evaluated on the current problem, so that symbolic
+  frontends can defer the lowering until it is needed while still reflecting
+  `remake`d `u0`/`p` values. Defaults to `nothing`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ## Special Solution Fields
@@ -70,7 +76,7 @@ For specifying Jacobians and mass matrices, see the DiffEqFunctions page.
 The `SteadyStateSolution` type is different from the other DiffEq solutions because
 it does not have temporal information.
 """
-struct SteadyStateProblem{uType, isinplace, P, F, K} <:
+struct SteadyStateProblem{uType, isinplace, P, F, LP, K} <:
     AbstractSteadyStateProblem{uType, isinplace}
     """f: The function in the ODE."""
     f::F
@@ -78,16 +84,23 @@ struct SteadyStateProblem{uType, isinplace, P, F, K} <:
     u0::uType
     """Parameter values for the ODE function."""
     p::P
+    """Optional non-transient problem that this problem lowers to; see the
+    `lowered_problem` field documentation above."""
+    lowered_problem::LP
     kwargs::K
     @add_kwonly function SteadyStateProblem{iip}(
             f::AbstractODEFunction{iip},
             u0, p = NullParameters();
+            lowered_problem = nothing,
             kwargs...
         ) where {iip}
         _u0 = prepare_initial_state(u0)
         warn_paramtype(p)
-        new{typeof(_u0), isinplace(f), typeof(p), typeof(f), typeof(kwargs)}(
-            f, _u0, p,
+        new{
+            typeof(_u0), isinplace(f), typeof(p), typeof(f),
+            typeof(lowered_problem), typeof(kwargs),
+        }(
+            f, _u0, p, lowered_problem,
             kwargs
         )
     end
@@ -119,13 +132,13 @@ function SteadyStateProblem(f, u0, p = NullParameters(); kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SteadyStateProblem}
-    return function ctor(f, u0, p, kw)
+    return function ctor(f, u0, p, lowered_problem, kw)
         if f isa AbstractODEFunction
             iip = isinplace(f)
         else
             iip = isinplace(f, 4)
         end
-        return SteadyStateProblem{iip}(f, u0, p; kw...)
+        return SteadyStateProblem{iip}(f, u0, p; lowered_problem, kw...)
     end
 end
 

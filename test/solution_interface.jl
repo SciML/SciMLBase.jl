@@ -8,6 +8,12 @@ using SymbolicIndexingInterface:
     ParameterTimeseriesCollection, SymbolCache, Timeseries, get_parameter_timeseries_collection,
     is_observed, is_parameter_timeseries, is_variable
 
+struct ConvertibleRetcode
+    value::ReturnCode.T
+end
+
+Base.convert(::Type{ReturnCode.T}, retcode::ConvertibleRetcode) = retcode.value
+
 @testset "getindex" begin
     u = rand(1)
     @test SciMLBase.build_linear_solution(nothing, u, zeros(1), nothing)[] == u[]
@@ -28,6 +34,8 @@ end
     @test all(!SciMLBase.successful_retcode(code) for code in unsuccessful)
     @test ReturnCode.Default in unsuccessful
     @test ReturnCode.Stalled in unsuccessful
+    @test SciMLBase.successful_retcode(ConvertibleRetcode(ReturnCode.Success))
+    @test !SciMLBase.successful_retcode(ConvertibleRetcode(ReturnCode.MaxIters))
 end
 
 struct DownstreamLikeSolution
@@ -49,6 +57,42 @@ SciMLBase.solution_new_retcode(sol::DownstreamLikeSolution, retcode) =
     updated = SciMLBase.solution_new_retcode(sol, ReturnCode.Success)
     @test updated.retcode === ReturnCode.Success
     @test updated.payload === sol.payload
+end
+
+@testset "NonlinearSolution retcode type parameter" begin
+    u = [1.0, 2.0]
+    resid = [0.0, 0.0]
+    nlsol = SciMLBase.NonlinearSolution(
+        u, resid, nothing, nothing, ReturnCode.Success,
+        nothing, nothing, nothing, nothing, nothing
+    )
+    @test fieldtype(typeof(nlsol), :retcode) === ReturnCode.T
+    @test SciMLBase.successful_retcode(nlsol)
+
+    wrapped_retcode = Ref(ReturnCode.MaxIters)
+    wrapped_sol = SciMLBase.solution_new_retcode(nlsol, wrapped_retcode)
+    @test wrapped_sol.retcode === wrapped_retcode
+    @test fieldtype(typeof(wrapped_sol), :retcode) === typeof(wrapped_retcode)
+
+    carried = SciMLBase.solution_new_retcode(nlsol, ConvertibleRetcode(ReturnCode.Success))
+    @test fieldtype(typeof(carried), :retcode) === ConvertibleRetcode
+    @test SciMLBase.successful_retcode(carried)
+
+    @test fieldtype(
+        typeof(SciMLBase.sensitivity_solution(wrapped_sol, u)), :retcode
+    ) === typeof(wrapped_retcode)
+
+    # `NonlinearSolution{...}` spelled with the ten non-`RC` parameters still
+    # constructs, inferring `RC` from the `retcode` argument.
+    compat_sol = SciMLBase.NonlinearSolution{
+        Float64, 1, typeof(u), typeof(resid), Nothing, Nothing,
+        Any, Nothing, Nothing, Nothing,
+    }(
+        u, resid, nothing, nothing, ReturnCode.Success, [0.1, 0.2],
+        nothing, nothing, nothing, nothing
+    )
+    @test fieldtype(typeof(compat_sol), :retcode) === ReturnCode.T
+    @test compat_sol.original == [0.1, 0.2]
 end
 
 struct MockParameterTimeseriesSolution <:
@@ -91,6 +135,11 @@ end
         @test updated.u === null_sol.u
         @test updated.retcode == ReturnCode.Success
     end
+
+    wrapped_retcode = Ref(ReturnCode.MaxIters)
+    wrapped_sol = SciMLBase.solution_new_retcode(null_sol, wrapped_retcode)
+    @test wrapped_sol.retcode === wrapped_retcode
+    @test fieldtype(typeof(wrapped_sol), :retcode) === typeof(wrapped_retcode)
     @test typeof(setproperties(null_sol, (u = copy(null_sol.u),))) === typeof(null_sol)
     no_saved_states = setproperties(null_sol, (u = nothing,))
     @test no_saved_states isa ODESolution{Any, 2}
@@ -200,6 +249,63 @@ end
     @test length(plot_vecs) == 2
     @test length(labels) == 3
     @test all(size(v, 1) > 0 for v in plot_vecs)
+end
+
+# #360: check plot dims from transform output, not idxs input arity.
+@testset "plot idxs with mixed input arity but matching output dims (#360)" begin
+    f = ODEFunction((du, u, p, t) -> (du .= -u))
+    t = collect(0.0:0.25:1.0)
+    u = [[1.0, 2.0, 10.0 + tt, 20.0 + 2tt] for tt in t]
+    ode = ODEProblem(f, u[1], (t[1], t[end]))
+    sol = SciMLBase.build_solution(ode, :NoAlgorithm, t, u)
+
+    adder(tt, a, b) = (tt, a + b)
+    adder3(tt, a, b) = (tt, a, b)
+    g(tt::Float64, x::Float64) = (tt, x)
+    dom(tt, x) = (tt, sqrt(x - 2))
+
+    function plot_sparse(idxs)
+        int_vars = SciMLBase.interpret_vars(idxs, sol)
+        return SciMLBase.diffeq_to_arrays(
+            sol, false, false, 100, nothing, int_vars, :identity, nothing
+        )
+    end
+
+    u3 = [uu[3] for uu in u]
+    u3pu4 = [uu[3] + uu[4] for uu in u]
+
+    for idxs in ([3, (adder, 0, 3, 4)], [(0, 3), (adder, 0, 3, 4)])
+        plot_vecs, labels = plot_sparse(idxs)
+        @test length(plot_vecs) == 2
+        @test size(plot_vecs[1], 2) == 2
+        @test plot_vecs[1][:, 1] ≈ t
+        @test plot_vecs[2][:, 1] ≈ u3
+        @test plot_vecs[1][:, 2] ≈ t
+        @test plot_vecs[2][:, 2] ≈ u3pu4
+        @test labels == ["u[3]", "f(t,u[3],u[4])"]
+    end
+
+    _, labels01 = plot_sparse((0, 1))
+    @test labels01 == ["u[1]"]
+
+    plot_vecs_g, labels_g = plot_sparse([(g, 0, 3)])
+    @test plot_vecs_g[1][:, 1] ≈ t
+    @test plot_vecs_g[2][:, 1] ≈ u3
+    @test labels_g == ["f(t,u[3])"]
+
+    plot_vecs_dom, labels_dom = plot_sparse([(dom, 0, 3)])
+    @test plot_vecs_dom[1][:, 1] ≈ t
+    @test plot_vecs_dom[2][:, 1] ≈ sqrt.(u3 .- 2)
+    @test labels_dom == ["f(t,u[3])"]
+
+    err = try
+        plot_sparse([3, (adder3, 0, 3, 4)])
+        nothing
+    catch e
+        e
+    end
+    @test err isa ArgumentError
+    @test occursin("output dimension", sprint(showerror, err))
 end
 
 @testset "interpolate empty ODE solution" begin
