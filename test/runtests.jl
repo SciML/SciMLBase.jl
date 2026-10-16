@@ -217,6 +217,9 @@ run_tests(;
                 @time @safetestset "PDE solution adjoints" begin
                     include("downstream/pde_solution_adjoints.jl")
                 end
+                @time @safetestset "Symbolic solution getindex adjoints" begin
+                    include("downstream/symbolic_getindex_zygote.jl")
+                end
             end
         end,
         "SII_Remake" => function ()

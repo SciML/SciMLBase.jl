@@ -212,6 +212,10 @@ function odesolution_getindex_cotangent(VA, sym, Δ)
     # scalar components.
     sym = sym isa Tuple || symbolic_type(sym) === ArraySymbolic() ? vec(collect(sym)) : sym
     i = map(x -> symbolic_type(x) != NotSymbolic() ? variable_index(VA, x) : x, sym)
+    # Timesteps the loss never reads (e.g. `sol[syms][end]`) arrive as `nothing`.
+    if !(Δ isa AbstractMatrix) && any(isnothing, Δ)
+        Δ = map(δ -> δ === nothing ? zeros(eltype(VA), length(sym)) : δ, Δ)
+    end
 
     obs_idx = findall(s -> is_observed(VA, s), sym)
     not_obs_idx = setdiff(1:length(sym), obs_idx)
