@@ -163,6 +163,16 @@ end
     @test_logs checkkwargs(nlprob, HonorsAllAlg(); maxtime = 1.0)
 end
 
+@testset "Unclassified problems get only the unrecognized-keyword check" begin
+    ensprob = EnsembleProblem(odeprob)
+    @test keyword_status(ensprob, :maxtime) === :unclassified
+    @test_logs checkkwargs(ensprob, NoMaxtimeAlg(); maxtime = 1.0, gtol = 1.0, saveat = 0.1)
+    @test_logs checkkwargs(
+        ensprob, NoMaxtimeAlg(); maxtime = 1.0, kwargshandle = KeywordArgError
+    )
+    @test_throws CommonKwargError checkkwargs(ensprob, NoMaxtimeAlg(); not_a_keyword = 1)
+end
+
 @testset "Legacy checkkwargs is unchanged" begin
     @test checkkwargs(KeywordArgError; abstol = 1.0, saveat = 0.1) === nothing
     @test checkkwargs(KeywordArgError; kwargs_verbosity = KeywordVerbosity()) === nothing

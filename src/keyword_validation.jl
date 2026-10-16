@@ -187,7 +187,6 @@ function _is_undefined_for_class(class::Symbol, kw::Symbol)
     kw in spec.undefined && return true
     return kw in TOLERANCE_KEYWORDS && !(kw in spec.defined)
 end
-_is_undefined_for_class(::Nothing, ::Symbol) = false
 
 """
     keyword_status(prob::AbstractSciMLProblem, kw::Symbol)::Symbol
@@ -277,7 +276,8 @@ a [`KeywordVerbosity`](@ref):
     `can_honor(alg, Val(kw))` is `false`, are reported through the `unhonored_keyword`
     toggle.
 
-Keywords whose value is `nothing` count as not passed for steps 2 and 3.
+Keywords whose value is `nothing` count as not passed for steps 2 and 3. Steps 2 and 3
+are skipped when `keyword_class(prob)` is `nothing`.
 
 Severity precedence: `kwargs_verbosity = KeywordVerbosity(None())` disables steps 2 and
 3 regardless of anything else. Otherwise an explicit `kwargshandle` wins
@@ -311,6 +311,7 @@ function checkkwargs(
     verbosity isa KeywordVerbosity{false} && return nothing
 
     class = keyword_class(prob)
+    class === nothing && return nothing
     passed = filter(k -> kwargs[k] !== nothing, keys(kwargs))
     undefined = filter(k -> _is_undefined_for_class(class, k), passed)
     if !isempty(undefined)
