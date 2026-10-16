@@ -74,6 +74,9 @@ run_tests(;
         @time @safetestset "Despecialized parameters" begin
             include("despecialized_parameters.jl")
         end
+        @time @safetestset "OptimizationFunction specialization" begin
+            include("optimization_function_specialization.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
@@ -115,8 +118,11 @@ run_tests(;
     end,
     groups = Dict(
         "Reactant" => function ()
-            return @safetestset "Reactant specialization" begin
+            @safetestset "Reactant specialization" begin
                 include("reactant_specialization.jl")
+            end
+            return @safetestset "Reactant return codes" begin
+                include("reactant_retcodes.jl")
             end
         end,
         "Downstream" => function ()
