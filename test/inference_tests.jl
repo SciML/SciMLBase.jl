@@ -42,3 +42,26 @@ end
 @testset "integrator iteration size" begin
     @test Base.IteratorSize(SciMLBase.DEIntegrator) === Base.SizeUnknown()
 end
+
+# Mirrors the shape of OptimizationBase's `OptimizationCache`: `u0`/`p` live in the
+# `reinit_cache`, and some field is abstractly typed (`solver_args::NamedTuple`).
+struct MockReInitCache{U, P}
+    u0::U
+    p::P
+end
+struct MockOptimizationCache{F, R} <: SciMLBase.AbstractOptimizationCache
+    f::F
+    reinit_cache::R
+    solver_args::NamedTuple
+end
+
+@testset "optimization cache u0/p inference" begin
+    cache = MockOptimizationCache(sin, MockReInitCache([1.0, 2.0], 2.0), (; a = 1))
+    # reading the reinit cache through `getproperty` again would make the call recursive,
+    # and inference would return the union of all field types instead of the field's
+    @test only(Base.return_types(c -> c.p, Tuple{typeof(cache)})) === Float64
+    @test only(Base.return_types(c -> c.u0, Tuple{typeof(cache)})) === Vector{Float64}
+    @test only(Base.return_types(c -> c.f, Tuple{typeof(cache)})) === typeof(sin)
+    @test cache.p === 2.0
+    @test cache.u0 == [1.0, 2.0]
+end

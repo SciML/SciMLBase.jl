@@ -1807,7 +1807,6 @@ function specialization(
             RODEFunction{iip, specialize}, NonlinearFunction{iip, specialize},
             HomotopyNonlinearFunction{iip, specialize},
             IntervalNonlinearFunction{iip, specialize}, ODEInputFunction{iip, specialize},
-            OptimizationFunction{iip, specialize},
             BVPFunction{iip, specialize}, DynamicalBVPFunction{iip, specialize},
             IntegralFunction{iip, specialize}, BatchIntegralFunction{iip, specialize},
             IncrementingODEFunction{iip, specialize},
@@ -1832,6 +1831,18 @@ for FunctionType in (
 end
 
 specialization(::Type{<:AbstractSciMLFunction}) = FullSpecialize
+
+# The second type parameter of `OptimizationFunction` is its AD type; the marker is last.
+specialization(f::OptimizationFunction) = specialization(typeof(f))
+const _OPTIMIZATION_FUNCTION_TYPE_PARAMS = (
+    :iip, :AD, :F, :G, :FG, :H, :FGH, :HV, :C, :CJ, :CJV, :CVJ, :CH, :HP, :CJP, :CHP, :O,
+    :EX, :CEX, :SYS, :LH, :LHP, :HCV, :CJCV, :CHCV, :LHCV, :ID,
+)
+@eval function specialization(
+        ::Type{<:OptimizationFunction{$(_OPTIMIZATION_FUNCTION_TYPE_PARAMS...), S}}
+    ) where {$(_OPTIMIZATION_FUNCTION_TYPE_PARAMS...), S <: AbstractSpecialization}
+    return S
+end
 
 """
 $(TYPEDEF)
@@ -2284,8 +2295,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
     supports_opt_cache_interface, alg_order, allowsbounds, requiresbounds,
     allowsconstraints, requiresconstraints, requiresgradient, allowsfg,
     requireshessian, allowsfgh, requiresconsjac, allowsconsjvp, allowsconsvjp,
-    requiresconshess, requireslagh, allowscallback, allows_non_wiener_noise,
-    requires_additive_noise
+    requiresconsjvp, requiresconsvjp, requiresconshess, requireslagh, allowscallback,
+    allows_non_wiener_noise, requires_additive_noise
 
 # Initialization algorithms and interface
 @public NoInit, OverrideInit, get_initial_values, is_overdetermined_initialization

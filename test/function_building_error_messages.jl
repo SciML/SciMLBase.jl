@@ -83,6 +83,85 @@ end
     end
 end
 
+@testset "concretized AutoDespecialize remake keeps narrowed metadata types" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    base = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    wrapped = FunctionWrappersWrapper(
+        rhs!,
+        (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},),
+        (Nothing,)
+    )
+    concrete = SciMLBase.unwrapped_f(base, wrapped)
+    @test SciMLBase.specialization(concrete) === SciMLBase.AutoDespecialize
+    @test typeof(concrete).parameters[end - 1] === Nothing
+    @test typeof(concrete).parameters[end] === Nothing
+
+    # A second concretization widens the bounded metadata, then remakes with that
+    # function. The remade function has to keep the narrowed type.
+    widened = SciMLBase.widen_bounded_type_params(concrete)
+    @test typeof(widened).parameters[end - 1] ===
+        Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+    @test typeof(remake(concrete; f = widened)) === typeof(concrete)
+
+    # The first concretization still adopts erasure from a not-yet-wrapped function.
+    plain = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    widened_plain = SciMLBase.widen_bounded_type_params(plain)
+    @test typeof(remake(plain; f = widened_plain)).parameters[end] ===
+        Union{Nothing, SciMLBase.ODENLStepData}
+end
+
+@testset "only a wrapped AutoDespecialize replacement skips erasure" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    sig = (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},)
+    function concretized(spec)
+        base = ODEFunction{true, spec}(rhs!)
+        wrapped = FunctionWrappersWrapper(rhs!, sig, (Nothing,))
+        return SciMLBase.unwrapped_f(base, wrapped)
+    end
+    metadata(f) = (
+        SciMLBase.specialization(f),
+        fieldtype(typeof(f), :initialization_data),
+        fieldtype(typeof(f), :nlstep_data),
+    )
+    erased = (
+        Union{Nothing, SciMLBase.OverrideInitData},
+        Union{Nothing, SciMLBase.ODENLStepData},
+    )
+
+    concrete_ad = concretized(SciMLBase.AutoDespecialize)
+    concrete_as = concretized(SciMLBase.AutoSpecialize)
+    widened_as = SciMLBase.widen_bounded_type_params(concrete_as)
+    widened_plain = SciMLBase.widen_bounded_type_params(
+        ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    )
+
+    # Concretized AutoSpecialize still adopts erasure from its widened replacement.
+    @test metadata(remake(concrete_as; f = widened_as)) ===
+        (SciMLBase.AutoSpecialize, erased...)
+
+    # The original is concretized AutoDespecialize. These replacements are not a
+    # re-promoted copy of it, so their erasure stays.
+    remade_as = remake(concrete_ad; f = widened_as)
+    @test metadata(remade_as) === (SciMLBase.AutoSpecialize, erased...)
+    @test typeof(remade_as) === typeof(widened_as)
+
+    remade_plain = remake(concrete_ad; f = widened_plain)
+    @test metadata(remade_plain) === (SciMLBase.AutoDespecialize, erased...)
+    @test !(remade_plain.f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+
+    # A wrapped, widened replacement of a function that is not yet wrapped still
+    # contributes its bounds. That is the first DAE concretization.
+    widened_wrapped = SciMLBase.widen_bounded_type_params(concrete_ad)
+    plain_ad = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    @test metadata(remake(plain_ad; f = widened_wrapped)) ===
+        (SciMLBase.AutoDespecialize, erased...)
+end
+
 @testset "ODEFunction specialization constructor" begin
     rhs = (u, p, t) -> u
     initdata = SciMLBase.OverrideInitData(
@@ -642,6 +721,27 @@ NonlinearFunction(nfoop, vjp = nvjp)
 nvjp(du, u, v, p) = [1.0]
 NonlinearFunction(nfiip, vjp = nvjp)
 NonlinearFunction(nfoop, vjp = nvjp)
+
+# IntervalNonlinearFunction
+
+infoop(t, p) = t - p
+infiip(u, t, p) = (u .= t .- p)
+
+injac(t) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infiip, jac = injac)
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infoop, jac = injac)
+injac(t, p) = 1.0
+@test_throws SciMLBase.NonconformingFunctionsError IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+injac(J, t, p) = (J .= 1.0)
+IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+
+@test !SciMLBase.has_jac(IntervalNonlinearFunction(infoop))
+intprob = IntervalNonlinearProblem(IntervalNonlinearFunction(infoop, jac = injac), (0.0, 2.0), 1.0)
+@test SciMLBase.has_jac(intprob.f)
+@test intprob.f.jac(0.5, 1.0) == 1.0
+@test remake(intprob; p = 1.5).f.jac === injac
 
 # Integrals
 intfew(u) = 1.0

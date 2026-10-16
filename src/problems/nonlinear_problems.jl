@@ -253,7 +253,7 @@ residual `f` is wrapped directly.
 function NonlinearProblem(prob::SteadyStateProblem)
     lp = prob.lowered_problem
     lp === nothing && return NonlinearProblem{isinplace(prob)}(prob.f, prob.u0, prob.p)
-    return lp isa Base.Callable ? lp(prob) : lp
+    return lp isa Callable ? lp(prob) : lp
 end
 
 """

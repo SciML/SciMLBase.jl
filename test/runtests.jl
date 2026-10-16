@@ -74,6 +74,9 @@ run_tests(;
         @time @safetestset "Despecialized parameters" begin
             include("despecialized_parameters.jl")
         end
+        @time @safetestset "OptimizationFunction specialization" begin
+            include("optimization_function_specialization.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
@@ -115,8 +118,11 @@ run_tests(;
     end,
     groups = Dict(
         "Reactant" => function ()
-            return @safetestset "Reactant specialization" begin
+            @safetestset "Reactant specialization" begin
                 include("reactant_specialization.jl")
+            end
+            return @safetestset "Reactant return codes" begin
+                include("reactant_retcodes.jl")
             end
         end,
         "Downstream" => function ()
@@ -137,11 +143,17 @@ run_tests(;
                 @time @safetestset "Ensemble Optimization and Nonlinear problems" begin
                     include("downstream/ensemble_nondes.jl")
                 end
+                @time @safetestset "Nonlinear least squares to Optimization conversion (NLopt)" begin
+                    include("downstream/nllsopt.jl")
+                end
                 @time @safetestset "Ensemble with DifferentialEquations automatic algorithm selection" begin
                     include("downstream/ensemble_diffeq.jl")
                 end
                 @time @safetestset "Ensemble RNG reproducibility" begin
                     include("downstream/ensemble_rng.jl")
+                end
+                @time @safetestset "Ensembles of BVProblems" begin
+                    include("downstream/ensemble_bvp.jl")
                 end
                 @time @safetestset "Solution Indexing" begin
                     include("downstream/solution_interface.jl")
