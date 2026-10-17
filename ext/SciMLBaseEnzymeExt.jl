@@ -1,9 +1,9 @@
 module SciMLBaseEnzymeExt
 
 using SciMLBase: SciMLBase, AbstractSensitivityAlgorithm, AbstractDEAlgorithm,
-    AbstractSciMLProblem, AbstractSciMLFunction, remake, AbstractDiscretizationMetadata,
+    AbstractSciMLProblem, AbstractSciMLFunction, remake,
     AbstractDifferentiableDiscretizationMetadata, AbstractPDESolution,
-    AbstractPDETimeSeriesSolution, pde_index_cotangent, pde_call_cotangent
+    AbstractTimeseriesSolution, pde_index_cotangent, pde_call_cotangent
 import CommonSolve
 import Enzyme: EnzymeRules
 using Enzyme: Active, Annotation, Const, Duplicated, DuplicatedNoNeed, MixedDuplicated,
@@ -90,10 +90,6 @@ EnzymeRules.inactive_noinl(
     ::typeof(Core.kwcall), ::Any, ::typeof(remake), ::AbstractSciMLFunction, args...,
 ) = true
 
-# The metadata of a PDE discretization, which a problem and its wrapped solution carry,
-# describes the discretization and is a constant of the solve.
-EnzymeRules.inactive_type(::Type{<:AbstractDiscretizationMetadata}) = true
-
 # =============================================================================
 # PDE solution wrappers
 # =============================================================================
@@ -102,13 +98,17 @@ EnzymeRules.inactive_type(::Type{<:AbstractDiscretizationMetadata}) = true
 # that subtypes `AbstractDifferentiableDiscretizationMetadata`. The shadow of the wrapper
 # `solve` builds holds the shadow of the solver's solution as `original_sol`, and
 # `sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)` accumulate the cotangent the
-# discretizer's hooks describe into it. The solver's Enzyme rule passes the shadow of its
-# solution on without its `prob.p`, so the parameter part of an observed value would be
-# lost; a cotangent with observed terms is an error instead.
+# discretizer's hooks describe into it. The solver's Enzyme rule hands the shadow of its
+# solution to the adjoint, which does not read `prob.p` from it, so the parameter part of
+# an observed value would be lost; a cotangent with observed terms is an error instead.
 
 const DifferentiablePDESolution = AbstractPDESolution{
     T, N, S, D,
 } where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+
+# The metadata, which the problem and the wrapped solution carry, describes the
+# discretization and is a constant of the solve.
+EnzymeRules.inactive_type(::Type{<:AbstractDifferentiableDiscretizationMetadata}) = true
 
 _shadow(x::Union{Duplicated, DuplicatedNoNeed}) = x.dval
 _shadow(x::MixedDuplicated) = x.dval[]
@@ -176,7 +176,7 @@ function _accumulate_original_sol!(A::Annotation, c)
         )
     )
     c.u === nothing && return nothing
-    if A.val isa AbstractPDETimeSeriesSolution
+    if A.val.original_sol isa AbstractTimeseriesSolution
         for k in eachindex(dsol.u)
             dsol.u[k] .+= c.u[k]
         end

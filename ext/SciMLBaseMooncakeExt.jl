@@ -3,9 +3,8 @@ module SciMLBaseMooncakeExt
 using Mooncake: Mooncake
 using SciMLBase: SciMLBase,
     AbstractTimeseriesSolution, AbstractNonlinearSolution, getobserved,
-    AbstractDiscretizationMetadata, AbstractDifferentiableDiscretizationMetadata,
-    AbstractPDETimeSeriesSolution, AbstractPDENoTimeSolution, pde_index_cotangent,
-    pde_call_cotangent
+    AbstractDifferentiableDiscretizationMetadata, AbstractPDETimeSeriesSolution,
+    AbstractPDENoTimeSolution, pde_index_cotangent, pde_call_cotangent
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index,
     parameter_values
 import SymbolicIndexingInterface as SII
@@ -23,10 +22,6 @@ import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
 # for these fields entirely.
 Mooncake.tangent_type(::Type{<:SciMLBase.OverrideInitData}) = Mooncake.NoTangent
 Mooncake.tangent_type(::Type{<:SciMLBase.ODENLStepData}) = Mooncake.NoTangent
-
-# The metadata of a PDE discretization, which a problem and its wrapped solution carry,
-# describes the discretization and is a constant of the solve.
-Mooncake.tangent_type(::Type{<:AbstractDiscretizationMetadata}) = Mooncake.NoTangent
 
 # Non-differentiable helpers — these use runtime reflection (`methods`) or
 # only validate/dispatch and have no numerical gradient contribution.
@@ -763,6 +758,10 @@ const DifferentiablePDESolution = Union{
     DifferentiablePDETimeSeriesSolution, DifferentiablePDENoTimeSolution,
 }
 
+# The metadata, which the problem and the wrapped solution carry, describes the
+# discretization and is a constant of the solve.
+Mooncake.tangent_type(::Type{<:AbstractDifferentiableDiscretizationMetadata}) = Mooncake.NoTangent
+
 for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
     @eval begin
         @is_primitive MinimalCtx Tuple{
@@ -806,7 +805,7 @@ function _accumulate_original_sol!(A::CoDual, c)
     c === nothing && return nothing
     sol = A.x.original_sol
     sol_fdata = A.dx.data.original_sol
-    hastime = A.x isa AbstractPDETimeSeriesSolution
+    hastime = sol isa AbstractTimeseriesSolution
     u_fd = sol_fdata.data.u
     if c.u !== nothing
         if hastime

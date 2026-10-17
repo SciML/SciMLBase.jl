@@ -1,7 +1,7 @@
 module SciMLBaseChainRulesCoreExt
 
 using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
-    SDEProblem, getobserved, remake, AbstractPDESolution, AbstractPDETimeSeriesSolution,
+    SDEProblem, getobserved, remake, AbstractTimeseriesSolution, AbstractPDESolution,
     AbstractDifferentiableDiscretizationMetadata, pde_index_cotangent, pde_call_cotangent
 import ChainRulesCore
 import ChainRulesCore: NoTangent, AbstractZero, @non_differentiable, zero_tangent, rrule_via_ad
@@ -266,7 +266,7 @@ end
 function _original_sol_cotangent(config, A, c)
     c === nothing && return NoTangent()
     sol = A.original_sol
-    hastime = A isa AbstractPDETimeSeriesSolution
+    hastime = sol isa AbstractTimeseriesSolution
     c.u === nothing && isempty(c.observed) && return NoTangent()
     Δu = if c.u === nothing
         hastime ? [zero(u) for u in sol.u] : zero(sol.u)

@@ -185,7 +185,8 @@ for instance), and otherwise a named tuple `(; u, observed)`:
     rather than stores, each the cotangent `δ` of
     `f(sol.original_sol.u[k], p, sol.original_sol.t[k])` with
     `p = parameter_values(sol.original_sol)`, or terms `(f, δ)` of
-    `f(sol.original_sol.u, p)` for a solution without time.
+    `f(sol.original_sol.u, p)` when `sol.original_sol` is not a time series (an
+    optimization solution, for instance).
 
 The hook is plain code, with no AD types: the AD extensions pull the observed terms back
 with the AD system in use and hand the cotangent to the solver's rules for
