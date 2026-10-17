@@ -349,11 +349,50 @@ end
     @test sccprob isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob) isa SVector{3, Float64}
     @test sccprob.p === prob1.p === prob2.p === prob3.p
+    @test sccprob.u0 == state_values(sccprob)
+    @test sccprob.u0 isa SVector{3, Float64}
 
     sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}
+    @test sccprob2.u0 == state_values(sccprob2)
+
+    @test_throws ArgumentError NonlinearProblem(sccprob)
+    @test_throws ArgumentError SciMLBase.ImmutableNonlinearProblem(sccprob)
+end
+
+@testset "SCCNonlinearProblem u0 property and flat conversions" begin
+    f(u, p) = u .- p
+    p = [3.0]
+    sccprob = SCCNonlinearProblem(
+        (NonlinearProblem(f, [1.0, 2.0], p), NonlinearProblem(f, [4.0], p)),
+        (Returns(nothing), Returns(nothing)), p, true
+    )
+    @test hasproperty(sccprob, :u0)
+    @test sccprob.u0 == [1.0, 2.0, 4.0]
+    @test sccprob.u0 !== sccprob.u0
+    sccprob.u0 .= 0.0
+    @test sccprob.u0 == [1.0, 2.0, 4.0]
+    set_state!(sccprob, 5.0, 3)
+    @test sccprob.u0 == [1.0, 2.0, 5.0]
+    @test sccprob.probs[2].u0 == [5.0]
+
+    @test_throws ArgumentError NonlinearProblem(sccprob)
+    @test_throws ArgumentError SciMLBase.ImmutableNonlinearProblem(sccprob)
+
+    sccprob2 = remake(sccprob; u0 = [7.0, 8.0, 9.0])
+    @test sccprob2 isa SCCNonlinearProblem
+    @test sccprob2.u0 == [7.0, 8.0, 9.0]
+    @test sccprob2.probs[1].u0 == [7.0, 8.0]
+
+    nlprob = NonlinearProblem(f, [1.0], p)
+    @test NonlinearProblem(SciMLBase.ImmutableNonlinearProblem(nlprob)).u0 == [1.0]
+
+    linprob = LinearProblem([2.0;;], [4.0])
+    linscc = SCCNonlinearProblem((linprob,), (Returns(nothing),))
+    @test linscc.u0 === nothing
+    @test_throws ArgumentError NonlinearProblem(linscc)
 end
 
 @testset "SCCNonlinearProblem remake preserves Vector container eltype" begin
