@@ -1551,18 +1551,35 @@ function _scc_state_slice(newu0::SVector, offset, ::Val{N}) where {N}
     return SVector{N, eltype(newu0)}(values)
 end
 
-function scc_update_subproblems(probs::Vector, newu0, newp, parameters_alias)
+function _scc_update_subproblem(subprob, newu0, newp, parameters_alias::Bool, offset::Int)
+    u0 = state_values(subprob)
+    if u0 === nothing
+        if newu0 === nothing
+            if parameters_alias
+                subprob = remake(subprob; p = newp)
+            end
+            return subprob, offset
+        end
+        N = size(subprob.A, 2)
+    else
+        # N should be inferred if `prob` and `subprob.u0` are type-stable.
+        N = length(u0)
+    end
+    _u0 = _scc_state_slice(newu0, offset, Val(N))
+    subprob = if parameters_alias
+        remake(subprob; u0 = _u0, p = newp)
+    else
+        remake(subprob; u0 = _u0)
+    end
+    return subprob, offset + N
+end
+
+function scc_update_subproblems(probs::Vector, newu0, newp, ::Val{parameters_alias}) where {parameters_alias}
     offset = Ref(0)
     out = map(probs) do subprob
-        # N should be inferred if `prob` and `subprob.u0` are type-stable.
-        N = length(state_values(subprob))
-        _u0 = _scc_state_slice(newu0, offset[], Val(N))
-        subprob = if parameters_alias === Val(true)
-            remake(subprob; u0 = _u0, p = newp)
-        else
-            remake(subprob; u0 = _u0)
-        end
-        offset[] += length(state_values(subprob))
+        subprob, offset[] = _scc_update_subproblem(
+            subprob, newu0, newp, parameters_alias, offset[]
+        )
         return subprob
     end
     # Keep the caller's container eltype so homogeneous and heterogeneous
@@ -1578,17 +1595,9 @@ end
         newu0, newp, ::Val{parameters_alias}, offset::Int,
         subprob, probs...
     ) where {parameters_alias}
-    u0 = state_values(subprob)
-    if u0 !== nothing
-        N = length(state_values(subprob))
-        _u0 = _scc_state_slice(newu0, offset, Val(N))
-        if parameters_alias
-            subprob = remake(subprob; u0 = _u0, p = newp)
-        else
-            subprob = remake(subprob; u0 = _u0)
-        end
-        offset += N
-    end
+    subprob, offset = _scc_update_subproblem(
+        subprob, newu0, newp, parameters_alias, offset
+    )
 
     return (
         subprob,
@@ -1602,20 +1611,24 @@ end
 
 """
     remake(
-        prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        prob::Union{SCCNonlinearProblem, SCCSteadyStateProblem};
+        u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, sys = missing, explicitfuns! = missing
     )
 
-Remake the given `SCCNonlinearProblem`. `u0` is the state vector for the entire problem,
+Remake the given `SCCNonlinearProblem` or `SCCSteadyStateProblem`, returning the same
+type it was given. `u0` is the state vector for the entire problem,
 which will be chunked appropriately and used to `remake` the individual subproblems. `p`
 is the parameter object for `prob`. If `parameters_alias`, the same parameter object will be
 used to `remake` the individual subproblems. Otherwise if `p !== missing`, this function will
 error and require that `probs` be specified. `probs` is the collection of subproblems. Even if
 `probs` is explicitly specified, the value of `u0` provided to `remake` will be used to
-override the values in `probs`. `sys` is the index provider for the full system.
+override the values in `probs`. For a problem whose blocks are all guess-less
+`LinearProblem`s, a supplied `u0` is split by each block's `size(A, 2)` and becomes
+the blocks' initial guesses. `sys` is the index provider for the full system.
 """
 function remake(
-        prob::SCCNonlinearProblem; u0 = missing, p = missing, probs = missing,
+        prob::_SCCProblem; u0 = missing, p = missing, probs = missing,
         parameters_alias = prob.parameters_alias, f = missing, sys = missing,
         interpret_symbolicmap = true, use_defaults = false, explicitfuns! = missing
     )
@@ -1623,7 +1636,7 @@ function remake(
         parameters_alias = Val(parameters_alias)
     end
     if p !== missing && parameters_alias === Val(false) && probs === missing
-        throw(ArgumentError("`parameters_alias` is `false` for the given `SCCNonlinearProblem`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
+        throw(ArgumentError("`parameters_alias` is `false` for the given `$(typeof(prob).name.name)`. Please provide the subproblems using the keyword `probs` with the parameters updated appropriately in each."))
     end
     newu0, newp = updated_u0_p(prob, u0, p; interpret_symbolicmap, use_defaults)
     if probs === missing
@@ -1641,7 +1654,23 @@ function remake(
     f = coalesce(f, prob.f)
     f = remake(f; sys)
 
+    return _scc_construct(prob, probs, explicitfuns!, f, newp, parameters_alias)
+end
+
+function _scc_construct(
+        ::SCCNonlinearProblem, probs, explicitfuns!, f, newp, parameters_alias
+    )
     return SCCNonlinearProblem{
+        typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp),
+    }(
+        probs, explicitfuns!, f, newp, parameters_alias
+    )
+end
+
+function _scc_construct(
+        ::SCCSteadyStateProblem, probs, explicitfuns!, f, newp, parameters_alias
+    )
+    return SCCSteadyStateProblem{
         typeof(probs), typeof(explicitfuns!), typeof(f), typeof(newp),
     }(
         probs, explicitfuns!, f, newp, parameters_alias

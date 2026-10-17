@@ -44,5 +44,6 @@ SciMLBase.ConvexOptimizationProblem
 
 ```@docs
 SciMLBase.SteadyStateProblem
+SciMLBase.SCCSteadyStateProblem
 SciMLBase.AnalyticalProblem
 ```

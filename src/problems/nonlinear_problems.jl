@@ -458,7 +458,10 @@ p_n &= g_n(u,p) & f_n(u_n,…,u_3,u_2,u_1,p_n) &= 0 \\\\
 where ``g_i`` is `explicitfuns![i]`. In a computational sense, `explictfuns!`
 is instead a mutating function `explictfuns![i](prob.probs[i],sols)` which
 updates the values of prob.probs[i] using the previous solutions `sols[i-1]`
-and below.
+and below. Either every block provides an initial state, in which case
+`state_values(prob)` is the concatenation of the block states, or every block is
+a `LinearProblem` without `u0`, in which case `state_values(prob) === nothing`;
+mixing the two throws an `ArgumentError`.
 
 !!! warning
     For the purposes of differentiation, it's assumed that `explictfuns!` does
@@ -568,28 +571,37 @@ mutable struct SCCNonlinearProblem{
             probs::P, funs::E, f::F, pobj::Par,
             alias::Palias
         ) where {P, E, F <: NonlinearFunction, Par, Palias}
-        init = state_values(first(probs))
-        has_no_u0 = init === nothing
-        if has_no_u0
-            # In this case, all of `probs` are `LinearProblem`
-            @assert first(probs) isa LinearProblem
-            init = first(probs).A
-        end
-        init = _scc_empty_state(init)
-        if has_no_u0
-            uType = Nothing
-        else
-            u0 = mapreduce(
-                state_values, vcat, probs; init
-            )
-            uType = typeof(u0)
-        end
+        uType = _scc_state_type(probs)
         return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
     end
 end
 
 _scc_empty_state(init) = similar(init, 0)
 _scc_empty_state(init::SVector) = SVector{0, eltype(init)}()
+
+function _scc_state_type(probs)
+    init = state_values(first(probs))
+    has_state = map(b -> state_values(b) !== nothing, probs)
+    if !any(has_state)
+        all(b -> b isa LinearProblem, probs) || throw(
+            ArgumentError(
+                "`probs` contains a block without an initial state that is not a " *
+                    "`LinearProblem`: either every block must provide an initial state " *
+                    "or every block must be a `LinearProblem` with `u0 = nothing`."
+            )
+        )
+        return Nothing
+    end
+    all(has_state) || throw(
+        ArgumentError(
+            "`probs` mixes blocks with and without an initial state: either every " *
+                "block must provide an initial state or every block must be a " *
+                "`LinearProblem` with `u0 = nothing`. Pass `u0` to each `LinearProblem` " *
+                "block."
+        )
+    )
+    return typeof(mapreduce(state_values, vcat, probs; init = _scc_empty_state(init)))
+end
 
 function SCCNonlinearProblem(
         probs, explicitfuns!, parameter_object = nothing,
@@ -607,7 +619,130 @@ function SCCNonlinearProblem(
     )
 end
 
-function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
+"""
+    SCCSteadyStateProblem(probs, explicitfuns!, parameter_object = nothing, parameters_alias = Val(false); kwargs...)
+
+Defines an SCC-split steady state problem to be solved iteratively.
+
+## Mathematical Specification of an SCC-Split Steady State Problem
+
+An SCC-Split Steady State Problem is the steady state of an ODE
+
+```math
+\\frac{du}{dt} = f(u, p)
+```
+
+whose residual `f(u, p) = 0` has a block-lower-triangular Jacobian. In this form
+the steady state can be found by solving a sequence of smaller nonlinear systems,
+one per diagonal block, in order — the same split form as
+[`SCCNonlinearProblem`](@ref). Solvers can treat each block either as a rootfinding
+problem (e.g. via [`SCCNonlinearProblem`](@ref)) or integrate each block's residual
+to steady state with a pseudo-transient method.
+
+## Representation
+
+The representation is identical to that of [`SCCNonlinearProblem`](@ref): an ordered
+collection `probs` of `NonlinearProblem`s (or `LinearProblem`s / `HomotopyProblem`s),
+one per diagonal block in SCC order, and `explicitfuns!` where
+`explicitfuns![i](parameter_values(probs[i]), sols)` updates block `i`'s caches from
+the already-solved blocks. See [`SCCNonlinearProblem`](@ref) for the full
+specification and an example. Either every block provides an initial state, in which
+case `state_values(prob)` is the concatenation of the block states, or every block is
+a `LinearProblem` without `u0`, in which case `state_values(prob) === nothing`;
+mixing the two throws an `ArgumentError`.
+
+## Constructors
+
+```julia
+SCCSteadyStateProblem(probs, explicitfuns!, parameter_object = nothing, parameters_alias = Val(false); kwargs...)
+```
+
+`kwargs` are passed to the `NonlinearFunction` stored in `f`, e.g. `sys` carrying
+the index provider for the concatenated system.
+
+Conversions between the two SCC forms share the block container and function
+without copying:
+
+```julia
+SCCSteadyStateProblem(prob::SCCNonlinearProblem)
+SCCNonlinearProblem(prob::SCCSteadyStateProblem)
+```
+
+## Fields
+
+* `probs`: the collection of problems to solve
+* `explicitfuns!`: the explicit functions for mutating the parameter set
+* `f`: the `NonlinearFunction` carrying the index provider (`sys`) of the
+  concatenated system
+* `p`: the parameter object for the whole problem
+* `parameters_alias`: whether `p` is shared with the subproblems' parameters
+
+## Solution
+
+The solution is a `SteadyStateSolution`. Its `u` is the concatenation of the
+block states in `state_values(prob)` order, and `resid` is the concatenated
+block residuals in the same layout. Symbolic indexing goes through
+`prob.f.sys`: `sol[x]` for states, `sol[obs]` for observed expressions of the
+compressed system, and `sol.ps[p]` for parameters.
+"""
+struct SCCSteadyStateProblem{
+        uType, iip, P, E, F <: NonlinearFunction{iip},
+        Par, Palias <: Union{Val{true}, Val{false}},
+    } <:
+    AbstractSteadyStateProblem{uType, iip}
+    probs::P
+    explicitfuns!::E
+    # NonlinearFunction with `f = Returns(nothing)`
+    f::F
+    p::Par
+    parameters_alias::Palias
+
+    function SCCSteadyStateProblem{P, E, F, Par}(
+            probs::P, funs::E, f::F, pobj::Par,
+            alias::Palias
+        ) where {P, E, F <: NonlinearFunction, Par, Palias}
+        uType = _scc_state_type(probs)
+        return new{uType, false, P, E, F, Par, Palias}(probs, funs, f, pobj, alias)
+    end
+end
+
+function SCCSteadyStateProblem(
+        probs, explicitfuns!, parameter_object = nothing,
+        parameters_alias::Union{Bool, Val{true}, Val{false}} = Val(false); kwargs...
+    )
+    f = NonlinearFunction{false}(Returns(nothing); kwargs...)
+    if parameters_alias isa Bool
+        parameters_alias = Val(parameters_alias)
+    end
+    return SCCSteadyStateProblem{
+        typeof(probs), typeof(explicitfuns!),
+        typeof(f), typeof(parameter_object),
+    }(
+        probs, explicitfuns!, f, parameter_object, parameters_alias
+    )
+end
+
+function SCCSteadyStateProblem(prob::SCCNonlinearProblem)
+    return SCCSteadyStateProblem{
+        typeof(prob.probs), typeof(prob.explicitfuns!),
+        typeof(prob.f), typeof(prob.p),
+    }(
+        prob.probs, prob.explicitfuns!, prob.f, prob.p, prob.parameters_alias
+    )
+end
+
+function SCCNonlinearProblem(prob::SCCSteadyStateProblem)
+    return SCCNonlinearProblem{
+        typeof(prob.probs), typeof(prob.explicitfuns!),
+        typeof(prob.f), typeof(prob.p),
+    }(
+        prob.probs, prob.explicitfuns!, prob.f, prob.p, prob.parameters_alias
+    )
+end
+
+const _SCCProblem = Union{SCCNonlinearProblem, SCCSteadyStateProblem}
+
+function Base.getproperty(prob::_SCCProblem, name::Symbol)
     if name == :explictfuns!
         return getfield(prob, :explicitfuns!)
     elseif name == :ps
@@ -616,22 +751,26 @@ function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
     return getfield(prob, name)
 end
 
-function SymbolicIndexingInterface.symbolic_container(prob::SCCNonlinearProblem)
+function SymbolicIndexingInterface.symbolic_container(prob::_SCCProblem)
     return prob.f
 end
-function SymbolicIndexingInterface.parameter_values(prob::SCCNonlinearProblem)
+function SymbolicIndexingInterface.parameter_values(prob::_SCCProblem)
     return prob.p
 end
-function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{Nothing})
+function SymbolicIndexingInterface.state_values(
+        prob::Union{SCCNonlinearProblem{Nothing}, SCCSteadyStateProblem{Nothing}}
+    )
     return nothing
 end
-function SymbolicIndexingInterface.state_values(prob::SCCNonlinearProblem{T}) where {T}
+function SymbolicIndexingInterface.state_values(
+        prob::Union{SCCNonlinearProblem{T}, SCCSteadyStateProblem{T}}
+    ) where {T}
     init = state_values(first(prob.probs))
     init = _scc_empty_state(init)
     return mapreduce(state_values, vcat, prob.probs; init)::T
 end
 
-function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, idx)
+function SymbolicIndexingInterface.set_state!(prob::_SCCProblem, val, idx)
     for scc in prob.probs
         svals = state_values(scc)
         checkbounds(Bool, svals, idx) && return set_state!(scc, val, idx)
@@ -640,7 +779,7 @@ function SymbolicIndexingInterface.set_state!(prob::SCCNonlinearProblem, val, id
     throw(BoundsError(state_values(prob), idx))
 end
 
-function SymbolicIndexingInterface.set_parameter!(prob::SCCNonlinearProblem, val, idx)
+function SymbolicIndexingInterface.set_parameter!(prob::_SCCProblem, val, idx)
     if prob.p !== nothing
         set_parameter!(prob.p, val, idx)
         prob.parameters_alias === Val(true) && return
