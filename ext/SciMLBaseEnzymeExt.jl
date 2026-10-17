@@ -1,9 +1,13 @@
 module SciMLBaseEnzymeExt
 
-using SciMLBase: AbstractSensitivityAlgorithm, AbstractDEAlgorithm, AbstractSciMLProblem,
-    AbstractSciMLFunction, remake
+using SciMLBase: SciMLBase, AbstractSensitivityAlgorithm, AbstractDEAlgorithm,
+    AbstractSciMLProblem, AbstractSciMLFunction, remake,
+    AbstractDifferentiableDiscretizationMetadata, AbstractPDESolution,
+    AbstractTimeseriesSolution, pde_index_cotangent, pde_call_cotangent
 import CommonSolve
 import Enzyme: EnzymeRules
+using Enzyme: Active, Annotation, Const, Duplicated, DuplicatedNoNeed, MixedDuplicated,
+    make_zero
 
 # Enzyme rules for SciMLBase abstract types
 #
@@ -85,5 +89,187 @@ EnzymeRules.inactive_kwarg(
 EnzymeRules.inactive_noinl(
     ::typeof(Core.kwcall), ::Any, ::typeof(remake), ::AbstractSciMLFunction, args...,
 ) = true
+
+# =============================================================================
+# PDE solution wrappers
+# =============================================================================
+#
+# The counterparts of the PDE solution rules in SciMLBaseChainRulesCoreExt, for metadata
+# that subtypes `AbstractDifferentiableDiscretizationMetadata`. The shadow of the wrapper
+# `solve` builds holds the shadow of the solver's solution as `original_sol`, and
+# `sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)` accumulate the cotangent the
+# discretizer's hooks describe into it. The solver's Enzyme rule hands the shadow of its
+# solution to the adjoint, which does not read `prob.p` from it, so the parameter part of
+# an observed value would be lost; a cotangent with observed terms is an error instead.
+
+const DifferentiablePDESolution = AbstractPDESolution{
+    T, N, S, D,
+} where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+
+# The metadata, which the problem and the wrapped solution carry, describes the
+# discretization and is a constant of the solve.
+EnzymeRules.inactive_type(::Type{<:AbstractDifferentiableDiscretizationMetadata}) = true
+
+_shadow(x::Union{Duplicated, DuplicatedNoNeed}) = x.dval
+_shadow(x::MixedDuplicated) = x.dval[]
+_shadow(::Annotation) = nothing
+
+# The shadow of a wrapper of `sol`: the shadow of `sol` as `original_sol`, and with it the
+# shadows of the fields the wrapper shares with `sol`. The symbols of the PDE are constants,
+# and the other fields start at zero.
+function _wrapper_shadow(A, sol, dsol)
+    fields = map(fieldnames(typeof(A))) do name
+        x = getfield(A, name)
+        if name === :original_sol
+            dsol
+        elseif name in (:ivs, :dvs)
+            x
+        elseif hasfield(typeof(sol), name) && x === getfield(sol, name)
+            getfield(dsol, name)
+        else
+            make_zero(x)
+        end
+    end
+    return typeof(A)(fields...)
+end
+
+for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
+    @eval begin
+        function EnzymeRules.augmented_primal(
+                config::EnzymeRules.RevConfigWidth{1}, func::Const{Type{SciMLBase.$W}},
+                ::Type{RT}, sol::Annotation,
+                metadata::Annotation{<:AbstractDifferentiableDiscretizationMetadata}
+            ) where {RT}
+            A = func.val(sol.val, metadata.val)
+            shadow = if EnzymeRules.needs_shadow(config)
+                dsol = something(_shadow(sol), make_zero(sol.val))
+                # Wrapping a wrapper is the identity.
+                dA = A === sol.val ? dsol : _wrapper_shadow(A, sol.val, dsol)
+                RT <: MixedDuplicated ? Ref(dA) : dA
+            else
+                nothing
+            end
+            primal = EnzymeRules.needs_primal(config) ? A : nothing
+            return EnzymeRules.augmented_rule_return_type(config, RT)(primal, shadow, nothing)
+        end
+        function EnzymeRules.reverse(
+                config::EnzymeRules.RevConfigWidth{1}, func::Const{Type{SciMLBase.$W}},
+                ::Type{RT}, tape, sol::Annotation,
+                metadata::Annotation{<:AbstractDifferentiableDiscretizationMetadata}
+            ) where {RT}
+            return (nothing, nothing)
+        end
+    end
+end
+
+# Accumulate the cotangent of `A.original_sol` that a hook describes into its shadow. A
+# solution that is not active, or only at runtime with a shadow that aliases it, takes none.
+function _accumulate_original_sol!(A::Annotation, c)
+    c === nothing && return nothing
+    dA = _shadow(A)
+    dA === nothing && return nothing
+    dsol = dA.original_sol
+    dsol === A.val.original_sol && return nothing
+    isempty(c.observed) || throw(
+        ArgumentError(
+            "Reverse-mode differentiation of the observed values of a PDE solution is not supported with Enzyme, since the parameter part of their cotangent has no way back to the solve."
+        )
+    )
+    c.u === nothing && return nothing
+    if A.val.original_sol isa AbstractTimeseriesSolution
+        for k in eachindex(dsol.u)
+            dsol.u[k] .+= c.u[k]
+        end
+    else
+        dsol.u .+= c.u
+    end
+    return nothing
+end
+
+# The shadow of the result of `sol[sym, inds...]` or `sol(args...)`: none for a number, which
+# is active, and otherwise the cotangent the reverse pass reads, kept as the tape.
+function _result_shadow(config, ::Type{RT}, y) where {RT}
+    EnzymeRules.needs_shadow(config) || return nothing
+    dy = make_zero(y)
+    return RT <: MixedDuplicated ? Ref(dy) : dy
+end
+
+# The cotangent of the result in the reverse pass.
+function _result_cotangent(dret, tape)
+    dret isa Active && return dret.val
+    return tape isa Ref ? tape[] : tape
+end
+
+function EnzymeRules.augmented_primal(
+        config::EnzymeRules.RevConfigWidth{1}, func::Const{typeof(getindex)}, ::Type{RT},
+        A::Annotation{<:DifferentiablePDESolution}, sym::Annotation, inds::Annotation...
+    ) where {RT}
+    y = A.val[sym.val, map(i -> i.val, inds)...]
+    dy = _result_shadow(config, RT, y)
+    primal = EnzymeRules.needs_primal(config) ? y : nothing
+    return EnzymeRules.augmented_rule_return_type(config, RT)(primal, dy, dy)
+end
+
+function EnzymeRules.reverse(
+        config::EnzymeRules.RevConfigWidth{1}, func::Const{typeof(getindex)}, dret, tape,
+        A::Annotation{<:DifferentiablePDESolution}, sym::Annotation, inds::Annotation...
+    )
+    Δ = _result_cotangent(dret, tape)
+    if Δ !== nothing
+        s = sym.val
+        is = map(i -> i.val, inds)
+        if !isempty(is)
+            # `sol[sym, inds...]` is `sol[sym][inds...]` in the interface.
+            Δfield = fill!(similar(A.val[s]), 0)
+            view(Δfield, is...) .+= Δ  # accumulates over a repeated index
+            Δ = Δfield
+        end
+        _accumulate_original_sol!(A, pde_index_cotangent(A.val, s, Δ))
+    end
+    return (nothing, nothing, map(Returns(nothing), inds)...)
+end
+
+const PDECallArgument = Union{Number, AbstractArray, Colon}
+
+function _check_call_kwargs(kwargs)
+    issubset(keys(kwargs), (:dv,)) || throw(
+        ArgumentError(
+            "Reverse-mode differentiation of `sol(args...; kwargs...)` covers the `dv` keyword only, got $(keys(kwargs))."
+        )
+    )
+    return nothing
+end
+
+# The cotangent of an argument of `sol(args...)`: returned for an active number, and
+# accumulated into the shadow of an array.
+_call_arg_cotangent!(x::Active, Δ) = Δ === nothing ? zero(x.val) : convert(typeof(x.val), Δ)
+function _call_arg_cotangent!(x::Union{Duplicated, DuplicatedNoNeed}, Δ)
+    Δ === nothing || x.dval === x.val || (x.dval .+= Δ)
+    return nothing
+end
+_call_arg_cotangent!(::Annotation, Δ) = nothing
+
+function EnzymeRules.augmented_primal(
+        config::EnzymeRules.RevConfigWidth{1}, func::Annotation{<:DifferentiablePDESolution},
+        ::Type{RT}, args::Annotation{<:PDECallArgument}...; kwargs...
+    ) where {RT}
+    _check_call_kwargs(kwargs)
+    y = func.val(map(x -> x.val, args)...; kwargs...)
+    dy = _result_shadow(config, RT, y)
+    primal = EnzymeRules.needs_primal(config) ? y : nothing
+    return EnzymeRules.augmented_rule_return_type(config, RT)(primal, dy, dy)
+end
+
+function EnzymeRules.reverse(
+        config::EnzymeRules.RevConfigWidth{1}, func::Annotation{<:DifferentiablePDESolution},
+        dret, tape, args::Annotation{<:PDECallArgument}...; kwargs...
+    )
+    Δ = _result_cotangent(dret, tape)
+    Δ === nothing && return map(x -> _call_arg_cotangent!(x, nothing), args)
+    xs = map(x -> x.val, args)
+    c, Δargs = pde_call_cotangent(func.val, xs, get(kwargs, :dv, nothing), Δ)
+    _accumulate_original_sol!(func, c)
+    return map(_call_arg_cotangent!, args, Tuple(Δargs))
+end
 
 end

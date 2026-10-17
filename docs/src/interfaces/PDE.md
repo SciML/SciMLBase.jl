@@ -113,6 +113,29 @@ SciMLBase.PDENoTimeSolution
 SciMLBase.wrap_sol
 ```
 
+### Reverse-mode differentiation
+
+A discretizer whose metadata subtypes
+[`AbstractDifferentiableDiscretizationMetadata`](@ref SciMLBase.AbstractDifferentiableDiscretizationMetadata)
+gets reverse-mode rules for `sol[sym]`, `sol[sym, inds...]` (`sol[sym][inds...]` in the
+interface) and `sol(args...; dv)`, for ChainRulesCore (Zygote), Mooncake and Enzyme. They
+route the cotangent back to `sol.original_sol`, whose rules the solver packages provide,
+and ask the discretizer for the map from a field or an evaluation back to the solver's
+solution through two hooks, which are plain code with no AD types. The package that owns
+the metadata implements them; a subtype without them errors, so a solution never returns a
+wrong gradient silently. Only `original_sol` carries a gradient back: the other fields of
+the wrapper are constants of the wrapping, and with ChainRulesCore a cotangent that reaches
+the wrapper through `sol.u`, `sol.interp` or `sol.prob` is an error. Enzyme does not cover
+observed values yet, since the solver's Enzyme rule has no way to take the parameter part
+of their cotangent. The metadata is a constant of the solve, and metadata that subtypes
+`AbstractDiscretizationMetadata` directly gets none of these rules.
+
+```@docs
+SciMLBase.AbstractDifferentiableDiscretizationMetadata
+SciMLBase.pde_index_cotangent
+SciMLBase.pde_call_cotangent
+```
+
 ## Transformations and Analysis
 
 Equation simplification, index reduction, domain decomposition, coordinate
