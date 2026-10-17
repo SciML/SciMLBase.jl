@@ -855,8 +855,9 @@ end
 function HomotopyProblem(f, u0, p = NullParameters(); kwargs...)
     # The residual takes λ as a trailing argument (like `t` for ODEs), so in-place
     # detection follows the 4-argument convention: f(du, u, p, λ) is in-place.
-    iip = isinplace(f, 4)
-    return HomotopyProblem(NonlinearFunction{iip}(f), u0, p; kwargs...)
+    return isinplace(f, 4) ?
+        HomotopyProblem(NonlinearFunction{true}(f), u0, p; kwargs...) :
+        HomotopyProblem(NonlinearFunction{false}(f), u0, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: HomotopyProblem}
