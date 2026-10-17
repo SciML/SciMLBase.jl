@@ -405,6 +405,44 @@ _invoke_solve(::Val{:seed}, new_prob, alg, rng, seed; kwargs...) =
 _invoke_solve(::Val{:none}, new_prob, alg, rng, seed; kwargs...) =
     solve(new_prob, alg; kwargs...)
 
+# Respect safetycopy: if true, deepcopy per simulation (user's explicit choice).
+# If false, use per-task JumpProblem copy if available (fixes race condition),
+# otherwise use the original problem directly.
+#
+# Each choice is solved in its own branch rather than first being joined into
+# one problem: a join of a fresh copy with the caller's problem is a pointer
+# phi that AD tools such as Enzyme cannot always keep rooted
+# (SciMLSensitivity.jl#1696).
+function _batch_solve(prob, thread_prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    if prob.safetycopy
+        return _batch_solve_one(deepcopy(prob.prob), prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    elseif thread_prob !== nothing
+        return _batch_solve_one(thread_prob, prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    else
+        return _batch_solve_one(prob.prob, prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    end
+end
+
+# Solve one simulation from `_prob`, returning `(output, rerun)`.
+function _batch_solve_one(_prob, prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    # Call prob_func(prob, ctx) — single 2-arg form, no arity detection needed
+    new_prob = prob.prob_func(_prob, ctx)
+
+    # Solve — dispatch on pre-computed _solve_rng_mode:
+    #   :rng  → pass rng kwarg (new interface)
+    #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
+    #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
+    _solve_call = _invoke_solve(
+        _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
+    )
+    x = prob.output_func(_solve_call, ctx)
+    if !(x isa Tuple)
+        rerun_warn()
+        return (x, false)
+    end
+    return x
+end
+
 function batch_func(
         i, prob, alg, ensemble_rng_state, thread_prob;
         worker_id = 0, kwargs...
@@ -423,20 +461,6 @@ function batch_func(
     # since R changes from Nothing to the concrete RNG type)
     ctx = @set pre_ctx.rng = sim_rng
 
-    # Respect safetycopy: if true, deepcopy per simulation (user's explicit choice).
-    # If false, use per-task JumpProblem copy if available (fixes race condition),
-    # otherwise use the original problem directly.
-    _prob = if prob.safetycopy
-        deepcopy(prob.prob)
-    elseif thread_prob !== nothing
-        thread_prob
-    else
-        prob.prob
-    end
-
-    # Call prob_func(prob, ctx) — single 2-arg form, no arity detection needed
-    new_prob = prob.prob_func(_prob, ctx)
-
     # Progress handling
     progress = get(kwargs, :progress, false)
     if progress
@@ -446,44 +470,14 @@ function batch_func(
         kwargs = (; kwargs..., progress_name, progress_id)
     end
 
-    # Solve — dispatch on pre-computed _solve_rng_mode:
-    #   :rng  → pass rng kwarg (new interface)
-    #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
-    #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
-    _solve_call = _invoke_solve(
-        _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
-    )
-    x = prob.output_func(_solve_call, ctx)
-    if !(x isa Tuple)
-        rerun_warn()
-        _x = (x, false)
-    else
-        _x = x
-    end
+    _x = _batch_solve(prob, thread_prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
 
     # Rerun loop
     rerun = _x[2]
     while rerun
         iter += 1
         ctx = @set ctx.repeat = iter
-        _prob2 = if prob.safetycopy
-            deepcopy(prob.prob)
-        elseif thread_prob !== nothing
-            thread_prob
-        else
-            prob.prob
-        end
-        new_prob = prob.prob_func(_prob2, ctx)
-        _solve_call = _invoke_solve(
-            _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
-        )
-        x = prob.output_func(_solve_call, ctx)
-        if !(x isa Tuple)
-            rerun_warn()
-            _x = (x, false)
-        else
-            _x = x
-        end
+        _x = _batch_solve(prob, thread_prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
         rerun = _x[2]
     end
     return _x[1]
