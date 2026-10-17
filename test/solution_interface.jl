@@ -440,3 +440,21 @@ end
     @test ss isa SciMLBase.SavedSubsystem
     @test SciMLBase.get_saved_state_idxs(ss) == [1]
 end
+
+@testset "integer save_idxs state mapping" begin
+    syms = [:x, :y, :z]
+    sc = SymbolCache(syms, [], :t)
+    prob = ODEProblem(ODEFunction((u, p, t) -> -u; sys = sc), [1.0, 2.0, 3.0], (0.0, 1.0))
+    ts = [0.0, 1.0]
+    for idx in eachindex(syms)
+        expected = [prob.u0[idx], prob.u0[idx] / 2]
+        for selection in (idx, [idx], syms[idx])
+            _, ss = SciMLBase.get_save_idxs_and_saved_subsystem(prob, selection)
+            @test ss.state_map == Dict(idx => 1)
+            @test SciMLBase.get_saved_state_idxs(ss) == [idx]
+            us = selection isa Int ? expected : [[v] for v in expected]
+            sol = SciMLBase.build_solution(prob, nothing, ts, us; saved_subsystem = ss)
+            @test sol[syms[idx]] == expected
+        end
+    end
+end
