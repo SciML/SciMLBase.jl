@@ -1018,14 +1018,15 @@ abstract type AbstractDiscretizationMetadata{hasTime} end
 """
 $(TYPEDEF)
 
-Metadata of a discretizer whose wrapped solutions differentiate in reverse mode through
-the ChainRulesCore extension: `sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)` get
-rules that route the cotangent to `sol.original_sol`, whose rules the solver packages
-provide, through [`pde_index_cotangent`](@ref SciMLBase.pde_index_cotangent) and
+Metadata of a discretizer whose wrapped solutions differentiate in reverse mode:
+`sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)` get rules in the ChainRulesCore,
+Mooncake and Enzyme extensions that route the cotangent to `sol.original_sol`, whose rules
+the solver packages provide, through
+[`pde_index_cotangent`](@ref SciMLBase.pde_index_cotangent) and
 [`pde_call_cotangent`](@ref SciMLBase.pde_call_cotangent), which the discretizer
 implements for its metadata type. The solutions of metadata that subtypes
 [`AbstractDiscretizationMetadata`](@ref SciMLBase.AbstractDiscretizationMetadata) directly
-get no rules; the AD system traces them like any other code.
+get none of these rules.
 """
 abstract type AbstractDifferentiableDiscretizationMetadata{hasTime} <:
 AbstractDiscretizationMetadata{hasTime} end

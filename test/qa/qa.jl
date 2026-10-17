@@ -118,9 +118,9 @@ const _ei_own_internals = (
 # Each group is an optional dependency's rule/tangent/plot-recipe interface: the
 # extension exists precisely to hook into it, and there is no public spelling.
 const _ei_nonpublic_third_party = (
-    # Enzyme's activity interface (EnzymeCore.EnzymeRules) plus the `Core.kwcall`
+    # Enzyme's rule and activity interface (EnzymeCore.EnzymeRules) plus the `Core.kwcall`
     # entry point a keyword-argument method must be marked inactive through.
-    :inactive_kwarg, :inactive_noinl, :inactive_type, :kwcall,
+    :augmented_primal, :reverse, :inactive_kwarg, :inactive_noinl, :inactive_type, :kwcall,
     # ForwardDiff's dual-number internals and the DiffResults buffer type it pairs
     # with, needed to opt AD configuration objects out of dual detection.
     :AbstractConfig, :Dual, :partials, :value, :DiffResult,

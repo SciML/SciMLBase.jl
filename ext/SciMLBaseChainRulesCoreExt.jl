@@ -1,7 +1,7 @@
 module SciMLBaseChainRulesCoreExt
 
 using SciMLBase: SciMLBase, EnsembleSolution, NonlinearProblem, ODESolution, RODESolution,
-    SDEProblem, getobserved, remake, AbstractPDESolution,
+    SDEProblem, getobserved, remake, AbstractPDESolution, AbstractPDETimeSeriesSolution,
     AbstractDifferentiableDiscretizationMetadata, pde_index_cotangent, pde_call_cotangent
 import ChainRulesCore
 import ChainRulesCore: NoTangent, AbstractZero, @non_differentiable, zero_tangent, rrule_via_ad
@@ -260,6 +260,39 @@ end
 # evaluation back to the solver's solution is the discretizer's, through
 # `pde_index_cotangent` and `pde_call_cotangent`. Other metadata gets no rule here.
 
+# The cotangent of `A.original_sol` that a hook describes, with the observed terms pulled
+# back through the AD system in use. Their parameter part goes in `prob.p`, where the
+# solver's rules look for the parameter cotangent of an observed value.
+function _original_sol_cotangent(config, A, c)
+    c === nothing && return NoTangent()
+    sol = A.original_sol
+    hastime = A isa AbstractPDETimeSeriesSolution
+    c.u === nothing && isempty(c.observed) && return NoTangent()
+    Δu = if c.u === nothing
+        hastime ? [zero(u) for u in sol.u] : zero(sol.u)
+    else
+        hastime ? copy(c.u) : c.u
+    end
+    p = parameter_values(sol)
+    Δp = NoTangent()
+    for term in c.observed
+        if hastime
+            f, k, δ = term
+            _, du, dp, _ = rrule_via_ad(config, f, sol.u[k], p, sol.t[k])[2](δ)
+            du = ChainRulesCore.unthunk(du)
+            du isa AbstractZero || (Δu[k] = Δu[k] + du)
+        else
+            f, δ = term
+            _, du, dp = rrule_via_ad(config, f, sol.u, p)[2](δ)
+            du = ChainRulesCore.unthunk(du)
+            du isa AbstractZero || (Δu = Δu + du)
+        end
+        Δp = Δp + ChainRulesCore.unthunk(dp)
+    end
+    Δprob = Δp isa AbstractZero ? NoTangent() : ChainRulesCore.Tangent{typeof(sol.prob)}(; p = Δp)
+    return ChainRulesCore.Tangent{typeof(sol)}(; u = Δu, prob = Δprob)
+end
+
 function _wrapper_cotangent(A, Δsol)
     Δsol isa AbstractZero && return NoTangent()
     return ChainRulesCore.Tangent{typeof(A)}(; original_sol = Δsol)
@@ -299,7 +332,7 @@ function ChainRulesCore.rrule(
     function pde_getindex_pullback(Δ)
         Δ = ChainRulesCore.unthunk(Δ)
         Δ isa AbstractZero && return (NoTangent(), NoTangent(), NoTangent())
-        Δsol = pde_index_cotangent(config, A, sym, Δ)
+        Δsol = _original_sol_cotangent(config, A, pde_index_cotangent(A, sym, Δ))
         return (NoTangent(), _wrapper_cotangent(A, Δsol), NoTangent())
     end
     return y, pde_getindex_pullback
@@ -316,9 +349,9 @@ function ChainRulesCore.rrule(
     function pde_getindex_pullback(Δ)
         Δ = ChainRulesCore.unthunk(Δ)
         Δ isa AbstractZero && return (NoTangent(), NoTangent(), NoTangent(), Δinds...)
-        Δfield = zero(A[sym])
+        Δfield = fill!(similar(A[sym]), 0)
         view(Δfield, ind, inds...) .+= Δ  # accumulates over a repeated index
-        Δsol = pde_index_cotangent(config, A, sym, Δfield)
+        Δsol = _original_sol_cotangent(config, A, pde_index_cotangent(A, sym, Δfield))
         return (NoTangent(), _wrapper_cotangent(A, Δsol), NoTangent(), Δinds...)
     end
     return y, pde_getindex_pullback
@@ -343,8 +376,9 @@ function ChainRulesCore.rrule(
     function pde_call_pullback(Δ)
         Δ = ChainRulesCore.unthunk(Δ)
         Δ isa AbstractZero && return (NoTangent(), ntuple(_ -> NoTangent(), length(args))...)
-        Δsol, Δargs = pde_call_cotangent(config, A, args, dv, Δ)
-        return (_wrapper_cotangent(A, Δsol), Δargs...)
+        c, Δargs = pde_call_cotangent(A, args, dv, Δ)
+        Δsol = _original_sol_cotangent(config, A, c)
+        return (_wrapper_cotangent(A, Δsol), map(a -> something(a, NoTangent()), Tuple(Δargs))...)
     end
     return y, pde_call_pullback
 end

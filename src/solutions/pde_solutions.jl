@@ -171,24 +171,32 @@ function SciMLBase.wrap_sol(
 end
 
 """
-    pde_index_cotangent(config, sol::AbstractPDESolution, sym, Δ)
+    pde_index_cotangent(sol::AbstractPDESolution, sym, Δ)
 
 Reverse-mode hook behind `sol[sym]` and `sol[sym, inds...]` (`sol[sym][inds...]` in the
 interface) for a solution whose metadata
 subtypes [`AbstractDifferentiableDiscretizationMetadata`](@ref SciMLBase.AbstractDifferentiableDiscretizationMetadata):
-the cotangent of `sol.original_sol` for a cotangent `Δ` of the array `sol[sym]`, as a
-`ChainRulesCore` tangent, or `NoTangent()` when `sym` does not depend on the solve (a
-grid, for instance). The rules in the ChainRulesCore extension route every cotangent of a
-wrapped solution back to `original_sol`, whose rules the solver packages provide; only the
-map from a field back to the solver's solution is the discretizer's, and this is where it
-implements it, for its metadata type `D`. `sym` is whatever the solution was indexed with,
-and the metadata is a constant of the solve, with no cotangent. `config` is the rule
-configuration, for `rrule_via_ad` on observed functions. The fallback errors, and a hook
-that cannot provide a cotangent throws as well, so that a solution never returns a wrong
-gradient silently.
+how a cotangent `Δ` of the array `sol[sym]` goes back to the solver's solution
+`sol.original_sol`. It returns `nothing` when `sym` does not depend on the solve (a grid,
+for instance), and otherwise a named tuple `(; u, observed)`:
+
+  - `u`: the cotangent of `sol.original_sol.u`, of the same shape, or `nothing`;
+  - `observed`: a collection of terms `(f, k, δ)` for the values the solution observes
+    rather than stores, each the cotangent `δ` of
+    `f(sol.original_sol.u[k], p, sol.original_sol.t[k])` with
+    `p = parameter_values(sol.original_sol)`, or terms `(f, δ)` of
+    `f(sol.original_sol.u, p)` for a solution without time.
+
+The hook is plain code, with no AD types: the AD extensions pull the observed terms back
+with the AD system in use and hand the cotangent to the solver's rules for
+`original_sol`. Only the map from a field back to the solver's solution is the
+discretizer's, implemented here for its metadata type `D`. `sym` is whatever the solution
+was indexed with, and the metadata and the functions `f` are constants of the solve. The
+fallback errors, and a hook that cannot provide a cotangent throws as well, so that a
+solution never returns a wrong gradient silently.
 """
 function pde_index_cotangent(
-        config, sol::AbstractPDESolution{T, N, S, D}, sym, Δ
+        sol::AbstractPDESolution{T, N, S, D}, sym, Δ
     ) where {T, N, S, D}
     throw(
         ArgumentError(
@@ -198,20 +206,19 @@ function pde_index_cotangent(
 end
 
 """
-    pde_call_cotangent(config, sol::AbstractPDESolution, args, dv, Δ)
+    pde_call_cotangent(sol::AbstractPDESolution, args, dv, Δ)
 
-Reverse-mode hook behind `sol(args...; dv)`: a tuple `(Δsol, Δargs)` of the cotangent of
-`sol.original_sol` and the cotangents of `args`, for a cotangent `Δ` of the evaluation at
-`args`. `dv` is the keyword as it was passed to the call, or `nothing` when it was not, and
-`Δ` then has the shape of what the call returns in that case (a collection over `sol.dvs`
-in the documented interface). `Δargs` has one entry per argument: the cotangent of a
-coordinate, or an error when the discretizer cannot provide it, and `NoTangent()` for an
-index or a colon. See
-[`pde_index_cotangent`](@ref SciMLBase.pde_index_cotangent) for the contract; the fallback
-errors.
+Reverse-mode hook behind `sol(args...; dv)`: a tuple of the cotangent of
+`sol.original_sol`, in the form [`pde_index_cotangent`](@ref SciMLBase.pde_index_cotangent)
+returns it, and the cotangents of `args`, for a cotangent `Δ` of the evaluation at `args`.
+`dv` is the keyword as it was passed to the call, or `nothing` when it was not, and `Δ`
+then has the shape of what the call returns in that case (a collection over `sol.dvs` in
+the documented interface). The cotangents of `args` are one per argument: that of a
+coordinate, or an error when the discretizer cannot provide it, and `nothing` for an index
+or a colon. The fallback errors.
 """
 function pde_call_cotangent(
-        config, sol::AbstractPDESolution{T, N, S, D}, args, dv, Δ
+        sol::AbstractPDESolution{T, N, S, D}, args, dv, Δ
     ) where {T, N, S, D}
     throw(
         ArgumentError(
