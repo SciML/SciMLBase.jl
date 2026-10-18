@@ -745,8 +745,9 @@ end
 # shares the fdata of `original_sol` with the solver's solution, so that `sol[sym]`,
 # `sol[sym, inds...]` and `sol(args...; dv)` can scatter the cotangent the discretizer's
 # hooks describe into it, with the observed terms pulled back through derived rules. The
-# wrapper's other fields get no gradient. The time series methods also disambiguate against
-# the `AbstractTimeseriesSolution` rules above.
+# wrapper's other fields are constants of the wrapping, except `u`, `interp` and `prob`,
+# where a gradient is an error. The time series methods also disambiguate against the
+# `AbstractTimeseriesSolution` rules above.
 
 const DifferentiablePDETimeSeriesSolution = AbstractPDETimeSeriesSolution{
     T, N, S, D,
@@ -761,6 +762,32 @@ const DifferentiablePDESolution = Union{
 # The metadata, which the problem and the wrapped solution carry, describes the
 # discretization and is a constant of the solve.
 Mooncake.tangent_type(::Type{<:AbstractDifferentiableDiscretizationMetadata}) = Mooncake.NoTangent
+
+# Whether a tangent, or its fdata or rdata, holds a nonzero number.
+_has_gradient(x::Union{AbstractFloat, Complex{<:AbstractFloat}}) = !iszero(x)
+function _has_gradient(x::AbstractArray{<:Union{AbstractFloat, Complex{<:AbstractFloat}}})
+    return any(!iszero, x)
+end
+_has_gradient(x::AbstractArray) = any(i -> isassigned(x, i) && _has_gradient(x[i]), eachindex(x))
+_has_gradient(x::Union{Tuple, NamedTuple}) = any(_has_gradient, x)
+_has_gradient(x::Union{Mooncake.Tangent, Mooncake.MutableTangent}) = _has_gradient(x.fields)
+_has_gradient(x::Union{Mooncake.FData, Mooncake.RData}) = _has_gradient(x.data)
+_has_gradient(::Any) = false
+
+# Only `original_sol` carries a gradient back; `u`, `interp` and `prob` are reached through
+# the rules below, so a gradient on them means a path that has no rule, and it is an error
+# rather than a zero, as in SciMLBaseChainRulesCoreExt.
+function _check_unreached_fields(fd, rd)
+    for x in (fd, rd), field in (:u, :interp, :prob)
+        x isa Union{Mooncake.FData, Mooncake.RData} && hasfield(typeof(x.data), field) || continue
+        _has_gradient(getfield(x.data, field)) && throw(
+            ArgumentError(
+                "Reverse-mode differentiation reaches a PDE solution through `sol[sym]` and `sol(args...)`; the `$field` field of the solution has no rule."
+            )
+        )
+    end
+    return nothing
+end
 
 for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
     @eval begin
@@ -777,7 +804,10 @@ for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
             fd = fdata(zero_tangent(A))
             fd = typeof(fd)(merge(fd.data, (; original_sol = sol.dx)))
             lzr_sol = lazy_zero_rdata(sol.x)
-            wrapper_pullback(::Any) = (NoRData(), instantiate(lzr_sol), NoRData())
+            function wrapper_pullback(dA)
+                _check_unreached_fields(fd, dA)
+                return NoRData(), instantiate(lzr_sol), NoRData()
+            end
             return CoDual(A, fd), wrapper_pullback
         end
     end

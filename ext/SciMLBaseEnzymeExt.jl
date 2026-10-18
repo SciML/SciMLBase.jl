@@ -133,6 +133,34 @@ function _wrapper_shadow(A, sol, dsol)
     return typeof(A)(fields...)
 end
 
+# Whether a shadow holds a nonzero number, through containers and the fields of structs.
+_has_gradient(x::Union{AbstractFloat, Complex{<:AbstractFloat}}) = !iszero(x)
+function _has_gradient(x::AbstractArray{<:Union{AbstractFloat, Complex{<:AbstractFloat}}})
+    return any(!iszero, x)
+end
+_has_gradient(x::AbstractArray) = any(i -> isassigned(x, i) && _has_gradient(x[i]), eachindex(x))
+_has_gradient(x::AbstractDict) = any(_has_gradient, values(x))
+_has_gradient(x::Union{Tuple, NamedTuple}) = any(_has_gradient, x)
+_has_gradient(::Union{Number, Symbol, AbstractString, Function, Type, Module}) = false
+function _has_gradient(x::T) where {T}
+    isstructtype(T) || return false
+    return any(i -> isdefined(x, i) && _has_gradient(getfield(x, i)), 1:fieldcount(T))
+end
+
+# `u` and `interp` are reached through the rules below, so a gradient on them means a path
+# that has no rule, and it is an error rather than a zero, as in SciMLBaseChainRulesCoreExt.
+# `prob` shares its shadow with `original_sol`.
+function _check_unreached_fields(dA)
+    for field in (:u, :interp)
+        _has_gradient(getfield(dA, field)) && throw(
+            ArgumentError(
+                "Reverse-mode differentiation reaches a PDE solution through `sol[sym]` and `sol(args...)`; the `$field` field of the solution has no rule."
+            )
+        )
+    end
+    return nothing
+end
+
 for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
     @eval begin
         function EnzymeRules.augmented_primal(
@@ -141,22 +169,23 @@ for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
                 metadata::Annotation{<:AbstractDifferentiableDiscretizationMetadata}
             ) where {RT}
             A = func.val(sol.val, metadata.val)
-            shadow = if EnzymeRules.needs_shadow(config)
+            shadow, tape = if EnzymeRules.needs_shadow(config)
                 dsol = something(_shadow(sol), make_zero(sol.val))
                 # Wrapping a wrapper is the identity.
                 dA = A === sol.val ? dsol : _wrapper_shadow(A, sol.val, dsol)
-                RT <: MixedDuplicated ? Ref(dA) : dA
+                (RT <: MixedDuplicated ? Ref(dA) : dA), dA
             else
-                nothing
+                nothing, nothing
             end
             primal = EnzymeRules.needs_primal(config) ? A : nothing
-            return EnzymeRules.augmented_rule_return_type(config, RT)(primal, shadow, nothing)
+            return EnzymeRules.augmented_rule_return_type(config, RT)(primal, shadow, tape)
         end
         function EnzymeRules.reverse(
                 config::EnzymeRules.RevConfigWidth{1}, func::Const{Type{SciMLBase.$W}},
                 ::Type{RT}, tape, sol::Annotation,
                 metadata::Annotation{<:AbstractDifferentiableDiscretizationMetadata}
             ) where {RT}
+            tape === nothing || _check_unreached_fields(tape)
             return (nothing, nothing)
         end
     end

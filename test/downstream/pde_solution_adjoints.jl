@@ -246,7 +246,9 @@ end
         @test_throws "not implemented for solution metadata type" DifferentiationInterface.gradient(
             ps -> wrapped(ps, hookless)(0.5, 0.3), backend, p0
         )
+        # A cotangent reaching the wrapper through a field with no rule is an error as well.
+        @test_throws "has no rule" DifferentiationInterface.gradient(
+            ps -> sum(abs2, wrapped(ps, md).u[:u]), backend, p0
+        )
     end
-    # A cotangent reaching the wrapper through a field with no rule is an error as well.
-    @test_throws "has no rule" Zygote.gradient(ps -> sum(abs2, wrapped(ps, md).u[:u]), p0)
 end
