@@ -283,7 +283,17 @@ function _call_arg_cotangent!(x::Union{Duplicated, DuplicatedNoNeed}, Δ)
     Δ === nothing || x.dval === x.val || (x.dval .+= Δ)
     return nothing
 end
-_call_arg_cotangent!(::Annotation, Δ) = nothing
+_call_arg_cotangent!(::Const, Δ) = nothing
+# An argument of mixed activity, a struct of numbers and arrays, has no way to take a
+# cotangent.
+function _call_arg_cotangent!(x::Annotation, Δ)
+    Δ === nothing && return nothing
+    throw(
+        ArgumentError(
+            "Reverse-mode differentiation of `sol(args...)` cannot return the cotangent of an argument of type $(typeof(x.val)) with Enzyme."
+        )
+    )
+end
 
 function EnzymeRules.augmented_primal(
         config::EnzymeRules.RevConfigWidth{1}, func::Annotation{<:DifferentiablePDESolution},

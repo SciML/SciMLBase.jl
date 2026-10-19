@@ -215,8 +215,8 @@ returns it, and the cotangents of `args`, for a cotangent `Δ` of the evaluation
 `dv` is the keyword as it was passed to the call, or `nothing` when it was not, and `Δ`
 then has the shape of what the call returns in that case (a collection over `sol.dvs` in
 the documented interface). The cotangents of `args` are one per argument: that of a
-coordinate, or an error when the discretizer cannot provide it, and `nothing` for an index
-or a colon. The fallback errors.
+coordinate, of the shape of the argument when it is an array, or an error when the
+discretizer cannot provide it, and `nothing` for an index or a colon. The fallback errors.
 """
 function pde_call_cotangent(
         sol::AbstractPDESolution{T, N, S, D}, args, dv, Δ

@@ -947,7 +947,7 @@ function _call_arg_rdata!(x::CoDual, Δ)
         tangent(x) .+= Δ
         return rd
     end
-    Δx = copyto!(Array{eltype(xp)}(undef, size(xp)), Δ)
+    Δx = convert(Array{eltype(xp)}, Δ)
     _, (_, dx) = value_and_pullback!!(prepare_pullback_cache(collect, xp), Δx, collect, xp)
     increment!!(tangent(x), fdata(dx))
     return rdata(dx)

@@ -70,6 +70,14 @@ function (A::GridSolution)(t::Number, ξ::Number; dv = :u)
 end
 (A::GridSolution)(t::Number, ξs::AbstractVector; dv = :u) = [A(t, ξ; dv) for ξ in ξs]
 
+# Coordinates scaled by a number: an argument with a number and an array in it.
+struct Scaled{T} <: AbstractVector{T}
+    s::T
+    v::Vector{T}
+end
+Base.size(x::Scaled) = size(x.v)
+Base.getindex(x::Scaled, i::Int) = x.s * x.v[i]
+
 # The hooks: a cotangent of `:u` goes back to the state vectors, one per saved time, one of
 # `:v` through the observed function, and an evaluation also has cotangents for its
 # coordinates.
@@ -284,4 +292,9 @@ end
             ps -> sum(abs2, wrapped(ps, md).u[:u]), backend, p0
         )
     end
+    # An argument of mixed activity under Enzyme, a number and an array in one, has no way to
+    # take the cotangent of its coordinates.
+    @test_throws "cannot return the cotangent" DifferentiationInterface.gradient(
+        x -> sum(wrapped(p0, md)(0.5, Scaled(x[1], x[2:3]))), ENZYME, [0.5, 0.3, 0.4]
+    )
 end
