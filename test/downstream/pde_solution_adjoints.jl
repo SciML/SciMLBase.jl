@@ -61,17 +61,18 @@ function cell(n, ξ)
     return i, ξ / h - (i - 1)
 end
 
-# Evaluation at a saved time, linear in the coordinate.
+# Evaluation at a saved time, linear in the coordinate, at one point or several.
 function (A::GridSolution)(t::Number, ξ::Number; dv = :u)
     field = A[dv]
     k = findfirst(==(t), A.t)
     i, w = cell(A.disc_data.n, ξ)
     return (1 - w) * field[k, i] + w * field[k, i + 1]
 end
+(A::GridSolution)(t::Number, ξs::AbstractVector; dv = :u) = [A(t, ξ; dv) for ξ in ξs]
 
 # The hooks: a cotangent of `:u` goes back to the state vectors, one per saved time, one of
-# `:v` through the observed function, and an evaluation also has a cotangent for its
-# coordinate.
+# `:v` through the observed function, and an evaluation also has cotangents for its
+# coordinates.
 function SciMLBase.pde_index_cotangent(
         A::SciMLBase.PDETimeSeriesSolution{T, N, S, GridMetadata}, sym, Δ
     ) where {T, N, S}
@@ -88,11 +89,13 @@ function SciMLBase.pde_call_cotangent(
     dv = something(dv, :u)  # the default of the evaluation
     field = A[dv]
     k = findfirst(==(t), A.t)
-    i, w = cell(A.disc_data.n, ξ)
     Δfield = zero(field)
-    Δfield[k, i] = (1 - w) * Δ
-    Δfield[k, i + 1] = w * Δ
-    Δξ = Δ * (field[k, i + 1] - field[k, i]) * (A.disc_data.n - 1)
+    Δξ = map(ξ, Δ) do x, δ
+        i, w = cell(A.disc_data.n, x)
+        Δfield[k, i] += (1 - w) * δ
+        Δfield[k, i + 1] += w * δ
+        δ * (field[k, i + 1] - field[k, i]) * (A.disc_data.n - 1)
+    end
     return SciMLBase.pde_index_cotangent(A, dv, Δfield), (nothing, Δξ)
 end
 
@@ -141,6 +144,10 @@ losses = [
     "sol(t, x)" => ps -> wrapped(ps, md)(0.5, 0.3),
     "sol(t, x; dv)" => ps -> wrapped(ps, md)(0.5, 0.3; dv = :u),
     "sol(t, x) and its coordinate" => x -> wrapped(x[1:3], md)(0.5, x[4]),
+    # Coordinates in a view of the input, and in a range, which is a constant.
+    "sol(t, xs) at a view, and its coordinate" =>
+        x -> sum(wrapped(x[1:3], md)(0.5, view(x, 4:4))),
+    "sol(t, xs) at a range" => ps -> sum(wrapped(ps, md)(0.5, 0:0.25:1)),
     # Indexing and evaluation of one solution object in the same loss.
     "sol[:u] and sol(t, x)" => ps -> (sol = wrapped(ps, md); sum(abs2, sol[:u]) + sol(0.5, 0.3)),
 ]
@@ -235,6 +242,32 @@ end
         @test DifferentiationInterface.gradient(observed, backend, p0) ≈
             ForwardDiff.gradient(observed, p0) rtol = 1.0e-6
     end
+end
+
+# Under Mooncake the parameter part of an observed value goes back as fdata or rdata, by the
+# form of the parameters and of their problem: a number or a matrix, in a `NonlinearProblem`,
+# which is mutable, and in a `DAEProblem`, which is not. The solutions are built directly.
+function nonlinear_solution(p)
+    prob = NonlinearProblem((u, p) -> u .- 1, ones(n), p)
+    sol = SciMLBase.build_solution(prob, nothing, ones(n), zeros(n))
+    return SciMLBase.wrap_sol(sol, LineMetadata(n))
+end
+function dae_solution(p)
+    prob = DAEProblem((du, u, p, t) -> du .+ u, -ones(n), ones(n), (0.0, 1.0), p)
+    sol = SciMLBase.build_solution(prob, nothing, [0.0, 1.0], [ones(n), fill(0.5, n)])
+    return SciMLBase.wrap_sol(sol, md)
+end
+
+@testset "Mooncake, parameters as a number or a matrix" begin
+    forms = (only, x -> reshape(x, 1, 1))
+    for solution in (nonlinear_solution, dae_solution), parameters in forms
+        observed(x) = sum(abs2, solution(parameters(x))[:v])
+        @test DifferentiationInterface.gradient(observed, MOONCAKE, [2.0]) ≈
+            ForwardDiff.gradient(observed, [2.0])
+    end
+    # A number read from the solver's solution through the wrapper.
+    direct(x) = dae_solution(only(x)).original_sol.prob.p
+    @test DifferentiationInterface.gradient(direct, MOONCAKE, [2.0]) ≈ [1.0]
 end
 
 @testset "without the hooks the rules error instead of guessing" begin

@@ -7,7 +7,7 @@ using SciMLBase: SciMLBase, AbstractSensitivityAlgorithm, AbstractDEAlgorithm,
 import CommonSolve
 import Enzyme: EnzymeRules
 using Enzyme: Active, Annotation, Const, Duplicated, DuplicatedNoNeed, MixedDuplicated,
-    make_zero
+    Reverse, autodiff, make_zero
 
 # Enzyme rules for SciMLBase abstract types
 #
@@ -270,8 +270,15 @@ function _check_call_kwargs(kwargs)
 end
 
 # The cotangent of an argument of `sol(args...)`: returned for an active number, and
-# accumulated into the shadow of an array.
-_call_arg_cotangent!(x::Active, Δ) = Δ === nothing ? zero(x.val) : convert(typeof(x.val), Δ)
+# accumulated into the shadow of an array. Any other active argument, a range for instance,
+# gets it through Enzyme's derivative of `collect`. Enzyme needs the type of what a rule
+# returns to follow from the annotations, whatever the hook returns, hence the assertions.
+function _call_arg_cotangent!(x::Active{T}, Δ) where {T}
+    Δ === nothing && return make_zero(x.val)::T
+    x.val isa Number && return convert(T, Δ)::T
+    return first(first(autodiff(Reverse, _dot_collect, Active, x, Const(Δ))))::T
+end
+_dot_collect(x, Δ) = sum(collect(x) .* Δ)
 function _call_arg_cotangent!(x::Union{Duplicated, DuplicatedNoNeed}, Δ)
     Δ === nothing || x.dval === x.val || (x.dval .+= Δ)
     return nothing
@@ -298,7 +305,8 @@ function EnzymeRules.reverse(
     xs = map(x -> x.val, args)
     c, Δargs = pde_call_cotangent(func.val, xs, get(kwargs, :dv, nothing), Δ)
     _accumulate_original_sol!(func, c)
-    return map(_call_arg_cotangent!, args, Tuple(Δargs))
+    # One cotangent for each argument, for the same reason.
+    return map(_call_arg_cotangent!, args, ntuple(i -> Δargs[i], Val(length(args))))
 end
 
 end

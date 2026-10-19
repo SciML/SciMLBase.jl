@@ -152,8 +152,8 @@ const _ei_nonpublic_explicit_imports = (
     # Mooncake's rule-definition interface.
     Symbol("@is_primitive"), Symbol("@mooncake_overlay"), Symbol("@zero_adjoint"),
     :CoDual, :MinimalCtx, :NoFData, :NoPullback, :NoRData, :NoTangent, :build_rrule,
-    :fdata, :instantiate, :lazy_zero_rdata, :primal, :rrule!!, :tangent,
-    :zero_fcodual, :zero_tangent,
+    :fdata, :increment!!, :instantiate, :lazy_zero_rdata, :primal, :rdata, :rrule!!,
+    :tangent, :zero_fcodual, :zero_tangent,
     # ZygoteRules' `getproperty`/`getfield` adjoint hooks.
     :literal_getfield, :literal_getproperty,
 )
