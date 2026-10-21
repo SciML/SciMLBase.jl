@@ -99,6 +99,24 @@ end
     end
 end
 
+@testset "SplitFunction without a state" begin
+    f! = (du, u, p, t) -> nothing
+    for build in (ODEProblem, SplitODEProblem)
+        @testset "$build" begin
+            prob = build(SplitFunction{true}(f!, f!), nothing, (0.0, 1.0))
+            @test prob.u0 === nothing
+            @test prob.f._func_cache === nothing
+            @test isinplace(prob)
+
+            u0 = Dict(:x => 1.0)
+            prob = build(SplitFunction{true}(f!, f!), u0, (0.0, 1.0))
+            @test prob.f._func_cache !== u0
+            prob.f._func_cache[:x] = 2.0
+            @test u0[:x] == 1.0
+        end
+    end
+end
+
 @testset "`constructorof` tests" begin
     probs = []
 
