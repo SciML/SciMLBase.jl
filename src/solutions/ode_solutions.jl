@@ -208,6 +208,8 @@ end
 function _hold_discrete(disc_u, disc_t, t::Number)
     idx = searchsortedlast(disc_t, t)
     if idx == firstindex(disc_t) - 1
+        isempty(disc_t) &&
+            error("Cannot access discrete variable at time $t: none of its values were saved")
         error("Cannot access discrete variable at time $t before initial save $(first(disc_t))")
     end
     return disc_u[idx]
