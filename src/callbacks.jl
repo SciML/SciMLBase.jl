@@ -265,7 +265,7 @@ as it doesn't scale well. For this reason, we have `VectorContinuousCallback` - 
 multiple events.
 
 `VectorContinuousCallback` intentionally does not have an `affect_neg!`
-callback. Its `affect!` receives the triggering event index and is responsible
+callback. Its `affect!` receives the information about triggering event and is responsible
 for applying the appropriate effect for that event.
 
 # Arguments
@@ -273,8 +273,10 @@ for applying the appropriate effect for that event.
   - `condition`: This is a function `condition(out, u, t, integrator)` which should save the condition value in the array `out`
     at the right index. Maximum index of `out` should be specified in the `len` property of callback. So, this way you can have
     a chain of `len` events, which would cause the `i`th event to trigger when `out[i] = 0`.
-  - `affect!`: This is a function `affect!(integrator, event_index)` which lets you modify `integrator` and it tells you about
-    which event occurred using `event_idx` i.e. gives you index `i` for which `out[i]` came out to be zero.
+  - `affect!`: This is a function `affect!(integrator, simultaneous_events)` which lets you modify `integrator` and it tells you about
+      which event occurred using `simultaneous_events` i.e. gives you vector of `Int8`, that on index `i` indicates signed change of `out[i]`.
+      `simultaneous_events[i]=0` indicates `i`th condition was not triggered, `+1/-1` indicates downcrossing/upcrossing of zero by respected 
+      condition.
   - `len`: Number of callbacks chained. This is compulsory to be specified.
 
 Rest of the arguments have the same meaning as in [`ContinuousCallback`](@ref).
