@@ -251,7 +251,7 @@ end
 # primary buffer, so `f(du,u,p,t)` would evaluate `f1` into `u0`'s memory.
 function ODEProblem(f::SplitFunction, u0, tspan, args...; kwargs...)
     iip = isinplace(f)
-    if iip && f._func_cache === nothing
+    if iip && f._func_cache === nothing && u0 !== nothing
         _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(copy(u0)) :
             copy(u0)
         f = remake(f; _func_cache)
@@ -587,7 +587,7 @@ function SplitODEProblem{iip}(
         f::SplitFunction, u0, tspan, p = NullParameters();
         kwargs...
     ) where {iip}
-    if f._func_cache === nothing && iip
+    if f._func_cache === nothing && iip && u0 !== nothing
         # A copy, not `u0` itself: `DiffCache(u0)` would keep `u0` as the primary
         # buffer and a direct `f(du,u,p,t)` would evaluate `f1` into `u0`'s memory.
         _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(copy(u0)) :
