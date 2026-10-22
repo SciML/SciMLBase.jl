@@ -207,6 +207,21 @@ solver package.
   - `userdata`: Backend-owned object stored on an integrator for application or
     callback use.
 
+## Keyword Validation
+
+Which tolerance and budget keywords (`abstol`, `reltol`, `internalnorm`, `xtol`,
+`gtol`, `constrtol`, `compltol`, `maxiters`, `maxtime`, `dtmin`) have a meaning
+depends on the problem class; see [`SciMLBase.keyword_class`](@ref). Solver packages
+that validate with [`SciMLBase.checkkwargs`](@ref) report a keyword that is undefined
+for the problem's class, or one that the chosen algorithm cannot honor
+([`SciMLBase.can_honor`](@ref)), through SciMLLogging.
+
+  - `kwargs_verbosity`: A [`SciMLBase.KeywordVerbosity`](@ref) setting the severity of
+    these reports. Both default to a warning. A `Bool` `verbose` does not affect them.
+  - `kwargshandle`: Handling of unrecognized keywords
+    ([`SciMLBase.KeywordArgError`](@ref)). When given explicitly it also sets the
+    severity of the class checks.
+
 ## Progress Monitoring
 
 Progress uses the Julia logging interface and `ProgressLogging.jl`-compatible
