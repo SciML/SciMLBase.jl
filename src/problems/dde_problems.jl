@@ -405,8 +405,8 @@ second-derivative function.
 """
 struct SecondOrderDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 function SecondOrderDDEProblem(f, args...; kwargs...)
-    iip = isinplace(f, 6)
-    return SecondOrderDDEProblem{iip}(f, args...; kwargs...)
+    return isinplace(f, 6) ? SecondOrderDDEProblem{true}(f, args...; kwargs...) :
+        SecondOrderDDEProblem{false}(f, args...; kwargs...)
 end
 
 """
