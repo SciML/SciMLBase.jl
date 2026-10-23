@@ -4,7 +4,7 @@ should_warn_paramtype(p::AbstractArray) = !isconcretetype(eltype(p))
 should_warn_paramtype(::Dict{K, V}) where {K, V} = !isconcretetype(V)
 should_warn_paramtype(p::AbstractArray{<:AbstractArray}) = any(should_warn_paramtype, p)
 should_warn_paramtype(p::Tuple) = any(should_warn_paramtype, p)
-should_warn_paramtype(p::NamedTuple) = any(should_warn_paramtype, p)
+should_warn_paramtype(p::NamedTuple) = should_warn_paramtype(values(p))
 should_warn_paramtype(p) = false
 
 const WARN_PARAMTYPE_MESSAGE = """
