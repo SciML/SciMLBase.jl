@@ -1,6 +1,6 @@
 name = "SciMLBase"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "3.58.0"
+version = "3.58.1"
 authors = ["Chris Rackauckas <accounts@chrisrackauckas.com> and contributors"]
 
 [deps]
@@ -141,7 +141,7 @@ StableRNGs = "1.0"
 StaticArrays = "1.7"
 StaticArraysCore = "1.4.2"
 Statistics = "1.10"
-SymbolicIndexingInterface = "0.3.36"
+SymbolicIndexingInterface = "0.3.57"
 Tables = "1.11"
 Test = "1.10"
 Tracker = "0.2"

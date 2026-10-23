@@ -158,6 +158,9 @@ run_tests(;
                 @time @safetestset "Solution Indexing" begin
                     include("downstream/solution_interface.jl")
                 end
+                @time @safetestset "Despecialized observed getters" begin
+                    include("downstream/despecialized_observed.jl")
+                end
                 @time @safetestset "Plots / Makie plot recipes on multi-state ODE" begin
                     include("downstream/plot_lines.jl")
                 end

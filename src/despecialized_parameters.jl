@@ -107,6 +107,11 @@ function SciMLStructures.replace!(
 end
 
 SymbolicIndexingInterface.parameter_values(params::DespecializedParameters) = params
+function SymbolicIndexingInterface.with_concrete_parameters(
+        f, params::DespecializedParameters, args...
+    )
+    return _invoke_with_despecialized_parameters(f, getfield(params, :params), args...)
+end
 function SymbolicIndexingInterface.parameter_values(
         params::DespecializedParameters, idx, args...
     )
