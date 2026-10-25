@@ -38,6 +38,9 @@ run_tests(;
         @time @safetestset "Public interface declarations" begin
             include("public_interface.jl")
         end
+        @time @safetestset "save_discretes! without a parameter time series" begin
+            include("save_discretes_without_timeseries.jl")
+        end
         @time @safetestset "Compile-time trait inference" begin
             include("inference_tests.jl")
         end
