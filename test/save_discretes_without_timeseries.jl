@@ -7,7 +7,7 @@ struct NoTimeseriesIntegrator <: SciMLBase.DEIntegrator{Nothing, true, Vector{Fl
 end
 @testset "save_discretes! without a parameter time series" begin
     integ = NoTimeseriesIntegrator(nothing)
-    # `get_sol` has no method for this integrator: reaching it would throw
+    # past the early return, computing the values to save would throw for this integrator
     @test SciMLBase.save_discretes!(integ, 1) === nothing
     @test SciMLBase.save_discretes!(integ, 2; skip_duplicates = true) === nothing
 end
