@@ -616,6 +616,17 @@ function Base.getproperty(prob::SCCNonlinearProblem, name::Symbol)
     return getfield(prob, name)
 end
 
+# An `SCCNonlinearProblem` solves as an ordered sequence of block solves, not a
+# single residual, so it has no `u0` and no faithful `NonlinearProblem` conversion.
+function NonlinearProblem(prob::SCCNonlinearProblem)
+    throw(
+        ArgumentError(
+            "an SCCNonlinearProblem cannot be converted to a NonlinearProblem; " *
+                "solve it directly or use its component problems."
+        )
+    )
+end
+
 function SymbolicIndexingInterface.symbolic_container(prob::SCCNonlinearProblem)
     return prob.f
 end

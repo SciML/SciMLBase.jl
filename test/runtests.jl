@@ -74,6 +74,9 @@ run_tests(;
         @time @safetestset "Despecialized parameters" begin
             include("despecialized_parameters.jl")
         end
+        @time @safetestset "OptimizationFunction specialization" begin
+            include("optimization_function_specialization.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
@@ -201,6 +204,9 @@ run_tests(;
                 end
                 @time @safetestset "Ensemble adjoint gradient correctness" begin
                     include("downstream/ensemble_adjoints.jl")
+                end
+                @time @safetestset "PDE solution adjoints" begin
+                    include("downstream/pde_solution_adjoints.jl")
                 end
             end
         end,
