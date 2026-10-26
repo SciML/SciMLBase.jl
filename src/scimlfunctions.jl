@@ -3606,7 +3606,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
         typeof(mass_matrix),
         typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp),
-        typeof(jac_prototype),
+        typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data),
@@ -4534,7 +4534,7 @@ DDEFunction(f::DDEFunction; kwargs...) = f
         typeof(mass_matrix),
         typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp),
-        typeof(jac_prototype),
+        typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data),
@@ -4569,7 +4569,7 @@ function DynamicalDDEFunction{iip, specialize}(
         colorvec = __has_colorvec(f1) ? f1.colorvec :
             nothing,
         sys = __has_sys(f1) ? f1.sys : nothing,
-        initialization_data = __has_initialization_data(f) ? f.initialization_data :
+        initialization_data = __has_initialization_data(f1) ? f1.initialization_data :
             nothing
     ) where {
         iip,
@@ -4595,7 +4595,7 @@ function DynamicalDDEFunction{iip, specialize}(
         )
     else
         DynamicalDDEFunction{
-            iip, typeof(f1), typeof(f2), typeof(mass_matrix),
+            iip, specialize, typeof(f1), typeof(f2), typeof(mass_matrix),
             typeof(analytic),
             typeof(tgrad), typeof(jac), typeof(jvp), typeof(vjp),
             typeof(jac_prototype), typeof(sparsity),
@@ -6077,6 +6077,11 @@ for S in [
         :NonlinearFunction
         :IntervalNonlinearFunction
         :IncrementingODEFunction
+        :SplitFunction
+        :DynamicalODEFunction
+        :DynamicalDDEFunction
+        :SplitSDEFunction
+        :DynamicalSDEFunction
         :BVPFunction
         :DynamicalBVPFunction
         :IntegralFunction
