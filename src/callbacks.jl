@@ -650,24 +650,26 @@ function save_discretes_if_enabled!(integrator::DEIntegrator, cb::Union{Continuo
     return save_discretes!(integrator, cb; skip_duplicates)
 end
 
-function _save_discretes_if_enabled!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...; kw...)
-    save_discretes_if_enabled!(integrator, cb; kw...)
-    return _save_discretes_if_enabled!(integrator, cbs...; kw...)
+# One call per callback, so a tuple of different callback types dispatches statically.
+@generated function _save_discretes_each!(integrator::DEIntegrator, skip_duplicates::Bool, cbs::Tuple)
+    calls = [:(save_discretes_if_enabled!(integrator, cbs[$i]; skip_duplicates)) for i in 1:fieldcount(cbs)]
+    return Expr(:block, calls..., :(return nothing))
 end
+_save_discretes_each!(integrator::DEIntegrator, skip_duplicates::Bool, cbs::AbstractVector) =
+    (foreach(cb -> save_discretes_if_enabled!(integrator, cb; skip_duplicates), cbs); nothing)
 
-_save_discretes_if_enabled!(::DEIntegrator; kw...) = nothing
-
-function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; kw...)
-    return _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
+function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; skip_duplicates = false)
+    _save_discretes_each!(integrator, skip_duplicates, cb.continuous_callbacks)
+    return _save_discretes_each!(integrator, skip_duplicates, cb.discrete_callbacks)
 end
 
 function save_discretes_if_enabled!(
         integrator::DEIntegrator,
-        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; skip_duplicates = false
     )
     for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
         for callback in callbacks
-            save_discretes_if_enabled!(integrator, callback; kw...)
+            save_discretes_if_enabled!(integrator, callback; skip_duplicates)
         end
     end
     return
