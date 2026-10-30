@@ -353,6 +353,22 @@ function _accumulate_p_fdata!(dest, src)
     return nothing
 end
 
+# The tangent of `prob.p` inside `sol_fdata`, the destination of the parameter
+# gradient. A mutable problem (an `ODEProblem`) carries its whole tangent as a
+# `MutableTangent` with `.fields`; an immutable one (a `DAEProblem`, an
+# `SDEProblem`, ...) carries only the fdata of its fields as an `FData` with
+# `.data`. Either way the `p` entry is what `_accumulate_p_fdata!` walks.
+function _prob_p_fdata(prob_fd)
+    fields = if prob_fd isa Mooncake.MutableTangent
+        prob_fd.fields
+    elseif prob_fd isa Mooncake.FData
+        prob_fd.data
+    else
+        return nothing
+    end
+    return hasfield(typeof(fields), :p) ? fields.p : nothing
+end
+
 function _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
     getter = getobserved(VA)
     u_jp = VA.u[jp]
@@ -366,10 +382,8 @@ function _observable_pullback_at!(sol_fdata, VA, s, dy, jp)
     @. u_dest += u_fd
 
     # Propagate p-grad into sol_fdata.prob.p (if accessible).
-    prob_fd = sol_fdata.data.prob
-    if prob_fd isa Mooncake.MutableTangent && hasfield(typeof(prob_fd.fields), :p)
-        _accumulate_p_fdata!(prob_fd.fields.p, p_fd)
-    end
+    p_dest = _prob_p_fdata(sol_fdata.data.prob)
+    p_dest === nothing || _accumulate_p_fdata!(p_dest, p_fd)
     return nothing
 end
 
@@ -638,10 +652,8 @@ function _observable_pullback_no_t!(sol_fdata, NS, s, dy)
     end
 
     # Propagate p-grad into sol_fdata.prob.p (if accessible).
-    prob_fd = sol_fdata.data.prob
-    if prob_fd isa Mooncake.MutableTangent && hasfield(typeof(prob_fd.fields), :p)
-        _accumulate_p_fdata!(prob_fd.fields.p, p_fd)
-    end
+    p_dest = _prob_p_fdata(sol_fdata.data.prob)
+    p_dest === nothing || _accumulate_p_fdata!(p_dest, p_fd)
     return nothing
 end
 
