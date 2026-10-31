@@ -187,7 +187,7 @@ function SavedSubsystem(indp, pobj, idx::Int)
     if _indp === EMPTY_SYMBOLCACHE || _indp === nothing
         return nothing
     end
-    state_map = Dict(1 => idx)
+    state_map = Dict(idx => 1)
     return SavedSubsystem(state_map, nothing, nothing, nothing, nothing, nothing, nothing)
 end
 
