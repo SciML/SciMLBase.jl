@@ -13,6 +13,38 @@ solutions must expose saved states as `u` and matching independent-variable valu
 concepts apply. Ensemble and noise-process subtypes follow the contracts in their
 rendered abstract-type docstrings below.
 
+### Generic Usage Rules
+
+Consumers should dispatch on the narrowest abstract solution family they need
+and use the array and callable interfaces instead of inspecting a concrete
+solution type. The common contract is:
+
+  - no-time solutions expose `u` and forward `size`, `getindex`, and compatible
+    linear algebra operations to it;
+  - time-series solutions expose matching `u` and `t` indices, with state
+    components preceding the saved-time index;
+  - callers use `successful_retcode(sol)` rather than comparing only against
+    `ReturnCode.Success`;
+  - callers use `isdenseplot(sol)` and `plottable_indices(x)` when selecting
+    plotting behavior instead of assuming dense interpolation or that every
+    state component is plottable;
+  - optional fields such as `prob`, `alg`, `interp`, `stats`, and `resid` may
+    be absent for a solution family and must be accessed only when that family's
+    contract documents them.
+
+For example, a generic report can work for every no-time solution without
+knowing whether it came from a linear, nonlinear, integral, or optimization
+solver:
+
+```julia
+function solution_report(sol::SciMLBase.AbstractNoTimeSolution)
+    return (; size = size(sol), successful = SciMLBase.successful_retcode(sol))
+end
+```
+
+Concrete solution types must document their fields, indexing shape, callable
+interpolation behavior, and any additional mutation or cache guarantees.
+
 ### Array Interface
 
 Instead of working on the `Vector{uType}` directly, we can use the provided

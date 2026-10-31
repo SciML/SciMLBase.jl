@@ -1,4 +1,4 @@
-using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays
+using Test, SciMLBase, SymbolicIndexingInterface, Accessors, StaticArrays, ConstructionBase
 
 function simplependulum!(du, u, p, t)
     θ = u[1]
@@ -71,6 +71,34 @@ end
     @test prob_oop.f(1.0, nothing, 0.0) == 0.0
 end
 
+# `_func_cache` must not alias `u0`: `f1` is evaluated into the cache, so an
+# aliased buffer overwrites the initial condition on every combined `f` call
+# and returns a wrong sum when called at `u0` itself.
+@testset "SplitFunction _func_cache does not alias u0" begin
+    f1! = (du, u, p, t) -> (du .= 2 .* u)
+    f2! = (du, u, p, t) -> (du .= u)
+
+    for build in (
+            (u0) -> SplitODEProblem(f1!, f2!, u0, (0.0, 1.0)),
+            (u0) -> ODEProblem(SplitFunction(f1!, f2!), u0, (0.0, 1.0)),
+        )
+        u0 = [1.0, 2.0]
+        prob = build(u0)
+        @test SciMLBase.get_tmp(prob.f._func_cache, u0) !== u0
+
+        # evaluation at u0 itself: f1 + f2 = 3u
+        du = zeros(2)
+        prob.f(du, u0, nothing, 0.0)
+        @test du == [3.0, 6.0]
+        @test u0 == [1.0, 2.0]
+
+        # evaluation at another state must not touch u0 either
+        prob.f(du, [5.0, 7.0], nothing, 0.0)
+        @test du == [15.0, 21.0]
+        @test u0 == [1.0, 2.0]
+    end
+end
+
 @testset "`constructorof` tests" begin
     probs = []
 
@@ -129,6 +157,55 @@ end
         newprob = @reset prob.u0 = u0 .+ 1
         @test typeof(newprob) == typeof(prob)
     end
+
+    @testset "rebuilding a function keeps its specialization" begin
+        for specialize in (
+                SciMLBase.FullSpecialize, SciMLBase.NoSpecialize,
+                SciMLBase.AutoSpecialize,
+            )
+            fn = ODEFunction{true, specialize}(lorenz!; sys)
+            newfn = @set fn.initialization_data = nothing
+            @test SciMLBase.specialization(newfn) === specialize
+            prob = ODEProblem(fn, u0, tspan, p)
+            newprob = @set prob.f.initialization_data = nothing
+            @test SciMLBase.specialization(newprob.f) === specialize
+        end
+
+        # the field parameters are still narrowed to the new values' types, so a
+        # rebuild after `widen_bounded_type_params` gets the concrete type back
+        fn = ODEFunction{true, SciMLBase.FullSpecialize}(lorenz!; sys)
+        widened = SciMLBase.widen_bounded_type_params(fn)
+        @test typeof(widened) != typeof(fn)
+        @test typeof(@set widened.jac = fn.jac) == typeof(fn)
+
+        # a partially specified type fills in what it leaves unbound
+        args = map(name -> getfield(fn, name), fieldnames(typeof(fn)))
+        newfn = ConstructionBase.constructorof(ODEFunction{true})(args...)
+        @test SciMLBase.specialization(newfn) === SciMLBase.DEFAULT_SPECIALIZATION
+        @test isconcretetype(typeof(newfn))
+        newfn = ConstructionBase.constructorof(ODEFunction{true, SciMLBase.FullSpecialize})(args...)
+        @test typeof(newfn) == typeof(fn)
+    end
+end
+
+@testset "getproperties avoids broadcast on SciML functions" begin
+    function lorenz!(du, u, p, t)
+        du[1] = p[1] * (u[2] - u[1])
+        du[2] = u[1] * (p[2] - u[3]) - u[2]
+        du[3] = u[1] * u[2] - p[3] * u[3]
+    end
+    f = ODEFunction(lorenz!)
+    props = SciMLBase.getproperties(f)
+    @test props isa NamedTuple
+    @test keys(props) == fieldnames(typeof(f))
+    @test props.f === f.f
+    @test remake(ODEProblem(f, [1.0, 0.0, 0.0], (0.0, 1.0)); u0 = [2.0, 0.0, 0.0]).u0 ==
+        [2.0, 0.0, 0.0]
+
+    df = DynamicalODEFunction(lorenz!, lorenz!)
+    dprops = SciMLBase.getproperties(df)
+    @test keys(dprops) == fieldnames(typeof(df))
+    @test dprops.f1 === df.f1
 end
 
 const ALIAS_SPECIFIER_TYPES = (
@@ -153,7 +230,7 @@ function alias_specifier_with_policy(T, alias)
     return if T === SciMLBase.IntegralAliasSpecifier
         T(nothing, nothing, alias)
     else
-        T(; alias = alias)
+        T(; alias)
     end
 end
 
@@ -295,24 +372,125 @@ end
     @test state_values(sccprob) isa SVector{3, Float64}
     @test sccprob.p === prob1.p === prob2.p === prob3.p
 
+    # `SCCNonlinearProblem` has no `u0` field, so normalizing an already-SCC
+    # problem through `NonlinearProblem` must not fall through to the generic
+    # `AbstractNonlinearProblem` method (which assumes `.u0` exists and throws an
+    # opaque `FieldError`); it should raise a clear, dedicated error instead.
+    @test_throws ArgumentError NonlinearProblem(sccprob)
+
     sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)
     @test sccprob2 isa SCCNonlinearProblem{SVector{3, Float64}}
     @test state_values(sccprob2) isa SVector{3, Float64}
 end
 
-@testset "AutoDePSpecialize specialization marker" begin
+@testset "SCCNonlinearProblem remake preserves Vector container eltype" begin
+    f(u, p) = [u[1]^2 - p[1]]
+    p = [2.0]
+    prob1 = NonlinearProblem(f, [1.0], p)
+    prob2 = NonlinearProblem(f, [0.5], p)
+    sccprob = SCCNonlinearProblem(
+        Any[prob1, prob2], Any[Returns(nothing), Returns(nothing)], p, true
+    )
+    @test sccprob.probs isa Vector{Any}
+
+    # `map` would narrow homogeneous blocks to `Vector{NonlinearProblem}`.
+    sccprob2 = remake(sccprob; u0 = [1.5, 0.5])
+    @test sccprob2.probs isa Vector{Any}
+    @test state_values(sccprob2) == [1.5, 0.5]
+
+    # A concretely typed container keeps remaking correctly.
+    sccprob3 = SCCNonlinearProblem(
+        [prob1, prob2], [Returns(nothing), Returns(nothing)], p, true
+    )
+    sccprob4 = remake(sccprob3; u0 = [1.5, 0.5])
+    @test state_values(sccprob4) == [1.5, 0.5]
+
+    # A narrow abstract container whose rebuilt blocks fit keeps its eltype.
+    probd = NonlinearProblem((u, p) -> [u[1]^2 - p[1]], [1.0], p)
+    U = Union{typeof(prob1), typeof(probd)}
+    sccprob5 = SCCNonlinearProblem(
+        U[prob1, probd], Any[Returns(nothing), Returns(nothing)], p, true
+    )
+    sccprob6 = remake(sccprob5; u0 = [1.5, 0.5])
+    @test sccprob6.probs isa Vector{U}
+    @test state_values(sccprob6) == [1.5, 0.5]
+end
+
+@testset "SteadyStateProblem lowered_problem" begin
+    ode_f = ODEFunction((du, u, p, t) -> (du .= -u .+ p))
+    u0 = [1.0, 2.0]
+    p = [3.0, 4.0]
+
+    @testset "defaults to nothing and wraps f" begin
+        prob = SteadyStateProblem(ode_f, u0, p)
+        @test prob.lowered_problem === nothing
+        nlprob = @inferred NonlinearProblem(prob)
+        @test nlprob isa NonlinearProblem
+        @test nlprob.u0 == u0
+        @test nlprob.p == p
+    end
+
+    @testset "stored problem is used verbatim" begin
+        lowered = NonlinearProblem((du, u, p) -> (du .= u .- p), u0, p)
+        prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
+        @test prob.lowered_problem === lowered
+        @test NonlinearProblem(prob) === lowered
+
+        # a `LinearProblem` lowering is not an `AbstractNonlinearProblem`, but
+        # is still returned verbatim
+        linlowered = LinearProblem([2.0 0.0; 0.0 4.0], [1.0, 1.0])
+        lprob = SteadyStateProblem(ode_f, u0, p; lowered_problem = linlowered)
+        @test NonlinearProblem(lprob) === linlowered
+    end
+
+    @testset "callable is materialized against the current problem" begin
+        lowered_calls = Ref(0)
+        lowered = prob -> begin
+            lowered_calls[] += 1
+            return NonlinearProblem((du, u, p) -> (du .= u .- p), prob.u0, prob.p)
+        end
+        prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
+        nlprob = NonlinearProblem(prob)
+        @test nlprob isa NonlinearProblem
+        @test nlprob.u0 == u0
+        @test nlprob.p == p
+        @test lowered_calls[] == 1
+
+        # `remake` carries the builder, so the materialization sees the new
+        # operating point rather than the construction-time one.
+        prob2 = remake(prob; u0 = [5.0, 6.0], p = [7.0, 8.0])
+        @test prob2.lowered_problem === lowered
+        nlprob2 = NonlinearProblem(prob2)
+        @test nlprob2.u0 == [5.0, 6.0]
+        @test nlprob2.p == [7.0, 8.0]
+    end
+
+    @testset "remake can replace or clear the lowering" begin
+        lowered = NonlinearProblem((du, u, p) -> (du .= u .- p), u0, p)
+        prob = SteadyStateProblem(ode_f, u0, p; lowered_problem = lowered)
+        @test remake(prob; lowered_problem = nothing).lowered_problem === nothing
+        other = NonlinearProblem((du, u, p) -> (du .= u), u0, p)
+        @test remake(prob; lowered_problem = other).lowered_problem === other
+        # a stored problem is carried verbatim
+        @test remake(prob; u0 = [9.0, 9.0]).lowered_problem === lowered
+    end
+end
+
+@testset "AutoRespecialize specialization marker" begin
+    @test SciMLBase.AutoDePSpecialize === SciMLBase.AutoRespecialize
+
     struct DePParams
         k::Float64
     end
     f_dep!(du, u, p, t) = (du[1] = -p.k * u[1]; nothing)
 
-    prob = ODEProblem{true, SciMLBase.AutoDePSpecialize}(
+    prob = ODEProblem{true, SciMLBase.AutoRespecialize}(
         f_dep!, [1.0], (0.0, 1.0), DePParams(0.5)
     )
     @test prob isa ODEProblem
-    @test prob.f isa ODEFunction{true, SciMLBase.AutoDePSpecialize}
-    @test SciMLBase.specialization(prob.f) === SciMLBase.AutoDePSpecialize
+    @test prob.f isa ODEFunction{true, SciMLBase.AutoRespecialize}
+    @test SciMLBase.specialization(prob.f) === SciMLBase.AutoRespecialize
     # The marker alone performs no wrapping or packing in SciMLBase: fields stay
     # concretely typed like FullSpecialize/AutoSpecialize construction, and p is
     # the user's struct until a solver path installs an opaque-parameter wrapper.
@@ -324,12 +502,35 @@ end
 
     # Available for other function families, e.g. nonlinear problems.
     f_nl!(res, u, p) = (res[1] = u[1] - p.k; nothing)
-    nlfun = NonlinearFunction{true, SciMLBase.AutoDePSpecialize}(f_nl!)
-    @test SciMLBase.specialization(nlfun) === SciMLBase.AutoDePSpecialize
+    nlfun = NonlinearFunction{true, SciMLBase.AutoRespecialize}(f_nl!)
+    @test SciMLBase.specialization(nlfun) === SciMLBase.AutoRespecialize
 
     # unwrapped_f reconstruction keeps the marker
     uf = SciMLBase.unwrapped_f(prob.f)
-    @test SciMLBase.specialization(uf) === SciMLBase.AutoDePSpecialize
+    @test SciMLBase.specialization(uf) === SciMLBase.AutoRespecialize
+end
+
+@testset "SDEProblem specialization" begin
+    f!(du, u, p, t) = (du .= p .* u; nothing)
+    g!(du, u, p, t) = (du .= p .* u; nothing)
+    f(u, p, t) = p .* u
+    g(u, p, t) = p .* u
+
+    for (iip, drift, diffusion) in ((true, f!, g!), (false, f, g))
+        for specialization in (
+                SciMLBase.FullSpecialize,
+                SciMLBase.NoSpecialize,
+                SciMLBase.AutoSpecialize,
+                SciMLBase.FunctionWrapperSpecialize,
+                SciMLBase.AutoDespecialize,
+                SciMLBase.AutoRespecialize,
+            )
+            prob = SDEProblem{iip, specialization}(
+                drift, diffusion, [1.0], (0.0, 1.0), [0.1]
+            )
+            @test SciMLBase.specialization(prob.f) === specialization
+        end
+    end
 end
 
 @testset "Nonlinear preconditioning keywords are accepted solver options" begin

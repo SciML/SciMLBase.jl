@@ -52,6 +52,7 @@ SciMLBase.linear_interpolant
 SciMLBase.linear_interpolant!
 SciMLBase.hermite_interpolant
 SciMLBase.hermite_interpolant!
+SciMLBase.is_independent_variable_index
 ```
 
 ## Symbolic Save Selection

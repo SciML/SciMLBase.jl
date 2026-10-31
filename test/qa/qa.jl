@@ -118,17 +118,20 @@ const _ei_own_internals = (
 # Each group is an optional dependency's rule/tangent/plot-recipe interface: the
 # extension exists precisely to hook into it, and there is no public spelling.
 const _ei_nonpublic_third_party = (
-    # Enzyme's activity interface (EnzymeCore.EnzymeRules) plus the `Core.kwcall`
+    # Enzyme's rule and activity interface (EnzymeCore.EnzymeRules) plus the `Core.kwcall`
     # entry point a keyword-argument method must be marked inactive through.
-    :inactive_kwarg, :inactive_noinl, :inactive_type, :kwcall,
+    :augmented_primal, :reverse, :inactive_kwarg, :inactive_noinl, :inactive_type, :kwcall,
     # ForwardDiff's dual-number internals and the DiffResults buffer type it pairs
     # with, needed to opt AD configuration objects out of dual detection.
     :AbstractConfig, :Dual, :partials, :value, :DiffResult,
     # Base reflection used by the `@generated` dual-eltype scan.
     Symbol("@pure"), :isType,
     # Makie's recipe/conversion plumbing; `Makie.SpecApi` is the documented spec API
-    # but is not marked public.
+    # but is not marked public. `expand_dimensions` opts a type out of PointBased
+    # index expansion. `ComputePipeline.is_same` is the Makie 0.24 hook that forces
+    # reconversion when an `Observable` is assigned an `isequal` solution wrapper.
     :Automatic, :SpecApi, :automatic, :conversion_trait, :plotsym, :plottype,
+    :expand_dimensions, :ComputePipeline, :is_same,
     # Mooncake's tangent-type interface.
     :FData, :RData, :Tangent, :MutableTangent, :NoTangent, :tangent_type,
     # Tracker / ReverseDiff tracked-value internals.
@@ -149,8 +152,8 @@ const _ei_nonpublic_explicit_imports = (
     # Mooncake's rule-definition interface.
     Symbol("@is_primitive"), Symbol("@mooncake_overlay"), Symbol("@zero_adjoint"),
     :CoDual, :MinimalCtx, :NoFData, :NoPullback, :NoRData, :NoTangent, :build_rrule,
-    :fdata, :instantiate, :lazy_zero_rdata, :primal, :rrule!!, :tangent,
-    :zero_fcodual, :zero_tangent,
+    :fdata, :increment!!, :instantiate, :lazy_zero_rdata, :primal, :rdata, :rrule!!,
+    :tangent, :zero_fcodual, :zero_tangent,
     # ZygoteRules' `getproperty`/`getfield` adjoint hooks.
     :literal_getfield, :literal_getproperty,
 )
@@ -184,7 +187,42 @@ const _ei_nonpublic_qualified_accesses = (
 # The CommonSolve verbs. SciMLBase does not own them, but they are the SciML solve
 # interface as users and solver packages write it, so they stay exported and are
 # allow-listed rather than dropped.
-const _reexports_allow = (:init, :solve, :solve!, :step!)
+const _commonsolve_reexports = (:init, :solve, :solve!, :step!)
+
+# The SciMLOperators operator interface. SciMLBase's own `jac_prototype`,
+# `SplitFunction`/`SplitODEProblem` and `IncrementingODEProblem` documentation is
+# written in terms of these, so `using SciMLBase` has to supply them. Owned and
+# documented by SciMLOperators; kept in sync with the reexport `export` block in
+# src/SciMLBase.jl and the list rendered in docs/src/interfaces/Reexported_API.md.
+const _scimloperators_reexports = (
+    :SciMLOperators,
+    :AddVector, :AffineOperator, :BlockDiagonalOperator, :DiagonalOperator,
+    :FunctionOperator, :IdentityOperator, :InvertibleOperator, :MatrixOperator,
+    :NullOperator, :ScalarOperator, :TensorProductOperator, :TensorSumOperator,
+    :cache_operator, :concretize, :has_adjoint, :has_concretization, :has_exp,
+    :has_expmv, :has_expmv!, :has_ldiv, :has_ldiv!, :has_mul, :has_mul!, :isconstant,
+    :isconvertible, :iscached, :islinear, :issquare, :kronsum, :update_coefficients,
+    :update_coefficients!,
+)
+
+const _reexports_allow = (_commonsolve_reexports..., _scimloperators_reexports...)
+
+# A scope whose only `using` is SciMLBase, so `isdefined` below measures exactly the
+# property under test: what `using SciMLBase` on its own brings into scope. Testing it
+# in this file's own scope would be confounded by the extension trigger packages loaded
+# above.
+module ReexportScope
+    using SciMLBase
+end
+
+@testset "Reexport surface" begin
+    # Every approved reexport must actually be reachable from `using SciMLBase`, so the
+    # allow-list cannot drift into approving names the package no longer provides.
+    @testset "$name" for name in _reexports_allow
+        @test name in names(SciMLBase)
+        @test isdefined(ReexportScope, name)
+    end
+end
 
 run_qa(
     SciMLBase;
@@ -192,6 +230,8 @@ run_qa(
     ei_kwargs = (;
         all_qualified_accesses_are_public = (; ignore = _ei_nonpublic_qualified_accesses),
         all_explicit_imports_are_public = (; ignore = _ei_nonpublic_explicit_imports),
+        # Makie re-exports ComputePipeline; the owner is the ComputePipeline package.
+        all_qualified_accesses_via_owners = (; ignore = (:ComputePipeline,)),
     ),
 )
 

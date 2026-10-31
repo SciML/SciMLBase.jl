@@ -14,7 +14,7 @@ function step!(d::DEIntegrator)
 end
 
 """
-    resize!(integrator::DEIntegrator,k::Int)
+    resize!(integrator::DEIntegrator, k::Int)
 
 Resize the state dimension of an integrator to length `k`.
 
@@ -28,7 +28,7 @@ function Base.resize!(i::DEIntegrator, ii::Int)
 end
 
 """
-    deleteat!(integrator::DEIntegrator,idxs)
+    deleteat!(integrator::DEIntegrator, idxs)
 
 Delete state components from a dynamic-size integrator.
 
@@ -42,7 +42,7 @@ function Base.deleteat!(i::DEIntegrator, ii)
 end
 
 """
-    addat!(integrator::DEIntegrator,idxs,val)
+    addat!(integrator::DEIntegrator, idxs, val)
 
 Insert state components into a dynamic-size integrator.
 
@@ -149,7 +149,7 @@ function full_cache(i::DEIntegrator)
 end
 
 """
-    resize_non_user_cache!(integrator::DEIntegrator,k::Int)
+    resize_non_user_cache!(integrator::DEIntegrator, k::Int)
 
 Resizes the non-user facing caches to be compatible with a DE of size `k`. This includes resizing Jacobian caches.
 
@@ -164,7 +164,7 @@ function resize_non_user_cache!(i::DEIntegrator, ii::Int)
 end
 
 """
-    deleteat_non_user_cache!(integrator::DEIntegrator,idxs)
+    deleteat_non_user_cache!(integrator::DEIntegrator, idxs)
 
 [`deleteat!`](@ref)s the non-user facing caches at indices `idxs`. This includes resizing Jacobian caches.
 
@@ -179,7 +179,7 @@ function deleteat_non_user_cache!(i::DEIntegrator, idxs)
 end
 
 """
-    addat_non_user_cache!(i::DEIntegrator,idxs)
+    addat_non_user_cache!(i::DEIntegrator, idxs)
 
 [`addat!`](@ref)s the non-user facing caches at indices `idxs`. This includes resizing Jacobian caches.
 
@@ -290,8 +290,10 @@ function set_proposed_dt!(i::DEIntegrator, dt)
 end
 
 """
-    savevalues!(integrator::DEIntegrator,
-      force_save=false) -> Tuple{Bool, Bool}
+    savevalues!(
+            integrator::DEIntegrator,
+            force_save = false
+        ) -> Tuple{Bool, Bool}
 
 Try to save the state and time variables at the current time point, or the
 `saveat` point by using interpolation when appropriate. It returns a tuple that
@@ -303,9 +305,9 @@ The saving priority/order is as follows:
 
   - `save_on`
 
-      + `saveat`
-      + `force_save`
-      + `save_everystep`
+    + `saveat`
+    + `force_save`
+    + `save_everystep`
 """
 function savevalues!(i::DEIntegrator)
     error("savevalues!: method has not been implemented for the integrator")
@@ -509,7 +511,7 @@ function set_rng!(integrator::DEIntegrator, rng)
 end
 
 """
-    reinit!(integrator::DEIntegrator,args...; kwargs...)
+    reinit!(integrator::DEIntegrator, args...; kwargs...)
 
 The reinit function lets you restart the integration at a new value.
 
@@ -536,7 +538,7 @@ function reinit!(integrator::DEIntegrator, args...; kwargs...)
 end
 
 """
-    initialize_dae!(integrator::DEIntegrator,initializealg = integrator.initializealg)
+    initialize_dae!(integrator::DEIntegrator, initializealg = integrator.initializealg)
 
 Runs the DAE initialization to find a consistent state vector. The optional
 argument `initializealg` can be used to specify a different initialization
@@ -568,7 +570,10 @@ function auto_dt_reset!(integrator::DEIntegrator)
 end
 
 """
-    change_t_via_interpolation!(integrator::DEIntegrator,t,modify_save_endpoint=Val{false},reinitialize_alg=nothing)
+    change_t_via_interpolation!(
+        integrator::DEIntegrator, t,
+        modify_save_endpoint = Val{false}, reinitialize_alg = nothing
+    )
 
 Move the integrator to time `t` using the method's local interpolation.
 
@@ -597,8 +602,10 @@ for cache construction and are not a portable user interface.
 addsteps!(i::DEIntegrator, args...) = nothing
 
 """
-    reeval_internals_due_to_modification!(integrator::DEIntegrator, continuous_modification::Bool=true;
-                                          callback_initializealg = nothing)
+    reeval_internals_due_to_modification!(
+        integrator::DEIntegrator, continuous_modification::Bool = true;
+        callback_initializealg = nothing
+    )
 
 Update an integrator after callback-driven mutation.
 
@@ -778,7 +785,7 @@ function getindepsym(integrator::DEIntegrator)
     if isempty(syms)
         return nothing
     end
-    return syms
+    return syms[1]
 end
 
 function getparamsyms(integrator::DEIntegrator)
@@ -812,6 +819,9 @@ SymbolicIndexingInterface.state_values(A::DEIntegrator) = A.u
 SymbolicIndexingInterface.current_time(A::DEIntegrator) = A.t
 function SymbolicIndexingInterface.set_state!(A::DEIntegrator, val, idx)
     A.u[idx] = val
+    return derivative_discontinuity!(A, true)
+end
+function SymbolicIndexingInterface.finalize_parameters_hook!(A::DEIntegrator, _)
     return derivative_discontinuity!(A, true)
 end
 
@@ -882,23 +892,31 @@ documented `reinit!` method. Supported optional keywords can still vary by
 problem family. The default is `false`.
 """
 has_reinit(i::DEIntegrator) = false
-@doc """
-    has_reinit(i::DEIntegrator)
-
-Return whether `i` supports reinitialization through [`reinit!`](@ref).
-
-Generic code should query this trait before attempting to reuse an initialized
-solver object. A `true` result guarantees support for restarting from a new
-initial state and integration interval through the concrete integrator's
-documented `reinit!` method. Supported optional keywords can still vary by
-problem family. The default is `false`.
-""" has_reinit
 
 log_numerical_instability(integrator; jacobian_logging::Bool = true) = ""
 
 has_mtk_sys(integrator) = false
 
 diagnose_symbolic_instability(sys, u, uprev) = ""
+
+"""
+    report_integrator_failure(integrator, ::Val{reason})
+
+Report a failure mode detected,called immediately 
+before the corresponding return code is returned. `reason` is one
+of `:dt_NaN`, `:max_iters`, `:dt_min_unstable`, `:dt_epsilon`, `:instability` or
+`:newton_convergence`.
+
+`check_error` only detects failures; describing them belongs to the solver stack,
+which owns both the wording and the verbosity settings that gate it. DiffEqBase.jl
+implements this for `DEIntegrator`s. The default is a no-op, so a stack that does not
+implement it still gets correct return codes, just no diagnostics.
+
+Implementations must not affect control flow and their return value is ignored. A
+`reason` configured at `SciMLLogging.ErrorLevel` throws instead of returning, which is
+the intended behaviour of that level.
+"""
+@inline report_integrator_failure(integrator, ::Val) = nothing
 
 ### Display
 
@@ -962,26 +980,25 @@ mutate `integrator.sol.retcode`; use
 [`check_error!`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.check_error!)
 when the solution must be updated. Concrete integrators may specialize the
 checks while preserving the return-code contract.
+
+Diagnostics for detected failures are emitted through
+[`report_integrator_failure`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Init_Solve/#SciMLBase.report_integrator_failure),
+which the solver stack implements; this function only performs detection.
 """
 function check_error(integrator::DEIntegrator)
     if integrator.sol.retcode ∉ (ReturnCode.Success, ReturnCode.Default)
         return integrator.sol.retcode
     end
     opts = integrator.opts
-    verbose = opts.verbose
     # This implementation is intended to be used for ODEIntegrator and
     # SDEIntegrator.
 
     if isnan(integrator.dt)
-        @SciMLMessage("NaN dt detected. Likely a NaN value in the state, parameters, or derivative value caused this outcome.", verbose, :dt_NaN)
+        report_integrator_failure(integrator, Val(:dt_NaN))
         return ReturnCode.DtNaN
     end
     if integrator.iter > opts.maxiters
-        @SciMLMessage(
-            "Interrupted. Larger maxiters is needed. If you are using an integrator for non-stiff ODEs or an automatic switching algorithm (the default), you may want to consider using a method for stiff equations. See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).",
-            verbose,
-            :max_iters
-        )
+        report_integrator_failure(integrator, Val(:max_iters))
         return ReturnCode.MaxIters
     end
 
@@ -1001,34 +1018,20 @@ function check_error(integrator::DEIntegrator)
                         true
                 )
             )
-            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-            numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
-            EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
-            @SciMLMessage(lazy"dt($(integrator.dt)) <= dtmin($(opts.dtmin)) at t=$(integrator.t)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable.$diagnostic", verbose, :dt_min_unstable)
+            report_integrator_failure(integrator, Val(:dt_min_unstable))
             return ReturnCode.DtLessThanMin
         elseif !step_accepted && integrator.t isa AbstractFloat && abs(integrator.dt) <= abs(eps(integrator.t))
-            sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-            symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-            numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-            diagnostic = verbosity_to_bool(verbose.dt_min_unstable) ? numeric_diagnostic * symbolic_diagnostic : ""
-            EEst = isdefined(integrator, :EEst) ? lazy", step error estimate = $(integrator.EEst)" : ""
-            @SciMLMessage(lazy"At t=$(integrator.t), dt was forced below floating point epsilon $(integrator.dt)$EEst. Aborting. There is either an error in your model specification or the true solution is unstable (or it cannot be represented in $(eltype(integrator.u)) precision).$diagnostic", verbose, :dt_epsilon)
+            report_integrator_failure(integrator, Val(:dt_epsilon))
             return ReturnCode.Unstable
         end
     end
     if step_accepted &&
             opts.unstable_check(integrator.dt, integrator.u, integrator.p, integrator.t)
-        sys = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? integrator.f.sys : nothing
-        symbolic_diagnostic = (has_mtk_sys(integrator) && verbosity_to_bool(verbose.symbolic_diagnostic)) ? diagnose_symbolic_instability(sys, integrator.u, integrator.uprev) : ""
-        numeric_diagnostic = log_numerical_instability(integrator, jacobian_logging = symbolic_diagnostic == "")
-        diagnostic = verbosity_to_bool(verbose.instability) ? numeric_diagnostic * symbolic_diagnostic : ""
-        @SciMLMessage("Instability detected. Aborting.$diagnostic", verbose, :instability)
+        report_integrator_failure(integrator, Val(:instability))
         return ReturnCode.Unstable
     end
     if last_step_failed(integrator)
-        @SciMLMessage("Newton steps could not converge and algorithm is not adaptive. Use a lower dt.", verbose, :newton_convergence)
+        report_integrator_failure(integrator, Val(:newton_convergence))
         return ReturnCode.ConvergenceFailure
     end
     return ReturnCode.Success
@@ -1127,6 +1130,141 @@ Base.eltype(::Type{T}) where {T <: DEIntegrator} = T
 Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
 
 
+"""
+    $(TYPEDSIGNATURES)
+
+Return whether `idx` refers to the independent variable of `integrator` rather than to one
+of its states. Plot specifications use `0` for the independent variable, and symbolic
+systems additionally allow naming it.
+"""
+function is_independent_variable_index(integrator::DEIntegrator, idx)
+    return (idx isa Integer && idx == 0) || isequal(idx, getindepsym_defaultt(integrator))
+end
+
+"""
+    has_symbolic_idxs(idxs)
+
+Return whether `idxs` names quantities symbolically rather than by position in the state
+vector.
+
+Solver packages use this to decide whether `integrator(t; idxs)` has to go through
+[`symbolic_interpolation`](@ref). A raw dense-output interpolant only accepts integer
+component indices, so it cannot resolve a symbolic index, which may name an observed
+equation that is not stored in the state vector at all.
+"""
+has_symbolic_idxs(idxs) = symbolic_type(idxs) !== NotSymbolic()
+function has_symbolic_idxs(idxs::Union{AbstractArray, Tuple})
+    return symbolic_type(idxs) !== NotSymbolic() || any(has_symbolic_idxs, idxs)
+end
+
+"""
+    symbolic_interpolation(integrator::DEIntegrator, t, idxs, deriv = Val{0})
+
+Evaluate `idxs` on the interpolant of `integrator`'s current step at time(s) `t`.
+
+`idxs` is resolved through `SymbolicIndexingInterface`, so observed equations and other
+symbolic expressions give the same values here that they do when indexing a solution with
+`sol(t; idxs)`. `t` may be a number or a collection of numbers; a collection returns a
+`DiffEqArray` over those times.
+
+Solver packages should route `integrator(t; idxs)` here when `idxs` is symbolic. Raw
+dense-output interpolants only accept integer component indices, so they cannot resolve
+quantities that are not stored in the state vector.
+"""
+function symbolic_interpolation(
+        integrator::DEIntegrator, t::Number, idxs, ::Type{deriv} = Val{0}
+    ) where {deriv}
+    error_if_observed_derivative(integrator, idxs, deriv)
+    state = ProblemState(; u = integrator(t, deriv), p = parameter_values(integrator), t = t)
+    return getsym(integrator, idxs)(state)
+end
+
+function symbolic_interpolation(
+        integrator::DEIntegrator, t, idxs, ::Type{deriv} = Val{0}
+    ) where {deriv}
+    error_if_observed_derivative(integrator, idxs, deriv)
+    getter = getsym(integrator, idxs)
+    p = parameter_values(integrator)
+    us = integrator(t, deriv)
+    u = map(eachindex(t)) do i
+        getter(ProblemState(; u = us[i], p = p, t = t[i]))
+    end
+    return DiffEqArray(u, collect(t), p, integrator)
+end
+
+function integplot_vecs_and_labels(vars, plott, integrator, denseplot)
+    varsyms = variable_symbols(integrator)
+
+    batch_symbolic_vars = []
+    for x in vars
+        for j in 2:length(x)
+            is_independent_variable_index(integrator, x[j]) && continue
+            push!(batch_symbolic_vars, x[j])
+        end
+    end
+    batch_symbolic_vars = identity.(batch_symbolic_vars)
+
+    if isempty(batch_symbolic_vars)
+        timevals = denseplot ? plott : [integrator.t]
+        indexed_values = [[] for _ in timevals]
+    elseif denseplot
+        timevals = plott
+        indexed_values = symbolic_interpolation(integrator, plott, batch_symbolic_vars).u
+    else
+        timevals = [integrator.t]
+        indexed_values = [getsym(integrator, batch_symbolic_vars)(integrator)]
+    end
+
+    plot_vecs = []
+    labels = String[]
+    dims = 0
+    idxx = 0
+    for x in vars
+        tmp = []
+        strs = String[]
+        for j in 2:length(x)
+            if is_independent_variable_index(integrator, x[j])
+                push!(tmp, timevals)
+                push!(strs, "t")
+            else
+                idxx += 1
+                push!(tmp, [vals[idxx] for vals in indexed_values])
+                if !isempty(varsyms) && x[j] isa Integer
+                    push!(strs, String(getname(varsyms[x[j]])))
+                elseif hasname(x[j])
+                    push!(strs, String(getname(x[j])))
+                else
+                    push!(strs, "u[$(x[j])]")
+                end
+            end
+        end
+
+        tmp = map(x[1], tmp...)
+        series_dims = length(tmp[1])
+        if isempty(plot_vecs)
+            dims = series_dims
+        elseif series_dims != dims
+            throw(
+                ArgumentError(
+                    "Plot idxs series must all have the same output dimension, but got $dims and $series_dims. " *
+                        "Output dimension is the number of coordinates returned by each series transform " *
+                        "(e.g. `(t, u)` is 2-D), not the number of input indices in the idxs tuple."
+                )
+            )
+        end
+        tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
+        for i in eachindex(tmp)
+            if length(plot_vecs) < i
+                push!(plot_vecs, [])
+            end
+            push!(plot_vecs[i], tmp[i])
+        end
+        add_labels!(labels, x, dims, integrator, strs)
+    end
+
+    return [hcat(x...) for x in plot_vecs], labels
+end
+
 @recipe function f(
         integrator::DEIntegrator;
         denseplot = (
@@ -1146,104 +1284,31 @@ Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
             error("Simultaneously using keywords vars and idxs is not supported. Please only use idxs.")
         idxs = vars
     end
-
-    int_vars = interpret_vars(idxs, integrator.sol)
-
-    if denseplot
-        # Generate the points from the plot from dense function
-        plott = collect(range(integrator.tprev, integrator.t; length = plotdensity))
-        if plot_analytic
-            plot_analytic_timeseries = [
-                integrator.sol.prob.f.analytic(
-                        integrator.sol.prob.u0,
-                        integrator.sol.prob.p,
-                        t
-                    ) for t in plott
-            ]
-        end
-    else
-        plott = nothing
-    end
-
-    dims = length(int_vars[1])
-    for var in int_vars
-        @assert length(var) == dims
-    end
-    # Should check that all have the same dims!
-
-    plot_vecs = []
-    for i in 2:dims
-        push!(plot_vecs, [])
-    end
-
-    labels = String[] # Array{String, 2}(1, length(int_vars)*(1+plot_analytic))
-    strs = String[]
-    varsyms = variable_symbols(integrator)
-    @show plott
-
-    for x in int_vars
-        for j in 2:dims
-            if denseplot
-                if (x[j] isa Integer && x[j] == 0) ||
-                        isequal(x[j], getindepsym_defaultt(integrator))
-                    push!(plot_vecs[j - 1], plott)
-                else
-                    push!(plot_vecs[j - 1], Vector(integrator(plott; idxs = x[j])))
-                end
-            else # just get values
-                if x[j] == 0
-                    push!(plot_vecs[j - 1], integrator.t)
-                elseif x[j] == 1 && !(integrator.u isa AbstractArray)
-                    push!(plot_vecs[j - 1], integrator.u)
-                else
-                    push!(plot_vecs[j - 1], integrator.u[x[j]])
-                end
-            end
-
-            if !isempty(varsyms) && x[j] isa Integer
-                push!(strs, String(getname(varsyms[x[j]])))
-            elseif hasname(x[j])
-                push!(strs, String(getname(x[j])))
-            else
-                push!(strs, "u[$(x[j])]")
-            end
-        end
-        add_labels!(labels, x, dims, integrator.sol, strs)
-    end
-
     if plot_analytic
-        for x in int_vars
-            for j in 1:dims
-                if denseplot
-                    push!(
-                        plot_vecs[j],
-                        u_n(plot_timeseries, x[j], sol, plott, plot_timeseries)
-                    )
-                else # Just get values
-                    if x[j] == 0
-                        push!(plot_vecs[j], integrator.t)
-                    elseif x[j] == 1 && !(integrator.u isa AbstractArray)
-                        push!(
-                            plot_vecs[j],
-                            integrator.sol.prob.f(
-                                Val{:analytic}, integrator.t,
-                                integrator.sol[1]
-                            )
-                        )
-                    else
-                        push!(
-                            plot_vecs[j],
-                            integrator.sol.prob.f(
-                                Val{:analytic}, integrator.t,
-                                integrator.sol[1]
-                            )[x[j]]
-                        )
-                    end
-                end
-            end
-            add_labels!(labels, x, dims, integrator.sol, strs)
-        end
+        throw(
+            ArgumentError(
+                "`plot_analytic` is not supported when plotting an integrator. Plot `integrator.sol` instead."
+            )
+        )
     end
+
+    idxs = idxs === nothing ? plottable_indices(integrator.u) : idxs
+    int_vars = if idxs isa Union{Tuple, AbstractArray}
+        interpret_vars(idxs, integrator.sol)
+    else
+        interpret_vars([idxs], integrator.sol)
+    end
+
+    plott = if denseplot
+        collect(range(integrator.tprev, integrator.t; length = plotdensity))
+    else
+        nothing
+    end
+
+    plot_vecs,
+        labels = integplot_vecs_and_labels(
+        int_vars, plott, integrator, denseplot
+    )
 
     xflip --> integrator.tdir < 0
 
@@ -1254,23 +1319,18 @@ Base.IteratorSize(::Type{<:DEIntegrator}) = Base.SizeUnknown()
     end
 
     # Special case labels when idxs = (:x,:y,:z) or (:x) or [:x,:y] ...
-    if idxs isa Tuple && (typeof(idxs[1]) == Symbol && typeof(idxs[2]) == Symbol)
+    if idxs isa Tuple && idxs[1] isa Symbol && idxs[2] isa Symbol
         xlabel --> idxs[1]
         ylabel --> idxs[2]
         if length(idxs) > 2
             zlabel --> idxs[3]
         end
     end
-    if getindex.(int_vars, 1) == zeros(length(int_vars)) ||
-            getindex.(int_vars, 2) == zeros(length(int_vars))
-        xlabel --> "t"
+    if all(x -> is_independent_variable_index(integrator, x[2]), int_vars)
+        xlabel --> "$(getindepsym_defaultt(integrator))"
     end
 
     linewidth --> 3
-    #xtickfont --> font(11)
-    #ytickfont --> font(11)
-    #legendfont --> font(11)
-    #guidefont  --> font(11)
     label --> reshape(labels, 1, length(labels))
     (plot_vecs...,)
 end
@@ -1300,18 +1360,6 @@ integrator fields. The default is `false`, which tells generic code not to assum
 that a `stats` field or stats update path exists.
 """
 has_stats(i::DEIntegrator) = false
-@doc """
-    has_stats(i::DEIntegrator)
-
-Return whether `i` exposes mutable solve statistics through its integrator
-interface.
-
-Solver integrators that maintain counters such as function evaluations, rejected
-steps, nonlinear iterations, or linear solves should overload this trait to
-return `true` and provide the corresponding statistics through their documented
-integrator fields. The default is `false`, which tells generic code not to assume
-that a `stats` field or stats update path exists.
-""" has_stats
 
 """
     isadaptive(i::DEIntegrator)

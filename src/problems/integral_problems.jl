@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines an integral problem.
 Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
@@ -8,7 +8,7 @@ Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
 Integral problems are multi-dimensional integrals defined as:
 
 ```math
-\int_{lb}^{ub} f(u,p) du
+∫_{lb}^{ub} f(u,p) du
 ```
 
 where `p` are parameters. `u` is a `Number` or `AbstractVector`
@@ -21,10 +21,10 @@ which are `Number`s or `AbstractVector`s with the same geometry as `u`.
 ### Constructors
 
 ```julia
-IntegralProblem(f::AbstractIntegralFunction,domain,p=NullParameters(); kwargs...)
-IntegralProblem(f::AbstractIntegralFunction,lb,ub,p=NullParameters(); kwargs...)
-IntegralProblem(f,domain,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
-IntegralProblem(f,lb,ub,p=NullParameters(); nout=nothing, batch=nothing, kwargs...)
+IntegralProblem(f::AbstractIntegralFunction, domain, p = NullParameters(); kwargs...)
+IntegralProblem(f::AbstractIntegralFunction, lb, ub, p = NullParameters(); kwargs...)
+IntegralProblem(f, domain, p = NullParameters(); nout = nothing, batch = nothing, kwargs...)
+IntegralProblem(f, lb, ub, p = NullParameters(); nout = nothing, batch = nothing, kwargs...)
 ```
 
 - `f`: the integrand, callable function `y = f(u,p)` for out-of-place (default) or an
@@ -88,7 +88,7 @@ function IntegralProblem{iip}(
 end
 
 
-@doc doc"""
+"""
 
 Defines a integral problem over pre-sampled data.
 Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
@@ -98,7 +98,7 @@ Documentation Page: <https://docs.sciml.ai/Integrals/stable/>
 Sampled integral problems are defined as:
 
 ```math
-\sum_i w_i y_i
+∑_i w_i y_i
 ```
 where `y_i` are sampled values of the integrand, and `w_i` are weights
 assigned by a quadrature rule, which depend on sampling points `x`.
@@ -108,7 +108,7 @@ assigned by a quadrature rule, which depend on sampling points `x`.
 ### Constructors
 
 ```julia
-SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim=ndims(y), kwargs...)
+SampledIntegralProblem(y::AbstractArray, x::AbstractVector; dim = ndims(y), kwargs...)
 ```
 - `y`: The sampled integrand, must be a subtype of `AbstractArray`.
   It is assumed that the values of `y` along dimension `dim`
@@ -138,7 +138,7 @@ struct SampledIntegralProblem{Y, X, K} <: AbstractIntegralProblem{false}
     end
 end
 
-@doc doc"""
+"""
     IntegralAliasSpecifier(alias_p = nothing, alias_f = nothing, alias = nothing)
 
 Control which `IntegralProblem` inputs a solver may alias.

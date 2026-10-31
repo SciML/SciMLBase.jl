@@ -15,6 +15,40 @@ types have a method for constructing the associated problem and function types.
 The following standard principles should be adhered to across all
 `AbstractSciMLProblem` instantiations.
 
+### Generic Usage Rules
+
+Code that accepts an abstract problem must dispatch on the problem type itself
+and use the generic traits rather than inspecting a concrete problem's fields.
+The minimum generic contract is:
+
+  - `isinplace(prob)` reports the callback mutation convention encoded by the
+    problem type.
+  - `problem_type(prob)` reports construction-layout metadata, or `nothing`
+    when no separate layout marker applies.
+  - `is_diagonal_noise(prob)` reports the noise-storage convention for
+    stochastic problem families.
+  - `remake(prob; kwargs...)` creates a compatible problem with requested
+    replacements while preserving the problem's layout marker and callback
+    convention.
+
+Solver and extension code must not assume that every problem has the same
+fields, that a problem can be mutated in place, or that a convenience
+constructor's concrete representation identifies its mathematical layout.
+Custom problem types should implement the generic traits they support and test
+them with a representative problem value, without dispatching on a concrete
+problem type in downstream code.
+
+For example, a generic consumer can make a dispatch decision without knowing
+which problem family supplied the value:
+
+```julia
+function setup_problem(prob::SciMLBase.AbstractSciMLProblem)
+    iip = SciMLBase.isinplace(prob)
+    layout = SciMLBase.problem_type(prob)
+    return (; iip, layout)
+end
+```
+
 ### In-place Specification
 
 Each `AbstractSciMLProblem` type can be called with an "is inplace" (iip) choice. For example:
@@ -30,6 +64,9 @@ but note that for full type-inferability of the `AbstractSciMLProblem` this iip-
 be specified.
 
 By default, problem functions use `AutoSpecialize` to balance latency and runtime.
+Inside Reactant compilation, `ODEFunction` with `AutoSpecialize` reports
+`FullSpecialize` so solvers retain the function types needed for tracing. Outside
+compilation, its specialization remains `AutoSpecialize`.
 Choose another specialization marker explicitly when a workflow needs a different
 trade-off.
 
@@ -55,10 +92,20 @@ Note that `iip` choice is required for specialization choices to be made.
 ```@docs
 SciMLBase.AbstractSpecialization
 SciMLBase.AutoSpecialize
+SciMLBase.AutoDespecialize
+SciMLBase.AutoRespecialize
 SciMLBase.AutoDePSpecialize
 SciMLBase.NoSpecialize
 SciMLBase.FunctionWrapperSpecialize
 SciMLBase.FullSpecialize
+```
+
+#### Parameter Despecialization
+
+```@docs
+SciMLBase.DespecializedParameters
+SciMLBase.unwrap_parameters
+SciMLBase.invoke_with_despecialized_parameters
 ```
 
 #### Specialization Interface Hooks
@@ -172,7 +219,8 @@ shows how to set the specialization default to `FullSpecialize`:
 ```julia
 using Preferences, UUIDs
 set_preferences!(
-    UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize")
+    UUID("0bca4576-84f4-4d90-8ffe-ffa030f20462"), "SpecializationLevel" => "FullSpecialize"
+)
 ```
 
 The default is `AutoSpecialize`.

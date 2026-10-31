@@ -11,6 +11,36 @@ of pre-computed functions to speed up the calculations. This is offered via the
 The following standard principles should be adhered to across all
 `AbstractSciMLFunction` instantiations.
 
+### Generic Usage Rules
+
+Generic solver code must treat an `AbstractSciMLFunction` as a callable
+container and query its capability traits before using optional callbacks. The
+portable contract is:
+
+  - call the function using the signature documented by its function family;
+    do not infer the signature from the concrete wrapper's fields;
+  - use `isinplace(f)` to select the mutating or returning call convention;
+  - use `has_jac`, `has_jvp`, `has_vjp`, `has_paramjac`, `has_observed`, and
+    the related `has_*` traits before reading an optional callback;
+  - use `unwrapped_f(f)` only when an operation explicitly needs the underlying
+    callable, and preserve the wrapper's in-place convention after wrapping;
+  - treat optional callbacks as absent when the corresponding trait is false,
+    rather than assuming a field exists on every concrete subtype.
+
+An implementation of a new function container should be testable through these
+generic operations alone. A downstream package should therefore be able to
+write code such as:
+
+```julia
+function evaluate_model(f::SciMLBase.AbstractSciMLFunction, u, p, t)
+    return (; value = f(u, p, t), has_jac = SciMLBase.has_jac(f))
+end
+```
+
+The concrete function type remains responsible for documenting callback
+arguments, return values, and field layout. Generic code must not reach into
+those fields to discover capabilities.
+
 ### Common Function Choice Definitions
 
 The full interface available to the solvers is as follows:
@@ -50,6 +80,16 @@ change the first value). This is automatically determined using the methods tabl
 but note that for full type-inferability of the `AbstractSciMLProblem` this iip-ness should
 be specified.
 
+### In-place Trait Contract
+
+Every concrete `AbstractSciMLFunction{iip}` subtype must encode whether its
+primary callback mutates its first argument in the `iip` parameter. Generic
+solver and extension code must obtain this information through
+`isinplace(f)`, rather than inspecting fields or type parameters. The generic
+trait returns `true` for in-place and `false` for out-of-place function
+containers; callers can therefore support new concrete subtypes without adding
+type-specific dispatches.
+
 ### Specialization Choices
 
 Each `SciMLFunction` type allows for specialization choices
@@ -76,7 +116,7 @@ using LinearAlgebra
 f = (du, u, p, t) -> du .= t .* u
 jac = (J, u, p, t) -> (J[1, 1] = t; J[2, 2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac = jac, jac_prototype = jp)
+fun = ODEFunction(f; jac, jac_prototype = jp)
 ```
 
 The prototype declares Jacobian shape, element type, and structure. It must support
@@ -89,7 +129,10 @@ When `jac_prototype` is an `AbstractSciMLOperator` and `jac` is omitted, the con
 creates a Jacobian update using `update_coefficients!` for the in-place form and
 `update_coefficients` for the out-of-place form.
 Refer to the [SciMLOperators](https://docs.sciml.ai/SciMLOperators/stable/premade_operators/) section for more information
-on setting up time/parameter dependent operators.
+on setting up time/parameter dependent operators. The operator types and traits named
+here are re-exported by SciMLBase, so `using SciMLBase` is enough to build them; see
+[Reexported API](@ref) for the exact list and for what has to be imported from
+SciMLOperators directly.
 
 ### Sparsity Handling
 

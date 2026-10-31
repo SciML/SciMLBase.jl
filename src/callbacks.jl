@@ -40,7 +40,8 @@ end
 
 """
 ```julia
-ContinuousCallback(condition, affect!, affect_neg!;
+ContinuousCallback(
+    condition, affect!, affect_neg!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -48,11 +49,13 @@ ContinuousCallback(condition, affect!, affect_neg!;
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 ```julia
-ContinuousCallback(condition, affect!;
+ContinuousCallback(
+    condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -61,7 +64,8 @@ ContinuousCallback(condition, affect!;
     affect_neg! = affect!,
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 Contains a single callback whose `condition` is a continuous function. The callback is triggered when this function evaluates to 0.
@@ -243,7 +247,8 @@ end
 
 """
 ```julia
-VectorContinuousCallback(condition, affect!, len;
+VectorContinuousCallback(
+    condition, affect!, len;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     idxs = nothing,
@@ -251,7 +256,8 @@ VectorContinuousCallback(condition, affect!, len;
     save_positions = (true, true),
     interp_points = 10,
     abstol = 10eps(), reltol = 0, repeat_nudge = 1 // 100,
-    initializealg = nothing, maybe_discontinuity = true)
+    initializealg = nothing, maybe_discontinuity = true
+)
 ```
 
 This is also a subtype of `AbstractContinuousCallback`. `CallbackSet` is not feasible when you have many callbacks,
@@ -354,11 +360,13 @@ end
 
 """
 ```julia
-DiscreteCallback(condition, affect!;
+DiscreteCallback(
+    condition, affect!;
     initialize = INITIALIZE_DEFAULT,
     finalize = FINALIZE_DEFAULT,
     save_positions = (true, true),
-    initializealg = nothing)
+    initializealg = nothing
+)
 ```
 
 # Arguments
@@ -458,16 +466,17 @@ Multiple callbacks can be chained together to form a `CallbackSet`. A
 `DiscreteCallback`, `VectorContinuousCallback`, `nothing`, or other
 `CallbackSet` instances:
 
-    CallbackSet(cb1,cb2,cb3)
+    CallbackSet(cb1, cb2, cb3)
 
 You can pass as many callbacks as needed. Nested callback sets are flattened into
-two ordered tuples, `continuous_callbacks` and `discrete_callbacks`. Solvers
-should use these tuples instead of re-splitting callbacks themselves.
+two ordered collections, `continuous_callbacks` and `discrete_callbacks`. Public
+constructors use tuples; solver paths may use vectors when callback types must be
+erased to reuse compilation.
 
 When a solver encounters multiple callbacks, the following rules apply:
 
-  - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s. (This is because
-    they often implement event-finding that will backtrack the timestep to smaller
+  - `ContinuousCallback`s and `VectorContinuousCallback`s are applied before `DiscreteCallback`s.
+    (This is because they often implement event-finding that will backtrack the timestep to smaller
     than `dt`).
   - For `ContinuousCallback`s and `VectorContinuousCallback`s, the event times are found by rootfinding and only
     the first `ContinuousCallback` or `VectorContinuousCallback` affect is applied.
@@ -476,7 +485,10 @@ When a solver encounters multiple callbacks, the following rules apply:
     that the next callback no longer evaluates condition to `true`, its `affect`
     will not be applied.
 """
-struct CallbackSet{T1 <: Tuple, T2 <: Tuple} <: DECallback
+struct CallbackSet{
+        T1 <: Union{Tuple, AbstractVector},
+        T2 <: Union{Tuple, AbstractVector},
+    } <: DECallback
     continuous_callbacks::T1
     discrete_callbacks::T2
 end
@@ -567,6 +579,18 @@ function save_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
     return _save_all_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
 end
 
+function save_discretes!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_discretes!(integrator, callback; skip_duplicates = true)
+        end
+    end
+    return
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -594,6 +618,18 @@ function save_final_discretes!(integrator::DEIntegrator, cb::CallbackSet; kw...)
     return _save_all_final_discretes!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...)
 end
 
+function save_final_discretes!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; kw...
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_final_discretes!(integrator, callback)
+        end
+    end
+    return
+end
+
 """
     $(TYPEDSIGNATURES)
 
@@ -614,13 +650,27 @@ function save_discretes_if_enabled!(integrator::DEIntegrator, cb::Union{Continuo
     return save_discretes!(integrator, cb; skip_duplicates)
 end
 
-function _save_discretes_if_enabled!(integrator::DEIntegrator, cb::DECallback, cbs::DECallback...; kw...)
-    save_discretes_if_enabled!(integrator, cb; kw...)
-    return _save_discretes_if_enabled!(integrator, cbs...; kw...)
+# One call per callback, so a tuple of different callback types dispatches statically.
+@generated function _save_discretes_each!(integrator::DEIntegrator, skip_duplicates::Bool, cbs::Tuple)
+    calls = [:(save_discretes_if_enabled!(integrator, cbs[$i]; skip_duplicates)) for i in 1:fieldcount(cbs)]
+    return Expr(:block, calls..., :(return nothing))
+end
+_save_discretes_each!(integrator::DEIntegrator, skip_duplicates::Bool, cbs::AbstractVector) =
+    (foreach(cb -> save_discretes_if_enabled!(integrator, cb; skip_duplicates), cbs); nothing)
+
+function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; skip_duplicates = false)
+    _save_discretes_each!(integrator, skip_duplicates, cb.continuous_callbacks)
+    return _save_discretes_each!(integrator, skip_duplicates, cb.discrete_callbacks)
 end
 
-_save_discretes_if_enabled!(::DEIntegrator; kw...) = nothing
-
-function save_discretes_if_enabled!(integrator::DEIntegrator, cb::CallbackSet; kw...)
-    return _save_discretes_if_enabled!(integrator, cb.continuous_callbacks..., cb.discrete_callbacks...; kw...)
+function save_discretes_if_enabled!(
+        integrator::DEIntegrator,
+        cb::CallbackSet{<:AbstractVector, <:AbstractVector}; skip_duplicates = false
+    )
+    for callbacks in (cb.continuous_callbacks, cb.discrete_callbacks)
+        for callback in callbacks
+            save_discretes_if_enabled!(integrator, callback; skip_duplicates)
+        end
+    end
+    return
 end

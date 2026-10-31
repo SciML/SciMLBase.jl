@@ -1,4 +1,5 @@
-using Optimization, OptimizationOptimJL, ForwardDiff, SciMLBase, Test
+using Optimization, ForwardDiff, SciMLBase, Test
+using OptimizationOptimJL: Optim
 
 x0 = zeros(2)
 rosenbrock(x, p = nothing) = (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
@@ -6,20 +7,20 @@ l1 = rosenbrock(x0)
 
 optf = OptimizationFunction(rosenbrock, Optimization.AutoForwardDiff())
 prob = OptimizationProblem(optf, x0)
-sol1 = Optimization.solve(prob, OptimizationOptimJL.BFGS(), maxiters = 5)
+sol1 = Optimization.solve(prob, Optim.BFGS(), maxiters = 5)
 
 ensembleprob = Optimization.EnsembleProblem(
     prob, [x0, x0 .+ rand(2), x0 .+ rand(2), x0 .+ rand(2)]
 )
 
 sol = Optimization.solve(
-    ensembleprob, OptimizationOptimJL.BFGS(),
+    ensembleprob, Optim.BFGS(),
     EnsembleThreads(), trajectories = 4, maxiters = 5
 )
 @test findmin(i -> sol.u[i].objective, 1:4)[1] <= sol1.objective
 
 sol = Optimization.solve(
-    ensembleprob, OptimizationOptimJL.BFGS(),
+    ensembleprob, Optim.BFGS(),
     EnsembleDistributed(), trajectories = 4, maxiters = 5
 )
 @test findmin(i -> sol.u[i].objective, 1:4)[1] <= sol1.objective
@@ -30,13 +31,13 @@ ensembleprob = Optimization.EnsembleProblem(
 )
 
 sol = Optimization.solve(
-    ensembleprob, OptimizationOptimJL.BFGS(),
+    ensembleprob, Optim.BFGS(),
     EnsembleThreads(), trajectories = 5, maxiters = 5
 )
 @test findmin(i -> sol.u[i].objective, 1:4)[1] <= sol1.objective
 
 sol = Optimization.solve(
-    ensembleprob, OptimizationOptimJL.BFGS(),
+    ensembleprob, Optim.BFGS(),
     EnsembleDistributed(), trajectories = 5, maxiters = 5
 )
 @test findmin(i -> sol.u[i].objective, 1:4)[1] <= sol1.objective

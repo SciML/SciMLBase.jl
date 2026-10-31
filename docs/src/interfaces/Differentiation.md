@@ -12,14 +12,16 @@ High-level `solve` methods make the differentiable inputs explicit before
 dropping into the internal solve path. A representative shape is:
 
 ```julia
-function solve(prob::AbstractDEProblem, args...; sensealg = nothing,
-        u0 = nothing, p = nothing, kwargs...)
+function solve(
+        prob::AbstractDEProblem, args...; sensealg = nothing,
+        u0 = nothing, p = nothing, kwargs...
+    )
     u0 = u0 !== nothing ? u0 : prob.u0
     p = p !== nothing ? p : prob.p
     if sensealg === nothing && haskey(prob.kwargs, :sensealg)
         sensealg = prob.kwargs[:sensealg]
     end
-    solve_up(prob, sensealg, u0, p, args...; kwargs...)
+    return solve_up(prob, sensealg, u0, p, args...; kwargs...)
 end
 ```
 
@@ -30,18 +32,22 @@ differentiated. Sensitivity packages then overload the internal calls with rules
 of the following form:
 
 ```julia
-function ChainRulesCore.frule(::typeof(solve_up), prob,
+function ChainRulesCore.frule(
+        ::typeof(solve_up), prob,
         sensealg::Union{Nothing, AbstractSensitivityAlgorithm},
         u0, p, args...;
-        kwargs...)
-    _solve_forward(prob, sensealg, u0, p, args...; kwargs...)
+        kwargs...
+    )
+    return _solve_forward(prob, sensealg, u0, p, args...; kwargs...)
 end
 
-function ChainRulesCore.rrule(::typeof(solve_up), prob::SciMLBase.AbstractDEProblem,
+function ChainRulesCore.rrule(
+        ::typeof(solve_up), prob::SciMLBase.AbstractDEProblem,
         sensealg::Union{Nothing, AbstractSensitivityAlgorithm},
         u0, p, args...;
-        kwargs...)
-    _solve_adjoint(prob, sensealg, u0, p, args...; kwargs...)
+        kwargs...
+    )
+    return _solve_adjoint(prob, sensealg, u0, p, args...; kwargs...)
 end
 ```
 

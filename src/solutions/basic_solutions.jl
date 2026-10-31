@@ -31,8 +31,10 @@ struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}
 end
 
 """
-    build_linear_solution(alg, u, resid, cache; retcode = ReturnCode.Default, iters = 0,
-        stats = nothing) -> LinearSolution
+    build_linear_solution(
+            alg, u, resid, cache; retcode = ReturnCode.Default, iters = 0,
+            stats = nothing
+        ) -> LinearSolution
 
 Construct the `LinearSolution` returned by a solver for a linear system.
 
@@ -62,11 +64,13 @@ Construct the `LinearSolution` returned by a solver for a linear system.
 
 # Example
 
-```julia
+```julia-repl
 julia> alg = :direct;
 
-julia> build_linear_solution(alg, [2.0], nothing, nothing;
-                              retcode = ReturnCode.Success)
+julia> build_linear_solution(
+           alg, [2.0], nothing, nothing;
+           retcode = ReturnCode.Success
+       )
 retcode: Success
 ```
 """
@@ -119,8 +123,10 @@ struct EigenvalueSolution{T, N, U, V, P, A, R, S} <: AbstractEigenvalueSolution{
 end
 
 """
-    build_eigenvalue_solution(prob, alg, values, vectors; retcode = ReturnCode.Success,
-        resid = nothing, stats = nothing) -> EigenvalueSolution
+    build_eigenvalue_solution(
+            prob, alg, values, vectors; retcode = ReturnCode.Success,
+            resid = nothing, stats = nothing
+        ) -> EigenvalueSolution
 
 Construct the `EigenvalueSolution` returned by a solver for an eigenvalue problem.
 
@@ -149,7 +155,7 @@ Construct the `EigenvalueSolution` returned by a solver for an eigenvalue proble
 
 # Example
 
-```julia
+```julia-repl
 julia> prob = EigenvalueProblem([2.0 0.0; 0.0 3.0]);
 
 julia> build_eigenvalue_solution(prob, :dense, [2.0, 3.0], [1.0 0.0; 0.0 1.0]).retcode
@@ -203,7 +209,8 @@ Construct the solution object returned by a SciML solver for `prob` solved with
 Solver packages extend `build_solution` for the problem and algorithm families
 they own so that direct solver implementations can share the same solution
 construction path. Methods should attach the original problem, algorithm,
-[`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes), residual or error information, solver statistics, dense
+[`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes),
+residual or error information, solver statistics, dense
 interpolation data, and saved values expected by the corresponding
 [`AbstractSciMLSolution`](@ref) interface.
 
@@ -233,24 +240,6 @@ function build_solution(
         stats
     )
 end
-@doc """
-    build_solution(prob, alg, args...; kwargs...)
-
-Construct the solution object returned by a SciML solver for `prob` solved with
-`alg`.
-
-Solver packages extend `build_solution` for the problem and algorithm families
-they own so that direct solver implementations can share the same solution
-construction path. Methods should attach the original problem, algorithm,
-[`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes), residual or error information, solver statistics, dense
-interpolation data, and saved values expected by the corresponding
-[`AbstractSciMLSolution`](@ref) interface.
-
-The accepted positional arguments are problem-family specific. Implementations
-should document the argument order they expect and should preserve common SciML
-solution behavior such as array indexing, symbolic indexing, and retcode
-inspection.
-""" build_solution
 
 """
     wrap_sol(sol)
@@ -260,7 +249,7 @@ Return `sol` or wrap it in a higher-level SciML solution container.
 
 Solvers call `wrap_sol(sol)` after constructing a low-level solution. When
 `sol.prob` is an [`AbstractSciMLProblem`](@ref), the default implementation
-queries [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) and dispatches to
+queries [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) and dispatches to
 `wrap_sol(sol, problem_type_or_metadata)` when the result is not `nothing`.
 Problem-family packages extend the two-argument form when a generated solver
 solution should be returned as a more specific public solution type.

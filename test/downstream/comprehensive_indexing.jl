@@ -1,7 +1,8 @@
 using ModelingToolkit, JumpProcesses, LinearAlgebra, NonlinearSolve, Optimization,
-    OptimizationOptimJL, OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
+    OrdinaryDiffEq, RecursiveArrayTools, SciMLBase,
     SteadyStateDiffEq, StochasticDiffEq, DelayDiffEq, SymbolicIndexingInterface,
     DiffEqCallbacks, Test, Plots
+using OptimizationOptimJL: Optim
 import Symbolics
 import SymbolicUtils as SU
 import Makie
@@ -74,10 +75,10 @@ begin
     p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
 
     # Creates problems.
-    oprob = ODEProblem(osys, [u0_vals; p_vals], tspan)
-    sprob = SDEProblem(ssys, [u0_vals; p_vals], tspan)
+    oprob = ODEProblem{true, SciMLBase.FullSpecialize}(osys, [u0_vals; p_vals], tspan)
+    sprob = SDEProblem{true, SciMLBase.FullSpecialize}(ssys, [u0_vals; p_vals], tspan)
     jprob = JumpProblem(jsys, [u0_vals; p_vals], tspan; aggregator = Direct(), rng)
-    nprob = NonlinearProblem(nsys, [u0_vals; p_vals])
+    nprob = NonlinearProblem{true, SciMLBase.FullSpecialize}(nsys, [u0_vals; p_vals])
     hcprob = NonlinearProblem(HomotopyNonlinearFunction(nprob.f), nprob.u0, nprob.p)
     ssprob = SteadyStateProblem(osys, [u0_vals; p_vals])
     optprob = OptimizationProblem(optsys, [u0_vals; p_vals], grad = true, hess = true)
@@ -99,7 +100,6 @@ begin
     sint = init(sprob, ImplicitEM(); save_everystep = false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep = false)
-    ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false)
     integrators = [oint, sint, jint, nint]
     integsystems = [osys, ssys, jsys, nsys]
 
@@ -109,7 +109,7 @@ begin
     jsol = solve(jprob, SSAStepper(); seed)
     nsol = solve(nprob, NewtonRaphson())
     sssol = solve(ssprob, DynamicSS(Tsit5()))
-    optsol = solve(optprob, GradientDescent())
+    optsol = solve(optprob, Optim.GradientDescent())
     sols = [osol, ssol, jsol, nsol, sssol, optsol]
 end
 
@@ -422,7 +422,7 @@ end
     ]
     @named sys = System(eqs, t, [sts...;], ps)
     sys = complete(sys)
-    prob = ODEProblem(sys, [], (0, 1.0))
+    prob = ODEProblem{true, SciMLBase.FullSpecialize}(sys, [], (0, 1.0))
     sol = solve(prob, Tsit5())
     # interpolation of array variables
     @test sol(1.0, idxs = x) == [sol(1.0, idxs = x[i]) for i in 1:3]
@@ -745,7 +745,7 @@ end
     function f!(du, u, p, t)
         du .= u .* t .+ p[5] * sum(u)
     end
-    fn = ODEFunction(f!; sys = sys)
+    fn = ODEFunction(f!; sys)
     prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
     cb1 = PeriodicCallback(
         0.1; initial_affect = true, final_affect = true,
@@ -1094,7 +1094,7 @@ end
     end
 
     @testset "`initialize_save_discretes`" begin
-        fn = ODEFunction(f!; sys = sys)
+        fn = ODEFunction(f!; sys)
         prob = ODEProblem(fn, [1.0], (0.0, 1.0), [1.0, 2.0, 3.0, 4.0, 5.0])
         cb1 = PeriodicCallback(
             0.1; initial_affect = true, final_affect = true,
@@ -1165,7 +1165,7 @@ end
             D(y) ~ -k * x(t - τ) + jcn,
             delx ~ x(t - τ),
         ]
-        return System(eqs, t; name = name)
+        return System(eqs, t; name)
     end
     systems = @named begin
         osc1 = oscillator(k = 1.0, τ = 0.01)
@@ -1200,7 +1200,7 @@ end
 #             D(y) ~ -k * x(t - τ) + jcn,
 #             delx ~ x(t - τ),
 #         ]
-#         return System(eqs, t; name = name)
+#         return System(eqs, t; name)
 #     end
 #     systems = @named begin
 #         osc1 = oscillator(k = 1.0, τ = 0.01)

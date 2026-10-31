@@ -27,6 +27,7 @@ pages = [
         "interfaces/Differentiation.md",
         "interfaces/PDE.md",
         "interfaces/Internal_API.md",
+        "interfaces/Reexported_API.md",
     ],
     "Fundamentals" => Any["fundamentals/FAQ.md"],
 ]

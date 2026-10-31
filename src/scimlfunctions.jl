@@ -19,12 +19,13 @@ with [`specialization`](@ref) instead of relying on a particular parameter
 position. Problem construction and `remake` should preserve an explicitly chosen
 marker unless the caller requests a different function representation.
 
-The built-in markers are [`AutoSpecialize`](@ref), [`NoSpecialize`](@ref),
-[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior
-is implemented jointly by SciMLBase constructors and downstream solver packages:
-a marker alone does not automatically erase types or install callable wrappers.
-New `AbstractSpecialization` subtypes therefore require explicit support in every
-function constructor and solver path that is expected to honor them.
+The built-in markers are [`AutoSpecialize`](@ref), [`AutoDespecialize`](@ref),
+[`AutoRespecialize`](@ref), [`NoSpecialize`](@ref),
+[`FunctionWrapperSpecialize`](@ref), and [`FullSpecialize`](@ref). Their behavior is
+implemented jointly by SciMLBase constructors and downstream solver packages: a marker
+alone does not automatically erase types or install callable wrappers. New
+`AbstractSpecialization` subtypes therefore require explicit support in every function
+constructor and solver path that is expected to honor them.
 
 Solver and transformation code must not assume that a type-restricted wrapped
 callable accepts new state, time, parameter, or AD types. Use
@@ -87,6 +88,41 @@ ODEProblem{true, SciMLBase.AutoSpecialize}(f, [1.0], (0.0, 1.0))
 ```
 """
 struct AutoSpecialize <: AbstractSpecialization end
+
+"""
+$(TYPEDEF)
+
+`AutoDespecialize` asks supported solver paths to store `p` in a
+[`DespecializedParameters`](@ref) container. [`AutoSpecialize`](@ref) retains its existing
+function-specialization behavior and does not select this parameter container. The
+container has a stable outer type and stores the original parameter object in an `Any`
+field, so solver compilation can be reused across parameter-container types. Built-in
+SciML function containers cross a dynamic function barrier before calling model code,
+where the original concrete parameter object is recovered.
+
+This policy accepts arbitrary parameter objects and does not impose the opaque-container
+constraints of [`AutoRespecialize`](@ref). The tradeoff is dynamic dispatch at the model
+function barrier. Transformations such as parameter AD may call
+[`unwrap_parameters`](@ref) and reconstruct a concretely parameterized problem when
+needed. Symbolic and modeling packages must forward their parameter interfaces through
+`DespecializedParameters` for indexed access to remain available.
+
+Support is solver-specific. A solver without an `AutoDespecialize` path may fall back to
+ordinary specialization without wrapping `p`.
+
+## Example
+
+```julia
+struct MyParameters
+    rate::Float64
+end
+f(du, u, p, t) = (du .= -p.rate .* u)
+ODEProblem{true, SciMLBase.AutoDespecialize}(
+    f, [1.0], (0.0, 1.0), MyParameters(2.0)
+)
+```
+"""
+struct AutoDespecialize <: AbstractSpecialization end
 
 """
 $(TYPEDEF)
@@ -172,7 +208,7 @@ struct FullSpecialize <: AbstractSpecialization end
 """
 $(TYPEDEF)
 
-`AutoDePSpecialize` extends
+`AutoRespecialize` extends
 [`AutoSpecialize`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 by additionally
 *de-specializing the parameter object*. Solver paths with a supported
@@ -186,7 +222,7 @@ across all `isbits` parameter types. Inside the user's `f`, `p` is recovered
 at its original concrete type via a type-stable, allocation-free unpack, so
 the model function itself remains fully specialized.
 
-`AutoDePSpecialize` is the recommended choice for latency-sensitive workflows
+`AutoRespecialize` is the recommended choice for latency-sensitive workflows
 that construct many problems with differently-typed parameter structs
 (parameter studies over configuration structs, package test suites,
 teaching setups).
@@ -205,18 +241,26 @@ struct MyParams
     k::Float64
 end
 f(du, u, p, t) = (du .= p.k .* u)
-ODEProblem{true, SciMLBase.AutoDePSpecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
+ODEProblem{true, SciMLBase.AutoRespecialize}(f, [1.0], (0.0, 1.0), MyParams(2.0))
 ```
 """
-struct AutoDePSpecialize <: AbstractSpecialization end
+struct AutoRespecialize <: AbstractSpecialization end
+
+"""
+    AutoDePSpecialize
+
+Deprecated name for [`AutoRespecialize`](@ref). New code should use
+`AutoRespecialize`.
+"""
+const AutoDePSpecialize = AutoRespecialize
 
 specstring = Preferences.@load_preference("SpecializationLevel", "AutoSpecialize")
 if specstring ∉
         (
         "NoSpecialize", "FullSpecialize", "AutoSpecialize", "FunctionWrapperSpecialize",
-        "AutoDePSpecialize",
+        "AutoDespecialize", "AutoRespecialize", "AutoDePSpecialize",
     )
-    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDePSpecialize).")
+    error("SpecializationLevel preference $specstring is not in the allowed set of choices (NoSpecialize, FullSpecialize, AutoSpecialize, FunctionWrapperSpecialize, AutoDespecialize, AutoRespecialize, AutoDePSpecialize).")
 end
 
 const DEFAULT_SPECIALIZATION = getproperty(SciMLBase, Symbol(specstring))
@@ -320,24 +364,35 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-ODEFunction{iip,specialize}(f;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+ODEFunction{iip, specialize}(
+    f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    vjp_p = __has_vjp_p(f) ? f.vjp_p : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
+
+ODEFunction{iip,specialize}(f::ODEFunction; kwargs...)
 ```
 
 Note that only the function `f` itself is required. This function should
 be given as `f!(du,u,p,t)` or `du = f(u,p,t)`. See the section on `iip`
 for more details on in-place vs out-of-place handling.
+
+The fully parameterized constructor can also change the specialization of an existing
+`ODEFunction`. It preserves the stored callable and fields, with keyword arguments taking
+priority. Converting to `AutoSpecialize`, `AutoDespecialize`, or `AutoRespecialize` widens
+the bounded initialization and nonlinear-step metadata types so model-specific metadata
+does not defeat compilation reuse. Construction from a raw callable retains concrete
+metadata types.
 
 All of the remaining functions are optional for improving or accelerating
 the usage of `f`. These include:
@@ -415,10 +470,10 @@ The following example creates an inplace `ODEFunction` whose Jacobian is a `Diag
 
 ```julia
 using LinearAlgebra
-f = (du,u,p,t) -> du .= t .* u
-jac = (J,u,p,t) -> (J[1,1] = t; J[2,2] = t; J)
+f = (du, u, p, t) -> du .= t .* u
+jac = (J, u, p, t) -> (J[1, 1] = t; J[2, 2] = t; J)
 jp = Diagonal(zeros(2))
-fun = ODEFunction(f; jac=jac, jac_prototype=jp)
+fun = ODEFunction(f; jac, jac_prototype = jp)
 ```
 
 The prototype declares Jacobian shape, element type, and structure. It must support
@@ -443,9 +498,10 @@ the function `f(du,u,p,t)` with an in-place updating function for the Jacobian:
 take the Lotka-Volterra model:
 
 ```julia
-function f(du,u,p,t)
-  du[1] = 2.0 * u[1] - 1.2 * u[1]*u[2]
-  du[2] = -3 * u[2] + u[1]*u[2]
+function f(du, u, p, t)
+    du[1] = 2.0 * u[1] - 1.2 * u[1] * u[2]
+    du[2] = -3 * u[2] + u[1] * u[2]
+    return
 end
 ```
 
@@ -453,24 +509,24 @@ To declare the Jacobian, we simply add the dispatch:
 
 ```julia
 function f_jac(J,u,p,t)
-  J[1,1] = 2.0 - 1.2 * u[2]
-  J[1,2] = -1.2 * u[1]
-  J[2,1] = 1 * u[2]
-  J[2,2] = -3 + u[1]
-  nothing
+    J[1,1] = 2.0 - 1.2 * u[2]
+    J[1,2] = -1.2 * u[1]
+    J[2,1] = 1 * u[2]
+    J[2,2] = -3 + u[1]
+    return
 end
 ```
 
 Then we can supply the Jacobian with our ODE as:
 
 ```julia
-ff = ODEFunction(f;jac=f_jac)
+ff = ODEFunction(f; jac = f_jac)
 ```
 
 and use this in an `ODEProblem`:
 
 ```julia
-prob = ODEProblem(ff,ones(2),(0.0,10.0))
+prob = ODEProblem(ff, ones(2), (0.0, 10.0))
 ```
 
 ## Symbolically Generating the Functions
@@ -530,19 +586,21 @@ and exponential integrators.
 ## Constructor
 
 ```julia
-SplitFunction{iip,specialize}(f1,f2;
-                             mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
-                             analytic = __has_analytic(f1) ? f1.analytic : nothing,
-                             tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
-                             jac = __has_jac(f1) ? f1.jac : nothing,
-                             jvp = __has_jvp(f1) ? f1.jvp : nothing,
-                             vjp = __has_vjp(f1) ? f1.vjp : nothing,
-                             jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
-                             W_prototype = __has_W_prototype(f1) ? f1.W_prototype : nothing,
-                             sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
-                             paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
-                             colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
-                             sys = __has_sys(f1) ? f1.sys : nothing)
+SplitFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f1) ? f1.mass_matrix : I,
+    analytic = __has_analytic(f1) ? f1.analytic : nothing,
+    tgrad= __has_tgrad(f1) ? f1.tgrad : nothing,
+    jac = __has_jac(f1) ? f1.jac : nothing,
+    jvp = __has_jvp(f1) ? f1.jvp : nothing,
+    vjp = __has_vjp(f1) ? f1.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f1) ? f1.jac_prototype : nothing,
+    W_prototype = __has_W_prototype(f1) ? f1.W_prototype : nothing,
+    sparsity = __has_sparsity(f1) ? f1.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f1) ? f1.paramjac : nothing,
+    colorvec = __has_colorvec(f1) ? f1.colorvec : nothing,
+    sys = __has_sys(f1) ? f1.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -658,18 +716,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalODEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+DynamicalODEFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -772,18 +832,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DDEFunction{iip,specialize}(f;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                 tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                 jac = __has_jac(f) ? f.jac : nothing,
-                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                 sys = __has_sys(f) ? f.sys : nothing)
+DDEFunction{iip, specialize}(
+    f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -878,18 +940,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalDDEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+DynamicalDDEFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -994,8 +1058,10 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing)
+DiscreteFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1049,9 +1115,11 @@ dt: the time step
 ## Constructor
 
 ```julia
-ImplicitDiscreteFunction{iip,specialize}(f;
-                                analytic = __has_analytic(f) ? f.analytic : nothing,
-                                resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing)
+ImplicitDiscreteFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1117,19 +1185,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-SDEFunction{iip,specialize}(f,g;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           ggprime = nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+SDEFunction{iip, specialize}(
+    f, g;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    ggprime = nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that both the function `f` and `g` are required. This function should
@@ -1224,19 +1294,21 @@ and exponential integrators.
 ## Constructor
 
 ```julia
-SplitSDEFunction{iip,specialize}(f1,f2,g;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                 tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                 jac = __has_jac(f) ? f.jac : nothing,
-                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                 ggprime = nothing,
-                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                 sys = __has_sys(f) ? f.sys : nothing)
+SplitSDEFunction{iip, specialize}(
+    f1, f2, g;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    ggprime = nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. All of the remaining functions
@@ -1337,19 +1409,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalSDEFunction{iip,specialize}(f1,f2;
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    ggprime=nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing)
+DynamicalSDEFunction{iip, specialize}(
+    f1, f2;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    ggprime = nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -1456,19 +1530,21 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-RODEFunction{iip,specialize}(f;
-                           mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing,
-                           analytic_full = __has_analytic_full(f) ? f.analytic_full : false)
+RODEFunction{iip, specialize}(
+    f;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing,
+    analytic_full = __has_analytic_full(f) ? f.analytic_full : false
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1576,18 +1652,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DAEFunction{iip,specialize}(f;
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jac_u = __has_jac_u(f) ? f.jac_u : nothing,
-                           jac_du = __has_jac_du(f) ? f.jac_du : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing,
-                           nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing)
+DAEFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jac_u = __has_jac_u(f) ? f.jac_u : nothing,
+    jac_du = __has_jac_du(f) ? f.jac_du : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing,
+    nlstep_data = __has_nlstep_data(f) ? f.nlstep_data : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1657,27 +1735,28 @@ The Jacobian should be given in the form `gamma*dG/d(du) + dG/du ` where `gamma`
 is given by the solver. This means that the signature is:
 
 ```julia
-f(J,du,u,p,gamma,t)
+f(J, du, u, p, gamma, t)
 ```
 
 For example, for the equation
 
 ```julia
-function testjac(res,du,u,p,t)
-  res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1]*u[2]
-  res[2] = du[2] -3 * u[2] - u[1]*u[2]
+function testjac(res, du, u, p, t)
+    res[1] = du[1] - 2.0 * u[1] + 1.2 * u[1] * u[2]
+    res[2] = du[2] - 3 * u[2] - u[1] * u[2]
+    return
 end
 ```
 
 we would define the Jacobian as:
 
 ```julia
-function testjac(J,du,u,p,gamma,t)
-  J[1,1] = gamma - 2.0 + 1.2 * u[2]
-  J[1,2] = 1.2 * u[1]
-  J[2,1] = - 1 * u[2]
-  J[2,2] = gamma - 3 - u[1]
-  nothing
+function testjac(J, du, u, p, gamma, t)
+    J[1, 1] = gamma - 2.0 + 1.2 * u[2]
+    J[1, 2] = 1.2 * u[1]
+    J[2, 1] = - 1 * u[2]
+    J[2, 2] = gamma - 3 - u[1]
+    return
 end
 ```
 
@@ -1743,18 +1822,20 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-SDDEFunction{iip,specialize}(f,g;
-                 mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                 analytic = __has_analytic(f) ? f.analytic : nothing,
-                 tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                 jac = __has_jac(f) ? f.jac : nothing,
-                 jvp = __has_jvp(f) ? f.jvp : nothing,
-                 vjp = __has_vjp(f) ? f.vjp : nothing,
-                 jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                 sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                 paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                 colorvec = __has_colorvec(f) ? f.colorvec : nothing
-                 sys = __has_sys(f) ? f.sys : nothing)
+SDDEFunction{iip, specialize}(
+    f, g;
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1857,16 +1938,18 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-NonlinearFunction{iip, specialize}(f;
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           jac = __has_jac(f) ? f.jac : nothing,
-                           jvp = __has_jvp(f) ? f.jvp : nothing,
-                           vjp = __has_vjp(f) ? f.vjp : nothing,
-                           jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                           sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                           paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                           colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+NonlinearFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -1886,6 +1969,9 @@ the usage of `f`. These include:
   as the prototype and integrators will specialize on this structure where possible. Non-structured
   sparsity patterns should use a `SparseMatrixCSC` with a correct sparsity pattern for the Jacobian.
   The default is `nothing`, which means a dense Jacobian.
+  It may also be an `AbstractSciMLOperator`, in which case `jac(u,p)` may return an operator that
+  NonlinearSolve.jl passes to the linear solver as is: `mul!` for Krylov methods, and
+  `convert(AbstractMatrix, op)` for factorizations (so it must be convertible for those).
 - `paramjac(pJ,u,p)`: returns the parameter Jacobian ``\\frac{df}{dp}``.
 - `colorvec`: a color vector according to the SparseDiffTools.jl definition for the sparsity
   pattern of the `jac_prototype`. This specializes the Jacobian construction when using
@@ -1999,8 +2085,8 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
 
     ```julia
     function polynomialize(u, p)
-      x, y = u
-      return [sin(x^2), log(x + y)]
+        x, y = u
+        return [sin(x^2), log(x + y)]
     end
     ```
 
@@ -2022,11 +2108,11 @@ struct HomotopyNonlinearFunction{iip, specialize, F, P, Q, D} <:
 
     ```julia
     function unpolynomialize(u, p)
-      a, b = u
-      return [
-        [sqrt(asin(a)), exp(b) - sqrt(asin(a))],
-        [-sqrt(asin(a)), exp(b) + sqrt(asin(a))],
-      ]
+        a, b = u
+        return [
+            [sqrt(asin(a)), exp(b) - sqrt(asin(a))],
+            [-sqrt(asin(a)), exp(b) + sqrt(asin(a))],
+        ]
     end
     ```
 
@@ -2071,9 +2157,12 @@ interval variable.
 ## Constructor
 
 ```julia
-IntervalNonlinearFunction{iip, specialize}(f;
-                           analytic = __has_analytic(f) ? f.analytic : nothing,
-                           sys = __has_sys(f) ? f.sys : nothing)
+IntervalNonlinearFunction{iip, specialize}(
+    f;
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 Note that only the function `f` itself is required. This function should
@@ -2085,6 +2174,8 @@ the usage of `f`. These include:
 
 - `analytic(p)`: used to pass an analytical solution function for the analytical
   solution of the ODE. Generally only used for testing and development of the solvers.
+- `jac(J,t,p)` or `J=jac(t,p)`: returns ``\\frac{df}{dt}``, for the solvers that use
+  the derivative of `f`.
 
 ## iip: In-Place vs Out-Of-Place
 
@@ -2099,11 +2190,12 @@ For more details on this argument, see the ODEFunction documentation.
 The fields of the IntervalNonlinearFunction type directly match the names of the inputs.
 """
 struct IntervalNonlinearFunction{
-        iip, specialize, F, Ta,
+        iip, specialize, F, Ta, TJ,
         O, SYS, ID,
     } <: AbstractIntervalNonlinearFunction{iip}
     f::F
     analytic::Ta
+    jac::TJ
     observed::O
     sys::SYS
     initialization_data::ID
@@ -2119,12 +2211,14 @@ A representation of an objective function `f`, defined by:
 ```
 
 and all of its related functions, such as the gradient of `f`, its Hessian,
-and more. For all cases, `u` is the state which in this case are the optimization variables and `p` are the fixed parameters or data.
+and more. For all cases, `u` is the state which in this case are the
+optimization variables and `p` are the fixed parameters or data.
 
 ## Constructor
 
 ```julia
-OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
+OptimizationFunction{iip, specialize}(
+    f, adtype::AbstractADType = NoAD();
     grad = nothing, hess = nothing, hv = nothing,
     cons = nothing, cons_j = nothing, cons_jvp = nothing,
     cons_vjp = nothing, cons_h = nothing,
@@ -2137,14 +2231,18 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
     cons_jac_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     cons_hess_colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     lag_hess_colorvec = nothing,
-    sys = __has_sys(f) ? f.sys : nothing)
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 ## Positional Arguments
 
-  - `f(u,p)`: the function to optimize. `u` are the optimization variables and `p` are fixed parameters or data used in the objective,
-    even if no such parameters are used in the objective it should be an argument in the function. For minibatching `p` can be used to pass in
-    a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/) to see how to do it.
+  - `f(u,p)`: the function to optimize. `u` are the optimization variables and
+    `p` are fixed parameters or data used in the objective,
+    even if no such parameters are used in the objective it should be an
+    argument in the function. For minibatching `p` can be used to pass in
+    a minibatch, take a look at the tutorial [here](https://docs.sciml.ai/Optimization/stable/tutorials/minibatch/)
+    to see how to do it.
     This should return a scalar, the loss value, as the return output.
   - `adtype`: see the Defining Optimization Functions via AD section below.
 
@@ -2190,7 +2288,8 @@ OptimizationFunction{iip}(f, adtype::AbstractADType = NoAD();
   - `cons_hess_colorvec`: an array of color vector according to the SparseDiffTools.jl definition for
     the sparsity pattern of the `cons_hess_prototype`.
 
-When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Optimization/stable/tutorials/symbolic/) interface is used the following arguments are also relevant:
+When [Symbolic Problem Building with ModelingToolkit](https://docs.sciml.ai/Optimization/stable/tutorials/symbolic/)
+interface is used the following arguments are also relevant:
 
   - `observed`: an algebraic combination of optimization variables that is of interest to the user
     which will be available in the solution. This can be single or multiple expressions.
@@ -2221,7 +2320,19 @@ For more details on this argument, see the ODEFunction documentation.
 
 ## specialize: Controlling Compilation and Specialization
 
-For more details on this argument, see the ODEFunction documentation.
+```julia
+OptimizationFunction{iip, specialize}(f, adtype = NoAD(); kwargs...)
+```
+
+The default is [`FullSpecialize`](@ref): the solvers compile for the concrete types of
+the functions and of `p`. With [`AutoSpecialize`](@ref), supporting solver paths hide
+the types of the functions behind wrappers when the problem is solved, so the solver
+code compiles once for all objectives. [`AutoDespecialize`](@ref) additionally stores
+`p` in a [`DespecializedParameters`](@ref) container. The functions themselves stay
+fully specialized behind the wrappers; each call pays one dynamic dispatch. Support is
+solver-specific, and paths without it (for example out-of-place functions) fall back to
+`FullSpecialize`. [`specialization`](@ref) returns the marker; it is stored as the last
+type parameter, after the field types.
 
 ## Fields
 
@@ -2229,7 +2340,7 @@ The fields of the OptimizationFunction type directly match the names of the inpu
 """
 struct OptimizationFunction{
         iip, AD, F, G, FG, H, FGH, HV, C, CJ, CJV, CVJ, CH, HP, CJP, CHP, O,
-        EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV, ID,
+        EX, CEX, SYS, LH, LHP, HCV, CJCV, CHCV, LHCV, ID, S,
     } <:
     AbstractOptimizationFunction{iip}
     f::F
@@ -2344,7 +2455,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-ODEInputFunction{iip, specialize}(f;
+ODEInputFunction{iip, specialize}(
+    f;
     mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
     analytic = __has_analytic(f) ? f.analytic : nothing,
     tgrad= __has_tgrad(f) ? f.tgrad : nothing,
@@ -2357,7 +2469,8 @@ ODEInputFunction{iip, specialize}(f;
     sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
     paramjac = __has_paramjac(f) ? f.paramjac : nothing,
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-    sys = __has_sys(f) ? f.sys : nothing)
+    sys = __has_sys(f) ? f.sys : nothing
+)
 ```
 
 `f` should be given as `f(x_out,x,u,p,t)` or `out = f(x,u,p,t)`.
@@ -2460,7 +2573,7 @@ If the size of `g(u, p, t)` is different from the size of `u`, then the constrai
 interpreted as a least squares problem, i.e. the objective function is:
 
 ```math
-\\min_u \\| g_i(u, p, t) \\|^2
+\\min_u ‖ g_i(u, p, t) ‖^2
 ```
 
 and all of its related functions, such as the Jacobian of `f`, its gradient
@@ -2468,7 +2581,8 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 `p` are the parameters, and `t` is the independent variable.
 
 ```julia
-BVPFunction{iip, specialize}(f, bc;
+BVPFunction{iip, specialize}(
+    f, bc;
     cost = __has_cost(f) ? f.cost : nothing,
     equality = __has_equality(f) ? f.equality : nothing,
     inequality = __has_inequality(f) ? f.inequality : nothing,
@@ -2487,7 +2601,8 @@ BVPFunction{iip, specialize}(f, bc;
     colorvec = __has_colorvec(f) ? f.colorvec : nothing,
     bccolorvec = __has_colorvec(f) ? bc.colorvec : nothing,
     sys = __has_sys(f) ? f.sys : nothing,
-    twopoint::Union{Val, Bool} = Val(false))
+    twopoint::Union{Val, Bool} = Val(false)
+)
 ```
 
 Note that both the function `f` and boundary condition `bc` are required. `f` should
@@ -2596,7 +2711,7 @@ $(TYPEDEF)
 A representation of a dynamical BVP function `f`, defined by:
 
 ```math
-M u'' = f(u',u,p,t)
+M u'' = f(u', u, p, t)
 ```
 
 along with its boundary condition:
@@ -2612,22 +2727,24 @@ with respect to time, and more. For all cases, `u0` is the initial condition,
 ## Constructor
 
 ```julia
-DynamicalBVPFunction{iip,specialize}(f, bc;
-                                    cost = __has_cost(f) ? f.cost : nothing,
-                                    equality = __has_equality(f) ? f.equality : nothing,
-                                    inequality = __has_inequality(f) ? f.inequality : nothing,
-                                    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
-                                    analytic = __has_analytic(f) ? f.analytic : nothing,
-                                    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
-                                    jac = __has_jac(f) ? f.jac : nothing,
-                                    jvp = __has_jvp(f) ? f.jvp : nothing,
-                                    vjp = __has_vjp(f) ? f.vjp : nothing,
-                                    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
-                                    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
-                                    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
-                                    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
-                                    sys = __has_sys(f) ? f.sys : nothing
-                                    twopoint::Union{Val, Bool} = Val(false))
+DynamicalBVPFunction{iip, specialize}(
+    f, bc;
+    cost = __has_cost(f) ? f.cost : nothing,
+    equality = __has_equality(f) ? f.equality : nothing,
+    inequality = __has_inequality(f) ? f.inequality : nothing,
+    mass_matrix = __has_mass_matrix(f) ? f.mass_matrix : I,
+    analytic = __has_analytic(f) ? f.analytic : nothing,
+    tgrad= __has_tgrad(f) ? f.tgrad : nothing,
+    jac = __has_jac(f) ? f.jac : nothing,
+    jvp = __has_jvp(f) ? f.jvp : nothing,
+    vjp = __has_vjp(f) ? f.vjp : nothing,
+    jac_prototype = __has_jac_prototype(f) ? f.jac_prototype : nothing,
+    sparsity = __has_sparsity(f) ? f.sparsity : jac_prototype,
+    paramjac = __has_paramjac(f) ? f.paramjac : nothing,
+    colorvec = __has_colorvec(f) ? f.colorvec : nothing,
+    sys = __has_sys(f) ? f.sys : nothing
+    twopoint::Union{Val, Bool} = Val(false)
+)
 ```
 
 Note that only the functions `f_i` themselves are required. These functions should
@@ -2715,8 +2832,8 @@ struct DynamicalBVPFunction{
     initialization_data::ID
 end
 
-@doc doc"""
-    IntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+"""
+    IntegralFunction{iip, specialize, F, T} <: AbstractIntegralFunction{iip}
 
 A representation of an integrand `f` defined by:
 
@@ -2728,7 +2845,7 @@ For an in-place form of `f` see the `iip` section below for details on in-place 
 out-of-place handling.
 
 ```julia
-IntegralFunction{iip,specialize}(f, [integrand_prototype])
+IntegralFunction{iip, specialize}(f, [integrand_prototype])
 ```
 
 Note that only `f` is required, and in the case of inplace integrands a mutable array
@@ -2761,8 +2878,8 @@ struct IntegralFunction{iip, specialize, F, T} <:
     integrand_prototype::T
 end
 
-@doc doc"""
-    BatchIntegralFunction{iip,specialize,F,T} <: AbstractIntegralFunction{iip}
+"""
+    BatchIntegralFunction{iip, specialize, F, T} <: AbstractIntegralFunction{iip}
 
 A batched representation of an (non-batched) integrand `f(u, p)` that can be
 evaluated at multiple points simultaneously using threads, the gpu, or
@@ -2787,8 +2904,9 @@ For an in-place form of `bf` see the `iip` section below for details on in-place
 or out-of-place handling.
 
 ```julia
-BatchIntegralFunction{iip,specialize}(bf, [integrand_prototype];
-                                     max_batch=typemax(Int))
+BatchIntegralFunction{iip, specialize}(
+    bf, [integrand_prototype]; max_batch = typemax(Int)
+)
 ```
 Note that only `bf` is required, and in the case of inplace integrands a mutable
 array `integrand_prototype` to store a batch of integrand evaluations, with
@@ -2841,7 +2959,21 @@ end
 
 ######### Backwards Compatibility Overloads
 
-(f::ODEFunction)(args...) = f.f(args...)
+(f::ODEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+
+function (f::ODEFunction)(du, u, p::DespecializedParameters, t)
+    if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        return f.f(du, u, p, t)
+    end
+    return invoke_with_despecialized_parameters(f, (du, u, p, t), p, Val(3))
+end
+
+function (f::ODEFunction)(u, p::DespecializedParameters, t)
+    if f.f isa FunctionWrappersWrappers.FunctionWrappersWrapper
+        return f.f(u, p, t)
+    end
+    return invoke_with_despecialized_parameters(f, (u, p, t), p, Val(2))
+end
 
 @static if isdefined(SciMLOperators, :isv1)
     function (f::ODEFunction)(du, u, p, t)
@@ -2862,20 +2994,54 @@ end
 end
 
 (f::NonlinearFunction)(args...) = f.f(args...)
-(f::HomotopyNonlinearFunction)(args...) = f.f(args...)
-(f::IntervalNonlinearFunction)(args...) = f.f(args...)
-(f::IntegralFunction)(args...) = f.f(args...)
-(f::BatchIntegralFunction)(args...) = f.f(args...)
+
+Base.@inline function _invoke_nonlinear_function(f, args)
+    return invoke_with_despecialized_parameters(f.f, args)
+end
+
+(f::NonlinearFunction{false})(u, p::DespecializedParameters) =
+    _invoke_nonlinear_function(f, (u, p))
+
+(f::NonlinearFunction{true})(du, u, p::DespecializedParameters) =
+    _invoke_nonlinear_function(f, (du, u, p))
+
+(f::NonlinearFunction{false})(u, p::DespecializedParameters, λ) =
+    _invoke_nonlinear_function(f, (u, p, λ))
+
+(f::NonlinearFunction{true})(du, u, p::DespecializedParameters, λ) =
+    _invoke_nonlinear_function(f, (du, u, p, λ))
+(f::HomotopyNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::IntervalNonlinearFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::IntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::BatchIntegralFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::DynamicalODEFunction)(u, p, t)
-    return ArrayPartition(f.f1(u.x[1], u.x[2], p, t), f.f2(u.x[1], u.x[2], p, t))
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], p, t))
+    return ArrayPartition(f1, f2)
 end
 function (f::DynamicalODEFunction)(du, u, p, t)
-    f.f1(du.x[1], u.x[1], u.x[2], p, t)
-    return f.f2(du.x[2], u.x[1], u.x[2], p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], p, t)
+    )
 end
 
-(f::SplitFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
+function (f::DynamicalSDEFunction)(u, p, t)
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], p, t))
+    return ArrayPartition(f1, f2)
+end
+function (f::DynamicalSDEFunction)(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], p, t)
+    )
+end
+
+(f::SplitFunction)(u, p, t) =
+    invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
+    invoke_with_despecialized_parameters(f.f2, (u, p, t))
 function (f::SplitFunction)(du, u, p, t)
     if f._func_cache === nothing
         throw(
@@ -2890,23 +3056,27 @@ function (f::SplitFunction)(du, u, p, t)
         )
     end
     tmp = get_tmp(f._func_cache, du)
-    f.f1(tmp, u, p, t)
-    f.f2(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
 
-(f::DiscreteFunction)(args...) = f.f(args...)
-(f::ImplicitDiscreteFunction)(args...) = f.f(args...)
-(f::DAEFunction)(args...) = f.f(args...)
-(f::DDEFunction)(args...) = f.f(args...)
-(f::ODEInputFunction)(args...) = f.f(args...)
+(f::DiscreteFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::ImplicitDiscreteFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DAEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::ODEInputFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 function (f::DynamicalDDEFunction)(u, h, p, t)
-    return ArrayPartition(f.f1(u.x[1], u.x[2], h, p, t), f.f2(u.x[1], u.x[2], h, p, t))
+    f1 = invoke_with_despecialized_parameters(f.f1, (u.x[1], u.x[2], h, p, t))
+    f2 = invoke_with_despecialized_parameters(f.f2, (u.x[1], u.x[2], h, p, t))
+    return ArrayPartition(f1, f2)
 end
 function (f::DynamicalDDEFunction)(du, u, h, p, t)
-    f.f1(du.x[1], u.x[1], u.x[2], h, p, t)
-    return f.f2(du.x[2], u.x[1], u.x[2], h, p, t)
+    invoke_with_despecialized_parameters(f.f1, (du.x[1], u.x[1], u.x[2], h, p, t))
+    return invoke_with_despecialized_parameters(
+        f.f2, (du.x[2], u.x[1], u.x[2], h, p, t)
+    )
 end
 function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
     if name === :f
@@ -2916,40 +3086,42 @@ function Base.getproperty(f::DynamicalDDEFunction, name::Symbol)
     return getfield(f, name)
 end
 
-(f::SDEFunction)(args...) = f.f(args...)
+(f::SDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 @static if isdefined(SciMLOperators, :isv1)
     function (f::SDEFunction)(du, u, p, t)
         if f.f isa AbstractSciMLOperator
-            f.f(du, u, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (du, u, u, p, t))
         else
-            f.f(du, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (du, u, p, t))
         end
     end
 
     function (f::SDEFunction)(u, p, t)
         if f.f isa AbstractSciMLOperator
-            f.f(u, u, p, t)
+            invoke_with_despecialized_parameters(f.f, (u, u, p, t))
         else
-            f.f(u, p, t)
+            invoke_with_despecialized_parameters(f.f, (u, p, t))
         end
     end
 end
 
-(f::SDDEFunction)(args...) = f.f(args...)
-(f::SplitSDEFunction)(u, p, t) = f.f1(u, p, t) + f.f2(u, p, t)
+(f::SDDEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::SplitSDEFunction)(u, p, t) =
+    invoke_with_despecialized_parameters(f.f1, (u, p, t)) +
+    invoke_with_despecialized_parameters(f.f2, (u, p, t))
 
 function (f::SplitSDEFunction)(du, u, p, t)
     tmp = get_tmp(f._func_cache, du)
-    f.f1(tmp, u, p, t)
-    f.f2(du, u, p, t)
+    invoke_with_despecialized_parameters(f.f1, (tmp, u, p, t))
+    invoke_with_despecialized_parameters(f.f2, (du, u, p, t))
     return du .+= tmp
 end
 
-(f::RODEFunction)(args...) = f.f(args...)
+(f::RODEFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
-(f::BVPFunction)(args...) = f.f(args...)
-(f::DynamicalBVPFunction)(args...) = f.f(args...)
+(f::BVPFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
+(f::DynamicalBVPFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 
 ######### Basic Constructor
 
@@ -2988,12 +3160,14 @@ function ODEFunction{iip, specialize}(
         iip,
         specialize,
     }
-    if mass_matrix === I && f isa Tuple
-        mass_matrix = ((I for i in 1:length(f))...,)
+    callable = f isa ODEFunction ? f.f : f
+
+    if mass_matrix === I && callable isa Tuple
+        mass_matrix = ((I for i in 1:length(callable))...,)
     end
 
     if (specialize === FunctionWrapperSpecialize) &&
-            !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+            !(callable isa FunctionWrappersWrappers.FunctionWrappersWrapper)
         error("FunctionWrapperSpecialize must be used on the problem constructor for access to u0, p, and t types!")
     end
 
@@ -3031,7 +3205,7 @@ function ODEFunction{iip, specialize}(
         throw(NonconformingFunctionsError(functions))
     end
 
-    _f = prepare_function(f)
+    _f = f isa ODEFunction ? callable : prepare_function(callable)
 
 
     initdata = reconstruct_initialization_data(
@@ -3074,6 +3248,13 @@ function ODEFunction{iip, specialize}(
             observed, _colorvec, sys, initdata, nlstep_data
         )
     else
+        widen_metadata = f isa ODEFunction &&
+            (
+            specialize === AutoSpecialize || specialize === AutoDespecialize ||
+                specialize === AutoRespecialize
+        )
+        initdata_type = widen_metadata ? Union{Nothing, OverrideInitData} : typeof(initdata)
+        nlstep_data_type = widen_metadata ? Union{Nothing, ODENLStepData} : typeof(nlstep_data)
         ODEFunction{
             iip, specialize,
             typeof(_f), typeof(mass_matrix), typeof(analytic), typeof(tgrad),
@@ -3083,7 +3264,7 @@ function ODEFunction{iip, specialize}(
             typeof(vjp_p),
             typeof(observed),
             typeof(_colorvec),
-            typeof(sys), typeof(initdata), typeof(nlstep_data),
+            typeof(sys), initdata_type, nlstep_data_type,
         }(
             _f, mass_matrix, analytic, tgrad,
             jac, jvp, vjp, jac_prototype, sparsity, Wfact,
@@ -3185,18 +3366,18 @@ function ODEFunction{iip}(f::NonlinearFunction) where {iip}
 
     return ODEFunction{iip, specialization(f)}(
         _f;
-        mass_matrix = f.mass_matrix,
+        f.mass_matrix,
         analytic = _analytic,
         jac = _jac,
         jvp = _jvp,
         vjp = _vjp,
-        jac_prototype = f.jac_prototype,
-        sparsity = f.sparsity,
-        paramjac = f.paramjac,
-        sys = f.sys,
-        observed = f.observed,
-        colorvec = f.colorvec,
-        initialization_data = f.initialization_data
+        f.jac_prototype,
+        f.sparsity,
+        f.paramjac,
+        f.sys,
+        f.observed,
+        f.colorvec,
+        f.initialization_data
     )
 end
 
@@ -3242,13 +3423,13 @@ function NonlinearFunction{iip}(f::ODEFunction) where {iip}
         jac = _jac,
         jvp = _jvp,
         vjp = _vjp,
-        jac_prototype = f.jac_prototype,
-        sparsity = f.sparsity,
-        paramjac = f.paramjac,
-        sys = f.sys,
-        observed = f.observed,
-        colorvec = f.colorvec,
-        initialization_data = f.initialization_data
+        f.jac_prototype,
+        f.sparsity,
+        f.paramjac,
+        f.sys,
+        f.observed,
+        f.colorvec,
+        f.initialization_data
     )
 end
 
@@ -4650,7 +4831,7 @@ NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where {iip} = f
 function NonlinearFunction(f; lambda_extended = false, kwargs...)
     iip = isinplace(f, lambda_extended ? 4 : 3)
     return NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(
-        f; lambda_extended = lambda_extended, kwargs...
+        f; lambda_extended, kwargs...
     )
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
@@ -4693,6 +4874,7 @@ function IntervalNonlinearFunction{iip, specialize}(
         analytic = __has_analytic(f) ?
             f.analytic :
             nothing,
+        jac = __has_jac(f) ? f.jac : nothing,
         observed = __has_observed(f) ?
             f.observed :
             DEFAULT_OBSERVED_NO_TIME,
@@ -4703,24 +4885,26 @@ function IntervalNonlinearFunction{iip, specialize}(
         iip,
         specialize,
     }
-    _f = prepare_function(f)
+    jaciip = jac !== nothing ? isinplace(jac, 3, "jac", iip) : iip
+    jaciip == iip || throw(NonconformingFunctionsError(["jac"]))
 
+    _f = prepare_function(f)
 
     return if specialize === NoSpecialize
         IntervalNonlinearFunction{
             iip, specialize,
-            Any, Any, Any, Any, Any,
+            Any, Any, Any, Any, Any, Any,
         }(
-            _f, analytic, observed, sys, initialization_data
+            _f, analytic, jac, observed, sys, initialization_data
         )
     else
         IntervalNonlinearFunction{
             iip, specialize,
-            typeof(_f), typeof(analytic),
+            typeof(_f), typeof(analytic), typeof(jac),
             typeof(observed),
             typeof(sys), typeof(initialization_data),
         }(
-            _f, analytic,
+            _f, analytic, jac,
             observed, sys, initialization_data
         )
     end
@@ -4745,16 +4929,36 @@ chosen by the solver rather than generated via automatic differentiation.
 """
 struct NoAD <: AbstractADType end
 
-(f::OptimizationFunction)(args...) = f.f(args...)
+(f::OptimizationFunction)(args...) = invoke_with_despecialized_parameters(f.f, args)
 function OptimizationFunction(f, args...; kwargs...)
     isinplace(f, 2, outofplace_param_number = 2)
     return OptimizationFunction{true}(f, args...; kwargs...)
 end
 
-OptimizationFunction{iip, spec}(f; adtype::spec, kws...) where {iip, spec} = OptimizationFunction(f, adtype; kws...)
-
 function OptimizationFunction{iip}(
-        f, adtype::AbstractADType = NoAD();
+        f, adtype::AbstractADType = NoAD(); kwargs...
+    ) where {iip}
+    return OptimizationFunction{iip, FullSpecialize}(f, adtype; kwargs...)
+end
+
+# `remake` and `ConstructionBase` rebuild through `T{iip, specialization(f)}(f; props...)`,
+# which passes `adtype` as a keyword.
+function OptimizationFunction{iip, specialize}(
+        f; adtype::AbstractADType = NoAD(), kwargs...
+    ) where {iip, specialize <: AbstractSpecialization}
+    return OptimizationFunction{iip, specialize}(f, adtype; kwargs...)
+end
+
+# Before the specialization marker existed, the second type parameter was the AD type
+# and this spelling rebuilt a function from its properties.
+function OptimizationFunction{iip, AD}(
+        f; adtype::AD, kwargs...
+    ) where {iip, AD <: AbstractADType}
+    return OptimizationFunction{iip}(f, adtype; kwargs...)
+end
+
+function OptimizationFunction{iip, specialize}(
+        f, adtype::AbstractADType;
         grad = nothing, fg = nothing, hess = nothing, hv = nothing, fgh = nothing,
         cons = nothing, cons_j = nothing, cons_jvp = nothing,
         cons_vjp = nothing, cons_h = nothing,
@@ -4775,7 +4979,7 @@ function OptimizationFunction{iip}(
         lag_hess_colorvec = nothing,
         initialization_data = __has_initialization_data(f) ? f.initialization_data :
             nothing
-    ) where {iip}
+    ) where {iip, specialize <: AbstractSpecialization}
 
     return OptimizationFunction{
         iip, typeof(adtype), typeof(f), typeof(grad), typeof(fg), typeof(hess),
@@ -4788,7 +4992,7 @@ function OptimizationFunction{iip}(
         typeof(expr), typeof(cons_expr), typeof(sys), typeof(lag_h),
         typeof(lag_hess_prototype), typeof(hess_colorvec),
         typeof(cons_jac_colorvec), typeof(cons_hess_colorvec),
-        typeof(lag_hess_colorvec), typeof(initialization_data),
+        typeof(lag_hess_colorvec), typeof(initialization_data), specialize,
     }(
         f, adtype, grad, fg, hess, fgh,
         hv, cons, cons_j, cons_jvp,
@@ -4801,7 +5005,8 @@ function OptimizationFunction{iip}(
 end
 
 # Function call operator for MultiObjectiveOptimizationFunction
-(f::MultiObjectiveOptimizationFunction)(args...) = f.f(args...)
+(f::MultiObjectiveOptimizationFunction)(args...) =
+    invoke_with_despecialized_parameters(f.f, args)
 
 # Convenience constructor
 function MultiObjectiveOptimizationFunction(f, args...; kwargs...)
@@ -5858,7 +6063,8 @@ function IncrementingODEFunction(f)
     return IncrementingODEFunction{isinplace(f, 7), DEFAULT_SPECIALIZATION}(f)
 end
 
-(f::IncrementingODEFunction)(args...; kwargs...) = f.f(args...; kwargs...)
+(f::IncrementingODEFunction)(args...; kwargs...) =
+    invoke_with_despecialized_parameters(f.f, args; kwargs...)
 
 for S in [
         :ODEFunction
@@ -5877,12 +6083,47 @@ for S in [
         :BatchIntegralFunction
     ]
     @eval begin
-        function ConstructionBase.constructorof(::Type{<:$S{iip}}) where {
-                iip,
-            }
-            return (args...) -> $S{iip, DEFAULT_SPECIALIZATION, map(typeof, args)...}(args...)
+        # Keep the specialization of the type being rebuilt: `@set f.x = ...` on a
+        # `FullSpecialize` function must not come back `AutoSpecialize`. The default
+        # applies only when the type leaves it unbound. The field parameters are always
+        # narrowed to the new values' types, which callers such as DiffEqBase rely on
+        # after `widen_bounded_type_params`.
+        function ConstructionBase.constructorof(::Type{T}) where {iip, T <: $S{iip}}
+            P = Base.unwrap_unionall(T).parameters[2]
+            specialize = P isa TypeVar ? DEFAULT_SPECIALIZATION : P
+            return (args...) -> $S{iip, specialize, map(typeof, args)...}(args...)
         end
     end
+end
+
+# As above, with the specialization stored after the field types. The type parameters
+# list the AD type before the objective, the fields store them the other way around.
+function ConstructionBase.constructorof(::Type{T}) where {iip, T <: OptimizationFunction{iip}}
+    P = last(Base.unwrap_unionall(T).parameters)
+    specialize = P isa TypeVar ? FullSpecialize : P
+    return function (f, adtype, args...)
+        return OptimizationFunction{
+            iip, typeof(adtype), typeof(f), map(typeof, args)..., specialize,
+        }(f, adtype, args...)
+    end
+end
+
+# Default ConstructionBase.getproperties uses `getproperty.((obj,), names)`, which
+# compiles broadcast/`convert` MethodInstances on fully open types like
+# `ODEFunction` / `DynamicalODEFunction` (NTuple{19,Symbol} field-name tuples).
+# Those instances sit in SciMLBase's precompile cache, get invalidated when
+# Symbolics' BroadcastStyle methods are present (MTK load order), and then
+# `@recompile_invalidations` tries to rebuild them — hitting Julia's
+# "irinterp is unable to handle heavy recursion correctly" internal error
+# (https://discourse.julialang.org/t/139291). A generated getfield-only path
+# keeps remake / Accessors off that broadcast edge set.
+@generated function ConstructionBase.getproperties(func::T) where {
+        T <:
+        AbstractSciMLFunction,
+    }
+    names = fieldnames(T)
+    vals = Expr(:tuple, (:(getfield(func, $(QuoteNode(n)))) for n in names)...)
+    return :(NamedTuple{$names}($vals))
 end
 
 const EMPTY_SYMBOLCACHE = SymbolCache()

@@ -45,8 +45,8 @@ mx, my,
     vals = [[1.0, 2.0, 4.0], [2.0, 3.0, 5.0], [4.0, 7.0, 11.0]]
     sols = [
         SciMLBase.build_solution(
-                prob, :NoAlgorithm, ts, u; retcode = SciMLBase.ReturnCode.Success
-            )
+            prob, :NoAlgorithm, ts, u; retcode = SciMLBase.ReturnCode.Success
+        )
             for u in vals
     ]
     sim = EnsembleSolution(sols, 0.0, true)
@@ -84,8 +84,8 @@ end
     ]
     sols = [
         SciMLBase.build_solution(
-                prob, :NoAlgorithm, ts, u; retcode = SciMLBase.ReturnCode.Success
-            )
+            prob, :NoAlgorithm, ts, u; retcode = SciMLBase.ReturnCode.Success
+        )
             for u in vals
     ]
     sim = EnsembleSolution(sols, 0.0, true)

@@ -1,6 +1,7 @@
 using Test, Random, SciMLBase, Distributed
 using OrdinaryDiffEq, StochasticDiffEq, JumpProcesses, StableRNGs
-using NonlinearSolve, Optimization, OptimizationOptimJL, ForwardDiff
+using NonlinearSolve, Optimization, ForwardDiff
+using OptimizationOptimJL: Optim
 
 # ============================================================
 # Problem definitions for each solver pathway
@@ -548,14 +549,14 @@ end
 
         # Ensemble solve with seed succeeds (rng is NOT forwarded)
         sim1 = Optimization.solve(
-            opt_eprob, OptimizationOptimJL.BFGS(),
+            opt_eprob, Optim.BFGS(),
             EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
         @test length(sim1.u) == 4
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = Optimization.solve(
-            opt_eprob, OptimizationOptimJL.BFGS(),
+            opt_eprob, Optim.BFGS(),
             EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
         @test endpoints(sim1) == endpoints(sim2)

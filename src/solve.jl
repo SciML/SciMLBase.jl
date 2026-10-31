@@ -1,7 +1,7 @@
 const NONCONCRETE_ELTYPE_MESSAGE = """
 Non-concrete element type inside of an `Array` detected.
 Arrays with non-concrete element types, such as
-`Array{Union{Float32,Float64}}`, are not supported by the
+`Array{Union{Float32, Float64}}`, are not supported by the
 differential equation solvers. Anyways, this is bad for
 performance so you don't want to be doing this!
 
@@ -14,8 +14,8 @@ from RecursiveArrayTools.jl. For example:
 
 ```julia
 using RecursiveArrayTools
-x = ArrayPartition([1.0,2.0],[1f0,2f0])
-y = ArrayPartition([3.0,4.0],[3f0,4f0])
+x = ArrayPartition([1.0, 2.0], [1.0f0, 2.0f0])
+y = ArrayPartition([3.0, 4.0], [3.0f0, 4.0f0])
 x .+ y # fast, stable, and usable as u0 into DiffEq!
 ```
 
@@ -222,7 +222,8 @@ struct MySymbolicProblem
 end
 
 function SciMLBase.get_updated_symbolic_problem(
-        ::MySolveSystem, prob::MySymbolicProblem; u0 = prob.u0, p = prob.p, kwargs...)
+        ::MySolveSystem, prob::MySymbolicProblem; u0 = prob.u0, p = prob.p, kwargs...
+    )
     return MySymbolicProblem(u0, p)
 end
 ```
@@ -392,6 +393,13 @@ end
 
 anyeltypedual(x) = anyeltypedual(x, Val{0})
 anyeltypedual(x, counter) = Any
+anyeltypedual(x::DespecializedParameters) = anyeltypedual(x.params)
+anyeltypedual(x::DespecializedParameters, counter) = anyeltypedual(x.params, counter)
+function anyeltypedual(
+        x::DespecializedParameters, counter::Type{Val{N}}
+    ) where {N}
+    return anyeltypedual(x.params, counter)
+end
 anyeltypedual(x::FixedSizeDiffCache, counter = 0) = Any
 
 """

@@ -18,8 +18,7 @@ prefer the [`AbstractODEProblem`](@ref) interface and problem traits.
 """
 struct StandardODEProblem end
 
-@doc doc"""
-
+"""
 Defines an ordinary differential equation (ODE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/>
 
@@ -29,12 +28,14 @@ To define an ODE Problem, you simply need to give the function ``f`` and the ini
 condition ``u_0`` which define an ODE:
 
 ```math
-M \frac{du}{dt} = f(u,p,t)
+M \\frac{du}{dt} = f(u,p,t)
 ```
 
 There are two different ways of specifying `f`:
-- `f(du,u,p,t)`: in-place. Memory-efficient when avoiding allocations. Best option for most cases unless mutation is not allowed.
-- `f(u,p,t)`: returning `du`. Less memory-efficient way, particularly suitable when mutation is not allowed (e.g. with certain automatic differentiation packages such as Zygote).
+- `f(du,u,p,t)`: in-place. Memory-efficient when avoiding allocations. Best option for most
+  cases unless mutation is not allowed.
+- `f(u,p,t)`: returning `du`. Less memory-efficient way, particularly suitable when mutation
+  is not allowed (e.g. with certain automatic differentiation packages such as Zygote).
 
 `u₀` should be an AbstractArray (or number) whose geometry matches the desired geometry of `u`.
 Note that we are not limited to numbers or vectors for `u₀`; one is allowed to
@@ -81,19 +82,20 @@ For specifying Jacobians and mass matrices, see the `ODEFunction` documentation.
 
 ```julia
 using SciMLBase
-function lorenz!(du,u,p,t)
-  du[1] = 10.0(u[2]-u[1])
-  du[2] = u[1]*(28.0-u[3]) - u[2]
-  du[3] = u[1]*u[2] - (8/3)*u[3]
+function lorenz!(du, u, p, t)
+    du[1] = 10.0(u[2] - u[1])
+    du[2] = u[1] * (28.0 - u[3]) - u[2]
+    du[3] = u[1] * u[2] - (8 / 3) * u[3]
+    return
 end
 u0 = [1.0;0.0;0.0]
-tspan = (0.0,100.0)
-prob = ODEProblem(lorenz!,u0,tspan)
+tspan = (0.0, 100.0)
+prob = ODEProblem(lorenz!, u0, tspan)
 
 # Test that it worked
 using OrdinaryDiffEq
-sol = solve(prob,Tsit5())
-using Plots; plot(sol,vars=(1,2,3))
+sol = solve(prob, Tsit5())
+using Plots; plot(sol, vars = (1, 2, 3))
 ```
 
 ## More Example Problems
@@ -148,7 +150,7 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 
     """
-        ODEProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=CallbackSet())
+        ODEProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
     Define an ODE problem with the specified function.
     `isinplace` optionally sets whether the function is inplace or not.
@@ -174,28 +176,39 @@ mutable struct ODEProblem{uType, tType, isinplace, P, F, K, PT} <:
         ) where {iip}
         _u0 = prepare_initial_state(u0)
         _tspan = promote_tspan(tspan)
-        if !(f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+        raw = f
+        props = (;)
+        if f isa ODEFunction
+            raw = unwrapped_f(f.f)
+            props = getproperties(f)
+            props = @delete props.f
+        end
+        if !(raw isa FunctionWrappersWrappers.FunctionWrappersWrapper)
             if iip
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_iip(
-                        f,
+                        raw,
                         (
                             _u0, _u0, p,
                             _tspan[1],
                         )
-                    )
+                    );
+                    props...
                 )
             else
                 ff = ODEFunction{iip, FunctionWrapperSpecialize}(
                     wrapfun_oop(
-                        f,
+                        raw,
                         (
                             _u0, p,
                             _tspan[1],
                         )
-                    )
+                    );
+                    props...
                 )
             end
+        else
+            ff = ODEFunction{iip, FunctionWrapperSpecialize}(raw; props...)
         end
         return ODEProblem{iip}(ff, _u0, _tspan, p; kwargs...)
     end
@@ -223,7 +236,7 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: ODEProblem}
 end
 
 """
-    ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    ODEProblem(f::ODEFunction, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define an ODE problem from an [`ODEFunction`](@ref).
 """
@@ -234,10 +247,13 @@ end
 # In-place `SplitFunction` evaluation needs a temporary buffer (`_func_cache`).
 # `SplitODEProblem` always allocates it from `u0`; bare `ODEProblem(sf, u0, tspan)`
 # must do the same so `f(du,u,p,t)` does not call `get_tmp(nothing, du)`.
+# The buffer must be a copy: `DiffCache(u0)` keeps the passed array itself as the
+# primary buffer, so `f(du,u,p,t)` would evaluate `f1` into `u0`'s memory.
 function ODEProblem(f::SplitFunction, u0, tspan, args...; kwargs...)
     iip = isinplace(f)
     if iip && f._func_cache === nothing
-        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(u0) : u0
+        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(copy(u0)) :
+            copy(u0)
         f = remake(f; _func_cache)
     end
     return ODEProblem{iip}(f, u0, tspan, args...; kwargs...)
@@ -258,12 +274,13 @@ Marker supertype for structured ODE problem layouts.
 
 Subtypes identify ODE problems that are constructed from partitioned or
 second-order dynamics and then stored in the common `ODEProblem` representation.
-The concrete marker is available through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) so solvers can
-preserve structure when they support specialized methods.
+The concrete marker is available through
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+so solvers can preserve structure when they support specialized methods.
 """
 abstract type AbstractDynamicalODEProblem end
 
-@doc doc"""
+"""
 
 Defines a dynamical ordinary differential equation (ODE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/>
@@ -278,10 +295,10 @@ how to define second order differential equations for their efficient numerical 
 These algorithms require a Partitioned ODE of the form:
 
 ```math
-\begin{align*}
-\frac{dv}{dt} &= f_1(u,t) \\
-\frac{du}{dt} &= f_2(v) \\
-\end{align*}
+\\begin{align*}
+\\frac{dv}{dt} &= f_1(u,t) \\\\
+\\frac{du}{dt} &= f_2(v) \\\\
+\\end{align*}
 ```
 This is a Partitioned ODE partitioned into two groups, so the functions should be
 specified as `f1(dv,v,u,p,t)` and `f2(du,v,u,p,t)` (in the inplace form), where `f1`
@@ -292,7 +309,7 @@ and Hamiltonians where the potential is (or can be) time-dependent, but the kine
 energy is only dependent on `v`.
 
 Note that some methods assume that the integral of `f2` is a quadratic form. That
-means that `f2=v'*M*v`, i.e. ``\int f_2 = \frac{1}{2} m v^2``, giving `du = v`.
+means that `f2 = v'*M*v`, i.e. ``∫ f_2 = \\frac{1}{2} m v^2``, giving `du = v`.
 This is equivalent to saying that the kinetic energy is related to ``v^2``. The
 methods which require this assumption will lose accuracy if this assumption is
 violated. Methods listed make note of this requirement with "Requires
@@ -301,8 +318,8 @@ quadratic kinetic energy".
 ### Constructor
 
 ```julia
-DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters();kwargs...)
-DynamicalODEProblem{isinplace}(f1,f2,v0,u0,tspan,p=NullParameters();kwargs...)
+DynamicalODEProblem(f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters(); kwargs...)
+DynamicalODEProblem{isinplace}(f1, f2, v0, u0, tspan, p = NullParameters(); kwargs...)
 ```
 
 Defines the ODE with the specified functions. `isinplace` optionally sets whether
@@ -325,31 +342,43 @@ every solve call.
 struct DynamicalODEProblem{iip} <: AbstractDynamicalODEProblem end
 
 """
-    DynamicalODEProblem(f::DynamicalODEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    DynamicalODEProblem(f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a dynamical ODE function from a [`DynamicalODEFunction`](@ref).
 """
 function DynamicalODEProblem(
-        f::DynamicalODEFunction, du0, u0, tspan, p = NullParameters();
+        f::DynamicalODEFunction, v0, u0, tspan, p = NullParameters();
         kwargs...
     )
-    return ODEProblem(f, ArrayPartition(du0, u0), tspan, p; kwargs...)
+    iip = isinplace(f)
+    _u0 = ArrayPartition(v0, u0)
+    _tspan = tspan
+    if specialization(f) === FunctionWrapperSpecialize
+        _u0 = prepare_initial_state(_u0)
+        _tspan = promote_tspan(tspan)
+        f = _functionwrapper_specialize_dynamical(f, _u0, p, _tspan[1])
+    end
+    return ODEProblem(
+        f, _u0, _tspan, p, DynamicalODEProblem{iip}(); kwargs...
+    )
 end
-function DynamicalODEProblem(f1, f2, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return ODEProblem(DynamicalODEFunction(f1, f2), ArrayPartition(du0, u0), tspan, p; kwargs...)
+function DynamicalODEProblem(f1, f2, v0, u0, tspan, p = NullParameters(); kwargs...)
+    return DynamicalODEProblem(
+        DynamicalODEFunction(f1, f2), v0, u0, tspan, p; kwargs...
+    )
 end
 
 function DynamicalODEProblem{iip}(
-        f1, f2, du0, u0, tspan, p = NullParameters();
+        f1, f2, v0, u0, tspan, p = NullParameters();
         kwargs...
     ) where {iip}
     return ODEProblem(
-        DynamicalODEFunction{iip}(f1, f2), ArrayPartition(du0, u0), tspan, p,
+        DynamicalODEFunction{iip}(f1, f2), ArrayPartition(v0, u0), tspan, p,
         DynamicalODEProblem{iip}(); kwargs...
     )
 end
 
-@doc doc"""
+"""
 
 Defines a second order ordinary differential equation (ODE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/dynamical_types/>
@@ -372,10 +401,10 @@ as well.
 From this form, a dynamical ODE:
 
 ```math
-\begin{align*}
-v' &= f(v,u,p,t) \\
+\\begin{align*}
+v' &= f(v,u,p,t) \\\\
 u' &= v
-\end{align*}
+\\end{align*}
 ```
 
 is generated.
@@ -383,7 +412,7 @@ is generated.
 ### Constructors
 
 ```julia
-SecondOrderODEProblem{isinplace}(f,du0,u0,tspan,callback=CallbackSet())
+SecondOrderODEProblem{isinplace}(f, du0, u0, tspan, callback = CallbackSet())
 ```
 
 Defines the ODE with the specified functions.
@@ -426,9 +455,9 @@ function SecondOrderODEProblem(
         f::DynamicalODEFunction, du0, u0, tspan,
         p = NullParameters(); kwargs...
     )
-    iip = isinplace(f.f1, 5)
+    iip = isinplace(f)
     _u0 = ArrayPartition((du0, u0))
-    if f.f2.f === nothing
+    if _is_absent_dynamical_component(f.f2)
         if iip
             f2 = function (du, v, u, p, t)
                 return du .= v
@@ -438,28 +467,23 @@ function SecondOrderODEProblem(
                 return v
             end
         end
-        return ODEProblem(
-            DynamicalODEFunction{iip}(
-                f.f1, f2; mass_matrix = f.mass_matrix,
-                analytic = f.analytic
-            ),
-            _u0,
-            tspan,
-            p,
-            SecondOrderODEProblem{iip}(); kwargs...
-        )
-    else
-        return ODEProblem(
-            DynamicalODEFunction{iip}(
-                f.f1, f.f2; mass_matrix = f.mass_matrix,
-                analytic = f.analytic
-            ),
-            _u0,
-            tspan,
-            p,
-            SecondOrderODEProblem{iip}(); kwargs...
-        )
+        f = if specialization(f) === FunctionWrapperSpecialize
+            _rebuild_dynamical_function(f, f.f1, f2, FunctionWrapperSpecialize)
+        else
+            remake(f; f2)
+        end
+    elseif specialization(f) !== FunctionWrapperSpecialize
+        f = remake(f)
     end
+    _tspan = tspan
+    if specialization(f) === FunctionWrapperSpecialize
+        _u0 = prepare_initial_state(_u0)
+        _tspan = promote_tspan(tspan)
+        f = _functionwrapper_specialize_dynamical(f, _u0, p, _tspan[1])
+    end
+    return ODEProblem(
+        f, _u0, _tspan, p, SecondOrderODEProblem{iip}(); kwargs...
+    )
 end
 
 """
@@ -469,12 +493,12 @@ Marker supertype for split ODE problem layouts.
 
 Subtypes identify ODEs whose right-hand side is supplied as a split function,
 usually to expose additive, linear, stiff, or nonstiff structure to solvers.
-Split constructors expose this marker through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) while using
+Split constructors expose this marker through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) while using
 the ordinary `ODEProblem` storage layout.
 """
 abstract type AbstractSplitODEProblem end
 
-@doc doc"""
+"""
 
 Defines a split ordinary differential equation (ODE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/split_ode_types/>
@@ -486,7 +510,7 @@ To define a `SplitODEProblem`, you simply need to give two functions
 define an ODE:
 
 ```math
-\frac{du}{dt} =  f_1(u,p,t) + f_2(u,p,t)
+\\frac{du}{dt} =  f_1(u,p,t) + f_2(u,p,t)
 ```
 
 `f` should be specified as `f(u,p,t)` (or in-place as `f(du,u,p,t)`), and `u₀` should
@@ -497,16 +521,17 @@ provide `u₀` as arbitrary matrices / higher dimension tensors as well.
 Many splits are at least partially linear. That is the equation:
 
 ```math
-\frac{du}{dt} =  Au + f_2(u,p,t)
+\\frac{du}{dt} =  Au + f_2(u,p,t)
 ```
 
-For how to define a linear function `A`, see the documentation for the [AbstractSciMLOperator](https://docs.sciml.ai/SciMLOperators/stable/interface/).
+For how to define a linear function `A`, see the documentation for the
+[AbstractSciMLOperator](https://docs.sciml.ai/SciMLOperators/stable/interface/).
 
 ### Constructors
 
 ```julia
-SplitODEProblem(f::SplitFunction,u0,tspan,p=NullParameters();kwargs...)
-SplitODEProblem{isinplace}(f1,f2,u0,tspan,p=NullParameters();kwargs...)
+SplitODEProblem(f::SplitFunction, u0, tspan, p = NullParameters(); kwargs...)
+SplitODEProblem{isinplace}(f1, f2, u0, tspan, p = NullParameters(); kwargs...)
 ```
 
 The `isinplace` parameter can be omitted and will be determined using the signature of `f2`.
@@ -563,7 +588,10 @@ function SplitODEProblem{iip}(
         kwargs...
     ) where {iip}
     if f._func_cache === nothing && iip
-        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(u0) : u0
+        # A copy, not `u0` itself: `DiffCache(u0)` would keep `u0` as the primary
+        # buffer and a direct `f(du,u,p,t)` would evaluate `f1` into `u0`'s memory.
+        _func_cache = typeof(u0) <: AbstractArray{<:Number} ? DiffCache(copy(u0)) :
+            copy(u0)
         f = remake(f; _func_cache)
     end
     return ODEProblem(f, u0, tspan, p, SplitODEProblem{iip}(); kwargs...)
@@ -576,7 +604,9 @@ Internal supertype for incrementing ODE constructor tags. Concrete tags record
 the in-place convention while [`IncrementingODEProblem`](@ref) converts the
 input into an `ODEProblem` with an [`IncrementingODEFunction`](@ref).
 
-These tags are available from [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) on the resulting problem;
+These tags are available from
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+on the resulting problem;
 they are not standalone problem containers. Solvers that require incrementing
 evaluation may dispatch on the tag or the wrapped function, but ordinary ODE
 tooling should use the returned `ODEProblem` interface.
@@ -591,8 +621,9 @@ Construct an experimental ODE problem for a model function that can update an
 existing derivative buffer in an incrementing form.
 
 The constructor wraps `f` in an [`IncrementingODEFunction`](@ref), exposes an
-`IncrementingODEProblem{iip}` tag through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/), and returns a
-standard `ODEProblem`. The result therefore follows the ordinary ODE problem
+`IncrementingODEProblem{iip}` tag through
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits),
+and returns a standard `ODEProblem`. The result therefore follows the ordinary ODE problem
 field, symbolic-indexing, keyword-forwarding, and solve interfaces.
 
 Low-storage solvers commonly use the in-place convention
@@ -634,8 +665,11 @@ function IncrementingODEProblem{iip}(
     return ODEProblem(f, u0, tspan, p, IncrementingODEProblem{iip}(); kwargs...)
 end
 
-@doc doc"""
-    ODEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
+"""
+    ODEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
 
 Control which ODE problem inputs and solver option arrays may be aliased.
 
@@ -715,7 +749,7 @@ struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
     end
 
     """
-        ImmutableODEProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=CallbackSet())
+        ImmutableODEProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
     Define an ODE problem with the specified function.
     `isinplace` optionally sets whether the function is inplace or not.
@@ -744,7 +778,7 @@ struct ImmutableODEProblem{uType, tType, isinplace, P, F, K, PT} <:
 end
 
 """
-    ImmutableODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    ImmutableODEProblem(f::ODEFunction, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define an ODE problem from an [`ODEFunction`](@ref).
 """

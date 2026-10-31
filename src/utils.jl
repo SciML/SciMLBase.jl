@@ -89,26 +89,23 @@ struct or other collection to hold the parameters. For example, here is the
 parameterized Lorenz equation:
 
 ```julia
-function lorenz(du,u,p,t)
-  du[1] = p[1]*(u[2]-u[1])
-  du[2] = u[1]*(p[2]-u[3]) - u[2]
-  du[3] = u[1]*u[2] - p[3]*u[3]
+function lorenz(du, u, p, t)
+    du[1] = p[1] * (u[2] - u[1])
+    du[2] = u[1] * (p[2] - u[3]) - u[2]
+    du[3] = u[1] * u[2] - p[3] * u[3]
+    return
 end
-u0 = [1.0;0.0;0.0]
-p = [10.0,28.0,8/3]
-tspan = (0.0,100.0)
-prob = ODEProblem(lorenz,u0,tspan,p)
+u0 = [1.0; 0.0; 0.0]
+p = [10.0, 28.0, 8/3]
+tspan = (0.0, 100.0)
+prob = ODEProblem(lorenz, u0, tspan, p)
 ```
 
 Notice that `f` is defined with a single `p`, an array which matches the definition
 of the `p` in the `ODEProblem`. Note that `p` can be any Julia struct.
 """
 
-struct TooManyArgumentsError <: Exception
-    fname::String
-    f::Any
-end
-@doc """
+"""
     TooManyArgumentsError
 
 Exception thrown when a model function defines methods with more arguments than the
@@ -123,7 +120,11 @@ ODE right-hand side must be callable as `f(u, p, t)` or `f(du, u, p, t)`, not as
 
 - `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
 - `f`: The offending callable; `showerror` prints its method table.
-""" TooManyArgumentsError
+"""
+struct TooManyArgumentsError <: Exception
+    fname::String
+    f::Any
+end
 
 function Base.showerror(io::IO, e::TooManyArgumentsError)
     println(io, TOO_MANY_ARGUMENTS_ERROR_MESSAGE)
@@ -148,23 +149,23 @@ For example, here is a parameterized optimization problem:
 
 ```julia
 using Optimization, OptimizationOptimJL
-rosenbrock(u,p) =  (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
+rosenbrock(u, p) = (p[1] - u[1])^2 + p[2] * (u[2] - u[1]^2)^2
 u0 = zeros(2)
-p  = [1.0,100.0]
+p = [1.0,100.0]
 
-prob = OptimizationProblem(rosenbrock,u0,p)
-sol = solve(prob,NelderMead())
+prob = OptimizationProblem(rosenbrock, u0, p)
+sol = solve(prob, NelderMead())
 ```
 
 and a parameter-less example:
 
 ```julia
 using Optimization, OptimizationOptimJL
-rosenbrock(u,p) =  (1 - u[1])^2 + (u[2] - u[1]^2)^2
+rosenbrock(u, p) = (1 - u[1])^2 + (u[2] - u[1]^2)^2
 u0 = zeros(2)
 
-prob = OptimizationProblem(rosenbrock,u0)
-sol = solve(prob,NelderMead())
+prob = OptimizationProblem(rosenbrock, u0)
+sol = solve(prob, NelderMead())
 ```
 """
 
@@ -180,37 +181,33 @@ For example, here is the no parameter Lorenz equation. The two valid versions
 are out of place:
 
 ```julia
-function lorenz(u,p,t)
-  du1 = 10.0*(u[2]-u[1])
-  du2 = u[1]*(28.0-u[3]) - u[2]
-  du3 = u[1]*u[2] - 8/3*u[3]
-  [du1,du2,du3]
+function lorenz(u, p, t)
+    du1 = 10.0 * (u[2] - u[1])
+    du2 = u[1] * (28.0 - u[3]) - u[2]
+    du3 = u[1] * u[2] - 8/3 * u[3]
+    return [du1, du2, du3]
 end
-u0 = [1.0;0.0;0.0]
-tspan = (0.0,100.0)
-prob = ODEProblem(lorenz,u0,tspan)
+u0 = [1.0; 0.0; 0.0]
+tspan = (0.0, 100.0)
+prob = ODEProblem(lorenz, u0, tspan)
 ```
 
 and in-place:
 
 ```julia
-function lorenz!(du,u,p,t)
-  du[1] = 10.0*(u[2]-u[1])
-  du[2] = u[1]*(28.0-u[3]) - u[2]
-  du[3] = u[1]*u[2] - 8/3*u[3]
+function lorenz!(du, u, p, t)
+    du[1] = 10.0 * (u[2] - u[1])
+    du[2] = u[1] * (28.0 - u[3]) - u[2]
+    du[3] = u[1] * u[2] - 8/3 * u[3]
+    return
 end
-u0 = [1.0;0.0;0.0]
-tspan = (0.0,100.0)
-prob = ODEProblem(lorenz!,u0,tspan)
+u0 = [1.0; 0.0; 0.0]
+tspan = (0.0, 100.0)
+prob = ODEProblem(lorenz!, u0, tspan)
 ```
 """
 
-struct TooFewArgumentsError <: Exception
-    fname::String
-    f::Any
-    isoptimization::Bool
-end
-@doc """
+"""
     TooFewArgumentsError
 
 Exception thrown when a model function defines methods with fewer arguments than the
@@ -227,7 +224,12 @@ and time arguments.
 - `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
 - `f`: The offending callable; `showerror` prints its method table.
 - `isoptimization`: Whether to use the optimization-specific explanation.
-""" TooFewArgumentsError
+"""
+struct TooFewArgumentsError <: Exception
+    fname::String
+    f::Any
+    isoptimization::Bool
+end
 
 function Base.showerror(io::IO, e::TooFewArgumentsError)
     if e.isoptimization
@@ -250,11 +252,7 @@ on the required dispatches for the given model function, consult the documentati
 for the appropriate `SciMLProblem` or `AbstractSciMLFunction`.
 """
 
-struct FunctionArgumentsError <: Exception
-    fname::String
-    f::Any
-end
-@doc """
+"""
     FunctionArgumentsError
 
 Exception thrown when a model function's methods do not match the accepted SciML
@@ -270,7 +268,11 @@ problem or SciMLFunction interface.
 
 - `fname`: Display name used in the error message, such as `"f"` or `"jac"`.
 - `f`: The offending callable; `showerror` prints its method table.
-""" FunctionArgumentsError
+"""
+struct FunctionArgumentsError <: Exception
+    fname::String
+    f::Any
+end
 
 function Base.showerror(io::IO, e::FunctionArgumentsError)
     println(io, ARGUMENTS_ERROR_MESSAGE)
@@ -281,9 +283,11 @@ function Base.showerror(io::IO, e::FunctionArgumentsError)
 end
 
 """
-    isinplace(f, inplace_param_number, fname = "f", iip_preferred = true;
-              has_two_dispatches = true,
-              outofplace_param_number = inplace_param_number - 1)
+    isinplace(
+        f, inplace_param_number, fname = "f", iip_preferred = true;
+        has_two_dispatches = true,
+        outofplace_param_number = inplace_param_number - 1
+    )
     isinplace(f::AbstractSciMLFunction[, inplace_param_number])
 
 Check whether a user callback follows the in-place SciML convention.
@@ -291,19 +295,48 @@ Check whether a user callback follows the in-place SciML convention.
 For an [`AbstractSciMLFunction`](@ref), `isinplace` returns the `iip` type
 parameter without inspecting methods. For an ordinary callable, it inspects the
 method table and compares available arities to the expected in-place and
-out-of-place signatures. `inplace_param_number` is the number of positional
-arguments for the in-place form, while `outofplace_param_number` defaults to one
-fewer argument. For example, an ODE right-hand side uses `4` for
-`f!(du, u, p, t)` and `3` for `f(u, p, t)`.
+out-of-place signatures.
+
+# Arguments
+
+- `f`: An [`AbstractSciMLFunction`](@ref) or callback whose calling convention is
+  being queried.
+- `inplace_param_number`: Number of positional arguments in the in-place callback
+  signature. For example, an ODE right-hand side uses `4` for `f!(du, u, p, t)`.
+- `fname`: Name used to identify `f` in an argument-convention error.
+- `iip_preferred`: Convention selected when `f` provides both accepted arities.
+
+# Keywords
+
+- `has_two_dispatches`: Whether the interface accepts both in-place and
+  out-of-place callback signatures. Set this to `false` for interfaces with only
+  one accepted arity, such as optimization objectives.
+- `isoptimization`: Whether errors should use optimization-specific wording.
+- `outofplace_param_number`: Number of positional arguments in the out-of-place
+  callback signature. It defaults to `inplace_param_number - 1`; the ODE
+  out-of-place form is therefore `f(u, p, t)`.
+
+# Returns
+
+Returns `true` for the in-place convention and `false` for the out-of-place
+convention. Concrete `AbstractSciMLFunction` subtypes must expose their
+convention through this trait; generic solver code must query `isinplace(f)` and
+must not inspect subtype fields or type parameters directly.
 
 If neither accepted arity is present, `isinplace` throws a function-argument
 error that uses `fname` to identify the offending callback. If both accepted
 arities are present, `iip_preferred = true` chooses the in-place interpretation
 and `iip_preferred = false` chooses the out-of-place interpretation.
 
-Set `has_two_dispatches = false` for interfaces that only accept one arity, such
-as optimization objective functions, so a shorter out-of-place form is not
-treated as valid.
+# Examples
+
+```julia
+f!(du, u, p, t) = (du .= u)
+f(u, p, t) = u
+
+isinplace(f!, 4) # true
+isinplace(f, 4)  # false
+```
 
 # See also
 
@@ -438,16 +471,16 @@ provide every referenced local. Do not extend `@def` or use it to define user-fa
 
 ```julia
 module ExampleSolver
-using SciMLBase: @def
+    using SciMLBase: @def
 
-@def affine_preamble begin
-    shifted = x + offset
-end
+    @def affine_preamble begin
+        shifted = x + offset
+    end
 
-function evaluate(x, offset)
-    @affine_preamble
-    return shifted
-end
+    function evaluate(x, offset)
+        @affine_preamble
+        return shifted
+    end
 end
 
 ExampleSolver.evaluate(2, 3) # 5
@@ -518,16 +551,16 @@ warn_compat() = @warn("https://docs.sciml.ai/DiffEqDocs/stable/basics/compatibil
 
 Define keyword-only version of the `function_definition`.
 
-    @add_kwonly function f(x; y=1)
+    @add_kwonly function f(x; y = 1)
         ...
     end
 
 expands to:
 
-    function f(x; y=1)
+    function f(x; y = 1)
         ...
     end
-    function f(; x = error("No argument x"), y=1)
+    function f(; x = error("No argument x"), y = 1)
         ...
     end
 """

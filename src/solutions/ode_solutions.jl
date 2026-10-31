@@ -111,10 +111,14 @@ page of the DifferentialEquations.jl documentation.
     successfully, whether it terminated early due to a user-defined callback, or whether it
     exited due to an error. For more details, see
     [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `global_error`: an estimate of the global (accumulated) error of the solution, or
+    `nothing` when the algorithm does not compute one (see [`has_global_error`](@ref)).
+    When present it is an array matching `u`, with `global_error[i]` the estimated global
+    error of `u[i]` at `t[i]`.
 """
 struct ODESolution{
         T, N, uType, uType2, DType, tType, rateType, discType, P, A, IType, S,
-        AC <: Union{Nothing, Vector{Int}}, R, O, V,
+        AC <: Union{Nothing, Vector{Int}}, R, O, V, GE, RC,
     } <:
     AbstractODESolution{T, N, uType}
     u::uType
@@ -130,10 +134,14 @@ struct ODESolution{
     tslocation::Int
     stats::S
     alg_choice::AC
-    retcode::ReturnCode.T
+    retcode::RC
     resid::R
     original::O
     saved_subsystem::V
+    # Estimate of the global (accumulated) error, populated by solvers/wrappers
+    # for which `has_global_error(alg)` is `true`; `nothing` otherwise. When
+    # present it matches `u`: a vector of per-time-point error estimates.
+    global_error::GE
 end
 
 function ConstructionBase.constructorof(::Type{O}) where {T, N, O <: ODESolution{T, N}}
@@ -153,7 +161,8 @@ function ConstructionBase.setproperties(
     return ODESolution{new_T, new_N}(
         patch.u, patch.u_analytic, patch.errors, patch.t, patch.k,
         patch.discretes, patch.prob, patch.alg, patch.interp, patch.dense, patch.tslocation, patch.stats,
-        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem
+        patch.alg_choice, patch.retcode, patch.resid, patch.original, patch.saved_subsystem,
+        patch.global_error
     )
 end
 
@@ -161,16 +170,17 @@ end
 function ODESolution{T, N}(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp, dense,
         tslocation, stats, alg_choice, retcode, resid,
-        original, saved_subsystem
+        original, saved_subsystem, global_error = nothing
     ) where {T, N}
     return ODESolution{
         T, N, typeof(u), typeof(u_analytic), typeof(errors), typeof(t),
         typeof(k), typeof(discretes), typeof(prob), typeof(alg), typeof(interp),
         typeof(stats), typeof(alg_choice), typeof(resid), typeof(original),
-        typeof(saved_subsystem),
+        typeof(saved_subsystem), typeof(global_error), typeof(retcode),
     }(
         u, u_analytic, errors, t, k, discretes, prob, alg, interp,
-        dense, tslocation, stats, alg_choice, retcode, resid, original, saved_subsystem
+        dense, tslocation, stats, alg_choice, retcode, resid, original,
+        saved_subsystem, global_error
     )
 end
 
@@ -286,7 +296,7 @@ function (sol::AbstractODESolution)(
     ) where {deriv}
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol; interp = sol.interp, dense = sol.dense)
+    return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 function (sol::AbstractODESolution)(
         t::AbstractVector{<:Number}, ::Type{deriv},
@@ -301,7 +311,7 @@ function (sol::AbstractODESolution)(
     end
     A = sol.interp(t, idxs, deriv, sol.prob.p, continuity)
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol; interp = sol.interp, dense = sol.dense)
+    return DiffEqArray(A.u, A.t, p, sol; sol.interp, sol.dense)
 end
 
 function (sol::AbstractODESolution)(
@@ -365,7 +375,7 @@ function (sol::AbstractODESolution)(
         interp_sol = augment(sol.interp(t, nothing, deriv, p, continuity), sol)
         return DiffEqArray(
             getter(interp_sol), t, p, sol;
-            interp = sol.interp, dense = sol.dense
+            sol.interp, sol.dense
         )
     end
     discretes = get_interpolated_discretes(sol, t, deriv, continuity)
@@ -379,7 +389,7 @@ function (sol::AbstractODESolution)(
     end
     return DiffEqArray(
         u, t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense
+        sol.interp, sol.dense
     )
 end
 
@@ -411,7 +421,7 @@ function (sol::AbstractODESolution)(
     end
     return DiffEqArray(
         u, t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense
+        sol.interp, sol.dense
     )
 end
 
@@ -495,6 +505,7 @@ discrete storage for `timeseries_idx`. If `get_saveable_values` returns
 may avoid appending a second value at the same saved time.
 """
 function save_discretes!(integ::DEIntegrator, timeseries_idx; skip_duplicates = false)
+    is_parameter_timeseries(integ.sol) == Timeseries() || return
     inner_sol = get_sol(integ)
     vals = get_saveable_values(inner_sol, parameter_values(integ), timeseries_idx)
     vals === nothing && return
@@ -540,6 +551,7 @@ function build_solution(
         retcode = ReturnCode.Default, stats = nothing,
         resid = nothing, original = nothing,
         saved_subsystem = nothing,
+        global_error = nothing,
         kwargs...
     )
     T = eltype(eltype(u))
@@ -590,12 +602,13 @@ function build_solution(
             retcode,
             resid,
             original,
-            saved_subsystem
+            saved_subsystem,
+            global_error
         )
         if calculate_error
             calculate_solution_errors!(
-                sol; timeseries_errors = timeseries_errors,
-                dense_errors = dense_errors
+                sol; timeseries_errors,
+                dense_errors
             )
         end
         return sol
@@ -616,7 +629,8 @@ function build_solution(
             retcode,
             resid,
             original,
-            saved_subsystem
+            saved_subsystem,
+            global_error
         )
     end
 end
@@ -711,13 +725,6 @@ function build_solution(sol::ODESolution{T, N}, u_analytic, errors) where {T, N}
     return @set sol.errors = errors
 end
 
-"""
-    solution_new_retcode(sol, retcode)
-
-Return a copy of the solution `sol` with its return code replaced by `retcode`. The
-solution is otherwise left unchanged; this is used to update the `retcode` of an existing
-solution (e.g. when an integrator finishes and the final status becomes known).
-"""
 function solution_new_retcode(sol::ODESolution{T, N}, retcode) where {T, N}
     return @set sol.retcode = retcode
 end
@@ -743,13 +750,14 @@ function solution_new_original_retcode(
         sol.u, sol.u_analytic, sol.errors, sol.t, sol.k,
         sol.discretes, sol.prob, sol.alg, sol.interp, sol.dense,
         sol.tslocation, sol.stats, sol.alg_choice, retcode,
-        resid, original, sol.saved_subsystem,
+        resid, original, sol.saved_subsystem, sol.global_error,
     )
 end
 
 function solution_slice(sol::ODESolution{T, N}, I) where {T, N}
     @reset sol.u = sol.u[I]
     @reset sol.u_analytic = sol.u_analytic === nothing ? nothing : sol.u_analytic[I]
+    @reset sol.global_error = sol.global_error === nothing ? nothing : sol.global_error[I]
     @reset sol.t = sol.t[I]
     @reset sol.k = sol.dense ? sol.k[I] : sol.k
     return @set sol.dense = false

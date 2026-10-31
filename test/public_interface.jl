@@ -38,6 +38,36 @@ SciMLBase.get_concrete_problem(
 SciMLBase.check_prob_alg_pairing(::ConcretizationHookProblem, ::ConcretizationHookAlgorithm) =
     nothing
 
+struct GenericSciMLFunction{iip} <: SciMLBase.AbstractSciMLFunction{iip} end
+
+struct GenericGlobalErrorAlgorithm <: SciMLBase.AbstractDEAlgorithm end
+struct GenericGlobalErrorReportingAlgorithm <: SciMLBase.AbstractDEAlgorithm end
+
+SciMLBase.has_global_error(::GenericGlobalErrorReportingAlgorithm) = true
+
+struct GenericProblem <: SciMLBase.AbstractNonlinearProblem{Vector{Float64}, false}
+    u0::Vector{Float64}
+    p::NamedTuple
+end
+
+struct GenericFunction <: SciMLBase.AbstractSciMLFunction{false}
+    f::Function
+end
+
+(f::GenericFunction)(u, p, t) = f.f(u, p, t)
+
+struct GenericAlgorithm <: SciMLBase.AbstractODEAlgorithm end
+
+SciMLBase.isadaptive(::GenericAlgorithm) = false
+SciMLBase.isdiscrete(::GenericAlgorithm) = false
+SciMLBase.allowscomplex(::GenericAlgorithm) = true
+SciMLBase.alg_order(::GenericAlgorithm) = 2
+
+struct GenericSolution <: SciMLBase.AbstractNonlinearSolution{Float64, 1}
+    u::Vector{Float64}
+    retcode::SciMLBase.ReturnCode.T
+end
+
 struct ConcreteSolveContractProblem end
 struct ConcreteSolveContractAlgorithm end
 struct ConcreteSolveContractSenseAlg end
@@ -177,6 +207,47 @@ end
     @test occursin("`update_coefficients` for the out-of-place form", function_docs)
     @test occursin("ODE and Discrete Function Types", function_docs)
     @test !occursin("SciMLBase.ODEFunction\n", function_docs)
+end
+
+@testset "AbstractSciMLFunction in-place trait contract" begin
+    @test SciMLBase.isinplace(GenericSciMLFunction{true}()) === true
+    @test SciMLBase.isinplace(GenericSciMLFunction{false}()) === false
+    @test !occursin("No documentation found", sprint(show, @doc SciMLBase.isinplace))
+end
+
+@testset "AbstractSciMLAlgorithm global-error trait contract" begin
+    @test !SciMLBase.has_global_error(GenericGlobalErrorAlgorithm())
+    @test SciMLBase.has_global_error(GenericGlobalErrorReportingAlgorithm())
+    @test (@doc SciMLBase.has_global_error) !== nothing
+end
+
+@testset "Generic abstract interface contracts" begin
+    problem = GenericProblem([1.0], (; rate = 2.0))
+    @test SciMLBase.isinplace(problem) === false
+    @test SciMLBase.problem_type(problem) === nothing
+    @test SciMLBase.is_diagonal_noise(problem) === false
+
+    f = GenericFunction((u, p, t) -> p.rate .* u .+ t)
+    @test SciMLBase.isinplace(f) === false
+    @test f([1.0], (; rate = 2.0), 0.5) == [2.5]
+    @test !SciMLBase.has_analytic(f)
+    @test !SciMLBase.has_jac(f)
+    @test !SciMLBase.has_jvp(f)
+    @test !SciMLBase.has_vjp(f)
+    @test !SciMLBase.has_paramjac(f)
+    @test !SciMLBase.has_observed(f)
+
+    alg = GenericAlgorithm()
+    @test !SciMLBase.isadaptive(alg)
+    @test !SciMLBase.isdiscrete(alg)
+    @test SciMLBase.allowscomplex(alg)
+    @test SciMLBase.alg_order(alg) == 2
+
+    sol = GenericSolution([1.0, 2.0], SciMLBase.ReturnCode.Success)
+    @test size(sol) == (2,)
+    @test sol[2] == 2.0
+    @test SciMLBase.successful_retcode(sol)
+    @test SciMLBase.plottable_indices(sol.u) == 1:2
 end
 
 @testset "Problem layout marker interface" begin
@@ -359,6 +430,7 @@ end
         "SciMLBase.SplitSDEProblem",
         "SciMLBase.DynamicalSDEProblem",
         "SciMLBase.DAEProblem",
+        "SciMLBase.StandardDAEProblem",
         "SciMLBase.DDEProblem",
         "SciMLBase.StandardDDEProblem",
         "SciMLBase.AbstractDynamicalDDEProblem",
@@ -443,6 +515,31 @@ end
     @test occursin("sol.tslocation != 0", solution_docs)
     @test occursin("1000 * sol.tslocation", solution_docs)
     @test occursin("`SensitivityInterpolation`", solution_docs)
+end
+
+@testset "Generic abstract interface documentation" begin
+    problem_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Problems.md"), String
+    )
+    function_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "SciMLFunctions.md"),
+        String,
+    )
+    algorithm_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Algorithms.md"), String
+    )
+    solution_docs = read(
+        joinpath(@__DIR__, "..", "docs", "src", "interfaces", "Solutions.md"), String
+    )
+
+    @test occursin("### Generic Usage Rules", problem_docs)
+    @test occursin("problem_type(prob)", problem_docs)
+    @test occursin("### Generic Usage Rules", function_docs)
+    @test occursin("has_paramjac", function_docs)
+    @test occursin("### Generic Usage Rules", algorithm_docs)
+    @test occursin("capability traits", algorithm_docs)
+    @test occursin("### Generic Usage Rules", solution_docs)
+    @test occursin("successful_retcode(sol)", solution_docs)
 end
 
 @testset "Ensemble interface documentation" begin
@@ -630,6 +727,7 @@ if isdefined(Base, :ispublic)
                 :forwarddiffs_model_time,
                 :forwarddiff_chunksize,
                 :has_lazy_interpolation,
+                :has_global_error,
                 :allows_late_binding_tstops,
                 :supports_opt_cache_interface,
                 :has_init,
@@ -645,7 +743,9 @@ if isdefined(Base, :ispublic)
                 :allowsfgh,
                 :requiresconsjac,
                 :allowsconsjvp,
+                :requiresconsjvp,
                 :allowsconsvjp,
+                :requiresconsvjp,
                 :requiresconshess,
                 :requireslagh,
                 :allowscallback,
@@ -788,6 +888,7 @@ if isdefined(Base, :ispublic)
                 :EnsembleSolution,
                 :EnsembleTestSolution,
                 :WeightedEnsembleSolution,
+                :calculate_ensemble_errors,
             )
             @test Base.ispublic(SciMLBase, name)
         end
@@ -817,8 +918,45 @@ if isdefined(Base, :ispublic)
                 :PDETimeSeriesSolution,
                 :PDENoTimeSolution,
                 :wrap_sol,
+                :AbstractDifferentiableDiscretizationMetadata,
+                :pde_index_cotangent,
+                :pde_call_cotangent,
             )
             @test Base.ispublic(SciMLBase, name)
+        end
+    end
+
+    @testset "Public abstract interface documentation" begin
+        interface_docs = join(
+            read(joinpath(root, file), String)
+                for (root, _, files) in walkdir(joinpath(@__DIR__, "..", "docs", "src", "interfaces"))
+                for file in files if endswith(file, ".md")
+        )
+        interface_api_bindings = String[]
+        in_docs_block = false
+        for line in strip.(split(interface_docs, '\n'))
+            if line == "```@docs"
+                in_docs_block = true
+            elseif in_docs_block && startswith(line, "```")
+                in_docs_block = false
+            elseif in_docs_block && !isempty(line)
+                push!(interface_api_bindings, line)
+            end
+        end
+        @test !in_docs_block
+        abstract_public_names = filter(
+            names(SciMLBase, all = true, imported = false)
+        ) do name
+            Base.ispublic(SciMLBase, name) &&
+                isdefined(SciMLBase, name) &&
+                let value = getfield(SciMLBase, name)
+                value isa DataType && isabstracttype(value)
+            end
+        end
+
+        for name in abstract_public_names
+            @test Base.Docs.hasdoc(SciMLBase, name)
+            @test "SciMLBase.$name" in interface_api_bindings
         end
     end
 end

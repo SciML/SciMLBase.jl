@@ -37,7 +37,7 @@ using DocStringExtensions: DocStringExtensions, FIELDS, SIGNATURES, TYPEDEF,
 using LinearAlgebra: LinearAlgebra, I, det, norm
 using Statistics: Statistics, mean, median
 using Distributed: Distributed, CachingPool, myid, nworkers, pmap, workers
-using Markdown: Markdown, @doc_str
+using Markdown: Markdown
 using Printf: Printf, @printf
 import Preferences
 using PreallocationTools: get_tmp, DiffCache, FixedSizeDiffCache
@@ -63,13 +63,24 @@ using SciMLOperators:
 import SciMLOperators:
     update_coefficients, update_coefficients!, islinear
 
-# Compatibility binding for released solver packages. New code must access this
-# name through SciMLOperators, which owns its public contract.
-const isconstant = SciMLOperators.isconstant
+# The SciMLOperators operator interface that SciMLBase reexports (see the matching
+# `export` block further down), so that `using SciMLBase` on its own is enough to build
+# the operator a `jac_prototype`, a `SplitFunction` or an `IncrementingODEFunction`
+# takes, and to update and query it. Everything stays owned and documented upstream in
+# SciMLOperators.
+#
+# This block is what sets the SciMLOperators compat floor: 1.19.0 is the first
+# registered version that exports every name below (`BlockDiagonalOperator`,
+# `TensorSumOperator` and `kronsum` arrived in 1.19.0, `has_concretization` in 1.13.0).
+# Lowering the floor breaks precompilation, not just behavior.
+using SciMLOperators: AddVector, AffineOperator, BlockDiagonalOperator,
+    DiagonalOperator, FunctionOperator, IdentityOperator, InvertibleOperator,
+    MatrixOperator, NullOperator, ScalarOperator, TensorProductOperator,
+    TensorSumOperator, cache_operator, concretize, has_adjoint, has_concretization,
+    has_exp, has_expmv, has_expmv!, has_ldiv, has_ldiv!, has_mul, has_mul!, isconstant,
+    isconvertible, iscached, issquare, kronsum
 
 using SciMLPublic: @public
-
-using SciMLLogging: @SciMLMessage, verbosity_to_bool
 
 """
     __solve(prob, alg, args...; kwargs...)
@@ -115,6 +126,18 @@ See also [`__solve`](@ref), which implements the direct solve path.
 """
 function __init end
 
+"""
+    solution_new_retcode(sol, retcode)
+
+Return a copy of the solution `sol` with its return code replaced by `retcode`. The
+solution is otherwise left unchanged; this is used to update the `retcode` of an existing
+solution (e.g. when an integrator finishes and the final status becomes known).
+
+Solver packages extend this generic for the solution types they own. Methods should return
+the same solution type with its return code replaced and preserve its other data.
+"""
+function solution_new_retcode end
+
 # Local alias for the `Union{Function, Type}` callable bound (mirrors the
 # unexported `Base.Callable`), so problem constructors can dispatch on it
 # without a non-public qualified access to Base.
@@ -138,7 +161,7 @@ are:
   - `tspan`: the independent-variable interval for time-dependent problems.
   - `p`: parameters, defaulting to `NullParameters` when omitted.
   - `kwargs`: keyword arguments stored on the problem and forwarded to solves.
-  - construction-layout metadata available through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) when
+  - construction-layout metadata available through [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) when
     several constructors share one concrete representation.
 
 Subtypes that expose state and parameters through symbolic indexing should
@@ -336,9 +359,9 @@ const AbstractSteadyStateProblem{
 $(TYPEDEF)
 
 Base interface for problems that directly solve or sample an
-[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess). Concrete noise problems should provide a `noise`
-field, a `tspan`, and solver keyword arguments. Their in-place behavior delegates
-to the stored noise process through [`isinplace`](@ref).
+[`AbstractNoiseProcess`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#SciMLBase.AbstractNoiseProcess).
+Concrete noise problems should provide a `noise` field, a `tspan`, and solver keyword arguments.
+Their in-place behavior delegates to the stored noise process through [`isinplace`](@ref).
 """
 abstract type AbstractNoiseProblem <: AbstractDEProblem end
 
@@ -355,7 +378,7 @@ function mutation convention.
 ## Interface
 
 ODE problems should provide `f`, `u0`, `tspan`, `p`, and `kwargs`. A problem that
-preserves an alternate construction layout should extend [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/).
+preserves an alternate construction layout should extend [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits).
 The function should support either `f(u, p, t)` or
 `f(du, u, p, t)` according to [`isinplace`](@ref). Stored keyword arguments such
 as callbacks or tolerances are forwarded to solvers.
@@ -467,7 +490,7 @@ $(TYPEDEF)
 
 Base interface for second-order ODE problems. These problems are represented in
 the ODE hierarchy for solver interoperability, but their constructors preserve
-second-order structure through concrete fields or [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problem_Traits/) metadata.
+second-order structure through concrete fields or [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) metadata.
 """
 abstract type AbstractSecondOrderODEProblem{uType, tType, isinplace} <:
 AbstractODEProblem{uType, tType, isinplace} end
@@ -552,8 +575,10 @@ problem family stay as `solve` or `init` keyword arguments. Solver packages
 normally implement dispatches such as:
 
 ```julia
-CommonSolve.solve(prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
-    kwargs...)
+CommonSolve.solve(
+    prob::AbstractSciMLProblem, alg::AbstractSciMLAlgorithm;
+    kwargs...
+)
 ```
 
 Algorithms should implement the relevant trait methods in `alg_traits.jl` when
@@ -951,7 +976,7 @@ end
 function OverrideInit(; abstol = nothing, reltol = nothing, nlsolve = nothing)
     return OverrideInit(abstol, reltol, nlsolve)
 end
-OverrideInit(abstol) = OverrideInit(; abstol = abstol, nlsolve = nothing)
+OverrideInit(abstol) = OverrideInit(; abstol, nlsolve = nothing)
 
 # PDE Discretizations
 
@@ -989,6 +1014,22 @@ to recover the original variables, domains, dependent-variable layout, and the
 solver-ready problem or solution generated by the discretizer.
 """
 abstract type AbstractDiscretizationMetadata{hasTime} end
+
+"""
+$(TYPEDEF)
+
+Metadata of a discretizer whose wrapped solutions differentiate in reverse mode:
+`sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)` get rules in the ChainRulesCore,
+Mooncake and Enzyme extensions that route the cotangent to `sol.original_sol`, whose rules
+the solver packages provide, through
+[`pde_index_cotangent`](@ref SciMLBase.pde_index_cotangent) and
+[`pde_call_cotangent`](@ref SciMLBase.pde_call_cotangent), which the discretizer
+implements for its metadata type. The solutions of metadata that subtypes
+[`AbstractDiscretizationMetadata`](@ref SciMLBase.AbstractDiscretizationMetadata) directly
+get none of these rules.
+"""
+abstract type AbstractDifferentiableDiscretizationMetadata{hasTime} <:
+AbstractDiscretizationMetadata{hasTime} end
 
 # Monte Carlo Simulations
 """
@@ -1263,7 +1304,7 @@ use `length(sol.t)` or `eachindex(sol.t)` when iterating over saved times.
 Time-series solutions should provide `prob`, `alg`, `interp`, `dense`,
 `retcode`, and `stats` fields when those concepts apply. Dense or piecewise
 interpolation is exposed through callable syntax such as `sol(t)` and
-`sol(t; idxs = idxs)` when the stored interpolation supports it. Symbolic state,
+`sol(t; idxs)` when the stored interpolation supports it. Symbolic state,
 observed-variable, and parameter access is delegated through the
 `SymbolicIndexingInterface` metadata on the solution's problem, with
 time-varying parameter support supplied through `sol.discretes` and
@@ -1736,6 +1777,7 @@ include("initialization.jl")
 include("odenlstep.jl")
 include("utils.jl")
 include("function_wrappers.jl")
+include("despecialized_parameters.jl")
 include("scimlfunctions.jl")
 include("alg_traits.jl")
 include("debug.jl")
@@ -1757,6 +1799,7 @@ end
 
 """
     specialization(f::AbstractSciMLFunction) -> Type{<:AbstractSpecialization}
+    specialization(::Type{<:AbstractSciMLFunction}) -> Type{<:AbstractSpecialization}
 
 Return the specialization marker carried by a SciML function wrapper.
 
@@ -1771,34 +1814,51 @@ result is a marker type, not an instance, and can be compared with `===`.
 """
 function specialization(
         ::Union{
-            ODEFunction{iip, specialize},
-            SDEFunction{iip, specialize}, DDEFunction{iip, specialize},
-            SDDEFunction{iip, specialize},
-            DAEFunction{iip, specialize},
-            DynamicalODEFunction{iip, specialize},
-            SplitFunction{iip, specialize},
-            DynamicalSDEFunction{iip, specialize},
-            SplitSDEFunction{iip, specialize},
-            DynamicalDDEFunction{iip, specialize},
-            DiscreteFunction{iip, specialize},
-            ImplicitDiscreteFunction{iip, specialize},
-            RODEFunction{iip, specialize},
-            NonlinearFunction{iip, specialize},
-            OptimizationFunction{iip, specialize},
-            BVPFunction{iip, specialize},
-            DynamicalBVPFunction{iip, specialize},
-            IntegralFunction{iip, specialize},
-            BatchIntegralFunction{iip, specialize},
+            ODEFunction{iip, specialize}, SDEFunction{iip, specialize},
+            DDEFunction{iip, specialize}, SDDEFunction{iip, specialize},
+            DAEFunction{iip, specialize}, DynamicalODEFunction{iip, specialize},
+            SplitFunction{iip, specialize}, DynamicalSDEFunction{iip, specialize},
+            SplitSDEFunction{iip, specialize}, DynamicalDDEFunction{iip, specialize},
+            DiscreteFunction{iip, specialize}, ImplicitDiscreteFunction{iip, specialize},
+            RODEFunction{iip, specialize}, NonlinearFunction{iip, specialize},
+            HomotopyNonlinearFunction{iip, specialize},
+            IntervalNonlinearFunction{iip, specialize}, ODEInputFunction{iip, specialize},
+            BVPFunction{iip, specialize}, DynamicalBVPFunction{iip, specialize},
+            IntegralFunction{iip, specialize}, BatchIntegralFunction{iip, specialize},
             IncrementingODEFunction{iip, specialize},
         }
-    ) where {
-        iip,
-        specialize,
-    }
+    ) where {iip, specialize}
     return specialize
 end
 
 specialization(f::AbstractSciMLFunction) = FullSpecialize
+
+for FunctionType in (
+        ODEFunction, SDEFunction, DDEFunction, SDDEFunction, DAEFunction,
+        DynamicalODEFunction, SplitFunction, DynamicalSDEFunction, SplitSDEFunction,
+        DynamicalDDEFunction, DiscreteFunction, ImplicitDiscreteFunction, RODEFunction,
+        NonlinearFunction, HomotopyNonlinearFunction, IntervalNonlinearFunction,
+        ODEInputFunction, BVPFunction, DynamicalBVPFunction, IntegralFunction,
+        BatchIntegralFunction, IncrementingODEFunction,
+    )
+    @eval specialization(
+        ::Type{<:$FunctionType{iip, specialize}}
+    ) where {iip, specialize} = specialize
+end
+
+specialization(::Type{<:AbstractSciMLFunction}) = FullSpecialize
+
+# The second type parameter of `OptimizationFunction` is its AD type; the marker is last.
+specialization(f::OptimizationFunction) = specialization(typeof(f))
+const _OPTIMIZATION_FUNCTION_TYPE_PARAMS = (
+    :iip, :AD, :F, :G, :FG, :H, :FGH, :HV, :C, :CJ, :CJV, :CVJ, :CH, :HP, :CJP, :CHP, :O,
+    :EX, :CEX, :SYS, :LH, :LHP, :HCV, :CJCV, :CHCV, :LHCV, :ID,
+)
+@eval function specialization(
+        ::Type{<:OptimizationFunction{$(_OPTIMIZATION_FUNCTION_TYPE_PARAMS...), S}}
+    ) where {$(_OPTIMIZATION_FUNCTION_TYPE_PARAMS...), S <: AbstractSpecialization}
+    return S
+end
 
 """
 $(TYPEDEF)
@@ -2155,6 +2215,24 @@ export Clocks, TimeDomain, is_discrete_time_domain, isclock, issolverstepclock, 
 
 export ODEAliasSpecifier, LinearAliasSpecifier
 
+# Reexported SciMLOperators operator interface. `jac_prototype`,
+# `SplitFunction`/`SplitODEProblem` and `IncrementingODEProblem` are all documented in
+# terms of these operators, so `using SciMLBase` has to supply them for that documented
+# use to work. The names are owned and documented by SciMLOperators; the `SciMLOperators`
+# binding is reexported too, which is how the non-exported abstract types
+# (`SciMLOperators.AbstractSciMLOperator` and friends) stay reachable.
+#
+# The same list lives in two other places and must be kept in sync with both: the
+# rendered docs page docs/src/interfaces/Reexported_API.md, and `reexports_allow` in
+# test/qa/qa.jl, which asserts the two agree.
+export SciMLOperators
+export AddVector, AffineOperator, BlockDiagonalOperator, DiagonalOperator,
+    FunctionOperator, IdentityOperator, InvertibleOperator, MatrixOperator,
+    NullOperator, ScalarOperator, TensorProductOperator, TensorSumOperator
+export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has_expmv,
+    has_expmv!, has_ldiv, has_ldiv!, has_mul, has_mul!, isconstant, isconvertible,
+    iscached, islinear, issquare, kronsum, update_coefficients, update_coefficients!
+
 # Public traits
 
 @public has_init, has_step, successful_retcode
@@ -2167,12 +2245,13 @@ export ODEAliasSpecifier, LinearAliasSpecifier
     AbstractBVPAlgorithm, AbstractSecondOrderODEAlgorithm, AbstractAliasSpecifier
 
 # Solution / problem support types
-@public NLStats, NullParameters, AbstractSpecialization, AutoSpecialize,
+@public NLStats, NullParameters, DespecializedParameters, AbstractSpecialization, AutoSpecialize,
     AbstractOptimizationCache, DefaultOptimizationCache, OptimizationStats,
     AbstractDEOptions, ODENLStepData
 
 # Core functions
-@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs
+@public build_solution, build_linear_solution, build_eigenvalue_solution, numargs,
+    unwrap_parameters, invoke_with_despecialized_parameters
 
 # Solver problem-concretization extension API
 @public get_concrete_p, get_concrete_u0, isconcreteu0, promote_u0,
@@ -2228,12 +2307,12 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Algorithm / problem traits
 @public isadaptive, allowscomplex, allows_arbitrary_number_types, isautodifferentiable,
     problem_type, is_diagonal_noise, forwarddiffs_model, forwarddiffs_model_time,
-    forwarddiff_chunksize, has_lazy_interpolation, allows_late_binding_tstops,
+    forwarddiff_chunksize, has_lazy_interpolation, has_global_error, allows_late_binding_tstops,
     supports_opt_cache_interface, alg_order, allowsbounds, requiresbounds,
     allowsconstraints, requiresconstraints, requiresgradient, allowsfg,
     requireshessian, allowsfgh, requiresconsjac, allowsconsjvp, allowsconsvjp,
-    requiresconshess, requireslagh, allowscallback, allows_non_wiener_noise,
-    requires_additive_noise
+    requiresconsjvp, requiresconsvjp, requiresconshess, requireslagh, allowscallback,
+    allows_non_wiener_noise, requires_additive_noise
 
 # Initialization algorithms and interface
 @public NoInit, OverrideInit, get_initial_values, is_overdetermined_initialization
@@ -2263,11 +2342,12 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Steady-state / problem support types
 @public AbstractSteadyStateProblem, StandardODEProblem, StandardDDEProblem,
-    StandardNonlinearProblem, StandardBVProblem, StandardSecondOrderBVProblem,
-    AbstractSplitODEProblem, AbstractDynamicalDDEProblem
+    StandardDAEProblem, StandardNonlinearProblem, StandardBVProblem,
+    StandardSecondOrderBVProblem, AbstractSplitODEProblem, AbstractDynamicalDDEProblem
 
 # Abstract solution / discretization types
-@public AbstractTimeseriesSolution, AbstractDiscretization, AbstractDiscretizationMetadata
+@public AbstractTimeseriesSolution, AbstractDiscretization, AbstractDiscretizationMetadata,
+    AbstractDifferentiableDiscretizationMetadata
 
 # Interpolation types
 @public AbstractDiffEqInterpolation, ConstantInterpolation, LinearInterpolation,
@@ -2275,11 +2355,12 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Interpolation / symbolic / solution interface
 @public interp_summary, getindepsym, getindepsym_defaultt,
-    calculate_solution_errors!, initialize_dae!
+    calculate_solution_errors!, initialize_dae!, symbolic_interpolation,
+    has_symbolic_idxs
 @public get_saved_subsystem, SavedSubsystem, get_saved_state_idxs,
     SavedSubsystemWithFallback, get_save_idxs_and_saved_subsystem,
     create_parameter_timeseries_collection, get_saveable_values, save_discretes!,
-    wrap_sol
+    wrap_sol, pde_index_cotangent, pde_call_cotangent
 
 # Automatic differentiation markers
 @public NoAD
@@ -2318,7 +2399,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 @public DECache
 
 # Specialization markers
-@public FullSpecialize, NoSpecialize, FunctionWrapperSpecialize, AutoDePSpecialize
+@public FullSpecialize, NoSpecialize, FunctionWrapperSpecialize, AutoDespecialize,
+    AutoRespecialize, AutoDePSpecialize
 
 # SDE interpretation trait
 @public AlgorithmInterpretation, alg_interpretation
@@ -2336,7 +2418,8 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 # Ensemble interface
 @public AbstractEnsembleEstimator, WeightedEnsembleProblem,
     DEFAULT_PROB_FUNC, DEFAULT_OUTPUT_FUNC, DEFAULT_REDUCTION,
-    generate_sim_seeds, default_rng_func, WeightedEnsembleSolution
+    generate_sim_seeds, default_rng_func, WeightedEnsembleSolution,
+    calculate_ensemble_errors
 
 # AD / sensitivity function wrappers
 @public TimeDerivativeWrapper, TimeGradientWrapper, UDerivativeWrapper, UJacobianWrapper,
@@ -2344,5 +2427,6 @@ export ODEAliasSpecifier, LinearAliasSpecifier
 
 # Problem alias specifiers
 @public RODEAliasSpecifier, SDEAliasSpecifier
+
 
 end

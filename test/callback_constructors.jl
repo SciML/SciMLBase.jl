@@ -1,6 +1,17 @@
 using SciMLBase
 using Test
 
+@testset "CallbackSet collection storage" begin
+    condition(u, t, integrator) = true
+    affect!(integrator) = nothing
+    callback = DiscreteCallback(condition, affect!)
+
+    callback_set = CallbackSet(Any[], Any[callback])
+    @test callback_set.continuous_callbacks isa Vector{Any}
+    @test callback_set.discrete_callbacks isa Vector{Any}
+    @test only(callback_set.discrete_callbacks) === callback
+end
+
 @testset "VectorContinuousCallback 3-arg kwarg constructor" begin
     cond(out, u, t, integ) = (out[1] = u[1])
     aff!(integ, idx) = nothing

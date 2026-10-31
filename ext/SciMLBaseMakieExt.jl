@@ -10,6 +10,24 @@ using Makie: Makie, Lines, Plot, PlotSpec
 
 import Makie.SpecApi as S
 
+# Scalar ODESolution <: AbstractVector{<:Real}; skip PointBased index expansion.
+# DEIntegrator is not an AbstractVector, so it does not need this hook.
+Makie.expand_dimensions(::Makie.PointBased, ::SciMLBase.AbstractTimeseriesSolution) = nothing
+
+# `step!` replaces the solution wrapper with an isequal copy; still reconvert.
+# Same-object DEIntegrator mutation already makes ComputePipeline's default
+# `is_same` return false, so only solutions need an override.
+# Axis autolimits still do not follow PlotList data growth; call
+# `autolimits!(ax)` / `reset_limits!(ax)` after expanding the time window.
+if isdefined(Makie, :ComputePipeline)
+    function Makie.ComputePipeline.is_same(
+            ::SciMLBase.AbstractTimeseriesSolution,
+            ::SciMLBase.AbstractTimeseriesSolution
+        )
+        return false
+    end
+end
+
 function _tspan_indices(t, tspan)
     lo, hi = minmax(tspan[1], tspan[end])
     if length(t) > 1 && t[end] < t[1]
@@ -289,10 +307,10 @@ function Makie.convert_arguments(
         if plot_analytic
             plot_analytic_timeseries = [
                 integrator.sol.prob.f.analytic(
-                        integrator.sol.prob.u0,
-                        integrator.sol.prob.p,
-                        t
-                    ) for t in plott
+                    integrator.sol.prob.u0,
+                    integrator.sol.prob.p,
+                    t
+                ) for t in plott
             ]
         end
     else
@@ -384,11 +402,11 @@ function Makie.convert_arguments(
     return if denseplot
         [
             Makie.PlotSpec(
-                    plot_type_sym,
-                    Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]);
-                    label,
-                    color = Makie.Cycled(idx)
-                )
+                plot_type_sym,
+                Point2f.(plot_vecs[1][idx], plot_vecs[2][idx]);
+                label,
+                color = Makie.Cycled(idx)
+            )
                 for (idx, label) in zip(1:length(plot_vecs[1]), labels)
         ]
     else
@@ -444,16 +462,16 @@ function Makie.convert_arguments(
 
     mp = [
         PlotSpec(
-                plot_type_sym,
-                sim.u[i];
-                plot_analytic,
-                denseplot,
-                plotdensity,
-                plotat,
-                tspan,
-                tscale,
-                idxs
-            ) for i in trajectories
+            plot_type_sym,
+            sim.u[i];
+            plot_analytic,
+            denseplot,
+            plotdensity,
+            plotat,
+            tspan,
+            tscale,
+            idxs
+        ) for i in trajectories
     ]
 
     # Main.Infiltrator.@infiltrate
@@ -503,9 +521,9 @@ function Makie.convert_arguments(
                 VectorOfArray(
                     [
                         sqrt.(
-                                sim.v.u[i] /
+                            sim.v.u[i] /
                                 sim.num_monte
-                            ) .*
+                        ) .*
                             1.96
                             for i in 1:length(sim.v)
                     ]

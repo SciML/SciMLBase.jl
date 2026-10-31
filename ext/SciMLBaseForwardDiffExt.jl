@@ -57,7 +57,7 @@ function promote_dual(
 end
 
 """
-    promote_dual(::Type{T},::Type{T2})
+    promote_dual(::Type{T}, ::Type{T2})
 
 Is like the number promotion system, but always prefers a dual number type above
 anything else. For higher order differentiation, it returns the most dualiest of

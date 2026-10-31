@@ -31,6 +31,17 @@ end
 # accessor.
 _unwrap_grad(gs) = hasproperty(gs, :fields) ? getfield(gs, :fields) : gs
 
+# A solution stores the *concrete* problem it was solved with, and MTK builds
+# problems with `specialize = AutoDespecialize`, so that problem holds `p`
+# behind a `SciMLBase.DespecializedParameters` barrier even when the problem
+# handed to `solve` did not. A structural cotangent has to mirror the primal
+# (Zygote projects a cotangent that does not onto `nothing`), so the parameter
+# cotangent carries a matching `params` level. Peel it to compare against a
+# cotangent of the unwrapped parameter object.
+function _unwrap_parameter_cotangent(prob, dp)
+    return prob.p isa SciMLBase.DespecializedParameters ? dp.params : dp
+end
+
 @parameters σ ρ β
 @variables x(t) y(t) z(t) w(t)
 
@@ -116,7 +127,7 @@ end
                 p -> f(SII.state_values(iprob), p), backend, SII.parameter_values(iprob)
             )
 
-            @test gs.prob.p == gp
+            @test _unwrap_parameter_cotangent(isol.prob, gs.prob.p) == gp
         end
     end
     for backend in MOONCAKE_BACKENDS
@@ -136,7 +147,9 @@ end
             end
             @test count(!iszero, gp_ref) == 1
             @test only(filter(!iszero, gp_ref)) == 1.0
-            @test _unwrap_grad(gs).prob.fields.p.fields.tunable ≈ gp_ref
+            gp = _unwrap_grad(gs).prob.fields.p
+            gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
+            @test gp.fields.tunable ≈ gp_ref
         end
     end
 end
@@ -223,23 +236,22 @@ sol_dae = solve(prob_dae, Rodas5())
                 gs = DifferentiationInterface.gradient(
                     isol -> isol[simple_dae.u_dae], backend, isol
                 )
-                gt = gs.prob.p.tunable
+                gt = _unwrap_parameter_cotangent(isol.prob, gs.prob.p).tunable
                 @test length(findall(!iszero, gt)) == 1
             end
         end
-        # Mooncake fails while copying the nonempty initialization-solution tangent.
         for backend in MOONCAKE_BACKENDS
-            @testset "$(backend_name(backend)) (broken)" begin
-                @test_broken begin
-                    iprob = prob_dae.f.initialization_data.initializeprob
-                    isol = solve(iprob)
-                    gs = DifferentiationInterface.gradient(
-                        isol -> isol[simple_dae.u_dae], backend, isol
-                    )
-                    gt = _unwrap_grad(gs).prob.fields.p.fields.tunable
-                    length(findall(!iszero, gt)) == 1 &&
-                        only(filter(!iszero, gt)) == 1.0
-                end
+            @testset "$(backend_name(backend))" begin
+                iprob = prob_dae.f.initialization_data.initializeprob
+                isol = solve(iprob)
+                gs = DifferentiationInterface.gradient(
+                    isol -> isol[simple_dae.u_dae], backend, isol
+                )
+                gp = _unwrap_grad(gs).prob.fields.p
+                gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
+                gt = gp.fields.tunable
+                @test length(findall(!iszero, gt)) == 1
+                @test only(filter(!iszero, gt)) == 1.0
             end
         end
     end
