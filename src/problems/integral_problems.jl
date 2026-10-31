@@ -74,7 +74,8 @@ function IntegralProblem(
 end
 
 function IntegralProblem(f, args...; kwargs...)
-    return IntegralProblem{isinplace(f, 3)}(f, args...; kwargs...)
+    return isinplace(f, 3) ? IntegralProblem{true}(f, args...; kwargs...) :
+        IntegralProblem{false}(f, args...; kwargs...)
 end
 function IntegralProblem{iip}(
         f, args...; kwargs...
