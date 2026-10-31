@@ -146,8 +146,9 @@ function SDEProblem(f::AbstractSDEFunction, u0, tspan, p = NullParameters(); kwa
 end
 
 function SDEProblem(f, g, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 4)
-    return SDEProblem{iip}(SDEFunction{iip}(f, g), u0, tspan, p; kwargs...)
+    return isinplace(f, 4) ?
+        SDEProblem{true}(SDEFunction{true}(f, g), u0, tspan, p; kwargs...) :
+        SDEProblem{false}(SDEFunction{false}(f, g), u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: SDEProblem}
