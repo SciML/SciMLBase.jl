@@ -319,11 +319,11 @@ end
 
 # Returns `(i, k)`: the saved state `k` when `k > 0`, else the interval t[i-1] to t[i]
 @inline function interp_index(t, tval, i, deriv::D, continuity) where {D}
-    if t[i] != tval
-        # isless orders -0.0 before 0.0, so the search can land one past an equal time
-        deriv == Val{0} && i > 1 && t[i - 1] == tval && return i, i - 1
-        return i, 0
+    # isless orders -0.0 before 0.0, so the search can land past an equal time
+    while i > firstindex(t) && t[i - 1] == tval
+        i -= 1
     end
+    t[i] != tval && return i, 0
     lasti = lastindex(t)
     j = i
     while j < lasti && t[j + 1] == tval
@@ -351,6 +351,7 @@ function node_derivative(id, k, idxs, ::Type{Val{D}}) where {D}
 end
 
 function node_derivative!(out, id, k, idxs, ::Type{Val{D}}) where {D}
+    out === nothing && return node_derivative(id, k, idxs, Val{D})
     id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
     if D == 1 && (id isa HermiteInterpolation || id isa BasicInterpolation && id.dense)
         return copyto!(out, idxs === nothing ? id.du[k] : view(id.du[k], idxs))

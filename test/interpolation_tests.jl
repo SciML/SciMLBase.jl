@@ -299,4 +299,17 @@ end
         @test allpaths(itp, 1.0, Val{1}, :left) ≈ [-0.4]
         @test allpaths(itp, 1.0, Val{1}, :right) == [-1.4]
     end
+    for itp in dense_interps(
+            [0.0, 1.0, 1.0], [[0.0, 0.0], [1.0, 2.0], [3.0, 4.0]], [[1.0, 2.0], [1.0, 2.0], [3.0, 4.0]]
+        )
+        @test itp(nothing, 1.0, 1, Val{1}, nothing, :right) == 3.0
+        @test itp(nothing, 1.0, 1, Val{1}, nothing, :left) == 1.0
+    end
+
+    fwd = SciMLBase.LinearInterpolation([-1.0, -0.0], [[1.0], [2.0]])
+    @test allpaths(fwd, 0.0, Val{0}, :left) == [2.0]
+    @test allpaths(fwd, 0.0, Val{1}, :left) == [1.0]
+    bwd = SciMLBase.LinearInterpolation([1.0, 0.0], [[1.0], [2.0]])
+    @test allpaths(bwd, -0.0, Val{0}, :left) == [2.0]
+    @test allpaths(bwd, -0.0, Val{1}, :left) == [-1.0]
 end
