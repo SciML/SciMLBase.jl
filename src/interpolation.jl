@@ -317,6 +317,54 @@ end
 @inline interp_search_hint(id) = nothing
 @inline interp_search_hint(id::BasicInterpolation) = id.guesser
 
+# Returns `(i, k)`: the saved state `k` when `k > 0`, else the interval t[i-1] to t[i]
+@inline function interp_index(t, tval, i, deriv::D, continuity) where {D}
+    # isless orders -0.0 before 0.0, so the search can land past an equal time
+    while i > firstindex(t) && t[i - 1] == tval
+        i -= 1
+    end
+    t[i] != tval && return i, 0
+    lasti = lastindex(t)
+    j = i
+    while j < lasti && t[j + 1] == tval
+        j += 1
+    end
+    if deriv == Val{0}
+        return i, continuity == :right ? j : i
+    elseif i == j && lasti > 1
+        return max(i, 2), 0
+    elseif continuity == :right
+        return j < lasti ? (j + 1, 0) : (j, j)
+    else
+        return i > 1 ? (i, 0) : (i, i)
+    end
+end
+
+function node_derivative(id, k, idxs, ::Type{Val{D}}) where {D}
+    id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
+    if D == 1 && (id isa HermiteInterpolation || id isa BasicInterpolation && id.dense)
+        return idxs === nothing ? id.du[k] : id.du[k][idxs]
+    elseif D == 1 && id isa ConstantInterpolation
+        return interpolant(nothing, id, nothing, id.u[k], id.u[k], idxs, Val{1})
+    end
+    return node_derivative_error(id.t[k], D)
+end
+
+function node_derivative!(out, id, k, idxs, ::Type{Val{D}}) where {D}
+    out === nothing && return node_derivative(id, k, idxs, Val{D})
+    id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
+    if D == 1 && (id isa HermiteInterpolation || id isa BasicInterpolation && id.dense)
+        return copyto!(out, idxs === nothing ? id.du[k] : view(id.du[k], idxs))
+    elseif D == 1 && id isa ConstantInterpolation
+        return interpolant!(out, nothing, id, nothing, id.u[k], id.u[k], idxs, Val{1})
+    end
+    return node_derivative_error(id.t[k], D)
+end
+
+@noinline function node_derivative_error(tk, D)
+    return error("Solution interpolation cannot compute the order $D derivative at t = $tk: no saved interval is adjacent to the state saved there on the requested side (a single timepoint, or a duplicated first or last timepoint).")
+end
+
 @inline function interpolation(
         tvals, id::I, idxs, deriv::D, p,
         continuity::Symbol = :left
@@ -326,7 +374,7 @@ end
     (id isa HermiteInterpolation || id isa BasicInterpolation) && (du = id.du)
     tdir = sign(t[end] - t[1])
     idx = sortperm(tvals, rev = tdir < 0)
-    i = 2 # Start the search thinking it's between t[1] and t[2]
+    ifirst = 1
     t[end] == t[1] && (tvals[idx[1]] != t[1] || tvals[idx[end]] != t[1]) &&
         error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tvals[idx[end]] > tdir * t[end] &&
@@ -342,25 +390,16 @@ end
     end
     for j in idx
         tval = tvals[j]
-        # `max` reproduces the previous view-based search's lower bound of `i`
-        # exactly (the sorted-`tvals` sweep never moves backward)
-        i = max(i, fff_searchsortedfirst(t, tval, clamp(i, firstindex(t), lastindex(t)), tdir)) # It's in the interval t[i-1] to t[i]
-        avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
-        avoid_constant_ends && i == 1 && (i += 1)
-        if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
-            if idxs === nothing
-                vals[j] = u[i - 1]
-            else
-                vals[j] = u[i - 1][idxs]
-            end
-        elseif !avoid_constant_ends && t[i] == tval
-            lasti = lastindex(t)
-            k = continuity == :right && i + 1 <= lasti && t[i + 1] == tval ? i + 1 : i
+        ifirst = fff_searchsortedfirst(t, tval, clamp(ifirst, firstindex(t), lastindex(t)), tdir)
+        i, k = interp_index(t, tval, ifirst, deriv, continuity)
+        if k > 0 && deriv == Val{0}
             if idxs === nothing
                 vals[j] = u[k]
             else
                 vals[j] = u[k][idxs]
             end
+        elseif k > 0
+            vals[j] = node_derivative(id, k, idxs, deriv)
         else
             id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
             dt = t[i] - t[i - 1]
@@ -403,7 +442,7 @@ times t (sorted), with values u and derivatives ks
     (id isa HermiteInterpolation || id isa BasicInterpolation) && (du = id.du)
     tdir = sign(t[end] - t[1])
     idx = sortperm(tvals, rev = tdir < 0)
-    i = 2 # Start the search thinking it's between t[1] and t[2]
+    ifirst = 1
     t[end] == t[1] && (tvals[idx[1]] != t[1] || tvals[idx[end]] != t[1]) &&
         error("Solution interpolation cannot extrapolate from a single timepoint. Either solve on a longer timespan or use the local extrapolation from the integrator interface.")
     tdir * tvals[idx[end]] > tdir * t[end] &&
@@ -412,24 +451,19 @@ times t (sorted), with values u and derivatives ks
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     for j in idx
         tval = tvals[j]
-        # `max` reproduces the previous view-based search's lower bound of `i`
-        # exactly (the sorted-`tvals` sweep never moves backward)
-        i = max(i, fff_searchsortedfirst(t, tval, clamp(i, firstindex(t), lastindex(t)), tdir)) # It's in the interval t[i-1] to t[i]
-        avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
-        avoid_constant_ends && i == 1 && (i += 1)
-        if !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
-            if idxs === nothing
-                vals[j] = u[i - 1]
-            else
-                vals[j] = u[i - 1][idxs]
-            end
-        elseif !avoid_constant_ends && t[i] == tval
-            lasti = lastindex(t)
-            k = continuity == :right && i + 1 <= lasti && t[i + 1] == tval ? i + 1 : i
+        ifirst = fff_searchsortedfirst(t, tval, clamp(ifirst, firstindex(t), lastindex(t)), tdir)
+        i, k = interp_index(t, tval, ifirst, deriv, continuity)
+        if k > 0 && deriv == Val{0}
             if idxs === nothing
                 vals[j] = u[k]
             else
                 vals[j] = u[k][idxs]
+            end
+        elseif k > 0
+            if eltype(u) <: Union{AbstractArray, ArrayPartition}
+                node_derivative!(vals[j], id, k, idxs, deriv)
+            else
+                vals[j] = node_derivative(id, k, idxs, deriv)
             end
         else
             id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
@@ -501,22 +535,15 @@ times t (sorted), with values u and derivatives ks
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     i = scalar_searchsortedfirst(interp_search_hint(id), t, tval, tdir) # It's in the interval t[i-1] to t[i]
-    avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
-    avoid_constant_ends && i == 1 && (i += 1)
-    if !avoid_constant_ends && t[i] == tval
-        lasti = lastindex(t)
-        k = continuity == :right && i + 1 <= lasti && t[i + 1] == tval ? i + 1 : i
+    i, k = interp_index(t, tval, i, deriv, continuity)
+    if k > 0 && deriv == Val{0}
         if idxs === nothing
             val = u[k]
         else
             val = u[k][idxs]
         end
-    elseif !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
-        if idxs === nothing
-            val = u[i - 1]
-        else
-            val = u[i - 1][idxs]
-        end
+    elseif k > 0
+        val = node_derivative(id, k, idxs, deriv)
     else
         id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
         dt = t[i] - t[i - 1]
@@ -563,28 +590,21 @@ times t (sorted), with values u and derivatives ks
     tdir * tval < tdir * t[1] &&
         error("Solution interpolation cannot extrapolate before the first timepoint. Either start solving earlier or use the local extrapolation from the integrator interface.")
     i = scalar_searchsortedfirst(interp_search_hint(id), t, tval, tdir) # It's in the interval t[i-1] to t[i]
-    avoid_constant_ends = deriv != Val{0} #|| tval isa ForwardDiff.Dual
-    avoid_constant_ends && i == 1 && (i += 1)
+    i, k = interp_index(t, tval, i, deriv, continuity)
     # `copyto!`, not `copy!`: the between-node kernel path has always required
     # a correctly-sized `out` (it broadcasts into it), so the exact-node
     # branches match that contract instead of silently resizing — and `copy!`'s
     # `resize!` branches are reachable allocations that would break the static
     # no-allocation guarantee of this path (`copyto!` is also alias-safe
     # without broadcast's defensive-copy machinery).
-    return if !avoid_constant_ends && t[i] == tval
-        lasti = lastindex(t)
-        k = continuity == :right && i + 1 <= lasti && t[i + 1] == tval ? i + 1 : i
+    return if k > 0 && deriv == Val{0}
         if idxs === nothing
             copyto!(out, u[k])
         else
             copyto!(out, view(u[k], idxs))
         end
-    elseif !avoid_constant_ends && t[i - 1] == tval # Can happen if it's the first value!
-        if idxs === nothing
-            copyto!(out, u[i - 1])
-        else
-            copyto!(out, view(u[i - 1], idxs))
-        end
+    elseif k > 0
+        node_derivative!(out, id, k, idxs, deriv)
     else
         id.sensitivitymode && error(SENSITIVITY_INTERP_MESSAGE)
         dt = t[i] - t[i - 1]
