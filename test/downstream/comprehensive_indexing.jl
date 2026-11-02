@@ -141,6 +141,7 @@ timeseries_systems = [osys, ssys, jsys]
                     (variable_index(sc, X), xval)
                 ]
                 get = getsym(sc, sym)
+                @inferred get(valp)
                 @test get(valp) == val
                 @test valp[sym] == val
             end
@@ -185,13 +186,16 @@ timeseries_systems = [osys, ssys, jsys]
     @testset "Observed" begin
         # Observed functions don't infer
         if scc_lowered
-            # Torn unknowns are `observed` on the lowering; reference values are
-            # evaluated through `observed` on the solution's own container.
+            # Torn unknowns are `observed` on the lowering. Expected values are
+            # derived from the fixture equations rather than `observed` itself,
+            # so a wrong generated function cannot agree with itself:
+            # `0 ~ 1 + k1 * X - k2 * Y - Y` gives `Y = (1 + k1 * X) / (1 + k2)`,
+            # and `XY ~ X + Y` is declared.
             sc = SymbolicIndexingInterface.symbolic_container(valp)
-            pv = parameter_values(valp)
+            ps = Dict(p_vals)
             xval = u[variable_index(sc, X)]
-            yval = SymbolicIndexingInterface.observed(sc, Y)(u, pv)
-            xyval = SymbolicIndexingInterface.observed(sc, XY)(u, pv)
+            yval = (1 + ps[k1] * xval) / (1 + ps[k2])
+            xyval = xval + yval
             for (sym, val) in [
                     (Y, yval)
                     (indp.Y, yval)
@@ -208,8 +212,9 @@ timeseries_systems = [osys, ssys, jsys]
                     (X * Y, xval * yval)
                 ]
                 get = getsym(sc, sym)
-                @test get(valp) == val
-                @test valp[sym] == val
+                asvec(x) = x isa Tuple ? collect(x) : x
+                @test asvec(get(valp)) ≈ asvec(val)
+                @test asvec(valp[sym]) ≈ asvec(val)
             end
         else
             for (sym, val) in [
