@@ -124,38 +124,60 @@ timeseries_systems = [osys, ssys, jsys]
     )
     u = state_values(valp)
     uidxs = variable_index.((indp,), [X, Y])
+    # A `SteadyStateProblem` with a stored `SCCNonlinearProblem` lowering solves
+    # in the lowering's (torn) state ordering: `variable_index(indp, ·)` does
+    # not index `state_values(valp)`, and torn unknowns like `Y` are only
+    # reachable through `observed`. Such `valp` is indexed through its own
+    # `symbolic_container` instead.
+    scc_lowered = !checkbounds(Bool, u, uidxs)
     @testset "State indexing" begin
-        for (sym, val, newval) in [
-                (X, u[uidxs[1]], 4.0)
-                (indp.X, u[uidxs[1]], 4.0)
-                (:X, u[uidxs[1]], 4.0)
-                (uidxs[1], u[uidxs[1]], 4.0)
-                ([X, Y], u[uidxs], 4ones(2))
-                ([indp.X, indp.Y], u[uidxs], 4ones(2))
-                ([:X, :Y], u[uidxs], 4ones(2))
-                (uidxs, u[uidxs], 4ones(2))
-                ((X, Y), Tuple(u[uidxs]), (4.0, 4.0))
-                ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
-                ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
-                (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))
-            ]
-            get = getsym(indp, sym)
-            set! = setsym(indp, sym)
-            @inferred get(valp)
-            @test get(valp) == val
-            @test valp[sym] == val
-
-            if !(valp isa SciMLBase.AbstractNoTimeSolution)
-                @inferred set!(valp, newval)
-                @test get(valp) == newval
-                set!(valp, val)
+        if scc_lowered
+            sc = SymbolicIndexingInterface.symbolic_container(valp)
+            xval = u[variable_index(sc, X)]
+            for (sym, val) in [
+                    (X, xval)
+                    (indp.X, xval)
+                    (:X, xval)
+                    (variable_index(sc, X), xval)
+                ]
+                get = getsym(sc, sym)
+                @inferred get(valp)
                 @test get(valp) == val
+                @test valp[sym] == val
+            end
+        else
+            for (sym, val, newval) in [
+                    (X, u[uidxs[1]], 4.0)
+                    (indp.X, u[uidxs[1]], 4.0)
+                    (:X, u[uidxs[1]], 4.0)
+                    (uidxs[1], u[uidxs[1]], 4.0)
+                    ([X, Y], u[uidxs], 4ones(2))
+                    ([indp.X, indp.Y], u[uidxs], 4ones(2))
+                    ([:X, :Y], u[uidxs], 4ones(2))
+                    (uidxs, u[uidxs], 4ones(2))
+                    ((X, Y), Tuple(u[uidxs]), (4.0, 4.0))
+                    ((indp.X, indp.Y), Tuple(u[uidxs]), (4.0, 4.0))
+                    ((:X, :Y), Tuple(u[uidxs]), (4.0, 4.0))
+                    (Tuple(uidxs), Tuple(u[uidxs]), (4.0, 4.0))
+                ]
+                get = getsym(indp, sym)
+                set! = setsym(indp, sym)
+                @inferred get(valp)
+                @test get(valp) == val
+                @test valp[sym] == val
 
-                if !(valp isa JumpProblem) || !(sym isa Union{Tuple, AbstractArray})
-                    valp[sym] = newval
-                    @test valp[sym] == newval
-                    valp[sym] = val
-                    @test valp[sym] == val
+                if !(valp isa SciMLBase.AbstractNoTimeSolution)
+                    @inferred set!(valp, newval)
+                    @test get(valp) == newval
+                    set!(valp, val)
+                    @test get(valp) == val
+
+                    if !(valp isa JumpProblem) || !(sym isa Union{Tuple, AbstractArray})
+                        valp[sym] = newval
+                        @test valp[sym] == newval
+                        valp[sym] = val
+                        @test valp[sym] == val
+                    end
                 end
             end
         end
@@ -163,16 +185,49 @@ timeseries_systems = [osys, ssys, jsys]
 
     @testset "Observed" begin
         # Observed functions don't infer
-        for (sym, val) in [
-                (XY, sum(u))
-                (indp.XY, sum(u))
-                (:XY, sum(u))
-                ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
-                ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
-                (X * Y, prod(u))
-            ]
-            get = getsym(indp, sym)
-            @test get(valp) == val
+        if scc_lowered
+            # Torn unknowns are `observed` on the lowering. Expected values are
+            # derived from the fixture equations rather than `observed` itself,
+            # so a wrong generated function cannot agree with itself:
+            # `0 ~ 1 + k1 * X - k2 * Y - Y` gives `Y = (1 + k1 * X) / (1 + k2)`,
+            # and `XY ~ X + Y` is declared.
+            sc = SymbolicIndexingInterface.symbolic_container(valp)
+            ps = Dict(p_vals)
+            xval = u[variable_index(sc, X)]
+            yval = (1 + ps[k1] * xval) / (1 + ps[k2])
+            xyval = xval + yval
+            for (sym, val) in [
+                    (Y, yval)
+                    (indp.Y, yval)
+                    (:Y, yval)
+                    (XY, xyval)
+                    (indp.XY, xyval)
+                    (:XY, xyval)
+                    ([X, Y], [xval, yval])
+                    ([indp.X, indp.Y], [xval, yval])
+                    ([:X, :Y], [xval, yval])
+                    ((X, Y), (xval, yval))
+                    ([X, indp.Y, :XY, X * Y], [xval, yval, xyval, xval * yval])
+                    ((X, indp.Y, :XY, X * Y), (xval, yval, xyval, xval * yval))
+                    (X * Y, xval * yval)
+                ]
+                get = getsym(sc, sym)
+                asvec(x) = x isa Tuple ? collect(x) : x
+                @test asvec(get(valp)) ≈ asvec(val)
+                @test asvec(valp[sym]) ≈ asvec(val)
+            end
+        else
+            for (sym, val) in [
+                    (XY, sum(u))
+                    (indp.XY, sum(u))
+                    (:XY, sum(u))
+                    ([X, indp.Y, :XY, X * Y], [u[uidxs]..., sum(u), prod(u)])
+                    ((X, indp.Y, :XY, X * Y), (u[uidxs]..., sum(u), prod(u)))
+                    (X * Y, prod(u))
+                ]
+                get = getsym(indp, sym)
+                @test get(valp) == val
+            end
         end
     end
 
