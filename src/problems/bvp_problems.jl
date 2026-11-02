@@ -223,8 +223,9 @@ struct BVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC, PT, S, K} 
 end
 
 function BVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 4)
-    return BVProblem{iip}(BVPFunction{iip}(f, bc), u0, tspan, p; kwargs...)
+    return isinplace(f, 4) ?
+        BVProblem{true}(BVPFunction{true}(f, bc), u0, tspan, p; kwargs...) :
+        BVProblem{false}(BVPFunction{false}(f, bc), u0, tspan, p; kwargs...)
 end
 
 function BVProblem(f::AbstractBVPFunction, u0, tspan, p = NullParameters(); kwargs...)
@@ -488,10 +489,13 @@ struct SecondOrderBVProblem{uType, tType, isinplace, nlls, P, F, LB, UB, LC, UC,
 end
 
 function SecondOrderBVProblem(f, bc, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 5)
-    return SecondOrderBVProblem{iip}(
-        DynamicalBVPFunction{iip}(f, bc), u0, tspan, p; kwargs...
-    )
+    return isinplace(f, 5) ?
+        SecondOrderBVProblem{true}(
+            DynamicalBVPFunction{true}(f, bc), u0, tspan, p; kwargs...
+        ) :
+        SecondOrderBVProblem{false}(
+            DynamicalBVPFunction{false}(f, bc), u0, tspan, p; kwargs...
+        )
 end
 
 function SecondOrderBVProblem(
