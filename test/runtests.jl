@@ -217,6 +217,9 @@ run_tests(;
                 @time @safetestset "Ensemble adjoint gradient correctness" begin
                     include("downstream/ensemble_adjoints.jl")
                 end
+                @time @safetestset "Enzyme through ensembles of SDEs" begin
+                    include("downstream/ensemble_enzyme_sde.jl")
+                end
                 @time @safetestset "PDE solution adjoints" begin
                     include("downstream/pde_solution_adjoints.jl")
                 end
