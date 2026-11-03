@@ -505,6 +505,7 @@ discrete storage for `timeseries_idx`. If `get_saveable_values` returns
 may avoid appending a second value at the same saved time.
 """
 function save_discretes!(integ::DEIntegrator, timeseries_idx; skip_duplicates = false)
+    is_parameter_timeseries(integ.sol) == Timeseries() || return
     inner_sol = get_sol(integ)
     vals = get_saveable_values(inner_sol, parameter_values(integ), timeseries_idx)
     vals === nothing && return

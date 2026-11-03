@@ -2,13 +2,15 @@ module SciMLBaseMooncakeExt
 
 using Mooncake: Mooncake
 using SciMLBase: SciMLBase,
-    AbstractTimeseriesSolution, AbstractNonlinearSolution, getobserved
+    AbstractTimeseriesSolution, AbstractNonlinearSolution, getobserved,
+    AbstractDifferentiableDiscretizationMetadata, AbstractPDETimeSeriesSolution,
+    AbstractPDENoTimeSolution, pde_index_cotangent, pde_call_cotangent
 using SymbolicIndexingInterface: symbolic_type, NotSymbolic, variable_index,
     parameter_values
 import SymbolicIndexingInterface as SII
 import Mooncake: rrule!!, CoDual, zero_fcodual, @is_primitive,
     @zero_adjoint, @mooncake_overlay, MinimalCtx,
-    NoPullback, NoFData, NoRData, NoTangent, fdata, zero_tangent,
+    NoPullback, NoFData, NoRData, NoTangent, fdata, rdata, zero_tangent, increment!!,
     primal, tangent, build_rrule, prepare_pullback_cache, value_and_pullback!!,
     lazy_zero_rdata, instantiate
 
@@ -732,6 +734,261 @@ function rrule!!(
     end
 
     return zero_fcodual(y), _ns_int_pullback
+end
+
+# =============================================================================
+# PDE solution wrappers
+# =============================================================================
+#
+# The counterparts of the PDE solution rules in SciMLBaseChainRulesCoreExt, for metadata
+# that subtypes `AbstractDifferentiableDiscretizationMetadata`. The wrapper `solve` builds
+# shares the fdata of `original_sol` with the solver's solution and hands the rdata of
+# `original_sol` back to it, so that `sol[sym]`, `sol[sym, inds...]` and `sol(args...; dv)`
+# can put the cotangent the discretizer's hooks describe into it, with the observed terms
+# pulled back through derived rules. The wrapper's other fields are constants of the
+# wrapping, except `u`, `interp` and `prob`, where a gradient is an error. The time series
+# methods also disambiguate against the `AbstractTimeseriesSolution` rules above.
+
+const DifferentiablePDETimeSeriesSolution = AbstractPDETimeSeriesSolution{
+    T, N, S, D,
+} where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+const DifferentiablePDENoTimeSolution = AbstractPDENoTimeSolution{
+    T, N, S, D,
+} where {T, N, S, D <: AbstractDifferentiableDiscretizationMetadata}
+const DifferentiablePDESolution = Union{
+    DifferentiablePDETimeSeriesSolution, DifferentiablePDENoTimeSolution,
+}
+
+# The metadata, which the problem and the wrapped solution carry, describes the
+# discretization and is a constant of the solve.
+Mooncake.tangent_type(::Type{<:AbstractDifferentiableDiscretizationMetadata}) = Mooncake.NoTangent
+
+# Whether a tangent, or its fdata or rdata, holds a nonzero number.
+_has_gradient(x::Union{AbstractFloat, Complex{<:AbstractFloat}}) = !iszero(x)
+function _has_gradient(x::AbstractArray{<:Union{AbstractFloat, Complex{<:AbstractFloat}}})
+    return any(!iszero, x)
+end
+_has_gradient(x::AbstractArray) = any(i -> isassigned(x, i) && _has_gradient(x[i]), eachindex(x))
+_has_gradient(x::Union{Tuple, NamedTuple}) = any(_has_gradient, x)
+_has_gradient(x::Union{Mooncake.Tangent, Mooncake.MutableTangent}) = _has_gradient(x.fields)
+_has_gradient(x::Union{Mooncake.FData, Mooncake.RData}) = _has_gradient(x.data)
+_has_gradient(::Any) = false
+
+# Only `original_sol` carries a gradient back; `u`, `interp` and `prob` are reached through
+# the rules below, so a gradient on them means a path that has no rule, and it is an error
+# rather than a zero, as in SciMLBaseChainRulesCoreExt.
+function _check_unreached_fields(fd, rd)
+    for x in (fd, rd), field in (:u, :interp, :prob)
+        x isa Union{Mooncake.FData, Mooncake.RData} && hasfield(typeof(x.data), field) || continue
+        _has_gradient(getfield(x.data, field)) && throw(
+            ArgumentError(
+                "Reverse-mode differentiation reaches a PDE solution through `sol[sym]` and `sol(args...)`; the `$field` field of the solution has no rule."
+            )
+        )
+    end
+    return nothing
+end
+
+for W in (:PDETimeSeriesSolution, :PDENoTimeSolution)
+    @eval begin
+        @is_primitive MinimalCtx Tuple{
+            Type{SciMLBase.$W}, Any, AbstractDifferentiableDiscretizationMetadata,
+        }
+        function rrule!!(
+                ::CoDual{Type{SciMLBase.$W}}, sol::CoDual,
+                metadata::CoDual{<:AbstractDifferentiableDiscretizationMetadata}
+            )
+            A = SciMLBase.$W(sol.x, metadata.x)
+            # Wrapping a wrapper is the identity.
+            A === sol.x && return sol, dA -> (NoRData(), dA, NoRData())
+            fd = fdata(zero_tangent(A))
+            fd = typeof(fd)(merge(fd.data, (; original_sol = sol.dx)))
+            lzr_sol = lazy_zero_rdata(sol.x)
+            function wrapper_pullback(dA)
+                _check_unreached_fields(fd, dA)
+                dsol = dA isa Mooncake.RData ? dA.data.original_sol : instantiate(lzr_sol)
+                return NoRData(), dsol, NoRData()
+            end
+            return CoDual(A, fd), wrapper_pullback
+        end
+    end
+end
+
+# The observed terms are pulled back once per term, through one cache per function.
+function _pullback_observed(caches, f, δ, args...)
+    cache = get!(() -> prepare_pullback_cache(f, args...), caches, f)
+    return last(value_and_pullback!!(cache, δ, f, args...))
+end
+
+# Add the cotangent `dp` of the parameters `sol.prob.p` to the solution. A mutable problem,
+# such as an `ODEProblem`, holds it whole; an immutable one, such as a `DAEProblem`, holds
+# its fdata, and its rdata, that of a number for instance, goes into `rA`, the rdata of the
+# wrapper.
+function _accumulate_parameters!(rA, sol_fdata, dp)
+    prob_fd = sol_fdata.data.prob
+    if prob_fd isa Mooncake.MutableTangent
+        prob_fd.fields = merge(prob_fd.fields, (; p = increment!!(prob_fd.fields.p, dp)))
+        return rA
+    end
+    prob_fd isa Mooncake.FData && increment!!(prob_fd.data.p, fdata(dp))
+    rdp = rdata(dp)
+    rdp isa NoRData && return rA
+    rsol = rA.data.original_sol
+    rprob = rsol.data.prob
+    rprob = typeof(rprob)(merge(rprob.data, (; p = increment!!(rprob.data.p, rdp))))
+    rsol = typeof(rsol)(merge(rsol.data, (; prob = rprob)))
+    return typeof(rA)(merge(rA.data, (; original_sol = rsol)))
+end
+
+# Add the cotangent of `A.original_sol` that a hook describes to the fdata of `A` and to
+# `rA`, its rdata, and return the latter.
+function _accumulate_original_sol!(A::CoDual, c, rA)
+    c === nothing && return rA
+    sol = A.x.original_sol
+    sol_fdata = A.dx.data.original_sol
+    hastime = sol isa AbstractTimeseriesSolution
+    u_fd = sol_fdata.data.u
+    if c.u !== nothing
+        if hastime
+            for k in eachindex(u_fd)
+                u_fd[k] .+= c.u[k]
+            end
+        else
+            u_fd .+= c.u
+        end
+    end
+    isempty(c.observed) && return rA
+    p = parameter_values(sol)
+    dp = zero_tangent(p)
+    caches = IdDict{Any, Any}()
+    for term in c.observed
+        if hastime
+            f, k, δ = term
+            _, du, dpk, _ = _pullback_observed(caches, f, δ, sol.u[k], p, sol.t[k])
+            u_fd[k] .+= du
+        else
+            f, δ = term
+            _, du, dpk = _pullback_observed(caches, f, δ, sol.u, p)
+            u_fd .+= du
+        end
+        dp = increment!!(dp, dpk)
+    end
+    return _accumulate_parameters!(rA, sol_fdata, dp)
+end
+
+function _pde_getindex_rrule(A::CoDual, sym::CoDual, inds::CoDual...)
+    s = primal(sym)
+    is = map(primal, inds)
+    y = zero_fcodual(primal(A)[s, is...])
+    lzr_A = lazy_zero_rdata(primal(A))
+    function pde_getindex_pullback(dy)
+        Δ = tangent(y.dx, dy)
+        if !isempty(is)
+            # `sol[sym, inds...]` is `sol[sym][inds...]` in the interface.
+            Δfield = fill!(similar(primal(A)[s]), 0)
+            view(Δfield, is...) .+= Δ  # accumulates over a repeated index
+            Δ = Δfield
+        end
+        c = pde_index_cotangent(primal(A), s, Δ)
+        rA = _accumulate_original_sol!(A, c, instantiate(lzr_A))
+        return (NoRData(), rA, NoRData(), map(_ -> NoRData(), inds)...)
+    end
+    return y, pde_getindex_pullback
+end
+
+# `sol[sym]` of a time series is a primitive through the `AbstractTimeseriesSolution`
+# declarations above; the last declaration here disambiguates against them.
+@is_primitive MinimalCtx Tuple{typeof(getindex), DifferentiablePDENoTimeSolution, Vararg}
+@is_primitive MinimalCtx Tuple{
+    typeof(getindex), DifferentiablePDETimeSeriesSolution, Any, Any, Vararg,
+}
+@is_primitive MinimalCtx Tuple{
+    typeof(getindex), DifferentiablePDETimeSeriesSolution, Any, Integer,
+}
+
+for Tsym in (:Any, :Integer, :CartesianIndex, :AbstractVector)
+    @eval function rrule!!(
+            ::CoDual{typeof(getindex)}, A::CoDual{<:DifferentiablePDETimeSeriesSolution},
+            sym::CoDual{<:$Tsym}
+        )
+        return _pde_getindex_rrule(A, sym)
+    end
+end
+function rrule!!(
+        ::CoDual{typeof(getindex)}, A::CoDual{<:DifferentiablePDETimeSeriesSolution},
+        sym::CoDual, j::CoDual{<:Integer}
+    )
+    return _pde_getindex_rrule(A, sym, j)
+end
+function rrule!!(
+        ::CoDual{typeof(getindex)}, A::CoDual{<:DifferentiablePDETimeSeriesSolution},
+        sym::CoDual, ind::CoDual, inds::CoDual...
+    )
+    return _pde_getindex_rrule(A, sym, ind, inds...)
+end
+function rrule!!(
+        ::CoDual{typeof(getindex)}, A::CoDual{<:DifferentiablePDENoTimeSolution},
+        sym::CoDual, inds::CoDual...
+    )
+    return _pde_getindex_rrule(A, sym, inds...)
+end
+
+# The cotangent of an argument of `sol(args...)`: rdata for a number, and accumulated into the
+# fdata of an `Array`. Any other array, a view or a range for instance, takes it through
+# Mooncake's pullback of `collect`, which carries it on to what the array is made of. An
+# argument without a tangent, an integer for instance, takes none.
+function _call_arg_rdata!(x::CoDual, Δ)
+    xp = primal(x)
+    rd = instantiate(lazy_zero_rdata(xp))
+    Δ === nothing && return rd
+    xp isa Number && return rd isa NoRData ? rd : convert(typeof(rd), Δ)
+    xp isa AbstractArray && Mooncake.tangent_type(eltype(xp)) !== NoTangent || return rd
+    if tangent(x) isa Array
+        tangent(x) .+= Δ
+        return rd
+    end
+    Δx = convert(Array{eltype(xp)}, Δ)
+    _, (_, dx) = value_and_pullback!!(prepare_pullback_cache(collect, xp), Δx, collect, xp)
+    increment!!(tangent(x), fdata(dx))
+    return rdata(dx)
+end
+
+function _pde_call_rrule(A::CoDual, args::Tuple, kwargs::NamedTuple)
+    issubset(keys(kwargs), (:dv,)) || throw(
+        ArgumentError(
+            "Reverse-mode differentiation of `sol(args...; kwargs...)` covers the `dv` keyword only, got $(keys(kwargs))."
+        )
+    )
+    xs = map(primal, args)
+    y = zero_fcodual(primal(A)(xs...; kwargs...))
+    dv = get(kwargs, :dv, nothing)
+    lzr_A = lazy_zero_rdata(primal(A))
+    function pde_call_pullback(dy)
+        c, Δargs = pde_call_cotangent(primal(A), xs, dv, tangent(y.dx, dy))
+        rA = _accumulate_original_sol!(A, c, instantiate(lzr_A))
+        return (rA, map(_call_arg_rdata!, args, Tuple(Δargs))...)
+    end
+    return y, pde_call_pullback
+end
+
+const PDECallArgument = Union{Number, AbstractArray, Colon}
+
+@is_primitive MinimalCtx Tuple{DifferentiablePDESolution, Vararg{PDECallArgument}}
+function rrule!!(A::CoDual{<:DifferentiablePDESolution}, args::CoDual{<:PDECallArgument}...)
+    return _pde_call_rrule(A, args, (;))
+end
+
+@is_primitive MinimalCtx Tuple{
+    typeof(Core.kwcall), NamedTuple, DifferentiablePDESolution, Vararg{PDECallArgument},
+}
+function rrule!!(
+        ::CoDual{typeof(Core.kwcall)}, kwargs::CoDual{<:NamedTuple},
+        A::CoDual{<:DifferentiablePDESolution}, args::CoDual{<:PDECallArgument}...
+    )
+    y, pde_call_pullback = _pde_call_rrule(A, args, primal(kwargs))
+    lzr_kwargs = lazy_zero_rdata(primal(kwargs))
+    kwcall_pullback(dy) = (NoRData(), instantiate(lzr_kwargs), pde_call_pullback(dy)...)
+    return y, kwcall_pullback
 end
 
 # NOTE: The ChainRules extension also defines rrules for constructors

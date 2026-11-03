@@ -136,6 +136,22 @@ end
     @test du == [6.0]
 end
 
+mutable struct DespecializedParametersHolder
+    p::SciMLBase.DespecializedParameters
+end
+
+@testset "conversion wraps a parameter object" begin
+    wrapped = SciMLBase.DespecializedParameters([1.0, 2.0])
+    @test convert(SciMLBase.DespecializedParameters, wrapped) === wrapped
+    converted = convert(SciMLBase.DespecializedParameters, (rate = 2.0,))
+    @test converted isa SciMLBase.DespecializedParameters
+    @test SciMLBase.unwrap_parameters(converted) == (rate = 2.0,)
+    holder = DespecializedParametersHolder(wrapped)
+    holder.p = [3.0]
+    @test holder.p isa SciMLBase.DespecializedParameters
+    @test SciMLBase.unwrap_parameters(holder.p) == [3.0]
+end
+
 @testset "stable container and forwarded interfaces" begin
     params = SciMLBase.DespecializedParameters([1.0, 2.0])
     other = SciMLBase.DespecializedParameters((rate = 2.0,))

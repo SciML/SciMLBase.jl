@@ -38,6 +38,9 @@ run_tests(;
         @time @safetestset "Public interface declarations" begin
             include("public_interface.jl")
         end
+        @time @safetestset "save_discretes! without a parameter time series" begin
+            include("save_discretes_without_timeseries.jl")
+        end
         @time @safetestset "Compile-time trait inference" begin
             include("inference_tests.jl")
         end
@@ -46,6 +49,9 @@ run_tests(;
         end
         @time @safetestset "Integrator interface" begin
             include("integrator_tests.jl")
+        end
+        @time @safetestset "save_discretes_if_enabled! dispatch" begin
+            include("save_discretes_dispatch.jl")
         end
         @time @safetestset "Ensemble functionality" begin
             include("ensemble_tests.jl")
@@ -74,11 +80,17 @@ run_tests(;
         @time @safetestset "Despecialized parameters" begin
             include("despecialized_parameters.jl")
         end
+        @time @safetestset "OptimizationFunction specialization" begin
+            include("optimization_function_specialization.jl")
+        end
         @time @safetestset "Performance warnings" begin
             include("performance_warnings.jl")
         end
         @time @safetestset "Error hints" begin
             include("error_hint_tests.jl")
+        end
+        @time @safetestset "Keyword validation" begin
+            include("keyword_validation.jl")
         end
         @time @safetestset "Problem building tests" begin
             include("problem_building_test.jl")
@@ -115,8 +127,11 @@ run_tests(;
     end,
     groups = Dict(
         "Reactant" => function ()
-            return @safetestset "Reactant specialization" begin
+            @safetestset "Reactant specialization" begin
                 include("reactant_specialization.jl")
+            end
+            return @safetestset "Reactant return codes" begin
+                include("reactant_retcodes.jl")
             end
         end,
         "Downstream" => function ()
@@ -151,6 +166,9 @@ run_tests(;
                 end
                 @time @safetestset "Solution Indexing" begin
                     include("downstream/solution_interface.jl")
+                end
+                @time @safetestset "Despecialized observed getters" begin
+                    include("downstream/despecialized_observed.jl")
                 end
                 @time @safetestset "Plots / Makie plot recipes on multi-state ODE" begin
                     include("downstream/plot_lines.jl")
@@ -201,6 +219,12 @@ run_tests(;
                 end
                 @time @safetestset "Enzyme through ensembles of SDEs" begin
                     include("downstream/ensemble_enzyme_sde.jl")
+                end
+                @time @safetestset "PDE solution adjoints" begin
+                    include("downstream/pde_solution_adjoints.jl")
+                end
+                @time @safetestset "Symbolic solution getindex adjoints" begin
+                    include("downstream/symbolic_getindex_zygote.jl")
                 end
             end
         end,
