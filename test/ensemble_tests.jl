@@ -1,4 +1,5 @@
 using Test, SciMLBase, SciMLBase.EnsembleAnalysis
+using SciMLBase: RecipesBase
 using Logging
 
 EA = SciMLBase.EnsembleAnalysis
@@ -100,4 +101,32 @@ end
     # mean/var path remains available without ordering
     m, v = EA.timeseries_point_meanvar(sim, ts)
     @test length(m.u) == length(ts)
+end
+
+# https://github.com/SciML/SciMLBase.jl/issues/1654
+# Plots normally defines this; the stub lets the recipe run without a backend
+RecipesBase.is_key_supported(::Symbol) = true
+@testset "EnsembleSummary SEM ribbon for scalar states" begin
+    function sem_ribbon(summ)
+        series = RecipesBase.apply_recipe(Dict{Symbol, Any}(:ci_type => :SEM), summ)
+        return series[1].plotattributes[:ribbon][1]
+    end
+
+    ts = [0.0, 0.5, 1.0]
+    vals = [[1.0, 2.0, 4.0], [2.0, 3.0, 5.0], [4.0, 7.0, 11.0], [0.5, 1.5, 3.5]]
+    N = length(vals)
+    prob_s = ODEProblem((u, p, t) -> u, 0.0, (0.0, 1.0))
+    prob_v = ODEProblem((u, p, t) -> u, [0.0], (0.0, 1.0))
+    build(prob, u) = SciMLBase.build_solution(
+        prob, :NoAlgorithm, ts, u; retcode = SciMLBase.ReturnCode.Success
+    )
+    summ_s = EnsembleSummary(EnsembleSolution([build(prob_s, u) for u in vals], 0.0, true))
+    summ_v = EnsembleSummary(
+        EnsembleSolution([build(prob_v, [[x] for x in u]) for u in vals], 0.0, true)
+    )
+
+    @test summ_s.num_monte == N
+    ribbon_s = sem_ribbon(summ_s)
+    @test ribbon_s ≈ 1.96 .* sqrt.(summ_s.v.u ./ N)
+    @test ribbon_s ≈ sem_ribbon(summ_v)
 end

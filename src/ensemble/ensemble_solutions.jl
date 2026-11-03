@@ -318,7 +318,7 @@ end
         else
             ci_low = [
                 [
-                    sqrt(sim.v.u[i] / length(sim.num_monte)) .* 1.96
+                    sqrt(sim.v.u[i] / sim.num_monte) .* 1.96
                         for i in 1:length(sim.v)
                 ],
             ]
