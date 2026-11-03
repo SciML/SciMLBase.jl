@@ -229,3 +229,87 @@ end
         end
     end
 end
+
+@testset "Single and duplicated timepoints" begin
+    function allpaths(itp, tv, deriv, cont)
+        s = itp(tv, nothing, deriv, nothing, cont)
+        v = only(itp([tv], nothing, deriv, nothing, cont).u)
+        o = zeros(length(s))
+        itp(o, tv, nothing, deriv, nothing, cont)
+        ov = [zeros(length(s))]
+        itp(ov, [tv], nothing, deriv, nothing, cont)
+        @test s == v == o == only(ov)
+        return s
+    end
+    dense_interps(ts, us, dus) = (
+        SciMLBase.HermiteInterpolation(ts, us, dus),
+        SciMLBase.BasicInterpolation(ts, us, dus, true),
+    )
+
+    for itp in dense_interps([0.0], [[1.0]], [[-1.0]])
+        @test allpaths(itp, 0.0, Val{0}, :left) == [1.0]
+        @test allpaths(itp, 0.0, Val{1}, :left) == [-1.0]
+        @test allpaths(itp, 0.0, Val{1}, :right) == [-1.0]
+        @test_throws ErrorException itp(0.0, nothing, Val{2}, nothing, :left)
+        @test_throws ErrorException itp([0.0], nothing, Val{2}, nothing, :left)
+    end
+    @test_throws ErrorException SciMLBase.LinearInterpolation([0.0], [[1.0]])(
+        0.0, nothing, Val{1}, nothing, :left
+    )
+    @test_throws ErrorException SciMLBase.BasicInterpolation(
+        [0.0], [[1.0]], Vector{Float64}[], false
+    )([0.0], nothing, Val{1}, nothing, :left)
+    @test allpaths(SciMLBase.ConstantInterpolation([0.0], [[1.0]]), 0.0, Val{1}, :left) ==
+        [0.0]
+
+    for itp in dense_interps(
+            [0.0, 0.0, 1.0], [[1.0], [2.0], [2exp(-1)]], [[-1.0], [-2.0], [-2exp(-1)]]
+        )
+        @test allpaths(itp, 0.0, Val{0}, :left) == [1.0]
+        @test allpaths(itp, 0.0, Val{0}, :right) == [2.0]
+        @test allpaths(itp, 0.0, Val{1}, :left) == [-1.0]
+        @test allpaths(itp, 0.0, Val{1}, :right) == [-2.0]
+        @test_throws ErrorException itp(0.0, nothing, Val{2}, nothing, :left)
+    end
+    rev = SciMLBase.HermiteInterpolation(
+        [1.0, 1.0, 0.0], [[1.0], [2.0], [2exp(-1)]], [[-1.0], [-2.0], [-2exp(-1)]]
+    )
+    @test allpaths(rev, 1.0, Val{1}, :left) == [-1.0]
+    @test allpaths(rev, 1.0, Val{1}, :right) == [-2.0]
+    lin = SciMLBase.LinearInterpolation([0.0, 0.0, 1.0], [[1.0], [2.0], [3.0]])
+    @test allpaths(lin, 0.0, Val{1}, :right) == [1.0]
+    @test_throws ErrorException lin(0.0, nothing, Val{1}, nothing, :left)
+
+    for itp in dense_interps(
+            [0.0, 0.5, 0.5, 1.0], [[1.0], [0.6], [1.6], [1.0]], [[-1.0], [-0.6], [-1.6], [-1.0]]
+        )
+        @test allpaths(itp, 0.5, Val{0}, :left) == [0.6]
+        @test allpaths(itp, 0.5, Val{0}, :right) == [1.6]
+        @test allpaths(itp, 0.5, Val{1}, :left) ≈ [-0.6]
+        @test allpaths(itp, 0.5, Val{1}, :right) == [-1.6]
+    end
+    for itp in dense_interps(
+            [0.0, 0.5, 0.5, 0.5, 1.0], [[1.0], [0.6], [1.6], [2.6], [1.0]],
+            [[-1.0], [-0.6], [-1.6], [-2.6], [-1.0]]
+        )
+        @test allpaths(itp, 0.5, Val{0}, :right) == [2.6]
+        @test allpaths(itp, 0.5, Val{1}, :right) == [-2.6]
+    end
+    for itp in dense_interps([0.0, 1.0, 1.0], [[1.0], [0.4], [1.4]], [[-1.0], [-0.4], [-1.4]])
+        @test allpaths(itp, 1.0, Val{1}, :left) ≈ [-0.4]
+        @test allpaths(itp, 1.0, Val{1}, :right) == [-1.4]
+    end
+    for itp in dense_interps(
+            [0.0, 1.0, 1.0], [[0.0, 0.0], [1.0, 2.0], [3.0, 4.0]], [[1.0, 2.0], [1.0, 2.0], [3.0, 4.0]]
+        )
+        @test itp(nothing, 1.0, 1, Val{1}, nothing, :right) == 3.0
+        @test itp(nothing, 1.0, 1, Val{1}, nothing, :left) == 1.0
+    end
+
+    fwd = SciMLBase.LinearInterpolation([-1.0, -0.0], [[1.0], [2.0]])
+    @test allpaths(fwd, 0.0, Val{0}, :left) == [2.0]
+    @test allpaths(fwd, 0.0, Val{1}, :left) == [1.0]
+    bwd = SciMLBase.LinearInterpolation([1.0, 0.0], [[1.0], [2.0]])
+    @test allpaths(bwd, -0.0, Val{0}, :left) == [2.0]
+    @test allpaths(bwd, -0.0, Val{1}, :left) == [-1.0]
+end
