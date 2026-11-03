@@ -3606,7 +3606,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
         typeof(mass_matrix),
         typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp),
-        typeof(jac_prototype),
+        typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data),
@@ -6077,6 +6077,11 @@ for S in [
         :NonlinearFunction
         :IntervalNonlinearFunction
         :IncrementingODEFunction
+        :SplitFunction
+        :DynamicalODEFunction
+        :DynamicalDDEFunction
+        :SplitSDEFunction
+        :DynamicalSDEFunction
         :BVPFunction
         :DynamicalBVPFunction
         :IntegralFunction
