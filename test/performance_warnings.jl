@@ -14,6 +14,12 @@ using SciMLBase: should_warn_paramtype, warn_paramtype, WARN_PARAMTYPE_MESSAGE
 @test should_warn_paramtype(([1, 2.0], [3, "4"])) == true
 @test should_warn_paramtype([(1, 2.0), (3, "4")]) == true # uh oh
 @test should_warn_paramtype([[1, 2.0], [3, "4"]]) == true
+@test should_warn_paramtype((; a = 1, b = "2")) == false
+@test should_warn_paramtype((; a = 1, b = [1, "2"])) == true
+let p = (; a = 1.0, b = sin, c = [1.0, 2.0])
+    should_warn_paramtype(p)
+    @test (@allocated should_warn_paramtype(p)) == 0
+end
 
 @test_logs (:warn, WARN_PARAMTYPE_MESSAGE) warn_paramtype([1, "2"])
 @test_logs warn_paramtype((1, "2"))
