@@ -284,6 +284,28 @@ end
     @test resid[2] ≈ u0[1] + u0[2] - 1.0
 end
 
+@testset "DynamicalDDEFunction constructors" begin
+    f1(u, h, p, t) = u
+    f2(u, h, p, t) = -u
+    initialization_data = Ref(:initialization_data)
+    wrapped_f1 = DDEFunction{false}(f1; initialization_data)
+
+    for specialize in (SciMLBase.FullSpecialize, SciMLBase.NoSpecialize)
+        f = DynamicalDDEFunction{false, specialize}(wrapped_f1, f2)
+        @test f isa DynamicalDDEFunction{false, specialize}
+        @test f.initialization_data === initialization_data
+    end
+
+    f = DynamicalDDEFunction{false}(;
+        f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
+        jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
+        sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+        observed = nothing, colorvec = nothing, sys = nothing
+    )
+    @test f isa DynamicalDDEFunction{false, SciMLBase.FullSpecialize}
+    @test f.sparsity === nothing
+end
+
 # test for tspan promotion in DiscreteProblem
 let
     p = (0.1 / 1000, 0.01)
@@ -351,6 +373,8 @@ end
     @test sccprob.p === prob1.p === prob2.p === prob3.p
     @test sccprob.u0 == state_values(sccprob)
     @test sccprob.u0 isa SVector{3, Float64}
+
+    @test_throws ArgumentError NonlinearProblem(sccprob)
 
     sccprob2 = @inferred remake(sccprob; u0 = SA[2.0, 1.0, 2.0])
     @test !SciMLBase.isinplace(sccprob2)
