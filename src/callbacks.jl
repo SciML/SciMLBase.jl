@@ -529,6 +529,64 @@ end
 end
 
 """
+    instantiate_callback(callback) -> callback
+
+Return a new instance (copy) of the callback. Since callbacks are often shared between
+problems (e.g. after `remake`), callbacks with mutable state should overload this
+function to return a copy with a fresh state. Each integrator should call this function
+before callbacks are initialized. By default, return `callback` itself.
+
+# Arguments
+
+- `callback`: A callback, a `CallbackSet`, or `nothing`.
+
+# Returns
+
+An independent copy of `callback`.
+
+# Example
+
+```julia
+# Holds at every `n`-th step
+struct EveryNthStep
+    n::Int
+    count::Base.RefValue{Int}
+end
+EveryNthStep(n) = EveryNthStep(n, Ref(0))
+(c::EveryNthStep)(u, t, integrator) = (c.count[] += 1) % c.n == 0
+
+# Each integrator counts its own steps
+function SciMLBase.instantiate_callback(cb::DiscreteCallback{<:EveryNthStep})
+    return remake(cb; condition = EveryNthStep(cb.condition.n))
+end
+```
+"""
+instantiate_callback(callback) = callback
+
+function instantiate_callback(callbacks::CallbackSet)
+    return CallbackSet(
+        instantiate_callbacks(callbacks.continuous_callbacks),
+        instantiate_callbacks(callbacks.discrete_callbacks)
+    )
+end
+
+instantiate_callbacks(callbacks::Tuple) = map(instantiate_callback, callbacks)
+# Keeps the storage type, e.g. the type-erased `Vector{Any}` some solvers use
+function instantiate_callbacks(callbacks::AbstractVector)
+    return map!(instantiate_callback, similar(callbacks), callbacks)
+end
+
+"""
+    remake(callback::DECallback; kwargs...)
+
+Re-construct `callback`, replacing the fields given as keyword arguments, for example the
+`condition` with one that has fresh state in [`instantiate_callback`](@ref).
+"""
+function remake(callback::DECallback; kwargs...)
+    return ConstructionBase.setproperties(callback; kwargs...)
+end
+
+"""
     $(TYPEDSIGNATURES)
 
 Save the discrete parameter partitions associated with callback `cb`.
