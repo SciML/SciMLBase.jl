@@ -161,8 +161,9 @@ function DiscreteProblem(
         f::Callable, u0, tspan, p = NullParameters();
         kwargs...
     )
-    iip = isinplace(f, 4)
-    return DiscreteProblem(DiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    return isinplace(f, 4) ?
+        DiscreteProblem(DiscreteFunction{true}(f), u0, tspan, p; kwargs...) :
+        DiscreteProblem(DiscreteFunction{false}(f), u0, tspan, p; kwargs...)
 end
 
 """

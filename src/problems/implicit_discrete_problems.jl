@@ -127,8 +127,9 @@ function ImplicitDiscreteProblem(
         f, u0, tspan, p = NullParameters();
         kwargs...
     )
-    iip = isinplace(f, 5)
-    return ImplicitDiscreteProblem(ImplicitDiscreteFunction{iip}(f), u0, tspan, p; kwargs...)
+    return isinplace(f, 5) ?
+        ImplicitDiscreteProblem(ImplicitDiscreteFunction{true}(f), u0, tspan, p; kwargs...) :
+        ImplicitDiscreteProblem(ImplicitDiscreteFunction{false}(f), u0, tspan, p; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteProblem}

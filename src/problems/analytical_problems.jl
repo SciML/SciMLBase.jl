@@ -40,8 +40,8 @@ struct AnalyticalProblem{uType, tType, isinplace, P, F, K} <:
 end
 
 function AnalyticalProblem(f, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 4)
-    return AnalyticalProblem{iip}(f, u0, tspan, p; kwargs...)
+    return isinplace(f, 4) ? AnalyticalProblem{true}(f, u0, tspan, p; kwargs...) :
+        AnalyticalProblem{false}(f, u0, tspan, p; kwargs...)
 end
 
 export AnalyticalProblem, AbstractAnalyticalProblem
