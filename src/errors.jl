@@ -50,6 +50,7 @@ const allowedkeywords = (
     :rng,
     :alg_hints,
     :kwargshandle,
+    :kwargs_verbosity,
     :trajectories,
     :batch_size,
     :sensealg,
