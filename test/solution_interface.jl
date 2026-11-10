@@ -118,6 +118,23 @@ SymbolicIndexingInterface.get_parameter_timeseries_collection(
     @test discrete.u == [[1.0], [2.0]]
 end
 
+@testset "Holding a discrete without a saved value at the time is an error" begin
+    @test SciMLBase.hold_discrete([[1.0], [2.0]], [0.0, 0.5], 0.7).u == [[2.0]]
+    caught(f) =
+    try
+        f()
+        nothing
+    catch err
+        err
+    end
+    err = caught(() -> SciMLBase.hold_discrete(Vector{Float64}[], Float64[], 0.7))
+    @test err isa ErrorException
+    @test occursin("none of its values were saved", err.msg)
+    err = caught(() -> SciMLBase.hold_discrete([[1.0]], [0.5], 0.2))
+    @test err isa ErrorException
+    @test occursin("before initial save 0.5", err.msg)
+end
+
 @testset "ODESolution property replacement preserves state metadata" begin
     f = (u, p, t) -> nothing
 
