@@ -449,10 +449,10 @@ function anyeltypedual(
     return T
 end
 
-value(x::Type{ForwardDiff.Dual{T, V, N}}) where {T, V, N} = V
+value(x::Type{ForwardDiff.Dual{T, V, N}}) where {T, V, N} = value(V)
 value(x::ForwardDiff.Dual) = value(ForwardDiff.value(x))
 
-unitfulvalue(x::Type{ForwardDiff.Dual{T, V, N}}) where {T, V, N} = V
+unitfulvalue(x::Type{ForwardDiff.Dual{T, V, N}}) where {T, V, N} = unitfulvalue(V)
 unitfulvalue(x::ForwardDiff.Dual) = unitfulvalue(ForwardDiff.value(x))
 
 sse(x::ForwardDiff.Dual) = sse(ForwardDiff.value(x)) + sum(sse, ForwardDiff.partials(x))

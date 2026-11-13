@@ -29,17 +29,21 @@ function SciMLBase.promote_u0(
     return nothing
 end
 
-SciMLBase.value(x::Type{MonteCarloMeasurements.AbstractParticles{T, N}}) where {T, N} = T
-SciMLBase.value(x::MonteCarloMeasurements.AbstractParticles) = mean(x.particles)
-function SciMLBase.unitfulvalue(
-        x::Type{
-            MonteCarloMeasurements.AbstractParticles{
-                T, N,
-            },
-        }
-    ) where {T, N}
-    return T
+function SciMLBase.value(
+        x::Type{<:MonteCarloMeasurements.AbstractParticles{T}}
+    ) where {T}
+    return SciMLBase.value(T)
 end
-SciMLBase.unitfulvalue(x::MonteCarloMeasurements.AbstractParticles) = mean(x.particles)
+function SciMLBase.value(x::MonteCarloMeasurements.AbstractParticles)
+    return SciMLBase.value(mean(x.particles))
+end
+function SciMLBase.unitfulvalue(
+        x::Type{<:MonteCarloMeasurements.AbstractParticles{T}}
+    ) where {T}
+    return SciMLBase.unitfulvalue(T)
+end
+function SciMLBase.unitfulvalue(x::MonteCarloMeasurements.AbstractParticles)
+    return SciMLBase.unitfulvalue(mean(x.particles))
+end
 
 end

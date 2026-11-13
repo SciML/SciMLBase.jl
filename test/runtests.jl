@@ -119,6 +119,9 @@ run_tests(;
         @time @safetestset "Enzyme inactive solver algorithms" begin
             include("enzyme_inactive_algorithm.jl")
         end
+        @time @safetestset "value and unitfulvalue" begin
+            include("value_tests.jl")
+        end
         return if !is_APPVEYOR
             @time @safetestset "Remake" begin
                 include("remake_tests.jl")
