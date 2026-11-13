@@ -13,7 +13,9 @@ function SciMLBase.anyeltypedual(
     return SciMLBase.anyeltypedual(V, Val{counter})
 end
 
-SciMLBase.value(x::Type{ReverseDiff.TrackedReal{V, D, O}}) where {V, D, O} = V
+function SciMLBase.value(x::Type{ReverseDiff.TrackedReal{V, D, O}}) where {V, D, O}
+    return SciMLBase.value(V)
+end
 function SciMLBase.value(
         x::Type{
             ReverseDiff.TrackedArray{V, D, N, VA, DA},
@@ -23,12 +25,14 @@ function SciMLBase.value(
         N, VA,
         DA,
     }
-    return Array{V, N}
+    return SciMLBase.value(Array{V, N})
 end
-SciMLBase.value(x::ReverseDiff.TrackedReal) = x.value
-SciMLBase.value(x::ReverseDiff.TrackedArray) = x.value
+SciMLBase.value(x::ReverseDiff.TrackedReal) = SciMLBase.value(x.value)
+SciMLBase.value(x::ReverseDiff.TrackedArray) = SciMLBase.value(x.value)
 
-SciMLBase.unitfulvalue(x::Type{ReverseDiff.TrackedReal{V, D, O}}) where {V, D, O} = V
+function SciMLBase.unitfulvalue(x::Type{ReverseDiff.TrackedReal{V, D, O}}) where {V, D, O}
+    return SciMLBase.unitfulvalue(V)
+end
 function SciMLBase.unitfulvalue(
         x::Type{
             ReverseDiff.TrackedArray{V, D, N, VA, DA},
@@ -38,10 +42,10 @@ function SciMLBase.unitfulvalue(
         N, VA,
         DA,
     }
-    return Array{V, N}
+    return SciMLBase.unitfulvalue(Array{V, N})
 end
-SciMLBase.unitfulvalue(x::ReverseDiff.TrackedReal) = x.value
-SciMLBase.unitfulvalue(x::ReverseDiff.TrackedArray) = x.value
+SciMLBase.unitfulvalue(x::ReverseDiff.TrackedReal) = SciMLBase.unitfulvalue(x.value)
+SciMLBase.unitfulvalue(x::ReverseDiff.TrackedArray) = SciMLBase.unitfulvalue(x.value)
 
 # Force TrackedArray from TrackedReal when reshaping W\b
 SciMLBase._reshape(v::AbstractVector{<:ReverseDiff.TrackedReal}, siz) = reduce(vcat, v)

@@ -411,13 +411,15 @@ Numeric-wrapper integrations may specialize this hook to remove AD,
 uncertainty, or unit wrappers when a solver needs an ordinary numeric value for
 control flow or type selection. The default returns `x` unchanged.
 
+Methods should recurse so that nested wrappers are fully stripped.
+
 !!! warning "Developer API, not user API"
     Solver and numeric-wrapper packages may extend this hook. Application code
     should preserve its numeric wrappers instead of stripping them manually.
 
 # Example
 ```julia
-SciMLBase.value(x::MyTrackedNumber) = x.primal
+SciMLBase.value(x::MyTrackedNumber) = SciMLBase.value(x.primal)
 ```
 """
 value(x) = x
@@ -438,7 +440,7 @@ a fully unwrapped scalar or type.
 
 # Example
 ```julia
-SciMLBase.unitfulvalue(x::MyDualQuantity) = x.primal
+SciMLBase.unitfulvalue(x::MyDualQuantity) = SciMLBase.unitfulvalue(x.primal)
 ```
 """
 unitfulvalue(x) = x
