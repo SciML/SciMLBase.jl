@@ -95,3 +95,59 @@ end
     @test sprob.kwargs[:a] == prob.kwargs[:a]
     @test sprob.kwargs[:b] == prob.kwargs[:b]
 end
+@testset "jvp/vjp survive ODEFunction <-> NonlinearFunction conversion (#1663)" begin
+    A = [1.0 2.0; 3.0 4.0]
+    u = [0.5, -1.0]
+    v = [1.0, 2.0]
+    p = nothing
+
+    # ODEFunction -> NonlinearFunction (evaluated at t = Inf)
+    odef! = ODEFunction{true}(
+        (du, u, p, t) -> (du .= A * u; nothing);
+        jvp = (Jv, v, u, p, t) -> (Jv .= A * v; nothing),
+        vjp = (vJ, v, u, p, t) -> (vJ .= A' * v; nothing)
+    )
+    odef = ODEFunction{false}(
+        (u, p, t) -> A * u;
+        jvp = (v, u, p, t) -> A * v,
+        vjp = (v, u, p, t) -> A' * v
+    )
+
+    nf! = NonlinearFunction(odef!)
+    nf = NonlinearFunction(odef)
+    Jv = zeros(2)
+    vJ = zeros(2)
+    nf!.jvp(Jv, v, u, p)
+    nf!.vjp(vJ, v, u, p)
+    @test Jv ≈ A * v
+    @test vJ ≈ A' * v
+    @test nf.jvp(v, u, p) ≈ A * v
+    @test nf.vjp(v, u, p) ≈ A' * v
+
+    # NonlinearFunction -> ODEFunction
+    nlf! = NonlinearFunction{true}(
+        (du, u, p) -> (du .= A * u; nothing);
+        jvp = (Jv, v, u, p) -> (Jv .= A * v; nothing),
+        vjp = (vJ, v, u, p) -> (vJ .= A' * v; nothing)
+    )
+    nlf = NonlinearFunction{false}(
+        (u, p) -> A * u;
+        jvp = (v, u, p) -> A * v,
+        vjp = (v, u, p) -> A' * v
+    )
+
+    of! = ODEFunction(nlf!)
+    of = ODEFunction(nlf)
+    fill!(Jv, 0.0)
+    fill!(vJ, 0.0)
+    of!.jvp(Jv, v, u, p, 0.0)
+    of!.vjp(vJ, v, u, p, 0.0)
+    @test Jv ≈ A * v
+    @test vJ ≈ A' * v
+    @test of.jvp(v, u, p, 0.0) ≈ A * v
+    @test of.vjp(v, u, p, 0.0) ≈ A' * v
+
+    # The exact case from the issue
+    @test NonlinearProblem(SteadyStateProblem(odef!, u)) isa NonlinearProblem
+    @test NonlinearProblem(SteadyStateProblem(odef, u)) isa NonlinearProblem
+end
