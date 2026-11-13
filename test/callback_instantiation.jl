@@ -1,5 +1,6 @@
 using SciMLBase
 using SciMLBase: instantiate_callback
+using SciMLBase.ConstructionBase: setproperties
 using Test
 
 # Holds at every `n`-th call; the counter is callback state
@@ -11,7 +12,7 @@ EveryNth(n) = EveryNth(n, Ref(0))
 (c::EveryNth)(u, t, integrator) = (c.count[] += 1) % c.n == 0
 
 function SciMLBase.instantiate_callback(cb::DiscreteCallback{<:EveryNth})
-    return remake(cb; condition = EveryNth(cb.condition.n))
+    return setproperties(cb; condition = EveryNth(cb.condition.n))
 end
 
 # A continuous condition with state
@@ -22,7 +23,7 @@ Shifted() = Shifted(Ref(0.0))
 (c::Shifted)(u, t, integrator) = u - c.shift[]
 
 function SciMLBase.instantiate_callback(cb::ContinuousCallback{<:Shifted})
-    return remake(cb; condition = Shifted())
+    return setproperties(cb; condition = Shifted())
 end
 
 no_affect!(integrator) = nothing
@@ -40,30 +41,6 @@ init_callback(cb, u, t, integrator) = nothing
     end
     callbacks = CallbackSet(continuous, discrete, vector)
     @test instantiate_callback(callbacks) === callbacks
-end
-
-@testset "remake replaces callback fields" begin
-    discrete = DiscreteCallback(
-        (u, t, integrator) -> true, no_affect!;
-        save_positions = (true, false)
-    )
-    other_affect!(integrator) = nothing
-    remade = remake(discrete; affect! = other_affect!)
-    @test remade isa DiscreteCallback
-    @test remade.affect! === other_affect!
-    @test remade.condition === discrete.condition
-    @test remade.save_positions == discrete.save_positions
-
-    vector = VectorContinuousCallback(
-        (out, u, t, integrator) -> nothing,
-        (integrator, idx) -> nothing, 2; abstol = 1.0e-9
-    )
-    @test remake(vector; len = 3).len == 3
-    @test remake(vector; len = 3).abstol == 1.0e-9
-
-    callbacks = CallbackSet(discrete)
-    @test only(remake(callbacks; discrete_callbacks = (remade,)).discrete_callbacks) ===
-        remade
 end
 
 @testset "Stateful callbacks get fresh state" begin
@@ -122,4 +99,22 @@ end
     @test instantiated.discrete_callbacks[1].condition.count !== stateful.condition.count
     @test instantiated.discrete_callbacks[2] === stateless
     @test erased.discrete_callbacks[1] === stateful
+end
+
+# Instantiation changes the condition's type
+struct Tagged{T}
+    tag::T
+end
+(c::Tagged)(u, t, integrator) = true
+
+function SciMLBase.instantiate_callback(cb::DiscreteCallback{<:Tagged{Int}})
+    return setproperties(cb; condition = Tagged(float(cb.condition.tag)))
+end
+
+@testset "Concretely typed vector storage can change type" begin
+    cb = DiscreteCallback(Tagged(1), no_affect!)
+    callbacks = CallbackSet((), [cb])
+    instantiated = instantiate_callback(callbacks)
+    @test only(instantiated.discrete_callbacks).condition === Tagged(1.0)
+    @test callbacks.discrete_callbacks == [cb]
 end

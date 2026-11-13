@@ -542,11 +542,13 @@ before callbacks are initialized. By default, return `callback` itself.
 
 # Returns
 
-An independent copy of `callback`.
+A callback of the same kind as `callback`, for use by one integrator only.
 
 # Example
 
 ```julia
+using ConstructionBase: setproperties
+
 # Holds at every `n`-th step
 struct EveryNthStep
     n::Int
@@ -557,7 +559,7 @@ EveryNthStep(n) = EveryNthStep(n, Ref(0))
 
 # Each integrator counts its own steps
 function SciMLBase.instantiate_callback(cb::DiscreteCallback{<:EveryNthStep})
-    return remake(cb; condition = EveryNthStep(cb.condition.n))
+    return setproperties(cb; condition = EveryNthStep(cb.condition.n))
 end
 ```
 """
@@ -571,19 +573,13 @@ function instantiate_callback(callbacks::CallbackSet)
 end
 
 instantiate_callbacks(callbacks::Tuple) = map(instantiate_callback, callbacks)
-# Keeps the storage type, e.g. the type-erased `Vector{Any}` some solvers use
+# Keeps the storage type (e.g. the type-erased `Vector{Any}` some solvers use) unless an
+# instantiated callback doesn't fit its element type
 function instantiate_callbacks(callbacks::AbstractVector)
-    return map!(instantiate_callback, similar(callbacks), callbacks)
-end
-
-"""
-    remake(callback::DECallback; kwargs...)
-
-Re-construct `callback`, replacing the fields given as keyword arguments, for example the
-`condition` with one that has fresh state in [`instantiate_callback`](@ref).
-"""
-function remake(callback::DECallback; kwargs...)
-    return ConstructionBase.setproperties(callback; kwargs...)
+    instantiated = map(instantiate_callback, callbacks)
+    T = eltype(callbacks)
+    return all(cb -> cb isa T, instantiated) ?
+        copyto!(similar(callbacks), instantiated) : instantiated
 end
 
 """

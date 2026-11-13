@@ -55,7 +55,6 @@ SciMLBase.DiscreteCallback
 SciMLBase.CallbackSet
 SciMLBase.split_callbacks
 SciMLBase.instantiate_callback
-SciMLBase.remake(::SciMLBase.DECallback)
 SciMLBase.save_final_discretes!
 SciMLBase.save_discretes_if_enabled!
 ```
