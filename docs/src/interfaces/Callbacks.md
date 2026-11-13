@@ -31,6 +31,14 @@ The root-finding mode for continuous events is selected by
 Callback-specific discrete-save hooks extend [`SciMLBase.save_discretes!`](@ref),
 which is documented with the [symbolic save-index interface](@ref symbolic_save_idxs).
 
+## Callback State
+
+A callback object is shared by every integrator it is passed to, including all
+trajectories of an ensemble. Callbacks that keep mutable state
+should overload [`SciMLBase.instantiate_callback`](@ref) to give
+each integrator a copy with fresh state, and reset that state in their `initialize`
+function so that `reinit!` starts fresh.
+
 ## API
 
 ```@docs
@@ -46,6 +54,7 @@ SciMLBase.VectorContinuousCallback
 SciMLBase.DiscreteCallback
 SciMLBase.CallbackSet
 SciMLBase.split_callbacks
+SciMLBase.instantiate_callback
 SciMLBase.save_final_discretes!
 SciMLBase.save_discretes_if_enabled!
 ```

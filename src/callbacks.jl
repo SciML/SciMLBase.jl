@@ -529,6 +529,60 @@ end
 end
 
 """
+    instantiate_callback(callback) -> callback
+
+Return a new instance (copy) of the callback. Since callbacks are often shared between
+problems (e.g. after `remake`), callbacks with mutable state should overload this
+function to return a copy with a fresh state. Each integrator should call this function
+before callbacks are initialized. By default, return `callback` itself.
+
+# Arguments
+
+- `callback`: A callback, a `CallbackSet`, or `nothing`.
+
+# Returns
+
+A callback of the same kind as `callback`, for use by one integrator only.
+
+# Example
+
+```julia
+using ConstructionBase: setproperties
+
+# Holds at every `n`-th step
+struct EveryNthStep
+    n::Int
+    count::Base.RefValue{Int}
+end
+EveryNthStep(n) = EveryNthStep(n, Ref(0))
+(c::EveryNthStep)(u, t, integrator) = (c.count[] += 1) % c.n == 0
+
+# Each integrator counts its own steps
+function SciMLBase.instantiate_callback(cb::DiscreteCallback{<:EveryNthStep})
+    return setproperties(cb; condition = EveryNthStep(cb.condition.n))
+end
+```
+"""
+instantiate_callback(callback) = callback
+
+function instantiate_callback(callbacks::CallbackSet)
+    return CallbackSet(
+        instantiate_callbacks(callbacks.continuous_callbacks),
+        instantiate_callbacks(callbacks.discrete_callbacks)
+    )
+end
+
+instantiate_callbacks(callbacks::Tuple) = map(instantiate_callback, callbacks)
+# Keeps the storage type (e.g. the type-erased `Vector{Any}` some solvers use) unless an
+# instantiated callback doesn't fit its element type
+function instantiate_callbacks(callbacks::AbstractVector)
+    instantiated = map(instantiate_callback, callbacks)
+    T = eltype(callbacks)
+    return all(cb -> cb isa T, instantiated) ?
+        copyto!(similar(callbacks), instantiated) : instantiated
+end
+
+"""
     $(TYPEDSIGNATURES)
 
 Save the discrete parameter partitions associated with callback `cb`.

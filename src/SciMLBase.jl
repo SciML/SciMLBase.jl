@@ -2420,7 +2420,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
 # Callback interface
 @public DECallback, AbstractContinuousCallback, AbstractDiscreteCallback,
     RootfindOpt, NoRootFind, LeftRootFind, RightRootFind,
-    split_callbacks, save_final_discretes!, save_discretes_if_enabled!
+    split_callbacks, save_final_discretes!, save_discretes_if_enabled!,
+    instantiate_callback
 
 # Ensemble interface
 @public AbstractEnsembleEstimator, WeightedEnsembleProblem,
