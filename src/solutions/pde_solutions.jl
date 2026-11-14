@@ -60,6 +60,13 @@ function (sol::PDETimeSeriesSolution{T, N, S, D})(args...; kwargs...) where {T, 
     error(ArgumentError("Call for PDETimeSeriesSolution not implemented for solution metadata type $D, please post an issue on the relevant discretizer package's github page."))
 end
 
+# Disambiguate with RecursiveArrayTools.AbstractDiffEqArray(t, ::Type{deriv}; idxs, continuity)
+function (sol::PDETimeSeriesSolution{T, N, S, D})(
+        t, ::Type{deriv}; idxs = nothing, continuity = :left
+    ) where {T, N, S, D, deriv}
+    error(ArgumentError("Call for PDETimeSeriesSolution not implemented for solution metadata type $D, please post an issue on the relevant discretizer package's github page."))
+end
+
 """
 $(TYPEDEF)
 

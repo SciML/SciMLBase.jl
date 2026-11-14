@@ -26,7 +26,7 @@ sol = Optimization.solve(
 
 prob = OptimizationProblem(optf, x0, lb = [-0.5, -0.5], ub = [0.5, 0.5])
 ensembleprob = Optimization.EnsembleProblem(
-    prob, prob_func = (prob, i, repeat) -> remake(prob, u0 = rand(-0.5:0.001:0.5, 2))
+    prob, prob_func = (prob, ctx) -> remake(prob, u0 = rand(-0.5:0.001:0.5, 2))
 )
 
 sol = Optimization.solve(

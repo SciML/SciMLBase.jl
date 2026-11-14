@@ -82,6 +82,8 @@ const allowedkeywords = (
     :linsolve_kwargs,
     # Solvers internally using EnsembleProblem
     :ensemblealg,
+    # Per-trajectory RNG factory for ensemble solves
+    :rng_func,
     # Fine Grained Control of Tracing (Storing and Logging) during Solve
     :show_trace,
     :trace_level,

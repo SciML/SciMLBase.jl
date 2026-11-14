@@ -100,6 +100,51 @@ SciMLBase.ReturnCode.Stalled
 SciMLBase.ReturnCode.StalledSuccess
 ```
 
+## Plotting
+
+Solution types include Plots.jl recipes. All the core plotting functionality
+(dense interpolation, `idxs` variable selection, `tspan`, `plotdensity`, etc.)
+is documented in the
+[RecursiveArrayTools.jl plotting docs](https://docs.sciml.ai/RecursiveArrayTools/stable/plotting/),
+since solutions are subtypes of `AbstractDiffEqArray`.
+
+Solution objects add the following on top of the base `AbstractDiffEqArray`
+recipe:
+
+| Keyword | Default | Description |
+|---------|---------|-------------|
+| `denseplot` | auto-detected from `sol.dense` and problem type | Whether to use dense interpolation. Disabled for `AbstractRODESolution` and sensitivity interpolation. |
+| `plotdensity` | `max(1000, 10 * length(sol))` | Automatically scaled; uses `100 *` for discrete problems. |
+| `plot_analytic` | `false` | Overlay the analytical solution (requires `prob.f.analytic`). |
+
+Additionally, solutions support:
+
+- **Discrete parameter variables**: Time-varying parameters from
+  `ParameterTimeseriesCollection` are plotted as step functions with dashed
+  lines and markers.
+- **Symbolic observed variables**: Derived quantities from ModelingToolkit
+  systems can be plotted directly via `idxs = :observed_var`.
+
+## Callable Interface (Interpolation)
+
+Solutions support callable syntax for interpolation:
+
+```julia
+sol(t)                       # all state variables at time t
+sol(t; idxs = 1)             # single component
+sol(t; idxs = [:x, :y])     # symbolic variables
+sol(t, Val{1})               # first derivative
+sol([0.1, 0.5, 0.9])        # returns a DiffEqArray
+```
+
+The returned `DiffEqArray` objects carry the interpolation, so they are
+themselves callable:
+
+```julia
+result = sol([0.0, 1.0])    # DiffEqArray with interp
+result(0.5)                  # interpolate the sub-result
+```
+
 ## Solution Traits
 
 ## AbstractSciMLSolution API

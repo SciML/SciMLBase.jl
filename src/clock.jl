@@ -89,6 +89,7 @@ iseventclock(@nospecialize(clk)) = clk isa EventClock
 Returns `true` if the clock operates in discrete time (i.e., is not a continuous clock).
 Discrete time domains have specific sampling intervals or event-based triggering.
 """
+is_discrete_time_domain(::Nothing) = false
 is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 
 # public

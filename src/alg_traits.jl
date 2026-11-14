@@ -345,3 +345,4 @@ Pass `alg = nothing` to query support for the default solver-selection path
 (i.e., `solve(prob; rng=...)`).
 """
 supports_solve_rng(::AbstractSciMLProblem, alg) = false
+supports_solve_rng(prob, alg) = false  # fallback for non-problem types (e.g., Vector of problems)

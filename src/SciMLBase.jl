@@ -16,7 +16,7 @@ using Printf
 import Preferences
 using PreallocationTools: get_tmp, DiffCache, FixedSizeDiffCache
 
-import Logging, ArrayInterface
+import Logging, ArrayInterface, Random
 import IteratorInterfaceExtensions
 import CommonSolve: solve, init, step!, solve!
 import FunctionWrappersWrappers
@@ -1035,7 +1035,8 @@ export OptimizationFunction, MultiObjectiveOptimizationFunction
 
 export CheckInit
 
-export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial
+export EnsembleThreads, EnsembleDistributed, EnsembleSplitThreads, EnsembleSerial,
+    EnsembleContext
 
 export EnsembleAnalysis, EnsembleSummary
 
