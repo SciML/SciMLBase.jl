@@ -145,7 +145,7 @@ function Makie.convert_arguments(
     # Convert continuous variables to arrays and generate PlotSpecs
     if !isempty(cont_vars)
         plot_vecs,
-            labels = SciMLBase.diffeq_to_arrays(
+            labels = SciMLBase.solution_plot_arrays(
             sol, plot_analytic, denseplot,
             plotdensity, tspan, vars, tscale, plotat
         )
