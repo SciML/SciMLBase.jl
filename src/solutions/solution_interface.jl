@@ -199,10 +199,6 @@ function Base.show(io::IO, m::MIME"text/plain", A::AbstractPDESolution)
     return show(io, m, A.u)
 end
 
-# Use plotting helpers from RecursiveArrayTools
-# (DEFAULT_PLOT_FUNC, plottable_indices, plot_indices, getindepsym_defaultt,
-#  interpret_vars, add_labels!, diffeq_to_arrays, solplot_vecs_and_labels)
-
 function isdenseplot(sol)
     return (sol.dense || sol.prob isa AbstractDiscreteProblem) &&
         !(sol isa AbstractRODESolution) &&
@@ -212,8 +208,6 @@ function isdenseplot(sol)
     )
 end
 
-# Solution-specific recipe: computes solution-specific defaults, delegates core
-# plotting to RecursiveArrayTools' helpers, and handles analytic + discrete overlays.
 @recipe function f(
         sol::AbstractTimeseriesSolution;
         plot_analytic = false,
@@ -245,8 +239,8 @@ end
         throw(ArgumentError("No analytic solution was found but `plot_analytic` was set to `true`."))
     end
 
-    # Separate continuous vs discrete variables (solution-specific)
     idxs = idxs === nothing ? plottable_indices(sol.u[1]) : idxs
+    idxs_input = idxs
     if !(idxs isa Union{Tuple, AbstractArray})
         vars = interpret_vars([idxs], sol)
     else
@@ -271,32 +265,28 @@ end
     xflip --> tdir < 0
     seriestype --> :path
 
-    # Main continuous variable series — delegates to RAT helpers
     @series begin
         if idxs isa Union{AbstractArray, Tuple} && isempty(idxs)
             label --> nothing
             ([], [])
         else
             tscale = get(plotattributes, :xscale, :identity)
-            # Use RAT's diffeq_to_arrays for core plotting logic
-            plot_vecs, labels = diffeq_to_arrays(
-                sol, denseplot, plotdensity, tspan, vars, tscale, plotat
+            plot_vecs, labels = solution_plot_arrays(
+                sol, plot_analytic, denseplot, plotdensity, tspan, vars, tscale, plotat
             )
 
-            # Axis labels
-            if idxs isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
-                for (guide, idx) in [(:xguide, 2), (:yguide, 3)]
-                    if idx <= length(vars[1])
-                        guide --> RecursiveArrayTools._var_label(sol, vars[1][idx])
-                    end
-                end
+            if idxs_input isa Tuple && vars[1][1] === DEFAULT_PLOT_FUNC
+                xguide --> plot_var_label(sol, vars[1][2])
+                yguide --> plot_var_label(sol, vars[1][3])
                 if length(vars[1]) > 3
-                    zguide --> RecursiveArrayTools._var_label(sol, vars[1][4])
+                    zguide --> plot_var_label(sol, vars[1][4])
                 end
             end
 
-            if all(x -> (x[2] isa Integer && x[2] == 0) ||
-                        isequal(x[2], getindepsym_defaultt(sol)), vars)
+            if all(
+                    x -> (x[2] isa Integer && x[2] == 0) ||
+                        isequal(x[2], getindepsym_defaultt(sol)), vars
+                )
                 xguide --> "$(getindepsym_defaultt(sol))"
                 if tspan === nothing
                     if tdir > 0
@@ -314,15 +304,6 @@ end
         end
     end
 
-    # Analytic solution overlay (solution-specific)
-    if plot_analytic
-        @series begin
-            tscale = get(plotattributes, :xscale, :identity)
-            _plot_analytic_series(sol, denseplot, plotdensity, tspan, vars, tscale, plotat)
-        end
-    end
-
-    # Discrete variable series (solution-specific)
     for (func, xvar, yvar, tsidx) in disc_vars
         partition = sol.discretes[tsidx]
         ts = current_time(partition)
@@ -361,99 +342,95 @@ end
     end
 end
 
-# Analytic solution plotting helper (solution-specific, uses sol.prob)
-function _plot_analytic_series(sol, denseplot, plotdensity, tspan, vars, tscale, plotat)
-    densetspacer = if tscale in [:ln, :log10, :log2]
-        (start, stop, n) -> exp10.(range(log10(start), stop = log10(stop), length = n))
-    else
-        (start, stop, n) -> range(start; stop = stop, length = n)
-    end
+"""
+    plot_var_label(sol, x)
 
+Axis and legend label of the plotting variable `x` of `sol`: `"t"` for index `0`,
+the variable name for symbolic or named indices, and `"u[x]"` otherwise.
+"""
+function plot_var_label(sol, x)
+    symbolic_type(x) == NotSymbolic() || return string(x)
+    x isa Integer || return string(x)
+    x == 0 && return "t"
+    varsyms = variable_symbols(sol)
+    return 0 < x <= length(varsyms) ? string(varsyms[x]) : "u[$x]"
+end
+
+"""
+    plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
+
+Time points at which the plot recipes sample `sol`. Without an explicit `tspan`
+or `plotat`, an animation frame (`sol.tslocation != 0`) is sampled only up to
+`sol.t[sol.tslocation]`.
+"""
+function plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
+    plotat === nothing || return plotat
     if tspan === nothing
         start_idx = 1
-        end_idx = sol.tslocation == 0 ? length(sol) : sol.tslocation
+        end_idx = sol.tslocation == 0 ? lastindex(sol.t) : sol.tslocation
     else
         start_idx = searchsortedfirst(sol.t, tspan[1])
         end_idx = searchsortedlast(sol.t, tspan[end])
     end
-
-    if plotat !== nothing
-        plott = plotat
-    elseif denseplot
-        if sol isa AbstractAnalyticalSolution
-            _tspan = sol.prob.tspan
-            plott = collect(densetspacer(_tspan[1], _tspan[end], plotdensity))
-        elseif tspan === nothing
-            plott = collect(densetspacer(sol.t[start_idx], sol.t[end_idx], plotdensity))
-        else
-            plott = collect(densetspacer(tspan[1], tspan[end], plotdensity))
-        end
+    denseplot || return sol.t[start_idx:end_idx]
+    tstart, tstop = if sol isa AbstractAnalyticalSolution
+        sol.prob.tspan[1], sol.prob.tspan[end]
+    elseif tspan === nothing
+        sol.t[start_idx], sol.t[end_idx]
     else
-        plott = sol.tslocation == 0 ? sol.t : sol.t[start_idx:end_idx]
+        tspan[1], tspan[end]
     end
-
-    if sol.prob.f isa Tuple
-        plot_analytic_timeseries = [
-            sol.prob.f[1].analytic(sol.prob.u0, sol.prob.p, t) for t in plott
-        ]
-    else
-        plot_analytic_timeseries = [
-            sol.prob.f.analytic(sol.prob.u0, sol.prob.p, t) for t in plott
-        ]
+    if tscale in (:ln, :log10, :log2)
+        return exp10.(range(log10(tstart), log10(tstop); length = plotdensity))
     end
+    return collect(range(tstart, tstop; length = plotdensity))
+end
 
-    dims = length(vars[1]) - 1
-    varsyms = variable_symbols(sol)
+"""
+    solution_plot_arrays(sol, plot_analytic, denseplot, plotdensity, tspan, vars, tscale, plotat)
+
+Plot coordinates and labels of the interpreted plotting variables `vars` of `sol`,
+as `(plot_vecs, labels)` with one column per curve. With `plot_analytic`, the
+analytic solution of `sol.prob` follows the numerical curves, labelled `"True ..."`.
+"""
+function solution_plot_arrays(
+        sol, plot_analytic, denseplot, plotdensity, tspan, vars, tscale, plotat
+    )
+    plott = plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
+    plot_vecs, labels = diffeq_to_arrays(
+        sol, denseplot, plotdensity, tspan, vars, tscale, plott
+    )
+    plot_analytic || return plot_vecs, labels
+    analytic_vecs, analytic_labels = analytic_plot_arrays(sol, vars, plott)
+    return [hcat(a, b) for (a, b) in zip(plot_vecs, analytic_vecs)],
+        vcat(labels, analytic_labels)
+end
+
+function analytic_plot_arrays(sol, vars, plott)
+    f = sol.prob.f isa Tuple ? sol.prob.f[1] : sol.prob.f
+    analytic = [f.analytic(sol.prob.u0, sol.prob.p, t) for t in plott]
     plot_vecs = []
     labels = String[]
     for x in vars
         tmp = []
         strs = String[]
         for j in 2:length(x)
-            if (x[j] isa Integer && x[j] == 0)
+            if (x[j] isa Integer && x[j] == 0) || isequal(x[j], getindepsym_defaultt(sol))
                 push!(tmp, plott)
                 push!(strs, "t")
-            elseif isequal(x[j], getindepsym_defaultt(sol))
-                push!(tmp, plott)
-                push!(strs, String(getname(x[j])))
-            elseif x[j] == 1 && !(sol[:, 1] isa Union{AbstractArray, ArrayPartition})
-                push!(tmp, plot_analytic_timeseries)
-                push!(strs, RecursiveArrayTools._var_label(sol, x[j]))
             else
-                _tmp = Vector{eltype(sol.u[1])}(undef, length(plot_analytic_timeseries))
-                for n in 1:length(plot_analytic_timeseries)
-                    _tmp[n] = plot_analytic_timeseries[n][x[j]]
-                end
-                push!(tmp, _tmp)
-                push!(strs, RecursiveArrayTools._var_label(sol, x[j]))
+                push!(tmp, [u isa Number ? u : u[x[j]] for u in analytic])
+                push!(strs, plot_var_label(sol, x[j]))
             end
         end
-        f = x[1]
-        tmp = map(f, tmp...)
+        tmp = map(x[1], tmp...)
         tmp = tuple((getindex.(tmp, i) for i in eachindex(tmp[1]))...)
         for i in eachindex(tmp)
-            if length(plot_vecs) < i
-                push!(plot_vecs, [])
-            end
+            length(plot_vecs) < i && push!(plot_vecs, [])
             push!(plot_vecs[i], tmp[i])
         end
-        add_analytic_labels!(labels, x, dims, sol, strs)
+        series_labels = add_labels!(String[], x, length(tmp), sol, strs)
+        push!(labels, "True " * only(series_labels))
     end
-    plot_vecs = [hcat(x...) for x in plot_vecs]
-    return plot_vecs, labels
+    return [hcat(x...) for x in plot_vecs], labels
 end
-
-function add_analytic_labels!(labels, x, dims, sol, strs)
-    if ((x[2] isa Integer && x[2] == 0) || isequal(x[2], getindepsym_defaultt(sol))) &&
-            dims == 2
-        push!(labels, "True $(strs[end])")
-    elseif x[1] !== DEFAULT_PLOT_FUNC
-        push!(labels, "True f($(join(strs, ',')))")
-    else
-        push!(labels, "True ($(join(strs, ',')))")
-    end
-    return labels
-end
-
-# ArrayPartition specialization
-RecursiveArrayTools.plot_indices(A::ArrayPartition) = eachindex(A)
