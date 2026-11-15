@@ -17,6 +17,13 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test PeriodicClock(1 // 30, 1 // 60).phase === 1 // 60
     @test Clock(1 // 30; phase = 1 // 60) == PeriodicClock(1 // 30, 1 // 60)
     @test Clock(0.1; phase = 1).phase === 1.0
+    @test Clock(0.1; phase = 0 // 1) == Clock(0.1)
+    @test isequal(Clock(0.1; phase = 1 // 2), Clock(0.1; phase = 0.5))
+    @test hash(Clock(0.1; phase = 1 // 2)) == hash(Clock(0.1; phase = 0.5))
+    @test Clock(1 // 2) == Clock(0.5)
+    @test hash(Clock(1 // 2)) == hash(Clock(0.5))
+    @test Clock(0.1; phase = 1 // 3) != Clock(0.1; phase = 1 / 3)
+    @test Clock(; phase = 0.2) == Clock(; phase = 0.2)
 
     @test isclock(PeriodicClock(; dt = 1.0))
     @test !isclock(Continuous())

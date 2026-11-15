@@ -61,6 +61,13 @@ struct PeriodicClock <: AbstractClock
 end
 _clock_phase(phase::Rational{Int}) = phase
 _clock_phase(phase) = Float64(phase)
+# Clocks with numerically equal periods and phases are equal, irrespective of
+# whether the values are stored as `Float64` or as `Rational{Int}`.
+function Base.:(==)(a::PeriodicClock, b::PeriodicClock)
+    return a.dt == b.dt && a.phase == b.phase
+end
+Base.isequal(a::PeriodicClock, b::PeriodicClock) = isequal(a.dt, b.dt) && isequal(a.phase, b.phase)
+Base.hash(c::PeriodicClock, h::UInt) = hash(c.phase, hash(c.dt, hash(PeriodicClock, h)))
 PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, _clock_phase(phase))
 PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, _clock_phase(phase))
 
