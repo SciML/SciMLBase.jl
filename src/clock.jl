@@ -38,7 +38,10 @@ Clock with nominal periodic ticks.
 `PeriodicClock(dt; phase = 0.0)` describes ticks separated by `dt`. A `dt` of
 `nothing` means the interval has not been fixed and may be inferred by
 downstream tooling. `phase` is stored as clock metadata for packages that need a
-phase offset.
+phase offset. Both `dt` and `phase` may be `Rational{Int}`, which allows
+downstream tooling to compute tick times exactly, for example such that ticks of
+two clocks that coincide mathematically are also equal as floating-point
+numbers. Other real values of `phase` are converted to `Float64`.
 
 # Fields
 
@@ -53,10 +56,13 @@ struct PeriodicClock <: AbstractClock
     """
     Phase offset metadata for the periodic clock.
     """
-    phase::Float64
+    phase::Union{Float64, Rational{Int}}
+    PeriodicClock(dt, phase) = new(dt, _clock_phase(phase))
 end
-PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, Float64(phase))
-PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, Float64(phase))
+_clock_phase(phase::Rational{Int}) = phase
+_clock_phase(phase) = Float64(phase)
+PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, _clock_phase(phase))
+PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, _clock_phase(phase))
 
 """
 $(TYPEDEF)
