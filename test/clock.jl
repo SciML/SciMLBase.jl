@@ -45,16 +45,13 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test is_discrete_time_domain(SolverStepClock())
     @test !is_discrete_time_domain(nothing)
 
-    @test first_clock_tick_time(PeriodicClock(; dt = 2.0), 5.0) === 6.0
+    # the ticks are t0 + phase + k*dt
+    @test first_clock_tick_time(PeriodicClock(; dt = 2.0), 5.0) === 5.0
     @test first_clock_tick_time(PeriodicClock(2.0, 0.5), 0.0) === 0.5
-    @test first_clock_tick_time(PeriodicClock(2.0, 0.5), 5.0) === 6.5
-    @test first_clock_tick_time(PeriodicClock(2.0, 0.5), 4.5) === 4.5
+    @test first_clock_tick_time(PeriodicClock(2.0, 0.5), 5.0) === 5.5
     @test first_clock_tick_time(PeriodicClock(1.0, 2.5), 0.0) === 2.5
-    # a tick at exactly t0 is not skipped because of rounding in the division
-    @test first_clock_tick_time(PeriodicClock(0.1, 0.0), 3 * 0.1) === 3 * 0.1
-    # rational clocks: tick times computed exactly and rounded once
-    @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), 1.34) === 1.35
-    @test first_clock_tick_time(PeriodicClock(1 // 200, 0 // 1), 1.346) === 1.35
+    @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), 0.0) === 1 / 60
+    @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), sqrt(2.0)) === sqrt(2.0) + 1 / 60
     @test_throws ErrorException first_clock_tick_time(Continuous(), 5.0)
     @test first_clock_tick_time(SolverStepClock(), 5.0) === 5.0
 
@@ -62,13 +59,17 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test ic === IndexedClock(Clock(1), 5)
 end
 
-@testset "canonicalize_indexed_clock with phase" begin
+@testset "canonicalize_indexed_clock with phase and start time" begin
     prob = SciMLBase.ODEProblem((u, p, t) -> zero(u), [1.0], (0.0, 2.0))
     sol = SciMLBase.build_solution(prob, nothing, [0.0, 2.0], [[1.0], [1.0]])
+    # rational clocks: tick times computed exactly and rounded once
     @test canonicalize_indexed_clock(Clock(1 // 30; phase = 1 // 60)[41], sol) === 1.35
+    @test canonicalize_indexed_clock(Clock(1 // 200)[271], sol) === 1.35
     @test canonicalize_indexed_clock(Clock(1 // 30; phase = 1 // 60)[1:2], sol) == [1 / 60, 0.05]
     @test canonicalize_indexed_clock(Clock(0.5; phase = 0.25)[[1, 3]], sol) == [0.25, 1.25]
     @test canonicalize_indexed_clock(Clock(0.1)[3], sol) === 0.2
+    # the ticks are relative to the start time of the simulation
     sol2 = SciMLBase.build_solution(SciMLBase.remake(prob; tspan = (1.0, 2.0)), nothing, [1.0, 2.0], [[1.0], [1.0]])
-    @test canonicalize_indexed_clock(Clock(0.5; phase = 0.25)[1], sol2) == 1.25
+    @test canonicalize_indexed_clock(Clock(0.5; phase = 0.25)[1:2], sol2) == [1.25, 1.75]
+    @test canonicalize_indexed_clock(Clock(0.3)[1:2], sol2) == [1.0, 1.3]
 end

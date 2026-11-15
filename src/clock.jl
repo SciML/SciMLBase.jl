@@ -204,35 +204,28 @@ is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 """
     first_clock_tick_time(clock, t0)
 
-Return the first tick time for a discrete clock at or after `t0`.
+Return the first tick time of a discrete clock in a simulation that starts at `t0`.
 
-For [`PeriodicClock`](@ref), the ticks are `phase + k * dt` for integers `k ≥ 0`,
-and the first of them at or after `t0` is returned. When `dt` and `phase` are
-both rational, the tick time is computed in exact arithmetic and rounded once.
-For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event
+A [`PeriodicClock`](@ref) ticks at `t0 + phase + k * dt` for integers `k ≥ 0`, so
+its first tick is at `t0 + phase`. When `dt` is rational and `phase` is rational
+or zero, the offset `phase + k * dt` is computed in exact arithmetic and rounded
+once. For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event
 clocks do not have a generic first tick time and throw an error.
 """
-function first_clock_tick_time(c::PeriodicClock, t0)
-    return _periodic_tick_time(c, _first_tick_index(c, t0), typeof(float(t0)))
-end
+first_clock_tick_time(c::PeriodicClock, t0) = _periodic_tick_time(c, t0, 0)
 
-# Time of the tick with index `k` (counted from zero) of a periodic clock, in the
-# time type `T`.
-_periodic_tick_time(c::PeriodicClock, k, ::Type{T}) where {T} = convert(T, c.phase + k * c.dt)
-
-# Index of the first tick at or after `t0`. The estimate from floating-point
-# division is corrected by comparing tick times, such that a tick at exactly `t0`
-# is not skipped because of rounding.
-function _first_tick_index(c::PeriodicClock, t0)
+# Time of the tick with index `k` (counted from zero) of a periodic clock in a
+# simulation that starts at `t0`. The arithmetic is that of `PeriodicCallback` of
+# DiffEqCallbacks.jl, such that the returned times are equal to the times at which
+# the callback fires.
+function _periodic_tick_time(c::PeriodicClock, t0, k)
     T = typeof(float(t0))
-    k = max(0, ceil(Int, (t0 - c.phase) / c.dt))
-    while k > 0 && _periodic_tick_time(c, k - 1, T) >= t0
-        k -= 1
+    dt, phase = c.dt, c.phase
+    return if dt isa Rational && (phase isa Rational || iszero(phase))
+        t0 + convert(T, convert(typeof(dt), phase) + k * dt)
+    else
+        convert(T, convert(typeof(dt), t0 + phase) + k * dt)
     end
-    while _periodic_tick_time(c, k, T) < t0
-        k += 1
-    end
-    return k
 end
 first_clock_tick_time(::SolverStepClock, t0) = t0
 first_clock_tick_time(::ContinuousClock, _) = error("ContinuousClock() is not a discrete clock")
@@ -304,17 +297,15 @@ for a saved time-series solution.
 
 `IndexedClock` stores a clock and one or more tick indices, but the actual tick
 times depend on the solve. Periodic clocks are reconstructed from the problem
-start time, tick interval and phase, solver-step clocks read the matching discrete
+start time, tick interval and phase (the clock ticks at
+`tspan[1] + phase + (idx - 1) * dt`), solver-step clocks read the matching discrete
 time series stored on the solution, and continuous clocks index directly into
 `sol.t`. Unsupported clock types throw an error.
 """
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
     return if c isa PeriodicClock
-        t0 = sol.prob.tspan[1]
-        k0 = _first_tick_index(c, t0)
-        T = typeof(float(t0))
-        _periodic_tick_time.(Ref(c), k0 .+ (ic.idx .- 1), T)
+        _periodic_tick_time.(Ref(c), sol.prob.tspan[1], ic.idx .- 1)
     elseif c isa SolverStepClock
         ssc_idx = findfirst(eachindex(sol.discretes)) do i
             !isa(sol.discretes[i].t, AbstractRange)
