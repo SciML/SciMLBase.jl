@@ -207,9 +207,8 @@ is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 Return the first tick time of a discrete clock in a simulation that starts at `t0`.
 
 A [`PeriodicClock`](@ref) ticks at `t0 + phase + k * dt` for integers `k ≥ 0`, so
-its first tick is at `t0 + phase`. When `dt` is rational and `phase` is rational
-or zero, the offset `phase + k * dt` is computed in exact arithmetic and rounded
-once. For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event
+its first tick is at `t0 + phase`. When `dt` is rational, the offset
+`phase + k * dt` is computed in exact arithmetic and rounded once. For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event
 clocks do not have a generic first tick time and throw an error.
 """
 first_clock_tick_time(c::PeriodicClock, t0) = _periodic_tick_time(c, t0, 0)
@@ -217,16 +216,21 @@ first_clock_tick_time(c::PeriodicClock, t0) = _periodic_tick_time(c, t0, 0)
 # Time of the tick with index `k` (counted from zero) of a periodic clock in a
 # simulation that starts at `t0`. The arithmetic is that of `PeriodicCallback` of
 # DiffEqCallbacks.jl, such that the returned times are equal to the times at which
-# the callback fires.
+# the callback fires: for a rational `dt`, the offset `phase + k * dt` is computed
+# exactly (a `Float64` phase converted exactly to `Rational{BigInt}`), rounded
+# once and added to `t0`. A clock with zero phase ticks at `t0` itself.
 function _periodic_tick_time(c::PeriodicClock, t0, k)
     T = typeof(float(t0))
     dt, phase = c.dt, c.phase
-    return if dt isa Rational && (phase isa Rational || iszero(phase))
-        t0 + convert(T, convert(typeof(dt), phase) + k * dt)
+    k == 0 && iszero(phase) && return convert(T, t0)
+    return if dt isa Rational
+        exact_phase = phase isa Rational ? phase : iszero(phase) ? zero(dt) : Rational{BigInt}(phase)
+        t0 + convert(T, exact_phase + k * dt)
     else
         convert(T, convert(typeof(dt), t0 + phase) + k * dt)
     end
 end
+
 first_clock_tick_time(::SolverStepClock, t0) = t0
 first_clock_tick_time(::ContinuousClock, _) = error("ContinuousClock() is not a discrete clock")
 first_clock_tick_time(::EventClock, _) = error("Event clocks do not have a defined first tick time.")

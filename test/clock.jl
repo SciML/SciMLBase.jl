@@ -72,4 +72,10 @@ end
     sol2 = SciMLBase.build_solution(SciMLBase.remake(prob; tspan = (1.0, 2.0)), nothing, [1.0, 2.0], [[1.0], [1.0]])
     @test canonicalize_indexed_clock(Clock(0.5; phase = 0.25)[1:2], sol2) == [1.25, 1.75]
     @test canonicalize_indexed_clock(Clock(0.3)[1:2], sol2) == [1.0, 1.3]
+    # equal clocks give equal tick times
+    sol3 = SciMLBase.build_solution(SciMLBase.remake(prob; tspan = (0.1, 2.0)), nothing, [0.1, 2.0], [[1.0], [1.0]])
+    @test canonicalize_indexed_clock(Clock(1 // 10; phase = 1 // 2)[1:5], sol3) ==
+        canonicalize_indexed_clock(Clock(1 // 10; phase = 0.5)[1:5], sol3)
+    # the tick of a clock with zero phase at the start time is the start time
+    @test first_clock_tick_time(Clock(0.1), big"0.1") == big"0.1"
 end
