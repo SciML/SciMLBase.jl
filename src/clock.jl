@@ -38,11 +38,17 @@ Clock with nominal periodic ticks.
 `PeriodicClock(dt; phase = 0.0)` describes ticks separated by `dt`. A `dt` of
 `nothing` means the interval has not been fixed and may be inferred by
 downstream tooling. `phase` is stored as clock metadata for packages that need a
-phase offset. Rational values of `dt` and `phase` are stored as they are, which
-allows downstream tooling to compute tick times exactly, for example such that
-ticks of two clocks that coincide mathematically are also equal as floating-point
-numbers. Other real values are converted to `Float64`. The type parameters `D` and
-`P` are the types of `dt` and `phase`.
+phase offset. A rational `dt` is stored as `Rational{Int}` (as `Rational{BigInt}`
+if it does not fit), which allows downstream tooling to compute tick times
+exactly, for example such that ticks of two clocks that coincide mathematically
+are also equal as floating-point numbers. A rational `phase` is stored in the same
+way when `dt` is rational or `nothing`. All other values are converted to
+`Float64`. The type parameters `D` and `P` are the types of `dt` and `phase`.
+
+Clocks are equal when their periods and phases are numerically equal and either
+both or neither of the periods are rational, since the tick times of a clock with
+a rational period are computed in exact arithmetic and those of a clock with a
+floating-point period are not.
 
 # Fields
 
@@ -59,20 +65,34 @@ struct PeriodicClock{D <: Union{Nothing, Real}, P <: Real} <: AbstractClock
     """
     phase::P
     function PeriodicClock(dt, phase)
-        dt′, phase′ = _clock_value(dt), _clock_value(phase)
+        dt′ = _clock_dt(dt)
+        phase′ = _clock_phase(dt′, phase)
         return new{typeof(dt′), typeof(phase′)}(dt′, phase′)
     end
 end
-_clock_value(x::Nothing) = x
-_clock_value(x::Rational) = x
-_clock_value(x) = Float64(x)
-# Clocks with numerically equal periods and phases are equal, irrespective of
-# whether the values are stored as `Float64` or as rationals.
-function Base.:(==)(a::PeriodicClock, b::PeriodicClock)
-    return a.dt == b.dt && a.phase == b.phase
+# Rationals are stored in one integer type, such that numerically equal clocks
+# have equal field types and therefore equal tick times.
+function _clock_rational(x::Rational)
+    n, d = numerator(x), denominator(x)
+    fits = typemin(Int) <= n <= typemax(Int) && d <= typemax(Int)
+    return fits ? Rational{Int}(x) : Rational{BigInt}(x)
 end
-Base.isequal(a::PeriodicClock, b::PeriodicClock) = isequal(a.dt, b.dt) && isequal(a.phase, b.phase)
-Base.hash(c::PeriodicClock, h::UInt) = hash(c.phase, hash(c.dt, hash(PeriodicClock, h)))
+_clock_dt(dt::Nothing) = dt
+_clock_dt(dt::Rational) = _clock_rational(dt)
+_clock_dt(dt) = Float64(dt)
+_clock_phase(::Union{Nothing, Rational}, phase::Rational) = _clock_rational(phase)
+_clock_phase(dt, phase) = Float64(phase)
+_rational_period(c::PeriodicClock) = c.dt isa Rational
+function Base.:(==)(a::PeriodicClock, b::PeriodicClock)
+    return _rational_period(a) == _rational_period(b) && a.dt == b.dt && a.phase == b.phase
+end
+function Base.isequal(a::PeriodicClock, b::PeriodicClock)
+    return _rational_period(a) == _rational_period(b) && isequal(a.dt, b.dt) &&
+        isequal(a.phase, b.phase)
+end
+function Base.hash(c::PeriodicClock, h::UInt)
+    return hash(c.phase, hash(c.dt, hash(_rational_period(c), hash(PeriodicClock, h))))
+end
 PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, phase)
 PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
 

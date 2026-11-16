@@ -16,7 +16,12 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test Clock(; phase = 0.2) == PeriodicClock(nothing, 0.2)
     @test PeriodicClock(1 // 30, 1 // 60).phase === 1 // 60
     @test PeriodicClock(1 // 30, 1 // 60) isa PeriodicClock{Rational{Int}, Rational{Int}}
-    @test PeriodicClock(big(1) // 30, 0.0) isa PeriodicClock{Rational{BigInt}, Float64}
+    # rationals are stored as Rational{Int}, or as Rational{BigInt} if they do not fit
+    @test PeriodicClock(big(1) // 30, 0.0) isa PeriodicClock{Rational{Int}, Float64}
+    @test PeriodicClock(big(1) // big(2)^70, 0.0) isa PeriodicClock{Rational{BigInt}, Float64}
+    # a rational phase of a floating-point period is converted to Float64
+    @test PeriodicClock(0.5, 1 // 10) isa PeriodicClock{Float64, Float64}
+    @test PeriodicClock(nothing, 1 // 10).phase === 1 // 10
     @test PeriodicClock(nothing, 0.2) isa PeriodicClock{Nothing, Float64}
     @test PeriodicClock(1, 0).dt === 1.0
     @test Clock(1 // 30; phase = 1 // 60) == PeriodicClock(1 // 30, 1 // 60)
@@ -24,9 +29,12 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test Clock(0.1; phase = 0 // 1) == Clock(0.1)
     @test isequal(Clock(0.1; phase = 1 // 2), Clock(0.1; phase = 0.5))
     @test hash(Clock(0.1; phase = 1 // 2)) == hash(Clock(0.1; phase = 0.5))
-    @test Clock(1 // 2) == Clock(0.5)
-    @test hash(Clock(1 // 2)) == hash(Clock(0.5))
-    @test Clock(0.1; phase = 1 // 3) != Clock(0.1; phase = 1 / 3)
+    # a rational and a floating-point period give different tick times
+    @test Clock(1 // 2) != Clock(0.5)
+    @test !isequal(Clock(1 // 2), Clock(0.5))
+    @test Clock(1 // 2; phase = 0.5) == Clock(1 // 2; phase = 1 // 2)
+    @test Clock(1 // 10; phase = 1 // 3) != Clock(1 // 10; phase = 1 / 3)
+    @test Clock(0.1; phase = 1 // 3) == Clock(0.1; phase = 1 / 3)
     @test Clock(; phase = 0.2) == Clock(; phase = 0.2)
 
     @test isclock(PeriodicClock(; dt = 1.0))
@@ -78,8 +86,15 @@ end
     @test canonicalize_indexed_clock(Clock(0.3)[1:2], sol2) == [1.0, 1.3]
     # equal clocks give equal tick times
     sol3 = SciMLBase.build_solution(SciMLBase.remake(prob; tspan = (0.1, 2.0)), nothing, [0.1, 2.0], [[1.0], [1.0]])
-    @test canonicalize_indexed_clock(Clock(1 // 10; phase = 1 // 2)[1:5], sol3) ==
-        canonicalize_indexed_clock(Clock(1 // 10; phase = 0.5)[1:5], sol3)
+    for (a, b) in (
+            (Clock(1 // 10; phase = 1 // 2), Clock(1 // 10; phase = 0.5)),
+            (Clock(0.5; phase = 1 // 10), Clock(0.5; phase = big(1) // 10)),
+            (Clock(big(1) // 2; phase = 1 // 10), Clock(1 // 2; phase = 1 // 10)),
+        )
+        @test a == b
+        @test hash(a) == hash(b)
+        @test canonicalize_indexed_clock(a[1:5], sol3) == canonicalize_indexed_clock(b[1:5], sol3)
+    end
     # the tick of a clock with zero phase at the start time is the start time
     @test first_clock_tick_time(Clock(0.1), big"0.1") == big"0.1"
 end
