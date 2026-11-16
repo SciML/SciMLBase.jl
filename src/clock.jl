@@ -38,38 +38,43 @@ Clock with nominal periodic ticks.
 `PeriodicClock(dt; phase = 0.0)` describes ticks separated by `dt`. A `dt` of
 `nothing` means the interval has not been fixed and may be inferred by
 downstream tooling. `phase` is stored as clock metadata for packages that need a
-phase offset. Both `dt` and `phase` may be `Rational{Int}`, which allows
-downstream tooling to compute tick times exactly, for example such that ticks of
-two clocks that coincide mathematically are also equal as floating-point
-numbers. Other real values of `phase` are converted to `Float64`.
+phase offset. Rational values of `dt` and `phase` are stored as they are, which
+allows downstream tooling to compute tick times exactly, for example such that
+ticks of two clocks that coincide mathematically are also equal as floating-point
+numbers. Other real values are converted to `Float64`. The type parameters `D` and
+`P` are the types of `dt` and `phase`.
 
 # Fields
 
 $(TYPEDFIELDS)
 """
-struct PeriodicClock <: AbstractClock
+struct PeriodicClock{D <: Union{Nothing, Real}, P <: Real} <: AbstractClock
     """
     Nominal tick interval, or `nothing` when the interval is left for downstream
     inference.
     """
-    dt::Union{Nothing, Float64, Rational{Int}}
+    dt::D
     """
     Phase offset metadata for the periodic clock.
     """
-    phase::Union{Float64, Rational{Int}}
-    PeriodicClock(dt, phase) = new(dt, _clock_phase(phase))
+    phase::P
+    function PeriodicClock(dt, phase)
+        dt′, phase′ = _clock_value(dt), _clock_value(phase)
+        return new{typeof(dt′), typeof(phase′)}(dt′, phase′)
+    end
 end
-_clock_phase(phase::Rational{Int}) = phase
-_clock_phase(phase) = Float64(phase)
+_clock_value(x::Nothing) = x
+_clock_value(x::Rational) = x
+_clock_value(x) = Float64(x)
 # Clocks with numerically equal periods and phases are equal, irrespective of
-# whether the values are stored as `Float64` or as `Rational{Int}`.
+# whether the values are stored as `Float64` or as rationals.
 function Base.:(==)(a::PeriodicClock, b::PeriodicClock)
     return a.dt == b.dt && a.phase == b.phase
 end
 Base.isequal(a::PeriodicClock, b::PeriodicClock) = isequal(a.dt, b.dt) && isequal(a.phase, b.phase)
 Base.hash(c::PeriodicClock, h::UInt) = hash(c.phase, hash(c.dt, hash(PeriodicClock, h)))
-PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, _clock_phase(phase))
-PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, _clock_phase(phase))
+PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, phase)
+PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
 
 """
 $(TYPEDEF)

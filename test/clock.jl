@@ -15,6 +15,10 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test Clock(1 // 24) == PeriodicClock(1 // 24, 0.0)
     @test Clock(; phase = 0.2) == PeriodicClock(nothing, 0.2)
     @test PeriodicClock(1 // 30, 1 // 60).phase === 1 // 60
+    @test PeriodicClock(1 // 30, 1 // 60) isa PeriodicClock{Rational{Int}, Rational{Int}}
+    @test PeriodicClock(big(1) // 30, 0.0) isa PeriodicClock{Rational{BigInt}, Float64}
+    @test PeriodicClock(nothing, 0.2) isa PeriodicClock{Nothing, Float64}
+    @test PeriodicClock(1, 0).dt === 1.0
     @test Clock(1 // 30; phase = 1 // 60) == PeriodicClock(1 // 30, 1 // 60)
     @test Clock(0.1; phase = 1).phase === 1.0
     @test Clock(0.1; phase = 0 // 1) == Clock(0.1)
