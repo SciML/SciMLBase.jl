@@ -584,4 +584,7 @@ end
     @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(f1!, f2)
     @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction{false}(f1!, f2, g)
     @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction(; f1 = f1!, f2, g, kw...)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(ODEFunction{true}(f1!), f2)
+    d1!(dv, v, u, p, t) = (dv .= -u; nothing)
+    @test_throws SciMLBase.NonconformingFunctionsError DynamicalSDEFunction{false}(d1!, (v, u, p, t) -> v, g)
 end
