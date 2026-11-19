@@ -214,9 +214,28 @@ end
         end
     end
 
+    @testset "rebuilding a SplitFunction with new components" begin
+        a(du, u, p, t) = (du .= 0.5 .* u; nothing)
+        a(u, p, t) = 45 .* u
+        sf = SplitFunction((u, p, t) -> u, (u, p, t) -> u)
+        newfn = ConstructionBase.setproperties(
+            sf, (; f1 = ODEFunction{true}(a), f2 = ODEFunction{true}(a))
+        )
+        prob = ODEProblem(newfn, [1.0, 3.0], (0.0, 1.0))
+        @test isinplace(prob)
+        du = zeros(2)
+        prob.f(du, [1.0, 3.0], nothing, 0.0)
+        @test du == [1.0, 3.0]
+
+        ia(du, u, p, t) = (du .= u; nothing)
+        @test_throws SciMLBase.NonconformingFunctionsError ConstructionBase.setproperties(
+            SplitFunction(ia, ia), (; f1 = (u, p, t) -> u)
+        )
+    end
+
     @testset "DynamicalDDEFunction keyword-only constructor" begin
-        f1(u, h, p, t) = u
-        f2(u, h, p, t) = -u
+        f1 = DDEFunction{false}((v, u, h, p, t) -> u)
+        f2 = DDEFunction{false}((v, u, h, p, t) -> -u)
         fn = DynamicalDDEFunction{false}(;
             f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
             jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
@@ -228,8 +247,8 @@ end
     end
 
     @testset "DynamicalODEFunction keyword-only constructor" begin
-        f1 = ODEFunction{false}((v, u, p, t) -> -u)
-        f2 = ODEFunction{false}((v, u, p, t) -> v)
+        f1 = (v, u, p, t) -> -u
+        f2 = (v, u, p, t) -> v
         fn = DynamicalODEFunction{false}(;
             f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
             jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
@@ -238,6 +257,8 @@ end
         )
         @test fn isa DynamicalODEFunction{false, SciMLBase.FullSpecialize}
         @test fn.sparsity === nothing
+        u = SciMLBase.RecursiveArrayTools.ArrayPartition([1.0], [2.0])
+        @test fn(u, nothing, 0.0) == SciMLBase.RecursiveArrayTools.ArrayPartition([-2.0], [1.0])
     end
 end
 

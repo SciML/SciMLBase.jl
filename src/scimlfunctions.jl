@@ -3595,8 +3595,8 @@ SplitFunction(f::SplitFunction; kwargs...) = f
         Wfact_t, paramjac,
         observed, colorvec, sys, initialization_data = nothing
     ) where {iip}
-    f1 = f1 isa AbstractSciMLOperator ? f1 : ODEFunction(f1)
-    f2 = ODEFunction(f2)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : ODEFunction{iip}(f1)
+    f2 = ODEFunction{iip}(f2)
 
     if isinplace(f1) != isinplace(f2)
         throw(NonconformingFunctionsError(["f2"]))
@@ -6077,11 +6077,6 @@ for S in [
         :NonlinearFunction
         :IntervalNonlinearFunction
         :IncrementingODEFunction
-        :SplitFunction
-        :DynamicalODEFunction
-        :DynamicalDDEFunction
-        :SplitSDEFunction
-        :DynamicalSDEFunction
         :BVPFunction
         :DynamicalBVPFunction
         :IntegralFunction
@@ -6099,6 +6094,46 @@ for S in [
             return (args...) -> $S{iip, specialize, map(typeof, args)...}(args...)
         end
     end
+end
+
+# The two-function types rebuild the way their constructors build them: raw callbacks
+# are wrapped, the in-place flag follows the new components and mixed modes throw.
+for (S, W, n) in [
+        (:SplitFunction, :ODEFunction, 4),
+        (:DynamicalODEFunction, :ODEFunction, 5),
+        (:DynamicalDDEFunction, :DDEFunction, 6),
+        (:SplitSDEFunction, :SDEFunction, 4),
+        (:DynamicalSDEFunction, :SDEFunction, 5),
+    ]
+    g = W === :SDEFunction ? (:(first(args)),) : ()
+    @eval function ConstructionBase.constructorof(::Type{T}) where {iip, T <: $S{iip}}
+        P = Base.unwrap_unionall(T).parameters[2]
+        specialize = P isa TypeVar ? DEFAULT_SPECIALIZATION : P
+        return function (f1, f2, args...)
+            f1 = _wrap_split_component($W, f1, $n, $(g...))
+            f2 = _wrap_split_component($W, f2, $n, $(g...))
+            newiip = _split_components_iip(iip, f1, f2)
+            return $S{newiip, specialize, map(typeof, (f1, f2, args...))...}(f1, f2, args...)
+        end
+    end
+end
+
+function _wrap_split_component(W, f, n, g...)
+    f isa Union{AbstractSciMLOperator, W} && return f
+    return W{isinplace(f, n)}(f, g...)
+end
+
+_split_component_iip(f::AbstractSciMLOperator) = nothing
+function _split_component_iip(f)
+    return f.f isa Union{Nothing, AbstractSciMLOperator} ? nothing : isinplace(f)
+end
+
+function _split_components_iip(iip, f1, f2)
+    m1 = _split_component_iip(f1)
+    m2 = _split_component_iip(f2)
+    m1 === nothing && return m2 === nothing ? iip : m2
+    m2 === nothing || m1 == m2 || throw(NonconformingFunctionsError(["f2"]))
+    return m1
 end
 
 # As above, with the specialization stored after the field types. The type parameters
