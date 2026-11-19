@@ -3580,9 +3580,9 @@ function SplitFunction{iip, specialize}(
     end
 end
 
-_f1_conforms(f1::AbstractSciMLOperator, n, iip) = true
-function _f1_conforms(f1::AbstractSciMLFunction, n, iip)
-    return f1.f isa AbstractSciMLOperator || isinplace(f1) == iip
+_f1_conforms(f1::AbstractSciMLOperator, _, _) = true
+function _f1_conforms(f1::AbstractSciMLFunction, _, iip)
+    return isinplace(f1) == iip || (hasfield(typeof(f1), :f) && f1.f isa AbstractSciMLOperator)
 end
 _f1_conforms(f1, n, iip) = isinplace(f1, n, "f1", iip) == iip
 
