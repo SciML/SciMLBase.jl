@@ -3582,6 +3582,8 @@ end
 
 SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
+    f1 isa Union{AbstractSciMLOperator, AbstractSciMLFunction} ||
+        isinplace(f1, 4, "f1", iip) == iip || throw(NonconformingFunctionsError(["f1"]))
     return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
         ODEFunction{iip}(f1), ODEFunction{iip}(f2);
         kwargs...
@@ -4003,6 +4005,8 @@ SDEFunction(f::SDEFunction; kwargs...) = f
         colorvec, sys, initialization_data = nothing
     )
     iip = isinplace(f2, 4)
+    f1 isa Union{AbstractSciMLOperator, AbstractSciMLFunction} ||
+        isinplace(f1, 4, "f1", iip) == iip || throw(NonconformingFunctionsError(["f1"]))
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
     f2 = SDEFunction{iip}(f2, g)
 
@@ -4089,6 +4093,8 @@ function SplitSDEFunction(f1, f2, g; kwargs...)
     return SplitSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
+    f1 isa Union{AbstractSciMLOperator, AbstractSciMLFunction} ||
+        isinplace(f1, 4, "f1", iip) == iip || throw(NonconformingFunctionsError(["f1"]))
     return SplitSDEFunction{iip, DEFAULT_SPECIALIZATION}(
         SDEFunction{iip}(f1, g), SDEFunction{iip}(f2, g),
         g; kwargs...
@@ -4104,6 +4110,8 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
         sys, initialization_data = nothing
     )
     iip = isinplace(f2, 5)
+    f1 isa Union{AbstractSciMLOperator, AbstractSciMLFunction} ||
+        isinplace(f1, 5, "f1", iip) == iip || throw(NonconformingFunctionsError(["f1"]))
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
     f2 = SDEFunction{iip}(f2, g)
 

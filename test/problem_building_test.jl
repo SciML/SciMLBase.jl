@@ -566,14 +566,22 @@ end
 
     kw = (;
         mass_matrix = nothing, _func_cache = nothing, analytic = nothing, tgrad = nothing,
-        jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
-        sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+        jac = nothing, jvp = :jvp, vjp = :vjp, jac_prototype = :jac_prototype,
+        sparsity = :sparsity, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
         observed = nothing, colorvec = nothing, sys = nothing,
     )
     sf = SplitSDEFunction(; f1 = (u, p, t) -> -u, f2, g, kw...)
-    @test sf isa SplitSDEFunction{false, SciMLBase.FullSpecialize}
-    @test sf(u, nothing, 0.0) == [-0.5]
     df = DynamicalSDEFunction(; f1 = (v, u, p, t) -> -u, f2 = (v, u, p, t) -> v, g, kw...)
+    @test sf isa SplitSDEFunction{false, SciMLBase.FullSpecialize}
     @test df isa DynamicalSDEFunction{false, SciMLBase.FullSpecialize}
+    @test sf(u, nothing, 0.0) == [-0.5]
     @test !isinplace(df.f1)
+    for fn in (sf, df), name in (:jvp, :vjp, :jac_prototype, :sparsity)
+        @test getfield(fn, name) === name
+    end
+
+    f1!(du, u, p, t) = (du .= -u; nothing)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(f1!, f2)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction{false}(f1!, f2, g)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction(; f1 = f1!, f2, g, kw...)
 end
