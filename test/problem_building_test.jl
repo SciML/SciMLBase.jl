@@ -234,8 +234,8 @@ end
     end
 
     @testset "DynamicalDDEFunction keyword-only constructor" begin
-        f1 = DDEFunction{false}((v, u, h, p, t) -> u)
-        f2 = DDEFunction{false}((v, u, h, p, t) -> -u)
+        f1 = (v, u, h, p, t) -> -u
+        f2 = (v, u, h, p, t) -> v
         fn = DynamicalDDEFunction{false}(;
             f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
             jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
@@ -243,7 +243,8 @@ end
             observed = nothing, colorvec = nothing, sys = nothing
         )
         @test fn isa DynamicalDDEFunction{false, SciMLBase.FullSpecialize}
-        @test fn.sparsity === nothing
+        u = SciMLBase.RecursiveArrayTools.ArrayPartition([1.0], [2.0])
+        @test fn(u, nothing, nothing, 0.0) == SciMLBase.RecursiveArrayTools.ArrayPartition([-2.0], [1.0])
     end
 
     @testset "DynamicalODEFunction keyword-only constructor" begin

@@ -4526,8 +4526,8 @@ DDEFunction(f::DDEFunction; kwargs...) = f
         observed,
         colorvec, sys, initialization_data = nothing
     ) where {iip}
-    f1 = f1 isa AbstractSciMLOperator ? f1 : DDEFunction(f1)
-    f2 = DDEFunction(f2)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : DDEFunction{iip}(f1)
+    f2 = DDEFunction{iip}(f2)
 
     DynamicalDDEFunction{
         isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
