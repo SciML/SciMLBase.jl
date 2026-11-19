@@ -551,3 +551,29 @@ end
     @test prob2.kwargs[:precondition] === G
     @test prob2.kwargs[:postcondition] === H
 end
+
+@testset "Split and dynamical constructors follow iip" begin
+    f1(u, p, t) = -u
+    f1(du, u, p, t) = (du .= -u; nothing)
+    f2(u, p, t) = 0.5u
+    g(u, p, t) = 0.1u
+    u = [1.0]
+
+    @test !isinplace(SplitFunction{false}(f1, f2).f1)
+    sf = SplitSDEFunction{false}(f1, f2, g)
+    @test !isinplace(sf.f1)
+    @test sf(u, nothing, 0.0) == [-0.5]
+
+    kw = (;
+        mass_matrix = nothing, _func_cache = nothing, analytic = nothing, tgrad = nothing,
+        jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
+        sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+        observed = nothing, colorvec = nothing, sys = nothing,
+    )
+    sf = SplitSDEFunction(; f1 = (u, p, t) -> -u, f2, g, kw...)
+    @test sf isa SplitSDEFunction{false, SciMLBase.FullSpecialize}
+    @test sf(u, nothing, 0.0) == [-0.5]
+    df = DynamicalSDEFunction(; f1 = (v, u, p, t) -> -u, f2 = (v, u, p, t) -> v, g, kw...)
+    @test df isa DynamicalSDEFunction{false, SciMLBase.FullSpecialize}
+    @test !isinplace(df.f1)
+end

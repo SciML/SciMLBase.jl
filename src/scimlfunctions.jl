@@ -3583,7 +3583,7 @@ end
 SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
     return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
-        ODEFunction(f1), ODEFunction{iip}(f2);
+        ODEFunction{iip}(f1), ODEFunction{iip}(f2);
         kwargs...
     )
 end
@@ -3999,22 +3999,24 @@ SDEFunction(f::SDEFunction; kwargs...) = f
 @add_kwonly function SplitSDEFunction(
         f1, f2, g, mass_matrix, _func_cache, analytic, tgrad, jac,
         jvp, vjp,
-        jac_prototype, Wfact, Wfact_t, paramjac, observed,
+        jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed,
         colorvec, sys, initialization_data = nothing
     )
-    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
-    f2 = SDEFunction(f2)
+    iip = isinplace(f2, 4)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
+    f2 = SDEFunction{iip}(f2, g)
 
-    SplitFunction{
-        isinplace(f2), typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
+    SplitSDEFunction{
+        iip, FullSpecialize, typeof(f1), typeof(f2), typeof(g), typeof(mass_matrix),
         typeof(_func_cache), typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
-        typeof(vjp),
+        typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data),
     }(
-        f1, f2, mass_matrix, _func_cache, analytic, tgrad, jac,
-        jac_prototype, Wfact, Wfact_t, paramjac, observed, colorvec, sys, initialization_data
+        f1, f2, g, mass_matrix, _func_cache, analytic, tgrad, jac, jvp, vjp,
+        jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
+        initialization_data
     )
 end
 
@@ -4088,7 +4090,7 @@ function SplitSDEFunction(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
     return SplitSDEFunction{iip, DEFAULT_SPECIALIZATION}(
-        SDEFunction(f1, g), SDEFunction{iip}(f2, g),
+        SDEFunction{iip}(f1, g), SDEFunction{iip}(f2, g),
         g; kwargs...
     )
 end
@@ -4097,25 +4099,26 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
 @add_kwonly function DynamicalSDEFunction(
         f1, f2, g, mass_matrix, _func_cache, analytic, tgrad,
         jac, jvp, vjp,
-        jac_prototype, Wfact, Wfact_t, paramjac,
+        jac_prototype, sparsity, Wfact, Wfact_t, paramjac,
         observed, colorvec,
         sys, initialization_data = nothing
     )
-    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction(f1)
-    f2 = SDEFunction(f2)
+    iip = isinplace(f2, 5)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
+    f2 = SDEFunction{iip}(f2, g)
 
     DynamicalSDEFunction{
-        isinplace(f2), FullSpecialize, typeof(f1), typeof(f2), typeof(g),
+        iip, FullSpecialize, typeof(f1), typeof(f2), typeof(g),
         typeof(mass_matrix),
         typeof(_func_cache), typeof(analytic), typeof(tgrad), typeof(jac),
-        typeof(jvp), typeof(vjp),
+        typeof(jvp), typeof(vjp), typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data),
     }(
         f1, f2, g, mass_matrix, _func_cache, analytic, tgrad,
-        jac, jac_prototype, Wfact, Wfact_t, paramjac, observed, colorvec, sys,
-        initialization_data
+        jac, jvp, vjp, jac_prototype, sparsity, Wfact, Wfact_t, paramjac, observed,
+        colorvec, sys, initialization_data
     )
 end
 
