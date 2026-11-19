@@ -186,6 +186,81 @@ end
         newfn = ConstructionBase.constructorof(ODEFunction{true, SciMLBase.FullSpecialize})(args...)
         @test typeof(newfn) == typeof(fn)
     end
+
+    @testset "rebuilding a two-function type" begin
+        rest!(du, u, p, t) = (du .= 0.0; nothing)
+        dyn!(dv, v, u, p, t) = (dv .= -u; nothing)
+        dynrest!(du, v, u, p, t) = (du .= v; nothing)
+        ddedyn!(dv, v, u, h, p, t) = (dv .= -u; nothing)
+        dderest!(du, v, u, h, p, t) = (du .= v; nothing)
+        jp = zeros(3, 3)
+        fns = [
+            SplitFunction(lorenz!, rest!; jac_prototype = jp),
+            DynamicalODEFunction(dyn!, dynrest!; jac_prototype = jp),
+            DynamicalDDEFunction(ddedyn!, dderest!; jac_prototype = jp),
+            SplitSDEFunction(lorenz!, rest!, noise!; jac_prototype = jp),
+            DynamicalSDEFunction(dyn!, dynrest!, noise!; jac_prototype = jp),
+        ]
+        @testset "$(SciMLBase.parameterless_type(typeof(fn)))" for fn in fns
+            newfn = @set fn.jac_prototype = zeros(Float32, 3, 3)
+            @test SciMLBase.parameterless_type(typeof(newfn)) ==
+                SciMLBase.parameterless_type(typeof(fn))
+            @test SciMLBase.specialization(newfn) === SciMLBase.specialization(fn)
+            @test newfn.jac_prototype isa Matrix{Float32}
+            @test all(
+                getfield(newfn, name) === getfield(fn, name)
+                    for name in fieldnames(typeof(fn)) if name !== :jac_prototype
+            )
+        end
+    end
+
+    @testset "rebuilding a SplitFunction with new components" begin
+        a(du, u, p, t) = (du .= 0.5 .* u; nothing)
+        a(u, p, t) = 45 .* u
+        sf = SplitFunction((u, p, t) -> u, (u, p, t) -> u)
+        newfn = ConstructionBase.setproperties(
+            sf, (; f1 = ODEFunction{true}(a), f2 = ODEFunction{true}(a))
+        )
+        prob = ODEProblem(newfn, [1.0, 3.0], (0.0, 1.0))
+        @test isinplace(prob)
+        du = zeros(2)
+        prob.f(du, [1.0, 3.0], nothing, 0.0)
+        @test du == [1.0, 3.0]
+
+        ia(du, u, p, t) = (du .= u; nothing)
+        @test_throws SciMLBase.NonconformingFunctionsError ConstructionBase.setproperties(
+            SplitFunction(ia, ia), (; f1 = (u, p, t) -> u)
+        )
+    end
+
+    @testset "DynamicalDDEFunction keyword-only constructor" begin
+        f1 = (v, u, h, p, t) -> -u
+        f2 = (v, u, h, p, t) -> v
+        fn = DynamicalDDEFunction{false}(;
+            f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
+            jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
+            sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+            observed = nothing, colorvec = nothing, sys = nothing
+        )
+        @test fn isa DynamicalDDEFunction{false, SciMLBase.FullSpecialize}
+        u = SciMLBase.RecursiveArrayTools.ArrayPartition([1.0], [2.0])
+        @test fn(u, nothing, nothing, 0.0) == SciMLBase.RecursiveArrayTools.ArrayPartition([-2.0], [1.0])
+    end
+
+    @testset "DynamicalODEFunction keyword-only constructor" begin
+        f1 = (v, u, p, t) -> -u
+        f2 = (v, u, p, t) -> v
+        fn = DynamicalODEFunction{false}(;
+            f1, f2, mass_matrix = nothing, analytic = nothing, tgrad = nothing,
+            jac = nothing, jvp = nothing, vjp = nothing, jac_prototype = nothing,
+            sparsity = nothing, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+            observed = nothing, colorvec = nothing, sys = nothing
+        )
+        @test fn isa DynamicalODEFunction{false, SciMLBase.FullSpecialize}
+        @test fn.sparsity === nothing
+        u = SciMLBase.RecursiveArrayTools.ArrayPartition([1.0], [2.0])
+        @test fn(u, nothing, 0.0) == SciMLBase.RecursiveArrayTools.ArrayPartition([-2.0], [1.0])
+    end
 end
 
 @testset "getproperties avoids broadcast on SciML functions" begin
