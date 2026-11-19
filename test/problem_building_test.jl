@@ -551,3 +551,41 @@ end
     @test prob2.kwargs[:precondition] === G
     @test prob2.kwargs[:postcondition] === H
 end
+
+@testset "Split and dynamical constructors follow iip" begin
+    f1(u, p, t) = -u
+    f1(du, u, p, t) = (du .= -u; nothing)
+    f2(u, p, t) = 0.5u
+    g(u, p, t) = 0.1u
+    u = [1.0]
+
+    @test !isinplace(SplitFunction{false}(f1, f2).f1)
+    sf = SplitSDEFunction{false}(f1, f2, g)
+    @test !isinplace(sf.f1)
+    @test sf(u, nothing, 0.0) == [-0.5]
+
+    kw = (;
+        mass_matrix = nothing, _func_cache = nothing, analytic = nothing, tgrad = nothing,
+        jac = nothing, jvp = :jvp, vjp = :vjp, jac_prototype = :jac_prototype,
+        sparsity = :sparsity, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+        observed = nothing, colorvec = nothing, sys = nothing,
+    )
+    sf = SplitSDEFunction(; f1 = (u, p, t) -> -u, f2, g, kw...)
+    df = DynamicalSDEFunction(; f1 = (v, u, p, t) -> -u, f2 = (v, u, p, t) -> v, g, kw...)
+    @test sf isa SplitSDEFunction{false, SciMLBase.FullSpecialize}
+    @test df isa DynamicalSDEFunction{false, SciMLBase.FullSpecialize}
+    @test sf(u, nothing, 0.0) == [-0.5]
+    @test !isinplace(df.f1)
+    for fn in (sf, df), name in (:jvp, :vjp, :jac_prototype, :sparsity)
+        @test getfield(fn, name) === name
+    end
+
+    f1!(du, u, p, t) = (du .= -u; nothing)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(f1!, f2)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction{false}(f1!, f2, g)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction(; f1 = f1!, f2, g, kw...)
+    @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(ODEFunction{true}(f1!), f2)
+    @test SplitFunction{false}(SplitFunction(f2, f2), f2) isa SplitFunction{false}
+    d1!(dv, v, u, p, t) = (dv .= -u; nothing)
+    @test_throws SciMLBase.NonconformingFunctionsError DynamicalSDEFunction{false}(d1!, (v, u, p, t) -> v, g)
+end
