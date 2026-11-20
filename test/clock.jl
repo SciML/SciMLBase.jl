@@ -63,7 +63,10 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test first_clock_tick_time(PeriodicClock(2.0, 0.5), 5.0) === 5.5
     @test first_clock_tick_time(PeriodicClock(1.0, 2.5), 0.0) === 2.5
     @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), 0.0) === 1 / 60
-    @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), sqrt(2.0)) === sqrt(2.0) + 1 / 60
+    # rational clocks: t0 + phase + k*dt computed exactly and rounded once
+    @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), sqrt(2.0)) ===
+        Float64(Rational{BigInt}(sqrt(2.0)) + 1 // 60)
+    @test first_clock_tick_time(PeriodicClock(1 // 10, 1), -1.0) === 0.0
     @test_throws ErrorException first_clock_tick_time(Continuous(), 5.0)
     @test first_clock_tick_time(SolverStepClock(), 5.0) === 5.0
 
