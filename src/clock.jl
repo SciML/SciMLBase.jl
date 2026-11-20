@@ -38,25 +38,63 @@ Clock with nominal periodic ticks.
 `PeriodicClock(dt; phase = 0.0)` describes ticks separated by `dt`. A `dt` of
 `nothing` means the interval has not been fixed and may be inferred by
 downstream tooling. `phase` is stored as clock metadata for packages that need a
-phase offset.
+phase offset. A rational `dt` is stored as `Rational{Int}` (as `Rational{BigInt}`
+if it does not fit), which allows downstream tooling to compute tick times
+exactly, for example such that ticks of two clocks that coincide mathematically
+are also equal as floating-point numbers. A rational `phase` is stored in the same
+way when `dt` is rational or `nothing`. All other values are converted to
+`Float64`. The type parameters `D` and `P` are the types of `dt` and `phase`.
+
+Clocks are equal when their periods and phases are numerically equal and either
+both or neither of the periods are rational, since the tick times of a clock with
+a rational period are computed in exact arithmetic and those of a clock with a
+floating-point period are not.
 
 # Fields
 
 $(TYPEDFIELDS)
 """
-struct PeriodicClock <: AbstractClock
+struct PeriodicClock{D <: Union{Nothing, Real}, P <: Real} <: AbstractClock
     """
     Nominal tick interval, or `nothing` when the interval is left for downstream
     inference.
     """
-    dt::Union{Nothing, Float64, Rational{Int}}
+    dt::D
     """
     Phase offset metadata for the periodic clock.
     """
-    phase::Float64
+    phase::P
+    function PeriodicClock(dt, phase)
+        dt′ = _clock_dt(dt)
+        phase′ = _clock_phase(dt′, phase)
+        return new{typeof(dt′), typeof(phase′)}(dt′, phase′)
+    end
 end
-PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, Float64(phase))
-PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, Float64(phase))
+# Rationals are stored in one integer type, such that numerically equal clocks
+# have equal field types and therefore equal tick times.
+function _clock_rational(x::Rational)
+    n, d = numerator(x), denominator(x)
+    fits = typemin(Int) <= n <= typemax(Int) && d <= typemax(Int)
+    return fits ? Rational{Int}(x) : Rational{BigInt}(x)
+end
+_clock_dt(dt::Nothing) = dt
+_clock_dt(dt::Rational) = _clock_rational(dt)
+_clock_dt(dt) = Float64(dt)
+_clock_phase(::Union{Nothing, Rational}, phase::Rational) = _clock_rational(phase)
+_clock_phase(dt, phase) = Float64(phase)
+_rational_period(c::PeriodicClock) = c.dt isa Rational
+function Base.:(==)(a::PeriodicClock, b::PeriodicClock)
+    return _rational_period(a) == _rational_period(b) && a.dt == b.dt && a.phase == b.phase
+end
+function Base.isequal(a::PeriodicClock, b::PeriodicClock)
+    return _rational_period(a) == _rational_period(b) && isequal(a.dt, b.dt) &&
+        isequal(a.phase, b.phase)
+end
+function Base.hash(c::PeriodicClock, h::UInt)
+    return hash(c.phase, hash(c.dt, hash(_rational_period(c), hash(PeriodicClock, h))))
+end
+PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, phase)
+PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
 
 """
 $(TYPEDEF)
@@ -191,13 +229,34 @@ is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 """
     first_clock_tick_time(clock, t0)
 
-Return the first tick time for a discrete clock at or after `t0`.
+Return the first tick time of a discrete clock in a simulation that starts at `t0`.
 
-For [`PeriodicClock`](@ref), this is the first multiple of `dt` at or after
-`t0`. For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and
-event clocks do not have a generic first tick time and throw an error.
+A [`PeriodicClock`](@ref) ticks at `t0 + phase + k * dt` for integers `k ≥ 0`, so
+its first tick is at `t0 + phase`. When `dt` is rational, the tick time
+`t0 + phase + k * dt` is computed in exact arithmetic and rounded once. For
+[`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event clocks do
+not have a generic first tick time and throw an error.
 """
-first_clock_tick_time(c::PeriodicClock, t0) = ceil(t0 / c.dt) * c.dt
+first_clock_tick_time(c::PeriodicClock, t0) = _periodic_tick_time(c, t0, 0)
+
+# Time of the tick with index `k` (counted from zero) of a periodic clock in a
+# simulation that starts at `t0`. The arithmetic is that of `PeriodicCallback` of
+# DiffEqCallbacks.jl, such that the returned times are equal to the times at which
+# the callback fires: for a rational `dt`, `t0 + phase + k * dt` is computed in
+# `Rational{BigInt}` (floating-point values converted exactly) and rounded once.
+# A clock with zero phase ticks at `t0` itself.
+_exact(x) = Rational{BigInt}(x)
+function _periodic_tick_time(c::PeriodicClock, t0, k)
+    T = typeof(float(t0))
+    dt, phase = c.dt, c.phase
+    k == 0 && iszero(phase) && return convert(T, t0)
+    return if dt isa Rational
+        convert(T, _exact(t0) + _exact(phase) + k * _exact(dt))
+    else
+        convert(T, convert(typeof(dt), t0 + phase) + k * dt)
+    end
+end
+
 first_clock_tick_time(::SolverStepClock, t0) = t0
 first_clock_tick_time(::ContinuousClock, _) = error("ContinuousClock() is not a discrete clock")
 first_clock_tick_time(::EventClock, _) = error("Event clocks do not have a defined first tick time.")
@@ -268,14 +327,15 @@ for a saved time-series solution.
 
 `IndexedClock` stores a clock and one or more tick indices, but the actual tick
 times depend on the solve. Periodic clocks are reconstructed from the problem
-start time and tick interval, solver-step clocks read the matching discrete
+start time, tick interval and phase (the clock ticks at
+`tspan[1] + phase + (idx - 1) * dt`), solver-step clocks read the matching discrete
 time series stored on the solution, and continuous clocks index directly into
 `sol.t`. Unsupported clock types throw an error.
 """
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
     return if c isa PeriodicClock
-        ceil(sol.prob.tspan[1] / c.dt) * c.dt .+ (ic.idx .- 1) .* c.dt
+        _periodic_tick_time.(Ref(c), sol.prob.tspan[1], ic.idx .- 1)
     elseif c isa SolverStepClock
         ssc_idx = findfirst(eachindex(sol.discretes)) do i
             !isa(sol.discretes[i].t, AbstractRange)
