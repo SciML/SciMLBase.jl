@@ -58,11 +58,30 @@ end
     @test sols[2].prob.u0 isa Matrix{Float64}
 end
 
-@testset "tmap homogeneous return type is concrete" begin
+@testset "tmap homogeneous return type" begin
     # EnsembleThreads solve goes through tmap; a runtime misfit branch widens
     # the inferred return to abstract Vector and makes solve infer as Any.
     h(i) = Float64(i)
-    @test isconcretetype(only(Base.return_types(tmap, Tuple{typeof(h), UnitRange{Int}})))
+    @test only(Base.return_types(tmap, Tuple{typeof(h), UnitRange{Int}})) === Vector{Float64}
+end
+
+@testset "tmap homogeneous results from abstract inputs" begin
+    input = Any[i for i in 1:100_000]
+    allocated(input) = @allocated tmap(identity, input)
+    @test tmap(identity, input)::Vector{Int} == input
+    allocated(input)
+    @test allocated(input) < 3 * sizeof(Int) * length(input) ÷ 2
+end
+
+@testset "tmap preserves the order of sparse mismatches" begin
+    input = Any[1, :a, 2, 3.5, 4, 5, 6, :b]
+    calls = zeros(Int, length(input))
+    output = tmap(eachindex(input), input) do i, value
+        calls[i] += 1
+        return value
+    end
+    @test all(x -> x == 1, calls)
+    @test all(map(===, output, input))
 end
 
 @testset "static array totallength" begin
@@ -126,12 +145,36 @@ end
     @test ODEProblem(f!, u0, tspan, p).f isa ODEFunction{true}
     @test ODEProblem(f_oop, u0, tspan, p).f isa ODEFunction{false}
     @test NonlinearProblem(nf, u0, p).f isa NonlinearFunction{false}
-    @test SDEProblem(f!, g!, u0, tspan).f isa SDEFunction{true}
-    @test BVProblem(f!, bc!, u0, tspan).f isa BVPFunction{true}
-    @test DiscreteProblem(f!, u0, tspan).f isa DiscreteFunction{true}
-    @test SplitFunction(f!, f!) isa SplitFunction{true}
-    @test DynamicalODEFunction(f1!, f2!) isa DynamicalODEFunction{true}
-    @test isinplace(LinearProblem(A!, u0))
+
+    second_order(v, u, p, t) = v
+    delay!(dv, v, u, h, p, t) = (dv .= v)
+    delay(v, u, h, p, t) = v
+    history(p, t) = u0
+    boundary(u, p, t) = [u[1][1] - 1]
+    second_boundary!(resid, v, u, p, t) = (resid[1] = u[1][1] - 1)
+    second_boundary(v, u, p, t) = [u[1][1] - 1]
+    for (iip, f, acceleration, delayed, bc, second_bc) in (
+            (true, f!, f1!, delay!, bc!, second_boundary!),
+            (false, f_oop, second_order, delay, boundary, second_boundary),
+        )
+        @test SDEProblem(f, f, u0, tspan).f isa SDEFunction{iip}
+        @test BVProblem(f, bc, u0, tspan).f isa BVPFunction{iip}
+        @test SecondOrderBVProblem(acceleration, second_bc, u0, tspan).f isa
+            DynamicalBVPFunction{iip}
+        @test DiscreteProblem(f, u0, tspan).f isa DiscreteFunction{iip}
+        @test ImplicitDiscreteProblem(acceleration, u0, tspan).f isa ImplicitDiscreteFunction{iip}
+        @test isinplace(LinearProblem(f, u0)) === iip
+        @test isinplace(HomotopyProblem(f, u0)) === iip
+        @test SciMLBase.ImmutableODEProblem(f, u0, tspan).f isa ODEFunction{iip}
+        @test SecondOrderODEProblem(acceleration, u0, u0, tspan).f isa DynamicalODEFunction{iip}
+        @test SecondOrderDDEProblem(delayed, u0, u0, history, tspan).f isa DynamicalDDEFunction{iip}
+        @test isinplace(AnalyticalProblem(f, u0, tspan)) === iip
+        @test SplitFunction(f, f) isa SplitFunction{iip}
+        @test DynamicalODEFunction(acceleration, acceleration) isa DynamicalODEFunction{iip}
+        @test SplitSDEFunction(f, f, f) isa SplitSDEFunction{iip}
+        @test DynamicalSDEFunction(acceleration, acceleration, f) isa DynamicalSDEFunction{iip}
+        @test DynamicalDDEFunction(delayed, delayed) isa DynamicalDDEFunction{iip}
+    end
 end
 
 @testset "integrator iteration size" begin

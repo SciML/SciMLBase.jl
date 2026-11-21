@@ -592,34 +592,41 @@ function tmap(f, args...)
         end
         return batch_data
     end
-    # Misfits go here; widen once after the thread barrier (in-loop widen races).
-    misfit = Vector{Any}(undef, n)
-    Threads.@threads for i in 1:n
-        v = f(getindex.(args, i)...)
-        if v isa T
-            @inbounds batch_data[i] = v
-        else
-            @inbounds misfit[i] = v
+    return tmap_widen!(f, batch_data, args)
+end
+
+function tmap_widen!(f::F, batch_data::Vector{T}, args::A) where {F, T, A}
+    n = length(batch_data)
+    chunk_size = cld(n, Threads.nthreads())
+    misfits = [Pair{Int, Any}[] for _ in 1:cld(n, chunk_size)]
+    Threads.@threads for chunk in eachindex(misfits)
+        first_index = (chunk - 1) * chunk_size + 1
+        last_index = first_index + min(chunk_size, n - first_index + 1) - 1
+        chunk_misfits = misfits[chunk]
+        for i in first_index:last_index
+            v = f(getindex.(args, i)...)
+            if v isa T
+                @inbounds batch_data[i] = v
+            else
+                push!(chunk_misfits, i => v)
+            end
         end
     end
-    any_misfit = false
-    for i in 1:n
-        if isassigned(misfit, i)
-            any_misfit = true
-            break
-        end
-    end
-    any_misfit || return batch_data
     U = T
-    for i in 1:n
-        if isassigned(misfit, i)
-            U = Base.promote_typejoin(U, typeof(misfit[i]))
-        end
+    for chunk_misfits in misfits, (_, v) in chunk_misfits
+        U = Base.promote_typejoin(U, typeof(v))
     end
+    U === T && return batch_data
+
     out = Vector{U}(undef, n)
-    for i in 1:n
-        @inbounds out[i] = isassigned(misfit, i) ? misfit[i] : batch_data[i]
+    next_index = 1
+    # Misfits are in index order, so each copy reads only initialized entries.
+    for chunk_misfits in misfits, (i, v) in chunk_misfits
+        copyto!(out, next_index, batch_data, next_index, i - next_index)
+        out[i] = v
+        next_index = i + 1
     end
+    copyto!(out, next_index, batch_data, next_index, n - next_index + 1)
     return out
 end
 
