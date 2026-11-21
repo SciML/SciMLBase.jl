@@ -82,6 +82,39 @@ end
     series = only(apply_recipe(Dict{Symbol, Any}(:idxs => (0, 2)), sol))
     @test series.plotattributes[:xguide] == "t"
     @test series.plotattributes[:yguide] == "u[2]"
+    for (idxs, guide) in (([(1, 0), (2, 0)], :yguide), ([(1, 2, 0)], :zguide))
+        series = only(apply_recipe(Dict{Symbol, Any}(:idxs => idxs), sol))
+        @test get(series.plotattributes, guide, nothing) == "t"
+    end
+end
+
+@testset "sparse analytic overlay uses saved values" begin
+    ts = collect(range(0.0, 1.0; length = 5))
+    p = Ref(1.0)
+    f = ODEFunction((u, p, t) -> -u, analytic = (u0, p, t) -> p[] * u0 * exp(-t))
+    prob = ODEProblem(f, 1.0, (first(ts), last(ts)), p)
+    sol = SciMLBase.build_solution(prob, :NoAlgorithm, ts, exp.(-ts))
+    p[] = 2.0
+
+    for plotted_sol in (sol, SciMLBase.solution_new_tslocation(sol, 3))
+        numerical, analytic = plotted_curves(plotted_sol; denseplot = false, plot_analytic = true)
+        @test analytic.y ≈ exp.(-numerical.x)
+    end
+
+    _, analytic = plotted_curves(sol; plotat = [0.1, 0.9], plot_analytic = true)
+    @test analytic.y ≈ 2 .* exp.(-analytic.x)
+end
+
+@testset "plot DDE analytic overlay" begin
+    ts = collect(range(0.0, 1.0; length = 5))
+    h = (p, t) -> 1.0
+    f = DDEFunction((u, h, p, t) -> -u; analytic = (u0, h, p, t) -> h(p, 0) * exp(-t))
+    prob = DDEProblem(f, 1.0, h, (first(ts), last(ts)))
+    sol = SciMLBase.build_solution(prob, :NoAlgorithm, ts, exp.(-ts))
+    for denseplot in (false, true)
+        _, analytic = plotted_curves(sol; plot_analytic = true, denseplot, plotdensity = 7)
+        @test analytic.y ≈ exp.(-analytic.x)
+    end
 end
 
 @testset "interpolate empty ODE solution" begin

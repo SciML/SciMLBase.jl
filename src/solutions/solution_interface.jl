@@ -27,8 +27,10 @@ function augment(
         discretes = nothing
     ) where {T, N, Q, B}
     p = hasproperty(sol.prob, :p) ? sol.prob.p : nothing
-    return DiffEqArray(A.u, A.t, p, sol; discretes,
-        interp = sol.interp, dense = sol.dense)
+    return DiffEqArray(
+        A.u, A.t, p, sol; discretes,
+        interp = sol.interp, dense = sol.dense
+    )
 end
 
 # SymbolicIndexingInterface.jl
@@ -284,11 +286,9 @@ end
                 end
             end
 
-            if all(
-                    x -> (x[2] isa Integer && x[2] == 0) ||
-                        isequal(x[2], getindepsym_defaultt(sol)), vars
-                )
-                xguide --> "$(getindepsym_defaultt(sol))"
+            time_var = getindepsym_defaultt(sol)
+            if all(var -> is_plot_time(var[2], time_var), vars)
+                xguide --> string(time_var)
                 if tspan === nothing
                     if tdir > 0
                         xlims --> (sol.t[1], sol.t[end])
@@ -298,6 +298,12 @@ end
                 else
                     xlims --> (tspan[1], tspan[end])
                 end
+            end
+            if all(var -> is_plot_time(var[3], time_var), vars)
+                yguide --> string(time_var)
+            end
+            if all(var -> length(var) > 3 && is_plot_time(var[4], time_var), vars)
+                zguide --> string(time_var)
             end
 
             label --> reshape(labels, 1, length(labels))
@@ -343,6 +349,8 @@ end
     end
 end
 
+is_plot_time(x, time_var) = (x isa Integer && x == 0) || isequal(x, time_var)
+
 """
     plot_var_label(sol, x)
 
@@ -360,12 +368,12 @@ end
 """
     plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
 
-Time points at which the plot recipes sample `sol`. Without an explicit `tspan`
-or `plotat`, an animation frame (`sol.tslocation != 0`) is sampled only up to
-`sol.t[sol.tslocation]`.
+Return the plot sample times and their indices into the saved times, if any.
+Without an explicit `tspan` or `plotat`, an animation frame
+(`sol.tslocation != 0`) is sampled only up to `sol.t[sol.tslocation]`.
 """
 function plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
-    plotat === nothing || return plotat
+    plotat === nothing || return plotat, nothing
     if tspan === nothing
         start_idx = 1
         end_idx = sol.tslocation == 0 ? lastindex(sol.t) : sol.tslocation
@@ -373,7 +381,10 @@ function plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
         start_idx = searchsortedfirst(sol.t, tspan[1])
         end_idx = searchsortedlast(sol.t, tspan[end])
     end
-    denseplot || return sol.t[start_idx:end_idx]
+    if !denseplot
+        saved_idxs = start_idx:end_idx
+        return sol.t[saved_idxs], saved_idxs
+    end
     tstart, tstop = if sol isa AbstractAnalyticalSolution
         sol.prob.tspan[1], sol.prob.tspan[end]
     elseif tspan === nothing
@@ -382,9 +393,9 @@ function plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
         tspan[1], tspan[end]
     end
     if tscale in (:ln, :log10, :log2)
-        return exp10.(range(log10(tstart), log10(tstop); length = plotdensity))
+        return exp10.(range(log10(tstart), log10(tstop); length = plotdensity)), nothing
     end
-    return collect(range(tstart, tstop; length = plotdensity))
+    return collect(range(tstart, tstop; length = plotdensity)), nothing
 end
 
 """
@@ -397,26 +408,36 @@ analytic solution of `sol.prob` follows the numerical curves, labelled `"True ..
 function solution_plot_arrays(
         sol, plot_analytic, denseplot, plotdensity, tspan, vars, tscale, plotat
     )
-    plott = plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
+    plott, saved_idxs = plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
     plot_vecs, labels = diffeq_to_arrays(
         sol, denseplot, plotdensity, tspan, vars, tscale, plott
     )
     plot_analytic || return plot_vecs, labels
-    analytic_vecs, analytic_labels = analytic_plot_arrays(sol, vars, plott)
+    analytic = if saved_idxs !== nothing && length(sol.u_analytic) == length(sol.t)
+        view(sol.u_analytic, saved_idxs)
+    else
+        prob = sol.prob
+        f = prob.f isa Tuple ? prob.f[1] : prob.f
+        if prob isa AbstractDDEProblem
+            [f.analytic(prob.u0, prob.h, prob.p, t) for t in plott]
+        else
+            [f.analytic(prob.u0, prob.p, t) for t in plott]
+        end
+    end
+    analytic_vecs, analytic_labels = analytic_plot_arrays(sol, vars, plott, analytic)
     return [hcat(a, b) for (a, b) in zip(plot_vecs, analytic_vecs)],
         vcat(labels, analytic_labels)
 end
 
-function analytic_plot_arrays(sol, vars, plott)
-    f = sol.prob.f isa Tuple ? sol.prob.f[1] : sol.prob.f
-    analytic = [f.analytic(sol.prob.u0, sol.prob.p, t) for t in plott]
+function analytic_plot_arrays(sol, vars, plott, analytic)
     plot_vecs = []
     labels = String[]
+    time_var = getindepsym_defaultt(sol)
     for x in vars
         tmp = []
         strs = String[]
         for j in 2:length(x)
-            if (x[j] isa Integer && x[j] == 0) || isequal(x[j], getindepsym_defaultt(sol))
+            if is_plot_time(x[j], time_var)
                 push!(tmp, plott)
                 push!(strs, "t")
             else
