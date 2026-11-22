@@ -241,6 +241,9 @@ run_tests(;
                 @time @safetestset "Symbol and integer based indexing of interpolated solutions" begin
                     include("downstream/comprehensive_indexing.jl")
                 end
+                @time @safetestset "Indexed clock ticks equal PeriodicCallback firings" begin
+                    include("downstream/clock_callback_ticks.jl")
+                end
                 @time @safetestset "Symbol and integer based indexing of integrators" begin
                     include("downstream/integrator_indexing.jl")
                 end

@@ -232,8 +232,9 @@ is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 Return the first tick time of a discrete clock in a simulation that starts at `t0`.
 
 A [`PeriodicClock`](@ref) ticks at `t0 + phase + k * dt` for integers `k ≥ 0`, so
-its first tick is at `t0 + phase`. When `dt` is rational, the tick time
-`t0 + phase + k * dt` is computed in exact arithmetic and rounded once. For
+its first tick is at `t0 + phase`, also when `dt` is `nothing`. When `dt` is
+rational, the tick time `t0 + phase + k * dt` is computed in exact arithmetic and
+rounded once to the nearest value of the time type. For
 [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event clocks do
 not have a generic first tick time and throw an error.
 """
@@ -242,18 +243,45 @@ first_clock_tick_time(c::PeriodicClock, t0) = _periodic_tick_time(c, t0, 0)
 # Time of the tick with index `k` (counted from zero) of a periodic clock in a
 # simulation that starts at `t0`. The arithmetic is that of `PeriodicCallback` of
 # DiffEqCallbacks.jl, such that the returned times are equal to the times at which
-# the callback fires: for a rational `dt`, `t0 + phase + k * dt` is computed in
-# `Rational{BigInt}` (floating-point values converted exactly) and rounded once.
-# A clock with zero phase ticks at `t0` itself.
-_exact(x) = Rational{BigInt}(x)
+# the callback fires: for a rational `dt` and a start time that is an integer, a
+# rational or a floating-point number, `t0 + phase + k * dt` is computed in
+# `Rational{BigInt}` (floating-point values converted exactly) and rounded once to
+# the nearest value of the time type. Otherwise `t0 + phase` is computed in the
+# promoted type of `dt` and the time, which retains the precision of the time and
+# supports generic time types such as dual numbers. A clock with zero phase ticks at
+# `t0` itself. A clock without period has only a first tick, at `t0 + phase`.
+const _ExactReal = Union{Integer, Rational, AbstractFloat}
+_exact(x::_ExactReal) = Rational{BigInt}(x)
+
+# Nearest value of `S` to `x`, ties to even, computed with integer arithmetic.
+# `Float64(::Rational{BigInt})` rounds twice when it divides in BigFloat.
+function _round_exact(::Type{S}, x::Rational{BigInt}) where {S <: Base.IEEEFloat}
+    iszero(x) && return zero(S)
+    n, d = abs(numerator(x)), denominator(x)
+    # 2^e <= n/d < 2^(e+1)
+    e = ndigits(n; base = 2) - ndigits(d; base = 2)
+    (e >= 0 ? n < d << e : n << -e < d) && (e -= 1)
+    # exponent of the unit in the last place, limited to that of subnormal numbers
+    shift = max(e, exponent(floatmin(S))) - (precision(S) - 1)
+    n, d = shift <= 0 ? (n << -shift, d) : (n, d << shift)
+    q, r = divrem(n, d)
+    (2r > d || (2r == d && isodd(q))) && (q += 1)
+    return copysign(ldexp(S(q), shift), S(sign(x)))
+end
+_round_exact(::Type{S}, x) where {S} = convert(S, x)
+
 function _periodic_tick_time(c::PeriodicClock, t0, k)
     T = typeof(float(t0))
     dt, phase = c.dt, c.phase
     k == 0 && iszero(phase) && return convert(T, t0)
-    return if dt isa Rational
-        convert(T, _exact(t0) + _exact(phase) + k * _exact(dt))
+    if dt === nothing
+        k == 0 || throw(ArgumentError("the tick times of $c with index > 1 are undefined, since its period is not set"))
+        dt = 0 // 1
+    end
+    return if dt isa Rational && t0 isa _ExactReal
+        _round_exact(T, _exact(t0) + _exact(phase) + k * _exact(dt))
     else
-        convert(T, convert(typeof(dt), t0 + phase) + k * dt)
+        convert(T, convert(promote_type(typeof(dt), T), t0 + phase) + k * dt)
     end
 end
 

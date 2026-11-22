@@ -1,7 +1,15 @@
 using Test
 using SciMLBase
+using ForwardDiff: Dual, value, partials
 using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepClock,
     first_clock_tick_time, IndexedClock, canonicalize_indexed_clock
+
+# nearest Float64 to the rational number `x`, ties to even
+function nearest(x)
+    c = (prevfloat(Float64(x)), Float64(x), nextfloat(Float64(x)))
+    dist = map(y -> abs(Rational{BigInt}(y) - x), c)
+    return c[argmin(i -> (dist[i], isodd(reinterpret(UInt64, c[i]))), 1:3)]
+end
 
 @testset "Clock" begin
     @test PeriodicClock(nothing, 0.2) isa TimeDomain
@@ -65,7 +73,7 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), 0.0) === 1 / 60
     # rational clocks: t0 + phase + k*dt computed exactly and rounded once
     @test first_clock_tick_time(PeriodicClock(1 // 30, 1 // 60), sqrt(2.0)) ===
-        Float64(Rational{BigInt}(sqrt(2.0)) + 1 // 60)
+        nearest(Rational{BigInt}(sqrt(2.0)) + 1 // 60)
     @test first_clock_tick_time(PeriodicClock(1 // 10, 1), -1.0) === 0.0
     @test_throws ErrorException first_clock_tick_time(Continuous(), 5.0)
     @test first_clock_tick_time(SolverStepClock(), 5.0) === 5.0
@@ -100,4 +108,33 @@ end
     end
     # the tick of a clock with zero phase at the start time is the start time
     @test first_clock_tick_time(Clock(0.1), big"0.1") == big"0.1"
+end
+
+@testset "Tick times: rounding, precision and generic time types" begin
+    tick(c, t0, k) = SciMLBase._periodic_tick_time(c, t0, k)
+    # The tick is rounded once to the nearest Float64, independently of the BigFloat
+    # precision, on both sides of the midpoint between 1.0 and nextfloat(1.0).
+    c = Clock(1 // Int64(2)^53; phase = 1)
+    @test tick(c, 0x1p-300, 1) === nextfloat(1.0) === nearest(1 // big(2)^300 + 1 + 1 // big(2)^53)
+    @test tick(c, -0x1p-300, 1) === 1.0
+    @test tick(c, 0.0, 1) === 1.0
+    @test setprecision(() -> tick(Clock(1 // 10), 0.0, 1), BigFloat, 24) === 0.1
+    # The precision of a BigFloat start time is retained.
+    t0 = big(2.0)^53 + 1
+    ic = Clock(1.0)[1:3]
+    prob = SciMLBase.ODEProblem((u, p, t) -> zero(u), [1.0], (t0, t0 + 3))
+    sol = SciMLBase.build_solution(prob, nothing, [t0, t0 + 3], [[1.0], [1.0]])
+    @test canonicalize_indexed_clock(ic, sol) == t0 .+ (0:2)
+    @test canonicalize_indexed_clock(Clock(1 // 3)[1:3], sol) == t0 .+ (0:2) .// 3
+    # Dual-number start times are supported and keep their partial derivatives.
+    for c in (Clock(0.25), Clock(1 // 4; phase = 1 // 8))
+        ticks = [tick(c, Dual(1.0, 1.0), k) for k in 0:2]
+        @test value.(ticks) == [tick(c, 1.0, k) for k in 0:2]
+        @test all(t -> partials(t)[1] == 1, ticks)
+    end
+    # A clock without period has only a first tick, at the start time plus phase.
+    @test first_clock_tick_time(Clock(), 5.0) === 5.0
+    @test first_clock_tick_time(Clock(; phase = 1 // 4), 5.0) === 5.25
+    @test first_clock_tick_time(Clock(; phase = 0.25), 5.0) === 5.25
+    @test_throws ArgumentError tick(Clock(), 5.0, 1)
 end
