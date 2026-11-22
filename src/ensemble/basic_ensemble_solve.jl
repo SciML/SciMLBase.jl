@@ -590,7 +590,7 @@ function tmap(f, args...)
         Core.Compiler.return_type(getindex, Tuple{typeof(arg), Int})
     end
     if Core.Compiler.return_type(f, Tuple{index_types...}) <: T
-        Threads.@threads for i in 1:n
+        tmap_foreach(length(batch_data)) do i
             batch_data[i] = f(getindex.(args, i)...)
         end
         return batch_data
@@ -598,11 +598,18 @@ function tmap(f, args...)
     return tmap_widen!(f, batch_data, args)
 end
 
+function tmap_foreach(f, n::Int)
+    Threads.@threads for i in 1:n
+        f(i)
+    end
+    return nothing
+end
+
 function tmap_widen!(f::F, batch_data::Vector{T}, args::A) where {F, T, A}
     n = length(batch_data)
     chunk_size = cld(n, Threads.nthreads())
     misfits = [Pair{Int, Any}[] for _ in 1:cld(n, chunk_size)]
-    Threads.@threads for chunk in eachindex(misfits)
+    tmap_foreach(length(misfits)) do chunk
         first_index = (chunk - 1) * chunk_size + 1
         last_index = first_index + min(chunk_size, n - first_index + 1) - 1
         chunk_misfits = misfits[chunk]

@@ -2,12 +2,13 @@ module SciMLBaseEnzymeExt
 
 using SciMLBase: SciMLBase, AbstractSensitivityAlgorithm, AbstractDEAlgorithm,
     AbstractSciMLProblem, AbstractSciMLFunction, remake,
-    AbstractDifferentiableDiscretizationMetadata, AbstractPDESolution,
+    AbstractDifferentiableDiscretizationMetadata, AbstractPDESolution, tmap_foreach,
     AbstractTimeseriesSolution, pde_index_cotangent, pde_call_cotangent
 import CommonSolve
 import Enzyme: EnzymeRules
 using Enzyme: Active, Annotation, Const, Duplicated, DuplicatedNoNeed, MixedDuplicated,
-    Reverse, autodiff, make_zero
+    Reverse, ReverseSplitModified, ReverseSplitNoPrimal, ReverseSplitWidth, autodiff,
+    autodiff_thunk, make_zero, set_runtime_activity, set_strong_zero, tape_type
 
 # Enzyme rules for SciMLBase abstract types
 #
@@ -89,6 +90,39 @@ EnzymeRules.inactive_kwarg(
 EnzymeRules.inactive_noinl(
     ::typeof(Core.kwcall), ::Any, ::typeof(remake), ::AbstractSciMLFunction, args...,
 ) = true
+
+function tmap_iteration(f, i)
+    f(i)
+    return nothing
+end
+
+function EnzymeRules.augmented_primal(
+        config::EnzymeRules.RevConfig, ::Const{typeof(tmap_foreach)}, ::Type{Const{Nothing}},
+        f::Annotation, n::Const{Int}
+    )
+    mode = set_strong_zero(set_runtime_activity(ReverseSplitNoPrimal, config), config)
+    mode = ReverseSplitWidth(mode, Val(EnzymeRules.width(config)))
+    mode = ReverseSplitModified(mode, Val((false, EnzymeRules.overwritten(config)[2], false)))
+    signature = (Const{typeof(tmap_iteration)}, Const{Nothing}, typeof(f), Const{Int})
+    forward, pullback = autodiff_thunk(mode, signature...)
+    tapes = Vector{tape_type(mode, signature...)}(undef, n.val)
+    tmap_foreach(n.val) do i
+        tapes[i] = first(forward(Const(tmap_iteration), f, Const(i)))
+    end
+    return EnzymeRules.AugmentedReturn(nothing, nothing, (pullback, tapes))
+end
+
+function EnzymeRules.reverse(
+        ::EnzymeRules.RevConfig, ::Const{typeof(tmap_foreach)}, ::Type{Const{Nothing}},
+        tape, f::Annotation, n::Const{Int}
+    )
+    pullback, tapes = tape
+    # Trajectories can accumulate into the same problem parameter shadow.
+    for i in n.val:-1:1
+        pullback(Const(tmap_iteration), f, Const(i), tapes[i])
+    end
+    return (nothing, nothing)
+end
 
 # =============================================================================
 # PDE solution wrappers
