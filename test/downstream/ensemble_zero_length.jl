@@ -22,6 +22,7 @@ timeseries_point_median(sim, ts)
 solve_threads(ep) = solve(ep, Tsit5(), EnsembleThreads(); trajectories = 10)
 rt = only(Base.return_types(solve_threads, Tuple{typeof(ensemble_prob)}))
 @test isconcretetype(rt)
+@test rt <: EnsembleSolution
 
 function prob_sol(_p)
     prob = ODEProblem(

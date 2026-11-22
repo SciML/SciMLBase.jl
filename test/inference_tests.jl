@@ -65,6 +65,16 @@ end
     @test only(Base.return_types(tmap, Tuple{typeof(h), UnitRange{Int}})) === Vector{Float64}
 end
 
+@testset "tmap indexes keyed collections" begin
+    big = Int64(2)^53 + 1
+    input = Dict{Int, Any}(1 => 1.5, 2 => big)
+    indexed_value(x) = x
+    indexed_value(::Pair) = 0.0
+    output = tmap(indexed_value, input)
+    @test output[1] === input[1]
+    @test output[2] === big
+end
+
 @testset "tmap homogeneous results from abstract inputs" begin
     input = Any[i for i in 1:100_000]
     allocated(input) = @allocated tmap(identity, input)

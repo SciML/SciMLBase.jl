@@ -584,9 +584,12 @@ function tmap(f, args...)
     n = length(args[1])
     T = Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...})
     batch_data = Vector{T}(undef, n)
-    # When eltype inference proves every result fits in T, return the typed
+    # When indexing inference proves every result fits in T, return the typed
     # vector directly so callers (e.g. EnsembleThreads solve) stay concrete.
-    if Core.Compiler.return_type(f, Tuple{map(eltype, args)...}) <: T
+    index_types = map(args) do arg
+        Core.Compiler.return_type(getindex, Tuple{typeof(arg), Int})
+    end
+    if Core.Compiler.return_type(f, Tuple{index_types...}) <: T
         Threads.@threads for i in 1:n
             batch_data[i] = f(getindex.(args, i)...)
         end
