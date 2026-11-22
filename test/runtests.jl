@@ -208,6 +208,9 @@ run_tests(;
         "DownstreamAD" => function ()
             return if !is_APPVEYOR
                 activate_downstream_env()
+                @time @safetestset "Mooncake ensemble map rules" begin
+                    include("downstream/ensemble_mooncake.jl")
+                end
                 @time @safetestset "Autodiff Remake" begin
                     include("downstream/remake_autodiff.jl")
                 end

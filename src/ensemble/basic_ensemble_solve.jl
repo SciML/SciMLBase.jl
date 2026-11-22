@@ -507,13 +507,19 @@ function solve_batch(
 end
 
 function responsible_map(f, II...)
+    return _responsible_map(f, II) do _, args...
+        f(args...)
+    end
+end
+
+function _responsible_map(evaluate, f, II)
     n = length(II[1])
     T = Core.Compiler.return_type(
         f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
     )
     batch_data = Vector{T}(undef, n)
     for i in 1:n
-        val = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+        val = evaluate(i, ntuple(ii -> II[ii][i], Val(length(II)))...)
         # Widen when a later element does not fit (Base map/collect).
         if val isa eltype(batch_data)
             @inbounds batch_data[i] = val
