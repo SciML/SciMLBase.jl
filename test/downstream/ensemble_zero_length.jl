@@ -18,6 +18,11 @@ sim = solve(ensemble_prob, Tsit5(), EnsembleThreads(), trajectories = 10, saveat
 timeseries_point_meancov(sim, ts)
 timeseries_point_median(sim, ts)
 
+# EnsembleThreads solve must infer a concrete EnsembleSolution (not Any).
+solve_threads(ep) = solve(ep, Tsit5(), EnsembleThreads(); trajectories = 10)
+rt = only(Base.return_types(solve_threads, Tuple{typeof(ensemble_prob)}))
+@test isconcretetype(rt)
+
 function prob_sol(_p)
     prob = ODEProblem(
         (u, p, t) -> p .* u, _p, (0.0, 1.0), _p, save_start = false,

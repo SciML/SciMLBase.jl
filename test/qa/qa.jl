@@ -108,7 +108,7 @@ end
 const _ei_own_internals = (
     :set_mooncakeoriginator_if_mooncake,
     :DualEltypeChecker,
-    :_reshape, :add_labels!, :anyeltypedual, :build_linear_solution, :checkkwargs,
+    :_reshape, :_responsible_map, :add_labels!, :anyeltypedual, :build_linear_solution, :checkkwargs,
     :diffeq_to_arrays, :getobserved, :handle_distribution_u0, :interpret_vars,
     :isdistribution, :isdualtype,
     :reduce_tup, :responsible_map, :sse, :tmap, :totallength,

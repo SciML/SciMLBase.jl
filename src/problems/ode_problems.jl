@@ -260,11 +260,8 @@ function ODEProblem(f::SplitFunction, u0, tspan, args...; kwargs...)
 end
 
 function ODEProblem(f, u0, tspan, p = NullParameters(); kwargs...)
-    iip = isinplace(f, 4)
-    _u0 = prepare_initial_state(u0)
-    _tspan = promote_tspan(tspan)
-    _f = ODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
-    return ODEProblem(_f, _u0, _tspan, p; kwargs...)
+    return isinplace(f, 4) ? ODEProblem{true}(f, u0, tspan, p; kwargs...) :
+        ODEProblem{false}(f, u0, tspan, p; kwargs...)
 end
 
 """
