@@ -507,16 +507,26 @@ function solve_batch(
 end
 
 function responsible_map(f, II...)
-    batch_data = Vector{
-        Core.Compiler.return_type(
-            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
-        ),
-    }(
-        undef,
-        length(II[1])
+    n = length(II[1])
+    T = Core.Compiler.return_type(
+        f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
     )
-    for i in 1:length(II[1])
-        batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+    batch_data = Vector{T}(undef, n)
+    for i in 1:n
+        val = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
+        # Widen when a later element does not fit (Base map/collect).
+        if val isa eltype(batch_data)
+            @inbounds batch_data[i] = val
+        else
+            new_data = Vector{
+                Base.promote_typejoin(eltype(batch_data), typeof(val)),
+            }(
+                undef, n
+            )
+            copyto!(new_data, 1, batch_data, 1, i - 1)
+            batch_data = new_data
+            @inbounds batch_data[i] = val
+        end
     end
     return batch_data
 end
@@ -571,16 +581,63 @@ function solve_batch(
 end
 
 function tmap(f, args...)
-    batch_data = Vector{
-        Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...}),
-    }(
-        undef,
-        length(args[1])
-    )
-    Threads.@threads for i in 1:length(args[1])
-        batch_data[i] = f(getindex.(args, i)...)
+    n = length(args[1])
+    T = Core.Compiler.return_type(f, Tuple{typeof.(getindex.(args, 1))...})
+    batch_data = Vector{T}(undef, n)
+    # When indexing inference proves every result fits in T, return the typed
+    # vector directly so callers (e.g. EnsembleThreads solve) stay concrete.
+    index_types = map(args) do arg
+        Core.Compiler.return_type(getindex, Tuple{typeof(arg), Int})
     end
-    return batch_data
+    if Core.Compiler.return_type(f, Tuple{index_types...}) <: T
+        tmap_foreach(length(batch_data)) do i
+            batch_data[i] = f(getindex.(args, i)...)
+        end
+        return batch_data
+    end
+    return tmap_widen!(f, batch_data, args)
+end
+
+function tmap_foreach(f, n::Int)
+    Threads.@threads for i in 1:n
+        f(i)
+    end
+    return nothing
+end
+
+function tmap_widen!(f::F, batch_data::Vector{T}, args::A) where {F, T, A}
+    n = length(batch_data)
+    chunk_size = cld(n, Threads.nthreads())
+    misfits = [Pair{Int, Any}[] for _ in 1:cld(n, chunk_size)]
+    tmap_foreach(length(misfits)) do chunk
+        first_index = (chunk - 1) * chunk_size + 1
+        last_index = first_index + min(chunk_size, n - first_index + 1) - 1
+        chunk_misfits = misfits[chunk]
+        for i in first_index:last_index
+            v = f(getindex.(args, i)...)
+            if v isa T
+                @inbounds batch_data[i] = v
+            else
+                push!(chunk_misfits, i => v)
+            end
+        end
+    end
+    U = T
+    for chunk_misfits in misfits, (_, v) in chunk_misfits
+        U = Base.promote_typejoin(U, typeof(v))
+    end
+    U === T && return batch_data
+
+    out = Vector{U}(undef, n)
+    next_index = 1
+    # Misfits are in index order, so each copy reads only initialized entries.
+    for chunk_misfits in misfits, (i, v) in chunk_misfits
+        copyto!(out, next_index, batch_data, next_index, i - next_index)
+        out[i] = v
+        next_index = i + 1
+    end
+    copyto!(out, next_index, batch_data, next_index, n - next_index + 1)
+    return out
 end
 
 function solve_batch(

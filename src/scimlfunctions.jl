@@ -3278,7 +3278,10 @@ function ODEFunction{iip}(f; kwargs...) where {iip}
     return ODEFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 ODEFunction{iip}(f::ODEFunction; kwargs...) where {iip} = f
-ODEFunction(f; kwargs...) = ODEFunction{isinplace(f, 4), DEFAULT_SPECIALIZATION}(f; kwargs...)
+function ODEFunction(f; kwargs...)
+    return isinplace(f, 4) ? ODEFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        ODEFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
+end
 ODEFunction(f::ODEFunction; kwargs...) = f
 
 function unwrapped_f(f::ODEFunction, newf = unwrapped_f(f.f))
@@ -3580,7 +3583,10 @@ function SplitFunction{iip, specialize}(
     end
 end
 
-SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
+function SplitFunction(f1, f2; kwargs...)
+    return isinplace(f2, 4) ? SplitFunction{true}(f1, f2; kwargs...) :
+        SplitFunction{false}(f1, f2; kwargs...)
+end
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
     return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
         ODEFunction(f1), ODEFunction{iip}(f2);
@@ -3683,7 +3689,8 @@ function DynamicalODEFunction{iip, specialize}(
 end
 
 function DynamicalODEFunction(f1, f2 = nothing; kwargs...)
-    return DynamicalODEFunction{isinplace(f1, 5)}(f1, f2; kwargs...)
+    return isinplace(f1, 5) ? DynamicalODEFunction{true}(f1, f2; kwargs...) :
+        DynamicalODEFunction{false}(f1, f2; kwargs...)
 end
 function DynamicalODEFunction{iip}(f1, f2; kwargs...) where {iip}
     return DynamicalODEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -3730,7 +3737,8 @@ function DiscreteFunction{iip}(f; kwargs...) where {iip}
 end
 DiscreteFunction{iip}(f::DiscreteFunction; kwargs...) where {iip} = f
 function DiscreteFunction(f; kwargs...)
-    return DiscreteFunction{isinplace(f, 4), DEFAULT_SPECIALIZATION}(f; kwargs...)
+    return isinplace(f, 4) ? DiscreteFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        DiscreteFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 DiscreteFunction(f::DiscreteFunction; kwargs...) = f
 
@@ -3802,7 +3810,9 @@ function ImplicitDiscreteFunction(
         f; resid_prototype = __has_resid_prototype(f) ? f.resid_prototype : nothing,
         kwargs...
     )
-    return ImplicitDiscreteFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION}(f; resid_prototype, kwargs...)
+    return isinplace(f, 5) ?
+        ImplicitDiscreteFunction{true, DEFAULT_SPECIALIZATION}(f; resid_prototype, kwargs...) :
+        ImplicitDiscreteFunction{false, DEFAULT_SPECIALIZATION}(f; resid_prototype, kwargs...)
 end
 ImplicitDiscreteFunction(f::ImplicitDiscreteFunction; kwargs...) = f
 
@@ -3992,7 +4002,8 @@ function SDEFunction{iip}(f, g; kwargs...) where {iip}
 end
 SDEFunction{iip}(f::SDEFunction, g; kwargs...) where {iip} = f
 function SDEFunction(f, g; kwargs...)
-    return SDEFunction{isinplace(f, 4), DEFAULT_SPECIALIZATION}(f, g; kwargs...)
+    return isinplace(f, 4) ? SDEFunction{true, DEFAULT_SPECIALIZATION}(f, g; kwargs...) :
+        SDEFunction{false, DEFAULT_SPECIALIZATION}(f, g; kwargs...)
 end
 SDEFunction(f::SDEFunction; kwargs...) = f
 
@@ -4084,7 +4095,8 @@ function SplitSDEFunction{iip, specialize}(
 end
 
 function SplitSDEFunction(f1, f2, g; kwargs...)
-    return SplitSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
+    return isinplace(f2, 4) ? SplitSDEFunction{true}(f1, f2, g; kwargs...) :
+        SplitSDEFunction{false}(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
     return SplitSDEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -4185,7 +4197,8 @@ function DynamicalSDEFunction{iip, specialize}(
 end
 
 function DynamicalSDEFunction(f1, f2, g; kwargs...)
-    return DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
+    return isinplace(f2, 5) ? DynamicalSDEFunction{true}(f1, f2, g; kwargs...) :
+        DynamicalSDEFunction{false}(f1, f2, g; kwargs...)
 end
 function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
     return DynamicalSDEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -4300,7 +4313,8 @@ function RODEFunction{iip}(f; kwargs...) where {iip}
 end
 RODEFunction{iip}(f::RODEFunction; kwargs...) where {iip} = f
 function RODEFunction(f; kwargs...)
-    return RODEFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION}(f; kwargs...)
+    return isinplace(f, 5) ? RODEFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        RODEFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 RODEFunction(f::RODEFunction; kwargs...) = f
 
@@ -4406,7 +4420,9 @@ function DAEFunction{iip}(f; kwargs...) where {iip}
     return DAEFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 DAEFunction{iip}(f::DAEFunction; kwargs...) where {iip} = f
-DAEFunction(f; kwargs...) = DAEFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION}(f; kwargs...)
+DAEFunction(f; kwargs...) = isinplace(f, 5) ?
+    DAEFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+    DAEFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 DAEFunction(f::DAEFunction; kwargs...) = f
 
 function DDEFunction{iip, specialize}(
@@ -4515,7 +4531,9 @@ function DDEFunction{iip}(f; kwargs...) where {iip}
     return DDEFunction{iip, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 DDEFunction{iip}(f::DDEFunction; kwargs...) where {iip} = f
-DDEFunction(f; kwargs...) = DDEFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION}(f; kwargs...)
+DDEFunction(f; kwargs...) = isinplace(f, 5) ?
+    DDEFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+    DDEFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 DDEFunction(f::DDEFunction; kwargs...) = f
 
 @add_kwonly function DynamicalDDEFunction{iip}(
@@ -4612,7 +4630,8 @@ function DynamicalDDEFunction{iip, specialize}(
 end
 
 function DynamicalDDEFunction(f1, f2 = nothing; kwargs...)
-    return DynamicalDDEFunction{isinplace(f1, 6)}(f1, f2; kwargs...)
+    return isinplace(f1, 6) ? DynamicalDDEFunction{true}(f1, f2; kwargs...) :
+        DynamicalDDEFunction{false}(f1, f2; kwargs...)
 end
 function DynamicalDDEFunction{iip}(f1, f2; kwargs...) where {iip}
     return DynamicalDDEFunction{iip, DEFAULT_SPECIALIZATION}(
@@ -4715,7 +4734,8 @@ function SDDEFunction{iip}(f, g; kwargs...) where {iip}
 end
 SDDEFunction{iip}(f::SDDEFunction, g; kwargs...) where {iip} = f
 function SDDEFunction(f, g; kwargs...)
-    return SDDEFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION}(f, g; kwargs...)
+    return isinplace(f, 5) ? SDDEFunction{true, DEFAULT_SPECIALIZATION}(f, g; kwargs...) :
+        SDDEFunction{false, DEFAULT_SPECIALIZATION}(f, g; kwargs...)
 end
 SDDEFunction(f::SDDEFunction; kwargs...) = f
 
@@ -4830,9 +4850,8 @@ end
 NonlinearFunction{iip}(f::NonlinearFunction; kwargs...) where {iip} = f
 function NonlinearFunction(f; lambda_extended = false, kwargs...)
     iip = isinplace(f, lambda_extended ? 4 : 3)
-    return NonlinearFunction{iip, DEFAULT_SPECIALIZATION}(
-        f; lambda_extended, kwargs...
-    )
+    return iip ? NonlinearFunction{true, DEFAULT_SPECIALIZATION}(f; lambda_extended, kwargs...) :
+        NonlinearFunction{false, DEFAULT_SPECIALIZATION}(f; lambda_extended, kwargs...)
 end
 NonlinearFunction(f::NonlinearFunction; kwargs...) = f
 
@@ -4865,7 +4884,9 @@ function HomotopyNonlinearFunction{iip}(f; kwargs...) where {iip}
 end
 HomotopyNonlinearFunction{iip}(f::HomotopyNonlinearFunction; kwargs...) where {iip} = f
 function HomotopyNonlinearFunction(f; kwargs...)
-    return HomotopyNonlinearFunction{isinplace(f, 3), DEFAULT_SPECIALIZATION}(f; kwargs...)
+    return isinplace(f, 3) ?
+        HomotopyNonlinearFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        HomotopyNonlinearFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 HomotopyNonlinearFunction(f::HomotopyNonlinearFunction; kwargs...) = f
 
@@ -4915,7 +4936,9 @@ function IntervalNonlinearFunction{iip}(f; kwargs...) where {iip}
 end
 IntervalNonlinearFunction{iip}(f::IntervalNonlinearFunction; kwargs...) where {iip} = f
 function IntervalNonlinearFunction(f; kwargs...)
-    return IntervalNonlinearFunction{isinplace(f, 3), DEFAULT_SPECIALIZATION}(f; kwargs...)
+    return isinplace(f, 3) ?
+        IntervalNonlinearFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        IntervalNonlinearFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 IntervalNonlinearFunction(f::IntervalNonlinearFunction; kwargs...) = f
 
@@ -5255,7 +5278,9 @@ function BVPFunction{iip}(
 end
 BVPFunction{iip}(f::BVPFunction, bc; kwargs...) where {iip} = f
 function BVPFunction(f, bc; twopoint::Union{Val, Bool} = Val(false), kwargs...)
-    return BVPFunction{isinplace(f, 4), DEFAULT_SPECIALIZATION, _unwrap_val(twopoint)}(f, bc; kwargs...)
+    return isinplace(f, 4) ?
+        BVPFunction{true, DEFAULT_SPECIALIZATION, _unwrap_val(twopoint)}(f, bc; kwargs...) :
+        BVPFunction{false, DEFAULT_SPECIALIZATION, _unwrap_val(twopoint)}(f, bc; kwargs...)
 end
 BVPFunction(f::BVPFunction; kwargs...) = f
 
@@ -5447,9 +5472,13 @@ function DynamicalBVPFunction{iip}(
 end
 DynamicalBVPFunction{iip}(f::DynamicalBVPFunction, bc; kwargs...) where {iip} = f
 function DynamicalBVPFunction(f, bc; twopoint::Union{Val, Bool} = Val(false), kwargs...)
-    return DynamicalBVPFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION, _unwrap_val(twopoint)}(
-        f, bc; kwargs...
-    )
+    return isinplace(f, 5) ?
+        DynamicalBVPFunction{true, DEFAULT_SPECIALIZATION, _unwrap_val(twopoint)}(
+            f, bc; kwargs...
+        ) :
+        DynamicalBVPFunction{false, DEFAULT_SPECIALIZATION, _unwrap_val(twopoint)}(
+            f, bc; kwargs...
+        )
 end
 DynamicalBVPFunction(f::DynamicalBVPFunction; kwargs...) = f
 
@@ -5675,7 +5704,8 @@ function ODEInputFunction{iip}(f; kwargs...) where {iip}
 end
 ODEInputFunction{iip}(f::ODEInputFunction; kwargs...) where {iip} = f
 function ODEInputFunction(f; kwargs...)
-    return ODEInputFunction{isinplace(f, 5), DEFAULT_SPECIALIZATION}(f; kwargs...)
+    return isinplace(f, 5) ? ODEInputFunction{true, DEFAULT_SPECIALIZATION}(f; kwargs...) :
+        ODEInputFunction{false, DEFAULT_SPECIALIZATION}(f; kwargs...)
 end
 ODEInputFunction(f::ODEInputFunction; kwargs...) = f
 
@@ -6060,7 +6090,8 @@ function IncrementingODEFunction{iip}(f) where {iip}
     return IncrementingODEFunction{iip, DEFAULT_SPECIALIZATION}(f)
 end
 function IncrementingODEFunction(f)
-    return IncrementingODEFunction{isinplace(f, 7), DEFAULT_SPECIALIZATION}(f)
+    return isinplace(f, 7) ? IncrementingODEFunction{true, DEFAULT_SPECIALIZATION}(f) :
+        IncrementingODEFunction{false, DEFAULT_SPECIALIZATION}(f)
 end
 
 (f::IncrementingODEFunction)(args...; kwargs...) =

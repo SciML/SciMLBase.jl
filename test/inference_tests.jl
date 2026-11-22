@@ -1,4 +1,4 @@
-using SciMLBase, StaticArrays, Test
+using SciMLBase, StaticArrays, Test, LinearAlgebra
 using SciMLBase: has_kwargs, parameterless_type, remaker_of, responsible_map, tmap,
     totallength
 
@@ -33,10 +33,158 @@ end
     @test tmap(x -> 2x, [1, 2, 3]) isa Vector{Int}
 end
 
+@testset "ensemble map widens when prob_func changes u0 type" begin
+    # Mixed u0 shapes must widen the container (responsible_map / EnsembleSerial
+    # and tmap / EnsembleThreads).
+    make_prob(u0) = ODEProblem((u, p, t) -> u, u0, (0.0, 1.0), nothing)
+    u0s = [0.5, diagm([1.0, 1.0])]
+    probs = responsible_map(make_prob, u0s)
+    @test length(probs) == 2
+    @test probs[1].u0 isa Float64
+    @test probs[2].u0 isa Matrix{Float64}
+    tprobs = tmap(make_prob, u0s)
+    @test length(tprobs) == 2
+    @test tprobs[1].u0 isa Float64
+    @test tprobs[2].u0 isa Matrix{Float64}
+    sols = responsible_map(
+        u0 -> SciMLBase.build_solution(
+            make_prob(u0), :NoAlgorithm, [0.0, 1.0], [u0, u0];
+            retcode = ReturnCode.Success
+        ),
+        u0s
+    )
+    @test length(sols) == 2
+    @test sols[1].prob.u0 isa Float64
+    @test sols[2].prob.u0 isa Matrix{Float64}
+end
+
+@testset "tmap homogeneous return type" begin
+    # EnsembleThreads solve goes through tmap; a runtime misfit branch widens
+    # the inferred return to abstract Vector and makes solve infer as Any.
+    h(i) = Float64(i)
+    @test only(Base.return_types(tmap, Tuple{typeof(h), UnitRange{Int}})) === Vector{Float64}
+end
+
+@testset "tmap indexes keyed collections" begin
+    big = Int64(2)^53 + 1
+    input = Dict{Int, Any}(1 => 1.5, 2 => big)
+    indexed_value(x) = x
+    indexed_value(::Pair) = 0.0
+    output = tmap(indexed_value, input)
+    @test output[1] === input[1]
+    @test output[2] === big
+end
+
+@testset "tmap homogeneous results from abstract inputs" begin
+    input = Any[i for i in 1:100_000]
+    allocated(input) = @allocated tmap(identity, input)
+    @test tmap(identity, input)::Vector{Int} == input
+    allocated(input)
+    @test allocated(input) < 3 * sizeof(Int) * length(input) ÷ 2
+end
+
+@testset "tmap preserves the order of sparse mismatches" begin
+    input = Any[1, :a, 2, 3.5, 4, 5, 6, :b]
+    calls = zeros(Int, length(input))
+    output = tmap(eachindex(input), input) do i, value
+        calls[i] += 1
+        return value
+    end
+    @test all(x -> x == 1, calls)
+    @test all(map(===, output, input))
+end
+
 @testset "static array totallength" begin
     @test totallength(SVector(1.0, 2.0, 3.0)) == 3
     @test totallength(SMatrix{2, 2}(1.0, 2.0, 3.0, 4.0)) == 4
     @test iszero(@allocated totallength(SVector(1.0, 2.0, 3.0)))
+end
+
+@testset "convenience constructor iip static dispatch" begin
+    f!(du, u, p, t) = (du .= u)
+    f_oop(u, p, t) = u
+    f1!(dv, v, u, p, t) = (dv .= v)
+    f2!(du, v, u, p, t) = (du .= v)
+    g!(du, u, p, t) = (du .= u)
+    bc!(resid, u, p, t) = (resid[1] = u[1][1] - 1)
+    A!(y, x, p, t) = (y .= x)
+    nf(u, p) = u .- p
+    u0 = [1.0]
+    tspan = (0.0, 1.0)
+    p = 1.0
+
+    # Julia 1.10's `@allocations` expands inline with `:force_compile`, so a bare
+    # constructor call does not warm the timed frame. Barrier helpers match 1.11+
+    # `Base.allocations(f, args...)` and drop the compiling first measurement.
+    odef_allocs(f) = @allocations ODEFunction(f)
+    odep_allocs(f, u0, tspan, p) = @allocations ODEProblem(f, u0, tspan, p)
+    nlp_allocs(f, u0, p) = @allocations NonlinearProblem(f, u0, p)
+    sdep_allocs(f, g, u0, tspan) = @allocations SDEProblem(f, g, u0, tspan)
+    bvp_allocs(f, bc, u0, tspan) = @allocations BVProblem(f, bc, u0, tspan)
+    disc_allocs(f, u0, tspan) = @allocations DiscreteProblem(f, u0, tspan)
+    splitf_allocs(f1, f2) = @allocations SplitFunction(f1, f2)
+    dynf_allocs(f1, f2) = @allocations DynamicalODEFunction(f1, f2)
+    linp_allocs(A, b) = @allocations LinearProblem(A, b)
+
+    odef_allocs(f!)
+    odef_allocs(f_oop)
+    odep_allocs(f!, u0, tspan, p)
+    odep_allocs(f_oop, u0, tspan, p)
+    nlp_allocs(nf, u0, p)
+    sdep_allocs(f!, g!, u0, tspan)
+    bvp_allocs(f!, bc!, u0, tspan)
+    disc_allocs(f!, u0, tspan)
+    splitf_allocs(f!, f!)
+    dynf_allocs(f1!, f2!)
+    linp_allocs(A!, u0)
+
+    @test odef_allocs(f!) < 40
+    @test odef_allocs(f_oop) < 40
+    @test odep_allocs(f!, u0, tspan, p) < 40
+    @test odep_allocs(f_oop, u0, tspan, p) < 40
+    @test nlp_allocs(nf, u0, p) < 40
+    @test sdep_allocs(f!, g!, u0, tspan) < 50
+    @test bvp_allocs(f!, bc!, u0, tspan) < 60
+    @test disc_allocs(f!, u0, tspan) < 22
+    @test splitf_allocs(f!, f!) < 45
+    @test dynf_allocs(f1!, f2!) < 30
+    @test linp_allocs(A!, u0) < 22
+
+    @test ODEFunction(f!) isa ODEFunction{true}
+    @test ODEFunction(f_oop) isa ODEFunction{false}
+    @test ODEProblem(f!, u0, tspan, p).f isa ODEFunction{true}
+    @test ODEProblem(f_oop, u0, tspan, p).f isa ODEFunction{false}
+    @test NonlinearProblem(nf, u0, p).f isa NonlinearFunction{false}
+
+    second_order(v, u, p, t) = v
+    delay!(dv, v, u, h, p, t) = (dv .= v)
+    delay(v, u, h, p, t) = v
+    history(p, t) = u0
+    boundary(u, p, t) = [u[1][1] - 1]
+    second_boundary!(resid, v, u, p, t) = (resid[1] = u[1][1] - 1)
+    second_boundary(v, u, p, t) = [u[1][1] - 1]
+    for (iip, f, acceleration, delayed, bc, second_bc) in (
+            (true, f!, f1!, delay!, bc!, second_boundary!),
+            (false, f_oop, second_order, delay, boundary, second_boundary),
+        )
+        @test SDEProblem(f, f, u0, tspan).f isa SDEFunction{iip}
+        @test BVProblem(f, bc, u0, tspan).f isa BVPFunction{iip}
+        @test SecondOrderBVProblem(acceleration, second_bc, u0, tspan).f isa
+            DynamicalBVPFunction{iip}
+        @test DiscreteProblem(f, u0, tspan).f isa DiscreteFunction{iip}
+        @test ImplicitDiscreteProblem(acceleration, u0, tspan).f isa ImplicitDiscreteFunction{iip}
+        @test isinplace(LinearProblem(f, u0)) === iip
+        @test isinplace(HomotopyProblem(f, u0)) === iip
+        @test SciMLBase.ImmutableODEProblem(f, u0, tspan).f isa ODEFunction{iip}
+        @test SecondOrderODEProblem(acceleration, u0, u0, tspan).f isa DynamicalODEFunction{iip}
+        @test SecondOrderDDEProblem(delayed, u0, u0, history, tspan).f isa DynamicalDDEFunction{iip}
+        @test isinplace(AnalyticalProblem(f, u0, tspan)) === iip
+        @test SplitFunction(f, f) isa SplitFunction{iip}
+        @test DynamicalODEFunction(acceleration, acceleration) isa DynamicalODEFunction{iip}
+        @test SplitSDEFunction(f, f, f) isa SplitSDEFunction{iip}
+        @test DynamicalSDEFunction(acceleration, acceleration, f) isa DynamicalSDEFunction{iip}
+        @test DynamicalDDEFunction(delayed, delayed) isa DynamicalDDEFunction{iip}
+    end
 end
 
 @testset "integrator iteration size" begin

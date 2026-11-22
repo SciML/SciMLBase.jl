@@ -111,7 +111,7 @@ const _ei_own_internals = (
     :_reshape, :add_labels!, :anyeltypedual, :build_linear_solution, :checkkwargs,
     :diffeq_to_arrays, :getobserved, :handle_distribution_u0, :interpret_vars,
     :isdistribution, :isdualtype,
-    :reduce_tup, :responsible_map, :sse, :tmap, :totallength,
+    :reduce_tup, :responsible_map, :sse, :tmap, :tmap_foreach, :totallength,
 )
 
 # Names the extensions must reach for that their *owners* have not declared public.

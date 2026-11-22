@@ -28,13 +28,13 @@ prob = SDEProblem(
 seeded(prob, ctx) = remake(prob; seed = UInt64(1000 + ctx.sim_id))
 p0 = [1.2, 0.8, 2.5, 0.8, 0.1, 0.1]
 
-@testset "Enzyme reverse over EnsembleProblem of SDEProblems: $(nameof(typeof(ensemblealg)))" for ensemblealg in
-    (EnsembleSerial(), EnsembleThreads())
+@testset "Enzyme reverse over EnsembleProblem of SDEProblems: $(nameof(typeof(ensemblealg))), $trajectories trajectories" for
+    ensemblealg in (EnsembleSerial(), EnsembleThreads()), trajectories in (3, 5)
     loss(p) = sum(
         Array(
             solve(
                 EnsembleProblem(remake(prob; p); prob_func = seeded, safetycopy = false), SOSRI(), ensemblealg;
-                saveat = 0.1, trajectories = 3
+                saveat = 0.1, trajectories
             )
         )
     )
