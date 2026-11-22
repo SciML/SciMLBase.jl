@@ -74,6 +74,20 @@ end
     @test isempty(plotted_curves(sol; idxs = Tuple[], plot_analytic))
 end
 
+@testset "sparse plotting time limits: step = $(step(ts))" for ts in (0.0:0.25:1.0, 1.0:-0.25:0.0)
+    sol = decay_solution([1.0, 2.0]; ts)
+    frame = SciMLBase.solution_new_tslocation(sol, 3)
+    @testset "tspan = $tspan" for tspan in ((0.25, 0.75), (0.75, 0.25))
+        for (plotted_sol, saved_times) in ((sol, ts), (frame, ts[1:3]))
+            expected = filter(t -> 0.25 <= t <= 0.75, saved_times)
+            curves = plotted_curves(plotted_sol; denseplot = false, plot_analytic = true, tspan)
+            @test length(curves) == 4
+            @test all(c -> c.x == expected, curves)
+        end
+    end
+    @test_throws ArgumentError plotted_curves(sol; denseplot = false, tspan = (0.1, 0.2))
+end
+
 @testset "plot axis guides" begin
     sol = decay_solution([1.0, 2.0])
     series = only(apply_recipe(Dict{Symbol, Any}(:idxs => (1, 2)), sol))

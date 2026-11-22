@@ -369,26 +369,32 @@ end
     plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
 
 Return the plot sample times and their indices into the saved times, if any.
-Without an explicit `tspan` or `plotat`, an animation frame
-(`sol.tslocation != 0`) is sampled only up to `sol.t[sol.tslocation]`.
+Sparse plots sample the saved times within `tspan` and through the current
+animation frame, when specified. Explicit `plotat` takes precedence.
 """
 function plot_times(sol, denseplot, plotdensity, tspan, tscale, plotat)
     plotat === nothing || return plotat, nothing
-    if tspan === nothing
-        start_idx = 1
-        end_idx = sol.tslocation == 0 ? lastindex(sol.t) : sol.tslocation
-    else
-        start_idx = searchsortedfirst(sol.t, tspan[1])
-        end_idx = searchsortedlast(sol.t, tspan[end])
-    end
+    ts = sol.t
+    end_idx = sol.tslocation == 0 ? lastindex(ts) : sol.tslocation
     if !denseplot
+        start_idx = firstindex(ts)
+        if tspan !== nothing
+            lo, hi = minmax(tspan[1], tspan[end])
+            rev = last(ts) < first(ts)
+            tstart, tstop = rev ? (hi, lo) : (lo, hi)
+            start_idx = searchsortedfirst(ts, tstart; rev)
+            end_idx = min(end_idx, searchsortedlast(ts, tstop; rev))
+        end
         saved_idxs = start_idx:end_idx
-        return sol.t[saved_idxs], saved_idxs
+        isempty(saved_idxs) && throw(
+            ArgumentError("No saved time points to plot within tspan = $tspan for the current solution or animation frame.")
+        )
+        return ts[saved_idxs], saved_idxs
     end
     tstart, tstop = if sol isa AbstractAnalyticalSolution
         sol.prob.tspan[1], sol.prob.tspan[end]
     elseif tspan === nothing
-        sol.t[start_idx], sol.t[end_idx]
+        first(ts), ts[end_idx]
     else
         tspan[1], tspan[end]
     end
