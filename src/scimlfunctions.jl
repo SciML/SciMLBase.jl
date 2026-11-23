@@ -6098,29 +6098,30 @@ end
 
 # The two-function types rebuild the way their constructors build them: raw callbacks
 # are wrapped, the in-place flag follows the new components and mixed modes throw.
-for (S, W, n) in [
-        (:SplitFunction, :ODEFunction, 4),
-        (:DynamicalODEFunction, :ODEFunction, 5),
-        (:DynamicalDDEFunction, :DDEFunction, 6),
-        (:SplitSDEFunction, :SDEFunction, 4),
-        (:DynamicalSDEFunction, :SDEFunction, 5),
+for (S, W, n, wrap_op) in [
+        (:SplitFunction, :ODEFunction, 4, true),
+        (:DynamicalODEFunction, :ODEFunction, 5, false),
+        (:DynamicalDDEFunction, :DDEFunction, 6, false),
+        (:SplitSDEFunction, :SDEFunction, 4, true),
+        (:DynamicalSDEFunction, :SDEFunction, 5, false),
     ]
     g = W === :SDEFunction ? (:(first(args)),) : ()
     @eval function ConstructionBase.constructorof(::Type{T}) where {iip, T <: $S{iip}}
         P = Base.unwrap_unionall(T).parameters[2]
         specialize = P isa TypeVar ? DEFAULT_SPECIALIZATION : P
         return function (f1, f2, args...)
-            f1 = _wrap_split_component($W, f1, $n, $(g...))
-            f2 = _wrap_split_component($W, f2, $n, $(g...))
+            f1 = _wrap_split_component($W, f1, $n, iip, $wrap_op, $(g...))
+            f2 = _wrap_split_component($W, f2, $n, iip, $wrap_op, $(g...))
             newiip = _split_components_iip(iip, f1, f2)
             return $S{newiip, specialize, map(typeof, (f1, f2, args...))...}(f1, f2, args...)
         end
     end
 end
 
-function _wrap_split_component(W, f, n, g...)
-    f isa Union{AbstractSciMLOperator, W} && return f
-    return W{isinplace(f, n)}(f, g...)
+function _wrap_split_component(W, f, n, iip, wrap_op, g...)
+    f isa W && return f
+    f isa AbstractSciMLOperator && return wrap_op ? W{iip}(f, g...) : f
+    return W{isinplace(f, n, "f", iip)}(f, g...)
 end
 
 _split_component_iip(f::AbstractSciMLOperator) = nothing

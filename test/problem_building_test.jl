@@ -214,6 +214,27 @@ end
         end
     end
 
+    @testset "rebuilding keeps the mode of dual-form callbacks" begin
+        a(v, u, p, t) = -u
+        a(dv, v, u, p, t) = (dv .= 10; nothing)
+        b(v, u, p, t) = v
+        b(du, v, u, p, t) = (du .= 10; nothing)
+        fn = DynamicalODEFunction{false, SciMLBase.FullSpecialize}(a, b)
+        newfn = ConstructionBase.setproperties(fn, (; jac_prototype = zeros(2, 2)))
+        @test !isinplace(newfn)
+        u = SciMLBase.RecursiveArrayTools.ArrayPartition([1.0], [2.0])
+        @test newfn(u, nothing, 0.0) == SciMLBase.RecursiveArrayTools.ArrayPartition([-2.0], [1.0])
+    end
+
+    @testset "rebuilding a SplitFunction wraps a raw operator" begin
+        A = SciMLBase.SciMLOperators.MatrixOperator([3.0 0.0; 0.0 4.0])
+        sf = SplitFunction((u, p, t) -> u, (u, p, t) -> 2u)
+        newfn = ConstructionBase.setproperties(sf, (; f1 = A))
+        @test newfn.f1 isa ODEFunction{false}
+        @test newfn([1.0, 3.0], nothing, 0.0) == [5.0, 18.0]
+        @test !SciMLBase.has_jac(newfn)
+    end
+
     @testset "rebuilding a SplitFunction with new components" begin
         a(du, u, p, t) = (du .= 0.5 .* u; nothing)
         a(u, p, t) = 45 .* u
