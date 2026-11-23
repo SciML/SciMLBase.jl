@@ -580,12 +580,9 @@ end
         @test getfield(fn, name) === name
     end
 
-    f1!(du, u, p, t) = (du .= -u; nothing)
-    @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(f1!, f2)
-    @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction{false}(f1!, f2, g)
-    @test_throws SciMLBase.NonconformingFunctionsError SplitSDEFunction(; f1 = f1!, f2, g, kw...)
-    @test_throws SciMLBase.NonconformingFunctionsError SplitFunction{false}(ODEFunction{true}(f1!), f2)
     @test SplitFunction{false}(SplitFunction(f2, f2), f2) isa SplitFunction{false}
-    d1!(dv, v, u, p, t) = (dv .= -u; nothing)
-    @test_throws SciMLBase.NonconformingFunctionsError DynamicalSDEFunction{false}(d1!, (v, u, p, t) -> v, g)
+    fv(u, p, t, args...) = -2u
+    prob = SplitODEProblem(fv, f2, [2.0], (0.0, 1.0))
+    @test !isinplace(prob)
+    @test prob.f([2.0], nothing, 0.0) == [-3.0]
 end

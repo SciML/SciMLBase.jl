@@ -3580,15 +3580,8 @@ function SplitFunction{iip, specialize}(
     end
 end
 
-_f1_conforms(f1::AbstractSciMLOperator, _, _) = true
-function _f1_conforms(f1::AbstractSciMLFunction, _, iip)
-    return isinplace(f1) == iip || (hasfield(typeof(f1), :f) && f1.f isa AbstractSciMLOperator)
-end
-_f1_conforms(f1, n, iip) = isinplace(f1, n, "f1", iip) == iip
-
 SplitFunction(f1, f2; kwargs...) = SplitFunction{isinplace(f2, 4)}(f1, f2; kwargs...)
 function SplitFunction{iip}(f1, f2; kwargs...) where {iip}
-    _f1_conforms(f1, 4, iip) || throw(NonconformingFunctionsError(["f1"]))
     return SplitFunction{iip, DEFAULT_SPECIALIZATION}(
         ODEFunction{iip}(f1), ODEFunction{iip}(f2);
         kwargs...
@@ -4010,7 +4003,6 @@ SDEFunction(f::SDEFunction; kwargs...) = f
         colorvec, sys, initialization_data = nothing
     )
     iip = isinplace(f2, 4)
-    _f1_conforms(f1, 4, iip) || throw(NonconformingFunctionsError(["f1"]))
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
     f2 = SDEFunction{iip}(f2, g)
 
@@ -4097,7 +4089,6 @@ function SplitSDEFunction(f1, f2, g; kwargs...)
     return SplitSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
-    _f1_conforms(f1, 4, iip) || throw(NonconformingFunctionsError(["f1"]))
     return SplitSDEFunction{iip, DEFAULT_SPECIALIZATION}(
         SDEFunction{iip}(f1, g), SDEFunction{iip}(f2, g),
         g; kwargs...
@@ -4113,7 +4104,6 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
         sys, initialization_data = nothing
     )
     iip = isinplace(f2, 5)
-    _f1_conforms(f1, 5, iip) || throw(NonconformingFunctionsError(["f1"]))
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
     f2 = SDEFunction{iip}(f2, g)
 
@@ -4201,7 +4191,6 @@ function DynamicalSDEFunction(f1, f2, g; kwargs...)
     return DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
 end
 function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
-    _f1_conforms(f1, 5, iip) || throw(NonconformingFunctionsError(["f1"]))
     return DynamicalSDEFunction{iip, DEFAULT_SPECIALIZATION}(
         SDEFunction{iip}(f1, g),
         SDEFunction{iip}(f2, g), g; kwargs...
