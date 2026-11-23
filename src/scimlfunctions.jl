@@ -3595,8 +3595,8 @@ SplitFunction(f::SplitFunction; kwargs...) = f
         Wfact_t, paramjac,
         observed, colorvec, sys, initialization_data = nothing
     ) where {iip}
-    f1 = f1 isa AbstractSciMLOperator ? f1 : ODEFunction(f1)
-    f2 = ODEFunction(f2)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : ODEFunction{iip}(f1)
+    f2 = ODEFunction{iip}(f2)
 
     if isinplace(f1) != isinplace(f2)
         throw(NonconformingFunctionsError(["f2"]))
@@ -3606,7 +3606,7 @@ SplitFunction(f::SplitFunction; kwargs...) = f
         typeof(mass_matrix),
         typeof(analytic), typeof(tgrad), typeof(jac), typeof(jvp),
         typeof(vjp),
-        typeof(jac_prototype),
+        typeof(jac_prototype), typeof(sparsity),
         typeof(Wfact), typeof(Wfact_t), typeof(paramjac), typeof(observed),
         typeof(colorvec),
         typeof(sys), typeof(initialization_data),
@@ -4526,8 +4526,8 @@ DDEFunction(f::DDEFunction; kwargs...) = f
         observed,
         colorvec, sys, initialization_data = nothing
     ) where {iip}
-    f1 = f1 isa AbstractSciMLOperator ? f1 : DDEFunction(f1)
-    f2 = DDEFunction(f2)
+    f1 = f1 isa AbstractSciMLOperator ? f1 : DDEFunction{iip}(f1)
+    f2 = DDEFunction{iip}(f2)
 
     DynamicalDDEFunction{
         isinplace(f2), FullSpecialize, typeof(f1), typeof(f2),
@@ -6094,6 +6094,47 @@ for S in [
             return (args...) -> $S{iip, specialize, map(typeof, args)...}(args...)
         end
     end
+end
+
+# The two-function types rebuild the way their constructors build them: raw callbacks
+# are wrapped, the in-place flag follows the new components and mixed modes throw.
+for (S, W, n, wrap_op) in [
+        (:SplitFunction, :ODEFunction, 4, true),
+        (:DynamicalODEFunction, :ODEFunction, 5, false),
+        (:DynamicalDDEFunction, :DDEFunction, 6, false),
+        (:SplitSDEFunction, :SDEFunction, 4, true),
+        (:DynamicalSDEFunction, :SDEFunction, 5, false),
+    ]
+    g = W === :SDEFunction ? (:(first(args)),) : ()
+    @eval function ConstructionBase.constructorof(::Type{T}) where {iip, T <: $S{iip}}
+        P = Base.unwrap_unionall(T).parameters[2]
+        specialize = P isa TypeVar ? DEFAULT_SPECIALIZATION : P
+        return function (f1, f2, args...)
+            f1 = _wrap_split_component($W, f1, $n, iip, $wrap_op, $(g...))
+            f2 = _wrap_split_component($W, f2, $n, iip, $wrap_op, $(g...))
+            newiip = _split_components_iip(iip, f1, f2)
+            return $S{newiip, specialize, map(typeof, (f1, f2, args...))...}(f1, f2, args...)
+        end
+    end
+end
+
+function _wrap_split_component(W, f, n, iip, wrap_op, g...)
+    f isa W && return f
+    f isa AbstractSciMLOperator && return wrap_op ? W{iip}(f, g...) : f
+    return W{isinplace(f, n, "f", iip)}(f, g...)
+end
+
+_split_component_iip(f::AbstractSciMLOperator) = nothing
+function _split_component_iip(f)
+    return f.f isa Union{Nothing, AbstractSciMLOperator} ? nothing : isinplace(f)
+end
+
+function _split_components_iip(iip, f1, f2)
+    m1 = _split_component_iip(f1)
+    m2 = _split_component_iip(f2)
+    m1 === nothing && return m2 === nothing ? iip : m2
+    m2 === nothing || m1 == m2 || throw(NonconformingFunctionsError(["f2"]))
+    return m1
 end
 
 # As above, with the specialization stored after the field types. The type parameters
