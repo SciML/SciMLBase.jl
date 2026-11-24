@@ -137,4 +137,8 @@ end
     @test first_clock_tick_time(Clock(; phase = 1 // 4), 5.0) === 5.25
     @test first_clock_tick_time(Clock(; phase = 0.25), 5.0) === 5.25
     @test_throws ArgumentError tick(Clock(), 5.0, 1)
+    # An infinite phase or period gives infinite tick times.
+    @test tick(Clock(1 // 4; phase = Inf), 0.0, 0) === Inf
+    @test tick(Clock(1 // 0), 0.0, 1) === Inf
+    @test tick(Clock(-1 // 0), 1.0, 1) === -Inf
 end
