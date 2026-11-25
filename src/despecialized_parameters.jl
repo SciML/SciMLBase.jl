@@ -139,8 +139,10 @@ end
 adapt_structure(to, params::DespecializedParameters) =
     DespecializedParameters(adapt(to, params.params))
 
-Base.@noinline _invoke_with_despecialized_parameters(f, args...; kwargs...) =
-    f(args...; kwargs...)
+# `F` and `N` force a specialization with a leaf signature for each despecialized callee
+Base.@noinline _invoke_with_despecialized_parameters(
+    f::F, args::Vararg{Any, N}; kwargs...
+) where {F, N} = f(args...; kwargs...)
 
 """
     invoke_with_despecialized_parameters(f, args; kwargs...)
