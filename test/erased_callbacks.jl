@@ -65,6 +65,11 @@ end
     @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64)
     @test_throws ArgumentError SciMLBase.erase_affect(erased.affect!, OtherIntegrator, Float64)
     @test_throws ArgumentError SciMLBase.erase_hook(erased.finalize, erased, OtherIntegrator)
+    @test_throws ArgumentError erased.condition(integrator.u, integrator.t, OtherIntegrator())
+    @test_throws ArgumentError erased.affect!(OtherIntegrator())
+    @test_throws ArgumentError erased.initialize(
+        erased, integrator.u, integrator.t, OtherIntegrator()
+    )
 
     tagged = erase_callback(DiscreteCallback(Tagged{false}(), identity), I, Float64)
     @test tagged.condition(integrator.u, integrator.t, integrator)
@@ -180,6 +185,7 @@ end
     @test erase_callback(erased, I, Float64, E).affect! === erased.affect!
     @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64, E)
     @test_throws ArgumentError SciMLBase.erase_affect(erased.affect!, OtherIntegrator, Float64, E)
+    @test_throws ArgumentError erased.affect!(OtherIntegrator(), view(events, 1:2))
 
     hook = (callback, u, t, integrator) -> nothing
     hooked = erase_callback(

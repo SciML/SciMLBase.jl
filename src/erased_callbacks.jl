@@ -128,6 +128,13 @@ end
 
 (hook::ErasedHook{I})(callback, u, t, integrator::I) where {I} = hook.call(integrator)
 
+# A solver that stores callbacks as given calls an erased callback without passing it
+# through `erase_callback`, so each erased function also rejects other integrators itself.
+(::ErasedCondition)(u, t, integrator) = throw_erased_for_another_integrator()
+(::ErasedAffect)(integrator) = throw_erased_for_another_integrator()
+(::ErasedVectorAffect)(integrator, events) = throw_erased_for_another_integrator()
+(::ErasedHook)(callback, u, t, integrator) = throw_erased_for_another_integrator()
+
 """
     erase_hook(hook, callback, ::Type{I})
 
