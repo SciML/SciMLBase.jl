@@ -864,6 +864,9 @@ if isdefined(Base, :ispublic)
                 :split_callbacks,
                 :save_final_discretes!,
                 :save_discretes_if_enabled!,
+                :erase_callback,
+                :ErasedDiscreteCallback,
+                :specialize_parameters,
             )
             @test Base.ispublic(SciMLBase, name)
         end

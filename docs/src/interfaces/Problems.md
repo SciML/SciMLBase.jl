@@ -130,6 +130,22 @@ SciMLBase.unwrap_fw
     are solver-specific. Use `FullSpecialize` when a model falls outside the wrapped
     signatures supported by a solver or when runtime performance is the priority.
 
+#### Callback Erasure
+
+A solver that stores callbacks in a vector erases each callback's type, so its compiled
+code depends only on the integrator type. When the integrator is parameter-agnostic, a
+callback that reads `integrator.p` pays a dynamic dispatch per read.
+
+`erase_callback` puts a callback's functions behind trampolines specific to the parameter
+type, while the integrator stays parameter-agnostic. A package whose callback functions
+read parameters extends `specialize_parameters`.
+
+```@docs
+SciMLBase.specialize_parameters
+SciMLBase.erase_callback
+SciMLBase.ErasedDiscreteCallback
+```
+
 ### Default Parameters
 
 By default, `AbstractSciMLProblem` types use the `SciMLBase.NullParameters()` singleton to

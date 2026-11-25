@@ -55,6 +55,18 @@ SciMLBase.hermite_interpolant!
 SciMLBase.is_independent_variable_index
 ```
 
+## Callback Erasure
+
+```@docs
+SciMLBase.CallbackTrampoline
+SciMLBase.ErasedCondition
+SciMLBase.ErasedAffect
+SciMLBase.ErasedVectorAffect
+SciMLBase.erase_affect
+SciMLBase.ErasedHook
+SciMLBase.erase_hook
+```
+
 ## Symbolic Save Selection
 
 ```@docs
