@@ -28,11 +28,11 @@ of compile times has failed. This is most likely due to an issue internal to the
 found upon evaluation of the model. To work around this issue, use `SciMLBase.FullSpecialize`, like:
 
 ```julia
-ODEProblem{iip,SciMLBase.FullSpecialize}(f,u0,tspan,p)
+ODEProblem{iip, SciMLBase.FullSpecialize}(f, u0, tspan, p)
 ```
 
 where `iip` is either true or false depending on the in-placeness of the definition of `f` (i.e. for ODEs
-if `f` has 3 arguments `(u,p,t)` then it's false, otherwise `f(du,u,p,t)` is true).
+if `f` has 3 arguments `(u, p, t)` then it's false, otherwise `f(du, u, p, t)` is true).
 
 For more information on the control of specialization options, please see the documentation at:
 
@@ -48,11 +48,11 @@ An arithmetic operation was performed on a NullParameters object. This means no 
 into the AbstractSciMLProblem (e.x.: ODEProblem) but the parameters object `p` was used in an arithmetic
 expression. Two common reasons for this issue are:
 
-1. Forgetting to pass parameters into the problem constructor. For example, `ODEProblem(f,u0,tspan)` should
-   be `ODEProblem(f,u0,tspan,p)` in order to use parameters.
+1. Forgetting to pass parameters into the problem constructor. For example, `ODEProblem(f, u0, tspan)` should
+   be `ODEProblem(f, u0, tspan, p)` in order to use parameters.
 
 2. Using the wrong function signature. For example, with `ODEProblem`s the function signature is always
-   `f(du,u,p,t)` for the in-place form or `f(u,p,t)` for the out-of-place form. Note that the `p` argument
+   `f(du, u, p, t)` for the in-place form or `f(u, p, t)` for the out-of-place form. Note that the `p` argument
    will always be in the function signature regardless of if the problem is defined with parameters!
 """
 

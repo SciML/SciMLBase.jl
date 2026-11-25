@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines a stochastic delay differential equation (SDDE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/sdde_types/>
@@ -10,11 +10,11 @@ the diffusion function `g`, the initial condition ``u_0`` at time point ``t_0``,
 and the history function ``h`` which together define a SDDE:
 
 ```math
-\begin{align*}
-du(t)  &= f(u,h,p,t) \, dt + g(u,h,p,t) \, dW_t & (t \geq t_0) \\
-u(t_0) &= u_0, \\
+\\begin{align*}
+du(t)  &= f(u,h,p,t) \\, dt + g(u,h,p,t) \\, dW_t & (t ≥ t_0) \\\\
+u(t_0) &= u_0, \\\\
 u(t)   &= h(t) & (t < t_0).
-\end{align*}
+\\end{align*}
 ```
 
 ``f`` should be specified as `f(u, h, p, t)` (or in-place as `f(du, u, h, p, t)`)
@@ -67,7 +67,8 @@ SDDEProblem{isinplace,specialize}(f,g[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction documentation.
@@ -79,13 +80,15 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref performance_overloads) page.
+For specifying Jacobians and mass matrices, see the
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/).
 
 ### Arguments
 
 * `f`: The drift function in the SDDE.
 * `g`: The diffusion function in the SDDE.
-* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the history function evaluated at the initial time point.
+* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the
+  history function evaluated at the initial time point.
 * `h`: The history function for the DDE before `t0`.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters with which function `f` is called. Defaults to `NullParameters`.
@@ -185,24 +188,35 @@ end
 
 SymbolicIndexingInterface.get_history_function(prob::AbstractSDDEProblem) = prob.h
 
-@doc doc"""
-    SDDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-
-Holds information on what variables to alias
-when solving an SDDEProblem. Conforms to the AbstractAliasSpecifier interface. 
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array. Defaults to `false`.
-* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array
-* `alias_jumps::Union{Bool, Nothing}`: alias jump process if wrapped in a `JumpProcess`
-* `alias::Union{Bool, Nothing}`: sets all fields of the `SDDEAliasSpecifier` to `alias`
-
 """
-struct SDDEAliasSpecifier
+    SDDEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing,
+        alias_tstops = nothing, alias_jumps = nothing, alias = nothing
+    )
+
+Control which `SDDEProblem` inputs and solver option arrays may be aliased.
+
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the SDDE function object, `alias_tstops` controls the
+`tstops` vector, and `alias_jumps` controls jump process data when the problem is
+wrapped in a jump problem. A value of `nothing` delegates to the solver default.
+Set `alias = true` or `alias = false` to apply the same policy to all stored
+fields.
+
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `SDDEAliasSpecifier` does not store a
+separate `du0` alias field.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the SDDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias_jumps::Union{Bool, Nothing}`: alias jump process data.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `SDDEAliasSpecifier`.
+"""
+struct SDDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

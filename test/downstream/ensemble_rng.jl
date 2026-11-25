@@ -1,6 +1,7 @@
 using Test, Random, SciMLBase, Distributed
 using OrdinaryDiffEq, StochasticDiffEq, JumpProcesses, StableRNGs
-using NonlinearSolve, Optimization, OptimizationOptimJL, ForwardDiff
+using NonlinearSolve, Optimization, ForwardDiff
+using OptimizationOptimJL: Optim
 
 # ============================================================
 # Problem definitions for each solver pathway
@@ -46,13 +47,13 @@ sde_jump_prob = JumpProblem(
 # ============================================================
 
 # Extract endpoints from ensemble solution
-endpoints(sim) = [sol[end] for sol in sim]
+endpoints(sim) = [sol[end] for sol in sim.u]
 
 # Extract first positive time from each trajectory (jump time, skipping t=0 entries)
-first_jump_times(sim) = [sol.t[findfirst(>(0), sol.t)] for sol in sim]
+first_jump_times(sim) = [sol.t[findfirst(>(0), sol.t)] for sol in sim.u]
 
 # Extract all solution time arrays (continuous-valued, safe for != comparisons)
-all_timeseries(sim) = [sol.t for sol in sim]
+all_timeseries(sim) = [sol.t for sol in sim.u]
 
 # Build ensemble problem with default prob_func that perturbs u0.
 # JumpProblems use identity prob_func — stochasticity comes from the jump process itself.
@@ -434,8 +435,8 @@ end
 @testset "11. No seed graceful execution" begin
     eprob = EnsembleProblem(ode_prob)
     sim = solve(eprob, Tsit5(), EnsembleSerial(); trajectories = 4)
-    @test length(sim) == 4
-    @test all(sol.retcode == ReturnCode.Success for sol in sim)
+    @test length(sim.u) == 4
+    @test all(sol.retcode == ReturnCode.Success for sol in sim.u)
 end
 
 # ============================================================
@@ -527,7 +528,7 @@ end
             nl_eprob, NewtonRaphson(), EnsembleSerial();
             seed = UInt64(42), trajectories = 5,
         )
-        @test length(sim1) == 5
+        @test length(sim1.u) == 5
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = solve(
@@ -548,14 +549,14 @@ end
 
         # Ensemble solve with seed succeeds (rng is NOT forwarded)
         sim1 = Optimization.solve(
-            opt_eprob, OptimizationOptimJL.BFGS(),
+            opt_eprob, Optim.BFGS(),
             EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
-        @test length(sim1) == 4
+        @test length(sim1.u) == 4
 
         # Reproducibility via TaskLocalRNG seeding
         sim2 = Optimization.solve(
-            opt_eprob, OptimizationOptimJL.BFGS(),
+            opt_eprob, Optim.BFGS(),
             EnsembleSerial(); seed = UInt64(42), trajectories = 4, maxiters = 10,
         )
         @test endpoints(sim1) == endpoints(sim2)
@@ -628,7 +629,7 @@ end
 
             # The callback saves pre/post states at t_cb then terminates.
             # post_cb - pre_cb must equal the trajectory's scale.
-            for (idx, sol) in enumerate(sim)
+            for (idx, sol) in enumerate(sim.u)
                 pre_cb = sol.u[end - 1][1]
                 post_cb = sol.u[end][1]
                 @test post_cb - pre_cb == pscales[idx]

@@ -1,20 +1,75 @@
 """
-    $(TYPEDEF)
+    $TYPEDEF
 
-A utility struct stored inside `LinearProblem` to enable a symbolic interface. Intended for
-use by ModelingToolkit.jl.
+Simple wrapper struct for deprecated `update_A!`, `update_b!` API of `SymbolicLinearInterface`.
+"""
+struct UpdateABWrapper{A, B} <: Function
+    update_A!::A
+    update_b!::B
+end
+
+function (up::UpdateABWrapper)(A::AbstractMatrix, b::AbstractVector, p)
+    up.update_A!(A, p)
+    up.update_b!(b, p)
+    return (A, b)
+end
+
+function (up::UpdateABWrapper)(p)
+    A = up.update_A!(p)
+    b = up.update_b!(p)
+    return (A, b)
+end
+
+"""
+    SymbolicLinearInterface(; update_Ab, sys, observed, metadata)
+    SymbolicLinearInterface(update_A!, update_b!, sys, observed, metadata)
+
+Attach symbolic indexing and parameter-dependent matrix reconstruction to a
+[`LinearProblem`](@ref).
+
+# Arguments
+
+- `update_Ab`: A callable that updates mutable `A` and `b` as
+  `update_Ab(A, b, p)` or returns replacements as `update_Ab(p) -> (A, b)`.
+- `sys`: The symbolic container used by `SymbolicIndexingInterface` and by
+  [`get_new_A_b`](@ref) dispatch.
+- `observed`: A callable that builds observed-value functions, or `nothing` to delegate to
+  `sys`.
+- `metadata`: Symbolic-backend metadata not interpreted by SciMLBase.
+- `update_A!`, `update_b!`: Legacy separate matrix and right-hand-side update callables.
 
 # Fields
 
 $(TYPEDFIELDS)
+
+# Returns
+
+- `SymbolicLinearInterface`: Metadata stored in a linear problem's `f` field.
+
+# Extension Rules
+
+Symbolic-system packages construct this type and specialize [`get_new_A_b`](@ref) on the
+type of `sys`. Consumers must use the documented fields and
+`SymbolicIndexingInterface` operations; they must not depend on the concrete type
+parameters. New code should use the unified `update_Ab` keyword constructor.
+
+# Example
+
+```julia
+update_Ab = (A, b, p) -> (A .= p[1]; b .= p[2]; (A, b))
+interface = SciMLBase.SymbolicLinearInterface(;
+    update_Ab, sys = :my_system, observed = nothing, metadata = nothing
+)
+```
 """
-struct SymbolicLinearInterface{F1, F2, S, O, M}
+@kwdef struct SymbolicLinearInterface{F, S, O, M}
     # the docstrings cannot start with a newline because otherwise the docs
     # builder fragments the list of fields into single-item lists (in TYPEDFIELDS)
-    """A function which takes `A` and the parameter object `p` and updates `A` in-place."""
-    update_A!::F1
-    """A function which takes `b` and the parameter object `p` and updates `b` in-place."""
-    update_b!::F2
+    """A function which takes `A`, `b` and the parameter object `p` and updates both `A`
+    and `b` in-place. For immutable `A` or `b`, this should only take `p` and return the
+    new `(A, b)`. Previously, this API used `update_A!` and `update_b!` as separate functions
+    with a similar contract. Supplying these individually is supported, but deprecated."""
+    update_Ab::F
     """The symbolic backend for the `LinearProblem`."""
     sys::S
     """A function which when given a symbolic expression returns a function `(u, p)`
@@ -22,6 +77,23 @@ struct SymbolicLinearInterface{F1, F2, S, O, M}
     observed::O
     """Arbitrary metadata useful for the symbolic backend."""
     metadata::M
+end
+
+# Separate `update_A!` and `update_b!` are deprecated in favor of a unified `update_Ab`.
+function SymbolicLinearInterface(update_A!, update_b!, sys, observed, metadata)
+    return SymbolicLinearInterface(;
+        update_Ab = UpdateABWrapper(update_A!, update_b!), sys, observed, metadata
+    )
+end
+
+@inline function Base.getproperty(sli::SymbolicLinearInterface, name::Symbol)
+    if name === :update_A!
+        return getfield(sli, :update_Ab).update_A!
+    elseif name === :update_b!
+        return getfield(sli, :update_Ab).update_b!
+    else
+        return getfield(sli, name)
+    end
 end
 
 __has_sys(::SymbolicLinearInterface) = true
@@ -39,7 +111,7 @@ function SymbolicIndexingInterface.observed(fn::SymbolicLinearInterface, sym)
     end
 end
 
-@doc doc"""
+"""
 
 Defines a linear system problem.
 Documentation Page: <https://docs.sciml.ai/LinearSolve/stable/basics/LinearProblem/>
@@ -63,7 +135,8 @@ are specified via the `AbstractSciMLOperator` interface. For more details, see
 the [SciMLBase Documentation](https://docs.sciml.ai/SciMLBase/stable/).
 
 Note that matrix-free versions of LinearProblem definitions are not compatible
-with all solvers. To check a solver for compatibility, use the function `needs_concrete_A(alg::AbstractLinearAlgorithm)`.
+with all solvers. To check a solver for compatibility, use the function
+`needs_concrete_A(alg::AbstractLinearAlgorithm)`.
 
 ## Problem Type
 
@@ -73,8 +146,8 @@ Optionally, an initial guess ``u₀`` can be supplied which is used for iterativ
 methods.
 
 ```julia
-LinearProblem{isinplace}(A,b,p=NullParameters();u0=nothing,kwargs...)
-LinearProblem(f::AbstractSciMLOperator,b,p=NullParameters();u0=nothing,kwargs...)
+LinearProblem{isinplace}(A, b, p = NullParameters(); u0 = nothing, kwargs...)
+LinearProblem(f::AbstractSciMLOperator, b, p = NullParameters(); u0 = nothing, kwargs...)
 ```
 
 `isinplace` optionally sets whether the function is in-place or not, i.e. whether
@@ -122,6 +195,12 @@ function LinearProblem(A, b, args...; kwargs...)
         LinearProblem{true}(A, b, args...; kwargs...)
     elseif A isa Number
         LinearProblem{false}(A, b, args...; kwargs...)
+    elseif A isa AbstractSciMLOperator
+        # `isinplace` reflects on the operator's call methods, which infers as
+        # `Union{Missing, Bool}` and makes the whole constructor infer to `Any`.
+        # Every `AbstractSciMLOperator` defines the 4-arg in-place call, so this
+        # is the value the reflection already computes -- just statically.
+        LinearProblem{true}(A, b, args...; kwargs...)
     else
         LinearProblem{isinplace(A, 4)}(A, b, args...; kwargs...)
     end
@@ -136,26 +215,25 @@ function SymbolicIndexingInterface.set_parameter!(
         val, idx
     ) where {A, B, C, D, E}
     set_parameter!(parameter_values(valp), val, idx)
-    valp.f.update_A!(valp.A, valp.p)
-    return valp.f.update_b!(valp.b, valp.p)
+    valp.f.update_Ab(valp.A, valp.b, valp.p)
+    return nothing
 end
 
-@doc doc"""
+"""
     LinearAliasSpecifier(; alias_A = nothing, alias_b = nothing, alias = nothing)
 
-Holds information on what variables to alias
-when solving a LinearProblem. Conforms to the AbstractAliasSpecifier interface. 
+Control which `LinearProblem` inputs a solver may alias.
 
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
+`alias_A` controls whether the linear operator or matrix `A` may be stored by
+reference, and `alias_b` controls whether the right-hand side `b` may be stored
+by reference. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to both fields.
 
 ### Keywords
 
 * `alias_A::Union{Bool, Nothing}`: alias the `A` array.
-* `alias_b::Union{Bool, Nothing}`: alias the `b` array. 
-* `alias::Union{Bool, Nothing}`: sets all fields of the `LinearAliasSpecifier` to `alias`. 
-
-Creates a `LinearAliasSpecifier` where `alias_A` and `alias_b` default to `nothing`.
-When `alias_A` or `alias_b` is nothing, the default value of the solver is used.
+* `alias_b::Union{Bool, Nothing}`: alias the `b` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `LinearAliasSpecifier`.
 """
 struct LinearAliasSpecifier <: AbstractAliasSpecifier
     alias_A::Union{Bool, Nothing}

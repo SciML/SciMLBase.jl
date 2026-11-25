@@ -1,5 +1,14 @@
 """
 $(TYPEDEF)
+
+Container for ensemble runs against problems with analytic reference solutions.
+
+`EnsembleTestSolution` extends the ordinary ensemble solution data with strong
+and weak error summaries computed by `calculate_ensemble_errors`. The `u` field
+stores the trajectory outputs, while `errors`, `weak_errors`, `error_means`, and
+`error_medians` store the per-error-key diagnostics collected across the
+ensemble. `elapsedTime` and `converged` carry the same meaning as in
+[`EnsembleSolution`](@ref).
 """
 struct EnsembleTestSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     u::S
@@ -32,6 +41,19 @@ end
 
 """
 $(TYPEDEF)
+
+Concrete solution container returned by ensemble solves.
+
+The `u` field stores the accepted output for each trajectory after applying the
+ensemble problem's `output_func`. When `output_func` returns full SciML
+solutions, `u` is a collection of solution objects; when it returns reduced
+values, `u` stores those reduced values instead. `elapsedTime` records the wall
+time spent in the ensemble solve, `converged` records whether the reduction
+reported early convergence, and `stats` stores merged inner-solver statistics
+when available.
+
+`EnsembleSolution` supports indexing and iteration through its stored `u`
+collection via the [`AbstractEnsembleSolution`](@ref) interface.
 """
 struct EnsembleSolution{T, N, S} <: AbstractEnsembleSolution{T, N, S}
     u::S
@@ -68,6 +90,15 @@ function EnsembleSolution(
     )
 end
 
+"""
+$(TYPEDEF)
+
+Solution wrapper that associates an ensemble solution with trajectory weights.
+
+The number of weights must match the number of stored trajectories. Weighted
+ensemble analysis utilities use the weights to form weighted summary statistics
+without changing the underlying unweighted solution object.
+"""
 struct WeightedEnsembleSolution{T1 <: AbstractEnsembleSolution, T2 <: Number}
     ensol::T1
     weights::Vector{T2}
@@ -98,6 +129,11 @@ a `(mean,var)` summary at each time point `t` in `ts`. This requires the ability
 to interpolate the solution. Quantile is used to determine the `qlow` and `qhigh`
 quantiles at each timepoint. It defaults to the 5% and 95% quantiles.
 
+Complex-valued trajectories are rejected with a
+`ComplexEnsembleSummaryError`: medians and quantiles require a total
+order, which complex numbers do not have. Summarize real/imaginary parts or
+magnitudes separately, or use mean/variance helpers that do not need ordering.
+
 ## Plot Recipe
 
 The `EnsembleSummary` comes with a plot recipe for visualizing the summary
@@ -125,10 +161,26 @@ struct EnsembleSummary{T, N, Tt, S, S2, S3, S4, S5} <: AbstractEnsembleSolution{
     converged::Bool
 end
 
+"""
+    calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
+    calculate_ensemble_errors(trajectories; elapsedTime = 0.0, converged = false,
+        weak_timeseries_errors = false, weak_dense_errors = false)
+
+Collect the strong and weak errors from an ensemble whose trajectories include analytic
+reference solutions, returning an [`EnsembleTestSolution`](@ref).
+
+Strong errors are collected from each trajectory's `errors` field and summarized by their
+mean and median. The final-time weak error is always calculated. Set
+`weak_timeseries_errors = true` to calculate weak errors at the saved time steps, or
+`weak_dense_errors = true` to calculate them on a 100-point interpolation grid.
+
+When an `AbstractEnsembleSolution` is passed, its `elapsedTime` and `converged` fields are
+preserved. The trajectory-collection form accepts those values as keyword arguments.
+"""
 function calculate_ensemble_errors(sim::AbstractEnsembleSolution; kwargs...)
     calculate_ensemble_errors(
-        sim.u; elapsedTime = sim.elapsedTime,
-        converged = sim.converged, kwargs...
+        sim.u; sim.elapsedTime,
+        sim.converged, kwargs...
     )
 end
 
@@ -165,12 +217,12 @@ function calculate_ensemble_errors(
         if analyticvoa
             ts_weak_errors = [
                 mean([u[j].u[i] - u[j].u_analytic.u[i] for j in 1:length(u)])
-                    for i in 1:length(u[1])
+                    for i in 1:length(u[1].u)
             ]
         else
             ts_weak_errors = [
                 mean([u[j].u[i] - u[j].u_analytic[i] for j in 1:length(u)])
-                    for i in 1:length(u[1])
+                    for i in 1:length(u[1].u)
             ]
         end
         ts_l2_errors = [sqrt.(sum(abs2, err) / length(err)) for err in ts_weak_errors]
@@ -183,12 +235,12 @@ function calculate_ensemble_errors(
         densetimes = collect(range(u[1].t[1], stop = u[1].t[end], length = 100))
         u_analytic = [
             [
-                    sol.prob.f.analytic(
-                        sol.prob.u0, sol.prob.p, densetimes[i],
-                        sol.W(densetimes[i])[1]
-                    )
+                sol.prob.f.analytic(
+                    sol.prob.u0, sol.prob.p, densetimes[i],
+                    sol.W(densetimes[i])[1]
+                )
                     for i in eachindex(densetimes)
-                ] for sol in u
+            ] for sol in u
         ]
 
         udense = [u[j](densetimes) for j in 1:length(u)]
@@ -226,7 +278,7 @@ end
         sim::AbstractEnsembleSolution;
         zcolors = sim.u isa AbstractArray ? fill(nothing, length(sim.u)) :
             nothing,
-        trajectories = eachindex(sim)
+        trajectories = eachindex(sim.u)
     )
     for i in trajectories
         size(sim.u[i].u, 1) == 0 && continue
@@ -308,7 +360,7 @@ end
 end
 
 function (sol::AbstractEnsembleSolution)(args...; kwargs...)
-    return [s(args...; kwargs...) for s in sol]
+    return [s(args...; kwargs...) for s in sol.u]
 end
 
 Base.@propagate_inbounds function Base.getindex(sol::WeightedEnsembleSolution, S)

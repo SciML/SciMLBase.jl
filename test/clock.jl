@@ -42,4 +42,3 @@ using SciMLBase: Clock, PeriodicClock, Continuous, ContinuousClock, SolverStepCl
     ic = Clock(1)[5]
     @test ic === IndexedClock(Clock(1), 5)
 end
-

@@ -1,4 +1,4 @@
-@doc doc"""
+"""
 
 Defines a discrete dynamical system problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/discrete_types/>
@@ -9,7 +9,7 @@ To define an ImplicitDiscrete Problem, you simply need to give the function ``f`
 condition ``u_0`` which define a function map:
 
 ```math
-f(u_{n+1}, u_n, p, t_{n+1}, \text{integ}) = 0
+f(u_{n+1}, u_n, p, t_{n+1}, \\text{integ}) = 0
 ```
 
 `f` should be specified as `f(un,p,t)` (or in-place as `f(unp1,un,p,t)`), and
@@ -19,24 +19,23 @@ one is allowed to provide `u₀` as arbitrary matrices / higher dimension tensor
 as well. ``u_{n+1}`` only depends on the previous iteration ``u_{n}`` and
 ``t_{n+1}``. The default ``t_{n+1}`` is chosen adaptively, and when ``dt`` is
 specified, we have ``t_n = t_0 + n*dt``. `integ` contains the fields:
-```julia
-dt: the time step
-```
+- `dt`: the time step
 
 ## Problem Type
 
 ### Constructors
 
-- `ImplicitDiscreteProblem(f::ImplicitDiscreteFunction,u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem(f::ImplicitDiscreteFunction, u0, tspan, p = NullParameters(); kwargs...)` :
   Defines the discrete problem with the specified functions.
-- `ImplicitDiscreteProblem{isinplace,specialize}(f,u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem{isinplace, specialize}(f, u0, tspan, p = NullParameters(); kwargs...)` :
   Defines the discrete problem with the specified functions.
-- `ImplicitDiscreteProblem{isinplace,specialize}(u0,tspan,p=NullParameters();kwargs...)` :
+- `ImplicitDiscreteProblem{isinplace, specialize}(u0, tspan, p = NullParameters(); kwargs...)` :
   Defines the discrete problem with the identity map.
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -49,7 +48,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/)
 page.
 
 ### Fields
@@ -113,7 +112,7 @@ struct ImplicitDiscreteProblem{uType, tType, isinplace, P, F, K} <:
 end
 
 """
-    ImplicitDiscreteProblem{isinplace}(f,u0,tspan,p=NullParameters(),callback=nothing)
+    ImplicitDiscreteProblem{isinplace}(f, u0, tspan, p = NullParameters(), callback = nothing)
 
 Defines a discrete problem with the specified functions.
 """
@@ -143,22 +142,26 @@ function ConstructionBase.constructorof(::Type{P}) where {P <: ImplicitDiscreteP
     end
 end
 
-@doc doc"""
-    ImplicitDiscreteAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing)
-
-Holds information on what variables to alias
-when solving an ODE. Conforms to the AbstractAliasSpecifier interface. 
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias::Union{Bool, Nothing}`: sets all fields of the `ImplicitDiscreteAliasSpecifier` to `alias`
-
 """
-struct ImplicitDiscreteAliasSpecifier
+    ImplicitDiscreteAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias = nothing
+    )
+
+Control which `ImplicitDiscreteProblem` inputs a solver may alias.
+
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+and `alias_f` controls the implicit discrete function object. A value of
+`nothing` delegates to the solver default. Set `alias = true` or
+`alias = false` to apply the same policy to all stored fields.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the implicit discrete function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `ImplicitDiscreteAliasSpecifier`.
+"""
+struct ImplicitDiscreteAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

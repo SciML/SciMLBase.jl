@@ -1,9 +1,17 @@
 """
 $(TYPEDEF)
+
+Marker for standard DDE problem layouts.
+
+`StandardDDEProblem()` is the default `problem_type` metadata stored by
+`DDEProblem` when the problem is represented directly by a DDE function, history
+function, initial state, lags, time span, and parameters. Solver code may test
+`problem_type(prob) isa StandardDDEProblem` to distinguish this layout from
+dynamical or second-order DDE encodings.
 """
 struct StandardDDEProblem end
 
-@doc doc"""
+"""
 
 Defines a delay differential equation (DDE) problem.
 Documentation Page: <https://docs.sciml.ai/DiffEqDocs/stable/types/dde_types/>
@@ -15,11 +23,11 @@ condition ``u_0`` at time point ``t_0``, and the history function ``h``
 which together define a DDE:
 
 ```math
-\begin{align*}
-\frac{du}{dt} &= f(u,h,p,t) & (t \geq t_0) \\
-u(t_0) &= u_0, \\
+\\begin{align*}
+\\frac{du}{dt} &= f(u,h,p,t) & (t ≥ t_0) \\\\
+u(t_0) &= u_0, \\\\
 u(t)   &= h(t) & (t < t_0).
-\end{align*}
+\\end{align*}
 ```
 
 ``f`` should be specified as `f(u, h, p, t)` (or in-place as `f(du, u, h, p, t)`),
@@ -70,7 +78,8 @@ DDEProblem{isinplace,specialize}(f[, u0], h, tspan[, p]; <keyword arguments>)
 
 `isinplace` optionally sets whether the function is inplace or not. This is
 determined automatically, but not inferred. `specialize` optionally controls
-the specialization level. See the [specialization levels section of the SciMLBase documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Specialization-Levels)
+the specialization level. See
+[Specialization Levels](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#specialization_levels)
 for more details. The default is `AutoSpecialize`.
 
 For more details on the in-place and specialization controls, see the ODEFunction
@@ -82,12 +91,14 @@ parameters. Any extra keyword arguments are passed on to the solvers. For exampl
 if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
-For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref performance_overloads) page.
+For specifying Jacobians and mass matrices, see the
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/).
 
 ### Arguments
 
 * `f`: The function in the DDE.
-* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the history function evaluated at the initial time point.
+* `u0`: The initial condition. Defaults to the value `h(p, first(tspan))` of the
+  history function evaluated at the initial time point.
 * `h`: The history function for the DDE before `t0`.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters with which function `f` is called. Defaults to `NullParameters`.
@@ -95,19 +106,22 @@ For specifying Jacobians and mass matrices, see the [DiffEqFunctions](@ref perfo
 * `dependent_lags` A tuple of functions `(u, p, t) -> lag` for the state-dependent lags
   used by the history function `h`. Defaults to `()`.
 * `neutral`: If the DDE is neutral, i.e., if delays appear in derivative terms.
-* `order_discontinuity_t0`: The order of the discontinuity at the initial time point. Defaults to `0` if an initial condition `u0` is provided. Otherwise, it is forced to be greater or equal than `1`.
+* `order_discontinuity_t0`: The order of the discontinuity at the initial time point.
+  Defaults to `0` if an initial condition `u0` is provided. Otherwise, it
+  is forced to be greater or equal than `1`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 ## Dynamical Delay Differential Equations
 
-Much like [Dynamical ODEs](@ref dynamical_prob), a Dynamical DDE is a Partitioned DDE
+Much like the dynamical ODE problem (see the Differential Equation Problem Types
+page of the SciMLBase interface documentation), a Dynamical DDE is a partitioned DDE
 of the form:
 
 ```math
-\begin{align*}
-\frac{dv}{dt} &= f_1(u,t,h) \\
-\frac{du}{dt} &= f_2(v,h) \\
-\end{align*}
+\\begin{align*}
+\\frac{dv}{dt} &= f_1(u,t,h) \\\\
+\\frac{du}{dt} &= f_2(v,h) \\\\
+\\end{align*}
 ```
 
 ### Constructors
@@ -122,20 +136,24 @@ This is determined automatically, but not inferred.
 ### Arguments
 
 * `f`: The function in the DDE.
-* `v0` and `u0`: The initial condition. Defaults to the values `h(p, first(tspan))...` of the history function evaluated at the initial time point.
-* `h`: The history function for the DDE before `t0`. Must return an object with the indices 1 and 2, with the values of `v` and `u` respectively.
+* `v0` and `u0`: The initial condition. Defaults to the values `h(p, first(tspan))...`
+  of the history function evaluated at the initial time point.
+* `h`: The history function for the DDE before `t0`. Must return an object with
+  the indices 1 and 2, with the values of `v` and `u` respectively.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters with which function `f` is called. Defaults to `NullParameters`.
 * `constant_lags`: A collection of constant lags used by the history function `h`. Defaults to `()`.
 * `dependent_lags` A tuple of functions `(v, u, p, t) -> lag` for the state-dependent lags
   used by the history function `h`. Defaults to `()`.
 * `neutral`: If the DDE is neutral, i.e., if delays appear in derivative terms.
-* `order_discontinuity_t0`: The order of the discontinuity at the initial time point. Defaults to `0` if an initial condition `u0` is provided. Otherwise, it is forced to be greater or equal than `1`.
+* `order_discontinuity_t0`: The order of the discontinuity at the initial time point.
+  Defaults to `0` if an initial condition `u0` is provided.
+  Otherwise, it is forced to be greater or equal than `1`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
 For dynamical and second order DDEs, the history function will return an object with
 the indices 1 and 2 defined, where `h(p, t_prev)[1]` is the value of ``f_2(v, u, h, p,
-t_{\mathrm{prev}})`` and `h(p, t_prev)[2]` is the value of ``f_1(v, u, h, p, t_{\mathrm{prev}})``
+t_{\\mathrm{prev}})`` and `h(p, t_prev)[2]` is the value of ``f_1(v, u, h, p, t_{\\mathrm{prev}})``
 (this is for consistency with the ordering of the initial conditions in the constructor).
 The supplied history function must also return such a 2-index object, which can be accomplished
 with a tuple `(v,u)` or vector `[v,u]`.
@@ -158,10 +176,10 @@ as well.
 From this form, a dynamical ODE:
 
 ```math
-\begin{align*}
-v' &= f(v,u,h,p,t) \\
+\\begin{align*}
+v' &= f(v,u,h,p,t) \\\\
 u' &= v
-\end{align*}
+\\end{align*}
 ```
 
 ### Constructors
@@ -177,18 +195,24 @@ This is determined automatically, but not inferred.
 ### Arguments
 
 * `f`: The function in the DDE.
-* `du0` and `u0`: The initial condition. Defaults to the values `h(p, first(tspan))...` of the history function evaluated at the initial time point.
-* `h`: The history function for the DDE before `t0`. Must return an object with the indices 1 and 2, with the values of `v` and `u` respectively.
+* `du0` and `u0`: The initial condition. Defaults to the values `h(p, first(tspan))...`
+  of the history function evaluated at the initial time point.
+* `h`: The history function for the DDE before `t0`. Must return an object with
+  the indices 1 and 2, with the values of `v` and `u` respectively.
 * `tspan`: The timespan for the problem.
 * `p`: The parameters with which function `f` is called. Defaults to `NullParameters`.
 * `constant_lags`: A collection of constant lags used by the history function `h`. Defaults to `()`.
 * `dependent_lags` A tuple of functions `(v, u, p, t) -> lag` for the state-dependent lags
   used by the history function `h`. Defaults to `()`.
 * `neutral`: If the DDE is neutral, i.e., if delays appear in derivative terms.
-* `order_discontinuity_t0`: The order of the discontinuity at the initial time point. Defaults to `0` if an initial condition `u0` is provided. Otherwise, it is forced to be greater or equal than `1`.
+* `order_discontinuity_t0`: The order of the discontinuity at the initial time point.
+  Defaults to `0` if an initial condition `u0` is provided.
+  Otherwise, it is forced to be greater or equal than `1`.
 * `kwargs`: The keyword arguments passed onto the solves.
 
-As above, the history function will return an object with indices 1 and 2, with the values of `du` and `u` respectively. The supplied history function must also match this return type, e.g. by returning a 2-element tuple or vector.
+As above, the history function will return an object with indices 1 and 2, with the values
+of `du` and `u` respectively. The supplied history function must also match this return
+type, e.g. by returning a 2-element tuple or vector.
 
 ## Example Problems
 
@@ -292,18 +316,33 @@ SymbolicIndexingInterface.get_history_function(prob::AbstractDDEProblem) = prob.
 
 """
 $(TYPEDEF)
+
+Marker supertype for structured DDE problem layouts.
+
+Subtypes identify DDE problems constructed from partitioned first-order dynamics
+or from second-order dynamics. These markers are available through
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+on the common `DDEProblem` representation so solvers can
+preserve or recover the structured interpretation when needed.
 """
 abstract type AbstractDynamicalDDEProblem end
 
 """
 $(TYPEDEF)
+
+Marker for partitioned dynamical DDE problem layouts.
+
+`DynamicalDDEProblem{iip}` is returned by
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+when a DDE is constructed from two coupled first-order components. The `iip` parameter records
+the in-place convention of the underlying `DynamicalDDEFunction`.
 """
 struct DynamicalDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 
 # u' = f1(v,h)
 # v' = f2(t,u,h)
 """
-    DynamicalDDEProblem(f::DynamicalDDEFunction,v0,u0,tspan,p=NullParameters(),callback=CallbackSet())
+    DynamicalDDEProblem(f::DynamicalDDEFunction, v0, u0, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a dynamical DDE problem from a [`DynamicalDDEFunction`](@ref).
 """
@@ -332,7 +371,7 @@ function DynamicalDDEProblem(f1, f2, args...; kwargs...)
 end
 
 """
-    DynamicalDDEProblem{isinplace}(f1,f2,v0,u0,h,tspan,p=NullParameters(),callback=CallbackSet())
+    DynamicalDDEProblem{isinplace}(f1, f2, v0, u0, h, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a dynamical DDE problem from the two functions `f1` and `f2`.
 
@@ -355,6 +394,14 @@ end
 # u'' = f(du,u,h,p,t)
 """
 $(TYPEDEF)
+
+Marker for second-order DDE problem layouts.
+
+`SecondOrderDDEProblem{iip}` is returned by
+[`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits)
+when a second-order delay equation is converted to the partitioned DDE form used by
+`DDEProblem`. The `iip` parameter records the in-place convention of the
+second-derivative function.
 """
 struct SecondOrderDDEProblem{iip} <: AbstractDynamicalDDEProblem end
 function SecondOrderDDEProblem(f, args...; kwargs...)
@@ -363,7 +410,7 @@ function SecondOrderDDEProblem(f, args...; kwargs...)
 end
 
 """
-    SecondOrderDDEProblem{isinplace}(f,du0,u0,h,tspan,p=NullParameters(),callback=CallbackSet())
+    SecondOrderDDEProblem{isinplace}(f, du0, u0, h, tspan, p = NullParameters(), callback = CallbackSet())
 
 Define a second order DDE problem with the specified function.
 
@@ -410,8 +457,8 @@ function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
         return DynamicalDDEProblem(
             DynamicalDDEFunction{iip}(
                 f.f1, f2;
-                mass_matrix = f.mass_matrix,
-                analytic = f.analytic
+                f.mass_matrix,
+                f.analytic
             ),
             args...; problem_type = SecondOrderDDEProblem{iip}(),
             kwargs...
@@ -420,8 +467,8 @@ function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
         return DynamicalDDEProblem(
             DynamicalDDEFunction{iip}(
                 f.f1, f.f2;
-                mass_matrix = f.mass_matrix,
-                analytic = f.analytic
+                f.mass_matrix,
+                f.analytic
             ),
             args...; problem_type = SecondOrderDDEProblem{iip}(),
             kwargs...
@@ -429,24 +476,32 @@ function SecondOrderDDEProblem(f::DynamicalDDEFunction, args...; kwargs...)
     end
 end
 
-@doc doc"""
-    DDEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-
-Holds information on what variables to alias
-when solving a DDE. Conforms to the AbstractAliasSpecifier interface. 
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false .
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DDEAliasSpecifier` to `alias`
-
 """
-struct DDEAliasSpecifier
+    DDEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
+
+Control which `DDEProblem` inputs and solver option arrays may be aliased.
+
+`alias_u0` controls the initial state, `alias_p` controls the parameter object,
+`alias_f` controls the DDE function object, and `alias_tstops` controls the
+`tstops` vector. A value of `nothing` delegates to the solver default. Set
+`alias = true` or `alias = false` to apply the same policy to all stored fields.
+
+The constructor also accepts `alias_du0` for compatibility with related
+differential-equation alias constructors; `DDEAliasSpecifier` does not store a
+separate `du0` alias field.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the DDE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every stored field of the `DDEAliasSpecifier`.
+"""
+struct DDEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

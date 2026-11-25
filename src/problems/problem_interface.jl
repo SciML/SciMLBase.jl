@@ -28,20 +28,12 @@ function SymbolicIndexingInterface.current_time(prob::AbstractEnsembleProblem)
 end
 SymbolicIndexingInterface.current_time(::AbstractSteadyStateProblem) = Inf
 
-Base.@propagate_inbounds function Base.getindex(
-        prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.SolvedVariables
-    )
-    return getindex(prob, variable_symbols(prob))
-end
-
-Base.@propagate_inbounds function Base.getindex(
-        prob::AbstractSciMLProblem, ::SymbolicIndexingInterface.AllVariables
-    )
-    return getindex(prob, all_variable_symbols(prob))
-end
-
 Base.@propagate_inbounds function Base.getindex(A::AbstractSciMLProblem, sym)
-    if is_parameter(A, sym)
+    if sym === solvedvariables
+        return getindex(A, variable_symbols(A))
+    elseif sym === allvariables
+        return getindex(A, all_variable_symbols(A))
+    elseif is_parameter(A, sym)
         error("Indexing with parameters is deprecated. Use `prob.ps[$sym]` for parameter indexing.")
     end
     return getsym(A, sym)(A)

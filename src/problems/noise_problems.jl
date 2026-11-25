@@ -1,5 +1,16 @@
 """
 $(TYPEDEF)
+
+Problem wrapper for sampling or replaying an `AbstractNoiseProcess`.
+
+`NoiseProblem` stores the noise process, the time span over which it should be
+generated, a deterministic seed, and solver keyword arguments. Noise-process
+solvers use this problem type to construct a saved noise trajectory that follows
+the common SciML solution interface.
+
+# Fields
+
+$(TYPEDFIELDS)
 """
 struct NoiseProblem{N <: AbstractNoiseProcess, T, K} <: AbstractNoiseProblem
     noise::N
