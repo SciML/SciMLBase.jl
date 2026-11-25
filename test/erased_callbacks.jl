@@ -25,7 +25,12 @@ end
 struct AddParameter end
 (::AddParameter)(integrator) = (integrator.u[1] += integrator.p; nothing)
 struct AddParameterAt{P} end
-(::AddParameterAt{P})(integrator) where {P} = (integrator.u[1] += integrator.p::P; nothing)
+function (::AddParameterAt{P})(integrator) where {P}
+    p = integrator.p
+    p isa P || return AddParameter()(integrator)
+    integrator.u[1] += p
+    return nothing
+end
 SciMLBase.specialize_parameters(::AddParameter, ::Type{P}) where {P} = AddParameterAt{P}()
 
 affect_allocations(callback, integrator) = @allocated callback.affect!(integrator)
@@ -51,6 +56,13 @@ end
     @test affect_allocations(erased, integrator) == 0
     @test erase_callback(erased, I, Float64) === erased
     @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64)
+
+    # The integrator's parameters are no longer the `P` the callback was erased with.
+    integrator.p = 3
+    integrator.u[1] = 0.0
+    erased.affect!(integrator)
+    @test integrator.u == [3.0]
+    @test erase_callback(erased, I, Int) === erased
 end
 
 @testset "hooks" begin

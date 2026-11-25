@@ -10,6 +10,10 @@ can use this function to recover the fully specific type.
 The fallback returns `f`. A package whose callback functions read parameters adds a method
 that returns a function taking the parameters as a `P` when the integrator holds a `P`, and
 calling `f` otherwise.
+
+The method must keep the branch that calls `f`. `P` is the parameter type when the callback
+is erased, and the integrator can hold parameters of another type afterwards: `integrator.p`
+is assignable, and an erased callback is reusable with another parameter object.
 """
 specialize_parameters(f, ::Type{P}) where {P} = f
 
