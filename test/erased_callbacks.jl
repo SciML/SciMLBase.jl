@@ -11,6 +11,8 @@ mutable struct MockIntegrator <: SciMLBase.DEIntegrator{Nothing, Nothing, Vector
 end
 MockIntegrator(p) = MockIntegrator([0.0], 0.0, p, Int[], true)
 
+struct OtherIntegrator end
+
 function SciMLBase.save_discretes!(integrator::MockIntegrator, idx::Int; skip_duplicates = false)
     push!(integrator.saved, idx)
     return nothing
@@ -48,6 +50,7 @@ end
     @test !erased.condition(integrator.u, integrator.t, integrator)
     @test affect_allocations(erased, integrator) == 0
     @test erase_callback(erased, I, Float64) === erased
+    @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64)
 end
 
 @testset "hooks" begin

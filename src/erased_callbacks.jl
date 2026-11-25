@@ -132,3 +132,13 @@ end
 
 erase_callback(callback::ErasedDiscreteCallback{I}, ::Type{I}, ::Type{P}) where {I, P} =
     callback
+
+function erase_callback(::ErasedDiscreteCallback, ::Type{I}, ::Type{P}) where {I, P}
+    throw(
+        ArgumentError(
+            "A callback that was erased for an integrator of another type" * 
+                "(such as one taken from `integrator.opts.callback`) was tried to be used for an integrator of type $I."*
+                "Pass the original callback."
+        )
+    )
+end
