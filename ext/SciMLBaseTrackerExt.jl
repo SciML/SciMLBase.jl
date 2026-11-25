@@ -1,6 +1,6 @@
 module SciMLBaseTrackerExt
 
-using SciMLBase
+using SciMLBase: SciMLBase
 import Tracker
 
 SciMLBase.value(x::Type{Tracker.TrackedReal{T}}) where {T} = T

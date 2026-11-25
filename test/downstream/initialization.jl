@@ -1,4 +1,5 @@
 using ModelingToolkit, NonlinearSolve, OrdinaryDiffEq, Sundials, SciMLBase, Test
+using OrdinaryDiffEqBDF
 using SymbolicIndexingInterface
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterface,
@@ -134,6 +135,27 @@ end
             @test success
             @test u0 == prob.u0
         end
+
+        # Immutable out-of-place RHS residual must not setindex! into SVector.
+        @testset "SVector out-of-place mass matrix" begin
+            using OrdinaryDiffEqRosenbrock: Rodas5P
+            using StaticArrays
+            fsv(u, p, t) = SA[-u[1] + u[2], u[1] + u[2] - 1.0]
+            oopfn = ODEFunction{false}(fsv, mass_matrix = [1.0 0.0; 0.0 0.0])
+            prob = ODEProblem(oopfn, SA[1.0, 0.0], (0.0, 1.0))
+            integ = init(prob, Rodas5P(); initializealg = SciMLBase.NoInit())
+            u0, _,
+                success = SciMLBase.get_initial_values(
+                prob, integ, oopfn, SciMLBase.CheckInit(),
+                Val(false); abstol = 1.0e-10
+            )
+            @test success
+            @test u0 == prob.u0
+
+            sol = solve(prob, Rodas5P())
+            @test SciMLBase.successful_retcode(sol)
+            @test sol.u[end][1] + sol.u[end][2] ≈ 1
+        end
     end
 
     @testset "DAEProblem" begin
@@ -170,6 +192,27 @@ end
             @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
                 prob, integ, f, SciMLBase.CheckInit(),
                 Val(SciMLBase.isinplace(f)); abstol = 1.0e-10
+            )
+        end
+
+        # Vector abstol must not MethodError on `normresid > abstol`
+        # (OrdinaryDiffEq.jl #1214 / DifferentialEquations path via CheckInit).
+        @testset "Vector abstol" begin
+            f = iipfn
+            prob = DAEProblem(f, [1.0, 0.0], [1.0, 1.0], (0.0, 1.0), 1.0)
+            integ = init(prob, DImplicitEuler(); abstol = [1.0e-6, 1.0e-6])
+            u0, _,
+                success = SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(true); abstol = [1.0e-6, 1.0e-6]
+            )
+            @test success
+            @test u0 == prob.u0
+
+            integ.u[2] = 2.0
+            @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(true); abstol = [1.0e-6, 1.0e-6]
             )
         end
     end
@@ -297,6 +340,28 @@ end
 
             initprob.p[1] = 1.0
         end
+        @testset "with constructor tolerances in nonlinear least squares" begin
+            initfn = NonlinearFunction(; resid_prototype = ones(1)) do u, p
+                return [u[1] - 1.0]
+            end
+            nllsprob = NonlinearLeastSquaresProblem(initfn, [0.0])
+            nllsmap = nlsol -> [nlsol.u[1], nlsol.u[1]]
+            initdata = SciMLBase.OverrideInitData(nllsprob, nothing, nllsmap, nothing)
+            nllsfn = ODEFunction(rhs2; initialization_data = initdata)
+            nllsprob_outer = ODEProblem(nllsfn, [0.0, 0.0], (0.0, 1.0), 0.0)
+            nllsinteg = init(nllsprob_outer; initializealg = NoInit())
+
+            u0, p,
+                success = SciMLBase.get_initial_values(
+                nllsprob_outer, nllsinteg, nllsfn,
+                SciMLBase.OverrideInit(; nlsolve = LevenbergMarquardt(), abstol, reltol),
+                Val(false)
+            )
+
+            @test u0 ≈ [1.0, 1.0]
+            @test p ≈ 0.0
+            @test success
+        end
         @testset "with trivial problem and no alg" begin
             iprob = NonlinearProblem((u, p) -> 0.0, nothing, 1.0)
             iprobmap = (_) -> [1.0, 1.0]
@@ -327,7 +392,7 @@ end
     end
 
     @testset "Solves with non-integrator value provider" begin
-        _integ = ProblemState(; u = integ.u, p = parameter_values(integ), t = integ.t)
+        _integ = ProblemState(; integ.u, p = parameter_values(integ), integ.t)
         u0, p,
             success = SciMLBase.get_initial_values(
             prob, _integ, fn, SciMLBase.OverrideInit(),

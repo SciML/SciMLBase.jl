@@ -24,6 +24,13 @@ f = Foo{1}()
 (this::Foo{T})(args...) where {T} = 1
 @test SciMLBase.isinplace(Foo{Int}(), 4)
 
+struct PreparedODEConstructorRHS
+    stage::Int
+end
+(f::PreparedODEConstructorRHS)(u, p, t) = u
+SciMLBase.prepare_function(f::PreparedODEConstructorRHS) =
+    PreparedODEConstructorRHS(f.stage + 1)
+
 @testset "isinplace for FunctionWrappersWrapper" begin
     using FunctionWrappersWrappers
 
@@ -76,6 +83,138 @@ end
     end
 end
 
+@testset "concretized AutoDespecialize remake keeps narrowed metadata types" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    base = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    wrapped = FunctionWrappersWrapper(
+        rhs!,
+        (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},),
+        (Nothing,)
+    )
+    concrete = SciMLBase.unwrapped_f(base, wrapped)
+    @test SciMLBase.specialization(concrete) === SciMLBase.AutoDespecialize
+    @test typeof(concrete).parameters[end - 1] === Nothing
+    @test typeof(concrete).parameters[end] === Nothing
+
+    # A second concretization widens the bounded metadata, then remakes with that
+    # function. The remade function has to keep the narrowed type.
+    widened = SciMLBase.widen_bounded_type_params(concrete)
+    @test typeof(widened).parameters[end - 1] ===
+        Union{Nothing, SciMLBase.OverrideInitData}
+    @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+    @test typeof(remake(concrete; f = widened)) === typeof(concrete)
+
+    # The first concretization still adopts erasure from a not-yet-wrapped function.
+    plain = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    widened_plain = SciMLBase.widen_bounded_type_params(plain)
+    @test typeof(remake(plain; f = widened_plain)).parameters[end] ===
+        Union{Nothing, SciMLBase.ODENLStepData}
+end
+
+@testset "only a wrapped AutoDespecialize replacement skips erasure" begin
+    using FunctionWrappersWrappers
+
+    rhs!(du, u, p, t) = (du[1] = -u[1]; nothing)
+    sig = (Tuple{Vector{Float64}, Vector{Float64}, SciMLBase.NullParameters, Float64},)
+    function concretized(spec)
+        base = ODEFunction{true, spec}(rhs!)
+        wrapped = FunctionWrappersWrapper(rhs!, sig, (Nothing,))
+        return SciMLBase.unwrapped_f(base, wrapped)
+    end
+    metadata(f) = (
+        SciMLBase.specialization(f),
+        fieldtype(typeof(f), :initialization_data),
+        fieldtype(typeof(f), :nlstep_data),
+    )
+    erased = (
+        Union{Nothing, SciMLBase.OverrideInitData},
+        Union{Nothing, SciMLBase.ODENLStepData},
+    )
+
+    concrete_ad = concretized(SciMLBase.AutoDespecialize)
+    concrete_as = concretized(SciMLBase.AutoSpecialize)
+    widened_as = SciMLBase.widen_bounded_type_params(concrete_as)
+    widened_plain = SciMLBase.widen_bounded_type_params(
+        ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    )
+
+    # Concretized AutoSpecialize still adopts erasure from its widened replacement.
+    @test metadata(remake(concrete_as; f = widened_as)) ===
+        (SciMLBase.AutoSpecialize, erased...)
+
+    # The original is concretized AutoDespecialize. These replacements are not a
+    # re-promoted copy of it, so their erasure stays.
+    remade_as = remake(concrete_ad; f = widened_as)
+    @test metadata(remade_as) === (SciMLBase.AutoSpecialize, erased...)
+    @test typeof(remade_as) === typeof(widened_as)
+
+    remade_plain = remake(concrete_ad; f = widened_plain)
+    @test metadata(remade_plain) === (SciMLBase.AutoDespecialize, erased...)
+    @test !(remade_plain.f isa FunctionWrappersWrappers.FunctionWrappersWrapper)
+
+    # A wrapped, widened replacement of a function that is not yet wrapped still
+    # contributes its bounds. That is the first DAE concretization.
+    widened_wrapped = SciMLBase.widen_bounded_type_params(concrete_ad)
+    plain_ad = ODEFunction{true, SciMLBase.AutoDespecialize}(rhs!)
+    @test metadata(remake(plain_ad; f = widened_wrapped)) ===
+        (SciMLBase.AutoDespecialize, erased...)
+end
+
+@testset "ODEFunction specialization constructor" begin
+    rhs = (u, p, t) -> u
+    initdata = SciMLBase.OverrideInitData(
+        NonlinearProblem((u, p) -> u, [0.0]), nothing, identity, nothing
+    )
+    nlstep_data = SciMLBase.ODENLStepData(
+        NonlinearProblem((z, p) -> z, [1.0]), identity,
+        (gamma1, gamma2, c) -> nothing, identity, identity, identity
+    )
+    initdata_type = Union{Nothing, SciMLBase.OverrideInitData}
+    nlstep_data_type = Union{Nothing, SciMLBase.ODENLStepData}
+    original = ODEFunction{false, SciMLBase.FullSpecialize}(
+        rhs; initialization_data = initdata, nlstep_data
+    )
+
+    for specialize in (
+            SciMLBase.AutoSpecialize,
+            SciMLBase.AutoDespecialize,
+            SciMLBase.AutoRespecialize,
+        )
+        respecialized = ODEFunction{false, specialize}(original)
+        @test SciMLBase.specialization(respecialized) === specialize
+        @test respecialized.f === rhs
+        @test fieldtype(typeof(respecialized), :initialization_data) === initdata_type
+        @test fieldtype(typeof(respecialized), :nlstep_data) === nlstep_data_type
+        for field in fieldnames(typeof(original))
+            @test getfield(respecialized, field) === getfield(original, field)
+        end
+    end
+
+    auto = SciMLBase.widen_bounded_type_params(
+        ODEFunction{false, SciMLBase.AutoSpecialize}(
+            rhs; initialization_data = initdata, nlstep_data
+        )
+    )
+    rebuilt = ODEFunction{false, SciMLBase.AutoSpecialize}(auto; sys = :replacement)
+    @test rebuilt.f === rhs
+    @test rebuilt.sys === :replacement
+    @test fieldtype(typeof(rebuilt), :initialization_data) === initdata_type
+    @test fieldtype(typeof(rebuilt), :nlstep_data) === nlstep_data_type
+
+    full = ODEFunction{false, SciMLBase.FullSpecialize}(auto)
+    @test full.f === rhs
+    @test fieldtype(typeof(full), :initialization_data) === typeof(initdata)
+    @test fieldtype(typeof(full), :nlstep_data) === typeof(nlstep_data)
+
+    prepared = ODEFunction{false, SciMLBase.FullSpecialize}(PreparedODEConstructorRHS(0))
+    @test prepared.f.stage == 1
+    prepared_auto = @inferred ODEFunction{false, SciMLBase.AutoSpecialize}(prepared)
+    @test prepared_auto.f === prepared.f
+    @test prepared_auto.f.stage == 1
+end
+
 @testset "isinplace accepts an out-of-place version with different numbers of parameters " begin
     f1(u) = 2 * u
     @test !isinplace(f1, 2)
@@ -110,80 +249,80 @@ ODEFunction(ofboth)
 @inferred ODEFunction{false}(ofboth)
 
 jac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, jac = jac)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, jac = jac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; jac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; jac)
 jac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, jac = jac)
-ODEFunction(foop, jac = jac)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; jac)
+ODEFunction(foop; jac)
 jac(du, u, p, t) = [1.0]
-ODEFunction(fiip, jac = jac)
-ODEFunction(foop, jac = jac)
+ODEFunction(fiip; jac)
+ODEFunction(foop; jac)
 
 Wfact(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact = Wfact)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact)
 Wfact(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact = Wfact)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact = Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact)
 Wfact(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, Wfact = Wfact)
-ODEFunction(foop, Wfact = Wfact)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; Wfact)
+ODEFunction(foop; Wfact)
 Wfact(du, u, p, gamma, t) = [1.0]
-ODEFunction(fiip, Wfact = Wfact)
-ODEFunction(foop, Wfact = Wfact)
+ODEFunction(fiip; Wfact)
+ODEFunction(foop; Wfact)
 
 Wfact_t(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact_t = Wfact_t)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact_t)
 Wfact_t(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, Wfact_t = Wfact_t)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, Wfact_t = Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; Wfact_t)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; Wfact_t)
 Wfact_t(u, p, gamma, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, Wfact_t = Wfact_t)
-ODEFunction(foop, Wfact_t = Wfact_t)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; Wfact_t)
+ODEFunction(foop; Wfact_t)
 Wfact_t(du, u, p, gamma, t) = [1.0]
-ODEFunction(fiip, Wfact_t = Wfact_t)
-ODEFunction(foop, Wfact_t = Wfact_t)
+ODEFunction(fiip; Wfact_t)
+ODEFunction(foop; Wfact_t)
 
 tgrad(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, tgrad = tgrad)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, tgrad = tgrad)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; tgrad)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; tgrad)
 tgrad(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, tgrad = tgrad)
-ODEFunction(foop, tgrad = tgrad)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; tgrad)
+ODEFunction(foop; tgrad)
 tgrad(du, u, p, t) = [1.0]
-ODEFunction(fiip, tgrad = tgrad)
-ODEFunction(foop, tgrad = tgrad)
+ODEFunction(fiip; tgrad)
+ODEFunction(foop; tgrad)
 
 paramjac(u, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, paramjac = paramjac)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, paramjac = paramjac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; paramjac)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; paramjac)
 paramjac(u, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, paramjac = paramjac)
-ODEFunction(foop, paramjac = paramjac)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; paramjac)
+ODEFunction(foop; paramjac)
 paramjac(du, u, p, t) = [1.0]
-ODEFunction(fiip, paramjac = paramjac)
-ODEFunction(foop, paramjac = paramjac)
+ODEFunction(fiip; paramjac)
+ODEFunction(foop; paramjac)
 
 jvp(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, jvp = jvp)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, jvp = jvp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; jvp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; jvp)
 jvp(u, v, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, jvp = jvp)
-ODEFunction(foop, jvp = jvp)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; jvp)
+ODEFunction(foop; jvp)
 jvp(du, u, v, p, t) = [1.0]
-ODEFunction(fiip, jvp = jvp)
-ODEFunction(foop, jvp = jvp)
+ODEFunction(fiip; jvp)
+ODEFunction(foop; jvp)
 
 vjp(u, p, t) = [1.0]
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip, vjp = vjp)
-@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop, vjp = vjp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(fiip; vjp)
+@test_throws SciMLBase.TooFewArgumentsError ODEFunction(foop; vjp)
 vjp(u, v, p, t) = [1.0]
-@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip, vjp = vjp)
-ODEFunction(foop, vjp = vjp)
+@test_throws SciMLBase.NonconformingFunctionsError ODEFunction(fiip; vjp)
+ODEFunction(foop; vjp)
 vjp(du, u, v, p, t) = [1.0]
-ODEFunction(fiip, vjp = vjp)
-ODEFunction(foop, vjp = vjp)
+ODEFunction(fiip; vjp)
+ODEFunction(foop; vjp)
 
 # SDE
 
@@ -387,6 +526,60 @@ DAEFunction(dfiip, vjp = dvjp)
 DAEFunction(dfoop, vjp = dvjp)
 DAEFunction{true, SciMLBase.NoSpecialize}(dfiip, observed = 1)
 
+@testset "DAEFunction nlstep_data" begin
+    nlstep = SciMLBase.ODENLStepData(
+        NonlinearProblem((z, p) -> z, [1.0]), identity,
+        (gamma1, gamma2, c) -> nothing, identity, identity, identity
+    )
+
+    @testset "construction" begin
+        @test DAEFunction(dfiip).nlstep_data === nothing
+        @test typeof(DAEFunction(dfiip)).parameters[end] === Nothing
+        @test DAEFunction(dfiip; nlstep_data = nlstep).nlstep_data === nlstep
+        @test DAEFunction(dfoop; nlstep_data = nlstep).nlstep_data === nlstep
+        # a `DAEFunction` passed as the function carries its `nlstep_data` over
+        wrapped = DAEFunction{true, SciMLBase.FullSpecialize}(
+            DAEFunction(dfiip; nlstep_data = nlstep)
+        )
+        @test wrapped.nlstep_data === nlstep
+    end
+
+    @testset "specialization $spec" for spec in (
+            SciMLBase.FullSpecialize, SciMLBase.NoSpecialize, SciMLBase.AutoSpecialize,
+        )
+        f = DAEFunction{true, spec}(dfiip; nlstep_data = nlstep)
+        @test f.nlstep_data === nlstep
+
+        # `remake` reconstructs the struct through the keyword constructor, which builds
+        # it positionally with an explicit type-parameter list. `unwrapped_f` has no
+        # `DAEFunction` method and so is the identity here; assert it anyway so a future
+        # method has to keep the field.
+        @test SciMLBase.unwrapped_f(f).nlstep_data === nlstep
+        @test SciMLBase.remake(f).nlstep_data === nlstep
+        @test SciMLBase.remake(f; jac_prototype = zeros(1, 1)).nlstep_data === nlstep
+        # explicit overrides still win, matching `ODEFunction`
+        @test SciMLBase.remake(f; nlstep_data = nothing).nlstep_data === nothing
+
+        # AutoSpecialize erases the bounded parameters to keep the function type
+        # model-independent; `remake` must not narrow them back.
+        widened = SciMLBase.widen_bounded_type_params(f)
+        @test typeof(widened).parameters[end] === Union{Nothing, SciMLBase.ODENLStepData}
+        @test widened.nlstep_data === nlstep
+        rewidened = SciMLBase.remake(widened; jac_prototype = zeros(1, 1))
+        @test typeof(rewidened).parameters[end] ===
+            Union{Nothing, SciMLBase.ODENLStepData}
+        @test rewidened.nlstep_data === nlstep
+    end
+
+    @testset "problem construction" begin
+        prob = DAEProblem(
+            DAEFunction(dfiip; nlstep_data = nlstep), [0.0], [1.0], (0.0, 1.0)
+        )
+        @test prob.f.nlstep_data === nlstep
+        @test SciMLBase.remake(prob; u0 = [2.0]).f.nlstep_data === nlstep
+    end
+end
+
 # DDEFunction
 
 ddefoop(u, h, p, t) = u
@@ -433,7 +626,7 @@ ddeWfact_t(u, h, p, gamma, t) = [1.0]
     ddefiip,
     Wfact_t = ddeWfact_t
 )
-DDEFunction(ddefoop, Wfact_t = Wfact_t)
+DDEFunction(ddefoop; Wfact_t)
 ddeWfact_t(du, u, h, p, gamma, t) = [1.0]
 DDEFunction(ddefiip, Wfact_t = ddeWfact_t)
 DDEFunction(ddefoop, Wfact_t = ddeWfact_t)
@@ -456,7 +649,7 @@ ddeparamjac(u, h, p, t) = [1.0]
     ddefiip,
     paramjac = ddeparamjac
 )
-DDEFunction(ddefoop, paramjac = paramjac)
+DDEFunction(ddefoop; paramjac)
 ddeparamjac(du, u, h, p, t) = [1.0]
 DDEFunction(ddefiip, paramjac = ddeparamjac)
 DDEFunction(ddefoop, paramjac = ddeparamjac)
@@ -529,6 +722,27 @@ nvjp(du, u, v, p) = [1.0]
 NonlinearFunction(nfiip, vjp = nvjp)
 NonlinearFunction(nfoop, vjp = nvjp)
 
+# IntervalNonlinearFunction
+
+infoop(t, p) = t - p
+infiip(u, t, p) = (u .= t .- p)
+
+injac(t) = 1.0
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infiip, jac = injac)
+@test_throws SciMLBase.TooFewArgumentsError IntervalNonlinearFunction(infoop, jac = injac)
+injac(t, p) = 1.0
+@test_throws SciMLBase.NonconformingFunctionsError IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+injac(J, t, p) = (J .= 1.0)
+IntervalNonlinearFunction(infiip, jac = injac)
+IntervalNonlinearFunction(infoop, jac = injac)
+
+@test !SciMLBase.has_jac(IntervalNonlinearFunction(infoop))
+intprob = IntervalNonlinearProblem(IntervalNonlinearFunction(infoop, jac = injac), (0.0, 2.0), 1.0)
+@test SciMLBase.has_jac(intprob.f)
+@test intprob.f.jac(0.5, 1.0) == 1.0
+@test remake(intprob; p = 1.5).f.jac === injac
+
 # Integrals
 intfew(u) = 1.0
 @test_throws SciMLBase.TooFewArgumentsError IntegralProblem(intfew, (0.0, 1.0))
@@ -598,65 +812,65 @@ bjac(u, t) = [1.0]
 bcjac(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfiip,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfoop,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfiip,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(
     bfoop,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 bjac(u, p, t) = [1.0]
 bcjac(u, p, t) = [1.0]
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfiip,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfiip,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfoop,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 BVPFunction(bfoop, bcoop, jac = bjac)
 bjac(du, u, p, t) = [1.0]
 bcjac(du, u, p, t) = [1.0]
-BVPFunction(bfiip, bciip, jac = bjac, bcjac = bcjac)
+BVPFunction(bfiip, bciip; jac = bjac, bcjac)
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfoop,
-    bciip,
+    bciip;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
     bfiip,
-    bcoop,
+    bcoop;
     jac = bjac,
-    bcjac = bcjac
+    bcjac
 )
-BVPFunction(bfoop, bcoop, jac = bjac, bcjac = bcjac)
+BVPFunction(bfoop, bcoop; jac = bjac, bcjac)
 
 bWfact(u, t) = [1.0]
 @test_throws SciMLBase.TooFewArgumentsError BVPFunction(bfiip, bciip, Wfact = bWfact)
@@ -754,12 +968,12 @@ BVPFunction(bfiip, bciip, cost = (x, p) -> 0.0)
 equality(u, p) = u
 inequality(u, p) = u
 @test_throws SciMLBase.NonconformingFunctionsError BVPFunction(
-    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality
+    bfiip, bciip; cost = (x, p) -> 0.0, equality, inequality
 )
 equality(res, u, p) = (res .= u)
 inequality(res, u, p) = (res .= u)
 BVPFunction(
-    bfiip, bciip, cost = (x, p) -> 0.0, equality = equality, inequality = inequality
+    bfiip, bciip; cost = (x, p) -> 0.0, equality, inequality
 )
 
 # DynamicalBVPFunction
@@ -1025,3 +1239,58 @@ BatchIntegralFunction(biip, Float64[], max_batch = 20)
 @test_throws SciMLBase.TooFewArgumentsError BatchIntegralFunction(bi1)
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo)
 @test_throws SciMLBase.TooManyArgumentsError BatchIntegralFunction(bitoo, Float64[])
+
+@testset "solve-level limiter kwargs are allowed" begin
+    # OrdinaryDiffEq solve-level step/stage limiters must pass keyword validation.
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; step_limiter = identity)
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; stage_limiter = identity)
+    SciMLBase.checkkwargs(
+        SciMLBase.KeywordArgError; step_limiter = identity, stage_limiter = identity
+    )
+    @test_throws SciMLBase.CommonKwargError SciMLBase.checkkwargs(
+        SciMLBase.KeywordArgError; not_a_real_kwarg = 1
+    )
+end
+
+@testset "controller kwargs are rejected" begin
+    # These moved onto the controller objects (PIController/PIDController/IController/
+    # PredictiveController). They were left in `allowedkeywords` after the controller
+    # refactor, so `solve` accepted them and silently dropped them -- see
+    # SciML/OrdinaryDiffEq.jl#4027. They must now be rejected.
+    for kw in SciMLBase.controller_kwargs
+        @test kw ∉ SciMLBase.allowedkeywords
+        @test_throws SciMLBase.CommonKwargError SciMLBase.checkkwargs(
+            SciMLBase.KeywordArgError; (kw => 0.9,)...
+        )
+    end
+
+    # `controller` itself is the replacement and stays allowed.
+    @test :controller ∈ SciMLBase.allowedkeywords
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; controller = nothing)
+
+    # `failfactor` sat directly after the removed block; guard against over-deletion.
+    @test :failfactor ∈ SciMLBase.allowedkeywords
+    SciMLBase.checkkwargs(SciMLBase.KeywordArgError; failfactor = 2)
+
+    # The error must point at the migration, not just list every allowed keyword.
+    err = try
+        SciMLBase.checkkwargs(SciMLBase.KeywordArgError; gamma = 0.9)
+        nothing
+    catch e
+        e
+    end
+    @test err isa SciMLBase.CommonKwargError
+    msg = sprint(showerror, err)
+    @test occursin("controller", msg)
+    @test occursin("PIController", msg)
+    @test occursin("gamma", msg)
+
+    # A plain unknown keyword must NOT get the controller advice.
+    err2 = try
+        SciMLBase.checkkwargs(SciMLBase.KeywordArgError; not_a_real_kwarg = 1)
+        nothing
+    catch e
+        e
+    end
+    @test !occursin("PIController", sprint(showerror, err2))
+end

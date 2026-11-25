@@ -84,6 +84,27 @@ using StochasticDiffEq, OrdinaryDiffEq, NonlinearSolve, SymbolicIndexingInterfac
                 Val(SciMLBase.isinplace(f)); abstol = 1.0e-10
             )
         end
+
+        # Vector abstol must not MethodError on `normresid > abstol`
+        # (OrdinaryDiffEq.jl #1214 / DifferentialEquations path via CheckInit).
+        @testset "Vector abstol" begin
+            f = iipfn
+            prob = DAEProblem(f, [1.0, 0.0], [1.0, 1.0], (0.0, 1.0), 1.0)
+            integ = init(prob, DImplicitEuler(); abstol = [1.0e-6, 1.0e-6])
+            u0, _,
+                success = SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(true); abstol = [1.0e-6, 1.0e-6]
+            )
+            @test success
+            @test u0 == prob.u0
+
+            integ.u[2] = 2.0
+            @test_throws SciMLBase.CheckInitFailureError SciMLBase.get_initial_values(
+                prob, integ, f, SciMLBase.CheckInit(),
+                Val(true); abstol = [1.0e-6, 1.0e-6]
+            )
+        end
     end
 
     @testset "SDEProblem" begin
@@ -209,6 +230,28 @@ end
 
             initprob.p[1] = 1.0
         end
+        @testset "with constructor tolerances in nonlinear least squares" begin
+            initfn = NonlinearFunction(; resid_prototype = ones(1)) do u, p
+                return [u[1] - 1.0]
+            end
+            nllsprob = NonlinearLeastSquaresProblem(initfn, [0.0])
+            nllsmap = nlsol -> [nlsol.u[1], nlsol.u[1]]
+            initdata = SciMLBase.OverrideInitData(nllsprob, nothing, nllsmap, nothing)
+            nllsfn = ODEFunction(rhs2; initialization_data = initdata)
+            nllsprob_outer = ODEProblem(nllsfn, [0.0, 0.0], (0.0, 1.0), 0.0)
+            nllsinteg = init(nllsprob_outer; initializealg = NoInit())
+
+            u0, p,
+                success = SciMLBase.get_initial_values(
+                nllsprob_outer, nllsinteg, nllsfn,
+                SciMLBase.OverrideInit(; nlsolve = LevenbergMarquardt(), abstol, reltol),
+                Val(false)
+            )
+
+            @test u0 ≈ [1.0, 1.0]
+            @test p ≈ 0.0
+            @test success
+        end
         @testset "with trivial problem and no alg" begin
             iprob = NonlinearProblem((u, p) -> 0.0, nothing, 1.0)
             iprobmap = (_) -> [1.0, 1.0]
@@ -239,7 +282,7 @@ end
     end
 
     @testset "Solves with non-integrator value provider" begin
-        _integ = ProblemState(; u = integ.u, p = parameter_values(integ), t = integ.t)
+        _integ = ProblemState(; integ.u, p = parameter_values(integ), integ.t)
         u0, p,
             success = SciMLBase.get_initial_values(
             prob, _integ, fn, SciMLBase.OverrideInit(),
@@ -383,6 +426,7 @@ end
         fn = ODEFunction(rhs2; initialization_data)
         prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
         @test SciMLBase.initialization_status(prob) == SciMLBase.OVERDETERMINED
+        @test SciMLBase.is_overdetermined_initialization(prob)
     end
 
     @testset "Initialization status for underdetermined case" begin
@@ -396,7 +440,19 @@ end
         fn = ODEFunction(rhs2; initialization_data)
         prob = ODEProblem(fn, [2.0, 0.0], (0.0, 1.0), 0.0)
         @test SciMLBase.initialization_status(prob) == SciMLBase.UNDERDETERMINED
+        @test !SciMLBase.is_overdetermined_initialization(prob)
     end
+end
+
+@testset "Sensitivity solution developer interface" begin
+    prob = ODEProblem((u, p, t) -> u, [1.0], (0.0, 1.0))
+    sol = solve(prob, Tsit5(); saveat = [0.0, 1.0])
+    sensitivity_sol = SciMLBase.sensitivity_solution(sol, [[2.0], [3.0]], [0.0, 1.0])
+
+    @test sensitivity_sol.prob === sol.prob
+    @test sensitivity_sol.alg === sol.alg
+    @test sensitivity_sol.u == [[2.0], [3.0]]
+    @test sensitivity_sol.t == [0.0, 1.0]
 end
 
 @testset "NoInit" begin

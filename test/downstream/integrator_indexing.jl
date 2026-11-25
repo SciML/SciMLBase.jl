@@ -1,5 +1,6 @@
 using ModelingToolkit, OrdinaryDiffEq, RecursiveArrayTools, StochasticDiffEq,
     SymbolicIndexingInterface, Test
+using OrdinaryDiffEqRosenbrock
 using ModelingToolkit: t_nounits as t, D_nounits as D
 using SciMLStructures: canonicalize, Tunable
 ### Tests on non-layered model (everything should work). ###
@@ -81,6 +82,21 @@ integrator[population_model.s2] = 10.0
 integrator[:s1] = 1.0
 @test integrator[s1] == integrator[population_model.s1] == integrator[:s1] == 1.0
 
+@testset "Parameter mutation invalidates integrator caches" begin
+    sys = SymbolCache([:x], [:p], :t)
+    f! = ODEFunction((du, u, p, t) -> du[1] = p[1]; sys)
+    prob = ODEProblem(f!, [0.0], (0.0, 2.0), [0.0])
+    integrator = init(
+        prob, Tsit5(); adaptive = false, dt = 1.0, save_everystep = false
+    )
+
+    step!(integrator, 1.0, true)
+    integrator.ps[:p] = 1.0
+    step!(integrator, 1.0, true)
+
+    @test integrator[:x] ≈ 1.0
+end
+
 # Tests on SDEProblem
 noiseeqs = [
     0.1 * s1,
@@ -142,7 +158,7 @@ connections = [
     0 ~ lorenz1.x + lorenz2.y + a * γ,
     α ~ 2lorenz1.x + a * γ,
 ]
-@mtkbuild sys = System(
+@mtkcompile sys = System(
     connections, t, [a, α], [γ], systems = [lorenz1, lorenz2]
 )
 

@@ -1,6 +1,6 @@
 module SciMLBaseMeasurementsExt
 
-using Measurements
+using Measurements: Measurements
 using SciMLBase: SciMLBase
 
 function SciMLBase.promote_u0(

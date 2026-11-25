@@ -32,7 +32,9 @@ using SciMLBase, Test
             sprint(showerror, e)
         end
         @test occursin("DomainError", output)
+        @test occursin("DomainError with -1.0", output)
         @test occursin("DomainError detected in the user", output)
+        @test occursin("NaNMath.jl", output)
     end
 
     @testset "DomainError through in-place ODEFunction triggers hint" begin
@@ -45,6 +47,7 @@ using SciMLBase, Test
             sprint(showerror, e)
         end
         @test occursin("DomainError", output)
+        @test occursin("DomainError with -1.0", output)
         @test occursin("DomainError detected in the user", output)
     end
 
@@ -68,5 +71,6 @@ end
             sprint(showerror, e)
         end
         @test occursin("NullParameters", output)
+        @test occursin("An arithmetic operation was performed on a NullParameters object", output)
     end
 end

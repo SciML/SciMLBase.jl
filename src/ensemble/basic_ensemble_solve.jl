@@ -1,56 +1,79 @@
 """
 $(TYPEDEF)
+
+Base interface for built-in ensemble execution algorithms. A
+`BasicEnsembleAlgorithm` chooses how trajectories from an `EnsembleProblem` are
+scheduled: serially, on Julia threads, across Julia distributed workers, or with
+a split distributed/threaded strategy.
+
+Concrete subtypes should document their execution backend, worker setup
+requirements, serialization assumptions, and random number behavior. They are
+passed as the ensemble algorithm in calls such as
+`solve(ensembleprob, alg, ensemblealg; trajectories, kwargs...)`, while `alg`
+continues to select the numerical solver for each generated trajectory.
 """
 abstract type BasicEnsembleAlgorithm <: EnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-Basic ensemble solver which uses no parallelism and runs
-the problems in serial
+Ensemble execution algorithm that runs trajectories serially in the current Julia
+process.
+
+`EnsembleSerial` has the lowest scheduling complexity and is useful for
+debugging, deterministic single-task execution, or small ensembles where
+parallel overhead dominates the solve time. Trajectories still receive distinct
+[`EnsembleContext`](@ref) values and can use per-trajectory RNG state when
+`seed` or `rng` is supplied to `solve`.
 """
 struct EnsembleSerial <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-The default. This uses multithreading. It's local (single computer, shared memory)
-parallelism only. Lowest parallelism overhead for small problems.
+Ensemble execution algorithm that schedules trajectories on Julia threads in the
+current process.
+
+`EnsembleThreads` is the default basic ensemble backend. It provides shared-memory
+parallelism with low overhead, but user hooks such as `prob_func`, `output_func`,
+and `rng_func` must be thread-safe. In particular, mutable objects captured by
+closures or shared through the template problem should not be mutated unless each
+trajectory receives independent storage.
 """
 struct EnsembleThreads <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-Uses `pmap` internally. It will use as many processors as you
-have Julia processes. To add more processes, use `addprocs(n)`. These processes
-can be placed onto multiple different machines in order to paralleize across
-an entire cluster via passwordless SSH. See Julia's
-documentation for more details.
+Ensemble execution algorithm that distributes trajectory batches with
+`Distributed.pmap`.
 
-Recommended for the case when each trajectory calculation isn't “too quick” (at least about
-a millisecond each?), where the calculations of a given problem allocate memory, or when
-you have a very large ensemble. This can be true even on a single shared memory system
-because distributed process use separate garbage collectors and thus can be even faster
-than EnsembleThreads if the computation is complex enough.
+`EnsembleDistributed` uses the available Julia worker processes; add workers
+with `Distributed.addprocs` before solving. The template problem, algorithms,
+callbacks, and ensemble hooks must be serializable and available on each worker.
+This backend is usually appropriate when each trajectory is relatively expensive,
+when trajectories allocate heavily, or when work should be spread across multiple
+machines. It can also help on a single machine when separate worker processes and
+garbage collectors outweigh distributed communication overhead.
 """
 struct EnsembleDistributed <: BasicEnsembleAlgorithm end
 
 """
 $(TYPEDEF)
 
-A mixture of distributed computing with threading. The optimal version of this is to have
-a process on each node of a computer and then multithread on each system. However, this
-ensembler will simply use the node setup provided by the Julia Distributed processes, and
-thus it is recommended that you setup the processes in this fashion before using this
-ensembler. See Julia's Distributed documentation for more information
+Ensemble execution algorithm that combines distributed workers with threaded
+execution inside each worker process.
+
+`EnsembleSplitThreads` uses the Julia distributed worker setup provided by the
+caller and then runs threaded batches on each worker. It is intended for node-based
+cluster layouts, for example one Julia worker per node with multiple local threads
+per worker. The same serialization requirements as [`EnsembleDistributed`](@ref)
+apply, and threaded hooks must also be thread-safe.
 """
 struct EnsembleSplitThreads <: BasicEnsembleAlgorithm end
 
 function merge_stats(us)
-    st = Iterators.filter(
-        !isnothing, (hasproperty(x, :stats) ? x.stats : nothing for x in us)
-    )
+    st = (x.stats for x in us if hasproperty(x, :stats) && !isnothing(x.stats))
     isempty(st) && return nothing
     return reduce(merge, st)
 end
@@ -58,19 +81,25 @@ end
 """
     EnsembleContext{S, R, M}
 
-Contextual information about the current simulation within an ensemble solve.
-Passed to `rng_func`, `prob_func(prob, ctx)`, and `output_func(sol, ctx)`.
+Contextual information about the current trajectory within an ensemble solve.
+
+An `EnsembleContext` is passed to `rng_func`, `prob_func(prob, ctx)`, and
+`output_func(sol, ctx)`. It is the stable interface for selecting
+trajectory-specific data without relying on global counters or backend-specific
+worker state.
 
 ## Fields
-- `sim_id::Int` — Unique simulation index (1:trajectories)
-- `repeat::Int` — Rerun counter (starts at 1, increments if `output_func` requests rerun)
-- `worker_id::Int` — 0 for serial/threaded; `Distributed.myid()` for distributed
-- `sim_seed::S` — Pre-generated seed for this simulation, or `nothing`
-- `rng::R` — Per-simulation RNG created by `rng_func`, or `nothing`.
-  When `rng_func` has not yet been called (i.e. inside `rng_func` itself), this is `nothing`.
-- `master_rng::M` — User-provided master RNG, or `nothing`.
-  Set to `nothing` in distributed modes (`EnsembleDistributed`, `EnsembleSplitThreads`)
-  to avoid serialization issues.
+
+- `sim_id::Int`: Unique trajectory index in `1:trajectories`.
+- `repeat::Int`: Rerun counter, starting at `1` and incremented when
+  `output_func` requests a rerun.
+- `worker_id::Int`: `0` for serial and threaded execution, or
+  `Distributed.myid()` for distributed execution.
+- `sim_seed::S`: Pre-generated seed for this trajectory, or `nothing`.
+- `rng::R`: Per-trajectory RNG created by `rng_func`, or `nothing` while
+  `rng_func` itself is running.
+- `master_rng::M`: User-provided master RNG, or `nothing`. Distributed modes set
+  this to `nothing` to avoid serializing mutable RNG state to workers.
 
 !!! warning "Thread safety"
     In threaded ensemble modes (`EnsembleThreads`, `EnsembleSplitThreads`), `master_rng`
@@ -89,8 +118,12 @@ end
 """
     generate_sim_seeds(rng, seed, trajectories)
 
-Pre-generate an array of per-simulation seeds from a master RNG.
-If `rng` is provided it is used directly; otherwise `Xoshiro(seed)` is constructed.
+Pre-generate an array of per-trajectory seeds from a master RNG.
+
+If `rng` is provided it is used directly; otherwise `Random.Xoshiro(seed)` is
+constructed. The returned `UInt64` values are stored in each
+[`EnsembleContext`](@ref) as `ctx.sim_seed` so serial, threaded, and distributed
+ensemble execution can create reproducible per-trajectory RNG state.
 """
 function generate_sim_seeds(rng, seed, trajectories)
     master = rng !== nothing ? rng : Random.Xoshiro(seed)
@@ -100,11 +133,12 @@ end
 """
     default_rng_func(ctx::EnsembleContext)
 
-Default per-simulation RNG factory. Seeds `TaskLocalRNG` with the simulation seed
-(if available) and returns `Random.default_rng()`.
+Default per-trajectory RNG factory.
 
-Note: `ctx.rng` is `nothing` when this function is called, since its purpose is to
-create the RNG that will be stored in `ctx.rng` for `prob_func` and `output_func`.
+When `ctx.sim_seed` is available, this seeds Julia's task-local default RNG and
+returns `Random.default_rng()`. `ctx.rng` is `nothing` when this function is
+called, since the returned RNG is what will be stored as `ctx.rng` for
+`prob_func` and `output_func`.
 """
 function default_rng_func(ctx::EnsembleContext)
     if ctx.sim_seed !== nothing
@@ -113,7 +147,7 @@ function default_rng_func(ctx::EnsembleContext)
     return Random.default_rng()
 end
 
-mutable struct AggregateLogger{T <: Logging.AbstractLogger} <: Logging.AbstractLogger
+mutable struct AggregateProgressState{T <: Logging.AbstractLogger}
     progress::Dict{Symbol, Float64}
     done_counter::Int
     total::Float64
@@ -121,61 +155,52 @@ mutable struct AggregateLogger{T <: Logging.AbstractLogger} <: Logging.AbstractL
     lock::ReentrantLock
     logger::T
 end
-function AggregateLogger(logger::Logging.AbstractLogger)
-    return AggregateLogger(Dict{Symbol, Float64}(), 0, 0.0, 0.0, ReentrantLock(), logger)
-end
-
-function Logging.handle_message(
-        l::AggregateLogger, level, message, _module, group, id, file, line; kwargs...
-    )
-    if convert(Logging.LogLevel, level) == Logging.LogLevel(-1) && haskey(kwargs, :progress)
-        pr = kwargs[:progress]
-        if trylock(l.lock) || (pr == "done" && lock(l.lock) === nothing)
+function _aggregate_progress_filter!(state::AggregateProgressState, args)
+    if convert(Logging.LogLevel, args.level) == Logging.LogLevel(-1) &&
+            haskey(args.kwargs, :progress)
+        progress = args.kwargs[:progress]
+        if trylock(state.lock) || (progress == "done" && lock(state.lock) === nothing)
             try
-                if pr == "done"
-                    pr = 1.0
-                    l.done_counter += 1
+                if progress == "done"
+                    progress = 1.0
+                    state.done_counter += 1
                 end
-                len = length(l.progress)
-                if haskey(l.progress, id)
-                    l.total += (pr - l.progress[id]) / len
+                len = length(state.progress)
+                if haskey(state.progress, args.id)
+                    state.total += (progress - state.progress[args.id]) / len
                 else
-                    l.total = l.total * (len / (len + 1)) + pr / (len + 1)
+                    state.total = state.total * (len / (len + 1)) + progress / (len + 1)
                     len += 1
                 end
-                l.progress[id] = pr
-                # validation check (slow)
-                # tot = sum(values(l.progress))/length(l.progress)
-                # @show tot l.total l.total ≈ tot
+                state.progress[args.id] = progress
                 curr_time = time()
-                if l.done_counter >= len
-                    tot = "done"
-                    empty!(l.progress)
-                    l.done_counter = 0
-                    l.print_time = 0.0
-                elseif curr_time - l.print_time > 0.1
-                    tot = l.total
-                    l.print_time = curr_time
+                total = if state.done_counter >= len
+                    empty!(state.progress)
+                    state.done_counter = 0
+                    state.print_time = 0.0
+                    "done"
+                elseif curr_time - state.print_time > 0.1
+                    state.print_time = curr_time
+                    state.total
                 else
-                    return
+                    nothing
                 end
-                id = :total
-                message = "Total"
-                kwargs = merge(values(kwargs), (progress = tot,))
+                total === nothing || Logging.with_logger(state.logger) do
+                    Logging.@logmsg args.level "Total" progress = total
+                end
             finally
-                unlock(l.lock)
+                unlock(state.lock)
             end
-        else
-            return
         end
+        return false
     end
-    return Logging.handle_message(
-        l.logger, level, message, _module, group, id, file, line; kwargs...
-    )
+    return true
 end
-Logging.shouldlog(l::AggregateLogger, args...) = Logging.shouldlog(l.logger, args...)
-Logging.min_enabled_level(l::AggregateLogger) = Logging.min_enabled_level(l.logger)
-Logging.catch_exceptions(l::AggregateLogger) = Logging.catch_exceptions(l.logger)
+
+function aggregate_progress_logger(logger::Logging.AbstractLogger)
+    state = AggregateProgressState(Dict{Symbol, Float64}(), 0, 0.0, 0.0, ReentrantLock(), logger)
+    return ActiveFilteredLogger(args -> _aggregate_progress_filter!(state, args), logger)
+end
 
 function __solve(
         prob::AbstractEnsembleProblem,
@@ -217,23 +242,32 @@ end
 """
     sim = solve(enprob, alg, ensemblealg = EnsembleThreads(), kwargs...)
 
-Solves the ensemble problem `enprob` with the algorithm `alg` using the ensembler
-`ensemblealg`.
+Solve an [`AbstractEnsembleProblem`](@ref) by running many trajectories of the
+template problem.
 
-The keyword arguments take in the arguments for the common solver interface and will
-pass them to the solver. The `ensemblealg` is optional, and will
-default to `EnsembleThreads()`. The special keyword arguments to note are:
+`alg` is the numerical algorithm used for each generated trajectory, while
+`ensemblealg` chooses the scheduling backend. Keywords that are not consumed by
+the ensemble layer are forwarded to each inner `solve` call, so common solver
+keywords such as `saveat`, tolerances, callbacks, and progress options retain
+their usual meaning for each trajectory.
 
-  - `trajectories`: The number of simulations to run. This argument is required.
-  - `batch_size` : The size of the batches on which the reductions are applies. Defaults to `trajectories`.
-  - `pmap_batch_size`: The size of the `pmap` batches. Default is
-    `batch_size÷100 > 0 ? batch_size÷100 : 1`
-  - `seed`: Master seed for reproducible ensemble solves. Pre-generates per-trajectory seeds.
+The special ensemble keywords are:
+
+  - `trajectories`: Required number of trajectories to run.
+  - `batch_size`: Number of trajectories processed before `prob.reduction` is
+    called. Defaults to `trajectories`.
+  - `pmap_batch_size`: Batch size passed to `pmap` for distributed ensemble
+    algorithms. Defaults to `div(batch_size, 100) > 0 ? div(batch_size, 100) : 1`.
+  - `progress_aggregate`: Whether per-trajectory progress messages are
+    aggregated into a single total progress message. Defaults to `true`.
+  - `seed`: Master seed for reproducible ensemble solves. Pre-generates
+    per-trajectory seeds.
   - `rng`: Master RNG for reproducible ensemble solves. Takes priority over `seed`.
   - `rng_func`: Custom per-trajectory RNG factory `(ctx::EnsembleContext) -> AbstractRNG`.
     Defaults to `default_rng_func` which seeds the `TaskLocalRNG`.
-    Note: `ctx.master_rng` is shared across tasks in threaded modes. A custom `rng_func`
-    must not mutate it unless it is thread-safe.
+
+In threaded modes, `ctx.master_rng` is shared across tasks. A custom `rng_func`
+must not mutate it unless that mutation is thread-safe.
 """
 function __solve(
         prob::AbstractEnsembleProblem,
@@ -246,7 +280,7 @@ function __solve(
         rng_func = default_rng_func,
         kwargs...
     ) where {A}
-    logger = progress_aggregate ? AggregateLogger(Logging.current_logger()) :
+    logger = progress_aggregate ? aggregate_progress_logger(Logging.current_logger()) :
         Logging.current_logger()
 
     # Pre-generate simulation seeds if rng or seed is provided
@@ -371,6 +405,44 @@ _invoke_solve(::Val{:seed}, new_prob, alg, rng, seed; kwargs...) =
 _invoke_solve(::Val{:none}, new_prob, alg, rng, seed; kwargs...) =
     solve(new_prob, alg; kwargs...)
 
+# Respect safetycopy: if true, deepcopy per simulation (user's explicit choice).
+# If false, use per-task JumpProblem copy if available (fixes race condition),
+# otherwise use the original problem directly.
+#
+# Each choice is solved in its own branch rather than first being joined into
+# one problem: a join of a fresh copy with the caller's problem is a pointer
+# phi that AD tools such as Enzyme cannot always keep rooted
+# (SciMLSensitivity.jl#1696).
+function _batch_solve(prob, thread_prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    if prob.safetycopy
+        return _batch_solve_one(deepcopy(prob.prob), prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    elseif thread_prob !== nothing
+        return _batch_solve_one(thread_prob, prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    else
+        return _batch_solve_one(prob.prob, prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    end
+end
+
+# Solve one simulation from `_prob`, returning `(output, rerun)`.
+function _batch_solve_one(_prob, prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
+    # Call prob_func(prob, ctx) — single 2-arg form, no arity detection needed
+    new_prob = prob.prob_func(_prob, ctx)
+
+    # Solve — dispatch on pre-computed _solve_rng_mode:
+    #   :rng  → pass rng kwarg (new interface)
+    #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
+    #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
+    _solve_call = _invoke_solve(
+        _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
+    )
+    x = prob.output_func(_solve_call, ctx)
+    if !(x isa Tuple)
+        rerun_warn()
+        return (x, false)
+    end
+    return x
+end
+
 function batch_func(
         i, prob, alg, ensemble_rng_state, thread_prob;
         worker_id = 0, kwargs...
@@ -389,67 +461,23 @@ function batch_func(
     # since R changes from Nothing to the concrete RNG type)
     ctx = @set pre_ctx.rng = sim_rng
 
-    # Respect safetycopy: if true, deepcopy per simulation (user's explicit choice).
-    # If false, use per-task JumpProblem copy if available (fixes race condition),
-    # otherwise use the original problem directly.
-    _prob = if prob.safetycopy
-        deepcopy(prob.prob)
-    elseif thread_prob !== nothing
-        thread_prob
-    else
-        prob.prob
-    end
-
-    # Call prob_func(prob, ctx) — single 2-arg form, no arity detection needed
-    new_prob = prob.prob_func(_prob, ctx)
-
     # Progress handling
     progress = get(kwargs, :progress, false)
     if progress
         name = get(kwargs, :progress_name, "Ensemble")
         progress_name = "$name #$i"
         progress_id = Symbol("SciMLBase_$i")
-        kwargs = (kwargs..., progress_name = progress_name, progress_id = progress_id)
+        kwargs = (; kwargs..., progress_name, progress_id)
     end
 
-    # Solve — dispatch on pre-computed _solve_rng_mode:
-    #   :rng  → pass rng kwarg (new interface)
-    #   :seed → pass seed kwarg (JP v9 fallback for explicit-RNG JumpProblems)
-    #   :none → no RNG kwargs (non-DE solvers; TaskLocalRNG already seeded by rng_func)
-    _solve_call = _invoke_solve(
-        _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
-    )
-    x = prob.output_func(_solve_call, ctx)
-    if !(x isa Tuple)
-        rerun_warn()
-        _x = (x, false)
-    else
-        _x = x
-    end
+    _x = _batch_solve(prob, thread_prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
 
     # Rerun loop
     rerun = _x[2]
     while rerun
         iter += 1
         ctx = @set ctx.repeat = iter
-        _prob2 = if prob.safetycopy
-            deepcopy(prob.prob)
-        elseif thread_prob !== nothing
-            thread_prob
-        else
-            prob.prob
-        end
-        new_prob = prob.prob_func(_prob2, ctx)
-        _solve_call = _invoke_solve(
-            _solve_rng_mode, new_prob, alg, sim_rng, sim_seed; kwargs...
-        )
-        x = prob.output_func(_solve_call, ctx)
-        if !(x isa Tuple)
-            rerun_warn()
-            _x = (x, false)
-        else
-            _x = x
-        end
+        _x = _batch_solve(prob, thread_prob, alg, ctx, _solve_rng_mode, sim_rng, sim_seed; kwargs...)
         rerun = _x[2]
     end
     return _x[1]
@@ -478,20 +506,17 @@ function solve_batch(
     return tighten_container_eltype(batch_data)
 end
 
-__getindex(x, i) = x[i]
-__getindex(x::AbstractVectorOfArray, i) = x.u[i]
-
 function responsible_map(f, II...)
     batch_data = Vector{
         Core.Compiler.return_type(
-            f, Tuple{ntuple(i -> typeof(__getindex(II[i], 1)), Val(length(II)))...}
+            f, Tuple{ntuple(i -> typeof(II[i][1]), Val(length(II)))...}
         ),
     }(
         undef,
         length(II[1])
     )
     for i in 1:length(II[1])
-        batch_data[i] = f(ntuple(ii -> __getindex(II[ii], i), Val(length(II)))...)
+        batch_data[i] = f(ntuple(ii -> II[ii][i], Val(length(II)))...)
     end
     return batch_data
 end

@@ -1,4 +1,19 @@
-@doc doc"""
+"""
+$(TYPEDEF)
+
+Marker for the standard fully implicit DAE problem representation.
+
+`StandardDAEProblem()` is the default `problem_type` metadata stored by
+`DAEProblem` when a problem is represented directly as `0 = f(du, u, p, t)`.
+
+Users normally do not need to construct this marker directly. Solver
+implementations may test `problem_type(prob) isa StandardDAEProblem` when they
+need behavior specific to the standard DAE layout; generic DAE code should
+prefer the [`AbstractDAEProblem`](@ref) interface and problem traits.
+"""
+struct StandardDAEProblem end
+
+"""
 
 Defines an implicit ordinary differential equation (ODE) or
 differential-algebraic equation (DAE) problem.
@@ -38,7 +53,7 @@ if you set a `callback` in the problem, then that `callback` will be added in
 every solve call.
 
 For specifying Jacobians and mass matrices, see the
-[DiffEqFunctions](@ref performance_overloads)
+[SciMLFunctions interface](https://docs.sciml.ai/SciMLBase/stable/interfaces/SciMLFunctions/)
 page.
 
 ### Fields
@@ -64,10 +79,10 @@ To use a sample problem, such as `prob_dae_resrob`, you can do something like:
 #] add DAEProblemLibrary
 using DAEProblemLibrary
 prob = DAEProblemLibrary.prob_dae_resrob
-sol = solve(prob,IDA())
+sol = solve(prob, IDA())
 ```
 """
-struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
+struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D, PT} <:
     AbstractDAEProblem{uType, duType, tType, isinplace}
     f::F
     du0::duType
@@ -76,9 +91,12 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
     p::P
     kwargs::K
     differential_vars::D
+    """An internal argument for storing traits about the solving process."""
+    problem_type::PT
     @add_kwonly function DAEProblem{iip}(
             f::AbstractDAEFunction{iip},
-            du0, u0, tspan, p = NullParameters();
+            du0, u0, tspan, p = NullParameters(),
+            problem_type = StandardDAEProblem();
             differential_vars = nothing,
             kwargs...
         ) where {iip}
@@ -99,51 +117,79 @@ struct DAEProblem{uType, duType, tType, isinplace, P, F, K, D} <:
             typeof(_u0), typeof(_du0), typeof(_tspan),
             isinplace(f), typeof(p),
             typeof(f), typeof(kwargs),
-            typeof(differential_vars),
+            typeof(differential_vars), typeof(problem_type),
         }(
             f, _du0, _u0, _tspan, p,
-            kwargs, differential_vars
+            kwargs, differential_vars, problem_type
         )
     end
 
-    function DAEProblem{iip}(f, du0, u0, tspan, p = NullParameters(); kwargs...) where {iip}
-        return DAEProblem(DAEFunction{iip}(f), du0, u0, tspan, p; kwargs...)
+    function DAEProblem{iip}(
+            f, du0, u0, tspan, p = NullParameters(),
+            problem_type = StandardDAEProblem(); kwargs...
+        ) where {iip}
+        return DAEProblem(
+            DAEFunction{iip, DEFAULT_SPECIALIZATION}(f), du0, u0, tspan, p,
+            problem_type; kwargs...
+        )
+    end
+
+    @add_kwonly function DAEProblem{iip, specialize}(
+            f, du0, u0, tspan, p = NullParameters(),
+            problem_type = StandardDAEProblem();
+            kwargs...
+        ) where {iip, specialize}
+        return DAEProblem{iip}(
+            DAEFunction{iip, specialize}(f), du0, u0, tspan, p, problem_type; kwargs...
+        )
     end
 end
 
-function DAEProblem(f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return DAEProblem{isinplace(f)}(f, du0, u0, tspan, p; kwargs...)
+function DAEProblem(
+        f::AbstractDAEFunction, du0, u0, tspan, p = NullParameters(),
+        problem_type = StandardDAEProblem(); kwargs...
+    )
+    return DAEProblem{isinplace(f)}(f, du0, u0, tspan, p, problem_type; kwargs...)
 end
 
-function DAEProblem(f, du0, u0, tspan, p = NullParameters(); kwargs...)
-    return DAEProblem(DAEFunction(f), du0, u0, tspan, p; kwargs...)
+function DAEProblem(
+        f, du0, u0, tspan, p = NullParameters(),
+        problem_type = StandardDAEProblem(); kwargs...
+    )
+    return DAEProblem(DAEFunction(f), du0, u0, tspan, p, problem_type; kwargs...)
 end
 
 function ConstructionBase.constructorof(::Type{P}) where {P <: DAEProblem}
-    return function ctor(f, du0, u0, tspan, p, kw, dv)
+    return function ctor(f, du0, u0, tspan, p, kw, dv, pt)
         iip = isinplace(f)
-        return DAEProblem{iip}(f, du0, u0, tspan, p; differential_vars = dv, kw...)
+        return DAEProblem{iip}(f, du0, u0, tspan, p, pt; differential_vars = dv, kw...)
     end
 end
 
-@doc doc"""
-    DAEAliasSpecifier(;alias_p = nothing, alias_f = nothing, alias_u0 = nothing, alias_du0 = nothing, alias_tstops = nothing, alias = nothing)
-
-Holds information on what variables to alias
-when solving a DAE. Conforms to the AbstractAliasSpecifier interface. 
-
-When a keyword argument is `nothing`, the default behaviour of the solver is used.
-
-### Keywords 
-* `alias_p::Union{Bool, Nothing}`
-* `alias_f::Union{Bool, Nothing}`
-* `alias_u0::Union{Bool, Nothing}`: alias the u0 array. Defaults to false.
-* `alias_du0::Union{Bool, Nothing}`: alias the du0 array for DAEs. Defaults to false.
-* `alias_tstops::Union{Bool, Nothing}`: alias the tstops array
-* `alias::Union{Bool, Nothing}`: sets all fields of the `DAEAliasSpecifier` to `alias`
-
 """
-struct DAEAliasSpecifier
+    DAEAliasSpecifier(;
+        alias_p = nothing, alias_f = nothing, alias_u0 = nothing,
+        alias_du0 = nothing, alias_tstops = nothing, alias = nothing
+    )
+
+Control which `DAEProblem` inputs and solver option arrays may be aliased.
+
+`alias_u0` controls the initial state, `alias_du0` controls the initial
+derivative array, `alias_p` controls the parameter object, `alias_f` controls
+the DAE function object, and `alias_tstops` controls the `tstops` vector. A
+value of `nothing` delegates to the solver default. Set `alias = true` or
+`alias = false` to apply the same policy to all fields.
+
+### Keywords
+
+* `alias_p::Union{Bool, Nothing}`: alias the parameter object.
+* `alias_f::Union{Bool, Nothing}`: alias the DAE function object.
+* `alias_u0::Union{Bool, Nothing}`: alias the `u0` array.
+* `alias_du0::Union{Bool, Nothing}`: alias the `du0` array.
+* `alias_tstops::Union{Bool, Nothing}`: alias the `tstops` array.
+* `alias::Union{Bool, Nothing}`: set every field of the `DAEAliasSpecifier`.
+"""
+struct DAEAliasSpecifier <: AbstractAliasSpecifier
     alias_p::Union{Bool, Nothing}
     alias_f::Union{Bool, Nothing}
     alias_u0::Union{Bool, Nothing}

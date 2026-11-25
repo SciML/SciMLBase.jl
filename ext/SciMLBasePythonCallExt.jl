@@ -1,6 +1,6 @@
 module SciMLBasePythonCallExt
 
-using PythonCall: Py, PyList, pyimport, hasproperty, pyconvert, pyisinstance, pybuiltins
+using PythonCall: Py, PyList, pyimport, pyconvert, pyisinstance, pybuiltins
 using SciMLBase: SciMLBase
 
 # SciML uses a function's arity (number of arguments) to determine if it operates in place.

@@ -30,6 +30,50 @@ struct LinearSolution{T, N, uType, R, A, C, S} <: AbstractLinearSolution{T, N}
     stats::S
 end
 
+"""
+    build_linear_solution(
+            alg, u, resid, cache; retcode = ReturnCode.Default, iters = 0,
+            stats = nothing
+        ) -> LinearSolution
+
+Construct the `LinearSolution` returned by a solver for a linear system.
+
+!!! warning "Developer API, not user API"
+    Solver packages use this versioned construction hook after implementing a linear solve.
+    Application code should obtain solutions through `solve` or `solve!` rather than call it
+    directly.
+
+# Arguments
+
+- `alg`: The linear algorithm that produced the result.
+- `u`: The computed solution state. It is retained without copying.
+- `resid`: The residual reported by the algorithm, or `nothing` when it is unavailable.
+- `cache`: The cache associated with this solve, or `nothing` when no cache should be
+  exposed.
+
+# Keywords
+
+- `retcode::ReturnCode.T = ReturnCode.Default`: The completion status of the solve.
+- `iters::Integer = 0`: Number of iterations performed by an iterative method.
+- `stats = nothing`: Solver-specific statistics, or `nothing` when none are available.
+
+# Returns
+
+- `LinearSolution`: A no-time solution whose `u`, `resid`, `alg`, `retcode`, `iters`,
+  `cache`, and `stats` fields are the corresponding supplied values.
+
+# Example
+
+```julia-repl
+julia> alg = :direct;
+
+julia> build_linear_solution(
+           alg, [2.0], nothing, nothing;
+           retcode = ReturnCode.Success
+       )
+retcode: Success
+```
+"""
 function build_linear_solution(
         alg, u, resid, cache;
         retcode = ReturnCode.Default,
@@ -49,6 +93,85 @@ function build_linear_solution(
         cache,
         stats
     )
+end
+
+"""
+$(TYPEDEF)
+
+Representation of the solution to an eigenvalue problem defined by an `EigenvalueProblem`.
+
+## Fields
+
+  - `u`: the computed eigenvalues.
+  - `vectors`: the corresponding eigenvectors, stored as the columns of a matrix.
+  - `prob`: the `EigenvalueProblem` that was solved.
+  - `alg`: the algorithm type used by the solver.
+  - `retcode`: the return code from the solver. Used to determine whether the solver solved
+    successfully or whether it exited due to an error. For more details, see
+    [the return code documentation](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes).
+  - `resid`: the residual(s) of the computed eigenpairs, if provided by the solver.
+  - `stats`: statistics of the solver, if provided.
+"""
+struct EigenvalueSolution{T, N, U, V, P, A, R, S} <: AbstractEigenvalueSolution{T, N}
+    u::U
+    vectors::V
+    prob::P
+    alg::A
+    retcode::ReturnCode.T
+    resid::R
+    stats::S
+end
+
+"""
+    build_eigenvalue_solution(
+            prob, alg, values, vectors; retcode = ReturnCode.Success,
+            resid = nothing, stats = nothing
+        ) -> EigenvalueSolution
+
+Construct the `EigenvalueSolution` returned by a solver for an eigenvalue problem.
+
+!!! warning "Developer API, not user API"
+    Solver packages use this versioned construction hook after computing eigenpairs.
+    Application code should obtain solutions through `solve` rather than call it directly.
+
+# Arguments
+
+- `prob`: The `EigenvalueProblem` that was solved.
+- `alg`: The eigenvalue algorithm that produced the result.
+- `values`: Computed eigenvalues. They are retained without copying as the solution's `u`
+  field.
+- `vectors`: Eigenvectors corresponding to `values`, conventionally stored column-wise.
+
+# Keywords
+
+- `retcode::ReturnCode.T = ReturnCode.Success`: The completion status of the solve.
+- `resid = nothing`: Residual information for the computed eigenpairs, when available.
+- `stats = nothing`: Solver-specific statistics, or `nothing` when none are available.
+
+# Returns
+
+- `EigenvalueSolution`: A no-time solution whose `u`, `vectors`, `prob`, `alg`, `retcode`,
+  `resid`, and `stats` fields are the corresponding supplied values.
+
+# Example
+
+```julia-repl
+julia> prob = EigenvalueProblem([2.0 0.0; 0.0 3.0]);
+
+julia> build_eigenvalue_solution(prob, :dense, [2.0, 3.0], [1.0 0.0; 0.0 1.0]).retcode
+Success
+```
+"""
+function build_eigenvalue_solution(
+        prob, alg, values, vectors;
+        retcode = ReturnCode.Success, resid = nothing, stats = nothing
+    )
+    T = eltype(eltype(values))
+    N = length((size(values)...,))
+    return EigenvalueSolution{
+        T, N, typeof(values), typeof(vectors), typeof(prob), typeof(alg),
+        typeof(resid), typeof(stats),
+    }(values, vectors, prob, alg, retcode, resid, stats)
 end
 
 """
@@ -77,9 +200,25 @@ struct IntegralSolution{T, N, uType, R, P, A, C, S} <: AbstractIntegralSolution{
     stats::S
 end
 
-struct QuadratureSolution end
-@deprecate QuadratureSolution(args...; kwargs...) IntegralSolution(args...; kwargs...)
+"""
+    build_solution(prob, alg, args...; kwargs...)
 
+Construct the solution object returned by a SciML solver for `prob` solved with
+`alg`.
+
+Solver packages extend `build_solution` for the problem and algorithm families
+they own so that direct solver implementations can share the same solution
+construction path. Methods should attach the original problem, algorithm,
+[`ReturnCode`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Solutions/#retcodes),
+residual or error information, solver statistics, dense
+interpolation data, and saved values expected by the corresponding
+[`AbstractSciMLSolution`](@ref) interface.
+
+The accepted positional arguments are problem-family specific. Implementations
+should document the argument order they expect and should preserve common SciML
+solution behavior such as array indexing, symbolic indexing, and retcode
+inspection.
+"""
 function build_solution(
         prob::AbstractIntegralProblem,
         alg, u, resid; chi = nothing,
@@ -102,12 +241,30 @@ function build_solution(
     )
 end
 
+"""
+    wrap_sol(sol)
+    wrap_sol(sol, problem_type_or_metadata)
+
+Return `sol` or wrap it in a higher-level SciML solution container.
+
+Solvers call `wrap_sol(sol)` after constructing a low-level solution. When
+`sol.prob` is an [`AbstractSciMLProblem`](@ref), the default implementation
+queries [`problem_type`](https://docs.sciml.ai/SciMLBase/stable/interfaces/Problems/#Problem-Traits) and dispatches to
+`wrap_sol(sol, problem_type_or_metadata)` when the result is not `nothing`.
+Problem-family packages extend the two-argument form when a generated solver
+solution should be returned as a more specific public solution type.
+
+The fallback two-argument method returns `sol` unchanged. PDE discretizer
+packages extend the metadata path by defining constructors such as
+`PDETimeSeriesSolution(sol, metadata::D)` or `PDENoTimeSolution(sol, metadata::D)`
+for their concrete discretization metadata type.
+"""
 function wrap_sol(sol)
-    return if hasproperty(sol, :prob) && hasproperty(sol.prob, :problem_type)
-        wrap_sol(sol, sol.prob.problem_type)
-    else
-        sol
-    end
+    hasproperty(sol, :prob) || return sol
+    prob = sol.prob
+    prob isa AbstractSciMLProblem || return sol
+    metadata = problem_type(prob)
+    return metadata === nothing ? sol : wrap_sol(sol, metadata)
 end
 
 # Define a default `wrap_sol` that does nothing
