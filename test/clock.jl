@@ -119,6 +119,11 @@ end
     @test tick(c, -0x1p-300, 1) === 1.0
     @test tick(c, 0.0, 1) === 1.0
     @test setprecision(() -> tick(Clock(1 // 10), 0.0, 1), BigFloat, 24) === 0.1
+    # A BigFloat tick is rounded once; rounding the numerator first gives the next value.
+    setprecision(BigFloat, 24) do
+        @test tick(Clock(1 // 1; phase = 2 // 3), nextfloat(BigFloat(1)), 0) ==
+            ldexp(BigFloat(13981014), -23)
+    end
     # The precision of a BigFloat start time is retained.
     t0 = big(2.0)^53 + 1
     ic = Clock(1.0)[1:3]

@@ -254,8 +254,10 @@ const _ExactReal = Union{Integer, Rational, AbstractFloat}
 _exact(x::_ExactReal) = Rational{BigInt}(x)
 
 # Nearest value of `S` to `x`, ties to even, computed with integer arithmetic.
-# `Float64(::Rational{BigInt})` rounds twice when it divides in BigFloat.
-function _round_exact(::Type{S}, x::Rational{BigInt}) where {S <: Union{Float16, Float32, Float64}}
+# `Float64(::Rational{BigInt})` and `BigFloat(::Rational{BigInt})` round twice.
+function _round_exact(
+        ::Type{S}, x::Rational{BigInt}
+    ) where {S <: Union{Float16, Float32, Float64, BigFloat}}
     iszero(x) && return zero(S)
     # an infinite tick time, from an infinite phase or period
     iszero(denominator(x)) && return convert(S, x)
@@ -264,7 +266,8 @@ function _round_exact(::Type{S}, x::Rational{BigInt}) where {S <: Union{Float16,
     e = ndigits(n; base = 2) - ndigits(d; base = 2)
     (e >= 0 ? n < d << e : n << -e < d) && (e -= 1)
     # exponent of the unit in the last place, limited to that of subnormal numbers
-    shift = max(e, exponent(floatmin(S))) - (precision(S) - 1)
+    emin = S === BigFloat ? e : exponent(floatmin(S))
+    shift = max(e, emin) - (precision(S) - 1)
     n, d = shift <= 0 ? (n << -shift, d) : (n, d << shift)
     q, r = divrem(n, d)
     (2r > d || (2r == d && isodd(q))) && (q += 1)
