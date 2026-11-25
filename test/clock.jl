@@ -147,3 +147,16 @@ end
     @test tick(Clock(1 // 0), 0.0, 1) === Inf
     @test tick(Clock(-1 // 0), 1.0, 1) === -Inf
 end
+
+@testset "periodic_schedule and periodic_tick_time" begin
+    using SciMLBase: periodic_schedule, periodic_schedule_type, periodic_tick_time
+    s = periodic_schedule(Float64, 0.0, 1 // 60, 1 // 30)
+    @test s isa periodic_schedule_type(Float64, Rational{Int}, Rational{Int})
+    @test periodic_tick_time(Float64, s, 40) === 1.35
+    @test periodic_tick_time(Float64, periodic_schedule(Float64, 0.0, 0, 1 // 200), 270) === 1.35
+    s2 = periodic_schedule(Float64, 0.3, 0.05, 0.1)
+    @test s2 isa periodic_schedule_type(Float64, Float64, Float64) === Tuple{Float64, Float64}
+    @test (@inferred periodic_tick_time(Float64, s2, 3)) === (0.3 + 0.05) + 3 * 0.1
+    s3 = periodic_schedule(Float32, 1.0f0, 0, 1 // 4)
+    @test (@inferred periodic_tick_time(Float32, s3, 2)) === 1.5f0
+end
