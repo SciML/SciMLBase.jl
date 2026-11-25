@@ -2,10 +2,11 @@
     specialize_parameters(f, ::Type{P})
 
 Return a function that behaves as `f` does and reads the parameter object of an integrator
-at the concrete type `P`. Basic (unspecialized) callbacks are called with [`DespecializedParameters`](@ref)
-and access the despecialized-to-any `integrator.p`. This causes dynamic dispatch and sad.
-[`erase_callback`](@ref) knows the concrete parameter type of the integrator, though, and
-can use this function to recover the fully specific type.
+at the concrete type `P`.
+
+A callback of a problem with [`DespecializedParameters`](@ref) reads `integrator.p` as an
+`Any`, and each read costs a dynamic dispatch. [`erase_callback`](@ref) knows the
+integrator's concrete parameter type and calls this function to restore it.
 
 The fallback returns `f`. A package whose callback functions read parameters adds a method
 that returns a function taking the parameters as a `P` when the integrator holds a `P`, and
@@ -40,7 +41,9 @@ end
 """
 $(TYPEDEF)
 
-The affect of an [`ErasedDiscreteCallback`](@ref).
+The affect of an erased callback: `affect!` of an [`ErasedDiscreteCallback`](@ref), and
+`affect!` and `affect_neg!` of an erased `ContinuousCallback`. It calls the original affect
+on an integrator of type `I`.
 """
 struct ErasedAffect{I}
     call::CallbackTrampoline{Nothing, I}
@@ -140,7 +143,8 @@ function erase_hook(hook, callback, ::Type{I}) where {I}
     )
 end
 
-# The default hooks are no-ops so they can share the same erased hook representation.
+# A default hook reads nothing of its callback, so every callback shares one trampoline per
+# integrator type.
 erase_hook(::typeof(INITIALIZE_DEFAULT), callback, ::Type{I}) where {I} =
     ErasedHook{I}(erased_initialize_default, true)
 erase_hook(::typeof(FINALIZE_DEFAULT), callback, ::Type{I}) where {I} =
@@ -176,9 +180,9 @@ Base.deepcopy_internal(hook::ErasedHook{I}, copies::IdDict) where {I} =
 """
     ErasedDiscreteCallback{I}
 
-The monomorphic type of every callback that [`erase_callback`](@ref) returns for an integrator of type
-`I`. The callback implementations are hidden underneath the indirection so that the integrator's compiled
-code doesn't become contaminated by their implementations and the precompiled code remains usable.
+The type of every `DiscreteCallback` that [`erase_callback`](@ref) returns for an integrator
+of type `I`. Its condition, affect and hooks are trampolines, so code compiled for `I` runs
+every discrete callback without recompiling.
 """
 const ErasedDiscreteCallback{I} = DiscreteCallback{
     ErasedCondition{I}, ErasedAffect{I}, ErasedHook{I}, ErasedHook{I}, Any, Vector{Int},

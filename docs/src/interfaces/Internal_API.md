@@ -63,6 +63,8 @@ SciMLBase.ErasedCondition
 SciMLBase.ErasedAffect
 SciMLBase.ErasedVectorAffect
 SciMLBase.erase_affect
+SciMLBase.ErasedHook
+SciMLBase.erase_hook
 ```
 
 ## Symbolic Save Selection

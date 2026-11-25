@@ -132,20 +132,18 @@ SciMLBase.unwrap_fw
 
 #### Callback Erasure
 
-Vector callbacks are erased to only depend on the integrator type allowing for better
-reuse of compiled integrators. However, by default, this comes at the cost of a dynamic
-dispatch on the parameters type which can substantially impact callback performance.
+A solver that stores callbacks in a vector erases each callback's type, so its compiled
+code depends only on the integrator type. When the integrator is parameter-agnostic, a
+callback that reads `integrator.p` pays a dynamic dispatch per read.
 
-To avoid this performance impact, callbacks can be type erased using trampolines to
-allow the callbacks to be parameters specific while the integrator remains parameters
-agnostic. `specialize_parameters` is the package-level trait for implementers.
+`erase_callback` puts a callback's functions behind trampolines specific to the parameter
+type, while the integrator stays parameter-agnostic. A package whose callback functions
+read parameters extends `specialize_parameters`.
 
 ```@docs
 SciMLBase.specialize_parameters
 SciMLBase.erase_callback
 SciMLBase.ErasedDiscreteCallback
-SciMLBase.erase_hook
-SciMLBase.ErasedHook
 ```
 
 ### Default Parameters
