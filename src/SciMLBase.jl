@@ -48,6 +48,7 @@ using LoggingExtras: ActiveFilteredLogger
 import IteratorInterfaceExtensions
 import CommonSolve
 import CommonSolve: solve, init, step!, solve!
+import FunctionWrappers
 import FunctionWrappersWrappers
 import RuntimeGeneratedFunctions
 import EnumX
@@ -1902,6 +1903,7 @@ include("interpolation.jl")
 include("integrator_interface.jl")
 include("remake.jl")
 include("callbacks.jl")
+include("erased_callbacks.jl")
 
 include("adapt.jl")
 

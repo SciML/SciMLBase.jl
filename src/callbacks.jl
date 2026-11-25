@@ -3,6 +3,8 @@
 INITIALIZE_DEFAULT(cb, u, t, integrator) = derivative_discontinuity!(integrator, false)
 FINALIZE_DEFAULT(cb, u, t, integrator) = nothing
 
+is_default_finalize(finalize) = finalize === FINALIZE_DEFAULT
+
 """
     RootfindOpt
 
@@ -441,6 +443,19 @@ struct DiscreteCallback{F1, F2, F3, F4, F5, SCP} <: AbstractDiscreteCallback
             initialize_save_discretes
         )
     end
+    # With the field types given, for a callback whose type does not follow from its
+    # fields (see `ErasedDiscreteCallback`).
+    function DiscreteCallback{F1, F2, F3, F4, F5, SCP}(
+            condition, affect!, initialize, finalize, save_positions, initializealg,
+            saved_clock_partitions, initialize_save_discretes
+        ) where {F1, F2, F3, F4, F5, SCP}
+        return new{F1, F2, F3, F4, F5, SCP}(
+            condition, affect!, initialize, finalize,
+            BitArray(collect(save_positions)),
+            initializealg, saved_clock_partitions,
+            initialize_save_discretes
+        )
+    end
 end
 function DiscreteCallback(
         condition, affect!;
@@ -602,7 +617,7 @@ finalizer-induced changes to time-series parameters are reflected in the
 solution's discrete storage.
 """
 function save_final_discretes!(integrator::DEIntegrator, cb::Union{ContinuousCallback, VectorContinuousCallback, DiscreteCallback})
-    cb.finalize === FINALIZE_DEFAULT && return
+    is_default_finalize(cb.finalize) && return
     cb.save_positions[2] || return
     return save_discretes!(integrator, cb; skip_duplicates = true)
 end

@@ -104,6 +104,9 @@ run_tests(;
         @time @safetestset "Callback constructors" begin
             include("callback_constructors.jl")
         end
+        @time @safetestset "Erased callbacks" begin
+            include("erased_callbacks.jl")
+        end
         @time @safetestset "NonlinearProblem Zygote cotangents" begin
             include("nonlinearproblem_zygote.jl")
         end
