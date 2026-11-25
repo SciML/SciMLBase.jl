@@ -33,6 +33,13 @@ function (::AddParameterAt{P})(integrator) where {P}
 end
 SciMLBase.specialize_parameters(::AddParameter, ::Type{P}) where {P} = AddParameterAt{P}()
 
+# `specialize_parameters` turns `Tagged{false}()` into `Tagged{true}()`, and each reports
+# which one it is.
+struct Tagged{B} end
+(::Tagged{B})(u, t, integrator) where {B} = B
+(::Tagged{B})(integrator, events) where {B} = (integrator.u[1] = B; nothing)
+SciMLBase.specialize_parameters(::Tagged{false}, ::Type{P}) where {P} = Tagged{true}()
+
 affect_allocations(callback, integrator) = @allocated callback.affect!(integrator)
 
 final_saves(callback) = final_saves(callback, MockIntegrator(2.0))
@@ -56,6 +63,11 @@ end
     @test affect_allocations(erased, integrator) == 0
     @test erase_callback(erased, I, Float64) === erased
     @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64)
+    @test_throws ArgumentError SciMLBase.erase_affect(erased.affect!, OtherIntegrator, Float64)
+    @test_throws ArgumentError SciMLBase.erase_hook(erased.finalize, erased, OtherIntegrator)
+
+    tagged = erase_callback(DiscreteCallback(Tagged{false}(), identity), I, Float64)
+    @test tagged.condition(integrator.u, integrator.t, integrator)
 
     # The integrator's parameters are no longer the `P` the callback was erased with.
     integrator.p = 3
@@ -126,6 +138,11 @@ end
     @test erased.affect! isa SciMLBase.ErasedAffect{I}
     @test typeof(erased.affect!) === typeof(other.affect!)
     @test other.affect_neg! === nothing
+    @test erased.affect_neg! isa SciMLBase.ErasedAffect{I}
+    @test typeof(erased) ===
+        typeof(erase_callback(ContinuousCallback(condition, identity, AddParameter()), I, Float64))
+    @test erase_callback(ContinuousCallback(Tagged{false}(), identity), I, Float64).condition ===
+        Tagged{true}()
     @test typeof(erased.initialize) === typeof(erased.finalize) === typeof(other.initialize)
     erased.affect!(integrator)
     erased.affect_neg!(integrator)
@@ -162,6 +179,23 @@ end
     @test fired == Int8[1, 0]
     @test erase_callback(erased, I, Float64, E).affect! === erased.affect!
     @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64, E)
+    @test_throws ArgumentError SciMLBase.erase_affect(erased.affect!, OtherIntegrator, Float64, E)
+
+    hook = (callback, u, t, integrator) -> nothing
+    hooked = erase_callback(
+        VectorContinuousCallback(condition, affect!, 2; initialize = hook, finalize = hook),
+        I, Float64, E
+    )
+    @test hooked.initialize isa SciMLBase.ErasedHook{I}
+    @test hooked.finalize isa SciMLBase.ErasedHook{I}
+    @test typeof(hooked) === typeof(erased)
+
+    tagged = erase_callback(
+        VectorContinuousCallback(Tagged{false}(), Tagged{false}(), 2), I, Float64, E
+    )
+    @test tagged.condition === Tagged{true}()
+    tagged.affect!(integrator, view(events, 1:2))
+    @test integrator.u == [1.0]
 
     copy = deepcopy(erased)
     copy.affect!(integrator, view(events, 2:3))
