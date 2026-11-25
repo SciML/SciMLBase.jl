@@ -99,6 +99,64 @@ end
     )
 end
 
+@testset "continuous callbacks" begin
+    integrator = MockIntegrator(2.0)
+    I = typeof(integrator)
+    up, down = Counter(0), Counter(0)
+    seen = Any[]
+    record = (callback, u, t, integrator) -> push!(seen, callback)
+    condition = (u, t, integrator) -> u[1] - 1
+    callback = ContinuousCallback(condition, up, down; initialize = record)
+    erased = erase_callback(callback, I, Float64)
+    other = erase_callback(ContinuousCallback(condition, identity, nothing), I, Float64)
+
+    @test erased.condition === condition
+    @test erased.affect! isa SciMLBase.ErasedAffect{I}
+    @test typeof(erased.affect!) === typeof(other.affect!)
+    @test other.affect_neg! === nothing
+    @test typeof(erased.initialize) === typeof(erased.finalize) === typeof(other.initialize)
+    erased.affect!(integrator)
+    erased.affect_neg!(integrator)
+    erased.affect_neg!(integrator)
+    @test (up.count, down.count) == (1, 2)
+    erased.initialize(erased, integrator.u, integrator.t, integrator)
+    @test only(seen) === callback
+    @test SciMLBase.is_default_finalize(erased.finalize)
+
+    again = erase_callback(erased, I, Float64)
+    @test again.affect! === erased.affect!
+    @test again.initialize === erased.initialize
+    @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64)
+
+    specialized = erase_callback(ContinuousCallback(condition, AddParameter()), I, Float64)
+    specialized.affect!(integrator)
+    @test affect_allocations(specialized, integrator) == 0
+end
+
+@testset "vector continuous callbacks" begin
+    integrator = MockIntegrator(2.0)
+    I = typeof(integrator)
+    events = Int8[1, 0, -1]
+    E = typeof(view(events, 1:2))
+    fired = Int8[]
+    affect! = (integrator, events) -> append!(fired, events)
+    condition = (out, u, t, integrator) -> fill!(out, u[1])
+    callback = VectorContinuousCallback(condition, affect!, 2)
+    erased = erase_callback(callback, I, Float64, E)
+
+    @test erased.len == 2
+    @test erased.affect! isa SciMLBase.ErasedVectorAffect{I, E}
+    @test erased.affect!(integrator, view(events, 1:2)) === nothing
+    @test fired == Int8[1, 0]
+    @test erase_callback(erased, I, Float64, E).affect! === erased.affect!
+    @test_throws ArgumentError erase_callback(erased, OtherIntegrator, Float64, E)
+
+    copy = deepcopy(erased)
+    copy.affect!(integrator, view(events, 2:3))
+    @test fired == Int8[1, 0]
+    @test erase_callback(VectorContinuousCallback(condition, nothing, 2), I, Float64, E).affect! === nothing
+end
+
 @testset "final discrete saving matches the original callback" begin
     I = MockIntegrator
     condition = (u, t, i) -> true

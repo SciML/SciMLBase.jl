@@ -61,6 +61,8 @@ SciMLBase.is_independent_variable_index
 SciMLBase.CallbackTrampoline
 SciMLBase.ErasedCondition
 SciMLBase.ErasedAffect
+SciMLBase.ErasedVectorAffect
+SciMLBase.erase_affect
 ```
 
 ## Symbolic Save Selection

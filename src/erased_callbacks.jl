@@ -47,6 +47,70 @@ end
 """
 $(TYPEDEF)
 
+The affect of an erased [`VectorContinuousCallback`](@ref). It takes an integrator of type
+`I` and the events as an `E`.
+"""
+struct ErasedVectorAffect{I, E}
+    call::FunctionWrappers.FunctionWrapper{Nothing, Tuple{I, E}}
+end
+
+(affect!::ErasedVectorAffect{I, E})(integrator::I, events::E) where {I, E} =
+    affect!.call(integrator, events)
+
+"""
+    erase_affect(affect!, ::Type{I}, ::Type{P})
+    erase_affect(affect!, ::Type{I}, ::Type{P}, ::Type{E})
+
+The [`ErasedAffect`](@ref) that calls `affect!` on an integrator of type `I`. With `E`,
+the [`ErasedVectorAffect`](@ref) that calls `affect!` on the integrator and events of type
+`E`.
+
+`affect!` is first passed through [`specialize_parameters`](@ref) with `P`. An absent
+affect, `nothing`, stays `nothing`.
+"""
+function erase_affect(affect!, ::Type{I}, ::Type{P}) where {I, P}
+    specialized! = specialize_parameters(affect!, P)
+    return ErasedAffect{I}(
+        function (integrator)
+            specialized!(integrator)
+            return nothing
+        end
+    )
+end
+function erase_affect(affect!, ::Type{I}, ::Type{P}, ::Type{E}) where {I, P, E}
+    specialized! = specialize_parameters(affect!, P)
+    return ErasedVectorAffect{I, E}(
+        function (integrator, events)
+            specialized!(integrator, events)
+            return nothing
+        end
+    )
+end
+
+erase_affect(::Nothing, ::Type, ::Type...) = nothing
+erase_affect(affect!::ErasedAffect{I}, ::Type{I}, ::Type{P}) where {I, P} = affect!
+erase_affect(::ErasedAffect, ::Type{I}, ::Type{P}) where {I, P} =
+    throw_erased_for_another_integrator()
+erase_affect(
+    affect!::ErasedVectorAffect{I, E}, ::Type{I}, ::Type{P}, ::Type{E}
+) where {I, P, E} = affect!
+erase_affect(::ErasedVectorAffect, ::Type{I}, ::Type{P}, ::Type{E}) where {I, P, E} =
+    throw_erased_for_another_integrator()
+
+# The trampolines of an erased callback accept one integrator type, and the original
+# callback is out of reach.
+function throw_erased_for_another_integrator()
+    throw(
+        ArgumentError(
+            "The callback is erased for an integrator of another type, as a callback " *
+                "read from `integrator.opts.callback` is. Pass the original callback."
+        )
+    )
+end
+
+"""
+$(TYPEDEF)
+
 An `initialize` or `finalize` hook that trampolines to the original hook, erasing the
 identity underneath. `default` records whether the original is the default hook.
 """
@@ -84,18 +148,24 @@ function erased_initialize_default(integrator)
 end
 erased_finalize_default(integrator) = nothing
 
+erase_hook(hook::ErasedHook{I}, callback, ::Type{I}) where {I} = hook
+erase_hook(::ErasedHook, callback, ::Type{I}) where {I} =
+    throw_erased_for_another_integrator()
+
 is_default_finalize(hook::ErasedHook) = hook.default
 
 # A `FunctionWrapper` holds a raw pointer to the function it wraps, and the generic
 # `deepcopy` leaves that pointer on the original. These methods belong upstream, as a
 # `deepcopy_internal` for `FunctionWrapper` in FunctionWrappers.jl.
-copy_trampoline(call::CallbackTrampoline{R, I}, copies::IdDict) where {R, I} =
-    CallbackTrampoline{R, I}(Base.deepcopy_internal(call.obj[], copies))
+copy_trampoline(call::W, copies::IdDict) where {W <: FunctionWrappers.FunctionWrapper} =
+    W(Base.deepcopy_internal(call.obj[], copies))
 
 Base.deepcopy_internal(condition::ErasedCondition{I}, copies::IdDict) where {I} =
     ErasedCondition{I}(copy_trampoline(condition.call, copies))
 Base.deepcopy_internal(affect!::ErasedAffect{I}, copies::IdDict) where {I} =
     ErasedAffect{I}(copy_trampoline(affect!.call, copies))
+Base.deepcopy_internal(affect!::ErasedVectorAffect{I, E}, copies::IdDict) where {I, E} =
+    ErasedVectorAffect{I, E}(copy_trampoline(affect!.call, copies))
 Base.deepcopy_internal(hook::ErasedHook{I}, copies::IdDict) where {I} =
     ErasedHook{I}(copy_trampoline(hook.call, copies), hook.default)
 
@@ -122,19 +192,13 @@ with `P`.
 """
 function erase_callback(callback::DiscreteCallback, ::Type{I}, ::Type{P}) where {I, P}
     condition = specialize_parameters(callback.condition, P)
-    affect! = specialize_parameters(callback.affect!, P)
     return ErasedDiscreteCallback{I}(
         ErasedCondition{I}(
             function (integrator)
                 return condition(integrator.u, integrator.t, integrator)::Bool
             end
         ),
-        ErasedAffect{I}(
-            function (integrator)
-                affect!(integrator)
-                return nothing
-            end
-        ),
+        erase_affect(callback.affect!, I, P),
         erase_hook(callback.initialize, callback, I),
         erase_hook(callback.finalize, callback, I),
         callback.save_positions, callback.initializealg,
@@ -146,12 +210,40 @@ end
 erase_callback(callback::ErasedDiscreteCallback{I}, ::Type{I}, ::Type{P}) where {I, P} =
     callback
 
-function erase_callback(::ErasedDiscreteCallback, ::Type{I}, ::Type{P}) where {I, P}
-    throw(
-        ArgumentError(
-            "A callback that was erased for an integrator of another type" * 
-                "(such as one taken from `integrator.opts.callback`) was tried to be used for an integrator of type $I."*
-                "Pass the original callback."
+erase_callback(::ErasedDiscreteCallback, ::Type{I}, ::Type{P}) where {I, P} =
+    throw_erased_for_another_integrator()
+
+"""
+    erase_callback(callback::ContinuousCallback, ::Type{I}, ::Type{P})
+    erase_callback(callback::VectorContinuousCallback, ::Type{I}, ::Type{P}, ::Type{E})
+
+`callback` with its affects and hooks erased for an integrator of type `I` whose parameter
+object is a `P`. The affect of a `VectorContinuousCallback` takes its events as an `E`.
+
+The condition is passed through [`specialize_parameters`](@ref) with `P` and keeps its
+type: a solver calls a continuous condition at states and times of its own, and wraps the
+condition for the signatures it uses.
+"""
+function erase_callback(callback::ContinuousCallback, ::Type{I}, ::Type{P}) where {I, P}
+    return ConstructionBase.setproperties(
+        callback, (;
+            condition = specialize_parameters(callback.condition, P),
+            affect! = erase_affect(callback.affect!, I, P),
+            affect_neg! = erase_affect(callback.affect_neg!, I, P),
+            initialize = erase_hook(callback.initialize, callback, I),
+            finalize = erase_hook(callback.finalize, callback, I),
+        )
+    )
+end
+function erase_callback(
+        callback::VectorContinuousCallback, ::Type{I}, ::Type{P}, ::Type{E}
+    ) where {I, P, E}
+    return ConstructionBase.setproperties(
+        callback, (;
+            condition = specialize_parameters(callback.condition, P),
+            affect! = erase_affect(callback.affect!, I, P, E),
+            initialize = erase_hook(callback.initialize, callback, I),
+            finalize = erase_hook(callback.finalize, callback, I),
         )
     )
 end
