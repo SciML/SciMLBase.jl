@@ -1071,7 +1071,9 @@ end
         @test getter(integ) == val
     end
 
-    xinterp = sol(0.1:0.1:0.3, idxs = x).u
+    # `PeriodicCallback(0.1)` ticks at `k * 0.1`, for example at
+    # `3 * 0.1 == 0.30000000000000004`, which the range `0.1:0.1:0.3` does not contain
+    xinterp = sol([1, 2, 3] .* 0.1, idxs = x).u
     xinterp2 = sol(sol.discretes.collection[2].t[2:4], idxs = x).u
     ud1interp = ud1val[2:4]
     ud2interp = ud2val[2:4]

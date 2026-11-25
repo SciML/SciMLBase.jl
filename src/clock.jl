@@ -38,25 +38,63 @@ Clock with nominal periodic ticks.
 `PeriodicClock(dt; phase = 0.0)` describes ticks separated by `dt`. A `dt` of
 `nothing` means the interval has not been fixed and may be inferred by
 downstream tooling. `phase` is stored as clock metadata for packages that need a
-phase offset.
+phase offset. A rational `dt` is stored as `Rational{Int}` (as `Rational{BigInt}`
+if it does not fit), which allows downstream tooling to compute tick times
+exactly, for example such that ticks of two clocks that coincide mathematically
+are also equal as floating-point numbers. A rational `phase` is stored in the same
+way when `dt` is rational or `nothing`. All other values are converted to
+`Float64`. The type parameters `D` and `P` are the types of `dt` and `phase`.
+
+Clocks are equal when their periods and phases are numerically equal and either
+both or neither of the periods are rational, since the tick times of a clock with
+a rational period are computed in exact arithmetic and those of a clock with a
+floating-point period are not.
 
 # Fields
 
 $(TYPEDFIELDS)
 """
-struct PeriodicClock <: AbstractClock
+struct PeriodicClock{D <: Union{Nothing, Real}, P <: Real} <: AbstractClock
     """
     Nominal tick interval, or `nothing` when the interval is left for downstream
     inference.
     """
-    dt::Union{Nothing, Float64, Rational{Int}}
+    dt::D
     """
     Phase offset metadata for the periodic clock.
     """
-    phase::Float64
+    phase::P
+    function PeriodicClock(dt, phase)
+        dt′ = _clock_dt(dt)
+        phase′ = _clock_phase(dt′, phase)
+        return new{typeof(dt′), typeof(phase′)}(dt′, phase′)
+    end
 end
-PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, Float64(phase))
-PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, Float64(phase))
+# Rationals are stored in one integer type, such that numerically equal clocks
+# have equal field types and therefore equal tick times.
+function _clock_rational(x::Rational)
+    n, d = numerator(x), denominator(x)
+    fits = typemin(Int) <= n <= typemax(Int) && d <= typemax(Int)
+    return fits ? Rational{Int}(x) : Rational{BigInt}(x)
+end
+_clock_dt(dt::Nothing) = dt
+_clock_dt(dt::Rational) = _clock_rational(dt)
+_clock_dt(dt) = Float64(dt)
+_clock_phase(::Union{Nothing, Rational}, phase::Rational) = _clock_rational(phase)
+_clock_phase(dt, phase) = Float64(phase)
+_rational_period(c::PeriodicClock) = c.dt isa Rational
+function Base.:(==)(a::PeriodicClock, b::PeriodicClock)
+    return _rational_period(a) == _rational_period(b) && a.dt == b.dt && a.phase == b.phase
+end
+function Base.isequal(a::PeriodicClock, b::PeriodicClock)
+    return _rational_period(a) == _rational_period(b) && isequal(a.dt, b.dt) &&
+        isequal(a.phase, b.phase)
+end
+function Base.hash(c::PeriodicClock, h::UInt)
+    return hash(c.phase, hash(c.dt, hash(_rational_period(c), hash(PeriodicClock, h))))
+end
+PeriodicClock(dt; phase = 0.0) = PeriodicClock(dt, phase)
+PeriodicClock(; dt = nothing, phase = 0.0) = PeriodicClock(dt, phase)
 
 """
 $(TYPEDEF)
@@ -191,13 +229,108 @@ is_discrete_time_domain(@nospecialize(clk)) = !iscontinuous(clk)
 """
     first_clock_tick_time(clock, t0)
 
-Return the first tick time for a discrete clock at or after `t0`.
+Return the first tick time of a discrete clock in a simulation that starts at `t0`.
 
-For [`PeriodicClock`](@ref), this is the first multiple of `dt` at or after
-`t0`. For [`SolverStepClock`](@ref), the first tick is `t0`. Continuous and
-event clocks do not have a generic first tick time and throw an error.
+A [`PeriodicClock`](@ref) ticks at `t0 + phase + k * dt` for integers `k ≥ 0`, so
+its first tick is at `t0 + phase`, also when `dt` is `nothing`. When `dt` is
+rational, the tick time `t0 + phase + k * dt` is computed in exact arithmetic and
+rounded once to the nearest value of the time type. For
+[`SolverStepClock`](@ref), the first tick is `t0`. Continuous and event clocks do
+not have a generic first tick time and throw an error.
 """
-first_clock_tick_time(c::PeriodicClock, t0) = ceil(t0 / c.dt) * c.dt
+first_clock_tick_time(c::PeriodicClock, t0) = _periodic_tick_time(c, t0, 0)
+
+const _ExactReal = Union{Integer, Rational, AbstractFloat}
+_exact(x::_ExactReal) = Rational{BigInt}(x)
+function _exact_ticks(::Type{T}, ::Type{Ph}, ::Type{D}) where {T, Ph, D}
+    return D <: Rational && Ph <: _ExactReal && T <: _ExactReal
+end
+
+# Nearest value of `S` to `x`, ties to even, computed with integer arithmetic.
+# `Float64(::Rational{BigInt})` and `BigFloat(::Rational{BigInt})` round twice.
+function _round_exact(
+        ::Type{S}, x::Rational{BigInt}
+    ) where {S <: Union{Float16, Float32, Float64, BigFloat}}
+    iszero(x) && return zero(S)
+    # an infinite tick time, from an infinite phase or period
+    iszero(denominator(x)) && return convert(S, x)
+    n, d = abs(numerator(x)), denominator(x)
+    # 2^e <= n/d < 2^(e+1)
+    e = ndigits(n; base = 2) - ndigits(d; base = 2)
+    (e >= 0 ? n < d << e : n << -e < d) && (e -= 1)
+    # exponent of the unit in the last place, limited to that of subnormal numbers
+    emin = S === BigFloat ? e : exponent(floatmin(S))
+    shift = max(e, emin) - (precision(S) - 1)
+    n, d = shift <= 0 ? (n << -shift, d) : (n, d << shift)
+    q = div(n, d, RoundNearest)
+    return copysign(ldexp(S(q), shift), S(sign(x)))
+end
+_round_exact(::Type{S}, x) where {S} = convert(S, x)
+
+# public
+"""
+    periodic_schedule(T, t0, phase, dt)
+
+Prepare the tick times of a periodic schedule with period `dt` and phase `phase` in
+a simulation that starts at `t0` and has the time type `T`. The tick with index
+`k ≥ 0` is at `t0 + phase + k * dt` and is returned by
+[`periodic_tick_time`](@ref). This schedule is shared by `PeriodicCallback` of
+DiffEqCallbacks.jl and [`canonicalize_indexed_clock`](@ref), such that indexed
+clock ticks are equal to the times at which the callback fires.
+
+When `dt` is rational and `T`, `t0` and `phase` are integers, rationals or
+floating-point numbers, the tick times are computed in `Rational{BigInt}`, with
+floating-point values converted exactly, and rounded once to the nearest value of
+`T`. Ticks of different schedules that coincide mathematically are then equal.
+Otherwise `t0 + phase` is computed in the promoted type of `dt` and `T`, and the
+tick is `convert(T, (t0 + phase) + k * dt)`. The type of the returned schedule is
+[`periodic_schedule_type(T, typeof(phase), typeof(dt))`](@ref periodic_schedule_type).
+"""
+function periodic_schedule(::Type{T}, t0, phase, dt) where {T}
+    S = periodic_schedule_type(T, typeof(phase), typeof(dt))
+    return if _exact_ticks(T, typeof(phase), typeof(dt))
+        S((_exact(t0) + _exact(phase), _exact(dt)))
+    else
+        S((t0 + phase, dt))
+    end
+end
+
+# public
+"""
+    periodic_schedule_type(T, Ph, D)
+
+Return the type of [`periodic_schedule`](@ref) for the time type `T`, the phase
+type `Ph` and the period type `D`.
+"""
+function periodic_schedule_type(::Type{T}, ::Type{Ph}, ::Type{D}) where {T, Ph, D}
+    return _exact_ticks(T, Ph, D) ? Tuple{Rational{BigInt}, Rational{BigInt}} :
+        Tuple{promote_type(D, T), D}
+end
+
+# public
+"""
+    periodic_tick_time(T, schedule, k)
+
+Return the tick with index `k ≥ 0` of a [`periodic_schedule`](@ref) as a value of
+the time type `T`.
+"""
+function periodic_tick_time(::Type{T}, schedule, k) where {T}
+    origin, period = schedule
+    return _round_exact(T, iszero(k) ? origin : origin + k * period)
+end
+
+# Tick with index `k ≥ 0` of a periodic clock. A clock with zero phase ticks at `t0`
+# itself. A clock without period has only a first tick, at `t0 + phase`.
+function _periodic_tick_time(c::PeriodicClock, t0, k, ::Type{T} = typeof(float(t0))) where {T}
+    dt = c.dt
+    if dt === nothing
+        k == 0 || throw(ArgumentError("the tick times of $c with index > 1 are undefined, since its period is not set"))
+        dt = 0 // 1
+    end
+    k == 0 && iszero(c.phase) && return convert(T, t0)
+    return periodic_tick_time(T, periodic_schedule(T, t0, c.phase, dt), k)
+end
+
 first_clock_tick_time(::SolverStepClock, t0) = t0
 first_clock_tick_time(::ContinuousClock, _) = error("ContinuousClock() is not a discrete clock")
 first_clock_tick_time(::EventClock, _) = error("Event clocks do not have a defined first tick time.")
@@ -268,14 +401,15 @@ for a saved time-series solution.
 
 `IndexedClock` stores a clock and one or more tick indices, but the actual tick
 times depend on the solve. Periodic clocks are reconstructed from the problem
-start time and tick interval, solver-step clocks read the matching discrete
+start time, tick interval and phase (the clock ticks at
+`tspan[1] + phase + (idx - 1) * dt`), solver-step clocks read the matching discrete
 time series stored on the solution, and continuous clocks index directly into
 `sol.t`. Unsupported clock types throw an error.
 """
 function canonicalize_indexed_clock(ic::IndexedClock, sol::AbstractTimeseriesSolution)
     c = ic.clock
     return if c isa PeriodicClock
-        ceil(sol.prob.tspan[1] / c.dt) * c.dt .+ (ic.idx .- 1) .* c.dt
+        _periodic_tick_time.(Ref(c), sol.prob.tspan[1], ic.idx .- 1, eltype(sol.t))
     elseif c isa SolverStepClock
         ssc_idx = findfirst(eachindex(sol.discretes)) do i
             !isa(sol.discretes[i].t, AbstractRange)

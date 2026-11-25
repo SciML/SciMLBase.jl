@@ -24,4 +24,7 @@ SciMLBase.first_clock_tick_time
 SciMLBase.IndexedClock
 Base.getindex(::SciMLBase.AbstractClock, ::Any)
 SciMLBase.canonicalize_indexed_clock
+SciMLBase.periodic_schedule
+SciMLBase.periodic_schedule_type
+SciMLBase.periodic_tick_time
 ```

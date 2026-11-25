@@ -2415,7 +2415,8 @@ export cache_operator, concretize, has_adjoint, has_concretization, has_exp, has
 # Clock interface
 @public AbstractClock, ContinuousClock, PeriodicClock, SolverStepClock, EventClock,
     Continuous, Clock, iseventclock, first_clock_tick_time, IndexedClock,
-    canonicalize_indexed_clock
+    canonicalize_indexed_clock, periodic_schedule, periodic_schedule_type,
+    periodic_tick_time
 
 # Callback interface
 @public DECallback, AbstractContinuousCallback, AbstractDiscreteCallback,
