@@ -71,6 +71,34 @@ end
     @test default.finalize(default, integrator.u, integrator.t, integrator) === nothing
 end
 
+mutable struct Counter
+    count::Int
+end
+(counter::Counter)(integrator) = (counter.count += 1; nothing)
+
+@testset "deepcopy" begin
+    integrator = MockIntegrator(2.0)
+    I = typeof(integrator)
+    counter = Counter(0)
+    report = (callback, u, t, integrator) -> (integrator.u[1] = callback.affect!.count)
+    erased = erase_callback(
+        DiscreteCallback((u, t, i) -> true, counter; finalize = report), I, Float64
+    )
+    copy = deepcopy(erased)
+    @test copy isa ErasedDiscreteCallback{I}
+    @test copy.condition(integrator.u, integrator.t, integrator)
+    copy.affect!(integrator)
+    copy.affect!(integrator)
+    @test counter.count == 0
+    # The copied hook sees the affect that the copied trampoline runs.
+    copy.finalize(copy, integrator.u, integrator.t, integrator)
+    @test integrator.u == [2.0]
+    @test !SciMLBase.is_default_finalize(copy.finalize)
+    @test SciMLBase.is_default_finalize(
+        deepcopy(erase_callback(DiscreteCallback((u, t, i) -> true, identity), I, Float64)).finalize
+    )
+end
+
 @testset "final discrete saving matches the original callback" begin
     I = MockIntegrator
     condition = (u, t, i) -> true

@@ -86,6 +86,19 @@ erased_finalize_default(integrator) = nothing
 
 is_default_finalize(hook::ErasedHook) = hook.default
 
+# A `FunctionWrapper` holds a raw pointer to the function it wraps, and the generic
+# `deepcopy` leaves that pointer on the original. These methods belong upstream, as a
+# `deepcopy_internal` for `FunctionWrapper` in FunctionWrappers.jl.
+copy_trampoline(call::CallbackTrampoline{R, I}, copies::IdDict) where {R, I} =
+    CallbackTrampoline{R, I}(Base.deepcopy_internal(call.obj[], copies))
+
+Base.deepcopy_internal(condition::ErasedCondition{I}, copies::IdDict) where {I} =
+    ErasedCondition{I}(copy_trampoline(condition.call, copies))
+Base.deepcopy_internal(affect!::ErasedAffect{I}, copies::IdDict) where {I} =
+    ErasedAffect{I}(copy_trampoline(affect!.call, copies))
+Base.deepcopy_internal(hook::ErasedHook{I}, copies::IdDict) where {I} =
+    ErasedHook{I}(copy_trampoline(hook.call, copies), hook.default)
+
 """
     ErasedDiscreteCallback{I}
 
