@@ -551,6 +551,8 @@ function translate_symbolic_save_idxs(indp, save_idxs)
     end
 end
 
+translate_symbolic_save_idxs(indp, save_idxs::AbstractArray{<:Integer}) = save_idxs
+
 function _append_state_indices!(translated, indp, sym)
     if symbolic_type(sym) == NotSymbolic()
         push!(translated, sym)

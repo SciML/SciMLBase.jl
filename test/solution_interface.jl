@@ -440,3 +440,13 @@ end
     @test ss isa SciMLBase.SavedSubsystem
     @test SciMLBase.get_saved_state_idxs(ss) == [1]
 end
+
+@testset "save_idxs keeps integer index arrays as given" begin
+    prob = ODEProblem((u, p, t) -> u, SA[1.0, 2.0, 3.0], (0.0, 1.0))
+    for idxs in (SOneTo(2), SA[1, 3], 1:2)
+        save_idxs, _ = SciMLBase.get_save_idxs_and_saved_subsystem(prob, idxs)
+        @test save_idxs === idxs
+    end
+    @test prob.u0[first(SciMLBase.get_save_idxs_and_saved_subsystem(prob, SOneTo(2)))] isa
+        SVector{2}
+end
