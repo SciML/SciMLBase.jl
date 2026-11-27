@@ -151,3 +151,32 @@ end
     @test NonlinearProblem(SteadyStateProblem(odef!, u)) isa NonlinearProblem
     @test NonlinearProblem(SteadyStateProblem(odef, u)) isa NonlinearProblem
 end
+
+@testset "ODEFunction -> NonlinearFunction jvp/vjp are evaluated at t = Inf" begin
+    c = t -> t === Inf ? 3.0 : 0.0
+    u = [1.0]
+    v = [2.0]
+    p = nothing
+
+    odef! = ODEFunction{true}(
+        (du, u, p, t) -> (du .= c(t) .* u; nothing);
+        jvp = (Jv, v, u, p, t) -> (Jv .= c(t) .* v; nothing),
+        vjp = (vJ, v, u, p, t) -> (vJ .= c(t) .* v; nothing)
+    )
+    odef = ODEFunction{false}(
+        (u, p, t) -> c(t) .* u;
+        jvp = (v, u, p, t) -> c(t) .* v,
+        vjp = (v, u, p, t) -> c(t) .* v
+    )
+
+    nf! = NonlinearFunction(odef!)
+    nf = NonlinearFunction(odef)
+    Jv = zeros(1)
+    vJ = zeros(1)
+    nf!.jvp(Jv, v, u, p)
+    nf!.vjp(vJ, v, u, p)
+    @test Jv == [6.0]
+    @test vJ == [6.0]
+    @test nf.jvp(v, u, p) == [6.0]
+    @test nf.vjp(v, u, p) == [6.0]
+end
