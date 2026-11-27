@@ -3354,12 +3354,14 @@ function ODEFunction{iip}(f::NonlinearFunction) where {iip}
         _jac = nothing
     end
     if f.jvp !== nothing
-        _jvp = iip ? (Jv, u, p, t) -> (f.jvp(Jv, u, p); nothing) : (u, p, t) -> f.jvp(u, p)
+        _jvp = iip ? (Jv, v, u, p, t) -> (f.jvp(Jv, v, u, p); nothing) :
+            (v, u, p, t) -> f.jvp(v, u, p)
     else
         _jvp = nothing
     end
     if f.vjp !== nothing
-        _vjp = iip ? (vJ, u, p, t) -> (f.vjp(vJ, u, p); nothing) : (u, p, t) -> f.vjp(u, p)
+        _vjp = iip ? (vJ, v, u, p, t) -> (f.vjp(vJ, v, u, p); nothing) :
+            (v, u, p, t) -> f.vjp(v, u, p)
     else
         _vjp = nothing
     end
@@ -3405,14 +3407,14 @@ function NonlinearFunction{iip}(f::ODEFunction) where {iip}
         _jac = nothing
     end
     if f.jvp !== nothing
-        _jvp = iip ? (Jv, u, p) -> (f.jvp(Jv, u, p, Inf); nothing) :
-            (u, p) -> f.jvp(u, p, Inf)
+        _jvp = iip ? (Jv, v, u, p) -> (f.jvp(Jv, v, u, p, Inf); nothing) :
+            (v, u, p) -> f.jvp(v, u, p, Inf)
     else
         _jvp = nothing
     end
     if f.vjp !== nothing
-        _vjp = iip ? (vJ, u, p) -> (f.vjp(vJ, u, p, Inf); nothing) :
-            (u, p) -> f.vjp(u, p, Inf)
+        _vjp = iip ? (vJ, v, u, p) -> (f.vjp(vJ, v, u, p, Inf); nothing) :
+            (v, u, p) -> f.vjp(v, u, p, Inf)
     else
         _vjp = nothing
     end
