@@ -295,6 +295,142 @@ end
     end
 end
 
+@testset "Observed parameter cotangent for an immutable problem" begin
+    using NonlinearSolve
+
+    @parameters a_imm b_imm
+    @variables u_imm(t) v_imm(t)
+    @mtkcompile imm_sys = System([D(u_imm) ~ -a_imm * u_imm, v_imm ~ b_imm * u_imm], t)
+    b_imm_value = 2.0
+    prob_imm = DAEProblem(
+        imm_sys, [u_imm => 1.0, a_imm => 1.2, b_imm => b_imm_value], (0.0, 1.0)
+    )
+    @test !ismutabletype(typeof(prob_imm))
+
+    tunables_imm, repack_imm, _ = SS.canonicalize(SS.Tunable(), prob_imm.p)
+    solve_imm(ps) = solve(
+        remake(prob_imm; p = repack_imm(ps));
+        saveat = 0.1, abstol = 1.0e-8, reltol = 1.0e-8,
+    )
+    sol_imm = solve_imm(tunables_imm)
+
+    # At fixed states, d(sum(b_imm * u_imm))/d(b_imm) = sum(u_imm).
+    f_imm = SII.observed(sol_imm, imm_sys.v_imm)
+    gp_ref = ForwardDiff.gradient(tunables_imm) do tun
+        p = repack_imm(tun)
+        sum(f_imm(u, p, τ) for (u, τ) in zip(sol_imm.u, sol_imm.t))
+    end
+    @test count(!iszero, gp_ref) == 1
+    @test only(filter(!iszero, gp_ref)) ≈ sum(sol_imm[imm_sys.u_imm])
+
+    # Through `solve`, against ForwardDiff.
+    loss_imm(ps) = sum(solve_imm(ps)[imm_sys.v_imm])
+    grad_ref = ForwardDiff.gradient(loss_imm, tunables_imm)
+
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend))" begin
+            gs = DifferentiationInterface.gradient(
+                sol -> sum(sol[imm_sys.v_imm]), backend, sol_imm
+            )
+            @test gs isa Mooncake.Tangent
+            @test all(du -> du ≈ [b_imm_value], _unwrap_grad(gs).u)
+            gp = _unwrap_grad(gs).prob.fields.p
+            gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
+            @test gp.fields.tunable ≈ gp_ref
+
+            grad = DifferentiationInterface.gradient(loss_imm, backend, tunables_imm)
+            @test grad ≈ grad_ref rtol = 1.0e-6
+        end
+    end
+
+    # The same for the rule without time: a `NonlinearLeastSquaresProblem` is
+    # immutable where a `NonlinearProblem` is not.
+    @variables x_imm y_imm
+    @mtkcompile imm_nsys = System(
+        [0 ~ x_imm^2 - a_imm, y_imm ~ b_imm * x_imm], [x_imm, y_imm], [a_imm, b_imm]
+    )
+    nprob_imm = NonlinearLeastSquaresProblem(
+        imm_nsys, [x_imm => 1.0, a_imm => 2.0, b_imm => 3.0]
+    )
+    @test !ismutabletype(typeof(nprob_imm))
+    nsol_imm = solve(nprob_imm)
+    @test SciMLBase.successful_retcode(nsol_imm)
+
+    f_nimm = SII.observed(nsol_imm, imm_nsys.y_imm)
+    ntunables_imm, nrepack_imm, _ = SS.canonicalize(SS.Tunable(), nprob_imm.p)
+    gp_nref = ForwardDiff.gradient(ntunables_imm) do tun
+        f_nimm(nsol_imm.u, nrepack_imm(tun))
+    end
+    @test count(!iszero, gp_nref) == 1
+    @test only(filter(!iszero, gp_nref)) ≈ only(nsol_imm.u)
+
+    for backend in MOONCAKE_BACKENDS
+        @testset "$(backend_name(backend)), no time" begin
+            gs = DifferentiationInterface.gradient(
+                sol -> sol[imm_nsys.y_imm], backend, nsol_imm
+            )
+            @test gs isa Mooncake.Tangent
+            gp = _unwrap_grad(gs).prob.fields.p
+            gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
+            @test gp.fields.tunable ≈ gp_nref
+        end
+    end
+end
+
+struct TwoVectorParameters
+    a::Vector{Float64}
+    b::Vector{Float64}
+end
+two_vector_observed(sym, u, p, t) = p.a[1] * u[1] + 2 * p.b[1]
+# The rule without time calls `f(sym)`, and `SII.observed` returns `f(sym)`
+# whenever that method exists, so only the form without time has it.
+two_vector_observed_no_t(sym) = (u, p) -> p.a[1] * u[1] + 2 * p.b[1]
+two_vector_observed_no_t(sym, u, p) = two_vector_observed_no_t(sym)(u, p)
+
+@testset "Observed parameter cotangent for a vector that two fields share" begin
+    obs = :(a * x + 2b)
+    sc = SII.SymbolCache([:x], Symbol[], :t)
+    nsc = SII.SymbolCache([:x], Symbol[], nothing)
+    dae_f = DAEFunction((du, u, p, t) -> du - u; observed = two_vector_observed, sys = sc)
+    ode_f = ODEFunction((u, p, t) -> -u; observed = two_vector_observed, sys = sc)
+    nl_f = NonlinearFunction((u, p) -> u .- 3; observed = two_vector_observed_no_t, sys = nsc)
+    v = [0.5]
+    # At the states 3 and 5 the gradient of the sum is 8 for `a` and 4 for `b`,
+    # so 12 for one vector that both hold. Without time, at the state 3, it is
+    # 3, 2 and 5.
+    for (p, label, da, db, nda, ndb) in (
+            (TwoVectorParameters(v, v), "shared", 12.0, 12.0, 5.0, 5.0),
+            (TwoVectorParameters([0.5], [0.5]), "separate", 8.0, 4.0, 3.0, 2.0),
+        )
+        probs = (
+            DAEProblem(dae_f, [0.0], [1.0], (0.0, 1.0), p),
+            ODEProblem(ode_f, [1.0], (0.0, 1.0), p),
+        )
+        nprobs = (
+            NonlinearLeastSquaresProblem(nl_f, [1.0], p),
+            NonlinearProblem(nl_f, [1.0], p),
+        )
+        for backend in MOONCAKE_BACKENDS, prob in probs
+            @testset "$(backend_name(backend)), $(nameof(typeof(prob))), $label" begin
+                sol = SciMLBase.build_solution(prob, nothing, [0.0, 1.0], [[3.0], [5.0]])
+                gs = DifferentiationInterface.gradient(sol -> sum(sol[obs]), backend, sol)
+                gp = _unwrap_grad(_unwrap_grad(_unwrap_grad(gs).prob).p)
+                @test gp.a ≈ [da]
+                @test gp.b ≈ [db]
+            end
+        end
+        for backend in MOONCAKE_BACKENDS, prob in nprobs
+            @testset "$(backend_name(backend)), $(nameof(typeof(prob))), $label" begin
+                sol = SciMLBase.build_solution(prob, nothing, [3.0], [0.0])
+                gs = DifferentiationInterface.gradient(sol -> sol[obs], backend, sol)
+                gp = _unwrap_grad(_unwrap_grad(_unwrap_grad(gs).prob).p)
+                @test gp.a ≈ [nda]
+                @test gp.b ≈ [ndb]
+            end
+        end
+    end
+end
+
 @testset "NonlinearSolution scalar getindex under AD (SciMLSensitivity#1446)" begin
     using SteadyStateDiffEq
     using OrdinaryDiffEqRosenbrock: Rodas5
