@@ -585,4 +585,21 @@ end
     prob = SplitODEProblem(fv, f2, [2.0], (0.0, 1.0))
     @test !isinplace(prob)
     @test prob.f([2.0], nothing, 0.0) == [-3.0]
+
+    g!(du, u, p, t) = (du .= 0.1u; nothing)
+    sf1 = SDEFunction{false}(f1, g)
+    sf2 = SDEFunction{false}(f2, g)
+    df1 = SDEFunction{false}((v, u, p, t) -> -u, g)
+    df2 = SDEFunction{false}((v, u, p, t) -> v, g)
+    tspan = (0.0, 1.0)
+    @test SplitSDEProblem(sf1, sf2, g, u, tspan) isa SDEProblem
+    @test DynamicalSDEProblem(df1, df2, g, u, u, tspan) isa SDEProblem
+    for build in (
+            () -> SplitSDEProblem(sf1, sf2, g!, u, tspan),
+            () -> DynamicalSDEProblem(df1, df2, g!, u, u, tspan),
+            () -> SplitSDEFunction(; f1 = sf1, f2 = sf2, g = g!, kw...),
+            () -> DynamicalSDEFunction(; f1 = df1, f2 = df2, g = g!, kw...),
+        )
+        @test_throws SciMLBase.NonconformingFunctionsError build()
+    end
 end

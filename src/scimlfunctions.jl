@@ -3996,6 +3996,11 @@ function SDEFunction(f, g; kwargs...)
 end
 SDEFunction(f::SDEFunction; kwargs...) = f
 
+function _check_diffusion_iip(g, iip)
+    isinplace(g, 4, "g", iip) == iip || throw(NonconformingFunctionsError(["g"]))
+    return nothing
+end
+
 @add_kwonly function SplitSDEFunction(
         f1, f2, g, mass_matrix, _func_cache, analytic, tgrad, jac,
         jvp, vjp,
@@ -4003,6 +4008,7 @@ SDEFunction(f::SDEFunction; kwargs...) = f
         colorvec, sys, initialization_data = nothing
     )
     iip = isinplace(f2, 4)
+    _check_diffusion_iip(g, iip)
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
     f2 = SDEFunction{iip}(f2, g)
 
@@ -4089,6 +4095,7 @@ function SplitSDEFunction(f1, f2, g; kwargs...)
     return SplitSDEFunction{isinplace(f2, 4)}(f1, f2, g; kwargs...)
 end
 function SplitSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
+    _check_diffusion_iip(g, iip)
     return SplitSDEFunction{iip, DEFAULT_SPECIALIZATION}(
         SDEFunction{iip}(f1, g), SDEFunction{iip}(f2, g),
         g; kwargs...
@@ -4104,6 +4111,7 @@ SplitSDEFunction(f::SplitSDEFunction; kwargs...) = f
         sys, initialization_data = nothing
     )
     iip = isinplace(f2, 5)
+    _check_diffusion_iip(g, iip)
     f1 = f1 isa AbstractSciMLOperator ? f1 : SDEFunction{iip}(f1, g)
     f2 = SDEFunction{iip}(f2, g)
 
@@ -4191,6 +4199,7 @@ function DynamicalSDEFunction(f1, f2, g; kwargs...)
     return DynamicalSDEFunction{isinplace(f2, 5)}(f1, f2, g; kwargs...)
 end
 function DynamicalSDEFunction{iip}(f1, f2, g; kwargs...) where {iip}
+    _check_diffusion_iip(g, iip)
     return DynamicalSDEFunction{iip, DEFAULT_SPECIALIZATION}(
         SDEFunction{iip}(f1, g),
         SDEFunction{iip}(f2, g), g; kwargs...
