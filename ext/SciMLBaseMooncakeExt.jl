@@ -321,11 +321,14 @@ end
 # (which may be a Tangent for immutable structs or an FData/MutableTangent
 # for other layouts). We can't use Mooncake.increment!! because of type
 # mismatches between Tangent and FData. Instead, walk the NamedTuple
-# structure and accumulate Vector-typed leaves in place.
-function _accumulate_p_fdata!(dest, src)
+# structure and accumulate Vector-typed leaves in place. Fields that share a
+# vector share its tangent, so each `(dest, src)` pair of leaves is added once.
+function _accumulate_p_fdata!(dest, src, seen = IdDict{Any, Nothing}())
     (dest isa NoFData || dest isa NoTangent || src isa NoFData || src isa NoTangent) &&
         return nothing
     if dest isa Vector{<:Real} && src isa Vector{<:Real}
+        haskey(seen, (dest, src)) && return nothing
+        seen[(dest, src)] = nothing
         @. dest += src
         return nothing
     end
@@ -346,7 +349,7 @@ function _accumulate_p_fdata!(dest, src)
     end
     for name in propertynames(dest_fields)
         hasproperty(src_fields, name) || continue
-        _accumulate_p_fdata!(getfield(dest_fields, name), getfield(src_fields, name))
+        _accumulate_p_fdata!(getfield(dest_fields, name), getfield(src_fields, name), seen)
     end
     return nothing
 end

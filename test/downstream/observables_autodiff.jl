@@ -295,13 +295,6 @@ end
     end
 end
 
-# `prob_dae` above is an `ODEProblem` with a mass matrix, and `ODEProblem` is a
-# mutable struct, so its Mooncake tangent is one `MutableTangent`. A `DAEProblem`
-# is immutable: its tangent is split into fdata and rdata, and the observed
-# rrules have to add the parameter part of a cotangent to the fdata of
-# `sol.prob.p`. The observed `v_imm = b_imm * u_imm` depends on a parameter
-# directly, so the gradient of `sum(sol[v_imm])` with respect to `b_imm` is
-# that part alone.
 @testset "Observed parameter cotangent for an immutable problem" begin
     using NonlinearSolve
 
@@ -321,8 +314,7 @@ end
     )
     sol_imm = solve_imm(tunables_imm)
 
-    # The rule on its own: the parameter cotangent of `sum(sol[v_imm])` is that
-    # of the observed function at the saved states, `sum(u_imm)` for `b_imm`.
+    # At fixed states, d(sum(b_imm * u_imm))/d(b_imm) = sum(u_imm).
     f_imm = SII.observed(sol_imm, imm_sys.v_imm)
     gp_ref = ForwardDiff.gradient(tunables_imm) do tun
         p = repack_imm(tun)
@@ -381,6 +373,60 @@ end
             gp = _unwrap_grad(gs).prob.fields.p
             gp = hasproperty(gp.fields, :params) ? gp.fields.params : gp
             @test gp.fields.tunable ≈ gp_nref
+        end
+    end
+end
+
+struct TwoVectorParameters
+    a::Vector{Float64}
+    b::Vector{Float64}
+end
+two_vector_observed(sym, u, p, t) = p.a[1] * u[1] + 2 * p.b[1]
+# The rule without time calls `f(sym)`, and `SII.observed` returns `f(sym)`
+# whenever that method exists, so only the form without time has it.
+two_vector_observed_no_t(sym) = (u, p) -> p.a[1] * u[1] + 2 * p.b[1]
+two_vector_observed_no_t(sym, u, p) = two_vector_observed_no_t(sym)(u, p)
+
+@testset "Observed parameter cotangent for a vector that two fields share" begin
+    obs = :(a * x + 2b)
+    sc = SII.SymbolCache([:x], Symbol[], :t)
+    nsc = SII.SymbolCache([:x], Symbol[], nothing)
+    dae_f = DAEFunction((du, u, p, t) -> du - u; observed = two_vector_observed, sys = sc)
+    ode_f = ODEFunction((u, p, t) -> -u; observed = two_vector_observed, sys = sc)
+    nl_f = NonlinearFunction((u, p) -> u .- 3; observed = two_vector_observed_no_t, sys = nsc)
+    v = [0.5]
+    # At the states 3 and 5 the gradient of the sum is 8 for `a` and 4 for `b`,
+    # so 12 for one vector that both hold. Without time, at the state 3, it is
+    # 3, 2 and 5.
+    for (p, label, da, db, nda, ndb) in (
+            (TwoVectorParameters(v, v), "shared", 12.0, 12.0, 5.0, 5.0),
+            (TwoVectorParameters([0.5], [0.5]), "separate", 8.0, 4.0, 3.0, 2.0),
+        )
+        probs = (
+            DAEProblem(dae_f, [0.0], [1.0], (0.0, 1.0), p),
+            ODEProblem(ode_f, [1.0], (0.0, 1.0), p),
+        )
+        nprobs = (
+            NonlinearLeastSquaresProblem(nl_f, [1.0], p),
+            NonlinearProblem(nl_f, [1.0], p),
+        )
+        for backend in MOONCAKE_BACKENDS, prob in probs
+            @testset "$(backend_name(backend)), $(nameof(typeof(prob))), $label" begin
+                sol = SciMLBase.build_solution(prob, nothing, [0.0, 1.0], [[3.0], [5.0]])
+                gs = DifferentiationInterface.gradient(sol -> sum(sol[obs]), backend, sol)
+                gp = _unwrap_grad(_unwrap_grad(_unwrap_grad(gs).prob).p)
+                @test gp.a ≈ [da]
+                @test gp.b ≈ [db]
+            end
+        end
+        for backend in MOONCAKE_BACKENDS, prob in nprobs
+            @testset "$(backend_name(backend)), $(nameof(typeof(prob))), $label" begin
+                sol = SciMLBase.build_solution(prob, nothing, [3.0], [0.0])
+                gs = DifferentiationInterface.gradient(sol -> sol[obs], backend, sol)
+                gp = _unwrap_grad(_unwrap_grad(_unwrap_grad(gs).prob).p)
+                @test gp.a ≈ [nda]
+                @test gp.b ≈ [ndb]
+            end
         end
     end
 end
