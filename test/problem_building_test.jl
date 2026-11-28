@@ -551,3 +551,55 @@ end
     @test prob2.kwargs[:precondition] === G
     @test prob2.kwargs[:postcondition] === H
 end
+
+@testset "Split and dynamical constructors follow iip" begin
+    f1(u, p, t) = -u
+    f1(du, u, p, t) = (du .= -u; nothing)
+    f2(u, p, t) = 0.5u
+    g(u, p, t) = 0.1u
+    u = [1.0]
+
+    @test !isinplace(SplitFunction{false}(f1, f2).f1)
+    sf = SplitSDEFunction{false}(f1, f2, g)
+    @test !isinplace(sf.f1)
+    @test sf(u, nothing, 0.0) == [-0.5]
+
+    kw = (;
+        mass_matrix = nothing, _func_cache = nothing, analytic = nothing, tgrad = nothing,
+        jac = nothing, jvp = :jvp, vjp = :vjp, jac_prototype = :jac_prototype,
+        sparsity = :sparsity, Wfact = nothing, Wfact_t = nothing, paramjac = nothing,
+        observed = nothing, colorvec = nothing, sys = nothing,
+    )
+    sf = SplitSDEFunction(; f1 = (u, p, t) -> -u, f2, g, kw...)
+    df = DynamicalSDEFunction(; f1 = (v, u, p, t) -> -u, f2 = (v, u, p, t) -> v, g, kw...)
+    @test sf isa SplitSDEFunction{false, SciMLBase.FullSpecialize}
+    @test df isa DynamicalSDEFunction{false, SciMLBase.FullSpecialize}
+    @test sf(u, nothing, 0.0) == [-0.5]
+    @test !isinplace(df.f1)
+    for fn in (sf, df), name in (:jvp, :vjp, :jac_prototype, :sparsity)
+        @test getfield(fn, name) === name
+    end
+
+    @test SplitFunction{false}(SplitFunction(f2, f2), f2) isa SplitFunction{false}
+    fv(u, p, t, args...) = -2u
+    prob = SplitODEProblem(fv, f2, [2.0], (0.0, 1.0))
+    @test !isinplace(prob)
+    @test prob.f([2.0], nothing, 0.0) == [-3.0]
+
+    g!(du, u, p, t) = (du .= 0.1u; nothing)
+    sf1 = SDEFunction{false}(f1, g)
+    sf2 = SDEFunction{false}(f2, g)
+    df1 = SDEFunction{false}((v, u, p, t) -> -u, g)
+    df2 = SDEFunction{false}((v, u, p, t) -> v, g)
+    tspan = (0.0, 1.0)
+    @test SplitSDEProblem(sf1, sf2, g, u, tspan) isa SDEProblem
+    @test DynamicalSDEProblem(df1, df2, g, u, u, tspan) isa SDEProblem
+    for build in (
+            () -> SplitSDEProblem(sf1, sf2, g!, u, tspan),
+            () -> DynamicalSDEProblem(df1, df2, g!, u, u, tspan),
+            () -> SplitSDEFunction(; f1 = sf1, f2 = sf2, g = g!, kw...),
+            () -> DynamicalSDEFunction(; f1 = df1, f2 = df2, g = g!, kw...),
+        )
+        @test_throws SciMLBase.NonconformingFunctionsError build()
+    end
+end
